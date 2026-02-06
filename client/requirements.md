@@ -1,15 +1,15 @@
 ## Packages
-framer-motion | For smooth page transitions and glassmorphism animations
+framer-motion | For smooth animations and page transitions
 recharts | For dashboard analytics charts
-date-fns | For date formatting
-react-day-picker | For date selection in forms
+date-fns | For date formatting in Arabic locale
 lucide-react | For iconography
+react-hook-form | For form management
+zod | For schema validation
+@hookform/resolvers | For connecting Zod with React Hook Form
+clsx | For conditional classes
+tailwind-merge | For merging tailwind classes
 
 ## Notes
-Tailwind Config - extend fontFamily:
-fontFamily: {
-  display: ["'Outfit'", "sans-serif"],
-  body: ["'DM Sans'", "sans-serif"],
-}
-RTL Support:
-The app uses `dir="rtl"` on the root. Ensure flex directions and margins start/end are handled correctly (e.g., `ml-auto` in LTR becomes `mr-auto` in RTL visually if not using logical properties, but Tailwind v3+ handles logical properties with `ms-` `me-` etc. We will stick to standard flex patterns and assume the browser flips layout for `dir="rtl"`).
+The application requires RTL layout support.
+Fonts: 'Cairo' for headings, 'IBM Plex Sans Arabic' for body text.
+Primary colors: Deep Blue (#0f172a) and Cyan (#06b6d4).

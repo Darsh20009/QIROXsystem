@@ -1,120 +1,144 @@
 import { Link, useLocation } from "wouter";
 import { useUser, useLogout } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
-import { LayoutDashboard, LogOut, Menu, X, User as UserIcon } from "lucide-react";
+import { Menu, X, LayoutDashboard, Home, Briefcase, LogOut, User } from "lucide-react";
 import { useState } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
-export function Navigation() {
-  const [location] = useLocation();
+export default function Navigation() {
   const { data: user } = useUser();
   const { mutate: logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
+  const [location] = useLocation();
 
-  const navItems = [
-    { label: "Home", href: "/" },
-    { label: "Services", href: "/services" },
+  const isHome = location === "/";
+
+  const navLinks = [
+    { href: "/", label: "الرئيسية", icon: Home },
+    { href: "/services", label: "خدماتنا", icon: Briefcase },
+    ...(user ? [{ href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard }] : []),
   ];
 
-  if (user) {
-    if (user.role === "client") {
-      navItems.push({ label: "Dashboard", href: "/dashboard" });
-    } else {
-      navItems.push({ label: "Admin Panel", href: "/admin" });
-    }
-  }
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          {/* Static logo import assumed or use simple text if image not available */}
-          <div className="w-8 h-8 rounded bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-lg">Q</div>
-          <span className="text-xl font-bold font-display tracking-tight text-white">QIROX</span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
-            <Link 
-              key={item.href} 
-              href={item.href}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                location === item.href ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="hidden md:flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <UserIcon className="w-4 h-4" />
-                <span>{user.username}</span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => logout()} className="hover:text-destructive hover:bg-destructive/10">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Log In</Button>
-              </Link>
-              <Link href="/register">
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Nav */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon">
-              <Menu className="w-6 h-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="bg-card border-r-white/10">
-            <div className="flex flex-col gap-6 mt-8">
-              {navItems.map((item) => (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`text-lg font-medium ${
-                    location === item.href ? "text-primary" : "text-foreground"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="h-px bg-white/10 my-2" />
-              {user ? (
-                <Button variant="ghost" onClick={() => logout()} className="justify-start px-0 text-muted-foreground hover:text-destructive">
-                  <LogOut className="w-5 h-5 mr-2" />
-                  Log Out
-                </Button>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <Link href="/login" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full">Log In</Button>
-                  </Link>
-                  <Link href="/register" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full">Get Started</Button>
-                  </Link>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isHome ? 'bg-white/80 backdrop-blur-lg border-b border-slate-200/50' : 'bg-white border-b border-slate-200'
+    }`}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          
+          {/* Logo Area */}
+          <div className="flex-shrink-0 flex items-center gap-3">
+             <Link href="/" className="flex items-center gap-3 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
+                   <img src="/logo.png" alt="Qirox Logo" className="w-8 h-8 object-contain filter invert" /> 
+                   {/* Invert logo to white if it's dark, or remove filter if it's already suitable */}
                 </div>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+                <span className="font-heading font-bold text-2xl text-primary tracking-tight group-hover:text-secondary transition-colors">Qirox</span>
+             </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8 space-x-reverse">
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href}>
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                  location === link.href 
+                    ? "text-secondary font-bold bg-secondary/5" 
+                    : "text-slate-600 hover:text-primary hover:bg-slate-50 font-medium"
+                }`}>
+                  <link.icon className="w-4 h-4" />
+                  <span>{link.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Auth Buttons */}
+          <div className="hidden md:flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                 <span className="text-sm font-medium text-slate-600">
+                    مرحباً، {user.fullName.split(' ')[0]}
+                 </span>
+                 <Button 
+                   variant="outline" 
+                   onClick={() => logout()}
+                   className="border-slate-200 hover:border-red-200 hover:text-red-600 hover:bg-red-50 text-slate-600 gap-2"
+                 >
+                   <LogOut className="w-4 h-4" />
+                   تسجيل خروج
+                 </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-slate-600 hover:text-primary font-medium">
+                    تسجيل دخول
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-0.5">
+                    ابدأ الآن
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden bg-white border-t border-slate-100 absolute w-full shadow-xl">
+          <div className="px-4 pt-2 pb-6 space-y-2">
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)}>
+                <div className={`block px-4 py-3 rounded-xl text-base font-medium ${
+                  location === link.href
+                    ? "text-secondary bg-secondary/5"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <link.icon className="w-5 h-5" />
+                    {link.label}
+                  </div>
+                </div>
+              </Link>
+            ))}
+            
+            <div className="h-px bg-slate-100 my-4" />
+            
+            {user ? (
+               <Button 
+                 variant="destructive" 
+                 className="w-full justify-start gap-3"
+                 onClick={() => { logout(); setIsOpen(false); }}
+               >
+                 <LogOut className="w-5 h-5" />
+                 تسجيل خروج
+               </Button>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <Link href="/login" onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" className="w-full">تسجيل دخول</Button>
+                </Link>
+                <Link href="/register" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full bg-primary text-white">ابدأ الآن</Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

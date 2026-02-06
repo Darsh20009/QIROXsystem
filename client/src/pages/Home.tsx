@@ -1,112 +1,162 @@
-import { Layout } from "@/components/Layout";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
+import InstallPrompt from "@/components/InstallPrompt";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Code, Layout as LayoutIcon, Rocket, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Globe, ShieldCheck, Zap } from "lucide-react";
 
 export default function Home() {
   return (
-    <Layout>
+    <div className="min-h-screen flex flex-col bg-slate-50 font-body">
+      <Navigation />
+      
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background opacity-50" />
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-white">
+        <div className="absolute inset-0 hero-gradient pointer-events-none" />
         
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="inline-block px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-6 backdrop-blur-sm">
-              Future of Software Development
-            </span>
-            <h1 className="text-5xl md:text-7xl font-bold font-display tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60">
-              Build Your Vision with <br />
-              <span className="text-primary">Precision & Speed</span>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              QIROX combines elite engineering with cutting-edge AI to deliver software solutions that scale. From concept to deployment in record time.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/services">
-                <Button size="lg" className="h-14 px-8 rounded-full text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25">
-                  Explore Services <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="h-14 px-8 rounded-full text-lg border-white/10 hover:bg-white/5 bg-white/5 backdrop-blur-sm">
-                  Book Consultation
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-24 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold font-display mb-4">Why Choose QIROX?</h2>
-            <p className="text-muted-foreground">Engineering excellence meets modern design.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Code className="w-8 h-8 text-primary" />,
-                title: "Modern Tech Stack",
-                desc: "Built with React, TypeScript, and Node.js for performance and scalability."
-              },
-              {
-                icon: <LayoutIcon className="w-8 h-8 text-purple-400" />,
-                title: "Premium Design",
-                desc: "Stunning interfaces that prioritize user experience and accessibility."
-              },
-              {
-                icon: <Shield className="w-8 h-8 text-emerald-400" />,
-                title: "Enterprise Security",
-                desc: "Bank-grade security standards to keep your data safe and compliant."
-              }
-            ].map((feature, i) => (
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+            
+            {/* Text Content */}
+            <div className="flex-1 text-center lg:text-right">
               <motion.div
-                key={i}
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="glass-card p-8 rounded-2xl hover:-translate-y-1 transition-transform duration-300"
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
               >
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
-                  {feature.icon}
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary font-semibold text-sm mb-6 border border-secondary/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+                  </span>
+                  المنصة الرائدة للأعمال الرقمية
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
+                
+                <h1 className="text-4xl lg:text-6xl font-extrabold font-heading text-primary leading-tight mb-6">
+                   الإبداع عبر الصور. <br />
+                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+                     نبني الأنظمة، ونبقى بشرًا.
+                   </span>
+                </h1>
+                
+                <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                  نحول أفكارك إلى واقع رقمي ملموس. منصة متكاملة لإدارة وتطوير أعمالك بأحدث التقنيات وأرقى معايير التصميم.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                  <Link href="/register">
+                    <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1 rounded-xl">
+                      ابدأ رحلتك الآن
+                      <ArrowLeft className="w-5 h-5 mr-2" />
+                    </Button>
+                  </Link>
+                  <Link href="/services">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg border-2 border-slate-200 hover:border-primary hover:text-primary hover:bg-slate-50 transition-all rounded-xl">
+                      تصفح خدماتنا
+                    </Button>
+                  </Link>
+                </div>
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* CTA Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="glass-card rounded-3xl p-12 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
-            <div className="relative z-10">
-              <h2 className="text-4xl font-bold font-display mb-6">Ready to start your project?</h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join hundreds of satisfied clients who have transformed their businesses with QIROX.
-              </p>
-              <Link href="/register">
-                <Button size="lg" className="rounded-full h-14 px-8 bg-white text-background hover:bg-gray-100 font-bold">
-                  Get Started Now <Rocket className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
+            {/* Visual/Image Area */}
+            <div className="flex-1 w-full relative">
+               <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
+               >
+                 {/* Abstract/Artistic representation since no banner provided */}
+                 <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 border-8 border-white/50 backdrop-blur-sm aspect-[4/3] bg-slate-900 group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-slate-900 to-slate-800 opacity-90 z-10"></div>
+                    
+                    {/* Decorative Elements */}
+                    <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-secondary/30 rounded-full blur-3xl animate-pulse z-20"></div>
+                    <div className="absolute bottom-1/3 left-1/3 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl z-20"></div>
+                    
+                    <div className="absolute inset-0 flex items-center justify-center z-30 flex-col text-white p-8 text-center">
+                        <div className="w-20 h-20 mb-6 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
+                           <Globe className="w-10 h-10 text-secondary" />
+                        </div>
+                        <h3 className="text-2xl font-bold font-heading mb-2">أنظمة ذكية للمستقبل</h3>
+                        <p className="text-slate-300 text-sm">نحن نصمم تجارب مستخدم لا تُنسى</p>
+                        
+                        {/* Fake UI Elements for "System" look */}
+                        <div className="mt-8 w-full max-w-xs space-y-3 opacity-60">
+                           <div className="h-2 bg-white/20 rounded-full w-3/4 mx-auto"></div>
+                           <div className="h-2 bg-white/10 rounded-full w-1/2 mx-auto"></div>
+                           <div className="flex gap-2 justify-center mt-4">
+                              <div className="w-8 h-8 rounded-full bg-white/20"></div>
+                              <div className="w-8 h-8 rounded-full bg-white/20"></div>
+                              <div className="w-8 h-8 rounded-full bg-white/20"></div>
+                           </div>
+                        </div>
+                    </div>
+                 </div>
+                 
+                 {/* Floating Cards */}
+                 <motion.div 
+                   animate={{ y: [0, -10, 0] }}
+                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                   className="absolute -bottom-6 -right-6 bg-white p-4 rounded-xl shadow-xl border border-slate-100 z-40 max-w-[200px]"
+                 >
+                    <div className="flex items-center gap-3 mb-2">
+                       <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                          <ShieldCheck className="w-5 h-5" />
+                       </div>
+                       <div>
+                          <p className="text-xs text-slate-500">الحماية والأمان</p>
+                          <p className="font-bold text-slate-800">مضمونة 100%</p>
+                       </div>
+                    </div>
+                 </motion.div>
+
+                 <motion.div 
+                   animate={{ y: [0, 10, 0] }}
+                   transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                   className="absolute -top-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-slate-100 z-40 max-w-[200px]"
+                 >
+                    <div className="flex items-center gap-3 mb-2">
+                       <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                          <Zap className="w-5 h-5" />
+                       </div>
+                       <div>
+                          <p className="text-xs text-slate-500">سرعة التنفيذ</p>
+                          <p className="font-bold text-slate-800">أداء فائق</p>
+                       </div>
+                    </div>
+                 </motion.div>
+               </motion.div>
             </div>
           </div>
         </div>
       </section>
-    </Layout>
+
+      {/* Features/Stats Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { title: "جودة احترافية", desc: "معايير عالمية في التصميم والبرمجة", icon: Globe },
+                { title: "دعم فني متواصل", desc: "فريق جاهز لخدمتك على مدار الساعة", icon: ShieldCheck },
+                { title: "تسليم في الموعد", desc: "التزام تام بالجداول الزمنية للمشاريع", icon: CheckCircle2 },
+              ].map((feat, idx) => (
+                <div key={idx} className="p-8 rounded-2xl bg-slate-50 hover:bg-white hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+                   <div className="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 text-primary group-hover:text-secondary group-hover:scale-110 transition-all duration-300 border border-slate-100">
+                      <feat.icon className="w-7 h-7" />
+                   </div>
+                   <h3 className="text-xl font-bold font-heading mb-3 text-primary">{feat.title}</h3>
+                   <p className="text-slate-500 leading-relaxed">{feat.desc}</p>
+                </div>
+              ))}
+           </div>
+        </div>
+      </section>
+      
+      <InstallPrompt />
+      <Footer />
+    </div>
   );
 }

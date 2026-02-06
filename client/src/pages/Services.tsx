@@ -1,76 +1,101 @@
-import { Layout } from "@/components/Layout";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import { useServices } from "@/hooks/use-services";
-import { Loader2, Server, Globe, Smartphone, BarChart, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowLeft, Check, Server, ShoppingBag, Utensils, Building2 } from "lucide-react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
 
-// Map icon strings to components
-const icons: Record<string, any> = {
-  "server": Server,
-  "globe": Globe,
-  "smartphone": Smartphone,
-  "chart": BarChart,
-  "pen": PenTool,
+// Helper to map icon string names to Lucide components
+const IconMap: Record<string, any> = {
+  Utensils,
+  ShoppingBag,
+  Building2,
+  Server
 };
 
 export default function Services() {
   const { data: services, isLoading } = useServices();
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold font-display mb-4">Our Premium Services</h1>
-          <p className="text-muted-foreground text-lg">
-            Choose the perfect solution for your business needs. 
-            We deliver excellence in every line of code.
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <Navigation />
+      
+      <section className="pt-32 pb-16 bg-primary text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
+        {/* Abstract technology background */}
+        
+        <div className="container mx-auto px-4 relative z-10 text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold font-heading mb-6">خدماتنا المتميزة</h1>
+          <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+            اختر الباقة التي تناسب احتياجات عملك، ودعنا نتكفل بالباقي. حلول مصممة خصيصاً لنمو أعمالك.
           </p>
         </div>
+      </section>
 
+      <section className="py-20 container mx-auto px-4">
         {isLoading ? (
-          <div className="flex justify-center"><Loader2 className="animate-spin w-8 h-8" /></div>
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services?.map((service, index) => {
-              const Icon = service.icon ? icons[service.icon] : Globe;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services?.map((service) => {
+              const Icon = IconMap[service.icon || "Server"] || Server;
+              
               return (
-                <motion.div
-                  key={service.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="glass-card rounded-2xl p-8 flex flex-col hover:border-primary/50 transition-colors group"
-                >
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-                    <Icon className="w-7 h-7 text-primary" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold mb-3">{service.title}</h3>
-                  <p className="text-muted-foreground mb-6 flex-1">{service.description}</p>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Estimated Time</span>
-                      <span className="font-medium text-foreground">{service.estimatedDuration}</span>
+                <Card key={service.id} className="border-0 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group">
+                  <div className="h-2 bg-gradient-to-r from-primary to-secondary w-full"></div>
+                  <CardHeader className="pb-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                       <Icon className="w-6 h-6" />
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Starting at</span>
-                      <span className="font-bold text-primary text-lg">${service.priceMin}</span>
+                    <div className="flex justify-between items-start mb-2">
+                       <Badge variant="secondary" className="bg-blue-50 text-primary hover:bg-blue-100 mb-2">
+                          {service.category === 'restaurants' ? 'مطاعم وكافيهات' : 
+                           service.category === 'stores' ? 'متاجر إلكترونية' : 'شركات ومؤسسات'}
+                       </Badge>
+                    </div>
+                    <CardTitle className="text-2xl font-bold font-heading text-primary">{service.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <p className="text-slate-600 mb-6 leading-relaxed">
+                      {service.description}
+                    </p>
+                    
+                    <div className="space-y-3 mb-6">
+                      {service.features?.slice(0, 4).map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-3 text-sm text-slate-700">
+                          <div className="w-5 h-5 rounded-full bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3" />
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
                     </div>
                     
-                    <Link href={`/order?serviceId=${service.id}`}>
-                      <Button className="w-full bg-white/5 hover:bg-primary hover:text-primary-foreground border border-white/10 transition-all">
-                        Select Service
+                    <div className="flex items-center justify-between py-4 border-t border-slate-100 mt-auto">
+                       <div className="text-sm text-slate-500">المدة التقديرية</div>
+                       <div className="font-semibold text-primary">{service.estimatedDuration}</div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="pt-0 pb-6">
+                    <Link href={`/order?service=${service.id}`} className="w-full">
+                      <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                        اطلب الخدمة الآن
+                        <ArrowLeft className="w-4 h-4 mr-2" />
                       </Button>
                     </Link>
-                  </div>
-                </motion.div>
+                  </CardFooter>
+                </Card>
               );
             })}
           </div>
         )}
-      </div>
-    </Layout>
+      </section>
+
+      <Footer />
+    </div>
   );
 }

@@ -9,7 +9,6 @@ import Home from "@/pages/Home";
 import Services from "@/pages/Services";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
-import Register from "@/pages/Register"; // Assumed similar to Login
 import OrderFlow from "@/pages/OrderFlow";
 import ProjectDetails from "@/pages/ProjectDetails";
 
@@ -20,13 +19,11 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/login" component={Login} />
-      {/* Reusing Login component structure for Register simplified for this generation, 
-          in real app would be separate file */}
-      <Route path="/register" component={Login} /> 
+      <Route path="/register" component={Login} />
       <Route path="/order" component={OrderFlow} />
       <Route path="/projects/:id" component={ProjectDetails} />
       
-      {/* Admin route placeholder - redirects to dashboard for now */}
+      {/* Admin route placeholder - redirects to dashboard for MVP */}
       <Route path="/admin" component={Dashboard} />
 
       <Route component={NotFound} />

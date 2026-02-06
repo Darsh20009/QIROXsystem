@@ -1,52 +1,47 @@
-import { Layout } from "@/components/Layout";
-import { useLocation, useSearch } from "wouter";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import Navigation from "@/components/Navigation";
+import { useUser } from "@/hooks/use-auth";
 import { useService } from "@/hooks/use-services";
 import { useCreateOrder } from "@/hooks/use-orders";
-import { useUser } from "@/hooks/use-auth";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ChevronRight, ChevronLeft, Check, CreditCard } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function OrderFlow() {
   const [location, setLocation] = useLocation();
-  const search = useSearch();
-  const params = new URLSearchParams(search);
-  const serviceId = Number(params.get("serviceId"));
+  const searchParams = new URLSearchParams(window.location.search);
+  const serviceId = parseInt(searchParams.get("service") || "0");
   
-  const { data: user } = useUser();
-  const { data: service, isLoading: serviceLoading } = useService(serviceId);
+  const { data: user, isLoading: isUserLoading } = useUser();
+  const { data: service, isLoading: isServiceLoading } = useService(serviceId);
   const { mutate: createOrder, isPending: isCreating } = useCreateOrder();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    requirements: {},
-    paymentMethod: "",
-    notes: ""
+    requirements: "",
+    budget: "",
+    timeline: "",
+    paymentMethod: "bank_transfer"
   });
 
-  if (!user) {
-    return (
-      <Layout>
-        <div className="h-[60vh] flex flex-col items-center justify-center text-center px-4">
-          <h2 className="text-2xl font-bold mb-4">Please log in to continue</h2>
-          <Button onClick={() => setLocation("/login")}>Go to Login</Button>
-        </div>
-      </Layout>
-    );
+  if (isUserLoading || isServiceLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
   }
 
-  if (serviceLoading) {
-    return <Layout><div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div></Layout>;
+  if (!user) {
+    setLocation(`/login`);
+    return null;
   }
 
   if (!service) {
-    return <Layout><div className="text-center p-20">Service not found</div></Layout>;
+    return <div className="text-center p-20">الخدمة غير موجودة</div>;
   }
 
   const handleNext = () => setStep(s => s + 1);
@@ -54,169 +49,159 @@ export default function OrderFlow() {
 
   const handleSubmit = () => {
     createOrder({
-      serviceId,
+      serviceId: service.id,
       userId: user.id,
-      status: "pending",
-      requirements: formData.requirements,
+      requirements: {
+        description: formData.requirements,
+        budget: formData.budget,
+        timeline: formData.timeline
+      },
       paymentMethod: formData.paymentMethod,
-      totalAmount: service.priceMin || 0, // Simplified price logic
+      totalAmount: service.priceMin // Using min price as base placeholder
     }, {
       onSuccess: () => {
-        toast({ title: "Order Created!", description: "We will review it shortly." });
+        toast({
+          title: "تم استلام طلبك بنجاح",
+          description: "سيتم التواصل معك قريباً لتأكيد التفاصيل.",
+        });
         setLocation("/dashboard");
-      },
-      onError: (err) => {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
       }
     });
   };
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-12 max-w-3xl">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold font-display">Configure Your Order</h1>
-            <div className="text-sm text-muted-foreground">Step {step} of 3</div>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Navigation />
+      
+      <div className="flex-1 container mx-auto px-4 py-8 pt-32 max-w-3xl">
+        {/* Progress Steps */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between relative">
+            <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-10"></div>
+            {[1, 2, 3].map((s) => (
+              <div key={s} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                step >= s ? "bg-primary text-white scale-110" : "bg-slate-200 text-slate-500"
+              }`}>
+                {s}
+              </div>
+            ))}
           </div>
-          {/* Progress Bar */}
-          <div className="h-1 bg-secondary rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-500" 
-              style={{ width: `${(step / 3) * 100}%` }}
-            />
+          <div className="flex justify-between mt-2 text-sm text-slate-600 font-medium px-1">
+             <span>تفاصيل المشروع</span>
+             <span>طريقة الدفع</span>
+             <span>مراجعة وتأكيد</span>
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="glass-card p-8 rounded-2xl space-y-6"
-            >
-              <h2 className="text-xl font-bold">{service.title} Details</h2>
-              <p className="text-muted-foreground">{service.description}</p>
-              
-              <div className="space-y-4">
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input 
-                    id="project-name" 
-                    className="glass-input" 
-                    onChange={(e) => setFormData({...formData, requirements: {...formData.requirements, projectName: e.target.value}})}
-                  />
+        <Card className="shadow-xl border-0 overflow-hidden">
+          <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
+          <CardHeader>
+            <CardTitle className="text-2xl font-heading text-primary">
+               {step === 1 && "أخبرنا عن مشروعك"}
+               {step === 2 && "اختر طريقة الدفع"}
+               {step === 3 && "ملخص الطلب"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 md:p-8">
+            {step === 1 && (
+              <div className="space-y-6">
+                <div>
+                   <Label className="text-base mb-2 block">تفاصيل ومتطلبات المشروع</Label>
+                   <Textarea 
+                     className="h-32 resize-none bg-slate-50" 
+                     placeholder="اشرح فكرتك بالتفصيل..."
+                     value={formData.requirements}
+                     onChange={e => setFormData({...formData, requirements: e.target.value})}
+                   />
                 </div>
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="description">Detailed Description</Label>
-                  <Textarea 
-                    id="description" 
-                    className="glass-input min-h-[120px]" 
-                    onChange={(e) => setFormData({...formData, requirements: {...formData.requirements, description: e.target.value}})}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div>
+                      <Label className="text-base mb-2 block">الميزانية المقترحة (ر.س)</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="5000"
+                        className="bg-slate-50"
+                        value={formData.budget}
+                        onChange={e => setFormData({...formData, budget: e.target.value})}
+                      />
+                   </div>
+                   <div>
+                      <Label className="text-base mb-2 block">المدة الزمنية المتوقعة</Label>
+                      <Input 
+                        placeholder="مثال: شهرين"
+                        className="bg-slate-50"
+                        value={formData.timeline}
+                        onChange={e => setFormData({...formData, timeline: e.target.value})}
+                      />
+                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleNext}>
-                  Next Step <ChevronRight className="ml-2 w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="glass-card p-8 rounded-2xl space-y-6"
-            >
-              <h2 className="text-xl font-bold">Payment Method</h2>
-              
-              <div className="grid md:grid-cols-3 gap-4">
-                {['Bank Transfer', 'Credit Card', 'PayPal'].map((method) => (
-                  <div 
-                    key={method}
-                    onClick={() => setFormData({...formData, paymentMethod: method})}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                      formData.paymentMethod === method 
-                        ? 'border-primary bg-primary/10 text-primary' 
-                        : 'border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <CreditCard className="w-6 h-6 mb-2" />
-                    <div className="font-medium">{method}</div>
+            {step === 2 && (
+              <div className="space-y-6">
+                <RadioGroup value={formData.paymentMethod} onValueChange={val => setFormData({...formData, paymentMethod: val})}>
+                  <div className="flex items-center space-x-reverse space-x-3 border p-4 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                    <RadioGroupItem value="bank_transfer" id="bank" />
+                    <Label htmlFor="bank" className="flex-1 cursor-pointer font-medium">تحويل بنكي</Label>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-reverse space-x-3 border p-4 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                    <RadioGroupItem value="card" id="card" />
+                    <Label htmlFor="card" className="flex-1 cursor-pointer font-medium">بطاقة مدى / فيزا (قريباً)</Label>
+                  </div>
+                </RadioGroup>
               </div>
+            )}
 
-              <div className="bg-secondary/30 p-4 rounded-lg mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Service Base Price</span>
-                  <span className="font-mono">${service.priceMin}</span>
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className="bg-slate-50 p-6 rounded-xl space-y-4 border border-slate-100">
+                   <div className="flex justify-between border-b pb-2">
+                      <span className="text-slate-500">الخدمة</span>
+                      <span className="font-bold text-primary">{service.title}</span>
+                   </div>
+                   <div className="flex justify-between border-b pb-2">
+                      <span className="text-slate-500">الميزانية المقترحة</span>
+                      <span className="font-bold">{formData.budget || "-"} ر.س</span>
+                   </div>
+                   <div className="flex justify-between border-b pb-2">
+                      <span className="text-slate-500">طريقة الدفع</span>
+                      <span className="font-bold">
+                        {formData.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'بطاقة ائتمانية'}
+                      </span>
+                   </div>
+                   <div className="pt-2">
+                      <span className="text-slate-500 block mb-2">التفاصيل</span>
+                      <p className="text-sm text-slate-700 bg-white p-3 rounded-lg border">
+                         {formData.requirements || "لا توجد تفاصيل إضافية"}
+                      </p>
+                   </div>
                 </div>
-                <div className="flex justify-between items-center text-lg font-bold border-t border-white/10 pt-2 mt-2">
-                  <span>Total</span>
-                  <span className="text-primary">${service.priceMin}</span>
-                </div>
               </div>
+            )}
 
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={handleBack}>
-                  <ChevronLeft className="mr-2 w-4 h-4" /> Back
+            <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
+              {step > 1 ? (
+                <Button variant="outline" onClick={handleBack} className="min-w-[120px]">
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                  السابق
                 </Button>
-                <Button onClick={handleNext} disabled={!formData.paymentMethod}>
-                  Review Order <ChevronRight className="ml-2 w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="glass-card p-8 rounded-2xl space-y-6"
-            >
-              <h2 className="text-xl font-bold text-center">Confirm Your Order</h2>
+              ) : <div></div>}
               
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between py-2 border-b border-white/5">
-                  <span className="text-muted-foreground">Service</span>
-                  <span>{service.title}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-white/5">
-                  <span className="text-muted-foreground">Payment Method</span>
-                  <span>{formData.paymentMethod}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-white/5">
-                  <span className="text-muted-foreground">Total Amount</span>
-                  <span className="font-bold text-primary">${service.priceMin}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-6">
-                <Button variant="outline" onClick={handleBack}>
-                  <ChevronLeft className="mr-2 w-4 h-4" /> Back
+              {step < 3 ? (
+                <Button onClick={handleNext} className="bg-primary hover:bg-primary/90 min-w-[120px]">
+                  التالي
+                  <ArrowLeft className="mr-2 w-4 h-4" />
                 </Button>
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={isCreating}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground w-1/2"
-                >
-                  {isCreating ? <Loader2 className="animate-spin" /> : <>Confirm & Pay <Check className="ml-2 w-4 h-4" /></>}
+              ) : (
+                <Button onClick={handleSubmit} disabled={isCreating} className="bg-secondary hover:bg-secondary/90 text-primary font-bold min-w-[120px]">
+                  {isCreating ? <Loader2 className="animate-spin" /> : "تأكيد الطلب"}
                 </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </Layout>
+    </div>
   );
 }
