@@ -98,22 +98,6 @@ export default function Home() {
                  
                  {/* Floating Cards */}
                  <motion.div 
-                   animate={{ y: [0, -10, 0] }}
-                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                   className="absolute -bottom-6 -right-6 bg-white p-4 rounded-xl shadow-xl border border-slate-100 z-40 max-w-[200px]"
-                 >
-                    <div className="flex items-center gap-3 mb-2">
-                       <div className="p-2 bg-green-100 rounded-lg text-green-600">
-                          <ShieldCheck className="w-5 h-5" />
-                       </div>
-                       <div>
-                          <p className="text-xs text-slate-500">الحماية والأمان</p>
-                          <p className="font-bold text-slate-800">مضمونة 100%</p>
-                       </div>
-                    </div>
-                 </motion.div>
-
-                 <motion.div 
                    animate={{ y: [0, 10, 0] }}
                    transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
                    className="absolute -top-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-slate-100 z-40 max-w-[200px]"
