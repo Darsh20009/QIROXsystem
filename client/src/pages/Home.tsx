@@ -34,14 +34,14 @@ export default function Home() {
                 </div>
                 
                 <h1 className="text-4xl lg:text-6xl font-extrabold font-heading text-primary leading-tight mb-6">
-                   الإبداع عبر الصور. <br />
+                   Qirox | كيروكس <br />
                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
                      نبني الأنظمة، ونبقى بشرًا.
                    </span>
                 </h1>
                 
                 <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                  نحول أفكارك إلى واقع رقمي ملموس. منصة متكاملة لإدارة وتطوير أعمالك بأحدث التقنيات وأرقى معايير التصميم.
+                  بناء منصات ومواقع احترافية في السعودية ومصر. نحن نحول أفكارك إلى واقع رقمي ملموس عبر حلول تقنية متكاملة.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
@@ -106,14 +106,19 @@ export default function Home() {
       {/* Features/Stats Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+           <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold font-heading text-primary mb-4">مسارات خدماتنا الأساسية</h2>
+              <p className="text-slate-500 max-w-2xl mx-auto">نقدم حلولاً متخصصة تلبي احتياجات مختلف القطاعات الحيوية</p>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { title: "جودة احترافية", desc: "معايير عالمية في التصميم والبرمجة", icon: Globe },
-                { title: "دعم فني متواصل", desc: "فريق جاهز لخدمتك على مدار الساعة", icon: ShieldCheck },
-                { title: "تسليم في الموعد", desc: "التزام تام بالجداول الزمنية للمشاريع", icon: CheckCircle2 },
+                { title: "المطاعم والكافيهات", desc: "أنظمة إدارة وطلب متكاملة للهوية الرقمية", icon: Zap },
+                { title: "المتاجر والبراندات", desc: "منصات تجارة إلكترونية احترافية لنمو مبيعاتك", icon: Globe },
+                { title: "التعليم والمنصات", desc: "بيئات تعليمية ذكية لإدارة الدورات والطلاب", icon: CheckCircle2 },
+                { title: "الأنظمة المؤسسية", desc: "حلول تقنية داخلية مخصصة للشركات والمنظمات", icon: ShieldCheck },
               ].map((feat, idx) => (
-                <div key={idx} className="p-8 rounded-2xl bg-slate-50 hover:bg-white hover:shadow-xl transition-all duration-300 border border-slate-100 group">
-                   <div className="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 text-primary group-hover:text-secondary group-hover:scale-110 transition-all duration-300 border border-slate-100">
+                <div key={idx} className="p-8 rounded-2xl bg-slate-50 hover:bg-white hover:shadow-xl transition-all duration-300 border border-slate-100 group text-center">
+                   <div className="w-14 h-14 bg-white rounded-xl shadow-sm flex items-center justify-center mb-6 text-primary group-hover:text-secondary group-hover:scale-110 transition-all duration-300 border border-slate-100 mx-auto">
                       <feat.icon className="w-7 h-7" />
                    </div>
                    <h3 className="text-xl font-bold font-heading mb-3 text-primary">{feat.title}</h3>

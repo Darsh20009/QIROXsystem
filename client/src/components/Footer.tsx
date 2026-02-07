@@ -32,13 +32,10 @@ export default function Footer() {
             <h4 className="font-heading font-bold text-lg mb-6 text-secondary">تواصل معنا</h4>
             <ul className="space-y-4 text-slate-300">
               <li className="flex items-center gap-3">
-                <span>info@qirox.com</span>
+                <span>info@qirox.tech</span>
               </li>
               <li className="flex items-center gap-3">
-                <span>الرياض، المملكة العربية السعودية</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <span>+966 50 000 0000</span>
+                <span>السعودية | مصر</span>
               </li>
             </ul>
           </div>
