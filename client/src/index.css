@@ -9,10 +9,10 @@
   --font-body: 'IBM Plex Sans Arabic', sans-serif;
 
   /* HSL Values for easy manipulation */
-  --background: 210 40% 98%;    /* #f8fafc - Very light blue-grey white */
-  --foreground: 222 47% 11%;    /* #0f172a - Deep Blue */
+  --background: 210 40% 98%;    /* #f8fafc - White backgrounds */
+  --foreground: 222 47% 11%;    /* #0f172a - Dark Slate texts */
   
-  --primary: 222 47% 11%;       /* #0f172a - Deep Blue */
+  --primary: 222 47% 11%;       /* #0f172a - Deep Tech Blue */
   --primary-foreground: 210 40% 98%;
 
   --secondary: 189 94% 43%;     /* #06b6d4 - Electric Cyan */
@@ -21,7 +21,7 @@
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 199 89% 48%;        /* Electric Cyan */
+  --accent: 189 94% 43%;        /* Electric Cyan */
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 84.2% 60.2%;
@@ -29,9 +29,33 @@
 
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 222 47% 11%;
+  --ring: 189 94% 43%;
 
-  --radius: 0.75rem; /* More organic rounded corners */
+  --card: 210 40% 96.1%;        /* Soft Gray for cards */
+  --card-foreground: 222 47% 11%;
+
+  --radius: 0.75rem; /* Modern rounded corners */
+}
+
+.dark {
+  --background: 222 47% 4%;
+  --foreground: 210 40% 98%;
+  
+  --primary: 210 40% 98%;
+  --primary-foreground: 222 47% 11%;
+
+  --secondary: 189 94% 43%;
+  --secondary-foreground: 222 47% 11%;
+
+  --accent: 189 94% 43%;
+  --accent-foreground: 210 40% 98%;
+
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 189 94% 43%;
 }
 
 @layer base {
@@ -55,7 +79,11 @@
   }
   
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl;
+  }
+  
+  .tech-glow {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
   }
   
   .hero-gradient {
