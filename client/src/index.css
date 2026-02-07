@@ -69,11 +69,16 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    direction: rtl; /* Force RTL */
   }
 }
 
 @layer utilities {
+  .rtl {
+    direction: rtl;
+  }
+  .ltr {
+    direction: ltr;
+  }
   .text-balance {
     text-wrap: balance;
   }
