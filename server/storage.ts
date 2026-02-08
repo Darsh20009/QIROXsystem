@@ -21,6 +21,7 @@ export interface IStorage {
   // Orders
   getOrders(userId?: number): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, updates: Partial<InsertOrder>): Promise<Order>;
 
   // Projects
   getProjects(userId?: number, role?: string): Promise<Project[]>;
@@ -80,6 +81,11 @@ export class DatabaseStorage implements IStorage {
   async createOrder(order: InsertOrder): Promise<Order> {
     const [newOrder] = await db.insert(orders).values(order).returning();
     return newOrder;
+  }
+
+  async updateOrder(id: number, updates: Partial<InsertOrder>): Promise<Order> {
+    const [order] = await db.update(orders).set(updates).where(eq(orders.id, id)).returning();
+    return order;
   }
 
   // Projects

@@ -24,7 +24,10 @@ export default function Login() {
 
   const schema = isRegister 
     ? api.auth.register.input.extend({
-        confirmPassword: z.string()
+        confirmPassword: z.string(),
+        whatsappNumber: z.string().optional(),
+        country: z.string().optional(),
+        businessType: z.string().optional(),
       }).refine((data) => data.password === data.confirmPassword, {
         message: "كلمات المرور غير متطابقة",
         path: ["confirmPassword"],
@@ -42,6 +45,9 @@ export default function Login() {
       email: "",
       fullName: "",
       confirmPassword: "",
+      whatsappNumber: "",
+      country: "",
+      businessType: "",
     },
   });
 
@@ -133,6 +139,47 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="whatsappNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>رقم الواتساب</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+966" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الدولة</FormLabel>
+                            <FormControl>
+                              <Input placeholder="السعودية" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="businessType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>نوع النشاط</FormLabel>
+                            <FormControl>
+                              <Input placeholder="تجاري" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </>
                 )}
 

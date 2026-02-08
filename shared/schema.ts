@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   phone: text("phone"),
   country: text("country"),
   businessType: text("business_type"),
+  emailVerified: boolean("email_verified").default(false),
+  whatsappNumber: text("whatsapp_number"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -35,10 +37,35 @@ export const orders = pgTable("orders", {
   userId: integer("user_id").references(() => users.id).notNull(),
   serviceId: integer("service_id").references(() => services.id),
   status: text("status").default("pending").notNull(), // pending, paid, in_progress, completed, cancelled
-  requirements: jsonb("requirements").notNull(), // Form answers
+  requirements: jsonb("requirements").notNull().$type<{
+    projectType?: string;
+    sector?: string;
+    competitors?: string;
+    visualStyle?: string;
+    likedExamples?: string;
+    requiredFunctions?: string;
+    requiredSystems?: string;
+    siteLanguage?: string;
+    whatsappIntegration?: boolean;
+    socialIntegration?: boolean;
+    hasLogo?: boolean;
+    wantsLogoDesign?: boolean;
+    hasHosting?: boolean;
+    hasDomain?: boolean;
+    documents?: {
+      logo?: string;
+      brandIdentity?: string;
+      files?: string;
+      textContent?: string;
+      images?: string;
+      videos?: string;
+      loginCredentials?: string;
+    }
+  }>(), 
   paymentMethod: text("payment_method"), // bank_transfer, cash, paypal
   paymentProofUrl: text("payment_proof_url"),
   totalAmount: integer("total_amount"),
+  isDepositPaid: boolean("is_deposit_paid").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
