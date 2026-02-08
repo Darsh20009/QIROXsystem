@@ -1,9 +1,11 @@
 import {
-  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel,
   type User, type InsertUser, type Service, type InsertService,
   type Order, type InsertOrder, type Project, type InsertProject,
   type Task, type InsertTask, type Message, type InsertMessage
 } from "@shared/schema";
+import {
+  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel
+} from "./models";
 
 export interface IStorage {
   // Users

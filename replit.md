@@ -28,58 +28,56 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Framework**: Express 5 on Node.js with TypeScript (run via tsx in dev, esbuild bundle for production)
 - **API Pattern**: REST API under `/api/*` prefix, with typed route definitions in `shared/routes.ts`
-- **Authentication**: Passport.js with Local Strategy, express-session with PostgreSQL session store (connect-pg-simple), scrypt password hashing
-- **Storage Layer**: Repository pattern via `IStorage` interface in `server/storage.ts`, currently implemented as `DatabaseStorage` using Drizzle ORM
+- **Authentication**: Passport.js with Local Strategy, express-session with memorystore, scrypt password hashing
+- **Storage Layer**: Repository pattern via `IStorage` interface in `server/storage.ts`, implemented as `MongoStorage` using Mongoose
 - **Build**: Custom build script (`script/build.ts`) that uses Vite for client and esbuild for server, outputting to `dist/`
 
 ### Shared Code (`shared/` directory)
-- **Schema** (`shared/schema.ts`): Drizzle ORM table definitions and Zod insert schemas (via drizzle-zod). This is the single source of truth for data models.
+- **Schema** (`shared/schema.ts`): Zod schemas and TypeScript types only (no mongoose). This is browser-safe and can be imported by the frontend.
 - **Routes** (`shared/routes.ts`): Typed API route definitions with paths, methods, input schemas, and response schemas. Used by both client hooks and server route handlers.
 
+### Server-Only Code
+- **Models** (`server/models.ts`): Mongoose model definitions. These must NOT be imported by frontend code.
+
 ### Database
-- **Primary Database**: PostgreSQL via Drizzle ORM (node-postgres driver)
-- **Schema Management**: `drizzle-kit push` for migrations (push-based, no migration files checked in by default)
-- **MongoDB**: Optional secondary database connection via Mongoose (configured in `server/db.ts` but only connects if `MONGODB_URI` env var is present)
-- **Tables**: `users`, `services`, `orders`, `projects`, `tasks`, `messages` — all defined in `shared/schema.ts`
-- **Key Relationships**: Users have orders → orders create projects → projects have tasks and messages. Users have roles (client, admin, employee_manager, employee_sales, employee_dev, employee_design, employee_support).
+- **Primary Database**: MongoDB via Mongoose
+- **Connection**: Configured via `MONGODB_URI` environment variable
+- **Collections**: users, services, orders, projects, tasks, messages — Mongoose models defined in `server/models.ts`
+- **Key Relationships**: Users have orders -> orders create projects -> projects have tasks and messages. Users have roles (client, admin, employee_manager, employee_sales, employee_dev, employee_design, employee_support).
 
 ### Authentication & Authorization
-- Session-based auth with 30-day cookie expiry
-- PostgreSQL-backed session store
+- Session-based auth with express-session and memorystore
 - Role-based access: roles defined on the user model (client, admin, various employee types)
 - Auth endpoints: POST `/api/register`, POST `/api/login`, POST `/api/logout`, GET `/api/user`
 
 ### Development Setup
 - **Dev server**: Vite dev server proxied through Express with HMR via WebSocket at `/vite-hmr`
 - **Production**: Static files served from `dist/public`, server bundle at `dist/index.cjs`
-- **Path aliases**: `@/` → `client/src/`, `@shared/` → `shared/`, `@assets/` → `attached_assets/`
-- **Environment variables needed**: `DATABASE_URL` (required), `MONGODB_URI` (optional), `SESSION_SECRET` (defaults to hardcoded value)
+- **Path aliases**: `@/` -> `client/src/`, `@shared/` -> `shared/`, `@assets/` -> `attached_assets/`
+- **Environment variables needed**: `MONGODB_URI` (required for database)
 
 ### Key Design Decisions
 
-1. **Monorepo with shared types**: The `shared/` directory contains both database schema and API route definitions, ensuring type safety across the full stack without code generation.
+1. **Monorepo with shared types**: The `shared/` directory contains Zod schemas and API route definitions, ensuring type safety across the full stack without code generation.
 
-2. **Drizzle ORM over Prisma**: Chosen for its lightweight SQL-like API and tight Zod integration via drizzle-zod, enabling schema-to-validation pipeline.
+2. **Mongoose models separated from shared types**: Mongoose models live in `server/models.ts` (server-only) while Zod schemas and types live in `shared/schema.ts` (browser-safe). This prevents Node.js-only packages from being bundled into the frontend.
 
 3. **Repository pattern**: The `IStorage` interface abstracts database operations, making it possible to swap implementations (e.g., in-memory for testing).
 
 4. **Arabic-first UI**: RTL layout is the default. Fonts, colors, and copy are designed for Arabic-speaking markets. The brand colors are Deep Blue (#0f172a) and Electric Cyan (#06b6d4).
 
-5. **Session-based auth over JWT**: Simpler server-side session management with PostgreSQL persistence, appropriate for a server-rendered SPA pattern.
+5. **Session-based auth**: Server-side session management with memorystore, appropriate for a server-rendered SPA pattern.
 
 ## External Dependencies
 
 ### Required Services
-- **PostgreSQL**: Primary database, also used for session storage. Must be provisioned and `DATABASE_URL` env var set.
-
-### Optional Services
-- **MongoDB**: Secondary database for future features. Connected only if `MONGODB_URI` is set.
+- **MongoDB**: Primary database. Must be provisioned and `MONGODB_URI` env var set.
 
 ### Key npm Packages
-- **drizzle-orm** + **drizzle-kit**: ORM and migration tooling for PostgreSQL
+- **mongoose**: ODM for MongoDB
 - **express** (v5): HTTP server framework
 - **passport** + **passport-local**: Authentication
-- **connect-pg-simple**: PostgreSQL session store
+- **memorystore**: Session store
 - **@tanstack/react-query**: Server state management on the client
 - **react-hook-form** + **zod**: Form handling and validation
 - **framer-motion**: Animations

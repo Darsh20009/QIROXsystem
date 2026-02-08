@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { insertUserSchema, insertServiceSchema, insertOrderSchema, insertProjectSchema, insertTaskSchema, insertMessageSchema, users, services, orders, projects, tasks, messages } from './schema';
+import {
+  insertUserSchema, insertServiceSchema, insertOrderSchema,
+  insertProjectSchema, insertTaskSchema, insertMessageSchema,
+  type User, type Service, type Order, type Project, type Task, type Message
+} from './schema';
+
+export type { InsertUser, InsertService, InsertOrder, InsertProject, InsertTask, InsertMessage } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -24,7 +30,7 @@ export const api = {
       path: '/api/register',
       input: insertUserSchema,
       responses: {
-        201: z.custom<typeof users.$inferSelect>(),
+        201: z.custom<User>(),
         400: errorSchemas.validation,
       },
     },
@@ -36,7 +42,7 @@ export const api = {
         password: z.string(),
       }),
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<User>(),
         401: errorSchemas.unauthorized,
       },
     },
@@ -51,7 +57,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/user',
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<User>(),
         401: errorSchemas.unauthorized,
       },
     },
@@ -61,14 +67,14 @@ export const api = {
       method: 'GET' as const,
       path: '/api/services',
       responses: {
-        200: z.array(z.custom<typeof services.$inferSelect>()),
+        200: z.array(z.custom<Service>()),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/services/:id',
       responses: {
-        200: z.custom<typeof services.$inferSelect>(),
+        200: z.custom<Service>(),
         404: errorSchemas.notFound,
       },
     },
@@ -78,7 +84,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/orders',
       responses: {
-        200: z.array(z.custom<typeof orders.$inferSelect>()),
+        200: z.array(z.custom<Order>()),
       },
     },
     create: {
@@ -86,7 +92,7 @@ export const api = {
       path: '/api/orders',
       input: insertOrderSchema,
       responses: {
-        201: z.custom<typeof orders.$inferSelect>(),
+        201: z.custom<Order>(),
         400: errorSchemas.validation,
       },
     },
@@ -96,14 +102,14 @@ export const api = {
       method: 'GET' as const,
       path: '/api/projects',
       responses: {
-        200: z.array(z.custom<typeof projects.$inferSelect>()),
+        200: z.array(z.custom<Project>()),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/projects/:id',
       responses: {
-        200: z.custom<typeof projects.$inferSelect>(),
+        200: z.custom<Project>(),
         404: errorSchemas.notFound,
       },
     },
@@ -112,7 +118,7 @@ export const api = {
       path: '/api/projects/:id',
       input: insertProjectSchema.partial(),
       responses: {
-        200: z.custom<typeof projects.$inferSelect>(),
+        200: z.custom<Project>(),
         404: errorSchemas.notFound,
       },
     },
@@ -122,7 +128,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/projects/:projectId/tasks',
       responses: {
-        200: z.array(z.custom<typeof tasks.$inferSelect>()),
+        200: z.array(z.custom<Task>()),
       },
     },
     create: {
@@ -130,7 +136,7 @@ export const api = {
       path: '/api/projects/:projectId/tasks',
       input: insertTaskSchema.omit({ projectId: true }),
       responses: {
-        201: z.custom<typeof tasks.$inferSelect>(),
+        201: z.custom<Task>(),
         400: errorSchemas.validation,
       },
     },
@@ -139,7 +145,7 @@ export const api = {
       path: '/api/tasks/:id',
       input: insertTaskSchema.partial(),
       responses: {
-        200: z.custom<typeof tasks.$inferSelect>(),
+        200: z.custom<Task>(),
         404: errorSchemas.notFound,
       },
     },
@@ -149,15 +155,15 @@ export const api = {
       method: 'GET' as const,
       path: '/api/projects/:projectId/messages',
       responses: {
-        200: z.array(z.custom<typeof messages.$inferSelect>()),
+        200: z.array(z.custom<Message>()),
       },
     },
     create: {
       method: 'POST' as const,
       path: '/api/projects/:projectId/messages',
-      input: insertMessageSchema.omit({ projectId: true, senderId: true }),
+      input: insertMessageSchema.omit({ projectId: true }),
       responses: {
-        201: z.custom<typeof messages.$inferSelect>(),
+        201: z.custom<Message>(),
         400: errorSchemas.validation,
       },
     },
