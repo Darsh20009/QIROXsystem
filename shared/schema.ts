@@ -1,160 +1,165 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
+import mongoose from "mongoose";
 import { z } from "zod";
 
-// === TABLE DEFINITIONS ===
+// Shared Types & Schemas
+export const roles = ["client", "admin", "employee_manager", "employee_sales", "employee_dev", "employee_design", "employee_support"] as const;
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull().unique(),
-  role: text("role").default("client").notNull(), // client, admin, employee_manager, employee_sales, employee_dev, employee_design, employee_support
-  fullName: text("full_name").notNull(),
-  phone: text("phone"),
-  country: text("country"),
-  businessType: text("business_type"),
-  emailVerified: boolean("email_verified").default(false),
-  whatsappNumber: text("whatsapp_number"),
-  createdAt: timestamp("created_at").defaultNow(),
+// Zod Schemas for validation
+export const insertUserSchema = z.object({
+  username: z.string().min(3),
+  password: z.string().min(6),
+  email: z.string().email(),
+  role: z.enum(roles).default("client"),
+  fullName: z.string().min(1),
+  phone: z.string().optional(),
+  country: z.string().optional(),
+  businessType: z.string().optional(),
+  whatsappNumber: z.string().optional(),
 });
 
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: text("category").notNull(), // restaurants, stores, education, institutions
-  priceMin: integer("price_min"),
-  priceMax: integer("price_max"),
-  estimatedDuration: text("estimated_duration"),
-  features: jsonb("features").$type<string[]>(),
-  icon: text("icon"), // lucide icon name
+export const insertServiceSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  category: z.string().min(1),
+  priceMin: z.number().optional(),
+  priceMax: z.number().optional(),
+  estimatedDuration: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  icon: z.string().optional(),
 });
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  serviceId: integer("service_id").references(() => services.id),
-  status: text("status").default("pending").notNull(), // pending, paid, in_progress, completed, cancelled
-  requirements: jsonb("requirements").notNull().$type<{
-    projectType?: string;
-    sector?: string;
-    competitors?: string;
-    visualStyle?: string;
-    likedExamples?: string;
-    requiredFunctions?: string;
-    requiredSystems?: string;
-    siteLanguage?: string;
-    whatsappIntegration?: boolean;
-    socialIntegration?: boolean;
-    hasLogo?: boolean;
-    wantsLogoDesign?: boolean;
-    hasHosting?: boolean;
-    hasDomain?: boolean;
-    documents?: {
-      logo?: string;
-      brandIdentity?: string;
-      files?: string;
-      textContent?: string;
-      images?: string;
-      videos?: string;
-      loginCredentials?: string;
-    }
-  }>(), 
-  paymentMethod: text("payment_method"), // bank_transfer, cash, paypal
-  paymentProofUrl: text("payment_proof_url"),
-  totalAmount: integer("total_amount"),
-  isDepositPaid: boolean("is_deposit_paid").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertOrderSchema = z.object({
+  serviceId: z.string().optional(),
+  requirements: z.record(z.any()),
+  paymentMethod: z.string().optional(),
+  paymentProofUrl: z.string().optional(),
+  totalAmount: z.number().optional(),
+  isDepositPaid: z.boolean().default(false),
 });
 
-export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").references(() => orders.id).notNull(),
-  clientId: integer("client_id").references(() => users.id).notNull(),
-  managerId: integer("manager_id").references(() => users.id),
-  status: text("status").default("new").notNull(), // new, planning, development, testing, review, delivered
-  progress: integer("progress").default(0),
-  repoUrl: text("repo_url"),
-  stagingUrl: text("staging_url"),
-  startDate: timestamp("start_date"),
-  deadline: timestamp("deadline"),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertProjectSchema = z.object({
+  orderId: z.string(),
+  clientId: z.string(),
+  managerId: z.string().optional(),
+  status: z.string().default("new"),
+  progress: z.number().default(0),
+  repoUrl: z.string().optional(),
+  stagingUrl: z.string().optional(),
+  startDate: z.date().optional(),
+  deadline: z.date().optional(),
 });
 
-export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id).notNull(),
-  assignedTo: integer("assigned_to").references(() => users.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  status: text("status").default("pending").notNull(), // pending, in_progress, completed
-  priority: text("priority").default("medium"), // low, medium, high
-  dueDate: timestamp("due_date"),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertTaskSchema = z.object({
+  projectId: z.string(),
+  assignedTo: z.string().optional(),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  status: z.string().default("pending"),
+  priority: z.string().default("medium"),
+  dueDate: z.date().optional(),
 });
 
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id).notNull(),
-  senderId: integer("sender_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  isInternal: boolean("is_internal").default(false), // If true, hidden from client
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertMessageSchema = z.object({
+  projectId: z.string(),
+  content: z.string().min(1),
+  isInternal: z.boolean().default(false),
 });
 
-// === RELATIONS ===
-
-export const usersRelations = relations(users, ({ many }) => ({
-  orders: many(orders),
-  projectsAsClient: many(projects, { relationName: "clientProjects" }),
-  projectsAsManager: many(projects, { relationName: "managerProjects" }),
-  tasks: many(tasks),
-}));
-
-export const ordersRelations = relations(orders, ({ one }) => ({
-  user: one(users, { fields: [orders.userId], references: [users.id] }),
-  service: one(services, { fields: [orders.serviceId], references: [services.id] }),
-}));
-
-export const projectsRelations = relations(projects, ({ one, many }) => ({
-  order: one(orders, { fields: [projects.orderId], references: [orders.id] }),
-  client: one(users, { fields: [projects.clientId], references: [users.id], relationName: "clientProjects" }),
-  manager: one(users, { fields: [projects.managerId], references: [users.id], relationName: "managerProjects" }),
-  tasks: many(tasks),
-  messages: many(messages),
-}));
-
-export const tasksRelations = relations(tasks, ({ one }) => ({
-  project: one(projects, { fields: [tasks.projectId], references: [projects.id] }),
-  assignee: one(users, { fields: [tasks.assignedTo], references: [users.id] }),
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  project: one(projects, { fields: [messages.projectId], references: [projects.id] }),
-  sender: one(users, { fields: [messages.senderId], references: [users.id] }),
-}));
-
-// === SCHEMA EXPORTS ===
-
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
-export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, status: true });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
-export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
-
-export type User = typeof users.$inferSelect;
-export type Service = typeof services.$inferSelect;
-export type Order = typeof orders.$inferSelect;
-export type Project = typeof projects.$inferSelect;
-export type Task = typeof tasks.$inferSelect;
-export type Message = typeof messages.$inferSelect;
+// Types
+export type User = z.infer<typeof insertUserSchema> & { id: string; createdAt: Date; emailVerified: boolean };
+export type Service = z.infer<typeof insertServiceSchema> & { id: string };
+export type Order = z.infer<typeof insertOrderSchema> & { id: string; userId: string; status: string; createdAt: Date };
+export type Project = z.infer<typeof insertProjectSchema> & { id: string; createdAt: Date };
+export type Task = z.infer<typeof insertTaskSchema> & { id: string; createdAt: Date };
+export type Message = z.infer<typeof insertMessageSchema> & { id: string; senderId: string; createdAt: Date };
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema> & { userId: string };
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema> & { senderId: string };
+
+// Mongoose Models
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  role: { type: String, enum: roles, default: "client", required: true },
+  fullName: { type: String, required: true },
+  phone: String,
+  country: String,
+  businessType: String,
+  emailVerified: { type: Boolean, default: false },
+  whatsappNumber: String,
+}, { timestamps: true });
+
+const serviceSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
+  priceMin: Number,
+  priceMax: Number,
+  estimatedDuration: String,
+  features: [String],
+  icon: String,
+});
+
+const orderSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+  status: { type: String, default: "pending", required: true },
+  requirements: { type: Map, of: mongoose.Schema.Types.Mixed, required: true },
+  paymentMethod: String,
+  paymentProofUrl: String,
+  totalAmount: Number,
+  isDepositPaid: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const projectSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: { type: String, default: "new", required: true },
+  progress: { type: Number, default: 0 },
+  repoUrl: String,
+  stagingUrl: String,
+  startDate: Date,
+  deadline: Date,
+}, { timestamps: true });
+
+const taskSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  title: { type: String, required: true },
+  description: String,
+  status: { type: String, default: "pending", required: true },
+  priority: { type: String, default: "medium" },
+  dueDate: Date,
+}, { timestamps: true });
+
+const messageSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  content: { type: String, required: true },
+  isInternal: { type: Boolean, default: false },
+}, { timestamps: true });
+
+// Convert Mongoose _id to id for compatibility
+const transform = (doc: any, ret: any) => {
+  ret.id = ret._id.toString();
+  delete ret._id;
+  delete ret.__v;
+};
+
+[userSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema].forEach(s => {
+  s.set('toJSON', { transform });
+  s.set('toObject', { transform });
+});
+
+export const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+export const ServiceModel = mongoose.models.Service || mongoose.model("Service", serviceSchema);
+export const OrderModel = mongoose.models.Order || mongoose.model("Order", orderSchema);
+export const ProjectModel = mongoose.models.Project || mongoose.model("Project", projectSchema);
+export const TaskModel = mongoose.models.Task || mongoose.model("Task", taskSchema);
+export const MessageModel = mongoose.models.Message || mongoose.model("Message", messageSchema);

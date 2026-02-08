@@ -1,138 +1,133 @@
-import { db } from "./db";
 import {
-  users, services, orders, projects, tasks, messages,
+  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel,
   type User, type InsertUser, type Service, type InsertService,
   type Order, type InsertOrder, type Project, type InsertProject,
   type Task, type InsertTask, type Message, type InsertMessage
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Users
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   // Services
   getServices(): Promise<Service[]>;
-  getService(id: number): Promise<Service | undefined>;
+  getService(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
 
   // Orders
-  getOrders(userId?: number): Promise<Order[]>;
+  getOrders(userId?: string): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
-  updateOrder(id: number, updates: Partial<InsertOrder>): Promise<Order>;
+  updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order>;
 
   // Projects
-  getProjects(userId?: number, role?: string): Promise<Project[]>;
-  getProject(id: number): Promise<Project | undefined>;
-  updateProject(id: number, updates: Partial<InsertProject>): Promise<Project>;
+  getProjects(userId?: string, role?: string): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  updateProject(id: string, updates: Partial<InsertProject>): Promise<Project>;
 
   // Tasks
-  getTasks(projectId: number): Promise<Task[]>;
+  getTasks(projectId: string): Promise<Task[]>;
   createTask(task: InsertTask): Promise<Task>;
-  updateTask(id: number, updates: Partial<InsertTask>): Promise<Task>;
+  updateTask(id: string, updates: Partial<InsertTask>): Promise<Task>;
 
   // Messages
-  getMessages(projectId: number): Promise<Message[]>;
+  getMessages(projectId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
 }
 
-export class DatabaseStorage implements IStorage {
-  // Users
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+export class MongoStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const user = await UserModel.findById(id);
+    return user ? user.toObject() : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const user = await UserModel.findOne({ username });
+    return user ? user.toObject() : undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const user = await UserModel.create(insertUser);
+    return user.toObject();
   }
 
-  // Services
   async getServices(): Promise<Service[]> {
-    return await db.select().from(services);
+    const services = await ServiceModel.find();
+    return services.map(s => s.toObject());
   }
 
-  async getService(id: number): Promise<Service | undefined> {
-    const [service] = await db.select().from(services).where(eq(services.id, id));
-    return service;
+  async getService(id: string): Promise<Service | undefined> {
+    const service = await ServiceModel.findById(id);
+    return service ? service.toObject() : undefined;
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const [newService] = await db.insert(services).values(service).returning();
-    return newService;
+    const newService = await ServiceModel.create(service);
+    return newService.toObject();
   }
 
-  // Orders
-  async getOrders(userId?: number): Promise<Order[]> {
-    if (userId) {
-      return await db.select().from(orders).where(eq(orders.userId, userId));
-    }
-    return await db.select().from(orders);
+  async getOrders(userId?: string): Promise<Order[]> {
+    const query = userId ? { userId } : {};
+    const orders = await OrderModel.find(query);
+    return orders.map(o => o.toObject());
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
-    const [newOrder] = await db.insert(orders).values(order).returning();
-    return newOrder;
+    const newOrder = await OrderModel.create(order);
+    return newOrder.toObject();
   }
 
-  async updateOrder(id: number, updates: Partial<InsertOrder>): Promise<Order> {
-    const [order] = await db.update(orders).set(updates).where(eq(orders.id, id)).returning();
-    return order;
+  async updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order> {
+    const order = await OrderModel.findByIdAndUpdate(id, updates, { new: true });
+    return order.toObject();
   }
 
-  // Projects
-  async getProjects(userId?: number, role?: string): Promise<Project[]> {
-    if (!userId) return await db.select().from(projects);
-    
-    if (role === 'client') {
-      return await db.select().from(projects).where(eq(projects.clientId, userId));
+  async getProjects(userId?: string, role?: string): Promise<Project[]> {
+    if (!userId) {
+      const projects = await ProjectModel.find();
+      return projects.map(p => p.toObject());
     }
-    // For managers/employees
-    return await db.select().from(projects).where(eq(projects.managerId, userId));
+    
+    const query = role === 'client' ? { clientId: userId } : { managerId: userId };
+    const projects = await ProjectModel.find(query);
+    return projects.map(p => p.toObject());
   }
 
-  async getProject(id: number): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
-    return project;
+  async getProject(id: string): Promise<Project | undefined> {
+    const project = await ProjectModel.findById(id);
+    return project ? project.toObject() : undefined;
   }
 
-  async updateProject(id: number, updates: Partial<InsertProject>): Promise<Project> {
-    const [project] = await db.update(projects).set(updates).where(eq(projects.id, id)).returning();
-    return project;
+  async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project> {
+    const project = await ProjectModel.findByIdAndUpdate(id, updates, { new: true });
+    return project.toObject();
   }
 
-  // Tasks
-  async getTasks(projectId: number): Promise<Task[]> {
-    return await db.select().from(tasks).where(eq(tasks.projectId, projectId));
+  async getTasks(projectId: string): Promise<Task[]> {
+    const tasks = await TaskModel.find({ projectId });
+    return tasks.map(t => t.toObject());
   }
 
   async createTask(task: InsertTask): Promise<Task> {
-    const [newTask] = await db.insert(tasks).values(task).returning();
-    return newTask;
+    const newTask = await TaskModel.create(task);
+    return newTask.toObject();
   }
 
-  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task> {
-    const [task] = await db.update(tasks).set(updates).where(eq(tasks.id, id)).returning();
-    return task;
+  async updateTask(id: string, updates: Partial<InsertTask>): Promise<Task> {
+    const task = await TaskModel.findByIdAndUpdate(id, updates, { new: true });
+    return task.toObject();
   }
 
-  // Messages
-  async getMessages(projectId: number): Promise<Message[]> {
-    return await db.select().from(messages).where(eq(messages.projectId, projectId));
+  async getMessages(projectId: string): Promise<Message[]> {
+    const messages = await MessageModel.find({ projectId });
+    return messages.map(m => m.toObject());
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db.insert(messages).values(message).returning();
-    return newMessage;
+    const newMessage = await MessageModel.create(message);
+    return newMessage.toObject();
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MongoStorage();

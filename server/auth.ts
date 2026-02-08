@@ -2,16 +2,13 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
+import MongoStore from "connect-mongo";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
-import { pool } from "./db";
 
 const scryptAsync = promisify(scrypt);
-
-const PostgresStore = connectPg(session);
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -28,7 +25,11 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    store: new PostgresStore({ pool, createTableIfMissing: true }),
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      collectionName: 'sessions',
+      ttl: 30 * 24 * 60 * 60, // 30 days
+    }),
     secret: process.env.SESSION_SECRET || "qirox_super_secret_key",
     resave: false,
     saveUninitialized: false,
@@ -61,7 +62,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, (user as User).id));
   passport.deserializeUser(async (id, done) => {
     try {
-      const user = await storage.getUser(id as number);
+      const user = await storage.getUser(id as string);
       done(null, user);
     } catch (err) {
       done(err);
