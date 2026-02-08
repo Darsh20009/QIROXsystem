@@ -25,31 +25,27 @@ export default function OrderFlow() {
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    requirements: {
-      projectType: "",
-      sector: "",
-      competitors: "",
-      visualStyle: "",
-      likedExamples: "",
-      requiredFunctions: "",
-      requiredSystems: "",
-      siteLanguage: "ar",
-      whatsappIntegration: false,
-      socialIntegration: false,
-      hasLogo: false,
-      wantsLogoDesign: false,
-      hasHosting: false,
-      hasDomain: false,
-      documents: {
-        logo: "",
-        brandIdentity: "",
-        files: "",
-        textContent: "",
-        images: "",
-        videos: "",
-        loginCredentials: ""
-      }
-    },
+    projectType: "",
+    sector: "",
+    competitors: "",
+    visualStyle: "",
+    favoriteExamples: "",
+    requiredFunctions: "",
+    requiredSystems: "",
+    siteLanguage: "ar",
+    whatsappIntegration: false,
+    socialIntegration: false,
+    hasLogo: false,
+    needsLogoDesign: false,
+    hasHosting: false,
+    hasDomain: false,
+    logoUrl: "",
+    brandIdentityUrl: "",
+    filesUrl: "",
+    contentUrl: "",
+    imagesUrl: "",
+    videoUrl: "",
+    accessCredentials: "",
     paymentMethod: "bank_transfer",
     paymentProofUrl: ""
   });
@@ -74,10 +70,10 @@ export default function OrderFlow() {
     createOrder({
       serviceId: service.id,
       userId: user.id,
-      requirements: formData.requirements,
-      paymentMethod: formData.paymentMethod,
-      paymentProofUrl: formData.paymentProofUrl,
-      totalAmount: service.priceMin // Using min price as base placeholder
+      ...formData,
+      status: "pending",
+      isDepositPaid: false,
+      totalAmount: service.priceMin
     }, {
       onSuccess: () => {
         toast({
@@ -135,8 +131,8 @@ export default function OrderFlow() {
                       <Input 
                         placeholder="مثال: تطبيق توصيل"
                         className="bg-slate-50"
-                        value={formData.requirements.projectType}
-                        onChange={e => setFormData({...formData, requirements: {...formData.requirements, projectType: e.target.value}})}
+                        value={formData.projectType}
+                        onChange={e => setFormData({...formData, projectType: e.target.value})}
                       />
                    </div>
                    <div>
@@ -144,8 +140,8 @@ export default function OrderFlow() {
                       <Input 
                         placeholder="مثال: قطاع التجزئة"
                         className="bg-slate-50"
-                        value={formData.requirements.sector}
-                        onChange={e => setFormData({...formData, requirements: {...formData.requirements, sector: e.target.value}})}
+                        value={formData.sector}
+                        onChange={e => setFormData({...formData, sector: e.target.value})}
                       />
                    </div>
                 </div>
@@ -154,8 +150,8 @@ export default function OrderFlow() {
                    <Input 
                      className="bg-slate-50" 
                      placeholder="اذكر أهم المنافسين..."
-                     value={formData.requirements.competitors}
-                     onChange={e => setFormData({...formData, requirements: {...formData.requirements, competitors: e.target.value}})}
+                     value={formData.competitors}
+                     onChange={e => setFormData({...formData, competitors: e.target.value})}
                    />
                 </div>
               </div>
@@ -169,8 +165,8 @@ export default function OrderFlow() {
                       <Input 
                         placeholder="مودرن، كلاسيك..."
                         className="bg-slate-50"
-                        value={formData.requirements.visualStyle}
-                        onChange={e => setFormData({...formData, requirements: {...formData.requirements, visualStyle: e.target.value}})}
+                        value={formData.visualStyle}
+                        onChange={e => setFormData({...formData, visualStyle: e.target.value})}
                       />
                    </div>
                    <div>
@@ -178,8 +174,8 @@ export default function OrderFlow() {
                       <Input 
                         placeholder="عربي، إنجليزي..."
                         className="bg-slate-50"
-                        value={formData.requirements.siteLanguage}
-                        onChange={e => setFormData({...formData, requirements: {...formData.requirements, siteLanguage: e.target.value}})}
+                        value={formData.siteLanguage}
+                        onChange={e => setFormData({...formData, siteLanguage: e.target.value})}
                       />
                    </div>
                 </div>
@@ -188,8 +184,8 @@ export default function OrderFlow() {
                    <Textarea 
                      className="h-24 resize-none bg-slate-50" 
                      placeholder="اشرح الوظائف التي تريدها..."
-                     value={formData.requirements.requiredFunctions}
-                     onChange={e => setFormData({...formData, requirements: {...formData.requirements, requiredFunctions: e.target.value}})}
+                     value={formData.requiredFunctions}
+                     onChange={e => setFormData({...formData, requiredFunctions: e.target.value})}
                    />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -203,8 +199,8 @@ export default function OrderFlow() {
                       <input 
                         type="checkbox" 
                         id={item.id}
-                        checked={(formData.requirements as any)[item.field]}
-                        onChange={e => setFormData({...formData, requirements: {...formData.requirements, [item.field]: e.target.checked}})}
+                        checked={(formData as any)[item.field]}
+                        onChange={e => setFormData({...formData, [item.field]: e.target.checked})}
                       />
                       <Label htmlFor={item.id} className="text-xs cursor-pointer">{item.label}</Label>
                     </div>
@@ -218,21 +214,18 @@ export default function OrderFlow() {
                 <p className="text-sm text-slate-500 mb-4">يمكنك رفع روابط المستندات هنا (أو تركها فارغة للمناقشة لاحقاً)</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { label: 'اللوجو', field: 'logo' },
-                    { label: 'الهوية التجارية', field: 'brandIdentity' },
-                    { label: 'المحتوى النصي', field: 'textContent' },
-                    { label: 'بيانات الدخول (اختياري)', field: 'loginCredentials' },
+                    { label: 'اللوجو', field: 'logoUrl' },
+                    { label: 'الهوية التجارية', field: 'brandIdentityUrl' },
+                    { label: 'المحتوى النصي', field: 'contentUrl' },
+                    { label: 'بيانات الدخول (اختياري)', field: 'accessCredentials' },
                   ].map(item => (
                     <div key={item.field}>
                       <Label className="text-sm mb-1 block">{item.label}</Label>
                       <Input 
                         placeholder="رابط الملف..."
                         className="bg-slate-50"
-                        value={(formData.requirements.documents as any)[item.field]}
-                        onChange={e => setFormData({...formData, requirements: {
-                          ...formData.requirements, 
-                          documents: { ...formData.requirements.documents, [item.field]: e.target.value }
-                        }})}
+                        value={(formData as any)[item.field]}
+                        onChange={e => setFormData({...formData, [item.field]: e.target.value})}
                       />
                     </div>
                   ))}
@@ -282,7 +275,7 @@ export default function OrderFlow() {
                    </div>
                    <div className="flex justify-between border-b pb-2">
                       <span className="text-slate-500">نوع المشروع</span>
-                      <span className="font-bold">{formData.requirements.projectType || "-"}</span>
+                      <span className="font-bold">{formData.projectType || "-"}</span>
                    </div>
                    <div className="flex justify-between border-b pb-2">
                       <span className="text-slate-500">طريقة الدفع</span>
@@ -293,7 +286,7 @@ export default function OrderFlow() {
                    <div className="pt-2">
                       <span className="text-slate-500 block mb-2">الوظائف المطلوبة</span>
                       <p className="text-xs text-slate-700 bg-white p-3 rounded-lg border">
-                         {formData.requirements.requiredFunctions || "لا توجد تفاصيل إضافية"}
+                         {formData.requiredFunctions || "لا توجد تفاصيل إضافية"}
                       </p>
                    </div>
                 </div>

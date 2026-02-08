@@ -29,11 +29,35 @@ const orderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
   status: { type: String, default: "pending", required: true },
-  requirements: { type: Map, of: mongoose.Schema.Types.Mixed, required: true },
-  paymentMethod: String,
+  // Smart Questionnaire Fields
+  projectType: String,
+  sector: String,
+  competitors: String,
+  visualStyle: String,
+  favoriteExamples: String,
+  requiredFunctions: String,
+  requiredSystems: String,
+  siteLanguage: String,
+  whatsappIntegration: { type: Boolean, default: false },
+  socialIntegration: { type: Boolean, default: false },
+  hasLogo: { type: Boolean, default: false },
+  needsLogoDesign: { type: Boolean, default: false },
+  hasHosting: { type: Boolean, default: false },
+  hasDomain: { type: Boolean, default: false },
+  // Uploads
+  logoUrl: String,
+  brandIdentityUrl: String,
+  filesUrl: String,
+  contentUrl: String,
+  imagesUrl: String,
+  videoUrl: String,
+  accessCredentials: String,
+  // Payment
+  paymentMethod: { type: String, enum: ["bank_transfer", "paypal"] },
   paymentProofUrl: String,
   totalAmount: Number,
   isDepositPaid: { type: Boolean, default: false },
+  requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
 const projectSchema = new mongoose.Schema({
