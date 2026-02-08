@@ -12,12 +12,34 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import OrderFlow from "@/pages/OrderFlow";
 import ProjectDetails from "@/pages/ProjectDetails";
+import About from "@/pages/About";
+import Prices from "@/pages/Prices";
+import Portfolio from "@/pages/Portfolio";
+import Customers from "@/pages/Customers";
+import News from "@/pages/News";
+import Jobs from "@/pages/Jobs";
+import JoinUs from "@/pages/JoinUs";
+import Contact from "@/pages/Contact";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
+import Segments from "@/pages/Segments";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
+      <Route path="/about" component={About} />
+      <Route path="/prices" component={Prices} />
+      <Route path="/portfolio" component={Portfolio} />
+      <Route path="/customers" component={Customers} />
+      <Route path="/news" component={News} />
+      <Route path="/jobs" component={Jobs} />
+      <Route path="/join" component={JoinUs} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/segments" component={Segments} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />

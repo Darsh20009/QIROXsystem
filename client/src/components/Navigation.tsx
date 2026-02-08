@@ -15,6 +15,10 @@ export default function Navigation() {
   const navLinks = [
     { href: "/", label: "الرئيسية", icon: Home },
     { href: "/services", label: "خدماتنا", icon: Briefcase },
+    { href: "/about", label: "من نحن", icon: User },
+    { href: "/portfolio", label: "أعمالنا", icon: Briefcase },
+    { href: "/news", label: "الأخبار", icon: Home },
+    { href: "/contact", label: "تواصل معنا", icon: Home },
     ...(user ? [{ href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard }] : []),
   ];
 
