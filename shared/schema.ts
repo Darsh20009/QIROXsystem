@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const roles = ["client", "admin", "employee_manager", "employee_sales", "employee_dev", "employee_design", "employee_support"] as const;
+export const roles = ["client", "admin", "manager", "accountant", "sales_manager", "sales", "developer", "designer", "support"] as const;
 export type UserRole = (typeof roles)[number];
 
 export const insertUserSchema = z.object({

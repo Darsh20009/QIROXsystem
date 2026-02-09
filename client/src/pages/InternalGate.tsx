@@ -11,16 +11,29 @@ export default function InternalGate() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Using the simplified uniform password as requested
-    if (password === "qirox2026") {
-      setLocation("/employee/register-secret");
-    } else {
+    try {
+      const response = await fetch("/api/internal-gate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        setLocation("/employee/register-secret");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "خطأ",
+          description: "كلمة المرور غير صحيحة",
+        });
+      }
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "كلمة المرور غير صحيحة",
+        description: "حدث خطأ أثناء التحقق",
       });
     }
   };

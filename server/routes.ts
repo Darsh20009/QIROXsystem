@@ -49,6 +49,16 @@ export async function registerRoutes(
     res.json(users);
   });
 
+  // Internal Gate Verification
+  app.post("/api/internal-gate/verify", (req, res) => {
+    const { password } = req.body;
+    if (password === "qirox2026") {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false, message: "كلمة مرور خاطئة" });
+    }
+  });
+
   app.post(api.auth.login.path, (req, res, next) => {
     const passportLogin = (req: any, res: any, next: any) => {
        import("passport").then((passport) => {
@@ -172,6 +182,26 @@ export async function registerRoutes(
 
 // Seed data function to be called from index.ts if needed
 export async function seedDatabase() {
+  // Initial Admin Account
+  const adminUsername = "admin_qirox";
+  const adminEmail = "admin@qirox.tech";
+  const existingAdmin = await storage.getUserByUsername(adminUsername);
+  
+  if (!existingAdmin) {
+    const { setupAuth } = await import("./auth");
+    const { hashPassword } = setupAuth({ use: () => {}, get: () => "development", set: () => {} } as any);
+    const hashedPassword = await hashPassword("admin13579");
+    
+    await storage.createUser({
+      username: adminUsername,
+      password: hashedPassword,
+      email: adminEmail,
+      role: "admin",
+      fullName: "System Admin",
+    });
+    console.log("Admin account created: admin@qirox.tech");
+  }
+
   const existingServices = await storage.getServices();
   if (existingServices.length === 0) {
     await storage.createService({
