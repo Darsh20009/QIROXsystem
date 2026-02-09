@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const roles = ["client", "admin", "employee_manager", "employee_sales", "employee_dev", "employee_design", "employee_support"] as const;
+export type UserRole = (typeof roles)[number];
 
 export const insertUserSchema = z.object({
   username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),

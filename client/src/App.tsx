@@ -43,6 +43,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />
+      <Route path="/employee/register-secret" component={Login} />
       <Route path="/order" component={OrderFlow} />
       <Route path="/projects/:id" component={ProjectDetails} />
       

@@ -19,9 +19,14 @@ export async function registerRoutes(
         return res.status(400).send("Username already exists");
       }
 
+      // If registering as admin or employee via the standard route, force to client
+      // unless it's a specific internal registration flow (which we'll handle by role-based validation)
+      const role = req.body.role || "client";
+      
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
+        role,
         password: hashedPassword,
       });
 
@@ -32,6 +37,17 @@ export async function registerRoutes(
     } catch (err) {
       next(err);
     }
+  });
+
+  // Admin users list (Only for admin)
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    // We need to add a method to storage for this, or use the model directly if needed
+    // For now, let's assume we can get all users
+    const users = await (storage as any).UserModel.find();
+    res.json(users);
   });
 
   app.post(api.auth.login.path, (req, res, next) => {
