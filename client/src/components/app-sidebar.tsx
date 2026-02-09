@@ -1,3 +1,4 @@
+import { useUser } from "@/hooks/use-auth";
 import {
   Sidebar,
   SidebarContent,
@@ -22,10 +23,15 @@ import {
   ShieldCheck,
   Bell,
   Download,
+  Settings,
+  Users,
+  Wallet,
+  Briefcase,
+  PlusCircle,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
-const menuItems = [
+const clientMenuItems = [
   { title: "لوحة العميل", icon: LayoutDashboard, url: "/dashboard" },
   { title: "حالة المشروع", icon: CheckCircle2, url: "/project/status" },
   { title: "مراحل التنفيذ", icon: ListTodo, url: "/project/implementation" },
@@ -40,8 +46,22 @@ const menuItems = [
   { title: "تحميل ملفات التسليم", icon: Download, url: "/project/deliverables" },
 ];
 
+const adminMenuItems = [
+  { title: "لوحة التحكم", icon: LayoutDashboard, url: "/admin" },
+  { title: "إدارة الخدمات", icon: Briefcase, url: "/admin/services" },
+  { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
+  { title: "الإدارة المالية", icon: Wallet, url: "/admin/finance" },
+  { title: "إدارة الموظفين", icon: Users, url: "/admin/employees" },
+  { title: "الإعدادات", icon: Settings, url: "/admin/settings" },
+];
+
 export function AppSidebar() {
   const [location] = useLocation();
+  const { data: user } = useUser();
+  const isAdmin = user && user.role !== "client";
+
+  const menuItems = isAdmin ? adminMenuItems : clientMenuItems;
+  const groupLabel = isAdmin ? "نظام الإدارة" : "إدارة المشروع";
 
   return (
     <Sidebar side="right">
@@ -56,7 +76,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-            إدارة المشروع
+            {groupLabel}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

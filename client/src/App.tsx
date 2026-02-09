@@ -9,6 +9,10 @@ import { useState, useEffect } from "react";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
 import Dashboard from "@/pages/Dashboard";
+import AdminServices from "@/pages/AdminServices";
+import AdminOrders from "@/pages/AdminOrders";
+import AdminEmployees from "@/pages/AdminEmployees";
+import AdminFinance from "@/pages/AdminFinance";
 import Login from "@/pages/Login";
 import OrderFlow from "@/pages/OrderFlow";
 import ProjectDetails from "@/pages/ProjectDetails";
@@ -52,8 +56,12 @@ function Router() {
       {/* Fallback routes for sidebar links to project details */}
       <Route path="/project/:section" component={ProjectDetails} />
       
-      {/* Admin route placeholder - redirects to dashboard for MVP */}
+      {/* Admin routes */}
       <Route path="/admin" component={Dashboard} />
+      <Route path="/admin/services" component={AdminServices} />
+      <Route path="/admin/orders" component={AdminOrders} />
+      <Route path="/admin/employees" component={AdminEmployees} />
+      <Route path="/admin/finance" component={AdminFinance} />
 
       <Route component={NotFound} />
     </Switch>

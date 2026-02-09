@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { type User } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -83,7 +84,7 @@ export async function registerRoutes(
   });
 
   app.get(api.services.get.path, async (req, res) => {
-    const service = await storage.getService(req.params.id);
+    const service = await storage.getService(req.params.id as string);
     if (!service) return res.sendStatus(404);
     res.json(service);
   });
@@ -112,7 +113,7 @@ export async function registerRoutes(
 
   app.get(api.projects.get.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const project = await storage.getProject(req.params.id);
+    const project = await storage.getProject(req.params.id as string);
     if (!project) return res.sendStatus(404);
     res.json(project);
   });
@@ -120,35 +121,35 @@ export async function registerRoutes(
   app.patch(api.projects.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.projects.update.input.parse(req.body);
-    const project = await storage.updateProject(req.params.id, input);
+    const project = await storage.updateProject(req.params.id as string, input);
     res.json(project);
   });
 
   // === TASKS API ===
   app.get(api.tasks.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const tasks = await storage.getTasks(req.params.projectId);
+    const tasks = await storage.getTasks(req.params.projectId as string);
     res.json(tasks);
   });
 
   app.post(api.tasks.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.create.input.parse(req.body);
-    const task = await storage.createTask({ ...input, projectId: req.params.projectId });
+    const task = await storage.createTask({ ...input, projectId: req.params.projectId as string });
     res.status(201).json(task);
   });
 
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);
-    const task = await storage.updateTask(req.params.id, input);
+    const task = await storage.updateTask(req.params.id as string, input);
     res.json(task);
   });
 
   // === MESSAGES API ===
   app.get(api.messages.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const messages = await storage.getMessages(req.params.projectId);
+    const messages = await storage.getMessages(req.params.projectId as string);
     res.json(messages);
   });
 
@@ -157,7 +158,7 @@ export async function registerRoutes(
     const input = api.messages.create.input.parse(req.body);
     const message = await storage.createMessage({ 
       ...input, 
-      projectId: req.params.projectId, 
+      projectId: req.params.projectId as string, 
       senderId: (req.user as User).id 
     });
     res.status(201).json(message);
