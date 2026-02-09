@@ -11,6 +11,7 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
 
   // Services
@@ -47,6 +48,11 @@ export class MongoStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const user = await UserModel.findOne({ username });
     return user ? user.toObject() : undefined;
+  }
+
+  async getUsers(): Promise<User[]> {
+    const users = await UserModel.find();
+    return users.map(u => u.toObject());
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

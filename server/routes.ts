@@ -44,9 +44,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.sendStatus(403);
     }
-    // We need to add a method to storage for this, or use the model directly if needed
-    // For now, let's assume we can get all users
-    const users = await (storage as any).UserModel.find();
+    const users = await storage.getUsers();
     res.json(users);
   });
 
