@@ -11,10 +11,12 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { api } from "@shared/routes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Login() {
   const [location] = useLocation();
-  const isRegister = location === "/register";
+  const isRegister = location === "/register" || location === "/employee/register-secret";
+  const isEmployeeRegister = location === "/employee/register-secret";
   
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
@@ -28,6 +30,7 @@ export default function Login() {
         whatsappNumber: z.string().optional(),
         country: z.string().optional(),
         businessType: z.string().optional(),
+        role: z.string().optional(),
       }).refine((data) => data.password === data.confirmPassword, {
         message: "كلمات المرور غير متطابقة",
         path: ["confirmPassword"],
@@ -48,6 +51,7 @@ export default function Login() {
       whatsappNumber: "",
       country: "",
       businessType: "",
+      role: isEmployeeRegister ? "employee_manager" : "client",
     },
   });
 
@@ -79,11 +83,11 @@ export default function Login() {
           <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold font-heading text-primary">
-              {isRegister ? "إنشاء حساب جديد" : "تسجيل الدخول"}
+              {isRegister ? (isEmployeeRegister ? "تسجيل موظف جديد" : "إنشاء حساب جديد") : "تسجيل الدخول"}
             </CardTitle>
             <CardDescription>
               {isRegister 
-                ? "أدخل بياناتك لإنشاء حساب والبدء في استخدام المنصة" 
+                ? (isEmployeeRegister ? "أكمل بياناتك كموظف للانضمام للمنصة" : "أدخل بياناتك لإنشاء حساب والبدء في استخدام المنصة")
                 : "مرحباً بك مجدداً، أدخل بياناتك للمتابعة"}
             </CardDescription>
           </CardHeader>
@@ -139,6 +143,34 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
+                    {isEmployeeRegister && (
+                      <FormField
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>الدور الوظيفي</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-11 bg-slate-50">
+                                  <SelectValue placeholder="اختر الدور" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="admin">مدير</SelectItem>
+                                <SelectItem value="employee_manager">محاسب</SelectItem>
+                                <SelectItem value="employee_sales">مدير مبيعات</SelectItem>
+                                <SelectItem value="employee_sales_exec">مبيعات</SelectItem>
+                                <SelectItem value="employee_dev">مبرمج</SelectItem>
+                                <SelectItem value="employee_design">مصمم</SelectItem>
+                                <SelectItem value="employee_support">دعم</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                     <FormField
                       control={form.control}
                       name="whatsappNumber"
@@ -152,34 +184,36 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="country"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>الدولة</FormLabel>
-                            <FormControl>
-                              <Input placeholder="السعودية" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="businessType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>نوع النشاط</FormLabel>
-                            <FormControl>
-                              <Input placeholder="تجاري" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    {!isEmployeeRegister && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الدولة</FormLabel>
+                              <FormControl>
+                                <Input placeholder="السعودية" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="businessType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>نوع النشاط</FormLabel>
+                              <FormControl>
+                                <Input placeholder="تجاري" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                   </>
                 )}
 

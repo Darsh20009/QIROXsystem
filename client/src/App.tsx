@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { useState, useEffect } from "react";
 
+import InternalGate from "@/pages/InternalGate";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
 import Dashboard from "@/pages/Dashboard";
@@ -34,6 +35,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/internal-gate" component={InternalGate} />
       <Route path="/services" component={Services} />
       <Route path="/about" component={About} />
       <Route path="/prices" component={Prices} />
