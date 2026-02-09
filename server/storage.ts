@@ -1,10 +1,11 @@
 import {
   type User, type InsertUser, type Service, type InsertService,
   type Order, type InsertOrder, type Project, type InsertProject,
-  type Task, type InsertTask, type Message, type InsertMessage
+  type Task, type InsertTask, type Message, type InsertMessage,
+  type Attendance, type InsertAttendance
 } from "@shared/schema";
 import {
-  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel
+  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel
 } from "./models";
 
 export interface IStorage {
@@ -13,6 +14,12 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Attendance
+  getAttendance(userId: string): Promise<Attendance[]>;
+  createAttendance(attendance: InsertAttendance): Promise<Attendance>;
+  updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance>;
+  getLatestAttendance(userId: string): Promise<Attendance | undefined>;
 
   // Services
   getServices(): Promise<Service[]>;
@@ -42,99 +49,117 @@ export interface IStorage {
 export class MongoStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const user = await UserModel.findById(id);
-    return user ? user.toObject() : undefined;
+    return user ? { ...user.toObject(), id: user._id.toString() } : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const user = await UserModel.findOne({ username });
-    return user ? user.toObject() : undefined;
+    return user ? { ...user.toObject(), id: user._id.toString() } : undefined;
   }
 
   async getUsers(): Promise<User[]> {
     const users = await UserModel.find();
-    return users.map(u => u.toObject());
+    return users.map(u => ({ ...u.toObject(), id: u._id.toString() }));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const user = await UserModel.create(insertUser);
-    return user.toObject();
+    return { ...user.toObject(), id: user._id.toString() };
+  }
+
+  async getAttendance(userId: string): Promise<Attendance[]> {
+    const attendances = await AttendanceModel.find({ userId });
+    return attendances.map(a => ({ ...a.toObject(), id: a._id.toString() }));
+  }
+
+  async createAttendance(attendance: InsertAttendance): Promise<Attendance> {
+    const newAttendance = await AttendanceModel.create(attendance);
+    return { ...newAttendance.toObject(), id: newAttendance._id.toString() };
+  }
+
+  async updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance> {
+    const attendance = await AttendanceModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...attendance.toObject(), id: attendance._id.toString() };
+  }
+
+  async getLatestAttendance(userId: string): Promise<Attendance | undefined> {
+    const attendance = await AttendanceModel.findOne({ userId }).sort({ checkIn: -1 });
+    return attendance ? { ...attendance.toObject(), id: attendance._id.toString() } : undefined;
   }
 
   async getServices(): Promise<Service[]> {
     const services = await ServiceModel.find();
-    return services.map(s => s.toObject());
+    return services.map(s => ({ ...s.toObject(), id: s._id.toString() }));
   }
 
   async getService(id: string): Promise<Service | undefined> {
     const service = await ServiceModel.findById(id);
-    return service ? service.toObject() : undefined;
+    return service ? { ...service.toObject(), id: service._id.toString() } : undefined;
   }
 
   async createService(service: InsertService): Promise<Service> {
     const newService = await ServiceModel.create(service);
-    return newService.toObject();
+    return { ...newService.toObject(), id: newService._id.toString() };
   }
 
   async getOrders(userId?: string): Promise<Order[]> {
     const query = userId ? { userId } : {};
     const orders = await OrderModel.find(query);
-    return orders.map(o => o.toObject());
+    return orders.map(o => ({ ...o.toObject(), id: o._id.toString() }));
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
     const newOrder = await OrderModel.create(order);
-    return newOrder.toObject();
+    return { ...newOrder.toObject(), id: newOrder._id.toString() };
   }
 
   async updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order> {
     const order = await OrderModel.findByIdAndUpdate(id, updates, { new: true });
-    return order.toObject();
+    return { ...order.toObject(), id: order._id.toString() };
   }
 
   async getProjects(userId?: string, role?: string): Promise<Project[]> {
-    if (!userId) {
-      const projects = await ProjectModel.find();
-      return projects.map(p => p.toObject());
+    let query = {};
+    if (userId) {
+      query = role === 'client' ? { clientId: userId } : { managerId: userId };
     }
-    
-    const query = role === 'client' ? { clientId: userId } : { managerId: userId };
     const projects = await ProjectModel.find(query);
-    return projects.map(p => p.toObject());
+    return projects.map(p => ({ ...p.toObject(), id: p._id.toString() }));
   }
 
   async getProject(id: string): Promise<Project | undefined> {
     const project = await ProjectModel.findById(id);
-    return project ? project.toObject() : undefined;
+    return project ? { ...project.toObject(), id: project._id.toString() } : undefined;
   }
 
   async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project> {
     const project = await ProjectModel.findByIdAndUpdate(id, updates, { new: true });
-    return project.toObject();
+    return { ...project.toObject(), id: project._id.toString() };
   }
 
   async getTasks(projectId: string): Promise<Task[]> {
     const tasks = await TaskModel.find({ projectId });
-    return tasks.map(t => t.toObject());
+    return tasks.map(t => ({ ...t.toObject(), id: t._id.toString() }));
   }
 
   async createTask(task: InsertTask): Promise<Task> {
     const newTask = await TaskModel.create(task);
-    return newTask.toObject();
+    return { ...newTask.toObject(), id: newTask._id.toString() };
   }
 
   async updateTask(id: string, updates: Partial<InsertTask>): Promise<Task> {
     const task = await TaskModel.findByIdAndUpdate(id, updates, { new: true });
-    return task.toObject();
+    return { ...task.toObject(), id: task._id.toString() };
   }
 
   async getMessages(projectId: string): Promise<Message[]> {
     const messages = await MessageModel.find({ projectId });
-    return messages.map(m => m.toObject());
+    return messages.map(m => ({ ...m.toObject(), id: m._id.toString() }));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
     const newMessage = await MessageModel.create(message);
-    return newMessage.toObject();
+    return { ...newMessage.toObject(), id: newMessage._id.toString() };
   }
 }
 

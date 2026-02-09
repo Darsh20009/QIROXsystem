@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useUser } from "@/hooks/use-auth";
 
 export function Logo({ 
   className, 
@@ -9,9 +10,27 @@ export function Logo({
   variant?: "horizontal" | "square" | "icon";
   mode?: "light" | "dark" | "monochrome";
 }) {
+  const { data: user } = useUser();
   const isDark = mode === "dark";
   const isMono = mode === "monochrome";
   
+  if (user?.logoUrl) {
+    return (
+      <div className={cn("flex items-center gap-3", className)}>
+        <img src={user.logoUrl} alt="Logo" className={cn(variant === "icon" ? "w-12 h-12" : "w-8 h-8", "object-contain")} />
+        {variant !== "icon" && (
+          <span className={cn(
+            "font-heading font-extrabold tracking-tighter text-xl",
+            isDark ? "text-slate-50" : "text-slate-900",
+            isMono && "text-current"
+          )}>
+            QIROX
+          </span>
+        )}
+      </div>
+    );
+  }
+
   const primaryColor = isMono ? "currentColor" : (isDark ? "#f8fafc" : "#0f172a");
   const accentColor = isMono ? "currentColor" : "#06b6d4";
 

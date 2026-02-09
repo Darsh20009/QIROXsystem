@@ -3,6 +3,21 @@ import { z } from "zod";
 export const roles = ["client", "admin", "manager", "accountant", "sales_manager", "sales", "developer", "designer", "support"] as const;
 export type UserRole = (typeof roles)[number];
 
+export const insertAttendanceSchema = z.object({
+  userId: z.string(),
+  checkIn: z.date(),
+  checkOut: z.date().optional(),
+  ipAddress: z.string().optional(),
+  location: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }).optional(),
+  workHours: z.number().optional(),
+});
+
+export type Attendance = z.infer<typeof insertAttendanceSchema> & { id: string };
+export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
+
 export const insertUserSchema = z.object({
   username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
   password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
@@ -13,6 +28,7 @@ export const insertUserSchema = z.object({
   country: z.string().optional(),
   businessType: z.string().optional(),
   whatsappNumber: z.string().optional(),
+  logoUrl: z.string().optional(),
 });
 
 export const insertServiceSchema = z.object({

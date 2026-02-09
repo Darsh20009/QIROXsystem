@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   businessType: String,
   emailVerified: { type: Boolean, default: false },
   whatsappNumber: String,
+  logoUrl: String,
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({
@@ -89,18 +90,31 @@ const messageSchema = new mongoose.Schema({
   isInternal: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const attendanceSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  checkIn: { type: Date, required: true },
+  checkOut: Date,
+  ipAddress: String,
+  location: {
+    lat: Number,
+    lng: Number
+  },
+  workHours: Number,
+}, { timestamps: true });
+
 const transform = (doc: any, ret: any) => {
   ret.id = ret._id ? ret._id.toString() : ret.id;
   delete ret._id;
   delete ret.__v;
 };
 
-[userSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema].forEach(s => {
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
 
 export const UserModel = mongoose.models.User || mongoose.model("User", userSchema);
+export const AttendanceModel = mongoose.models.Attendance || mongoose.model("Attendance", attendanceSchema);
 export const ServiceModel = mongoose.models.Service || mongoose.model("Service", serviceSchema);
 export const OrderModel = mongoose.models.Order || mongoose.model("Order", orderSchema);
 export const ProjectModel = mongoose.models.Project || mongoose.model("Project", projectSchema);

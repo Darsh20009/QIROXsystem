@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -27,9 +28,14 @@ import {
   Users,
   Wallet,
   Briefcase,
-  PlusCircle,
+  LogIn,
+  LogOut,
+  Clock,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Logo } from "./logo";
 
 const clientMenuItems = [
   { title: "لوحة العميل", icon: LayoutDashboard, url: "/dashboard" },
@@ -58,7 +64,45 @@ const adminMenuItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { data: user } = useUser();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isAdmin = user && user.role !== "client";
+
+  const { data: attendanceStatus } = useQuery({
+    queryKey: ["/api/attendance/status"],
+    enabled: !!user && user.role !== "client",
+  });
+
+  const checkInMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/attendance/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ipAddress: "fetching...",
+          location: { lat: 0, lng: 0 },
+        }),
+      });
+      if (!res.ok) throw new Error("Check-in failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
+      toast({ title: "تم تسجيل الدخول", description: "تم تبصيم الحضور بنجاح" });
+    },
+  });
+
+  const checkOutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/attendance/check-out", { method: "POST" });
+      if (!res.ok) throw new Error("Check-out failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
+      toast({ title: "تم تسجيل الخروج", description: "تم تبصيم الانصراف بنجاح" });
+    },
+  });
 
   const menuItems = isAdmin ? adminMenuItems : clientMenuItems;
   const groupLabel = isAdmin ? "نظام الإدارة" : "إدارة المشروع";
@@ -66,12 +110,7 @@ export function AppSidebar() {
   return (
     <Sidebar side="right">
       <SidebarHeader className="p-4 border-b">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">Q</span>
-          </div>
-          <span className="font-bold text-xl font-heading text-primary">QIROX</span>
-        </div>
+        <Logo />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -98,7 +137,55 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user && user.role !== "client" && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              التبصيم
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="px-4 pb-4">
+              {!attendanceStatus || attendanceStatus.checkOut ? (
+                <SidebarMenuButton
+                  onClick={() => checkInMutation.mutate()}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white justify-center gap-2 rounded-md transition-colors"
+                  disabled={checkInMutation.isPending}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>تسجيل حضور</span>
+                </SidebarMenuButton>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 bg-slate-100 p-2 rounded border border-slate-200">
+                    <Clock className="w-3 h-3" />
+                    <span>منذ: {new Date(attendanceStatus.checkIn).toLocaleTimeString("ar-SA")}</span>
+                  </div>
+                  <SidebarMenuButton
+                    onClick={() => checkOutMutation.mutate()}
+                    className="w-full bg-red-500 hover:bg-red-600 text-white justify-center gap-2 rounded-md transition-colors"
+                    disabled={checkOutMutation.isPending}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>تسجيل انصراف</span>
+                  </SidebarMenuButton>
+                </div>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
+      <SidebarFooter className="p-4 border-t bg-slate-50/50">
+        {user && (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20">
+              {user.fullName[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate text-slate-900">{user.fullName}</p>
+              <p className="text-[10px] text-slate-500 truncate font-medium uppercase tracking-wider">{user.role}</p>
+            </div>
+          </div>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }

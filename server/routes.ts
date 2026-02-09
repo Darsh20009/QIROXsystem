@@ -87,6 +87,59 @@ export async function registerRoutes(
     res.json(req.user);
   });
 
+  // Attendance API
+  app.post("/api/attendance/check-in", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { ipAddress, location } = req.body;
+    
+    const attendance = await storage.createAttendance({
+      userId: user.id,
+      checkIn: new Date(),
+      ipAddress,
+      location
+    });
+    res.json(attendance);
+  });
+
+  app.post("/api/attendance/check-out", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const latest = await storage.getLatestAttendance(user.id);
+    
+    if (!latest || latest.checkOut) {
+      return res.status(400).send("No active session found");
+    }
+
+    const checkOut = new Date();
+    const workHours = (checkOut.getTime() - latest.checkIn.getTime()) / (1000 * 60 * 60);
+    
+    const attendance = await storage.updateAttendance(latest.id, {
+      checkOut,
+      workHours: Number(workHours.toFixed(2))
+    });
+    res.json(attendance);
+  });
+
+  app.get("/api/attendance/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const latest = await storage.getLatestAttendance(user.id);
+    res.json(latest || null);
+  });
+
+  app.get("/api/admin/attendance", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as User).role !== 'admin') {
+      return res.sendStatus(403);
+    }
+    const users = await storage.getUsers();
+    const allAttendance = await Promise.all(users.map(async (u) => {
+      const attendance = await storage.getAttendance(u.id);
+      return { user: u, attendance };
+    }));
+    res.json(allAttendance);
+  });
+
   // === SERVICES API ===
   app.get(api.services.list.path, async (req, res) => {
     const services = await storage.getServices();
