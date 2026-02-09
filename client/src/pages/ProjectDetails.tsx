@@ -2,7 +2,7 @@ import { useProject } from "@/hooks/use-projects";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -51,7 +51,11 @@ export default function ProjectDetails() {
           <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-white">روابط الأدوات</TabsTrigger>
           <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-white">محادثة الفريق</TabsTrigger>
           <TabsTrigger value="invoices" className="data-[state=active]:bg-primary data-[state=active]:text-white">الفواتير</TabsTrigger>
+          <TabsTrigger value="payments" className="data-[state=active]:bg-primary data-[state=active]:text-white">الدفعات</TabsTrigger>
+          <TabsTrigger value="contracts" className="data-[state=active]:bg-primary data-[state=active]:text-white">العقود</TabsTrigger>
           <TabsTrigger value="vault" className="data-[state=active]:bg-primary data-[state=active]:text-white">Vault المشروع</TabsTrigger>
+          <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-white">التنبيهات</TabsTrigger>
+          <TabsTrigger value="deliverables" className="data-[state=active]:bg-primary data-[state=active]:text-white">التسليمات</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -154,6 +158,110 @@ export default function ProjectDetails() {
                 <div className="p-8 text-center bg-white rounded-xl border border-secondary/20">
                   <p className="text-slate-600">يتم تشفير وتخزين كلمات المرور، روابط لوحات التحكم، والمفاتيح البرمجية هنا بشكل آمن.</p>
                   <Button className="mt-4" variant="secondary">فتح الخزنة الآمنة</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tools">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">روابط الأدوات</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { name: "بيئة التطوير (Staging)", url: "https://staging.qirox.tech" },
+                    { name: "لوحة تحكم WordPress", url: "https://site.com/wp-admin" },
+                    { name: "رابط Google Drive", url: "#" },
+                  ].map((tool, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Link2 className="w-5 h-5 text-primary" />
+                        <span className="font-medium text-slate-700">{tool.name}</span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-blue-600">زيارة الرابط</Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="invoices">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">الفواتير</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { id: "INV-001", amount: "500$", status: "Paid", date: "01/02/2026" },
+                    { id: "INV-002", amount: "750$", status: "Pending", date: "15/02/2026" },
+                  ].map((inv, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 border rounded-xl">
+                      <div>
+                        <p className="font-bold text-primary">{inv.id}</p>
+                        <p className="text-xs text-slate-500">{inv.date}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold">{inv.amount}</span>
+                        <Badge variant={inv.status === 'Paid' ? 'default' : 'secondary'}>{inv.status}</Badge>
+                        <Button size="icon" variant="ghost"><Download className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">الدفعات</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-6 bg-slate-50 rounded-xl border border-dashed text-center text-slate-500">
+                    <CreditCard className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                    <p>سجل الدفعات سيكون متاحاً بعد تأكيد الفاتورة القادمة</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="contracts">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">العقود</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 border rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <FileSignature className="w-5 h-5 text-primary" />
+                    <span className="font-medium">عقد تقديم الخدمات البرمجية.pdf</span>
+                  </div>
+                  <Badge className="bg-green-100 text-green-700">موقع إلكترونياً</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">التنبيهات</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-sm text-blue-800">تم تحديث حالة المشروع إلى "قيد التنفيذ"</p>
+                    <p className="text-[10px] text-blue-600 mt-1">منذ ساعتين</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="deliverables">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">ملفات التسليم النهائية</CardTitle></CardHeader>
+              <CardContent>
+                <div className="p-12 text-center text-slate-400">
+                  <Download className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                  <p>سيتم رفع ملفات التسليم النهائية هنا عند اكتمال المشروع</p>
                 </div>
               </CardContent>
             </Card>

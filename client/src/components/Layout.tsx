@@ -1,4 +1,4 @@
-import { Navigation } from "./Navigation";
+import Navigation from "./Navigation";
 import { useEffect } from "react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
