@@ -1,5 +1,3 @@
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { useUser } from "@/hooks/use-auth";
 import { useOrders } from "@/hooks/use-orders";
 import { useProjects } from "@/hooks/use-projects";
@@ -17,17 +15,14 @@ export default function Dashboard() {
   if (!user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 py-8 pt-32">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="p-4 md:p-8 space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold font-heading text-primary">لوحة التحكم</h1>
-            <p className="text-slate-500 mt-1">أهلاً بك، {user.fullName}</p>
+            <p className="text-slate-500 mt-1 font-medium">أهلاً بك، {user.fullName}</p>
           </div>
-          <Link href="/services">
-             <Button className="bg-secondary hover:bg-secondary/90 text-primary font-bold shadow-lg shadow-secondary/20">
+          <Link href="/order">
+             <Button className="bg-secondary hover:bg-secondary/90 text-primary font-bold shadow-lg shadow-secondary/20 min-h-10">
                <Plus className="w-5 h-5 ml-2" />
                طلب جديد
              </Button>
@@ -35,54 +30,54 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-           <Card className="border-none shadow-md hover:shadow-lg transition-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <Card className="border-none shadow-sm hover-elevate bg-white">
              <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="p-3 bg-blue-100 rounded-xl text-primary">
+                   <div className="p-3 bg-blue-50 rounded-xl text-primary border border-blue-100">
                       <FileText className="w-6 h-6" />
                    </div>
-                   <span className="text-slate-500 text-sm font-medium">الطلبات الكلية</span>
+                   <span className="text-slate-500 text-sm font-semibold">الطلبات</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-800">{orders?.length || 0}</div>
+                <div className="text-3xl font-bold text-primary">{orders?.length || 0}</div>
              </CardContent>
            </Card>
 
-           <Card className="border-none shadow-md hover:shadow-lg transition-shadow">
+           <Card className="border-none shadow-sm hover-elevate bg-white">
              <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="p-3 bg-green-100 rounded-xl text-green-700">
+                   <div className="p-3 bg-secondary/10 rounded-xl text-primary border border-secondary/20">
                       <Layers className="w-6 h-6" />
                    </div>
-                   <span className="text-slate-500 text-sm font-medium">المشاريع النشطة</span>
+                   <span className="text-slate-500 text-sm font-semibold">المشاريع</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-800">{projects?.length || 0}</div>
+                <div className="text-3xl font-bold text-primary">{projects?.length || 0}</div>
              </CardContent>
            </Card>
            
-           <Card className="border-none shadow-md hover:shadow-lg transition-shadow">
+           <Card className="border-none shadow-sm hover-elevate bg-white">
              <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="p-3 bg-yellow-100 rounded-xl text-yellow-700">
+                   <div className="p-3 bg-yellow-50 rounded-xl text-yellow-700 border border-yellow-100">
                       <Clock className="w-6 h-6" />
                    </div>
-                   <span className="text-slate-500 text-sm font-medium">في الانتظار</span>
+                   <span className="text-slate-500 text-sm font-semibold">قيد الانتظار</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-800">
+                <div className="text-3xl font-bold text-primary">
                   {orders?.filter(o => o.status === 'pending').length || 0}
                 </div>
              </CardContent>
            </Card>
 
-           <Card className="border-none shadow-md hover:shadow-lg transition-shadow">
+           <Card className="border-none shadow-sm hover-elevate bg-white">
              <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
-                   <div className="p-3 bg-purple-100 rounded-xl text-purple-700">
+                   <div className="p-3 bg-green-50 rounded-xl text-green-700 border border-green-100">
                       <Activity className="w-6 h-6" />
                    </div>
-                   <span className="text-slate-500 text-sm font-medium">المكتملة</span>
+                   <span className="text-slate-500 text-sm font-semibold">مكتملة</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-800">
+                <div className="text-3xl font-bold text-primary">
                   {orders?.filter(o => o.status === 'completed').length || 0}
                 </div>
              </CardContent>
@@ -90,7 +85,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Projects */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
            <div className="lg:col-span-2 space-y-6">
               <h2 className="text-xl font-bold font-heading text-primary flex items-center gap-2">
                  <Layers className="w-5 h-5 text-secondary" />
@@ -99,32 +94,32 @@ export default function Dashboard() {
               
               {isLoadingProjects ? (
                 <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-400" /></div>
-              ) : projects?.length === 0 ? (
-                <Card className="border-dashed border-2 bg-slate-50/50">
+              ) : !projects || projects?.length === 0 ? (
+                <Card className="border-dashed border-2 bg-white/50">
                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                       <Layers className="w-12 h-12 text-slate-300 mb-4" />
                       <h3 className="text-lg font-semibold text-slate-700">لا توجد مشاريع حالياً</h3>
-                      <p className="text-slate-500 mb-4">ابدأ بطلب خدمة جديدة لبدء مشروعك الأول</p>
-                      <Link href="/services"><Button variant="outline">تصفح الخدمات</Button></Link>
+                      <p className="text-slate-500 mb-6">ابدأ بطلب خدمة جديدة لبدء مشروعك الأول</p>
+                      <Link href="/order"><Button variant="secondary" className="font-bold">تصفح الخدمات</Button></Link>
                    </CardContent>
                 </Card>
               ) : (
                 <div className="grid gap-4">
                    {projects?.map(project => (
-                     <Card key={project.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                     <Card key={project.id} className="overflow-hidden shadow-sm hover-elevate bg-white border-none">
                         <div className="flex items-center p-6 gap-4">
-                           <div className="w-12 h-12 bg-primary/5 rounded-lg flex items-center justify-center flex-shrink-0">
+                           <div className="w-12 h-12 bg-primary/5 rounded-lg flex items-center justify-center shrink-0 border border-primary/10">
                               <Activity className="w-6 h-6 text-primary" />
                            </div>
-                           <div className="flex-1">
-                              <h4 className="font-bold text-lg text-primary mb-1">مشروع #{project.id}</h4>
-                              <div className="flex items-center gap-4 text-sm text-slate-500">
-                                 <span>الحالة: {project.status}</span>
-                                 <span>التقدم: {project.progress}%</span>
+                           <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-lg text-primary truncate">مشروع #{project.id}</h4>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 mt-1">
+                                 <Badge variant="outline" className="text-[10px] h-5">{project.status}</Badge>
+                                 <span className="font-medium">التقدم: {project.progress}%</span>
                               </div>
                            </div>
-                           <Link href={`/projects/${project.id}`}>
-                              <Button size="sm" variant="secondary">التفاصيل</Button>
+                           <Link href={`/project/status`}>
+                              <Button size="sm" variant="secondary" className="font-bold h-9">التفاصيل</Button>
                            </Link>
                         </div>
                         <div className="h-1 bg-slate-100 w-full">
@@ -141,23 +136,28 @@ export default function Dashboard() {
                  <FileText className="w-5 h-5 text-secondary" />
                  آخر الطلبات
               </h2>
-              <Card>
+              <Card className="border-none shadow-sm bg-white overflow-hidden">
                  <CardContent className="p-0">
                     {isLoadingOrders ? (
                       <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" /></div>
-                    ) : orders?.length === 0 ? (
-                      <div className="p-8 text-center text-slate-500 text-sm">لا توجد طلبات سابقة</div>
+                    ) : !orders || orders?.length === 0 ? (
+                      <div className="p-12 text-center text-slate-400 text-sm">لا توجد طلبات سابقة</div>
                     ) : (
-                      <div className="divide-y divide-slate-100">
+                      <div className="divide-y divide-slate-50">
                          {orders?.slice(0, 5).map(order => (
                            <div key={order.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                              <div>
-                                 <p className="font-medium text-slate-800 text-sm">طلب خدمة #{order.serviceId}</p>
-                                 <p className="text-xs text-slate-500 mt-1">
+                              <div className="min-w-0">
+                                 <p className="font-bold text-slate-800 text-sm truncate">طلب خدمة #{order.serviceId}</p>
+                                 <p className="text-[10px] text-slate-400 mt-1 font-medium">
                                     {new Date(order.createdAt!).toLocaleDateString('ar-SA')}
                                  </p>
                               </div>
-                              <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                              <Badge 
+                                className={`text-[10px] h-5 ${
+                                  order.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                                  'bg-secondary/20 text-primary'
+                                }`}
+                              >
                                  {order.status === 'pending' ? 'قيد المراجعة' : 
                                   order.status === 'completed' ? 'مكتمل' : order.status}
                               </Badge>
@@ -169,8 +169,6 @@ export default function Dashboard() {
               </Card>
            </div>
         </div>
-      </div>
-      <Footer />
     </div>
   );
 }

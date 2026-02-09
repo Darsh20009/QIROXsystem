@@ -23,6 +23,8 @@ import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Segments from "@/pages/Segments";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 function Router() {
   return (
@@ -47,6 +49,9 @@ function Router() {
       <Route path="/order" component={OrderFlow} />
       <Route path="/projects/:id" component={ProjectDetails} />
       
+      {/* Fallback routes for sidebar links to project details */}
+      <Route path="/project/:section" component={ProjectDetails} />
+      
       {/* Admin route placeholder - redirects to dashboard for MVP */}
       <Route path="/admin" component={Dashboard} />
 
@@ -63,21 +68,39 @@ function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  const style = {
+    "--sidebar-width": "18rem",
+    "--sidebar-width-icon": "4rem",
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className={lang === "ar" ? "rtl" : "ltr"}>
-          <div className="fixed top-4 right-4 z-50">
-            <button 
-              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-              className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium"
-            >
-              {lang === "ar" ? "English" : "عربي"}
-            </button>
+        <SidebarProvider style={style as React.CSSProperties}>
+          <div className={`min-h-screen flex w-full bg-slate-50 ${lang === "ar" ? "rtl" : "ltr"}`}>
+            <AppSidebar />
+            <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+              <header className="h-16 border-b bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                  <h2 className="font-heading font-bold text-primary hidden md:block">لوحة العميل</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                    className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium hover-elevate"
+                  >
+                    {lang === "ar" ? "English" : "عربي"}
+                  </button>
+                </div>
+              </header>
+              <main className="flex-1 overflow-auto">
+                <Router />
+              </main>
+              <Toaster />
+            </div>
           </div>
-          <Toaster />
-          <Router />
-        </div>
+        </SidebarProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
