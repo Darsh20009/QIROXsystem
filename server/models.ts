@@ -90,6 +90,14 @@ const messageSchema = new mongoose.Schema({
   isInternal: { type: Boolean, default: false },
 }, { timestamps: true });
 
+const projectVaultSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  category: { type: String, required: true },
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  isSecret: { type: Boolean, default: false },
+}, { timestamps: true });
+
 const attendanceSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   checkIn: { type: Date, required: true },
@@ -108,7 +116,7 @@ const transform = (doc: any, ret: any) => {
   delete ret.__v;
 };
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema].forEach(s => {
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -120,3 +128,4 @@ export const OrderModel = mongoose.models.Order || mongoose.model("Order", order
 export const ProjectModel = mongoose.models.Project || mongoose.model("Project", projectSchema);
 export const TaskModel = mongoose.models.Task || mongoose.model("Task", taskSchema);
 export const MessageModel = mongoose.models.Message || mongoose.model("Message", messageSchema);
+export const ProjectVaultModel = mongoose.models.ProjectVault || mongoose.model("ProjectVault", projectVaultSchema);

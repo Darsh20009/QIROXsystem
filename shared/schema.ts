@@ -104,12 +104,24 @@ export const insertMessageSchema = z.object({
   isInternal: z.boolean().default(false),
 });
 
+export const insertProjectVaultSchema = z.object({
+  projectId: z.string(),
+  category: z.enum(["git", "db", "server", "api", "social", "credentials", "notes", "recordings"]),
+  title: z.string().min(1),
+  content: z.string().min(1),
+  isSecret: z.boolean().default(false),
+});
+
+export type ProjectVault = z.infer<typeof insertProjectVaultSchema> & { id: string; createdAt: Date };
+export type InsertProjectVault = z.infer<typeof insertProjectVaultSchema>;
+
 export type User = z.infer<typeof insertUserSchema> & { id: string; createdAt: Date; emailVerified: boolean };
 export type Service = z.infer<typeof insertServiceSchema> & { id: string };
 export type Order = z.infer<typeof insertOrderSchema> & { id: string; userId: string; createdAt: Date };
 export type Project = z.infer<typeof insertProjectSchema> & { id: string; createdAt: Date };
 export type Task = z.infer<typeof insertTaskSchema> & { id: string; createdAt: Date };
 export type Message = z.infer<typeof insertMessageSchema> & { id: string; senderId: string; createdAt: Date };
+export type ProjectVaultItem = z.infer<typeof insertProjectVaultSchema> & { id: string; createdAt: Date };
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -117,3 +129,4 @@ export type InsertOrder = z.infer<typeof insertOrderSchema> & { userId: string }
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema> & { senderId: string };
+export type InsertProjectVaultItem = z.infer<typeof insertProjectVaultSchema>;

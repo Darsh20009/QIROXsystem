@@ -227,6 +227,22 @@ export async function registerRoutes(
     res.status(201).json(message);
   });
 
+  // === PROJECT VAULT API ===
+  app.get("/api/projects/:projectId/vault", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const items = await storage.getVaultItems(req.params.projectId);
+    res.json(items);
+  });
+
+  app.post("/api/projects/:projectId/vault", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const item = await storage.createVaultItem({
+      ...req.body,
+      projectId: req.params.projectId
+    });
+    res.status(201).json(item);
+  });
+
   // Initialize seed data
   await seedDatabase();
 

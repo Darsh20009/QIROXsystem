@@ -2,10 +2,10 @@ import {
   type User, type InsertUser, type Service, type InsertService,
   type Order, type InsertOrder, type Project, type InsertProject,
   type Task, type InsertTask, type Message, type InsertMessage,
-  type Attendance, type InsertAttendance
+  type Attendance, type InsertAttendance, type ProjectVault, type InsertProjectVault
 } from "@shared/schema";
 import {
-  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel
+  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel
 } from "./models";
 
 export interface IStorage {
@@ -44,9 +44,31 @@ export interface IStorage {
   // Messages
   getMessages(projectId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+
+  // Project Vault
+  getVaultItems(projectId: string): Promise<ProjectVault[]>;
+  createVaultItem(item: InsertProjectVault): Promise<ProjectVault>;
+  updateVaultItem(id: string, updates: Partial<InsertProjectVault>): Promise<ProjectVault>;
 }
 
 export class MongoStorage implements IStorage {
+  // ... (previous methods)
+
+  async getVaultItems(projectId: string): Promise<ProjectVault[]> {
+    const items = await ProjectVaultModel.find({ projectId });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() }));
+  }
+
+  async createVaultItem(item: InsertProjectVault): Promise<ProjectVault> {
+    const newItem = await ProjectVaultModel.create(item);
+    return { ...newItem.toObject(), id: newItem._id.toString() };
+  }
+
+  async updateVaultItem(id: string, updates: Partial<InsertProjectVault>): Promise<ProjectVault> {
+    const item = await ProjectVaultModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: item._id.toString() };
+  }
+}
   async getUser(id: string): Promise<User | undefined> {
     const user = await UserModel.findById(id);
     return user ? { ...user.toObject(), id: user._id.toString() } : undefined;
