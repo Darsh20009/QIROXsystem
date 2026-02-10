@@ -1,8 +1,10 @@
 import { useProject } from "@/hooks/use-projects";
+import { useTasks } from "@/hooks/use-tasks";
+import { useVault } from "@/hooks/use-vault";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -11,12 +13,15 @@ export default function ProjectDetails() {
   const section = params?.section || "status";
   const { data: projectOrProjects, isLoading } = useProject(1); // Default to first project for MVP
   const project = Array.isArray(projectOrProjects) ? projectOrProjects[0] : projectOrProjects;
+  const { data: tasks, isLoading: isLoadingTasks } = useTasks(project?.id);
+  const { data: vaultItems, isLoading: isLoadingVault } = useVault(project?.id);
 
   if (isLoading) return <div className="min-h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
   if (!project) return <div className="text-center p-20 text-slate-500 font-medium">المشروع غير موجود</div>;
 
   return (
     <div className="p-4 md:p-8 space-y-8">
+        {/* ... (previous header code) */}
       <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100">
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -88,33 +93,63 @@ export default function ProjectDetails() {
           </TabsContent>
 
           <TabsContent value="implementation">
-            <Card>
-              <CardHeader><CardTitle className="font-heading">مراحل التنفيذ</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {[
-                    { title: "تحليل المتطلبات", status: "completed", date: "05/02/2026" },
-                    { title: "تصميم واجهات المستخدم UI/UX", status: "completed", date: "12/02/2026" },
-                    { title: "برمجة الواجهة الأمامية", status: "in-progress", date: "25/02/2026" },
-                    { title: "تطوير النظام الخلفي والربط", status: "pending", date: "05/03/2026" },
-                  ].map((step, i) => (
-                    <div key={i} className="flex gap-4 relative">
-                      {i !== 3 && <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-slate-100" />}
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                        step.status === 'completed' ? 'bg-green-500 text-white' : 
-                        step.status === 'in-progress' ? 'bg-secondary text-primary' : 'bg-slate-200'
-                      }`}>
-                        {step.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="font-heading flex items-center justify-between">
+                    <span>مراحل التنفيذ والمهام</span>
+                    <Button size="sm" variant="outline"><Plus className="w-4 h-4 ml-2" /> مهمة جديدة</Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {isLoadingTasks ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 
+                     tasks?.length === 0 ? <p className="text-center text-slate-400 py-8">لا توجد مهام حالياً</p> :
+                     tasks?.map((task: any) => (
+                      <div key={task.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className={`w-5 h-5 ${task.status === 'completed' ? 'text-green-500' : 'text-slate-300'}`} />
+                          <div>
+                            <p className="font-bold text-primary">{task.title}</p>
+                            <p className="text-xs text-slate-500">{task.priority === 'high' ? 'أولوية قصوى' : task.priority}</p>
+                          </div>
+                        </div>
+                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                          {task.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}
+                        </Badge>
                       </div>
-                      <div className="flex-1 pb-4">
-                        <p className="font-bold text-primary">{step.title}</p>
-                        <p className="text-xs text-slate-500 mt-1">الموعد المتوقع: {step.date}</p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="font-heading">المخطط الزمني</CardTitle></CardHeader>
+                <CardContent>
+                   <div className="space-y-6">
+                    {[
+                      { title: "تحليل المتطلبات", status: "completed", date: "05/02/2026" },
+                      { title: "تصميم واجهات المستخدم UI/UX", status: "completed", date: "12/02/2026" },
+                      { title: "برمجة الواجهة الأمامية", status: "in-progress", date: "25/02/2026" },
+                      { title: "تطوير النظام الخلفي والربط", status: "pending", date: "05/03/2026" },
+                    ].map((step, i) => (
+                      <div key={i} className="flex gap-4 relative">
+                        {i !== 3 && <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-slate-100" />}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                          step.status === 'completed' ? 'bg-green-500 text-white' : 
+                          step.status === 'in-progress' ? 'bg-secondary text-primary' : 'bg-slate-200'
+                        }`}>
+                          {step.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                        </div>
+                        <div className="flex-1 pb-4">
+                          <p className="font-bold text-primary text-sm">{step.title}</p>
+                          <p className="text-[10px] text-slate-500 mt-1">الموعد: {step.date}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="files">
@@ -149,16 +184,48 @@ export default function ProjectDetails() {
           <TabsContent value="vault">
             <Card className="border-secondary/20 bg-secondary/5">
               <CardHeader>
-                <CardTitle className="font-heading flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                  Vault المشروع (البيانات الحساسة)
+                <CardTitle className="font-heading flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    Vault المشروع (البيانات الحساسة)
+                  </div>
+                  <Button size="sm" variant="secondary"><Plus className="w-4 h-4 ml-2" /> إضافة عنصر</Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="p-8 text-center bg-white rounded-xl border border-secondary/20">
-                  <p className="text-slate-600">يتم تشفير وتخزين كلمات المرور، روابط لوحات التحكم، والمفاتيح البرمجية هنا بشكل آمن.</p>
-                  <Button className="mt-4" variant="secondary">فتح الخزنة الآمنة</Button>
-                </div>
+                {isLoadingVault ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> :
+                 !vaultItems || vaultItems.length === 0 ? (
+                  <div className="p-8 text-center bg-white rounded-xl border border-secondary/20">
+                    <p className="text-slate-600">لا توجد بيانات حساسة مخزنة حالياً في هذا المشروع.</p>
+                  </div>
+                 ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vaultItems.map((item: any) => (
+                      <Card key={item.id} className="bg-white hover:shadow-md transition-shadow">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="p-2 bg-slate-50 rounded-lg text-primary">
+                              {item.category === 'git' && <Globe className="w-5 h-5" />}
+                              {item.category === 'db' && <Database className="w-5 h-5" />}
+                              {item.category === 'server' && <Globe className="w-5 h-5" />}
+                              {item.category === 'api' && <Share2 className="w-5 h-5" />}
+                              {item.category === 'social' && <Share2 className="w-5 h-5" />}
+                              {item.category === 'credentials' && <Key className="w-5 h-5" />}
+                              {item.category === 'notes' && <StickyNote className="w-5 h-5" />}
+                              {item.category === 'recordings' && <Mic className="w-5 h-5" />}
+                            </div>
+                            <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
+                          </div>
+                          <h4 className="font-bold text-primary mb-1">{item.title}</h4>
+                          <div className="mt-4 p-3 bg-slate-900 rounded-lg text-xs font-mono text-cyan-400 break-all">
+                            {item.isSecret ? "••••••••••••" : item.content}
+                          </div>
+                          <Button variant="ghost" size="sm" className="w-full mt-4 text-xs">عرض المحتوى</Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                 )}
               </CardContent>
             </Card>
           </TabsContent>

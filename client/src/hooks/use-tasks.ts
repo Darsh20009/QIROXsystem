@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type InsertTask } from "@shared/routes";
 
-export function useTasks(projectId: number) {
+export function useTasks(projectId: string) {
   return useQuery({
     queryKey: [api.tasks.list.path, projectId],
     queryFn: async () => {
       const url = buildUrl(api.tasks.list.path, { projectId });
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch tasks");
-      return api.tasks.list.responses[200].parse(await res.json());
+      return await res.json();
     },
     enabled: !!projectId,
   });
@@ -17,7 +17,7 @@ export function useTasks(projectId: number) {
 export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ projectId, ...data }: InsertTask & { projectId: number }) => {
+    mutationFn: async ({ projectId, ...data }: InsertTask & { projectId: string }) => {
       const url = buildUrl(api.tasks.create.path, { projectId });
       const res = await fetch(url, {
         method: "POST",
@@ -26,7 +26,7 @@ export function useCreateTask() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create task");
-      return api.tasks.create.responses[201].parse(await res.json());
+      return await res.json();
     },
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: [api.tasks.list.path, projectId] });
@@ -37,7 +37,7 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, projectId, ...updates }: { id: number, projectId: number } & Partial<InsertTask>) => {
+    mutationFn: async ({ id, projectId, ...updates }: { id: string, projectId: string } & Partial<InsertTask>) => {
       const url = buildUrl(api.tasks.update.path, { id });
       const res = await fetch(url, {
         method: "PATCH",
@@ -46,7 +46,7 @@ export function useUpdateTask() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update task");
-      return api.tasks.update.responses[200].parse(await res.json());
+      return await res.json();
     },
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: [api.tasks.list.path, projectId] });

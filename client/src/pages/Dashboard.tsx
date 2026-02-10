@@ -1,18 +1,61 @@
 import { useUser } from "@/hooks/use-auth";
 import { useOrders } from "@/hooks/use-orders";
 import { useProjects } from "@/hooks/use-projects";
+import { useAttendanceStatus, useCheckIn, useCheckOut } from "@/hooks/use-attendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, FileText, Activity, Clock, Layers } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, MapPin } from "lucide-react";
 import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { data: user } = useUser();
   const { data: orders, isLoading: isLoadingOrders } = useOrders();
   const { data: projects, isLoading: isLoadingProjects } = useProjects();
+  const { data: attendanceStatus } = useAttendanceStatus();
+  const checkInMutation = useCheckIn();
+  const checkOutMutation = useCheckOut();
+  const { toast } = useToast();
+  const [ip, setIp] = useState<string>("");
+
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(data => setIp(data.ip))
+      .catch(() => setIp("Unknown"));
+  }, []);
 
   if (!user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
+
+  const handleCheckIn = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        checkInMutation.mutate({
+          ipAddress: ip,
+          location: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }
+        }, {
+          onSuccess: () => toast({ title: "تم تسجيل الدخول بنجاح" })
+        });
+      }, () => {
+        checkInMutation.mutate({ ipAddress: ip }, {
+          onSuccess: () => toast({ title: "تم تسجيل الدخول بنجاح (بدون موقع)" })
+        });
+      });
+    } else {
+      checkInMutation.mutate({ ipAddress: ip });
+    }
+  };
+
+  const handleCheckOut = () => {
+    checkOutMutation.mutate(undefined, {
+      onSuccess: () => toast({ title: "تم تسجيل الخروج بنجاح" })
+    });
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-8">
@@ -21,12 +64,46 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold font-heading text-primary">لوحة التحكم</h1>
             <p className="text-slate-500 mt-1 font-medium">أهلاً بك، {user.fullName}</p>
           </div>
-          <Link href="/order">
-             <Button className="bg-secondary hover:bg-secondary/90 text-primary font-bold shadow-lg shadow-secondary/20 min-h-10">
-               <Plus className="w-5 h-5 ml-2" />
-               طلب جديد
-             </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {user.role !== 'client' && (
+              <div className="flex items-center gap-2 bg-white p-1 rounded-lg border shadow-sm">
+                {!attendanceStatus || attendanceStatus.checkOut ? (
+                  <Button 
+                    size="sm" 
+                    variant="default" 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleCheckIn}
+                    disabled={checkInMutation.isPending}
+                  >
+                    <LogIn className="w-4 h-4 ml-2" />
+                    تسجيل دخول
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={handleCheckOut}
+                    disabled={checkOutMutation.isPending}
+                  >
+                    <LogOut className="w-4 h-4 ml-2" />
+                    تسجيل خروج
+                  </Button>
+                )}
+                {attendanceStatus && !attendanceStatus.checkOut && (
+                  <div className="px-3 py-1 text-xs font-bold text-primary flex items-center gap-2">
+                    <Clock className="w-3 h-3 text-secondary" />
+                    {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA')}
+                  </div>
+                )}
+              </div>
+            )}
+            <Link href="/order">
+               <Button className="bg-secondary hover:bg-secondary/90 text-primary font-bold shadow-lg shadow-secondary/20 min-h-10">
+                 <Plus className="w-5 h-5 ml-2" />
+                 طلب جديد
+               </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}

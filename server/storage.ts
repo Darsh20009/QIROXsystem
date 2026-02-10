@@ -68,7 +68,7 @@ export class MongoStorage implements IStorage {
     const item = await ProjectVaultModel.findByIdAndUpdate(id, updates, { new: true });
     return { ...item.toObject(), id: item._id.toString() };
   }
-}
+
   async getUser(id: string): Promise<User | undefined> {
     const user = await UserModel.findById(id);
     return user ? { ...user.toObject(), id: user._id.toString() } : undefined;
