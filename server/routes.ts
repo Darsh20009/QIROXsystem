@@ -243,6 +243,25 @@ export async function registerRoutes(
     res.status(201).json(item);
   });
 
+  // === CHAT API ===
+  app.get("/api/projects/:projectId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const messages = await storage.getMessages(req.params.projectId);
+    res.json(messages);
+  });
+
+  app.post("/api/projects/:projectId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const message = await storage.createMessage({
+      projectId: req.params.projectId,
+      senderId: user.id,
+      content: req.body.content,
+      isInternal: req.body.isInternal || false,
+    });
+    res.status(201).json(message);
+  });
+
   // Initialize seed data
   await seedDatabase();
 

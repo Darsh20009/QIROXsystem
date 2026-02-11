@@ -1,23 +1,63 @@
 import { useProject } from "@/hooks/use-projects";
 import { useTasks } from "@/hooks/use-tasks";
 import { useVault } from "@/hooks/use-vault";
+import { useUser } from "@/hooks/use-auth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ProjectDetails() {
   const [, params] = useRoute("/project/:section");
   const section = params?.section || "status";
+  const { data: user } = useUser();
+  const queryClient = useQueryClient();
   const { data: projectOrProjects, isLoading } = useProject(1); // Default to first project for MVP
   const project = Array.isArray(projectOrProjects) ? projectOrProjects[0] : projectOrProjects;
   const { data: tasks, isLoading: isLoadingTasks } = useTasks(project?.id);
   const { data: vaultItems, isLoading: isLoadingVault } = useVault(project?.id);
+  const [messageContent, setMessageContent] = useState("");
+
+  const { data: messages, isLoading: isLoadingMessages } = useQuery({
+    queryKey: ["/api/projects", project?.id, "messages"],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${project.id}/messages`);
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return await res.json();
+    },
+    enabled: !!project?.id,
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const res = await fetch(`/api/projects/${project.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, isInternal: false }),
+      });
+      if (!res.ok) throw new Error("Failed to send message");
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id, "messages"] });
+      setMessageContent("");
+    },
+  });
 
   if (isLoading) return <div className="min-h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
   if (!project) return <div className="text-center p-20 text-slate-500 font-medium">المشروع غير موجود</div>;
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageContent.trim()) return;
+    sendMessageMutation.mutate(messageContent);
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-8">
@@ -172,11 +212,50 @@ export default function ProjectDetails() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <Card>
-              <CardHeader><CardTitle className="font-heading">محادثة الفريق</CardTitle></CardHeader>
-              <CardContent className="h-[400px] flex flex-col justify-center items-center text-slate-400 bg-slate-50/50 border-2 border-dashed rounded-xl m-4">
-                <MessageSquare className="w-12 h-12 mb-4 opacity-20" />
-                <p>المحادثة الجماعية للمشروع سيتم تفعيلها قريباً</p>
+            <Card className="flex flex-col h-[600px]">
+              <CardHeader className="border-b">
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  محادثة الفريق والعميل
+                </CardTitle>
+                <p className="text-xs text-slate-500">جميع المحادثات محفوظة وغير قابلة للحذف لضمان الجودة</p>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {isLoadingMessages ? (
+                      <div className="flex justify-center p-4"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                    ) : messages?.length === 0 ? (
+                      <div className="text-center py-20 text-slate-400">ابدأ المحادثة الآن</div>
+                    ) : (
+                      messages.map((msg: any) => (
+                        <div key={msg.id} className={`flex flex-col ${msg.senderId === user?.id ? 'items-start' : 'items-end'}`}>
+                          <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                            msg.senderId === user?.id 
+                              ? 'bg-primary text-white rounded-tr-none' 
+                              : 'bg-slate-100 text-slate-800 rounded-tl-none'
+                          }`}>
+                            {msg.content}
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1">
+                            {new Date(msg.createdAt).toLocaleTimeString('ar-SA')}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+                <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
+                  <Input 
+                    placeholder="اكتب رسالتك هنا..." 
+                    value={messageContent}
+                    onChange={(e) => setMessageContent(e.target.value)}
+                    disabled={sendMessageMutation.isPending}
+                  />
+                  <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !messageContent.trim()}>
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
