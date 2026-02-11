@@ -225,22 +225,6 @@ export async function registerRoutes(
     res.status(201).json(member);
   });
 
-  // === PROJECT MEMBERS API ===
-  app.get("/api/projects/:projectId/members", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const members = await storage.getProjectMembers(req.params.projectId);
-    res.json(members);
-  });
-
-  app.post("/api/projects/:projectId/members", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const member = await storage.addProjectMember({
-      ...req.body,
-      projectId: req.params.projectId
-    });
-    res.status(201).json(member);
-  });
-
   // === MESSAGES API ===
   app.get(api.messages.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

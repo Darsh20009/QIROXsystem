@@ -50,6 +50,20 @@ export default function ProjectDetails() {
     },
   });
 
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      new: "جديد",
+      under_study: "قيد الدراسة",
+      pending_payment: "بانتظار الدفع",
+      in_progress: "جاري التنفيذ",
+      testing: "اختبار",
+      review: "مراجعة",
+      delivery: "تسليم",
+      closed: "مغلق"
+    };
+    return labels[status] || status;
+  };
+
   if (isLoading) return <div className="min-h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
   if (!project) return <div className="text-center p-20 text-slate-500 font-medium">المشروع غير موجود</div>;
 
@@ -61,11 +75,10 @@ export default function ProjectDetails() {
 
   return (
     <div className="p-4 md:p-8 space-y-8">
-        {/* ... (previous header code) */}
       <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100">
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-               <Badge className="mb-2 bg-secondary text-primary hover:bg-secondary/90">{project.status}</Badge>
+               <Badge className="mb-2 bg-secondary text-primary hover:bg-secondary/90">{getStatusLabel(project.status)}</Badge>
                <h1 className="text-2xl md:text-3xl font-bold font-heading text-primary">مشروع: {project.id}</h1>
             </div>
             <div className="text-right">

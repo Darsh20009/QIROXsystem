@@ -58,7 +58,7 @@ export interface IStorage {
 
 export class MongoStorage implements IStorage {
   async getTasks(projectId: string, parentId?: string): Promise<Task[]> {
-    const query = parentId ? { projectId, parentId } : { projectId, parentId: null };
+    const query = parentId ? { projectId, parentId } : { projectId, parentId: { $exists: false } };
     const tasks = await TaskModel.find(query);
     return tasks.map(t => ({ ...t.toObject(), id: t._id.toString() }));
   }
@@ -163,11 +163,6 @@ export class MongoStorage implements IStorage {
     return { ...project.toObject(), id: project._id.toString() };
   }
 
-  async getTasks(projectId: string): Promise<Task[]> {
-    const tasks = await TaskModel.find({ projectId });
-    return tasks.map(t => ({ ...t.toObject(), id: t._id.toString() }));
-  }
-
   async createTask(task: InsertTask): Promise<Task> {
     const newTask = await TaskModel.create(task);
     return { ...newTask.toObject(), id: newTask._id.toString() };
@@ -186,6 +181,22 @@ export class MongoStorage implements IStorage {
   async createMessage(message: InsertMessage): Promise<Message> {
     const newMessage = await MessageModel.create(message);
     return { ...newMessage.toObject(), id: newMessage._id.toString() };
+  }
+
+  // Project Vault
+  async getVaultItems(projectId: string): Promise<ProjectVault[]> {
+    const items = await ProjectVaultModel.find({ projectId });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() }));
+  }
+
+  async createVaultItem(item: InsertProjectVault): Promise<ProjectVault> {
+    const newItem = await ProjectVaultModel.create(item);
+    return { ...newItem.toObject(), id: newItem._id.toString() };
+  }
+
+  async updateVaultItem(id: string, updates: Partial<InsertProjectVault>): Promise<ProjectVault> {
+    const item = await ProjectVaultModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: item._id.toString() };
   }
 }
 
