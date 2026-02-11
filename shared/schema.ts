@@ -76,11 +76,14 @@ export const insertOrderSchema = z.object({
   requirements: z.record(z.any()).optional(),
 });
 
+export const projectStatuses = ["new", "under_study", "pending_payment", "in_progress", "testing", "review", "delivery", "closed"] as const;
+export type ProjectStatus = (typeof projectStatuses)[number];
+
 export const insertProjectSchema = z.object({
   orderId: z.string(),
   clientId: z.string(),
   managerId: z.string().optional(),
-  status: z.string().default("new"),
+  status: z.enum(projectStatuses).default("new"),
   progress: z.number().default(0),
   repoUrl: z.string().optional(),
   stagingUrl: z.string().optional(),
@@ -96,7 +99,17 @@ export const insertTaskSchema = z.object({
   status: z.string().default("pending"),
   priority: z.string().default("medium"),
   dueDate: z.date().optional(),
+  parentId: z.string().optional(), // For subtasks
 });
+
+export const insertProjectMemberSchema = z.object({
+  projectId: z.string(),
+  userId: z.string(),
+  role: z.string(), // e.g., "lead", "developer", "designer"
+});
+
+export type ProjectMember = z.infer<typeof insertProjectMemberSchema> & { id: string };
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
 
 export const insertMessageSchema = z.object({
   projectId: z.string(),

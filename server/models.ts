@@ -65,7 +65,7 @@ const projectSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  status: { type: String, default: "new", required: true },
+  status: { type: String, enum: ["new", "under_study", "pending_payment", "in_progress", "testing", "review", "delivery", "closed"], default: "new", required: true },
   progress: { type: Number, default: 0 },
   repoUrl: String,
   stagingUrl: String,
@@ -81,6 +81,13 @@ const taskSchema = new mongoose.Schema({
   status: { type: String, default: "pending", required: true },
   priority: { type: String, default: "medium" },
   dueDate: Date,
+  parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
+}, { timestamps: true });
+
+const projectMemberSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  role: String,
 }, { timestamps: true });
 
 const messageSchema = new mongoose.Schema({
@@ -116,7 +123,7 @@ const transform = (doc: any, ret: any) => {
   delete ret.__v;
 };
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema].forEach(s => {
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -129,3 +136,4 @@ export const ProjectModel = mongoose.models.Project || mongoose.model("Project",
 export const TaskModel = mongoose.models.Task || mongoose.model("Task", taskSchema);
 export const MessageModel = mongoose.models.Message || mongoose.model("Message", messageSchema);
 export const ProjectVaultModel = mongoose.models.ProjectVault || mongoose.model("ProjectVault", projectVaultSchema);
+export const ProjectMemberModel = mongoose.models.ProjectMember || mongoose.model("ProjectMember", projectMemberSchema);
