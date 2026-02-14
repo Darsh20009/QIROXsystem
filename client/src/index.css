@@ -12,10 +12,10 @@
   --background: 210 40% 98%;    /* #f8fafc - White backgrounds */
   --foreground: 222 47% 11%;    /* #0f172a - Dark Slate texts */
   
-  --primary: 222 47% 11%;       /* #0f172a - Deep Tech Blue */
+  --primary: 222 47% 11%;       /* #0f172a - Deep Tech Blue (Saudi) */
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 189 94% 43%;     /* #06b6d4 - Electric Cyan */
+  --secondary: 189 94% 43%;     /* #06b6d4 - Electric Cyan (Egypt) */
   --secondary-foreground: 222 47% 11%;
 
   --muted: 210 40% 96.1%;
@@ -31,7 +31,7 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 189 94% 43%;
 
-  --card: 210 40% 96.1%;        /* Soft Gray for cards */
+  --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
 
   --radius: 0.75rem; /* Modern rounded corners */
@@ -41,20 +41,20 @@
   --background: 222 47% 4%;
   --foreground: 210 40% 98%;
   
-  --primary: 210 40% 98%;
+  --primary: 189 94% 43%;       /* In dark mode, cyan pops better as primary */
   --primary-foreground: 222 47% 11%;
 
-  --secondary: 189 94% 43%;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 222 47% 11%;     /* Deep blue as secondary in dark mode */
+  --secondary-foreground: 210 40% 98%;
 
   --accent: 189 94% 43%;
   --accent-foreground: 210 40% 98%;
 
-  --card: 222 47% 11%;
+  --card: 222 47% 6%;
   --card-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --border: 222 47% 12%;
+  --input: 222 47% 12%;
   --ring: 189 94% 43%;
 }
 

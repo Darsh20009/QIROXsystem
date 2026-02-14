@@ -1,145 +1,82 @@
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const roles = ["client", "admin", "manager", "accountant", "sales_manager", "sales", "developer", "designer", "support"] as const;
-export type UserRole = (typeof roles)[number];
-
-export const insertAttendanceSchema = z.object({
-  userId: z.string(),
-  checkIn: z.date(),
-  checkOut: z.date().optional(),
-  ipAddress: z.string().optional(),
-  location: z.object({
-    lat: z.number(),
-    lng: z.number(),
-  }).optional(),
-  workHours: z.number().optional(),
+// --- Users & Authentication ---
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  email: text("email").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  role: text("role", { enum: ["admin", "merchant", "customer", "support"] }).default("customer").notNull(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export type Attendance = z.infer<typeof insertAttendanceSchema> & { id: string };
-export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
-
-export const insertUserSchema = z.object({
-  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-  email: z.string().email("بريد إلكتروني غير صالح"),
-  role: z.enum(roles).default("client"),
-  fullName: z.string().min(1, "الاسم الكامل مطلوب"),
-  phone: z.string().optional(),
-  country: z.string().optional(),
-  businessType: z.string().optional(),
-  whatsappNumber: z.string().optional(),
-  logoUrl: z.string().optional(),
+// --- Stores (Multi-tenant) ---
+export const stores = pgTable("stores", {
+  id: serial("id").primaryKey(),
+  ownerId: integer("owner_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(), // e.g., mystore.q-platform.com
+  logoUrl: text("logo_url"),
+  description: text("description"),
+  currency: text("currency").default("SAR").notNull(),
+  isLive: boolean("is_live").default(false).notNull(),
+  themeConfig: jsonb("theme_config").default({}), // Colors, fonts, layouts
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertServiceSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  category: z.string().min(1),
-  priceMin: z.number().optional(),
-  priceMax: z.number().optional(),
-  estimatedDuration: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  icon: z.string().optional(),
+// --- Products ---
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => stores.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  compareAtPrice: decimal("compare_at_price", { precision: 10, scale: 2 }),
+  inventoryQuantity: integer("inventory_quantity").default(0).notNull(),
+  imageUrl: text("image_url"),
+  category: text("category"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertOrderSchema = z.object({
-  serviceId: z.string().optional(),
-  // Smart Questionnaire Fields
-  projectType: z.string().optional(),
-  sector: z.string().optional(),
-  competitors: z.string().optional(),
-  visualStyle: z.string().optional(),
-  favoriteExamples: z.string().optional(),
-  requiredFunctions: z.string().optional(),
-  requiredSystems: z.string().optional(),
-  siteLanguage: z.string().optional(),
-  whatsappIntegration: z.boolean().default(false),
-  socialIntegration: z.boolean().default(false),
-  hasLogo: z.boolean().default(false),
-  needsLogoDesign: z.boolean().default(false),
-  hasHosting: z.boolean().default(false),
-  hasDomain: z.boolean().default(false),
-  // Uploads (URLs)
-  logoUrl: z.string().optional(),
-  brandIdentityUrl: z.string().optional(),
-  filesUrl: z.string().optional(),
-  contentUrl: z.string().optional(),
-  imagesUrl: z.string().optional(),
-  videoUrl: z.string().optional(),
-  accessCredentials: z.string().optional(),
-  // Payment
-  paymentMethod: z.enum(["bank_transfer", "paypal"]).optional(),
-  paymentProofUrl: z.string().optional(),
-  totalAmount: z.number().optional(),
-  isDepositPaid: z.boolean().default(false),
-  status: z.string().default("pending"),
-  requirements: z.record(z.any()).optional(),
+// --- Orders ---
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => stores.id).notNull(),
+  customerId: integer("customer_id").references(() => users.id),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status", { enum: ["pending", "paid", "shipped", "delivered", "cancelled"] }).default("pending").notNull(),
+  shippingAddress: jsonb("shipping_address"),
+  paymentStatus: text("payment_status").default("unpaid").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const projectStatuses = ["new", "under_study", "pending_payment", "in_progress", "testing", "review", "delivery", "closed"] as const;
-export type ProjectStatus = (typeof projectStatuses)[number];
-
-export const insertProjectSchema = z.object({
-  orderId: z.string(),
-  clientId: z.string(),
-  managerId: z.string().optional(),
-  status: z.enum(projectStatuses).default("new"),
-  progress: z.number().default(0),
-  repoUrl: z.string().optional(),
-  stagingUrl: z.string().optional(),
-  startDate: z.date().optional(),
-  deadline: z.date().optional(),
+// --- Order Items ---
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => orders.id).notNull(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  quantity: integer("quantity").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
 });
 
-export const insertTaskSchema = z.object({
-  projectId: z.string(),
-  assignedTo: z.string().optional(),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  status: z.string().default("pending"),
-  priority: z.string().default("medium"),
-  dueDate: z.date().optional(),
-  parentId: z.string().optional(), // For subtasks
-});
+// --- Schemas & Types ---
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 
-export const insertProjectMemberSchema = z.object({
-  projectId: z.string(),
-  userId: z.string(),
-  role: z.string(), // e.g., "lead", "developer", "designer"
-});
-
-export type ProjectMember = z.infer<typeof insertProjectMemberSchema> & { id: string };
-export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
-
-export const insertMessageSchema = z.object({
-  projectId: z.string(),
-  content: z.string().min(1),
-  isInternal: z.boolean().default(false),
-});
-
-export const insertProjectVaultSchema = z.object({
-  projectId: z.string(),
-  category: z.enum(["git", "db", "server", "api", "social", "credentials", "notes", "recordings"]),
-  title: z.string().min(1),
-  content: z.string().min(1),
-  isSecret: z.boolean().default(false),
-});
-
-export type ProjectVault = z.infer<typeof insertProjectVaultSchema> & { id: string; createdAt: Date };
-export type InsertProjectVault = z.infer<typeof insertProjectVaultSchema>;
-
-export type User = z.infer<typeof insertUserSchema> & { id: string; createdAt: Date; emailVerified: boolean };
-export type Service = z.infer<typeof insertServiceSchema> & { id: string };
-export type Order = z.infer<typeof insertOrderSchema> & { id: string; userId: string; createdAt: Date };
-export type Project = z.infer<typeof insertProjectSchema> & { id: string; createdAt: Date };
-export type Task = z.infer<typeof insertTaskSchema> & { id: string; createdAt: Date };
-export type Message = z.infer<typeof insertMessageSchema> & { id: string; senderId: string; createdAt: Date };
-export type ProjectVaultItem = z.infer<typeof insertProjectVaultSchema> & { id: string; createdAt: Date };
+export type User = typeof users.$inferSelect;
+export type Store = typeof stores.$inferSelect;
+export type Product = typeof products.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertService = z.infer<typeof insertServiceSchema>;
-export type InsertOrder = z.infer<typeof insertOrderSchema> & { userId: string };
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type InsertMessage = z.infer<typeof insertMessageSchema> & { senderId: string };
-export type InsertProjectVaultItem = z.infer<typeof insertProjectVaultSchema>;
+export type InsertStore = z.infer<typeof insertStoreSchema>;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
