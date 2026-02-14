@@ -37,22 +37,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "./logo";
 
-const clientMenuItems = [
-  { title: "لوحة العميل", icon: LayoutDashboard, url: "/dashboard" },
-  { title: "حالة المشروع", icon: CheckCircle2, url: "/project/status" },
-  { title: "مراحل التنفيذ", icon: ListTodo, url: "/project/implementation" },
-  { title: "ملفات المشروع", icon: FileText, url: "/project/files" },
-  { title: "روابط الأدوات", icon: Link2, url: "/project/tools" },
-  { title: "محادثة الفريق", icon: MessageSquare, url: "/project/chat" },
-  { title: "الفواتير", icon: Receipt, url: "/project/invoices" },
-  { title: "الدفعات", icon: CreditCard, url: "/project/payments" },
-  { title: "العقود", icon: FileSignature, url: "/project/contracts" },
-  { title: "Vault المشروع", icon: ShieldCheck, url: "/project/vault" },
-  { title: "التنبيهات", icon: Bell, url: "/project/notifications" },
-  { title: "تحميل ملفات التسليم", icon: Download, url: "/project/deliverables" },
-];
-
-const adminMenuItems = [
+const items = [
+  { title: "Home", icon: LayoutDashboard, url: "/" },
+  { title: "Services", icon: Briefcase, url: "/services" },
+  { title: "Projects", icon: LayoutDashboard, url: "/dashboard" },
+  { title: "About", icon: FileText, url: "/about" },
+  { title: "Contact", icon: MessageSquare, url: "/contact" },
+  { title: "Portfolio", icon: Briefcase, url: "/portfolio" },
+  { title: "News", icon: Bell, url: "/news" },
+  { title: "Segments", icon: Users, url: "/segments" },
   { title: "لوحة التحكم", icon: LayoutDashboard, url: "/admin" },
   { title: "إدارة الخدمات", icon: Briefcase, url: "/admin/services" },
   { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
@@ -104,15 +97,29 @@ export function AppSidebar() {
     },
   });
 
-  const menuItems = isAdmin ? adminMenuItems : clientMenuItems;
-  const groupLabel = isAdmin ? "نظام الإدارة" : "إدارة المشروع";
+  const menuItems = items.filter(item => {
+    // If not logged in, only show basic public items
+    if (!user) {
+      return ["Home", "Services", "About", "Contact", "Portfolio", "News", "Segments"].includes(item.title);
+    }
+    
+    // If client, show public items + project-related items
+    if (user.role === "client") {
+      return ["Home", "Services", "Projects", "About", "Contact"].includes(item.title);
+    }
+    
+    // Employees/Admins see everything or specific roles
+    return true;
+  });
+
+  const groupLabel = !user ? "القائمة العامة" : (isAdmin ? "نظام الإدارة" : "إدارة المشروع");
 
   return (
-    <Sidebar side="right">
-      <SidebarHeader className="p-4 border-b">
+    <Sidebar side="right" className="bg-sidebar border-l border-sidebar-border shadow-xl">
+      <SidebarHeader className="p-4 border-b bg-sidebar">
         <Logo />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-sidebar">
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
             {groupLabel}
@@ -125,7 +132,7 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     tooltip={item.title}
-                    className="px-4 py-2"
+                    className="px-4 py-2 hover:bg-sidebar-accent transition-colors"
                   >
                     <Link href={item.url} className="flex items-center gap-3 w-full">
                       <item.icon className="w-5 h-5" />
@@ -173,8 +180,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t bg-slate-50/50">
-        {user && (
+      <SidebarFooter className="p-4 border-t bg-sidebar">
+        {user ? (
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20">
               {user.fullName[0]}
@@ -183,6 +190,15 @@ export function AppSidebar() {
               <p className="text-sm font-bold truncate text-slate-900">{user.fullName}</p>
               <p className="text-[10px] text-slate-500 truncate font-medium uppercase tracking-wider">{user.role}</p>
             </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2">
+              <Link href="/auth">
+                <LogIn className="w-4 h-4" />
+                <span>تسجيل الدخول</span>
+              </Link>
+            </Button>
           </div>
         )}
       </SidebarFooter>
