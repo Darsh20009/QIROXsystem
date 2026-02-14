@@ -153,7 +153,25 @@ export const projectVault = pgTable("project_vault", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// --- Qirox Core Architecture ---
+export const engineTypes = ["commerce", "education", "corporate"] as const;
+export type EngineType = (typeof engineTypes)[number];
+
+export const qiroxEngines = pgTable("qirox_engines", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type", { enum: engineTypes }).notNull(),
+  description: text("description"),
+  features: jsonb("features").default([]),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // --- Schemas & Types ---
+export const insertQiroxEngineSchema = createInsertSchema(qiroxEngines).omit({ id: true, createdAt: true });
+export type QiroxEngine = typeof qiroxEngines.$inferSelect;
+export type InsertQiroxEngine = z.infer<typeof insertQiroxEngineSchema>;
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, emailVerified: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
