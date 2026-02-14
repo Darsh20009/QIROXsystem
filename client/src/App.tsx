@@ -90,22 +90,24 @@ function App() {
           <div className={`min-h-screen flex w-full bg-background ${lang === "ar" ? "rtl" : "ltr"}`}>
             <AppSidebar />
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-              <header className="h-16 border-b border-border/50 bg-background/60 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
+              <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
                 <div className="flex items-center gap-4">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <h2 className="font-heading font-bold text-foreground/90 hidden md:block">لوحة النظام</h2>
+                  <h2 className="font-heading font-bold text-foreground hidden md:block text-lg">QIROX</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                    className="bg-secondary text-secondary-foreground border border-border px-3 py-1 rounded-md text-sm font-medium hover-elevate"
+                    className="bg-white text-foreground border border-border px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-accent hover:text-white transition-all duration-300 shadow-sm"
                   >
                     {lang === "ar" ? "English" : "عربي"}
                   </button>
                 </div>
               </header>
-              <main className="flex-1 overflow-auto">
-                <Router />
+              <main className="flex-1 overflow-auto p-6 md:p-8">
+                <div className="max-w-7xl mx-auto w-full">
+                  <Router />
+                </div>
               </main>
               <Toaster />
             </div>

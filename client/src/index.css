@@ -8,46 +8,46 @@
   --font-heading: 'Cairo', sans-serif;
   --font-body: 'IBM Plex Sans Arabic', sans-serif;
 
-  /* New Mature Tech Identity (Version 2) */
-  --background: 222 47% 11%;    /* Deep Slate #111827 approx */
-  --foreground: 210 40% 92%;    /* Tech Gray #E5E7EB approx */
+  /* Light Corporate Identity */
+  --background: 220 14% 96%;    /* #F3F4F6 - Light Gray */
+  --foreground: 222 47% 11%;    /* #111827 - Black Charcoal */
   
-  --primary: 189 94% 43%;       /* Accent Cyan #00E0C6 */
-  --primary-foreground: 222 47% 11%;
+  --primary: 222 47% 11%;       /* #111827 - Primary Action */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 222 47% 15%;     /* Lighter Deep Slate */
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222 47% 11%;
 
-  --muted: 222 47% 15%;
-  --muted-foreground: 215.4 16.3% 68.9%; /* Muted Gray #9CA3AF approx */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 36.9%; /* #374151 approx */
 
-  --accent: 189 94% 43%;        /* Cyan */
+  --accent: 176 100% 38%;       /* #00C2B8 - Electric Cyan */
   --accent-foreground: 222 47% 11%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 222 47% 18%;
-  --input: 222 47% 18%;
-  --ring: 189 94% 43%;
+  --border: 220 13% 91%;        /* #E5E7EB */
+  --input: 220 13% 91%;
+  --ring: 176 100% 38%;
 
-  --card: 222 47% 13%;
-  --card-foreground: 210 40% 92%;
+  --card: 0 0% 100%;            /* #FFFFFF - White Cards */
+  --card-foreground: 222 47% 11%;
 
-  --radius: 0.5rem; /* Geometric / 8px approx */
+  --radius: 0.875rem;           /* 14px - Modern Geometric */
 }
 
 .dark {
   --background: 222 47% 4%;
   --foreground: 210 40% 98%;
   
-  --primary: 189 94% 43%;
+  --primary: 176 100% 38%;
   --primary-foreground: 222 47% 11%;
 
   --secondary: 222 47% 11%;
   --secondary-foreground: 210 40% 98%;
 
-  --accent: 189 94% 43%;
+  --accent: 176 100% 38%;
   --accent-foreground: 210 40% 98%;
 
   --card: 222 47% 6%;
@@ -55,7 +55,7 @@
 
   --border: 222 47% 12%;
   --input: 222 47% 12%;
-  --ring: 189 94% 43%;
+  --ring: 176 100% 38%;
 }
 
 @layer base {
@@ -65,6 +65,7 @@
   
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    @apply font-bold tracking-tight;
   }
 
   body {
@@ -84,16 +85,16 @@
   }
   
   .glass-card {
-    @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl;
+    @apply bg-white/80 backdrop-blur-lg border border-border shadow-sm;
   }
   
   .tech-glow {
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
   }
   
   .hero-gradient {
-    background: radial-gradient(circle at top right, rgba(6, 182, 212, 0.15), transparent 40%),
-                radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.05), transparent 40%);
+    background: radial-gradient(circle at top right, rgba(0, 194, 184, 0.05), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(17, 24, 39, 0.02), transparent 40%);
   }
 }
 
