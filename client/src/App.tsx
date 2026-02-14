@@ -87,18 +87,18 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SidebarProvider style={style as React.CSSProperties}>
-          <div className={`min-h-screen flex w-full bg-slate-50 ${lang === "ar" ? "rtl" : "ltr"}`}>
+          <div className={`min-h-screen flex w-full bg-background ${lang === "ar" ? "rtl" : "ltr"}`}>
             <AppSidebar />
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-              <header className="h-16 border-b bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
+              <header className="h-16 border-b border-border/50 bg-background/60 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
                 <div className="flex items-center gap-4">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <h2 className="font-heading font-bold text-primary hidden md:block">لوحة العميل</h2>
+                  <h2 className="font-heading font-bold text-foreground/90 hidden md:block">لوحة النظام</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                    className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium hover-elevate"
+                    className="bg-secondary text-secondary-foreground border border-border px-3 py-1 rounded-md text-sm font-medium hover-elevate"
                   >
                     {lang === "ar" ? "English" : "عربي"}
                   </button>

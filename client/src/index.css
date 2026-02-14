@@ -8,43 +8,43 @@
   --font-heading: 'Cairo', sans-serif;
   --font-body: 'IBM Plex Sans Arabic', sans-serif;
 
-  /* HSL Values for easy manipulation */
-  --background: 210 40% 98%;    /* #f8fafc - White backgrounds */
-  --foreground: 222 47% 11%;    /* #0f172a - Dark Slate texts */
+  /* New Mature Tech Identity (Version 2) */
+  --background: 222 47% 11%;    /* Deep Slate #111827 approx */
+  --foreground: 210 40% 92%;    /* Tech Gray #E5E7EB approx */
   
-  --primary: 222 47% 11%;       /* #0f172a - Deep Tech Blue (Saudi) */
-  --primary-foreground: 210 40% 98%;
+  --primary: 189 94% 43%;       /* Accent Cyan #00E0C6 */
+  --primary-foreground: 222 47% 11%;
 
-  --secondary: 189 94% 43%;     /* #06b6d4 - Electric Cyan (Egypt) */
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 222 47% 15%;     /* Lighter Deep Slate */
+  --secondary-foreground: 210 40% 98%;
 
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --muted: 222 47% 15%;
+  --muted-foreground: 215.4 16.3% 68.9%; /* Muted Gray #9CA3AF approx */
 
-  --accent: 189 94% 43%;        /* Electric Cyan */
-  --accent-foreground: 210 40% 98%;
+  --accent: 189 94% 43%;        /* Cyan */
+  --accent-foreground: 222 47% 11%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
+  --border: 222 47% 18%;
+  --input: 222 47% 18%;
   --ring: 189 94% 43%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card: 222 47% 13%;
+  --card-foreground: 210 40% 92%;
 
-  --radius: 0.75rem; /* Modern rounded corners */
+  --radius: 0.5rem; /* Geometric / 8px approx */
 }
 
 .dark {
   --background: 222 47% 4%;
   --foreground: 210 40% 98%;
   
-  --primary: 189 94% 43%;       /* In dark mode, cyan pops better as primary */
+  --primary: 189 94% 43%;
   --primary-foreground: 222 47% 11%;
 
-  --secondary: 222 47% 11%;     /* Deep blue as secondary in dark mode */
+  --secondary: 222 47% 11%;
   --secondary-foreground: 210 40% 98%;
 
   --accent: 189 94% 43%;
