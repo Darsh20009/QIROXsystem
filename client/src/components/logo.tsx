@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/use-auth";
+import { QiroxIcon } from "./qirox-brand";
 
 export function Logo({ 
   className, 
@@ -35,35 +36,9 @@ export function Logo({
   const accentColor = isMono ? "currentColor" : "#06b6d4";
 
   const Icon = () => (
-    <svg 
-      viewBox="0 0 100 100" 
-      className={cn(variant === "icon" ? "w-12 h-12" : "w-8 h-8", className)}
-      fill="none" 
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Q Circle */}
-      <circle 
-        cx="50" 
-        cy="50" 
-        r="35" 
-        stroke={primaryColor} 
-        strokeWidth="8" 
-        className="opacity-90"
-      />
-      {/* Connection Node 1 */}
-      <circle cx="85" cy="50" r="6" fill={accentColor} />
-      {/* Connection Node 2 */}
-      <circle cx="50" cy="15" r="4" fill={accentColor} className="opacity-60" />
-      {/* Q Tail / Link */}
-      <path 
-        d="M75 75L85 85" 
-        stroke={primaryColor} 
-        strokeWidth="8" 
-        strokeLinecap="round" 
-      />
-      {/* Inner Node */}
-      <circle cx="50" cy="50" r="12" stroke={accentColor} strokeWidth="2" strokeDasharray="4 2" />
-    </svg>
+    <div className="relative">
+      <QiroxIcon className={cn(variant === "icon" ? "w-12 h-12" : "w-8 h-8", className)} />
+    </div>
   );
 
   if (variant === "icon") return <Icon />;

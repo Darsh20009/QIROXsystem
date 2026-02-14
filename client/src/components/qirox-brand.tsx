@@ -64,9 +64,40 @@ export function QiroxIcon({ className = "w-8 h-8" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg" 
       className={className}
     >
-      <rect x="20" y="20" width="60" height="60" rx="4" stroke="currentColor" strokeWidth="4" />
-      <circle cx="50" cy="50" r="15" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
-      <path d="M50 35V65M35 50H65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      {/* The Q-Nexus: A fusion of System (Square) and Human (Circle) */}
+      <motion.path
+        d="M20 20 H80 V80 H20 Z"
+        stroke="currentColor"
+        strokeWidth="4"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.5, ease: "easeInOut" }}
+        className="text-slate-300 dark:text-slate-700"
+      />
+      <motion.path
+        d="M50 10 A40 40 0 1 1 50 90 A40 40 0 1 1 50 10"
+        stroke="url(#qirox-grad)"
+        strokeWidth="6"
+        strokeLinecap="round"
+        initial={{ pathLength: 0, rotate: -90 }}
+        animate={{ pathLength: 1, rotate: 0 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+      />
+      <motion.path
+        d="M75 75 L95 95"
+        stroke="url(#qirox-grad)"
+        strokeWidth="8"
+        strokeLinecap="round"
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 1.5 }}
+      />
+      <defs>
+        <linearGradient id="qirox-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#06b6d4" />
+          <stop offset="100%" stopColor="#00E0C6" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 }
