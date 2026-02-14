@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { useState, useEffect } from "react";
+import { SplashScreen, QiroxLogo } from "@/components/qirox-brand";
 
 import InternalGate from "@/pages/InternalGate";
 import Home from "@/pages/Home";
@@ -72,6 +73,7 @@ function Router() {
 
 function App() {
   const [lang, setLang] = useState<"ar" | "en">("ar");
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
@@ -83,6 +85,10 @@ function App() {
     "--sidebar-width-icon": "4rem",
   };
 
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -93,7 +99,7 @@ function App() {
               <header className="h-16 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-40">
                 <div className="flex items-center gap-4">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <h2 className="font-heading font-bold text-foreground hidden md:block text-lg">QIROX</h2>
+                  <QiroxLogo className="text-xl hidden md:block" />
                 </div>
                 <div className="flex items-center gap-2">
                   <button 

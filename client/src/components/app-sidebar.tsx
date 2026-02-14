@@ -55,6 +55,8 @@ const items = [
   { title: "الإعدادات", icon: Settings, url: "/admin/settings" },
 ];
 
+import { QiroxLogo, QiroxIcon } from "./qirox-brand";
+
 export function AppSidebar() {
   const [location] = useLocation();
   const { data: user } = useUser();
@@ -65,7 +67,7 @@ export function AppSidebar() {
   const { data: attendanceStatus } = useQuery({
     queryKey: ["/api/attendance/status"],
     enabled: !!user && user.role !== "client",
-  });
+  }) as { data: { checkIn?: string; checkOut?: string } | null };
 
   const checkInMutation = useMutation({
     mutationFn: async () => {
@@ -118,7 +120,10 @@ export function AppSidebar() {
   return (
     <Sidebar side="right" className="bg-sidebar border-l border-sidebar-border shadow-xl">
       <SidebarHeader className="p-4 border-b bg-sidebar">
-        <Logo />
+        <div className="flex items-center gap-3">
+          <QiroxIcon className="h-6 w-6 text-cyan-500" />
+          <QiroxLogo className="text-xl" />
+        </div>
       </SidebarHeader>
       <SidebarContent className="bg-sidebar">
         <SidebarGroup>
@@ -165,7 +170,7 @@ export function AppSidebar() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 bg-slate-100 p-2 rounded border border-slate-200">
                     <Clock className="w-3 h-3" />
-                    <span>منذ: {new Date(attendanceStatus.checkIn).toLocaleTimeString("ar-SA")}</span>
+                    <span>منذ: {new Date(attendanceStatus.checkIn || "").toLocaleTimeString("ar-SA")}</span>
                   </div>
                   <SidebarMenuButton
                     onClick={() => checkOutMutation.mutate()}
