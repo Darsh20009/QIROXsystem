@@ -32,6 +32,7 @@ import {
   LogIn,
   LogOut,
   Clock,
+  LayoutGrid,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,13 +41,10 @@ import { Logo } from "./logo";
 
 const items = [
   { title: "Home", icon: LayoutDashboard, url: "/" },
+  { title: "Qirox Engines", icon: LayoutGrid, url: "/segments" },
   { title: "Services", icon: Briefcase, url: "/services" },
   { title: "Projects", icon: LayoutDashboard, url: "/dashboard" },
   { title: "About", icon: FileText, url: "/about" },
-  { title: "Contact", icon: MessageSquare, url: "/contact" },
-  { title: "Portfolio", icon: Briefcase, url: "/portfolio" },
-  { title: "News", icon: Bell, url: "/news" },
-  { title: "Segments", icon: Users, url: "/segments" },
   { title: "لوحة التحكم", icon: LayoutDashboard, url: "/admin" },
   { title: "إدارة الخدمات", icon: Briefcase, url: "/admin/services" },
   { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
