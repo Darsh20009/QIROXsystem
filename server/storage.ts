@@ -3,10 +3,12 @@ import {
   type Order, type InsertOrder, type Project, type InsertProject,
   type Task, type InsertTask, type Message, type InsertMessage,
   type Attendance, type InsertAttendance, type ProjectVault, type InsertProjectVault,
-  type ProjectMember, type InsertProjectMember
+  type ProjectMember, type InsertProjectMember,
+  type News, type InsertNews, type Job, type InsertJob, type Application, type InsertApplication
 } from "@shared/schema";
 import {
-  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel
+  UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel,
+  NewsModel, JobModel, ApplicationModel
 } from "./models";
 
 export interface IStorage {
@@ -54,6 +56,19 @@ export interface IStorage {
   // Project Members
   getProjectMembers(projectId: string): Promise<ProjectMember[]>;
   addProjectMember(member: InsertProjectMember): Promise<ProjectMember>;
+
+  // News CMS
+  getNews(): Promise<News[]>;
+  createNews(news: InsertNews): Promise<News>;
+  updateNews(id: string, updates: Partial<InsertNews>): Promise<News>;
+
+  // Recruitment
+  getJobs(): Promise<Job[]>;
+  createJob(job: InsertJob): Promise<Job>;
+  updateJob(id: string, updates: Partial<InsertJob>): Promise<Job>;
+  getApplications(jobId?: string): Promise<Application[]>;
+  createApplication(application: InsertApplication): Promise<Application>;
+  updateApplication(id: string, updates: Partial<InsertApplication>): Promise<Application>;
 }
 
 export class MongoStorage implements IStorage {

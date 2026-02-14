@@ -123,7 +123,39 @@ const transform = (doc: any, ret: any) => {
   delete ret.__v;
 };
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema].forEach(s => {
+const newsSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  excerpt: String,
+  imageUrl: String,
+  authorId: { type: Number, required: true },
+  status: { type: String, enum: ["draft", "published"], default: "draft" },
+  publishedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+const jobSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  requirements: [String],
+  location: String,
+  type: { type: String, default: "full-time" },
+  salaryRange: String,
+  status: { type: String, enum: ["open", "closed"], default: "open" },
+}, { timestamps: true });
+
+const applicationSchema = new mongoose.Schema({
+  jobId: { type: Number, required: true },
+  fullName: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: String,
+  resumeUrl: String,
+  technicalScore: Number,
+  internalEvaluation: String,
+  status: { type: String, default: "new" },
+  appliedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -137,3 +169,6 @@ export const TaskModel = mongoose.models.Task || mongoose.model("Task", taskSche
 export const MessageModel = mongoose.models.Message || mongoose.model("Message", messageSchema);
 export const ProjectVaultModel = mongoose.models.ProjectVault || mongoose.model("ProjectVault", projectVaultSchema);
 export const ProjectMemberModel = mongoose.models.ProjectMember || mongoose.model("ProjectMember", projectMemberSchema);
+export const NewsModel = mongoose.models.News || mongoose.model("News", newsSchema);
+export const JobModel = mongoose.models.Job || mongoose.model("Job", jobSchema);
+export const ApplicationModel = mongoose.models.Application || mongoose.model("Application", applicationSchema);

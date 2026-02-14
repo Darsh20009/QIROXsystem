@@ -167,7 +167,57 @@ export const qiroxEngines = pgTable("qirox_engines", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// --- News CMS ---
+export const news = pgTable("news", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  imageUrl: text("image_url"),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  publishedAt: timestamp("published_at").defaultNow().notNull(),
+  status: text("status").default("draft").notNull(),
+});
+
+// --- Recruitment System ---
+export const jobs = pgTable("jobs", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  requirements: text("requirements").array(),
+  location: text("location"),
+  type: text("type").default("full-time"),
+  salaryRange: text("salary_range"),
+  status: text("status").default("open").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const applications = pgTable("applications", {
+  id: serial("id").primaryKey(),
+  jobId: integer("job_id").references(() => jobs.id).notNull(),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  resumeUrl: text("resume_url"),
+  technicalScore: integer("technical_score"),
+  internalEvaluation: text("internal_evaluation"),
+  status: text("status").default("new").notNull(),
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+});
+
 // --- Schemas & Types ---
+export const insertNewsSchema = createInsertSchema(news).omit({ id: true, publishedAt: true });
+export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
+export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, appliedAt: true });
+
+export type News = typeof news.$inferSelect;
+export type Job = typeof jobs.$inferSelect;
+export type Application = typeof applications.$inferSelect;
+
+export type InsertNews = z.infer<typeof insertNewsSchema>;
+export type InsertJob = z.infer<typeof insertJobSchema>;
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+
 export const insertQiroxEngineSchema = createInsertSchema(qiroxEngines).omit({ id: true, createdAt: true });
 export type QiroxEngine = typeof qiroxEngines.$inferSelect;
 export type InsertQiroxEngine = z.infer<typeof insertQiroxEngineSchema>;
