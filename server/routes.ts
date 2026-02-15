@@ -94,7 +94,7 @@ export async function registerRoutes(
     const { ipAddress, location } = req.body;
     
     const attendance = await storage.createAttendance({
-      userId: user.id,
+      userId: String(user.id),
       checkIn: new Date(),
       ipAddress,
       location
@@ -105,7 +105,7 @@ export async function registerRoutes(
   app.post("/api/attendance/check-out", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const latest = await storage.getLatestAttendance(user.id);
+    const latest = await storage.getLatestAttendance(String(user.id));
     
     if (!latest || latest.checkOut) {
       return res.status(400).send("No active session found");
@@ -114,7 +114,7 @@ export async function registerRoutes(
     const checkOut = new Date();
     const workHours = (checkOut.getTime() - latest.checkIn.getTime()) / (1000 * 60 * 60);
     
-    const attendance = await storage.updateAttendance(latest.id, {
+    const attendance = await storage.updateAttendance(String(latest.id), {
       checkOut,
       workHours: Number(workHours.toFixed(2))
     });
@@ -124,7 +124,7 @@ export async function registerRoutes(
   app.get("/api/attendance/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const latest = await storage.getLatestAttendance(user.id);
+    const latest = await storage.getLatestAttendance(String(user.id));
     res.json(latest || null);
   });
 
@@ -134,7 +134,7 @@ export async function registerRoutes(
     }
     const users = await storage.getUsers();
     const allAttendance = await Promise.all(users.map(async (u) => {
-      const attendance = await storage.getAttendance(u.id);
+      const attendance = await storage.getAttendance(String(u.id));
       return { user: u, attendance };
     }));
     res.json(allAttendance);
@@ -147,7 +147,7 @@ export async function registerRoutes(
   });
 
   app.get(api.services.get.path, async (req, res) => {
-    const service = await storage.getService(req.params.id as string);
+    const service = await storage.getService(req.params.id);
     if (!service) return res.sendStatus(404);
     res.json(service);
   });
@@ -155,14 +155,14 @@ export async function registerRoutes(
   // === ORDERS API ===
   app.get(api.orders.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const orders = await storage.getOrders((req.user as User).id);
+    const orders = await storage.getOrders(String((req.user as User).id));
     res.json(orders);
   });
 
   app.post(api.orders.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.orders.create.input.parse(req.body);
-    const order = await storage.createOrder({ ...input, userId: (req.user as User).id });
+    const order = await storage.createOrder({ ...input, userId: String((req.user as User).id) });
     res.status(201).json(order);
   });
 
@@ -170,13 +170,13 @@ export async function registerRoutes(
   app.get(api.projects.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const projects = await storage.getProjects(user.id, user.role);
+    const projects = await storage.getProjects(String(user.id), user.role);
     res.json(projects);
   });
 
   app.get(api.projects.get.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const project = await storage.getProject(req.params.id as string);
+    const project = await storage.getProject(req.params.id);
     if (!project) return res.sendStatus(404);
     res.json(project);
   });
@@ -184,28 +184,28 @@ export async function registerRoutes(
   app.patch(api.projects.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.projects.update.input.parse(req.body);
-    const project = await storage.updateProject(req.params.id as string, input);
+    const project = await storage.updateProject(req.params.id, input);
     res.json(project);
   });
 
   // === TASKS API ===
   app.get(api.tasks.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const tasks = await storage.getTasks(req.params.projectId as string);
+    const tasks = await storage.getTasks(req.params.projectId);
     res.json(tasks);
   });
 
   app.post(api.tasks.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.create.input.parse(req.body);
-    const task = await storage.createTask({ ...input, projectId: req.params.projectId as string });
+    const task = await storage.createTask({ ...input, projectId: req.params.projectId });
     res.status(201).json(task);
   });
 
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);
-    const task = await storage.updateTask(req.params.id as string, input);
+    const task = await storage.updateTask(req.params.id, input);
     res.json(task);
   });
 
@@ -228,7 +228,7 @@ export async function registerRoutes(
   // === MESSAGES API ===
   app.get(api.messages.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const messages = await storage.getMessages(req.params.projectId as string);
+    const messages = await storage.getMessages(req.params.projectId);
     res.json(messages);
   });
 
@@ -237,8 +237,8 @@ export async function registerRoutes(
     const input = api.messages.create.input.parse(req.body);
     const message = await storage.createMessage({ 
       ...input, 
-      projectId: req.params.projectId as string, 
-      senderId: (req.user as User).id 
+      projectId: req.params.projectId, 
+      senderId: String((req.user as User).id) 
     });
     res.status(201).json(message);
   });
@@ -271,7 +271,7 @@ export async function registerRoutes(
     const user = req.user as User;
     const message = await storage.createMessage({
       projectId: req.params.projectId,
-      senderId: user.id,
+      senderId: String(user.id),
       content: req.body.content,
       isInternal: req.body.isInternal || false,
     });
