@@ -89,13 +89,18 @@ export function AppSidebar() {
   const groupLabel = !user ? "القائمة" : (isAdmin ? "الإدارة" : "المشروع");
 
   return (
-    <Sidebar side="right" className="bg-white border-l border-[#E0E0E0]">
-      <SidebarHeader className="p-4 border-b border-[#E0E0E0]">
-        <span className="font-heading font-black text-lg text-[#111111] tracking-tight">QIROX</span>
+    <Sidebar side="right" className="bg-[#0A0A0F] border-l border-white/5">
+      <SidebarHeader className="p-4 border-b border-white/5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
+            <span className="text-xs font-black text-[#0A0A0F]">Q</span>
+          </div>
+          <span className="font-heading font-black text-lg text-white tracking-tight">QIROX</span>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-2">
+          <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-white/20 uppercase tracking-[3px] mb-2">
             {groupLabel}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -106,11 +111,11 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     tooltip={item.title}
-                    className="px-4 py-2 hover:bg-[#F4F4F4] transition-colors"
+                    className="px-4 py-2 hover:bg-white/5 transition-colors rounded-xl"
                   >
                     <Link href={item.url} className="flex items-center gap-3 w-full">
-                      <item.icon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{item.title}</span>
+                      <item.icon className="w-4 h-4 text-white/30" />
+                      <span className="text-sm font-medium text-white/60">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -121,14 +126,14 @@ export function AppSidebar() {
 
         {user && user.role !== "client" && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-2">
+            <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-white/20 uppercase tracking-[3px] mb-2">
               التبصيم
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-4 pb-4">
               {!attendanceStatus || attendanceStatus.checkOut ? (
                 <SidebarMenuButton
                   onClick={() => checkInMutation.mutate()}
-                  className="w-full bg-[#111111] hover:bg-[#2B2B2B] text-white justify-center gap-2 rounded-lg transition-colors"
+                  className="w-full premium-btn justify-center gap-2 rounded-xl transition-colors"
                   disabled={checkInMutation.isPending}
                 >
                   <LogIn className="w-4 h-4" />
@@ -136,13 +141,13 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-[10px] text-[#555555] bg-[#F4F4F4] p-2 rounded-lg border border-[#E0E0E0]">
+                  <div className="flex items-center justify-center gap-2 text-[10px] text-white/30 bg-white/5 p-2 rounded-xl border border-white/5">
                     <Clock className="w-3 h-3" />
                     <span>منذ: {new Date(attendanceStatus.checkIn || "").toLocaleTimeString("ar-SA")}</span>
                   </div>
                   <SidebarMenuButton
                     onClick={() => checkOutMutation.mutate()}
-                    className="w-full bg-[#111111] hover:bg-[#2B2B2B] text-white justify-center gap-2 rounded-lg transition-colors"
+                    className="w-full bg-white/5 hover:bg-white/10 text-white justify-center gap-2 rounded-xl transition-colors"
                     disabled={checkOutMutation.isPending}
                   >
                     <LogOut className="w-4 h-4" />
@@ -154,20 +159,20 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-[#E0E0E0]">
+      <SidebarFooter className="p-4 border-t border-white/5">
         {user ? (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center text-white font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)", color: "#0A0A0F" }}>
               {user.fullName[0]}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate text-[#111111]">{user.fullName}</p>
-              <p className="text-[10px] text-black/30 truncate uppercase tracking-wider">{user.role}</p>
+              <p className="text-sm font-bold truncate text-white">{user.fullName}</p>
+              <p className="text-[10px] text-white/20 truncate uppercase tracking-wider">{user.role}</p>
             </div>
           </div>
         ) : (
-          <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 border-[#E0E0E0] rounded-lg">
-            <Link href="/auth">
+          <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 border-white/10 text-white/50 rounded-xl bg-transparent hover:bg-white/5">
+            <Link href="/login">
               <LogIn className="w-4 h-4" />
               <span>تسجيل الدخول</span>
             </Link>

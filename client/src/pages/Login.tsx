@@ -6,39 +6,44 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
-import { api } from "@shared/routes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { motion } from "framer-motion";
 
 export default function Login() {
   const [location] = useLocation();
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
-  
+
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
 
   const isPending = isLoginPending || isRegisterPending;
   const error = loginError || registerError;
 
-  const schema = isRegister 
-    ? api.auth.register.input.extend({
-        confirmPassword: z.string(),
-        whatsappNumber: z.string().optional(),
-        country: z.string().optional(),
-        businessType: z.string().optional(),
-        role: z.string().optional(),
-      }).refine((data) => data.password === data.confirmPassword, {
-        message: "كلمات المرور غير متطابقة",
-        path: ["confirmPassword"],
-      })
-    : z.object({
-        username: z.string().min(1, "اسم المستخدم مطلوب"),
-        password: z.string().min(1, "كلمة المرور مطلوبة"),
-      });
+  const registerSchema = z.object({
+    username: z.string().min(1, "اسم المستخدم مطلوب"),
+    password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    email: z.string().email("البريد الإلكتروني غير صالح"),
+    fullName: z.string().min(1, "الاسم الكامل مطلوب"),
+    confirmPassword: z.string(),
+    whatsappNumber: z.string().optional(),
+    country: z.string().optional(),
+    businessType: z.string().optional(),
+    role: z.string().optional(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "كلمات المرور غير متطابقة",
+    path: ["confirmPassword"],
+  });
+
+  const loginSchema = z.object({
+    username: z.string().min(1, "اسم المستخدم مطلوب"),
+    password: z.string().min(1, "كلمة المرور مطلوبة"),
+  });
+
+  const schema = isRegister ? registerSchema : loginSchema;
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -64,36 +69,46 @@ export default function Login() {
     }
   };
 
+  const inputClasses = "h-12 bg-white/5 border-white/10 focus:border-[#00D4FF]/50 text-white placeholder:text-white/20 rounded-xl";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-primary skew-y-3 transform -translate-y-24 z-0"></div>
-      
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-           <Link href="/">
-             <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm p-4 rounded-2xl cursor-pointer hover:bg-white/20 transition-colors">
-                <img src="/logo.png" alt="Qirox" className="w-10 h-10 object-contain filter invert" />
-                <span className="text-3xl font-bold font-heading text-white">Qirox</span>
-             </div>
-           </Link>
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F] px-4 py-12 relative overflow-hidden">
+      <div className="absolute inset-0 gradient-mesh opacity-30" />
+      <div className="absolute inset-0 dot-grid opacity-10" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="text-center mb-10">
+          <Link href="/">
+            <div className="inline-flex items-center gap-2.5 cursor-pointer group">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
+                <span className="text-lg font-black text-[#0A0A0F] font-heading">Q</span>
+              </div>
+              <span className="text-2xl font-black font-heading text-white tracking-tight">QIROX</span>
+            </div>
+          </Link>
         </div>
 
-        <Card className="border-0 shadow-2xl overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold font-heading text-primary">
-              {isRegister ? (isEmployeeRegister ? "تسجيل موظف جديد" : "إنشاء حساب جديد") : "تسجيل الدخول"}
-            </CardTitle>
-            <CardDescription>
-              {isRegister 
-                ? (isEmployeeRegister ? "أكمل بياناتك كموظف للانضمام للمنصة" : "أدخل بياناتك لإنشاء حساب والبدء في استخدام المنصة")
-                : "مرحباً بك مجدداً، أدخل بياناتك للمتابعة"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #00D4FF, transparent)" }} />
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold font-heading text-white mb-2">
+                {isRegister ? (isEmployeeRegister ? "تسجيل موظف جديد" : "إنشاء حساب جديد") : "تسجيل الدخول"}
+              </h1>
+              <p className="text-sm text-white/30">
+                {isRegister
+                  ? (isEmployeeRegister ? "أكمل بياناتك كموظف للانضمام للمنصة" : "أدخل بياناتك لإنشاء حساب والبدء")
+                  : "مرحباً بك مجدداً، أدخل بياناتك للمتابعة"}
+              </p>
+            </div>
+
             {error && (
-              <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200 text-red-800">
+              <Alert variant="destructive" className="mb-6 bg-red-500/10 border-red-500/20 text-red-400">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error.message}</AlertDescription>
               </Alert>
@@ -106,9 +121,9 @@ export default function Login() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>اسم المستخدم</FormLabel>
+                      <FormLabel className="text-white/50 text-sm">اسم المستخدم</FormLabel>
                       <FormControl>
-                        <Input placeholder="user123" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                        <Input placeholder="user123" {...field} className={inputClasses} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -122,9 +137,9 @@ export default function Login() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>الاسم الكامل</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">الاسم الكامل</FormLabel>
                           <FormControl>
-                            <Input placeholder="محمد أحمد" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                            <Input placeholder="محمد أحمد" {...field} className={inputClasses} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -135,9 +150,9 @@ export default function Login() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>البريد الإلكتروني</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">البريد الإلكتروني</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="name@example.com" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                            <Input type="email" placeholder="name@example.com" {...field} className={inputClasses} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -149,10 +164,10 @@ export default function Login() {
                         name="role"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الدور الوظيفي</FormLabel>
+                            <FormLabel className="text-white/50 text-sm">الدور الوظيفي</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-11 bg-slate-50">
+                                <SelectTrigger className={inputClasses}>
                                   <SelectValue placeholder="اختر الدور" />
                                 </SelectTrigger>
                               </FormControl>
@@ -176,9 +191,9 @@ export default function Login() {
                       name="whatsappNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>رقم الواتساب</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">رقم الواتساب</FormLabel>
                           <FormControl>
-                            <Input placeholder="+966" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                            <Input placeholder="+966" {...field} className={inputClasses} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -191,9 +206,9 @@ export default function Login() {
                           name="country"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>الدولة</FormLabel>
+                              <FormLabel className="text-white/50 text-sm">الدولة</FormLabel>
                               <FormControl>
-                                <Input placeholder="السعودية" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                                <Input placeholder="السعودية" {...field} className={inputClasses} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -204,9 +219,9 @@ export default function Login() {
                           name="businessType"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>نوع النشاط</FormLabel>
+                              <FormLabel className="text-white/50 text-sm">نوع النشاط</FormLabel>
                               <FormControl>
-                                <Input placeholder="تجاري" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                                <Input placeholder="تجاري" {...field} className={inputClasses} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -222,9 +237,9 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>كلمة المرور</FormLabel>
+                      <FormLabel className="text-white/50 text-sm">كلمة المرور</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                        <Input type="password" placeholder="••••••••" {...field} className={inputClasses} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -237,9 +252,9 @@ export default function Login() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>تأكيد كلمة المرور</FormLabel>
+                        <FormLabel className="text-white/50 text-sm">تأكيد كلمة المرور</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} className="h-11 bg-slate-50 focus:bg-white transition-colors" />
+                          <Input type="password" placeholder="••••••••" {...field} className={inputClasses} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -247,7 +262,7 @@ export default function Login() {
                   />
                 )}
 
-                <Button type="submit" className="w-full h-12 text-lg mt-6 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" disabled={isPending}>
+                <Button type="submit" className="w-full h-12 premium-btn rounded-xl font-semibold mt-6" disabled={isPending}>
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -259,17 +274,17 @@ export default function Login() {
                 </Button>
               </form>
             </Form>
-          </CardContent>
-          <CardFooter className="flex justify-center pb-8 bg-slate-50/50">
-            <div className="text-sm text-slate-500">
+          </div>
+          <div className="py-5 text-center border-t border-white/5 bg-white/[0.02]">
+            <span className="text-sm text-white/30">
               {isRegister ? "لديك حساب بالفعل؟" : "ليس لديك حساب؟"}{" "}
-              <Link href={isRegister ? "/login" : "/register"} className="text-primary font-bold hover:underline">
+              <Link href={isRegister ? "/login" : "/register"} className="text-[#00D4FF] font-bold hover:underline">
                 {isRegister ? "سجل دخولك" : "أنشئ حساباً جديداً"}
               </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+            </span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

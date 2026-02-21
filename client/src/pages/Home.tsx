@@ -3,13 +3,14 @@ import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
 import { useTemplates } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion, useMotionValue, useTransform, useScroll, useSpring } from "framer-motion";
 import { Link } from "wouter";
+import { useRef } from "react";
 import {
-  ArrowLeft, Globe,
+  ArrowLeft, Globe, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Layers, ArrowUpRight,
-  Cpu, Database, Code2, Shield
+  User, Heart, ShoppingCart, Coffee, Layers,
+  Cpu, Database, Code2, Shield, Zap, GitBranch
 } from "lucide-react";
 
 const sectorIcons: Record<string, any> = {
@@ -18,16 +19,21 @@ const sectorIcons: Record<string, any> = {
 };
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 40 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }
+    opacity: 1, y: 0,
+    transition: { duration: 0.7, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }
   })
+};
+
+const stagger = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
 export default function Home() {
   const { data: templates } = useTemplates();
+  const heroRef = useRef<HTMLElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const spotlightX = useTransform(mouseX, (v) => `${v}px`);
@@ -40,104 +46,119 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F4F4] font-body">
+    <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
       <Navigation />
 
       <section
-        className="relative pt-40 pb-32 lg:pt-56 lg:pb-40 overflow-hidden bg-[#111111]"
+        ref={heroRef}
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
         onMouseMove={handleMouseMove}
       >
-        <div className="absolute inset-0 animated-grid-dark opacity-60" />
+        <div className="absolute inset-0 animated-grid-dark opacity-30" />
+        <div className="absolute inset-0 gradient-mesh" />
 
         <motion.div
-          className="absolute w-[500px] h-[500px] rounded-full pointer-events-none"
+          className="absolute w-[800px] h-[800px] rounded-full pointer-events-none opacity-50"
           style={{
             left: spotlightX,
             top: spotlightY,
-            background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 60%)",
             transform: "translate(-50%, -50%)"
           }}
         />
 
+        <div className="absolute top-1/4 right-[10%] w-72 h-72 rounded-full blur-[120px] opacity-20" style={{ background: "rgba(0,212,255,0.15)" }} />
+        <div className="absolute bottom-1/4 left-[10%] w-96 h-96 rounded-full blur-[150px] opacity-10" style={{ background: "rgba(100,80,255,0.1)" }} />
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-5xl mx-auto text-center">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              custom={0}
-              className="mb-8"
-            >
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/60 text-sm font-medium tracking-wide">
-                <span className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
-                Systems Factory
-              </span>
-            </motion.div>
+            <motion.div initial="hidden" animate="visible" variants={stagger}>
+              <motion.div variants={fadeUp} custom={0} className="mb-8">
+                <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full glass border border-white/10">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00D4FF] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00D4FF]" />
+                  </span>
+                  <span className="text-white/50 text-sm font-medium tracking-wide">Systems Factory — مصنع الأنظمة</span>
+                </div>
+              </motion.div>
 
-            <motion.h1
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              custom={1}
-              className="text-5xl md:text-7xl lg:text-8xl font-black font-heading text-white leading-[1.1] mb-8 tracking-tight"
-            >
-              نبني بنية تحتية
-              <br />
-              <span className="text-white/30">رقمية.</span>
-            </motion.h1>
+              <motion.h1
+                variants={fadeUp}
+                custom={1}
+                className="text-5xl md:text-7xl lg:text-[5.5rem] font-black font-heading text-white leading-[1.05] mb-8 tracking-tight"
+              >
+                نبني <span className="text-gradient">بنية تحتية</span>
+                <br />
+                <span className="text-white/20">رقمية متكاملة.</span>
+              </motion.h1>
 
-            <motion.p
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              custom={2}
-              className="text-lg md:text-xl text-white/50 mb-12 max-w-2xl mx-auto leading-relaxed"
-            >
-              منصة QIROX لتوليد وإدارة الأنظمة الرقمية.
-              {templates?.length || 8} نظام متكامل جاهز للتخصيص والنشر.
-            </motion.p>
+              <motion.p
+                variants={fadeUp}
+                custom={2}
+                className="text-lg md:text-xl text-white/35 mb-14 max-w-2xl mx-auto leading-relaxed"
+              >
+                منصة QIROX لتوليد وإدارة الأنظمة الرقمية.
+                <br className="hidden md:block" />
+                {templates?.length || 8} نظام احترافي جاهز للتخصيص والنشر الفوري.
+              </motion.p>
 
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
-              custom={3}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Link href="/portfolio">
-                <Button size="lg" className="h-14 px-8 text-base bg-white text-black hover:bg-white/90 rounded-xl font-semibold" data-testid="button-explore-portfolio">
-                  استعرض الأنظمة
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                </Button>
-              </Link>
-              <Link href="/about">
-                <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/20 text-white hover:bg-white/5 rounded-xl font-semibold" data-testid="button-about-home">
-                  تعرف على المنصة
-                </Button>
-              </Link>
+              <motion.div
+                variants={fadeUp}
+                custom={3}
+                className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              >
+                <Link href="/portfolio">
+                  <Button size="lg" className="premium-btn h-14 px-8 text-base rounded-xl" data-testid="button-explore-portfolio">
+                    استعرض الأنظمة
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                  </Button>
+                </Link>
+                <Link href="/about">
+                  <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/10 text-white/70 hover:bg-white/5 hover:text-white rounded-xl font-semibold bg-transparent" data-testid="button-about-home">
+                    تعرف على المنصة
+                  </Button>
+                </Link>
+              </motion.div>
+
+              <motion.div variants={fadeUp} custom={4} className="mt-20 flex items-center justify-center gap-12">
+                {[
+                  { value: templates?.length || 8, label: "نظام متكامل" },
+                  { value: "6+", label: "قطاع مختلف" },
+                  { value: "100%", label: "قابل للتخصيص" },
+                ].map((stat, i) => (
+                  <div key={i} className="text-center">
+                    <div className="text-2xl md:text-3xl font-black text-white mb-1 font-heading">{stat.value}</div>
+                    <div className="text-white/25 text-xs">{stat.label}</div>
+                  </div>
+                ))}
+              </motion.div>
             </motion.div>
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F4F4F4] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0A0A0F] to-transparent" />
       </section>
 
-      <section className="py-24 bg-[#F4F4F4]">
-        <div className="container mx-auto px-4">
+      <section className="py-28 section-dark relative">
+        <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
-            className="text-center mb-16"
+            variants={stagger}
+            className="text-center mb-20"
           >
-            <motion.p variants={fadeUp} custom={0} className="text-sm font-semibold text-black/40 uppercase tracking-widest mb-3">
-              القطاعات
-            </motion.p>
-            <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-[#111111] mb-4">
-              {templates?.length || 8} أنظمة جاهزة للنشر
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
+              <Layers className="w-3.5 h-3.5 text-[#00D4FF]" />
+              <span className="text-white/40 text-xs tracking-wider uppercase">القطاعات</span>
+            </motion.div>
+            <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-5">
+              {templates?.length || 8} أنظمة <span className="text-gradient">جاهزة للنشر</span>
             </motion.h2>
-            <motion.p variants={fadeUp} custom={2} className="text-[#555555] max-w-xl mx-auto">
-              كل نظام مبني على بنية Core + Modules قابلة للتوسعة والتخصيص
+            <motion.p variants={fadeUp} custom={2} className="text-white/30 max-w-xl mx-auto">
+              كل نظام مبني على بنية Core + Modules قابلة للتوسعة بدون حدود
             </motion.p>
           </motion.div>
 
@@ -155,20 +176,20 @@ export default function Home() {
                 >
                   <Link href="/portfolio">
                     <div
-                      className="group p-6 rounded-xl bg-white border border-[#E0E0E0] hover:border-[#111111] transition-all duration-300 cursor-pointer h-full"
+                      className="glass-card group p-6 rounded-2xl cursor-pointer h-full"
                       data-testid={`home-sector-${template.slug}`}
                     >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 rounded-lg bg-[#F4F4F4] flex items-center justify-center group-hover:bg-[#111111] group-hover:text-white transition-all duration-300">
-                          <Icon className="w-5 h-5" />
+                      <div className="flex items-start justify-between mb-5">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 group-hover:bg-[#00D4FF]/10 transition-all duration-500">
+                          <Icon className="w-5 h-5 text-white/40 group-hover:text-[#00D4FF] transition-colors duration-500" />
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-black/20 group-hover:text-black transition-colors" />
+                        <ArrowUpRight className="w-4 h-4 text-white/10 group-hover:text-[#00D4FF] transition-all duration-300 group-hover:translate-x-[-2px] group-hover:translate-y-[-2px]" />
                       </div>
-                      <h3 className="text-base font-bold font-heading text-[#111111] mb-2">{template.nameAr}</h3>
-                      <p className="text-sm text-[#555555] leading-relaxed line-clamp-2 mb-3">{template.descriptionAr}</p>
-                      <div className="flex items-center justify-between text-xs text-black/30">
+                      <h3 className="text-base font-bold font-heading text-white mb-2">{template.nameAr}</h3>
+                      <p className="text-sm text-white/30 leading-relaxed line-clamp-2 mb-4">{template.descriptionAr}</p>
+                      <div className="flex items-center justify-between text-[10px] text-white/20">
                         <span>{template.estimatedDuration}</span>
-                        <span className="px-2 py-0.5 rounded bg-[#EAEAEA] text-[#555555]">{template.category}</span>
+                        <span className="px-2.5 py-1 rounded-full bg-white/5 text-white/30">{template.category}</span>
                       </div>
                     </div>
                   </Link>
@@ -183,10 +204,10 @@ export default function Home() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="text-center mt-12"
+            className="text-center mt-14"
           >
             <Link href="/portfolio">
-              <Button variant="outline" size="lg" className="h-12 px-8 border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white rounded-xl font-semibold transition-all" data-testid="button-all-systems">
+              <Button variant="outline" size="lg" className="h-12 px-8 border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl font-semibold transition-all bg-transparent" data-testid="button-all-systems">
                 عرض جميع الأنظمة
                 <ArrowLeft className="w-4 h-4 mr-2" />
               </Button>
@@ -195,87 +216,112 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 bg-white">
+      <section className="py-28 section-darker relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent)" }} />
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <p className="text-sm font-semibold text-black/40 uppercase tracking-widest mb-3">البنية التحتية</p>
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#111111] mb-4">لماذا QIROX؟</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {[
-              { icon: Layers, title: "معمارية وحدوية", desc: "Core + Modules. إضافة ميزات بدون كسر البنية." },
-              { icon: Database, title: "قاعدة بيانات مستقلة", desc: "كل عميل يحصل على MongoDB مستقلة." },
-              { icon: Code2, title: "تصدير مشروع كامل", desc: "ZIP جاهز للنشر مع .env و README." },
-              { icon: Shield, title: "حماية متكاملة", desc: "JWT + Role-based access + تشفير." },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={idx}
-                className="p-6 rounded-xl border border-[#E0E0E0] bg-white hover:border-[#111111] transition-all group"
-              >
-                <div className="w-10 h-10 rounded-lg bg-[#F4F4F4] flex items-center justify-center mb-4 group-hover:bg-[#111111] group-hover:text-white transition-all">
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold font-heading text-[#111111] mb-2">{item.title}</h3>
-                <p className="text-sm text-[#555555] leading-relaxed">{item.desc}</p>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={stagger}
+          >
+            <div className="text-center mb-20">
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
+                <Zap className="w-3.5 h-3.5 text-[#00D4FF]" />
+                <span className="text-white/40 text-xs tracking-wider uppercase">المميزات</span>
               </motion.div>
-            ))}
-          </div>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-5">
+                لماذا <span className="text-gradient">QIROX</span>؟
+              </motion.h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+              {[
+                { icon: Layers, title: "معمارية وحدوية", desc: "Core + Modules. إضافة ميزات بدون كسر البنية الأساسية.", color: "#00D4FF" },
+                { icon: Database, title: "قاعدة بيانات مستقلة", desc: "كل عميل يحصل على MongoDB Atlas مستقلة وآمنة.", color: "#48CAE4" },
+                { icon: Code2, title: "تصدير مشروع كامل", desc: "ZIP جاهز للنشر مع .env و README وبذور البيانات.", color: "#0099CC" },
+                { icon: Shield, title: "حماية متكاملة", desc: "JWT + Role-based access + تشفير كامل للبيانات.", color: "#90E0EF" },
+              ].map((item, idx) => (
+                <motion.div key={idx} variants={fadeUp} custom={idx}>
+                  <div className="glass-card p-7 rounded-2xl h-full group">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-500"
+                      style={{ background: `${item.color}10` }}
+                    >
+                      <item.icon className="w-5 h-5 transition-colors duration-500" style={{ color: `${item.color}80` }} />
+                    </div>
+                    <h3 className="text-base font-bold font-heading text-white mb-3">{item.title}</h3>
+                    <p className="text-sm text-white/30 leading-relaxed">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      <section className="py-20 bg-[#EAEAEA]">
+      <section className="py-24 section-dark relative">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto text-center">
-            {[
-              { value: templates?.length || 8, label: "نظام متكامل" },
-              { value: "6+", label: "قطاعات مختلفة" },
-              { value: "3", label: "باقات أسعار" },
-              { value: "2", label: "أسواق مستهدفة" },
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={idx}
-              >
-                <div className="text-4xl md:text-5xl font-black text-[#111111] mb-2 font-heading">{stat.value}</div>
-                <div className="text-[#555555] text-sm">{stat.label}</div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={stagger}
+            className="glass-card rounded-3xl p-12 md:p-16 text-center relative overflow-hidden"
+          >
+            <div className="absolute inset-0 gradient-mesh opacity-50" />
+            <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent)" }} />
+
+            <div className="relative z-10">
+              <motion.div variants={fadeUp} custom={0} className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-0">
+                {[
+                  { value: templates?.length || 8, label: "نظام متكامل" },
+                  { value: "6+", label: "قطاعات مختلفة" },
+                  { value: "3", label: "باقات أسعار" },
+                  { value: "2", label: "أسواق مستهدفة" },
+                ].map((stat, idx) => (
+                  <div key={idx} className="text-center">
+                    <div className="text-4xl md:text-5xl font-black text-white mb-2 font-heading">{stat.value}</div>
+                    <div className="text-white/30 text-sm">{stat.label}</div>
+                  </div>
+                ))}
               </motion.div>
-            ))}
-          </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      <section className="py-24 bg-[#111111] relative overflow-hidden">
-        <div className="absolute inset-0 animated-grid-dark opacity-40" />
+      <section className="py-32 relative overflow-hidden">
+        <div className="absolute inset-0 section-darker" />
+        <div className="absolute inset-0 gradient-mesh opacity-30" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent)" }} />
+
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
-            ابدأ مشروعك الآن
-          </h2>
-          <p className="text-white/40 text-lg max-w-2xl mx-auto mb-10">
-            اختر النظام المناسب لقطاعك وابدأ في بناء بنيتك التحتية الرقمية.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/portfolio">
-              <Button size="lg" className="h-14 px-8 text-base bg-white text-[#111111] hover:bg-white/90 rounded-xl font-semibold" data-testid="button-cta-portfolio">
-                استعرض الأنظمة
-                <ArrowLeft className="w-5 h-5 mr-2" />
-              </Button>
-            </Link>
-            <Link href="/prices">
-              <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/20 text-white hover:bg-white/5 rounded-xl font-semibold" data-testid="button-cta-prices">
-                الباقات والأسعار
-              </Button>
-            </Link>
-          </div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={stagger}
+          >
+            <motion.h2 variants={fadeUp} custom={0} className="text-4xl md:text-6xl font-bold font-heading text-white mb-6">
+              ابدأ مشروعك <span className="text-gradient">الآن</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="text-white/30 text-lg max-w-2xl mx-auto mb-12">
+              اختر النظام المناسب لقطاعك وابدأ في بناء بنيتك التحتية الرقمية.
+            </motion.p>
+            <motion.div variants={fadeUp} custom={2} className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/portfolio">
+                <Button size="lg" className="premium-btn h-14 px-10 text-base rounded-xl" data-testid="button-cta-portfolio">
+                  استعرض الأنظمة
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                </Button>
+              </Link>
+              <Link href="/prices">
+                <Button variant="outline" size="lg" className="h-14 px-10 text-base border-white/10 text-white/60 hover:bg-white/5 hover:text-white rounded-xl font-semibold bg-transparent" data-testid="button-cta-prices">
+                  الباقات والأسعار
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
