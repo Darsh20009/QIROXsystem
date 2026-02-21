@@ -4,6 +4,7 @@ import { Menu, X, LogOut, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export default function Navigation() {
   const { data: user } = useUser();
@@ -46,11 +47,8 @@ export default function Navigation() {
               : "bg-transparent max-w-6xl"
           }`}>
             <div className="flex justify-between items-center h-14">
-              <Link href="/" className="flex items-center gap-2.5 group" data-testid="link-logo">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all group-hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
-                  <span className="text-sm font-black text-[#0A0A0F] font-heading">Q</span>
-                </div>
-                <span className="font-heading font-black text-lg text-white tracking-tight hidden sm:inline">QIROX</span>
+              <Link href="/" className="flex items-center gap-2 group" data-testid="link-logo">
+                <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
               </Link>
 
               <div className="hidden md:flex items-center gap-1">

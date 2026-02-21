@@ -11,7 +11,8 @@ import {
   ArrowLeft, Globe, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Layers,
-  Cpu, Database, Code2, Shield, Zap, GitBranch
+  Cpu, Database, Code2, Shield, Zap, GitBranch,
+  UtensilsCrossed, Store, Building2
 } from "lucide-react";
 
 const sectorIcons: Record<string, any> = {
@@ -227,9 +228,86 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             variants={stagger}
           >
-            <div className="text-center mb-20">
+            <div className="text-center mb-16">
               <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
                 <Zap className="w-3.5 h-3.5 text-[#00D4FF]" />
+                <span className="text-white/40 text-xs tracking-wider uppercase">المسارات الرئيسية</span>
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-5">
+                4 مسارات <span className="text-gradient">خدمية متخصصة</span>
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={2} className="text-white/30 max-w-xl mx-auto">
+                نقدم حلول رقمية متكاملة مصممة لأربع قطاعات رئيسية
+              </motion.p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto mb-24">
+              {[
+                {
+                  icon: UtensilsCrossed,
+                  title: "المطاعم والكافيهات",
+                  desc: "نظام إدارة متكامل: قائمة طعام إلكترونية، حجوزات، طلبات أونلاين، نظام كاشير، وإدارة مخزون.",
+                  features: ["قائمة QR", "نظام طلبات", "إدارة فروع", "تقارير مبيعات"],
+                  gradient: "from-orange-500/20 to-red-500/10",
+                  accent: "#FF6B35",
+                },
+                {
+                  icon: Store,
+                  title: "المتاجر والبراندات",
+                  desc: "متجر إلكتروني احترافي: كتالوج منتجات، سلة مشتريات، بوابات دفع، شحن وتتبع.",
+                  features: ["متجر إلكتروني", "بوابات دفع", "تتبع شحن", "تحليلات"],
+                  gradient: "from-purple-500/20 to-pink-500/10",
+                  accent: "#A855F7",
+                },
+                {
+                  icon: GraduationCap,
+                  title: "التعليم والتدريب",
+                  desc: "منصة تعليمية شاملة: دورات، اختبارات، شهادات، بث مباشر، وإدارة طلاب.",
+                  features: ["منصة دورات", "اختبارات", "شهادات", "بث مباشر"],
+                  gradient: "from-green-500/20 to-emerald-500/10",
+                  accent: "#22C55E",
+                },
+                {
+                  icon: Building2,
+                  title: "المؤسسات والشركات",
+                  desc: "نظام مؤسسي متكامل: إدارة موظفين، مشاريع، مالية، تقارير، وبوابة عملاء.",
+                  features: ["بوابة عملاء", "إدارة مشاريع", "نظام مالي", "تقارير ذكية"],
+                  gradient: "from-[#00D4FF]/20 to-blue-500/10",
+                  accent: "#00D4FF",
+                },
+              ].map((path, idx) => (
+                <motion.div key={idx} variants={fadeUp} custom={idx}>
+                  <div className={`glass-card group p-8 rounded-2xl h-full relative overflow-hidden`} data-testid={`service-path-${idx}`}>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${path.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500"
+                          style={{ background: `${path.accent}15`, border: `1px solid ${path.accent}20` }}>
+                          <path.icon className="w-6 h-6 transition-colors duration-500" style={{ color: path.accent }} />
+                        </div>
+                        <Link href="/portfolio">
+                          <ArrowUpRight className="w-5 h-5 text-white/10 group-hover:text-white/40 transition-all duration-300 cursor-pointer" />
+                        </Link>
+                      </div>
+                      <h3 className="text-xl font-bold font-heading text-white mb-3">{path.title}</h3>
+                      <p className="text-sm text-white/35 leading-relaxed mb-5">{path.desc}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {path.features.map((f, i) => (
+                          <span key={i} className="text-[11px] px-3 py-1 rounded-full border transition-colors duration-300"
+                            style={{ borderColor: `${path.accent}20`, color: `${path.accent}90`, background: `${path.accent}08` }}>
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="text-center mb-20">
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
+                <Layers className="w-3.5 h-3.5 text-[#00D4FF]" />
                 <span className="text-white/40 text-xs tracking-wider uppercase">المميزات</span>
               </motion.div>
               <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-5">

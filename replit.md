@@ -16,8 +16,13 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - Built Portfolio page with category filtering and sector cards
 - Built Pricing page with 3 plans (Starter 5K, Business 15K, Enterprise 40K SAR)
 - Built Admin Templates page with CRUD operations and pricing management tabs
-- Enhanced Home page with dynamic 8-sector showcase from database
+- Enhanced Home page with dynamic 8-sector showcase from database + 4 main service paths section (restaurants, stores, education, institutions)
 - Updated Navigation with Portfolio, Prices, About links
+- Built AdminServices page with full CRUD (create/edit/delete) using simple state management
+- Built AdminOrders page with order management, quick approve/reject, status updates, and detail view
+- Integrated PayPal payment (server/paypal.ts with lazy SDK initialization, client/src/components/PayPalButton.tsx)
+- PayPal routes: GET /paypal/setup, POST /paypal/order, POST /paypal/order/:orderID/capture
+- Replaced splash screen and system icons with actual QIROX logo (attached_assets/QIROX_LOGO_1771674917456.png)
 - Updated Sidebar with admin templates management link
 - Enhanced About page with investor-focused content (tech stack, business model, sectors)
 
@@ -99,6 +104,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Required Services
 - **MongoDB**: Primary database. Must be provisioned and `MONGODB_URI` env var set.
+- **PayPal**: Optional. Requires `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` secrets. Server gracefully degrades if not set (returns 503 on PayPal routes).
 
 ### Key npm Packages
 - **mongoose**: ODM for MongoDB

@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
+import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -150,6 +151,48 @@ export async function registerRoutes(
     const service = await storage.getService(req.params.id);
     if (!service) return res.sendStatus(404);
     res.json(service);
+  });
+
+  // === ADMIN SERVICES API ===
+  app.post("/api/admin/services", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const service = await storage.createService(req.body);
+    res.status(201).json(service);
+  });
+
+  app.patch("/api/admin/services/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const service = await storage.updateService(req.params.id, req.body);
+    res.json(service);
+  });
+
+  app.delete("/api/admin/services/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    await storage.deleteService(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // === ADMIN ORDERS API ===
+  app.get("/api/admin/orders", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") {
+      return res.sendStatus(403);
+    }
+    const orders = await storage.getOrders();
+    res.json(orders);
+  });
+
+  app.patch("/api/admin/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") {
+      return res.sendStatus(403);
+    }
+    const order = await storage.updateOrder(req.params.id, req.body);
+    res.json(order);
   });
 
   // === ORDERS API ===
@@ -354,6 +397,19 @@ export async function registerRoutes(
   app.get("/api/jobs", async (req, res) => {
     const jobs = await storage.getJobs();
     res.json(jobs);
+  });
+
+  // === PAYPAL ROUTES === (blueprint:javascript_paypal)
+  app.get("/paypal/setup", async (req, res) => {
+    await loadPaypalDefault(req, res);
+  });
+
+  app.post("/paypal/order", async (req, res) => {
+    await createPaypalOrder(req, res);
+  });
+
+  app.post("/paypal/order/:orderID/capture", async (req, res) => {
+    await capturePaypalOrder(req, res);
   });
 
   // Initialize seed data

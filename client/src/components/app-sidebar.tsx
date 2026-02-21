@@ -19,6 +19,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 const items = [
   { title: "Home", icon: LayoutDashboard, url: "/" },
@@ -91,12 +92,9 @@ export function AppSidebar() {
   return (
     <Sidebar side="right" className="bg-[#0A0A0F] border-l border-white/5">
       <SidebarHeader className="p-4 border-b border-white/5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
-            <span className="text-xs font-black text-[#0A0A0F]">Q</span>
-          </div>
-          <span className="font-heading font-black text-lg text-white tracking-tight">QIROX</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain" />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

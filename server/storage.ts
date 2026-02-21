@@ -29,6 +29,8 @@ export interface IStorage {
   getServices(): Promise<Service[]>;
   getService(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
+  updateService(id: string, updates: Partial<InsertService>): Promise<Service>;
+  deleteService(id: string): Promise<void>;
 
   // Orders
   getOrders(userId?: string): Promise<Order[]>;
@@ -157,6 +159,15 @@ export class MongoStorage implements IStorage {
   async createService(service: InsertService): Promise<Service> {
     const newService = await ServiceModel.create(service);
     return { ...newService.toObject(), id: Number(newService._id.toString()) };
+  }
+
+  async updateService(id: string, updates: Partial<InsertService>): Promise<Service> {
+    const service = await ServiceModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...service.toObject(), id: Number(service._id.toString()) };
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await ServiceModel.findByIdAndDelete(id);
   }
 
   async getOrders(userId?: string): Promise<Order[]> {
