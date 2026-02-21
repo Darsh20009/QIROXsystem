@@ -155,7 +155,46 @@ const applicationSchema = new mongoose.Schema({
   appliedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema].forEach(s => {
+const sectorTemplateSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  description: { type: String, required: true },
+  descriptionAr: { type: String, required: true },
+  category: { type: String, required: true },
+  repoUrl: String,
+  icon: String,
+  features: [String],
+  featuresAr: [String],
+  tags: [String],
+  priceMin: Number,
+  priceMax: Number,
+  currency: { type: String, default: "SAR" },
+  estimatedDuration: String,
+  status: { type: String, enum: ["active", "coming_soon", "archived"], default: "active" },
+  sortOrder: { type: Number, default: 0 },
+  demoUrl: String,
+  heroColor: String,
+}, { timestamps: true });
+
+const pricingPlanSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  description: String,
+  descriptionAr: String,
+  price: { type: Number, required: true },
+  currency: { type: String, default: "SAR" },
+  billingCycle: { type: String, enum: ["monthly", "yearly", "one_time"], default: "one_time" },
+  features: [String],
+  featuresAr: [String],
+  maxProjects: Number,
+  isPopular: { type: Boolean, default: false },
+  status: { type: String, enum: ["active", "archived"], default: "active" },
+  sortOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -172,3 +211,5 @@ export const ProjectMemberModel = mongoose.models.ProjectMember || mongoose.mode
 export const NewsModel = mongoose.models.News || mongoose.model("News", newsSchema);
 export const JobModel = mongoose.models.Job || mongoose.model("Job", jobSchema);
 export const ApplicationModel = mongoose.models.Application || mongoose.model("Application", applicationSchema);
+export const SectorTemplateModel = mongoose.models.SectorTemplate || mongoose.model("SectorTemplate", sectorTemplateSchema);
+export const PricingPlanModel = mongoose.models.PricingPlan || mongoose.model("PricingPlan", pricingPlanSchema);

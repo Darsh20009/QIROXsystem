@@ -33,6 +33,9 @@ import {
   LogOut,
   Clock,
   LayoutGrid,
+  Layers,
+  Image,
+  DollarSign,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,16 +44,18 @@ import { Logo } from "./logo";
 
 const items = [
   { title: "Home", icon: LayoutDashboard, url: "/" },
-  { title: "Qirox Engines", icon: LayoutGrid, url: "/segments" },
+  { title: "Portfolio", icon: Image, url: "/portfolio" },
   { title: "Services", icon: Briefcase, url: "/services" },
-  { title: "Projects", icon: LayoutDashboard, url: "/dashboard" },
+  { title: "Prices", icon: DollarSign, url: "/prices" },
   { title: "About", icon: FileText, url: "/about" },
+  { title: "Contact", icon: Briefcase, url: "/contact" },
+  { title: "Projects", icon: LayoutDashboard, url: "/dashboard" },
   { title: "لوحة التحكم", icon: LayoutDashboard, url: "/admin" },
+  { title: "إدارة القوالب", icon: Layers, url: "/admin/templates" },
   { title: "إدارة الخدمات", icon: Briefcase, url: "/admin/services" },
   { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
   { title: "الإدارة المالية", icon: Wallet, url: "/admin/finance" },
   { title: "إدارة الموظفين", icon: Users, url: "/admin/employees" },
-  { title: "الإعدادات", icon: Settings, url: "/admin/settings" },
 ];
 
 import { QiroxLogo, QiroxIcon } from "./qirox-brand";
@@ -99,17 +104,14 @@ export function AppSidebar() {
   });
 
   const menuItems = items.filter(item => {
-    // If not logged in, only show basic public items
     if (!user) {
-      return ["Home", "Services", "About", "Contact", "Portfolio", "News", "Segments"].includes(item.title);
+      return ["Home", "Portfolio", "Services", "Prices", "About", "Contact"].includes(item.title);
     }
     
-    // If client, show public items + project-related items
     if (user.role === "client") {
-      return ["Home", "Services", "Projects", "About", "Contact"].includes(item.title);
+      return ["Home", "Portfolio", "Services", "Prices", "About", "Contact", "Projects"].includes(item.title);
     }
     
-    // Employees/Admins see everything or specific roles
     return true;
   });
 

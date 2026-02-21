@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useUser, useLogout } from "@/hooks/use-auth";
-import { Menu, X, LayoutDashboard, Home, Briefcase, LogOut, User } from "lucide-react";
+import { Menu, X, LayoutDashboard, Home, Briefcase, LogOut, User, DollarSign, Layers } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -14,11 +14,10 @@ export default function Navigation() {
 
   const navLinks = [
     { href: "/", label: "الرئيسية", icon: Home },
-    { href: "/services", label: "خدماتنا", icon: Briefcase },
+    { href: "/portfolio", label: "أنظمتنا", icon: Layers },
+    { href: "/prices", label: "الباقات", icon: DollarSign },
     { href: "/about", label: "من نحن", icon: User },
-    { href: "/portfolio", label: "أعمالنا", icon: Briefcase },
-    { href: "/news", label: "الأخبار", icon: Home },
-    { href: "/contact", label: "تواصل معنا", icon: Home },
+    { href: "/contact", label: "تواصل معنا", icon: Briefcase },
     ...(user ? [{ href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard }] : []),
   ];
 

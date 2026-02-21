@@ -4,11 +4,12 @@ import {
   type Task, type InsertTask, type Message, type InsertMessage,
   type Attendance, type InsertAttendance, type ProjectVault, type InsertProjectVault,
   type ProjectMember, type InsertProjectMember,
-  type News, type InsertNews, type Job, type InsertJob, type Application, type InsertApplication
+  type News, type InsertNews, type Job, type InsertJob, type Application, type InsertApplication,
+  type SectorTemplate, type InsertSectorTemplate, type PricingPlan, type InsertPricingPlan
 } from "@shared/schema";
 import {
   UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel,
-  NewsModel, JobModel, ApplicationModel
+  NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel
 } from "./models";
 
 export interface IStorage {
@@ -69,6 +70,21 @@ export interface IStorage {
   getApplications(jobId?: string): Promise<Application[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplication(id: string, updates: Partial<InsertApplication>): Promise<Application>;
+
+  // Sector Templates
+  getSectorTemplates(): Promise<SectorTemplate[]>;
+  getSectorTemplate(id: string): Promise<SectorTemplate | undefined>;
+  getSectorTemplateBySlug(slug: string): Promise<SectorTemplate | undefined>;
+  createSectorTemplate(template: InsertSectorTemplate): Promise<SectorTemplate>;
+  updateSectorTemplate(id: string, updates: Partial<InsertSectorTemplate>): Promise<SectorTemplate>;
+  deleteSectorTemplate(id: string): Promise<void>;
+
+  // Pricing Plans
+  getPricingPlans(): Promise<PricingPlan[]>;
+  getPricingPlan(id: string): Promise<PricingPlan | undefined>;
+  createPricingPlan(plan: InsertPricingPlan): Promise<PricingPlan>;
+  updatePricingPlan(id: string, updates: Partial<InsertPricingPlan>): Promise<PricingPlan>;
+  deletePricingPlan(id: string): Promise<void>;
 }
 
 export class MongoStorage implements IStorage {
@@ -212,6 +228,109 @@ export class MongoStorage implements IStorage {
   async updateVaultItem(id: string, updates: Partial<InsertProjectVault>): Promise<ProjectVault> {
     const item = await ProjectVaultModel.findByIdAndUpdate(id, updates, { new: true });
     return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  // News
+  async getNews(): Promise<News[]> {
+    const items = await NewsModel.find().sort({ publishedAt: -1 });
+    return items.map(i => ({ ...i.toObject(), id: Number(i._id.toString()) }));
+  }
+
+  async createNews(news: InsertNews): Promise<News> {
+    const item = await NewsModel.create(news);
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  async updateNews(id: string, updates: Partial<InsertNews>): Promise<News> {
+    const item = await NewsModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  // Jobs
+  async getJobs(): Promise<Job[]> {
+    const items = await JobModel.find().sort({ createdAt: -1 });
+    return items.map(i => ({ ...i.toObject(), id: Number(i._id.toString()) }));
+  }
+
+  async createJob(job: InsertJob): Promise<Job> {
+    const item = await JobModel.create(job);
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job> {
+    const item = await JobModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  async getApplications(jobId?: string): Promise<Application[]> {
+    const query = jobId ? { jobId } : {};
+    const items = await ApplicationModel.find(query).sort({ appliedAt: -1 });
+    return items.map(i => ({ ...i.toObject(), id: Number(i._id.toString()) }));
+  }
+
+  async createApplication(application: InsertApplication): Promise<Application> {
+    const item = await ApplicationModel.create(application);
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  async updateApplication(id: string, updates: Partial<InsertApplication>): Promise<Application> {
+    const item = await ApplicationModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: Number(item._id.toString()) };
+  }
+
+  // Sector Templates
+  async getSectorTemplates(): Promise<SectorTemplate[]> {
+    const items = await SectorTemplateModel.find().sort({ sortOrder: 1 });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as SectorTemplate[];
+  }
+
+  async getSectorTemplate(id: string): Promise<SectorTemplate | undefined> {
+    const item = await SectorTemplateModel.findById(id);
+    return item ? ({ ...item.toObject(), id: item._id.toString() } as SectorTemplate) : undefined;
+  }
+
+  async getSectorTemplateBySlug(slug: string): Promise<SectorTemplate | undefined> {
+    const item = await SectorTemplateModel.findOne({ slug });
+    return item ? ({ ...item.toObject(), id: item._id.toString() } as SectorTemplate) : undefined;
+  }
+
+  async createSectorTemplate(template: InsertSectorTemplate): Promise<SectorTemplate> {
+    const item = await SectorTemplateModel.create(template);
+    return { ...item.toObject(), id: item._id.toString() } as SectorTemplate;
+  }
+
+  async updateSectorTemplate(id: string, updates: Partial<InsertSectorTemplate>): Promise<SectorTemplate> {
+    const item = await SectorTemplateModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: item._id.toString() } as SectorTemplate;
+  }
+
+  async deleteSectorTemplate(id: string): Promise<void> {
+    await SectorTemplateModel.findByIdAndDelete(id);
+  }
+
+  // Pricing Plans
+  async getPricingPlans(): Promise<PricingPlan[]> {
+    const items = await PricingPlanModel.find({ status: "active" }).sort({ sortOrder: 1 });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as PricingPlan[];
+  }
+
+  async getPricingPlan(id: string): Promise<PricingPlan | undefined> {
+    const item = await PricingPlanModel.findById(id);
+    return item ? ({ ...item.toObject(), id: item._id.toString() } as PricingPlan) : undefined;
+  }
+
+  async createPricingPlan(plan: InsertPricingPlan): Promise<PricingPlan> {
+    const item = await PricingPlanModel.create(plan);
+    return { ...item.toObject(), id: item._id.toString() } as PricingPlan;
+  }
+
+  async updatePricingPlan(id: string, updates: Partial<InsertPricingPlan>): Promise<PricingPlan> {
+    const item = await PricingPlanModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: item._id.toString() } as PricingPlan;
+  }
+
+  async deletePricingPlan(id: string): Promise<void> {
+    await PricingPlanModel.findByIdAndDelete(id);
   }
 }
 

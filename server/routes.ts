@@ -278,6 +278,84 @@ export async function registerRoutes(
     res.status(201).json(message);
   });
 
+  // === SECTOR TEMPLATES API ===
+  app.get("/api/templates", async (req, res) => {
+    const templates = await storage.getSectorTemplates();
+    res.json(templates);
+  });
+
+  app.get("/api/templates/:id", async (req, res) => {
+    const template = await storage.getSectorTemplate(req.params.id);
+    if (!template) return res.sendStatus(404);
+    res.json(template);
+  });
+
+  app.post("/api/admin/templates", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const template = await storage.createSectorTemplate(req.body);
+    res.status(201).json(template);
+  });
+
+  app.patch("/api/admin/templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const template = await storage.updateSectorTemplate(req.params.id, req.body);
+    res.json(template);
+  });
+
+  app.delete("/api/admin/templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    await storage.deleteSectorTemplate(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // === PRICING PLANS API ===
+  app.get("/api/pricing", async (req, res) => {
+    const plans = await storage.getPricingPlans();
+    res.json(plans);
+  });
+
+  app.post("/api/admin/pricing", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const plan = await storage.createPricingPlan(req.body);
+    res.status(201).json(plan);
+  });
+
+  app.patch("/api/admin/pricing/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const plan = await storage.updatePricingPlan(req.params.id, req.body);
+    res.json(plan);
+  });
+
+  app.delete("/api/admin/pricing/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    await storage.deletePricingPlan(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // === NEWS API ===
+  app.get("/api/news", async (req, res) => {
+    const news = await storage.getNews();
+    res.json(news);
+  });
+
+  // === JOBS API ===
+  app.get("/api/jobs", async (req, res) => {
+    const jobs = await storage.getJobs();
+    res.json(jobs);
+  });
+
   // Initialize seed data
   await seedDatabase();
 
@@ -338,5 +416,237 @@ export async function seedDatabase() {
       features: ["Employee Portal", "Document Management", "Secure Login", "Analytics Dashboard"],
       icon: "Building2"
     });
+  }
+
+  // Seed Sector Templates
+  const existingTemplates = await storage.getSectorTemplates();
+  if (existingTemplates.length === 0) {
+    const templates = [
+      {
+        name: "Quran Academy System",
+        nameAr: "نظام أكاديميات تحفيظ القرآن",
+        slug: "quran-academy",
+        description: "Complete digital platform for Quran memorization academies with student tracking, teacher management, and progress reports.",
+        descriptionAr: "منصة رقمية متكاملة لأكاديميات تحفيظ القرآن مع تتبع الطلاب وإدارة المعلمين وتقارير التقدم.",
+        category: "education",
+        repoUrl: "https://github.com/Darsh20009/bustan-aleman.git",
+        icon: "BookOpen",
+        features: ["Student Progress Tracking", "Teacher Dashboard", "Quran Memorization Plans", "Parent Portal", "Attendance System"],
+        featuresAr: ["تتبع تقدم الطلاب", "لوحة تحكم المعلمين", "خطط حفظ القرآن", "بوابة أولياء الأمور", "نظام الحضور"],
+        tags: ["education", "quran", "academy"],
+        priceMin: 8000,
+        priceMax: 20000,
+        currency: "SAR",
+        estimatedDuration: "3-5 أسابيع",
+        status: "active" as const,
+        sortOrder: 1,
+        heroColor: "#1a5c2e",
+      },
+      {
+        name: "Education Platform",
+        nameAr: "منصة تعليمية متكاملة",
+        slug: "education-platform",
+        description: "Modern e-learning platform with course management, live classes, quizzes, and student analytics.",
+        descriptionAr: "منصة تعليم إلكتروني حديثة مع إدارة الدورات والفصول المباشرة والاختبارات وتحليلات الطلاب.",
+        category: "education",
+        repoUrl: "https://github.com/Darsh20009/be-fluent-edu.git",
+        icon: "GraduationCap",
+        features: ["Course Builder", "Live Classes", "Quiz Engine", "Certificates", "Student Analytics"],
+        featuresAr: ["منشئ الدورات", "فصول مباشرة", "محرك اختبارات", "شهادات", "تحليلات الطلاب"],
+        tags: ["education", "e-learning", "courses"],
+        priceMin: 12000,
+        priceMax: 30000,
+        currency: "SAR",
+        estimatedDuration: "4-6 أسابيع",
+        status: "active" as const,
+        sortOrder: 2,
+        heroColor: "#2563eb",
+      },
+      {
+        name: "Exam & Assessment System",
+        nameAr: "منظومة اختبارات وتقييم",
+        slug: "exam-system",
+        description: "Professional exam management system with question banks, auto-grading, analytics, and anti-cheat measures.",
+        descriptionAr: "نظام إدارة اختبارات احترافي مع بنوك أسئلة وتصحيح تلقائي وتحليلات ومنع الغش.",
+        category: "education",
+        repoUrl: "https://github.com/Darsh20009/qodratak.exam.git",
+        icon: "ClipboardCheck",
+        features: ["Question Banks", "Auto Grading", "Timer System", "Analytics Dashboard", "Anti-Cheat"],
+        featuresAr: ["بنوك الأسئلة", "تصحيح تلقائي", "نظام المؤقت", "لوحة التحليلات", "منع الغش"],
+        tags: ["education", "exams", "assessment"],
+        priceMin: 10000,
+        priceMax: 25000,
+        currency: "SAR",
+        estimatedDuration: "3-5 أسابيع",
+        status: "active" as const,
+        sortOrder: 3,
+        heroColor: "#7c3aed",
+      },
+      {
+        name: "Fitness & Gym Platform",
+        nameAr: "منصة اللياقة البدنية",
+        slug: "fitness-platform",
+        description: "Complete fitness website with workout plans, nutrition tracking, membership management, and trainer profiles.",
+        descriptionAr: "موقع لياقة بدنية متكامل مع خطط التمارين وتتبع التغذية وإدارة العضويات وملفات المدربين.",
+        category: "health",
+        repoUrl: "https://github.com/Darsh20009/darwfit-fitness.git",
+        icon: "Dumbbell",
+        features: ["Workout Plans", "Nutrition Tracker", "Membership System", "Trainer Profiles", "Progress Photos"],
+        featuresAr: ["خطط التمارين", "تتبع التغذية", "نظام العضويات", "ملفات المدربين", "صور التقدم"],
+        tags: ["fitness", "health", "gym"],
+        priceMin: 7000,
+        priceMax: 18000,
+        currency: "SAR",
+        estimatedDuration: "2-4 أسابيع",
+        status: "active" as const,
+        sortOrder: 4,
+        heroColor: "#dc2626",
+      },
+      {
+        name: "Professional Resume/CV",
+        nameAr: "موقع السيرة الذاتية الاحترافية",
+        slug: "resume-cv",
+        description: "Personal professional portfolio and resume website with modern design, project showcase, and contact forms.",
+        descriptionAr: "موقع محفظة شخصية احترافية وسيرة ذاتية بتصميم حديث وعرض المشاريع ونماذج الاتصال.",
+        category: "personal",
+        repoUrl: "https://github.com/Darsh20009/my-resume.git",
+        icon: "User",
+        features: ["Responsive Design", "Project Showcase", "Skills Section", "Contact Form", "Downloadable CV"],
+        featuresAr: ["تصميم متجاوب", "عرض المشاريع", "قسم المهارات", "نموذج اتصال", "تحميل السيرة الذاتية"],
+        tags: ["personal", "resume", "portfolio"],
+        priceMin: 3000,
+        priceMax: 8000,
+        currency: "SAR",
+        estimatedDuration: "1-2 أسابيع",
+        status: "active" as const,
+        sortOrder: 5,
+        heroColor: "#0d9488",
+      },
+      {
+        name: "Charity & NGO Platform",
+        nameAr: "منصة المؤسسات الخيرية",
+        slug: "charity-ngo",
+        description: "Non-profit organization website with donation management, volunteer tracking, campaigns, and transparency reports.",
+        descriptionAr: "موقع منظمات غير ربحية مع إدارة التبرعات وتتبع المتطوعين والحملات وتقارير الشفافية.",
+        category: "institutional",
+        repoUrl: "https://github.com/Darsh20009/tuwaiq.git",
+        icon: "Heart",
+        features: ["Donation System", "Volunteer Management", "Campaign Tracker", "Impact Reports", "Event Calendar"],
+        featuresAr: ["نظام التبرعات", "إدارة المتطوعين", "تتبع الحملات", "تقارير الأثر", "تقويم الفعاليات"],
+        tags: ["charity", "ngo", "nonprofit"],
+        priceMin: 8000,
+        priceMax: 22000,
+        currency: "SAR",
+        estimatedDuration: "3-5 أسابيع",
+        status: "active" as const,
+        sortOrder: 6,
+        heroColor: "#ea580c",
+      },
+      {
+        name: "E-Commerce Store",
+        nameAr: "متجر إلكتروني متكامل",
+        slug: "ecommerce-store",
+        description: "Full-featured e-commerce platform with product management, cart, checkout, payment gateways, and order tracking.",
+        descriptionAr: "منصة تجارة إلكترونية متكاملة مع إدارة المنتجات وسلة التسوق والدفع وتتبع الطلبات.",
+        category: "commerce",
+        repoUrl: "https://github.com/Darsh20009/genmz-shop.git",
+        icon: "ShoppingCart",
+        features: ["Product Catalog", "Shopping Cart", "Payment Gateway", "Order Tracking", "Inventory Management"],
+        featuresAr: ["كتالوج المنتجات", "سلة التسوق", "بوابة الدفع", "تتبع الطلبات", "إدارة المخزون"],
+        tags: ["ecommerce", "shop", "store"],
+        priceMin: 10000,
+        priceMax: 30000,
+        currency: "SAR",
+        estimatedDuration: "4-6 أسابيع",
+        status: "active" as const,
+        sortOrder: 7,
+        heroColor: "#ca8a04",
+      },
+      {
+        name: "Cafe & Restaurant System",
+        nameAr: "نظام الكافيهات والمطاعم",
+        slug: "cafe-restaurant",
+        description: "Smart restaurant management system with digital menu, QR ordering, kitchen display, and real-time analytics.",
+        descriptionAr: "نظام إدارة مطاعم ذكي مع قائمة رقمية وطلب عبر QR وشاشة المطبخ وتحليلات مباشرة.",
+        category: "food",
+        repoUrl: "https://github.com/Darsh20009/CLUNY-CAFE.git",
+        icon: "Coffee",
+        features: ["Digital Menu", "QR Ordering", "Kitchen Display", "Table Management", "Real-time Analytics"],
+        featuresAr: ["قائمة رقمية", "طلب QR", "شاشة المطبخ", "إدارة الطاولات", "تحليلات مباشرة"],
+        tags: ["restaurant", "cafe", "food"],
+        priceMin: 6000,
+        priceMax: 18000,
+        currency: "SAR",
+        estimatedDuration: "2-4 أسابيع",
+        status: "active" as const,
+        sortOrder: 8,
+        heroColor: "#92400e",
+      },
+    ];
+
+    for (const t of templates) {
+      await storage.createSectorTemplate(t);
+    }
+    console.log("8 sector templates seeded successfully");
+  }
+
+  // Seed Pricing Plans
+  const existingPlans = await storage.getPricingPlans();
+  if (existingPlans.length === 0) {
+    const plans = [
+      {
+        name: "Starter",
+        nameAr: "الأساسية",
+        slug: "starter",
+        description: "Perfect for small businesses starting their digital journey",
+        descriptionAr: "مثالية للشركات الصغيرة التي تبدأ رحلتها الرقمية",
+        price: 5000,
+        currency: "SAR",
+        billingCycle: "one_time" as const,
+        features: ["Basic Website", "Mobile Responsive", "SEO Setup", "1 Month Support"],
+        featuresAr: ["موقع أساسي", "متجاوب مع الجوال", "إعداد SEO", "دعم شهر واحد"],
+        maxProjects: 1,
+        isPopular: false,
+        status: "active" as const,
+        sortOrder: 1,
+      },
+      {
+        name: "Business",
+        nameAr: "الأعمال",
+        slug: "business",
+        description: "Comprehensive solution for growing businesses",
+        descriptionAr: "حل شامل للشركات النامية",
+        price: 15000,
+        currency: "SAR",
+        billingCycle: "one_time" as const,
+        features: ["Advanced Website", "Admin Dashboard", "Payment Integration", "Database Setup", "3 Months Support", "Custom Domain"],
+        featuresAr: ["موقع متقدم", "لوحة تحكم", "تكامل الدفع", "إعداد قاعدة البيانات", "دعم 3 أشهر", "دومين مخصص"],
+        maxProjects: 3,
+        isPopular: true,
+        status: "active" as const,
+        sortOrder: 2,
+      },
+      {
+        name: "Enterprise",
+        nameAr: "المؤسسات",
+        slug: "enterprise",
+        description: "Full-scale digital infrastructure for large organizations",
+        descriptionAr: "بنية تحتية رقمية كاملة للمؤسسات الكبيرة",
+        price: 40000,
+        currency: "SAR",
+        billingCycle: "one_time" as const,
+        features: ["Custom Platform", "API Integration", "White-label", "Dedicated Support", "6 Months Support", "Priority Updates", "Training"],
+        featuresAr: ["منصة مخصصة", "تكامل API", "علامة بيضاء", "دعم مخصص", "دعم 6 أشهر", "تحديثات أولوية", "تدريب"],
+        maxProjects: 10,
+        isPopular: false,
+        status: "active" as const,
+        sortOrder: 3,
+      },
+    ];
+
+    for (const p of plans) {
+      await storage.createPricingPlan(p);
+    }
+    console.log("3 pricing plans seeded successfully");
   }
 }

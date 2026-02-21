@@ -29,6 +29,7 @@ import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Segments from "@/pages/Segments";
+import AdminTemplates from "@/pages/AdminTemplates";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/admin/orders" component={AdminOrders} />
       <Route path="/admin/employees" component={AdminEmployees} />
       <Route path="/admin/finance" component={AdminFinance} />
+      <Route path="/admin/templates" component={AdminTemplates} />
 
       <Route component={NotFound} />
     </Switch>

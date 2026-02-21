@@ -2,9 +2,24 @@
 
 ## Overview
 
-Qirox is a SaaS platform for a digital services company (qirox.tech) that builds professional websites and digital systems for businesses. The platform targets four market segments: restaurants/cafes, stores/brands, education platforms, and institutional/internal systems. It operates primarily in Saudi Arabia and Egypt.
+Qirox is a SaaS "Systems Factory" platform (qirox.tech) that showcases 8 industry-specific website templates and provides admin management for templates and pricing. The platform targets Arabic-speaking markets (Saudi Arabia, Egypt) with RTL UI, positioning itself as a "Website Infrastructure Automation Platform" for investors and clients.
 
-The application is a full-stack TypeScript project with a React frontend and Express backend. It includes client-facing pages (home, services catalog, order flow), user authentication, a client dashboard for tracking orders and projects, and project management with tasks and messaging. The UI is Arabic-first with RTL layout support.
+The application is a full-stack TypeScript project with a React frontend and Express backend. It includes:
+- **Public Pages**: Home (8 sectors showcase), Portfolio (filtering by category), Pricing (3 tiers), About (investor-focused company profile), Contact
+- **Admin Pages**: Templates CRUD management, Pricing management, Services, Orders, Finance, Employees
+- **Client Pages**: Dashboard, Project tracking, Order flow
+- **Authentication**: Session-based with role-based access control
+
+## Recent Changes (Feb 2026)
+
+- Added SectorTemplate and PricingPlan MongoDB models with 8 seeded industry templates
+- Built Portfolio page with category filtering and sector cards
+- Built Pricing page with 3 plans (Starter 5K, Business 15K, Enterprise 40K SAR)
+- Built Admin Templates page with CRUD operations and pricing management tabs
+- Enhanced Home page with dynamic 8-sector showcase from database
+- Updated Navigation with Portfolio, Prices, About links
+- Updated Sidebar with admin templates management link
+- Enhanced About page with investor-focused content (tech stack, business model, sectors)
 
 ## User Preferences
 
@@ -33,8 +48,8 @@ Preferred communication style: Simple, everyday language.
 - **Build**: Custom build script (`script/build.ts`) that uses Vite for client and esbuild for server, outputting to `dist/`
 
 ### Shared Code (`shared/` directory)
-- **Schema** (`shared/schema.ts`): Zod schemas and TypeScript types only (no mongoose). This is browser-safe and can be imported by the frontend.
-- **Routes** (`shared/routes.ts`): Typed API route definitions with paths, methods, input schemas, and response schemas. Used by both client hooks and server route handlers.
+- **Schema** (`shared/schema.ts`): TypeScript interfaces for MongoDB types (SectorTemplate, PricingPlan) + Drizzle/Zod schemas for legacy PostgreSQL types. Browser-safe.
+- **Routes** (`shared/routes.ts`): Typed API route definitions with paths, methods, input schemas, and response schemas.
 
 ### Server-Only Code
 - **Models** (`server/models.ts`): Mongoose model definitions. These must NOT be imported by frontend code.
@@ -42,13 +57,23 @@ Preferred communication style: Simple, everyday language.
 ### Database
 - **Primary Database**: MongoDB via Mongoose
 - **Connection**: Configured via `MONGODB_URI` environment variable
-- **Collections**: users, services, orders, projects, tasks, messages — Mongoose models defined in `server/models.ts`
-- **Key Relationships**: Users have orders -> orders create projects -> projects have tasks and messages. Users have roles (client, admin, employee_manager, employee_sales, employee_dev, employee_design, employee_support).
+- **Collections**: users, services, orders, projects, tasks, messages, sectortemplates, pricingplans
+- **Key Models**:
+  - SectorTemplate: 8 industry templates (quran-academy, education-platform, exam-system, fitness-platform, resume-cv, charity-ngo, ecommerce-store, cafe-restaurant)
+  - PricingPlan: 3 tiers (starter, business, enterprise)
+- **Key Relationships**: Users have orders -> orders create projects -> projects have tasks and messages. Users have roles (client, admin, employee types).
+
+### API Endpoints
+- **Templates**: GET `/api/templates`, GET `/api/templates/:id`
+- **Pricing**: GET `/api/pricing`
+- **Admin Templates**: POST/PATCH/DELETE `/api/admin/templates/:id`
+- **Admin Pricing**: POST/PATCH/DELETE `/api/admin/pricing/:id`
+- **Auth**: POST `/api/register`, POST `/api/login`, POST `/api/logout`, GET `/api/user`
 
 ### Authentication & Authorization
 - Session-based auth with express-session and memorystore
 - Role-based access: roles defined on the user model (client, admin, various employee types)
-- Auth endpoints: POST `/api/register`, POST `/api/login`, POST `/api/logout`, GET `/api/user`
+- Admin routes require authentication and non-client role
 
 ### Development Setup
 - **Dev server**: Vite dev server proxied through Express with HMR via WebSocket at `/vite-hmr`
@@ -58,15 +83,17 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Design Decisions
 
-1. **Monorepo with shared types**: The `shared/` directory contains Zod schemas and API route definitions, ensuring type safety across the full stack without code generation.
+1. **Monorepo with shared types**: The `shared/` directory contains TypeScript interfaces and Zod schemas, ensuring type safety across the full stack.
 
-2. **Mongoose models separated from shared types**: Mongoose models live in `server/models.ts` (server-only) while Zod schemas and types live in `shared/schema.ts` (browser-safe). This prevents Node.js-only packages from being bundled into the frontend.
+2. **Mongoose models separated from shared types**: Mongoose models live in `server/models.ts` (server-only) while types/interfaces live in `shared/schema.ts` (browser-safe).
 
-3. **Repository pattern**: The `IStorage` interface abstracts database operations, making it possible to swap implementations (e.g., in-memory for testing).
+3. **Repository pattern**: The `IStorage` interface abstracts database operations.
 
-4. **Arabic-first UI**: RTL layout is the default. Fonts, colors, and copy are designed for Arabic-speaking markets. The brand colors are Deep Blue (#0f172a) and Electric Cyan (#06b6d4).
+4. **Arabic-first UI**: RTL layout is the default. Fonts, colors, and copy are designed for Arabic-speaking markets. Brand colors: Deep Blue (#0f172a) and Electric Cyan (#06b6d4).
 
-5. **Session-based auth**: Server-side session management with memorystore, appropriate for a server-rendered SPA pattern.
+5. **Session-based auth**: Server-side session management with memorystore.
+
+6. **Modular architecture concept**: Each template is built on Core + Modules pattern for extensibility.
 
 ## External Dependencies
 
@@ -83,7 +110,7 @@ Preferred communication style: Simple, everyday language.
 - **framer-motion**: Animations
 - **recharts**: Dashboard analytics charts
 - **wouter**: Client-side routing
-- **shadcn/ui components**: Full suite of Radix-based UI components (accordion, dialog, dropdown, form, toast, etc.)
+- **shadcn/ui components**: Full suite of Radix-based UI components
 - **tailwindcss**: Utility-first CSS framework
 - **date-fns**: Date formatting (Arabic locale support)
 

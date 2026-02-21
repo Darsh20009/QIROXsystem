@@ -205,6 +205,89 @@ export const applications = pgTable("applications", {
   appliedAt: timestamp("applied_at").defaultNow().notNull(),
 });
 
+// --- Sector Templates (types only - uses MongoDB) ---
+export interface SectorTemplate {
+  id: string;
+  name: string;
+  nameAr: string;
+  slug: string;
+  description: string;
+  descriptionAr: string;
+  category: string;
+  repoUrl?: string;
+  icon?: string;
+  features?: string[];
+  featuresAr?: string[];
+  tags?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  currency: string;
+  estimatedDuration?: string;
+  status: "active" | "coming_soon" | "archived";
+  sortOrder: number;
+  demoUrl?: string;
+  heroColor?: string;
+  createdAt?: Date;
+}
+
+export interface InsertSectorTemplate {
+  name: string;
+  nameAr: string;
+  slug: string;
+  description: string;
+  descriptionAr: string;
+  category: string;
+  repoUrl?: string;
+  icon?: string;
+  features?: string[];
+  featuresAr?: string[];
+  tags?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  currency?: string;
+  estimatedDuration?: string;
+  status?: "active" | "coming_soon" | "archived";
+  sortOrder?: number;
+  demoUrl?: string;
+  heroColor?: string;
+}
+
+export interface PricingPlan {
+  id: string;
+  name: string;
+  nameAr: string;
+  slug: string;
+  description?: string;
+  descriptionAr?: string;
+  price: number;
+  currency: string;
+  billingCycle: "monthly" | "yearly" | "one_time";
+  features?: string[];
+  featuresAr?: string[];
+  maxProjects?: number;
+  isPopular: boolean;
+  status: "active" | "archived";
+  sortOrder: number;
+  createdAt?: Date;
+}
+
+export interface InsertPricingPlan {
+  name: string;
+  nameAr: string;
+  slug: string;
+  description?: string;
+  descriptionAr?: string;
+  price: number;
+  currency?: string;
+  billingCycle?: "monthly" | "yearly" | "one_time";
+  features?: string[];
+  featuresAr?: string[];
+  maxProjects?: number;
+  isPopular?: boolean;
+  status?: "active" | "archived";
+  sortOrder?: number;
+}
+
 // --- Schemas & Types ---
 export const insertNewsSchema = createInsertSchema(news).omit({ id: true, publishedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
