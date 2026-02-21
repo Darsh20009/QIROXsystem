@@ -1,9 +1,10 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
+import ParticleCanvas from "@/components/ParticleCanvas";
 import { useTemplates } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
-import { motion, useMotionValue, useTransform, useScroll, useSpring } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { Link } from "wouter";
 import { useRef } from "react";
 import {
@@ -54,7 +55,8 @@ export default function Home() {
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         onMouseMove={handleMouseMove}
       >
-        <div className="absolute inset-0 animated-grid-dark opacity-30" />
+        <ParticleCanvas />
+        <div className="absolute inset-0 animated-grid-dark opacity-20" />
         <div className="absolute inset-0 gradient-mesh" />
 
         <motion.div
