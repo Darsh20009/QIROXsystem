@@ -204,8 +204,7 @@ export async function registerRoutes(
 
   app.post(api.orders.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const input = api.orders.create.input.parse(req.body);
-    const order = await storage.createOrder({ ...input, userId: String((req.user as User).id) });
+    const order = await storage.createOrder({ ...req.body, userId: String((req.user as User).id) });
     res.status(201).json(order);
   });
 
@@ -397,6 +396,36 @@ export async function registerRoutes(
   app.get("/api/jobs", async (req, res) => {
     const jobs = await storage.getJobs();
     res.json(jobs);
+  });
+
+  // === PARTNERS API ===
+  app.get("/api/partners", async (req, res) => {
+    const partners = await storage.getPartners();
+    res.json(partners);
+  });
+
+  app.post("/api/admin/partners", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const partner = await storage.createPartner(req.body);
+    res.status(201).json(partner);
+  });
+
+  app.patch("/api/admin/partners/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const partner = await storage.updatePartner(req.params.id, req.body);
+    res.json(partner);
+  });
+
+  app.delete("/api/admin/partners/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    await storage.deletePartner(req.params.id);
+    res.sendStatus(204);
   });
 
   // === PAYPAL ROUTES === (blueprint:javascript_paypal)

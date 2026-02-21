@@ -29,10 +29,12 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Segments from "@/pages/Segments";
 import AdminTemplates from "@/pages/AdminTemplates";
+import AdminPartners from "@/pages/AdminPartners";
+import Partners from "@/pages/Partners";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order"];
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order"];
 
 function PublicRouter() {
   return (
@@ -42,6 +44,7 @@ function PublicRouter() {
       <Route path="/about" component={About} />
       <Route path="/prices" component={Prices} />
       <Route path="/portfolio" component={Portfolio} />
+      <Route path="/partners" component={Partners} />
       <Route path="/customers" component={Customers} />
       <Route path="/news" component={News} />
       <Route path="/jobs" component={Jobs} />
@@ -71,6 +74,7 @@ function AdminRouter() {
       <Route path="/admin/employees" component={AdminEmployees} />
       <Route path="/admin/finance" component={AdminFinance} />
       <Route path="/admin/templates" component={AdminTemplates} />
+      <Route path="/admin/partners" component={AdminPartners} />
       <Route component={NotFound} />
     </Switch>
   );

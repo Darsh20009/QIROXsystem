@@ -12,16 +12,14 @@ export function useServices() {
   });
 }
 
-export function useService(id: number) {
+export function useService(id: string) {
   return useQuery({
     queryKey: [api.services.get.path, id],
     queryFn: async () => {
-      // Manually construct URL since buildUrl helper is on server side or shared
-      // Ideally import buildUrl from shared/routes if possible, or replicate logic
-      const url = api.services.get.path.replace(":id", id.toString());
+      const url = api.services.get.path.replace(":id", id);
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch service");
-      return api.services.get.responses[200].parse(await res.json());
+      return res.json();
     },
     enabled: !!id,
   });

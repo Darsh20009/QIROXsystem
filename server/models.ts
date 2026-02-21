@@ -24,6 +24,8 @@ const serviceSchema = new mongoose.Schema({
   estimatedDuration: String,
   features: [String],
   icon: String,
+  portfolioImages: [String],
+  portfolioUrl: String,
 });
 
 const orderSchema = new mongoose.Schema({
@@ -194,7 +196,17 @@ const pricingPlanSchema = new mongoose.Schema({
   sortOrder: { type: Number, default: 0 },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema].forEach(s => {
+const partnerSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: String,
+  logoUrl: { type: String, required: true },
+  websiteUrl: String,
+  category: String,
+  sortOrder: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -213,3 +225,4 @@ export const JobModel = mongoose.models.Job || mongoose.model("Job", jobSchema);
 export const ApplicationModel = mongoose.models.Application || mongoose.model("Application", applicationSchema);
 export const SectorTemplateModel = mongoose.models.SectorTemplate || mongoose.model("SectorTemplate", sectorTemplateSchema);
 export const PricingPlanModel = mongoose.models.PricingPlan || mongoose.model("PricingPlan", pricingPlanSchema);
+export const PartnerModel = mongoose.models.Partner || mongoose.model("Partner", partnerSchema);

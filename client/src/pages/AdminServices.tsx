@@ -30,6 +30,8 @@ interface FormData {
   estimatedDuration: string;
   icon: string;
   features: string;
+  portfolioImages: string;
+  portfolioUrl: string;
 }
 
 const emptyForm: FormData = {
@@ -41,6 +43,8 @@ const emptyForm: FormData = {
   estimatedDuration: "",
   icon: "",
   features: "",
+  portfolioImages: "",
+  portfolioUrl: "",
 };
 
 export default function AdminServices() {
@@ -62,6 +66,8 @@ export default function AdminServices() {
     estimatedDuration: data.estimatedDuration || undefined,
     icon: data.icon || undefined,
     features: data.features ? data.features.split(",").map((f: string) => f.trim()).filter(Boolean) : [],
+    portfolioImages: data.portfolioImages ? data.portfolioImages.split(",").map((f: string) => f.trim()).filter(Boolean) : [],
+    portfolioUrl: data.portfolioUrl || undefined,
   });
 
   const createMutation = useMutation({
@@ -134,6 +140,8 @@ export default function AdminServices() {
       estimatedDuration: service.estimatedDuration || "",
       icon: service.icon || "",
       features: Array.isArray(service.features) ? service.features.join(", ") : "",
+      portfolioImages: Array.isArray((service as any).portfolioImages) ? (service as any).portfolioImages.join(", ") : "",
+      portfolioUrl: (service as any).portfolioUrl || "",
     });
     setOpen(true);
   };
@@ -333,6 +341,26 @@ export default function AdminServices() {
                 className="bg-white/5 border-white/10 text-white"
                 placeholder="ميزة 1, ميزة 2, ميزة 3"
                 data-testid="input-features"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">صور المحفظة (روابط مفصولة بفاصلة)</label>
+              <Input
+                value={formData.portfolioImages}
+                onChange={(e) => setFormData({ ...formData, portfolioImages: e.target.value })}
+                className="bg-white/5 border-white/10 text-white"
+                placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
+                data-testid="input-portfolio-images"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">رابط المحفظة</label>
+              <Input
+                value={formData.portfolioUrl}
+                onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                className="bg-white/5 border-white/10 text-white"
+                placeholder="https://example.com/portfolio"
+                data-testid="input-portfolio-url"
               />
             </div>
             <div className="flex gap-3 pt-2">

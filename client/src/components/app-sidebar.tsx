@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, FileText, Settings, Users, Wallet, Briefcase,
-  LogIn, LogOut, Clock, Layers, Image, DollarSign
+  LogIn, LogOut, Clock, Layers, Image, DollarSign, Handshake
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +35,7 @@ const items = [
   { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
   { title: "الإدارة المالية", icon: Wallet, url: "/admin/finance" },
   { title: "إدارة الموظفين", icon: Users, url: "/admin/employees" },
+  { title: "إدارة الشركاء", icon: Handshake, url: "/admin/partners" },
 ];
 
 export function AppSidebar() {

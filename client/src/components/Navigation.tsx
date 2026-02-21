@@ -21,8 +21,10 @@ export default function Navigation() {
 
   const navLinks = [
     { href: "/", label: "الرئيسية" },
+    { href: "/services", label: "الخدمات" },
     { href: "/portfolio", label: "الأنظمة" },
     { href: "/prices", label: "الباقات" },
+    { href: "/partners", label: "الشركاء" },
     { href: "/about", label: "عن المنصة" },
     { href: "/contact", label: "تواصل" },
     ...(user ? [{ href: "/dashboard", label: "لوحة التحكم" }] : []),

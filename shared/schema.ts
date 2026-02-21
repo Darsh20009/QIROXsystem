@@ -288,6 +288,29 @@ export interface InsertPricingPlan {
   sortOrder?: number;
 }
 
+// --- Partner (MongoDB) ---
+export interface Partner {
+  id: string;
+  name: string;
+  nameAr?: string;
+  logoUrl: string;
+  websiteUrl?: string;
+  category?: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt?: Date;
+}
+
+export interface InsertPartner {
+  name: string;
+  nameAr?: string;
+  logoUrl: string;
+  websiteUrl?: string;
+  category?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
 // --- Schemas & Types ---
 export const insertNewsSchema = createInsertSchema(news).omit({ id: true, publishedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
