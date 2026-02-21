@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export default function Login() {
   const [location] = useLocation();
@@ -85,10 +86,7 @@ export default function Login() {
         <div className="text-center mb-10">
           <Link href="/">
             <div className="inline-flex items-center gap-2.5 cursor-pointer group">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
-                <span className="text-lg font-black text-[#0A0A0F] font-heading">Q</span>
-              </div>
-              <span className="text-2xl font-black font-heading text-white tracking-tight">QIROX</span>
+              <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
             </div>
           </Link>
         </div>

@@ -111,8 +111,6 @@ export function QiroxLogo({ className = "" }: { className?: string }) {
 
 export function QiroxIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
-    <div className={`rounded-lg flex items-center justify-center ${className}`} style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
-      <span className="text-sm font-black text-[#0A0A0F] font-heading">Q</span>
-    </div>
+    <img src={qiroxLogoPath} alt="QIROX" className={`object-contain ${className}`} />
   );
 }

@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export default function Footer() {
   return (
@@ -10,10 +11,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)" }}>
-                <span className="text-sm font-black text-[#0A0A0F] font-heading">Q</span>
-              </div>
-              <span className="font-heading font-black text-lg text-white tracking-tight">QIROX</span>
+              <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain" />
             </div>
             <p className="text-white/25 text-sm leading-relaxed max-w-md">
               منصة توليد وإدارة الأنظمة الرقمية. نبني بنية تحتية رقمية متكاملة للشركات والمؤسسات في السعودية ومصر.
