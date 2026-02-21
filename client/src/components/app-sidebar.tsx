@@ -13,34 +13,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
-  CheckCircle2,
-  ListTodo,
-  FileText,
-  Link2,
-  MessageSquare,
-  Receipt,
-  CreditCard,
-  FileSignature,
-  ShieldCheck,
-  Bell,
-  Download,
-  Settings,
-  Users,
-  Wallet,
-  Briefcase,
-  LogIn,
-  LogOut,
-  Clock,
-  LayoutGrid,
-  Layers,
-  Image,
-  DollarSign,
+  LayoutDashboard, FileText, Settings, Users, Wallet, Briefcase,
+  LogIn, LogOut, Clock, Layers, Image, DollarSign
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Logo } from "./logo";
 
 const items = [
   { title: "Home", icon: LayoutDashboard, url: "/" },
@@ -57,8 +35,6 @@ const items = [
   { title: "الإدارة المالية", icon: Wallet, url: "/admin/finance" },
   { title: "إدارة الموظفين", icon: Users, url: "/admin/employees" },
 ];
-
-import { QiroxLogo, QiroxIcon } from "./qirox-brand";
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -77,10 +53,7 @@ export function AppSidebar() {
       const res = await fetch("/api/attendance/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ipAddress: "fetching...",
-          location: { lat: 0, lng: 0 },
-        }),
+        body: JSON.stringify({ ipAddress: "fetching...", location: { lat: 0, lng: 0 } }),
       });
       if (!res.ok) throw new Error("Check-in failed");
       return res.json();
@@ -107,27 +80,22 @@ export function AppSidebar() {
     if (!user) {
       return ["Home", "Portfolio", "Services", "Prices", "About", "Contact"].includes(item.title);
     }
-    
     if (user.role === "client") {
       return ["Home", "Portfolio", "Services", "Prices", "About", "Contact", "Projects"].includes(item.title);
     }
-    
     return true;
   });
 
-  const groupLabel = !user ? "القائمة العامة" : (isAdmin ? "نظام الإدارة" : "إدارة المشروع");
+  const groupLabel = !user ? "القائمة" : (isAdmin ? "الإدارة" : "المشروع");
 
   return (
-    <Sidebar side="right" className="bg-sidebar border-l border-sidebar-border shadow-xl">
-      <SidebarHeader className="p-4 border-b bg-sidebar">
-        <div className="flex items-center gap-3">
-          <QiroxIcon className="h-6 w-6 text-cyan-500" />
-          <QiroxLogo className="text-xl" />
-        </div>
+    <Sidebar side="right" className="bg-white border-l border-[#E0E0E0]">
+      <SidebarHeader className="p-4 border-b border-[#E0E0E0]">
+        <span className="font-heading font-black text-lg text-[#111111] tracking-tight">QIROX</span>
       </SidebarHeader>
-      <SidebarContent className="bg-sidebar">
+      <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-2">
             {groupLabel}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -138,11 +106,11 @@ export function AppSidebar() {
                     asChild
                     isActive={location === item.url}
                     tooltip={item.title}
-                    className="px-4 py-2 hover:bg-sidebar-accent transition-colors"
+                    className="px-4 py-2 hover:bg-[#F4F4F4] transition-colors"
                   >
                     <Link href={item.url} className="flex items-center gap-3 w-full">
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.title}</span>
+                      <item.icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -153,14 +121,14 @@ export function AppSidebar() {
 
         {user && user.role !== "client" && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-2">
               التبصيم
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-4 pb-4">
               {!attendanceStatus || attendanceStatus.checkOut ? (
                 <SidebarMenuButton
                   onClick={() => checkInMutation.mutate()}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white justify-center gap-2 rounded-md transition-colors"
+                  className="w-full bg-[#111111] hover:bg-[#2B2B2B] text-white justify-center gap-2 rounded-lg transition-colors"
                   disabled={checkInMutation.isPending}
                 >
                   <LogIn className="w-4 h-4" />
@@ -168,13 +136,13 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-[10px] text-slate-500 bg-slate-100 p-2 rounded border border-slate-200">
+                  <div className="flex items-center justify-center gap-2 text-[10px] text-[#555555] bg-[#F4F4F4] p-2 rounded-lg border border-[#E0E0E0]">
                     <Clock className="w-3 h-3" />
                     <span>منذ: {new Date(attendanceStatus.checkIn || "").toLocaleTimeString("ar-SA")}</span>
                   </div>
                   <SidebarMenuButton
                     onClick={() => checkOutMutation.mutate()}
-                    className="w-full bg-red-500 hover:bg-red-600 text-white justify-center gap-2 rounded-md transition-colors"
+                    className="w-full bg-[#111111] hover:bg-[#2B2B2B] text-white justify-center gap-2 rounded-lg transition-colors"
                     disabled={checkOutMutation.isPending}
                   >
                     <LogOut className="w-4 h-4" />
@@ -186,26 +154,24 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t bg-sidebar">
+      <SidebarFooter className="p-4 border-t border-[#E0E0E0]">
         {user ? (
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20">
+            <div className="w-8 h-8 rounded-lg bg-[#111111] flex items-center justify-center text-white font-bold text-xs">
               {user.fullName[0]}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate text-slate-900">{user.fullName}</p>
-              <p className="text-[10px] text-slate-500 truncate font-medium uppercase tracking-wider">{user.role}</p>
+              <p className="text-sm font-bold truncate text-[#111111]">{user.fullName}</p>
+              <p className="text-[10px] text-black/30 truncate uppercase tracking-wider">{user.role}</p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2">
-              <Link href="/auth">
-                <LogIn className="w-4 h-4" />
-                <span>تسجيل الدخول</span>
-              </Link>
-            </Button>
-          </div>
+          <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 border-[#E0E0E0] rounded-lg">
+            <Link href="/auth">
+              <LogIn className="w-4 h-4" />
+              <span>تسجيل الدخول</span>
+            </Link>
+          </Button>
         )}
       </SidebarFooter>
     </Sidebar>

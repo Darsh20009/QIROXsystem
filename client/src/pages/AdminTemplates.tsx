@@ -320,7 +320,7 @@ export default function AdminTemplates() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-bold">{plan.nameAr}</CardTitle>
-                      {plan.isPopular && <Badge className="bg-cyan-100 text-cyan-700">الأكثر طلباً</Badge>}
+                      {plan.isPopular && <Badge className="bg-[#111111] text-white">الأكثر طلباً</Badge>}
                     </div>
                     <p className="text-sm text-slate-500">{plan.descriptionAr}</p>
                   </CardHeader>

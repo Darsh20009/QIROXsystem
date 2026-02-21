@@ -3,208 +3,233 @@ import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
 import { useTemplates } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { Link } from "wouter";
 import {
-  ArrowLeft, Globe, ShieldCheck, Zap, CheckCircle2,
+  ArrowLeft, Globe,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Layers, Cpu, TrendingUp
+  User, Heart, ShoppingCart, Coffee, Layers, ArrowUpRight,
+  Cpu, Database, Code2, Shield
 } from "lucide-react";
-import { QiroxIcon } from "@/components/qirox-brand";
 
 const sectorIcons: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe
 };
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }
+  })
+};
+
 export default function Home() {
   const { data: templates } = useTemplates();
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const spotlightX = useTransform(mouseX, (v) => `${v}px`);
+  const spotlightY = useTransform(mouseY, (v) => `${v}px`);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-body">
+    <div className="min-h-screen flex flex-col bg-[#F4F4F4] font-body">
       <Navigation />
 
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-white">
-        <div className="absolute inset-0 hero-gradient pointer-events-none" />
+      <section
+        className="relative pt-40 pb-32 lg:pt-56 lg:pb-40 overflow-hidden bg-[#111111]"
+        onMouseMove={handleMouseMove}
+      >
+        <div className="absolute inset-0 animated-grid-dark opacity-60" />
+
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full pointer-events-none"
+          style={{
+            left: spotlightX,
+            top: spotlightY,
+            background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)",
+            transform: "translate(-50%, -50%)"
+          }}
+        />
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-            <div className="flex-1 text-center lg:text-right">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary font-semibold text-sm mb-6 border border-secondary/20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
-                  </span>
-                  Website Infrastructure Automation Platform
-                </div>
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
+              custom={0}
+              className="mb-8"
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/60 text-sm font-medium tracking-wide">
+                <span className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
+                Systems Factory
+              </span>
+            </motion.div>
 
-                <h1 className="text-4xl lg:text-6xl font-extrabold font-heading text-primary leading-tight mb-6">
-                  Qirox | كيروكس <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-                    مصنع الأنظمة الرقمية
-                  </span>
-                </h1>
+            <motion.h1
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
+              custom={1}
+              className="text-5xl md:text-7xl lg:text-8xl font-black font-heading text-white leading-[1.1] mb-8 tracking-tight"
+            >
+              نبني بنية تحتية
+              <br />
+              <span className="text-white/30">رقمية.</span>
+            </motion.h1>
 
-                <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                  منصة تقنية متكاملة لتوليد وإدارة الأنظمة الرقمية. نحول أفكارك إلى منصات قابلة للتوسع في السعودية ومصر.
-                </p>
+            <motion.p
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
+              custom={2}
+              className="text-lg md:text-xl text-white/50 mb-12 max-w-2xl mx-auto leading-relaxed"
+            >
+              منصة QIROX لتوليد وإدارة الأنظمة الرقمية.
+              {templates?.length || 8} نظام متكامل جاهز للتخصيص والنشر.
+            </motion.p>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                  <Link href="/portfolio">
-                    <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1 rounded-xl" data-testid="button-explore-portfolio">
-                      استعرض أنظمتنا
-                      <ArrowLeft className="w-5 h-5 mr-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/prices">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg border-2 border-slate-200 hover:border-primary hover:text-primary hover:bg-slate-50 transition-all rounded-xl" data-testid="button-view-prices">
-                      الباقات والأسعار
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
-            </div>
-
-            <div className="flex-1 w-full relative">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="relative"
-              >
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/20 border-8 border-white/50 backdrop-blur-sm aspect-[4/3] bg-slate-900 group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-slate-900 to-slate-800 opacity-90 z-10"></div>
-                  <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-secondary/30 rounded-full blur-3xl animate-pulse z-20"></div>
-                  <div className="absolute bottom-1/3 left-1/3 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl z-20"></div>
-
-                  <div className="absolute inset-0 flex items-center justify-center z-30 flex-col text-white p-8 text-center">
-                    <div className="w-24 h-24 mb-6 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg p-4">
-                      <QiroxIcon className="w-full h-full text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold font-heading mb-2">Systems Factory</h3>
-                    <p className="text-slate-300 text-sm">{templates?.length || 8} أنظمة متكاملة جاهزة للتخصيص</p>
-
-                    <div className="mt-6 grid grid-cols-4 gap-3 w-full max-w-xs">
-                      {templates?.slice(0, 8).map((t, i) => (
-                        <div key={t.id} className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10">
-                          {(() => {
-                            const Icon = sectorIcons[t.icon || "Globe"] || Globe;
-                            return <Icon className="w-5 h-5 text-white/80" />;
-                          })()}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
+              custom={3}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            >
+              <Link href="/portfolio">
+                <Button size="lg" className="h-14 px-8 text-base bg-white text-black hover:bg-white/90 rounded-xl font-semibold" data-testid="button-explore-portfolio">
+                  استعرض الأنظمة
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                </Button>
+              </Link>
+              <Link href="/about">
+                <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/20 text-white hover:bg-white/5 rounded-xl font-semibold" data-testid="button-about-home">
+                  تعرف على المنصة
+                </Button>
+              </Link>
+            </motion.div>
           </div>
         </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F4F4F4] to-transparent" />
       </section>
 
-      <section className="py-20 bg-white">
+      <section className="py-24 bg-[#F4F4F4]">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="bg-primary/10 text-primary border-primary/20 mb-4 text-sm px-4 py-2">
-              {templates?.length || 8} نظام متكامل
-            </Badge>
-            <h2 className="text-3xl font-bold font-heading text-primary mb-4">القطاعات التي نخدمها</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">
-              كل نظام مبني على بنية معمارية وحدوية (Core + Modules) وجاهز للتخصيص والنشر
-            </p>
-          </div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="text-center mb-16"
+          >
+            <motion.p variants={fadeUp} custom={0} className="text-sm font-semibold text-black/40 uppercase tracking-widest mb-3">
+              القطاعات
+            </motion.p>
+            <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-[#111111] mb-4">
+              {templates?.length || 8} أنظمة جاهزة للنشر
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={2} className="text-[#555555] max-w-xl mx-auto">
+              كل نظام مبني على بنية Core + Modules قابلة للتوسعة والتخصيص
+            </motion.p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {templates?.map((template, idx) => {
               const Icon = sectorIcons[template.icon || "Globe"] || Globe;
               return (
                 <motion.div
                   key={template.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  custom={idx}
                 >
-                  <Card className="border-0 shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden h-full" data-testid={`home-sector-${template.slug}`}>
+                  <Link href="/portfolio">
                     <div
-                      className="h-2 w-full"
-                      style={{ backgroundColor: template.heroColor }}
-                    />
-                    <CardContent className="pt-6 pb-6">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                        style={{ backgroundColor: `${template.heroColor}15`, color: template.heroColor }}
-                      >
-                        <Icon className="w-6 h-6" />
+                      className="group p-6 rounded-xl bg-white border border-[#E0E0E0] hover:border-[#111111] transition-all duration-300 cursor-pointer h-full"
+                      data-testid={`home-sector-${template.slug}`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-[#F4F4F4] flex items-center justify-center group-hover:bg-[#111111] group-hover:text-white transition-all duration-300">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-black/20 group-hover:text-black transition-colors" />
                       </div>
-                      <h3 className="text-lg font-bold font-heading text-primary mb-2">{template.nameAr}</h3>
-                      <p className="text-sm text-slate-500 leading-relaxed mb-3 line-clamp-2">{template.descriptionAr}</p>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                      <h3 className="text-base font-bold font-heading text-[#111111] mb-2">{template.nameAr}</h3>
+                      <p className="text-sm text-[#555555] leading-relaxed line-clamp-2 mb-3">{template.descriptionAr}</p>
+                      <div className="flex items-center justify-between text-xs text-black/30">
                         <span>{template.estimatedDuration}</span>
-                        <Badge variant="secondary" className="text-[10px]">{template.category}</Badge>
+                        <span className="px-2 py-0.5 rounded bg-[#EAEAEA] text-[#555555]">{template.category}</span>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </Link>
                 </motion.div>
               );
             })}
           </div>
 
-          <div className="text-center mt-12">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            className="text-center mt-12"
+          >
             <Link href="/portfolio">
-              <Button variant="outline" size="lg" className="h-12 px-8" data-testid="button-all-systems">
-                عرض جميع الأنظمة بالتفصيل
+              <Button variant="outline" size="lg" className="h-12 px-8 border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white rounded-xl font-semibold transition-all" data-testid="button-all-systems">
+                عرض جميع الأنظمة
                 <ArrowLeft className="w-4 h-4 mr-2" />
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      <section className="py-20 bg-slate-50">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold font-heading text-primary mb-4">لماذا QIROX؟</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">بنية SaaS عالمية مصممة للسوق العربي</p>
+            <p className="text-sm font-semibold text-black/40 uppercase tracking-widest mb-3">البنية التحتية</p>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#111111] mb-4">لماذا QIROX؟</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: Layers, title: "معمارية وحدوية", desc: "Core + Modules. إضافة ميزة جديدة بدون كسر البنية الحالية.", color: "#06b6d4" },
-              { icon: Cpu, title: "تحديث مركزي", desc: "تحديث كل المواقع بنفس الموديول بضغطة واحدة.", color: "#3b82f6" },
-              { icon: TrendingUp, title: "نمو مستمر", desc: "العميل يطلب ميزة → تضيف Module → إيراد مستدام.", color: "#10b981" },
+              { icon: Layers, title: "معمارية وحدوية", desc: "Core + Modules. إضافة ميزات بدون كسر البنية." },
+              { icon: Database, title: "قاعدة بيانات مستقلة", desc: "كل عميل يحصل على MongoDB مستقلة." },
+              { icon: Code2, title: "تصدير مشروع كامل", desc: "ZIP جاهز للنشر مع .env و README." },
+              { icon: Shield, title: "حماية متكاملة", desc: "JWT + Role-based access + تشفير." },
             ].map((item, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={idx}
+                className="p-6 rounded-xl border border-[#E0E0E0] bg-white hover:border-[#111111] transition-all group"
               >
-                <Card className="border-0 shadow-sm hover:shadow-xl transition-all duration-300 text-center h-full">
-                  <CardContent className="pt-10 pb-8">
-                    <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 mx-auto"
-                      style={{ backgroundColor: `${item.color}15`, color: item.color }}
-                    >
-                      <item.icon className="w-7 h-7" />
-                    </div>
-                    <h3 className="text-xl font-bold font-heading text-primary mb-3">{item.title}</h3>
-                    <p className="text-slate-500 leading-relaxed">{item.desc}</p>
-                  </CardContent>
-                </Card>
+                <div className="w-10 h-10 rounded-lg bg-[#F4F4F4] flex items-center justify-center mb-4 group-hover:bg-[#111111] group-hover:text-white transition-all">
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold font-heading text-[#111111] mb-2">{item.title}</h3>
+                <p className="text-sm text-[#555555] leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-slate-900 text-white">
+      <section className="py-20 bg-[#EAEAEA]">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto text-center">
             {[
@@ -215,36 +240,39 @@ export default function Home() {
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={idx}
               >
-                <div className="text-3xl md:text-4xl font-extrabold text-cyan-400 mb-2">{stat.value}</div>
-                <div className="text-slate-400 text-sm">{stat.label}</div>
+                <div className="text-4xl md:text-5xl font-black text-[#111111] mb-2 font-heading">{stat.value}</div>
+                <div className="text-[#555555] text-sm">{stat.label}</div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-r from-primary to-slate-800 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-6">
-            ابدأ مشروعك الرقمي اليوم
+      <section className="py-24 bg-[#111111] relative overflow-hidden">
+        <div className="absolute inset-0 animated-grid-dark opacity-40" />
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
+            ابدأ مشروعك الآن
           </h2>
-          <p className="text-slate-300 text-lg max-w-2xl mx-auto mb-10">
-            اختر القالب المناسب لقطاعك وابدأ في بناء نظامك الرقمي مع فريق QIROX.
+          <p className="text-white/40 text-lg max-w-2xl mx-auto mb-10">
+            اختر النظام المناسب لقطاعك وابدأ في بناء بنيتك التحتية الرقمية.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/portfolio">
-              <Button size="lg" className="h-14 px-8 text-lg bg-white text-slate-900 hover:bg-slate-100" data-testid="button-cta-portfolio">
-                استعرض أنظمتنا
+              <Button size="lg" className="h-14 px-8 text-base bg-white text-[#111111] hover:bg-white/90 rounded-xl font-semibold" data-testid="button-cta-portfolio">
+                استعرض الأنظمة
                 <ArrowLeft className="w-5 h-5 mr-2" />
               </Button>
             </Link>
-            <Link href="/about">
-              <Button variant="outline" size="lg" className="h-14 px-8 text-lg border-white/30 text-white hover:bg-white/10" data-testid="button-cta-about">
-                تعرف علينا
+            <Link href="/prices">
+              <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/20 text-white hover:bg-white/5 rounded-xl font-semibold" data-testid="button-cta-prices">
+                الباقات والأسعار
               </Button>
             </Link>
           </div>
