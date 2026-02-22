@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useUser } from "@/hooks/use-auth";
-import { useService } from "@/hooks/use-services";
+import { useService, useServices } from "@/hooks/use-services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,11 +18,13 @@ import { useI18n } from "@/lib/i18n";
 export default function OrderFlow() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const serviceId = searchParams.get("service") || "";
-  const { t } = useI18n();
+  const serviceIdFromUrl = searchParams.get("service") || "";
+  const [selectedServiceId, setSelectedServiceId] = useState(serviceIdFromUrl);
+  const { t, lang } = useI18n();
 
   const { data: user, isLoading: isUserLoading } = useUser();
-  const { data: service, isLoading: isServiceLoading } = useService(serviceId);
+  const { data: services, isLoading: isServicesLoading } = useServices();
+  const { data: service, isLoading: isServiceLoading } = useService(selectedServiceId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,7 +77,13 @@ export default function OrderFlow() {
     },
   });
 
-  if (isUserLoading || isServiceLoading) {
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      setLocation("/login");
+    }
+  }, [user, isUserLoading, setLocation]);
+
+  if (isUserLoading || isServicesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F]">
         <Loader2 className="w-10 h-10 animate-spin text-[#00D4FF]" />
@@ -84,21 +92,55 @@ export default function OrderFlow() {
   }
 
   if (!user) {
-    setLocation(`/login`);
     return null;
   }
 
-  if (!service) {
+  if (!selectedServiceId || !service) {
     return (
       <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
         <Navigation />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center" dir="rtl">
-            <p className="text-white/40 text-lg mb-4">{t("order.serviceNotFound")}</p>
-            <Button onClick={() => setLocation("/services")} className="premium-btn" data-testid="button-back-services">
-              {t("order.backToServices")}
-            </Button>
+        <div className="flex-1 container mx-auto px-4 py-8 pt-32 max-w-4xl">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
+              <Briefcase className="w-3.5 h-3.5 text-[#00D4FF]" />
+              <span className="text-white/40 text-xs tracking-wider uppercase">{t("order.step1")}</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black font-heading text-white mb-4">
+              {t("order.step1.title")}
+            </h1>
+            <p className="text-white/30 text-lg">{t("services.subtitle")}</p>
           </div>
+
+          {services && services.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((svc) => (
+                <button
+                  key={svc.id}
+                  onClick={() => setSelectedServiceId(String(svc.id))}
+                  className="glass-card p-6 rounded-2xl text-right hover:border-[#00D4FF]/30 border border-transparent transition-all group"
+                  data-testid={`select-service-${svc.id}`}
+                >
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#00D4FF] transition-colors">{svc.title}</h3>
+                  <p className="text-sm text-white/30 line-clamp-2 mb-4">{svc.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20">
+                      {svc.category}
+                    </span>
+                    <span className="text-sm font-bold text-white">
+                      {svc.priceMin?.toLocaleString()} {t("order.sar")}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <p className="text-white/40 text-lg mb-4">{t("order.serviceNotFound")}</p>
+              <Button onClick={() => setLocation("/services")} className="premium-btn" data-testid="button-back-services">
+                {t("order.backToServices")}
+              </Button>
+            </div>
+          )}
         </div>
         <Footer />
       </div>
