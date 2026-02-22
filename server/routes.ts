@@ -6,12 +6,75 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import express from "express";
+import crypto from "crypto";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const name = crypto.randomBytes(16).toString("hex");
+      cb(null, `${name}${ext}`);
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("File type not allowed"));
+    }
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  app.use("/uploads", express.static(uploadsDir));
+
+  app.post("/api/upload", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    upload.single("file")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large (max 20MB)" });
+        return res.status(400).json({ error: err.message });
+      }
+      if (err) return res.status(400).json({ error: err.message || "Upload failed" });
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url, filename: req.file.originalname, size: req.file.size });
+    });
+  });
+
+  app.post("/api/upload/multiple", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    upload.array("files", 10)(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large (max 20MB)" });
+        return res.status(400).json({ error: err.message });
+      }
+      if (err) return res.status(400).json({ error: err.message || "Upload failed" });
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
+      const results = files.map(f => ({
+        url: `/uploads/${f.filename}`,
+        filename: f.originalname,
+        size: f.size,
+      }));
+      res.json(results);
+    });
+  });
 
   // === AUTH API ===
   app.post(api.auth.register.path, async (req, res, next) => {

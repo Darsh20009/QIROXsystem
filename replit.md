@@ -31,6 +31,10 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **i18n**: Language toggle button in navigation and admin header with localStorage persistence
 - **Fix**: Changed order creation route from Drizzle-validated path to direct `/api/orders` for MongoDB string ObjectID compatibility
 - **Fix**: MongoDB migration to strip repoUrl from existing template documents
+- **Upload**: Added file upload system (multer) with POST /api/upload and /api/upload/multiple endpoints
+- **Upload**: OrderFlow Step 3 now uses real file uploads (logo, brand identity, content, images, video) instead of URL text fields
+- **Upload**: Bank transfer receipt (Step 4) also uses file upload; uploaded files stored in `uploads/` directory
+- **Upload**: Files payload saved as `files` field in order documents (Mixed type in Mongoose)
 
 ## User Preferences
 

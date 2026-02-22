@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema({
   needsLogoDesign: { type: Boolean, default: false },
   hasHosting: { type: Boolean, default: false },
   hasDomain: { type: Boolean, default: false },
-  // Uploads
+  // Uploads (stored as arrays of file URLs)
   logoUrl: String,
   brandIdentityUrl: String,
   filesUrl: String,
@@ -55,6 +55,7 @@ const orderSchema = new mongoose.Schema({
   imagesUrl: String,
   videoUrl: String,
   accessCredentials: String,
+  files: { type: mongoose.Schema.Types.Mixed },
   // Payment
   paymentMethod: { type: String, enum: ["bank_transfer", "paypal"] },
   paymentProofUrl: String,
