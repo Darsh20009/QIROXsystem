@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check, Briefcase, Upload, X, FileText, Image, Film } from "lucide-react";
+import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check, Briefcase, Upload, X, FileText, Image, Film, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
+import PayPalButton from "@/components/PayPalButton";
 
 interface UploadedFile {
   url: string;
@@ -506,9 +507,31 @@ export default function OrderFlow() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center space-x-reverse space-x-3 border border-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
-                    <RadioGroupItem value="paypal" id="paypal" data-testid="radio-paypal" />
-                    <Label htmlFor="paypal" className="flex-1 cursor-pointer font-medium text-white">{t("order.paypal")}</Label>
+                  <div className="flex flex-col space-y-2 border border-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
+                    <div className="flex items-center space-x-reverse space-x-3">
+                      <RadioGroupItem value="paypal" id="paypal" data-testid="radio-paypal" />
+                      <Label htmlFor="paypal" className="flex-1 cursor-pointer font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-[#00D4FF]" />
+                          {t("order.paypal")}
+                        </div>
+                      </Label>
+                    </div>
+                    {formData.paymentMethod === 'paypal' && service.priceMin && (
+                      <div className="mt-4 p-4 bg-[#00D4FF]/5 rounded-lg border border-[#00D4FF]/20">
+                        <p className="text-sm text-white/60 mb-3">
+                          {t("order.paypalAmount")}: <span className="font-bold text-[#00D4FF]">{service.priceMin.toLocaleString()} {t("order.sar")}</span>
+                        </p>
+                        <div className="paypal-button-wrapper">
+                          <PayPalButton
+                            amount={String(service.priceMin)}
+                            currency="USD"
+                            intent="CAPTURE"
+                          />
+                        </div>
+                        <p className="text-[10px] text-white/30 mt-2 text-center">{t("order.paypalNote")}</p>
+                      </div>
+                    )}
                   </div>
                 </RadioGroup>
               </div>

@@ -89,6 +89,8 @@ const translations = {
   "order.bankNote": { ar: "بنك الراجحي السعودي (بشرط المحول غير راجحي)", en: "Al Rajhi Bank Saudi (condition: transfer not from Rajhi)" },
   "order.receiptLink": { ar: "إيصال التحويل", en: "Transfer Receipt" },
   "order.receiptPlaceholder": { ar: "ارفع صورة الإيصال", en: "Upload receipt image" },
+  "order.paypalAmount": { ar: "المبلغ المطلوب", en: "Amount Due" },
+  "order.paypalNote": { ar: "سيتم فتح بوابة PayPal للدفع الآمن بالبطاقة أو حساب PayPal", en: "PayPal gateway will open for secure payment via card or PayPal account" },
   "order.paymentMethod": { ar: "طريقة الدفع", en: "Payment Method" },
   "order.startingPrice": { ar: "السعر المبدئي", en: "Starting Price" },
   "order.functionsRequired": { ar: "الوظائف المطلوبة", en: "Required Functions" },
