@@ -18,6 +18,11 @@ The application is a full-stack TypeScript project with a React frontend and Exp
   - Splash screen: typewriter effect with black/gray on white, minimal animations
   - Cards: white bg with subtle borders and hover shadows instead of dark glass
   - CTA sections: bg-black with white text (inverted from main)
+- **DASHBOARD REDESIGN**: Creative client dashboard with animated stat cards, progress bars, order timeline with status icons, investment summary, and CTA section
+- **EMPLOYEE MANAGEMENT**: Full CRUD AdminEmployees page with add/edit/delete, role selection, search, role filtering. Backend: POST/PATCH/DELETE /api/admin/users with input validation, role whitelisting, admin protection
+- **SEO**: Comprehensive meta tags, OG tags, Twitter cards, JSON-LD structured data, canonical URL qiroxstudio.online
+- **PWA**: Updated manifest.json with orientation "any" (portrait+landscape), proper theme colors for light theme
+- **DEPLOYMENT**: Configured autoscale deployment with build + run commands, fixed session cookies for production
 - Added SectorTemplate and PricingPlan MongoDB models with 8 seeded industry templates
 - Built Portfolio page with category filtering and sector cards
 - Built Pricing page with 3 plans (Starter 5K, Business 15K, Enterprise 40K SAR)

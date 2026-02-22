@@ -1,20 +1,29 @@
 {
-  "name": "QIROX Studio",
+  "name": "QIROX Studio - منصة بناء الأنظمة",
   "short_name": "QIROX",
+  "description": "منصة بناء الأنظمة الرقمية - نبني أنظمة، نبقى بشراً",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0F",
-  "theme_color": "#00D4FF",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

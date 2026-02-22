@@ -113,6 +113,88 @@ export async function registerRoutes(
     res.json(users);
   });
 
+  const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "client"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone"];
+
+  app.post("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    try {
+      const { username, password, email, fullName, role, phone } = req.body;
+      if (!username || !password || !email || !fullName || !role) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      if (!allowedRoles.includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        username: String(username).trim(),
+        password: hashedPassword,
+        email: String(email).trim(),
+        fullName: String(fullName).trim(),
+        role,
+        phone: phone ? String(phone).trim() : undefined,
+      });
+      res.status(201).json(user);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    try {
+      const sanitized: Record<string, any> = {};
+      for (const key of userFieldsWhitelist) {
+        if (req.body[key] !== undefined && req.body[key] !== "") {
+          sanitized[key] = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
+        }
+      }
+      if (sanitized.role && !allowedRoles.includes(sanitized.role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+      if (sanitized.password) {
+        if (sanitized.password.length < 6) {
+          return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+        sanitized.password = await hashPassword(sanitized.password);
+      }
+      const user = await storage.updateUser(req.params.id, sanitized);
+      if (!user) return res.sendStatus(404);
+      res.json(user);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    try {
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) return res.sendStatus(404);
+      if (targetUser.role === "admin") {
+        return res.status(400).json({ error: "Cannot delete admin users" });
+      }
+      await storage.deleteUser(req.params.id);
+      res.sendStatus(204);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to delete user" });
+    }
+  });
+
   // Internal Gate Verification
   app.post("/api/internal-gate/verify", (req, res) => {
     const { password } = req.body;

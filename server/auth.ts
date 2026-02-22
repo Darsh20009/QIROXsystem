@@ -33,7 +33,12 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "qirox_super_secret_key",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 days
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      httpOnly: true,
+    },
   };
 
   if (app.get("env") === "production") {

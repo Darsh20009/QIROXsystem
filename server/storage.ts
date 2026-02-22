@@ -19,6 +19,8 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<void>;
 
   // Attendance
   getAttendance(userId: string): Promise<Attendance[]>;
@@ -131,6 +133,16 @@ export class MongoStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const user = await UserModel.create(insertUser);
     return { ...user.toObject(), id: user._id.toString() } as any;
+  }
+
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const user = await UserModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!user) return undefined;
+    return { ...user.toObject(), id: user._id.toString() } as any;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await UserModel.findByIdAndDelete(id);
   }
 
   async getAttendance(userId: string): Promise<Attendance[]> {
