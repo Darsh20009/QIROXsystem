@@ -196,13 +196,13 @@ export async function registerRoutes(
   });
 
   // === ORDERS API ===
-  app.get(api.orders.list.path, async (req, res) => {
+  app.get("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const orders = await storage.getOrders(String((req.user as User).id));
     res.json(orders);
   });
 
-  app.post(api.orders.create.path, async (req, res) => {
+  app.post("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const order = await storage.createOrder({ ...req.body, userId: String((req.user as User).id) });
     res.status(201).json(order);
@@ -503,6 +503,12 @@ export async function seedDatabase() {
     });
   }
 
+  // Clean repoUrl from existing templates (migration)
+  try {
+    const { SectorTemplateModel } = await import("./models");
+    await SectorTemplateModel.collection.updateMany({}, { $unset: { repoUrl: "" } });
+  } catch (e) {}
+
   // Seed Sector Templates
   const existingTemplates = await storage.getSectorTemplates();
   if (existingTemplates.length === 0) {
@@ -514,7 +520,6 @@ export async function seedDatabase() {
         description: "Complete digital platform for Quran memorization academies with student tracking, teacher management, and progress reports.",
         descriptionAr: "منصة رقمية متكاملة لأكاديميات تحفيظ القرآن مع تتبع الطلاب وإدارة المعلمين وتقارير التقدم.",
         category: "education",
-        repoUrl: "https://github.com/Darsh20009/bustan-aleman.git",
         icon: "BookOpen",
         features: ["Student Progress Tracking", "Teacher Dashboard", "Quran Memorization Plans", "Parent Portal", "Attendance System"],
         featuresAr: ["تتبع تقدم الطلاب", "لوحة تحكم المعلمين", "خطط حفظ القرآن", "بوابة أولياء الأمور", "نظام الحضور"],
@@ -534,7 +539,6 @@ export async function seedDatabase() {
         description: "Modern e-learning platform with course management, live classes, quizzes, and student analytics.",
         descriptionAr: "منصة تعليم إلكتروني حديثة مع إدارة الدورات والفصول المباشرة والاختبارات وتحليلات الطلاب.",
         category: "education",
-        repoUrl: "https://github.com/Darsh20009/be-fluent-edu.git",
         icon: "GraduationCap",
         features: ["Course Builder", "Live Classes", "Quiz Engine", "Certificates", "Student Analytics"],
         featuresAr: ["منشئ الدورات", "فصول مباشرة", "محرك اختبارات", "شهادات", "تحليلات الطلاب"],
@@ -554,7 +558,6 @@ export async function seedDatabase() {
         description: "Professional exam management system with question banks, auto-grading, analytics, and anti-cheat measures.",
         descriptionAr: "نظام إدارة اختبارات احترافي مع بنوك أسئلة وتصحيح تلقائي وتحليلات ومنع الغش.",
         category: "education",
-        repoUrl: "https://github.com/Darsh20009/qodratak.exam.git",
         icon: "ClipboardCheck",
         features: ["Question Banks", "Auto Grading", "Timer System", "Analytics Dashboard", "Anti-Cheat"],
         featuresAr: ["بنوك الأسئلة", "تصحيح تلقائي", "نظام المؤقت", "لوحة التحليلات", "منع الغش"],
@@ -574,7 +577,6 @@ export async function seedDatabase() {
         description: "Complete fitness website with workout plans, nutrition tracking, membership management, and trainer profiles.",
         descriptionAr: "موقع لياقة بدنية متكامل مع خطط التمارين وتتبع التغذية وإدارة العضويات وملفات المدربين.",
         category: "health",
-        repoUrl: "https://github.com/Darsh20009/darwfit-fitness.git",
         icon: "Dumbbell",
         features: ["Workout Plans", "Nutrition Tracker", "Membership System", "Trainer Profiles", "Progress Photos"],
         featuresAr: ["خطط التمارين", "تتبع التغذية", "نظام العضويات", "ملفات المدربين", "صور التقدم"],
@@ -594,7 +596,6 @@ export async function seedDatabase() {
         description: "Personal professional portfolio and resume website with modern design, project showcase, and contact forms.",
         descriptionAr: "موقع محفظة شخصية احترافية وسيرة ذاتية بتصميم حديث وعرض المشاريع ونماذج الاتصال.",
         category: "personal",
-        repoUrl: "https://github.com/Darsh20009/my-resume.git",
         icon: "User",
         features: ["Responsive Design", "Project Showcase", "Skills Section", "Contact Form", "Downloadable CV"],
         featuresAr: ["تصميم متجاوب", "عرض المشاريع", "قسم المهارات", "نموذج اتصال", "تحميل السيرة الذاتية"],
@@ -614,7 +615,6 @@ export async function seedDatabase() {
         description: "Non-profit organization website with donation management, volunteer tracking, campaigns, and transparency reports.",
         descriptionAr: "موقع منظمات غير ربحية مع إدارة التبرعات وتتبع المتطوعين والحملات وتقارير الشفافية.",
         category: "institutional",
-        repoUrl: "https://github.com/Darsh20009/tuwaiq.git",
         icon: "Heart",
         features: ["Donation System", "Volunteer Management", "Campaign Tracker", "Impact Reports", "Event Calendar"],
         featuresAr: ["نظام التبرعات", "إدارة المتطوعين", "تتبع الحملات", "تقارير الأثر", "تقويم الفعاليات"],
@@ -634,7 +634,6 @@ export async function seedDatabase() {
         description: "Full-featured e-commerce platform with product management, cart, checkout, payment gateways, and order tracking.",
         descriptionAr: "منصة تجارة إلكترونية متكاملة مع إدارة المنتجات وسلة التسوق والدفع وتتبع الطلبات.",
         category: "commerce",
-        repoUrl: "https://github.com/Darsh20009/genmz-shop.git",
         icon: "ShoppingCart",
         features: ["Product Catalog", "Shopping Cart", "Payment Gateway", "Order Tracking", "Inventory Management"],
         featuresAr: ["كتالوج المنتجات", "سلة التسوق", "بوابة الدفع", "تتبع الطلبات", "إدارة المخزون"],
@@ -654,7 +653,6 @@ export async function seedDatabase() {
         description: "Smart restaurant management system with digital menu, QR ordering, kitchen display, and real-time analytics.",
         descriptionAr: "نظام إدارة مطاعم ذكي مع قائمة رقمية وطلب عبر QR وشاشة المطبخ وتحليلات مباشرة.",
         category: "food",
-        repoUrl: "https://github.com/Darsh20009/CLUNY-CAFE.git",
         icon: "Coffee",
         features: ["Digital Menu", "QR Ordering", "Kitchen Display", "Table Management", "Real-time Analytics"],
         featuresAr: ["قائمة رقمية", "طلب QR", "شاشة المطبخ", "إدارة الطاولات", "تحليلات مباشرة"],

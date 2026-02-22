@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import {
-  Loader2, ExternalLink, ArrowLeft, Check, ArrowUpRight,
+  Loader2, ArrowLeft, Check, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe, Layers, Filter
 } from "lucide-react";
@@ -16,14 +17,14 @@ const IconMap: Record<string, any> = {
   User, Heart, ShoppingCart, Coffee, Globe
 };
 
-const categoryLabels: Record<string, string> = {
-  all: "الكل",
-  education: "التعليم",
-  health: "الصحة واللياقة",
-  personal: "شخصي",
-  institutional: "مؤسسي",
-  commerce: "تجارة إلكترونية",
-  food: "مطاعم وكافيهات",
+const categoryLabelsMap: Record<string, { ar: string; en: string }> = {
+  all: { ar: "الكل", en: "All" },
+  education: { ar: "التعليم", en: "Education" },
+  health: { ar: "الصحة واللياقة", en: "Health & Fitness" },
+  personal: { ar: "شخصي", en: "Personal" },
+  institutional: { ar: "مؤسسي", en: "Institutional" },
+  commerce: { ar: "تجارة إلكترونية", en: "E-commerce" },
+  food: { ar: "مطاعم وكافيهات", en: "Restaurants & Cafes" },
 };
 
 const fadeUp = {
@@ -37,11 +38,14 @@ const fadeUp = {
 export default function Portfolio() {
   const { data: templates, isLoading } = useTemplates();
   const [activeFilter, setActiveFilter] = useState("all");
+  const { t, lang } = useI18n();
 
   const categories = ["all", ...Array.from(new Set(templates?.map(t => t.category) || []))];
   const filtered = activeFilter === "all"
     ? templates
     : templates?.filter(t => t.category === activeFilter);
+
+  const catLabel = (cat: string) => categoryLabelsMap[cat]?.[lang] || cat;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
@@ -54,20 +58,20 @@ export default function Portfolio() {
           <motion.div initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
               <Layers className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span className="text-white/40 text-xs tracking-wider uppercase">Portfolio</span>
+              <span className="text-white/40 text-xs tracking-wider uppercase">{t("portfolio.badge")}</span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-white mb-6 tracking-tight">
-              الأنظمة <span className="text-gradient">الجاهزة</span>
+              {t("portfolio.title1")} <span className="text-gradient">{t("portfolio.title2")}</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-white/30 text-lg max-w-2xl mx-auto leading-relaxed">
-              {templates?.length || 8} أنظمة مبنية بمعايير SaaS عالمية. كل نظام قابل للتخصيص والتوسعة.
+              {t("portfolio.subtitle")}
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex items-center justify-center gap-12 mt-14">
               {[
-                { value: templates?.length || 8, label: "نظام" },
-                { value: "6+", label: "قطاع" },
-                { value: "100%", label: "قابل للتخصيص" },
+                { value: templates?.length || 8, label: t("portfolio.system") },
+                { value: "6+", label: t("portfolio.sectors") },
+                { value: "100%", label: t("portfolio.customizable") },
               ].map((stat, i) => (
                 <div key={i} className="text-center">
                   <div className="text-2xl font-black text-white">{stat.value}</div>
@@ -95,7 +99,7 @@ export default function Portfolio() {
                     : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70"
                 }`}
               >
-                {categoryLabels[cat] || cat}
+                {catLabel(cat)}
               </button>
             ))}
           </div>
@@ -128,51 +132,50 @@ export default function Portfolio() {
                         <Icon className="w-5 h-5 text-white/40 group-hover:text-[#00D4FF] transition-colors duration-500" />
                       </div>
                       <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-white/30">
-                        {categoryLabels[template.category] || template.category}
+                        {catLabel(template.category)}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold font-heading text-white mb-1">{template.nameAr}</h3>
-                    <p className="text-[10px] text-white/20 font-mono mb-3">{template.name}</p>
-                    <p className="text-sm text-white/30 leading-relaxed mb-5 line-clamp-2 flex-1">{template.descriptionAr}</p>
+                    <h3 className="text-base font-bold font-heading text-white mb-1">
+                      {lang === "ar" ? template.nameAr : template.name}
+                    </h3>
+                    <p className="text-[10px] text-white/20 font-mono mb-3">
+                      {lang === "ar" ? template.name : template.nameAr}
+                    </p>
+                    <p className="text-sm text-white/30 leading-relaxed mb-5 line-clamp-2 flex-1">
+                      {lang === "ar" ? template.descriptionAr : template.description}
+                    </p>
 
                     <div className="space-y-2 mb-5">
-                      {template.featuresAr?.slice(0, 3).map((feature, i) => (
+                      {(lang === "ar" ? template.featuresAr : template.features)?.slice(0, 3).map((feature, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs text-white/30">
                           <Check className="w-3 h-3 text-[#00D4FF]/60 flex-shrink-0" />
                           <span>{feature}</span>
                         </div>
                       ))}
-                      {(template.featuresAr?.length || 0) > 3 && (
+                      {((lang === "ar" ? template.featuresAr : template.features)?.length || 0) > 3 && (
                         <div className="text-[10px] text-white/15">
-                          +{(template.featuresAr?.length || 0) - 3} ميزات أخرى
+                          +{((lang === "ar" ? template.featuresAr : template.features)?.length || 0) - 3} {t("portfolio.moreFeatures")}
                         </div>
                       )}
                     </div>
 
                     <div className="mt-auto pt-4 border-t border-white/5">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-white/20">يبدأ من</span>
+                        <span className="text-[10px] text-white/20">{t("portfolio.startFrom")}</span>
                         <span className="font-bold text-white text-sm">{template.priceMin?.toLocaleString()} <span className="text-white/30 text-xs">{template.currency}</span></span>
                       </div>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] text-white/20">المدة</span>
+                        <span className="text-[10px] text-white/20">{t("portfolio.duration")}</span>
                         <span className="text-xs text-white/30">{template.estimatedDuration}</span>
                       </div>
                       <div className="flex gap-2">
                         <Link href="/order" className="flex-1">
                           <Button className="w-full h-10 text-xs premium-btn rounded-xl" data-testid={`button-order-${template.slug}`}>
-                            اطلب الآن
+                            {t("portfolio.orderNow")}
                             <ArrowLeft className="w-3 h-3 mr-1" />
                           </Button>
                         </Link>
-                        {template.repoUrl && (
-                          <a href={template.repoUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 text-white/30 hover:text-white hover:bg-white/5 rounded-xl bg-transparent" data-testid={`button-repo-${template.slug}`}>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Button>
-                          </a>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -187,21 +190,21 @@ export default function Portfolio() {
         <div className="absolute inset-0 gradient-mesh opacity-30" />
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
-            جاهز لبناء <span className="text-gradient">مشروعك</span>؟
+            {t("portfolio.readyTitle")} <span className="text-gradient">{t("portfolio.readyHighlight")}</span>
           </h2>
           <p className="text-white/30 text-lg max-w-2xl mx-auto mb-12">
-            اختر النظام المناسب وابدأ بنيتك التحتية الرقمية.
+            {t("portfolio.readySubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/order">
               <Button size="lg" className="premium-btn h-14 px-10 rounded-xl font-semibold" data-testid="button-start-project">
-                ابدأ مشروعك
+                {t("portfolio.startProject")}
                 <ArrowLeft className="w-5 h-5 mr-2" />
               </Button>
             </Link>
             <Link href="/contact">
               <Button variant="outline" size="lg" className="h-14 px-10 border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl font-semibold bg-transparent" data-testid="button-contact-us">
-                تواصل معنا
+                {t("portfolio.contactUs")}
               </Button>
             </Link>
           </div>

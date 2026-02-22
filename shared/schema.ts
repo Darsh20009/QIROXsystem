@@ -214,7 +214,6 @@ export interface SectorTemplate {
   description: string;
   descriptionAr: string;
   category: string;
-  repoUrl?: string;
   icon?: string;
   features?: string[];
   featuresAr?: string[];
@@ -237,7 +236,6 @@ export interface InsertSectorTemplate {
   description: string;
   descriptionAr: string;
   category: string;
-  repoUrl?: string;
   icon?: string;
   features?: string[];
   featuresAr?: string[];

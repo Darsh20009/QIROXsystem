@@ -13,37 +13,39 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, FileText, Settings, Users, Wallet, Briefcase,
-  LogIn, LogOut, Clock, Layers, Image, DollarSign, Handshake
+  LayoutDashboard, FileText, Users, Wallet, Briefcase,
+  LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
-
-const items = [
-  { title: "Home", icon: LayoutDashboard, url: "/" },
-  { title: "Portfolio", icon: Image, url: "/portfolio" },
-  { title: "Services", icon: Briefcase, url: "/services" },
-  { title: "Prices", icon: DollarSign, url: "/prices" },
-  { title: "About", icon: FileText, url: "/about" },
-  { title: "Contact", icon: Briefcase, url: "/contact" },
-  { title: "Projects", icon: LayoutDashboard, url: "/dashboard" },
-  { title: "لوحة التحكم", icon: LayoutDashboard, url: "/admin" },
-  { title: "إدارة القوالب", icon: Layers, url: "/admin/templates" },
-  { title: "إدارة الخدمات", icon: Briefcase, url: "/admin/services" },
-  { title: "إدارة الطلبات", icon: FileText, url: "/admin/orders" },
-  { title: "الإدارة المالية", icon: Wallet, url: "/admin/finance" },
-  { title: "إدارة الموظفين", icon: Users, url: "/admin/employees" },
-  { title: "إدارة الشركاء", icon: Handshake, url: "/admin/partners" },
-];
 
 export function AppSidebar() {
   const [location] = useLocation();
   const { data: user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const isAdmin = user && user.role !== "client";
+
+  const items = [
+    { title: t("nav.home"), icon: LayoutDashboard, url: "/", group: "public" },
+    { title: t("nav.portfolio"), icon: Image, url: "/portfolio", group: "public" },
+    { title: t("nav.services"), icon: Briefcase, url: "/services", group: "public" },
+    { title: t("nav.prices"), icon: DollarSign, url: "/prices", group: "public" },
+    { title: t("nav.about"), icon: FileText, url: "/about", group: "public" },
+    { title: t("nav.contact"), icon: Briefcase, url: "/contact", group: "public" },
+    { title: t("admin.dashboard"), icon: LayoutDashboard, url: "/dashboard", group: "client" },
+    { title: t("admin.dashboard"), icon: LayoutDashboard, url: "/admin", group: "admin" },
+    { title: t("admin.templates"), icon: Layers, url: "/admin/templates", group: "admin" },
+    { title: t("admin.services"), icon: Briefcase, url: "/admin/services", group: "admin" },
+    { title: t("admin.orders"), icon: FileText, url: "/admin/orders", group: "admin" },
+    { title: t("admin.finance"), icon: Wallet, url: "/admin/finance", group: "admin" },
+    { title: t("admin.employees"), icon: Users, url: "/admin/employees", group: "admin" },
+    { title: t("admin.partners"), icon: Handshake, url: "/admin/partners", group: "admin" },
+  ];
 
   const { data: attendanceStatus } = useQuery({
     queryKey: ["/api/attendance/status"],
@@ -62,7 +64,7 @@ export function AppSidebar() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
-      toast({ title: "تم تسجيل الدخول", description: "تم تبصيم الحضور بنجاح" });
+      toast({ title: t("admin.dashboard"), description: "OK" });
     },
   });
 
@@ -74,21 +76,15 @@ export function AppSidebar() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance/status"] });
-      toast({ title: "تم تسجيل الخروج", description: "تم تبصيم الانصراف بنجاح" });
+      toast({ title: t("admin.logout") });
     },
   });
 
   const menuItems = items.filter(item => {
-    if (!user) {
-      return ["Home", "Portfolio", "Services", "Prices", "About", "Contact"].includes(item.title);
-    }
-    if (user.role === "client") {
-      return ["Home", "Portfolio", "Services", "Prices", "About", "Contact", "Projects"].includes(item.title);
-    }
+    if (!user) return item.group === "public";
+    if (user.role === "client") return item.group === "public" || item.group === "client";
     return true;
   });
-
-  const groupLabel = !user ? "القائمة" : (isAdmin ? "الإدارة" : "المشروع");
 
   return (
     <Sidebar side="right" className="bg-[#0A0A0F] border-l border-white/5">
@@ -100,7 +96,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-white/20 uppercase tracking-[3px] mb-2">
-            {groupLabel}
+            {!user ? t("nav.home") : (isAdmin ? t("admin.dashboard") : t("admin.dashboard"))}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -126,7 +122,7 @@ export function AppSidebar() {
         {user && user.role !== "client" && (
           <SidebarGroup>
             <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-white/20 uppercase tracking-[3px] mb-2">
-              التبصيم
+              Attendance
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-4 pb-4">
               {!attendanceStatus || attendanceStatus.checkOut ? (
@@ -136,13 +132,13 @@ export function AppSidebar() {
                   disabled={checkInMutation.isPending}
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>تسجيل حضور</span>
+                  <span>{t("login.submit")}</span>
                 </SidebarMenuButton>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2 text-[10px] text-white/30 bg-white/5 p-2 rounded-xl border border-white/5">
                     <Clock className="w-3 h-3" />
-                    <span>منذ: {new Date(attendanceStatus.checkIn || "").toLocaleTimeString("ar-SA")}</span>
+                    <span>{new Date(attendanceStatus.checkIn || "").toLocaleTimeString("ar-SA")}</span>
                   </div>
                   <SidebarMenuButton
                     onClick={() => checkOutMutation.mutate()}
@@ -150,7 +146,7 @@ export function AppSidebar() {
                     disabled={checkOutMutation.isPending}
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>تسجيل انصراف</span>
+                    <span>{t("admin.logout")}</span>
                   </SidebarMenuButton>
                 </div>
               )}
@@ -173,7 +169,7 @@ export function AppSidebar() {
           <Button asChild variant="outline" size="sm" className="w-full justify-start gap-2 border-white/10 text-white/50 rounded-xl bg-transparent hover:bg-white/5">
             <Link href="/login">
               <LogIn className="w-4 h-4" />
-              <span>تسجيل الدخول</span>
+              <span>{t("login.submit")}</span>
             </Link>
           </Button>
         )}

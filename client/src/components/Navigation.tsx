@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useUser, useLogout } from "@/hooks/use-auth";
-import { Menu, X, LogOut, ArrowLeft } from "lucide-react";
+import { Menu, X, LogOut, ArrowLeft, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 export default function Navigation() {
   const { data: user } = useUser();
@@ -12,6 +13,7 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const { t, lang, setLang } = useI18n();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -20,14 +22,14 @@ export default function Navigation() {
   }, []);
 
   const navLinks = [
-    { href: "/", label: "الرئيسية" },
-    { href: "/services", label: "الخدمات" },
-    { href: "/portfolio", label: "الأنظمة" },
-    { href: "/prices", label: "الباقات" },
-    { href: "/partners", label: "الشركاء" },
-    { href: "/about", label: "عن المنصة" },
-    { href: "/contact", label: "تواصل" },
-    ...(user ? [{ href: "/dashboard", label: "لوحة التحكم" }] : []),
+    { href: "/", label: t("nav.home") },
+    { href: "/services", label: t("nav.services") },
+    { href: "/portfolio", label: t("nav.portfolio") },
+    { href: "/prices", label: t("nav.prices") },
+    { href: "/partners", label: t("nav.partners") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/contact", label: t("nav.contact") },
+    ...(user ? [{ href: "/dashboard", label: t("nav.dashboard") }] : []),
   ];
 
   return (
@@ -75,6 +77,13 @@ export default function Navigation() {
               </div>
 
               <div className="hidden md:flex items-center gap-3">
+                <button
+                  onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                  className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+                  data-testid="button-lang-toggle-nav"
+                >
+                  <Globe className="w-4 h-4" />
+                </button>
                 {user ? (
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
@@ -95,12 +104,12 @@ export default function Navigation() {
                   <>
                     <Link href="/login">
                       <Button variant="ghost" size="sm" className="text-white/50 hover:text-white hover:bg-white/5 font-medium rounded-xl" data-testid="button-login-nav">
-                        دخول
+                        {t("nav.login")}
                       </Button>
                     </Link>
                     <Link href="/register">
                       <Button size="sm" className="premium-btn rounded-xl px-5 text-sm font-semibold" data-testid="button-register-nav">
-                        ابدأ مشروعك
+                        {t("nav.startProject")}
                         <ArrowLeft className="w-3.5 h-3.5 mr-1" />
                       </Button>
                     </Link>
@@ -153,6 +162,13 @@ export default function Navigation() {
 
               <div className="pb-8 space-y-3">
                 <div className="h-px bg-white/10 mb-4" />
+                <button
+                  onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                  className="w-full text-center py-2 text-white/40 text-sm hover:text-white/70 transition-colors"
+                  data-testid="button-lang-toggle-mobile"
+                >
+                  {lang === "ar" ? "English" : "عربي"}
+                </button>
                 {user ? (
                   <Button
                     variant="outline"
@@ -160,15 +176,15 @@ export default function Navigation() {
                     onClick={() => { logout(); setIsOpen(false); }}
                   >
                     <LogOut className="w-4 h-4" />
-                    تسجيل خروج
+                    {t("admin.logout")}
                   </Button>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Link href="/login" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full border-white/10 text-white/70 rounded-xl h-12">دخول</Button>
+                      <Button variant="outline" className="w-full border-white/10 text-white/70 rounded-xl h-12">{t("nav.login")}</Button>
                     </Link>
                     <Link href="/register" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full premium-btn rounded-xl h-12">ابدأ الآن</Button>
+                      <Button className="w-full premium-btn rounded-xl h-12">{t("nav.startProject")}</Button>
                     </Link>
                   </div>
                 )}

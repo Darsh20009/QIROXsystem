@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Loader2, ArrowLeft, Check, Server, ShoppingBag, Utensils, Building2, Briefcase } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const IconMap: Record<string, any> = { Utensils, ShoppingBag, Building2, Server };
 
@@ -16,8 +17,18 @@ const fadeUp = {
   })
 };
 
+const categoryMap: Record<string, string> = {
+  restaurants: "services.cat.restaurants",
+  stores: "services.cat.stores",
+  institutions: "services.cat.institutions",
+  education: "services.cat.education",
+  health: "services.cat.health",
+  personal: "services.cat.personal",
+};
+
 export default function Services() {
   const { data: services, isLoading } = useServices();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
@@ -30,13 +41,13 @@ export default function Services() {
           <motion.div initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
               <Briefcase className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span className="text-white/40 text-xs tracking-wider uppercase">Services</span>
+              <span className="text-white/40 text-xs tracking-wider uppercase">{t("services.badge")}</span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-white mb-6 tracking-tight">
-              خدماتنا <span className="text-gradient">المتميزة</span>
+              {t("services.title")} <span className="text-gradient">{t("services.titleHighlight")}</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-white/30 text-lg max-w-2xl mx-auto">
-              حلول مصممة خصيصاً لنمو أعمالك. اختر الباقة المناسبة ودعنا نتكفل بالباقي.
+              {t("services.subtitle")}
             </motion.p>
           </motion.div>
         </div>
@@ -52,6 +63,7 @@ export default function Services() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {services?.map((service, idx) => {
               const Icon = IconMap[service.icon || "Server"] || Server;
+              const catKey = categoryMap[service.category || ""] as any;
               return (
                 <motion.div
                   key={service.id}
@@ -65,8 +77,7 @@ export default function Services() {
                       <Icon className="w-5 h-5 text-white/40 group-hover:text-[#00D4FF] transition-colors" />
                     </div>
                     <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-white/30 self-start mb-4">
-                      {service.category === 'restaurants' ? 'مطاعم وكافيهات' :
-                       service.category === 'stores' ? 'متاجر إلكترونية' : 'شركات ومؤسسات'}
+                      {catKey ? t(catKey) : service.category}
                     </span>
                     <h3 className="text-lg font-bold font-heading text-white mb-3">{service.title}</h3>
                     <p className="text-sm text-white/30 mb-6 leading-relaxed flex-1">{service.description}</p>
@@ -81,13 +92,13 @@ export default function Services() {
                     </div>
 
                     <div className="flex items-center justify-between py-4 border-t border-white/5 mb-4">
-                      <span className="text-xs text-white/20">المدة التقديرية</span>
+                      <span className="text-xs text-white/20">{t("services.duration")}</span>
                       <span className="text-sm font-semibold text-white">{service.estimatedDuration}</span>
                     </div>
 
                     <Link href={`/order?service=${service.id}`} className="w-full">
                       <Button className="w-full h-12 premium-btn rounded-xl font-semibold">
-                        اطلب الخدمة
+                        {t("services.orderService")}
                         <ArrowLeft className="w-4 h-4 mr-2" />
                       </Button>
                     </Link>

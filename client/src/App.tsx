@@ -4,8 +4,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SplashScreen } from "@/components/qirox-brand";
+import { I18nProvider, useI18n } from "@/lib/i18n";
 
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
@@ -80,15 +81,10 @@ function AdminRouter() {
   );
 }
 
-function App() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
+function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [location] = useLocation();
-
-  useEffect(() => {
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
-  }, [lang]);
+  const { lang, setLang, dir } = useI18n();
 
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
@@ -100,7 +96,7 @@ function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <div className={`min-h-screen flex flex-col bg-[#0A0A0F] ${lang === "ar" ? "rtl" : "ltr"}`}>
+          <div className={`min-h-screen flex flex-col bg-[#0A0A0F] ${dir}`}>
             <PublicRouter />
             <Toaster />
           </div>
@@ -118,7 +114,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SidebarProvider style={style as React.CSSProperties}>
-          <div className={`min-h-screen flex w-full bg-[#0A0A0F] ${lang === "ar" ? "rtl" : "ltr"}`}>
+          <div className={`min-h-screen flex w-full bg-[#0A0A0F] ${dir}`}>
             <AppSidebar />
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
               <header className="h-16 border-b border-white/5 bg-[#0A0A0F]/80 backdrop-blur-xl flex items-center justify-between px-4 sticky top-0 z-40">
@@ -129,6 +125,7 @@ function App() {
                   <button
                     onClick={() => setLang(lang === "ar" ? "en" : "ar")}
                     className="bg-white/5 text-white/70 border border-white/10 px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-all"
+                    data-testid="button-lang-toggle"
                   >
                     {lang === "ar" ? "English" : "عربي"}
                   </button>
@@ -145,6 +142,14 @@ function App() {
         </SidebarProvider>
       </TooltipProvider>
     </QueryClientProvider>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 }
 

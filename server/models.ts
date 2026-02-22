@@ -164,7 +164,6 @@ const sectorTemplateSchema = new mongoose.Schema({
   description: { type: String, required: true },
   descriptionAr: { type: String, required: true },
   category: { type: String, required: true },
-  repoUrl: String,
   icon: String,
   features: [String],
   featuresAr: [String],

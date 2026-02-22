@@ -1,8 +1,11 @@
 import { Link } from "wouter";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { ArrowUpRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function Footer() {
+  const { t } = useI18n();
+
   return (
     <footer className="relative bg-[#07070A] pt-24 pb-10 overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.12), transparent)" }} />
@@ -14,7 +17,7 @@ export default function Footer() {
               <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain" />
             </div>
             <p className="text-white/30 text-[15px] leading-[1.8] max-w-sm mb-8">
-              مصنع الأنظمة الرقمية — نبني بنية تحتية رقمية متكاملة للشركات والمؤسسات في السعودية ومصر.
+              {t("footer.description")}
             </p>
             <div className="flex items-center gap-4">
               <span className="text-[11px] tracking-[3px] uppercase text-[#00D4FF]/40 font-medium">الرياض</span>
@@ -24,13 +27,13 @@ export default function Footer() {
           </div>
 
           <div className="md:col-span-2 md:col-start-7">
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">المنصة</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">{t("footer.quickLinks")}</h4>
             <ul className="space-y-4">
               {[
-                { href: "/portfolio", label: "الأنظمة" },
-                { href: "/prices", label: "الباقات" },
-                { href: "/about", label: "عن المنصة" },
-                { href: "/services", label: "الخدمات" },
+                { href: "/portfolio", label: t("nav.portfolio") },
+                { href: "/prices", label: t("nav.prices") },
+                { href: "/about", label: t("nav.about") },
+                { href: "/services", label: t("nav.services") },
               ].map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-white/25 hover:text-[#00D4FF] transition-colors text-sm flex items-center gap-1 group" data-testid={`footer-link-${link.href.replace('/', '')}`}>
@@ -43,13 +46,13 @@ export default function Footer() {
           </div>
 
           <div className="md:col-span-2">
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">الشركة</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">{t("nav.contact")}</h4>
             <ul className="space-y-4">
               {[
-                { href: "/contact", label: "تواصل معنا" },
-                { href: "/jobs", label: "الوظائف" },
-                { href: "/news", label: "الأخبار" },
-                { href: "/join", label: "انضم لنا" },
+                { href: "/contact", label: t("nav.contact") },
+                { href: "/jobs", label: t("nav.portfolio") },
+                { href: "/news", label: t("nav.home") },
+                { href: "/join", label: t("nav.startProject") },
               ].map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-white/25 hover:text-[#00D4FF] transition-colors text-sm flex items-center gap-1 group" data-testid={`footer-link-${link.href.replace('/', '')}`}>
@@ -62,11 +65,11 @@ export default function Footer() {
           </div>
 
           <div className="md:col-span-2">
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">قانوني</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-[3px] mb-7">{t("footer.legal")}</h4>
             <ul className="space-y-4">
               {[
-                { href: "/privacy", label: "الخصوصية" },
-                { href: "/terms", label: "الشروط" },
+                { href: "/privacy", label: t("footer.privacy") },
+                { href: "/terms", label: t("footer.terms") },
               ].map(link => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-white/25 hover:text-[#00D4FF] transition-colors text-sm flex items-center gap-1 group" data-testid={`footer-link-${link.href.replace('/', '')}`}>
@@ -83,7 +86,7 @@ export default function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-white/15 text-xs">
-            © {new Date().getFullYear()} QIROX Systems Factory. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} QIROX Systems Factory. {t("footer.rights")}.
           </p>
           <p className="text-white/10 text-[10px] tracking-[2px] uppercase">
             Build Systems. Stay Human.

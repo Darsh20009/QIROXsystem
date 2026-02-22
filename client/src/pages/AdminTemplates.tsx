@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Plus, Pencil, Trash2, ExternalLink, Layers, CreditCard,
+  Loader2, Plus, Pencil, Trash2, Layers, CreditCard,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe
 } from "lucide-react";
@@ -31,7 +31,6 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
     description: template?.description || "",
     descriptionAr: template?.descriptionAr || "",
     category: template?.category || "",
-    repoUrl: template?.repoUrl || "",
     icon: template?.icon || "Globe",
     priceMin: template?.priceMin || 0,
     priceMax: template?.priceMax || 0,
@@ -130,11 +129,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
           <Input value={formData.estimatedDuration} onChange={e => setFormData({...formData, estimatedDuration: e.target.value})} data-testid="input-template-duration" />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">رابط GitHub</label>
-          <Input value={formData.repoUrl} onChange={e => setFormData({...formData, repoUrl: e.target.value})} data-testid="input-template-repo" />
-        </div>
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium text-slate-700 block mb-1">الأيقونة</label>
           <Input value={formData.icon} onChange={e => setFormData({...formData, icon: e.target.value})} data-testid="input-template-icon" />
@@ -279,13 +274,6 @@ export default function AdminTemplates() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {template.repoUrl && (
-                          <a href={template.repoUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-repo-admin-${template.slug}`}>
-                              <ExternalLink className="w-4 h-4" />
-                            </Button>
-                          </a>
-                        )}
                         <Button 
                           variant="ghost" size="icon" className="h-8 w-8"
                           onClick={() => { setEditingTemplate(template); setIsDialogOpen(true); }}

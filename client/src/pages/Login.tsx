@@ -11,10 +11,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export default function Login() {
   const [location] = useLocation();
+  const { t } = useI18n();
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
 
@@ -25,23 +27,23 @@ export default function Login() {
   const error = loginError || registerError;
 
   const registerSchema = z.object({
-    username: z.string().min(1, "اسم المستخدم مطلوب"),
-    password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-    email: z.string().email("البريد الإلكتروني غير صالح"),
-    fullName: z.string().min(1, "الاسم الكامل مطلوب"),
+    username: z.string().min(1),
+    password: z.string().min(6),
+    email: z.string().email(),
+    fullName: z.string().min(1),
     confirmPassword: z.string(),
     whatsappNumber: z.string().optional(),
     country: z.string().optional(),
     businessType: z.string().optional(),
     role: z.string().optional(),
   }).refine((data) => data.password === data.confirmPassword, {
-    message: "كلمات المرور غير متطابقة",
+    message: "Passwords don't match",
     path: ["confirmPassword"],
   });
 
   const loginSchema = z.object({
-    username: z.string().min(1, "اسم المستخدم مطلوب"),
-    password: z.string().min(1, "كلمة المرور مطلوبة"),
+    username: z.string().min(1),
+    password: z.string().min(1),
   });
 
   const schema = isRegister ? registerSchema : loginSchema;
@@ -96,12 +98,12 @@ export default function Login() {
           <div className="p-8">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold font-heading text-white mb-2">
-                {isRegister ? (isEmployeeRegister ? "تسجيل موظف جديد" : "إنشاء حساب جديد") : "تسجيل الدخول"}
+                {isRegister ? (isEmployeeRegister ? t("login.employee.title") : t("login.register.title")) : t("login.title")}
               </h1>
               <p className="text-sm text-white/30">
                 {isRegister
-                  ? (isEmployeeRegister ? "أكمل بياناتك كموظف للانضمام للمنصة" : "أدخل بياناتك لإنشاء حساب والبدء")
-                  : "مرحباً بك مجدداً، أدخل بياناتك للمتابعة"}
+                  ? (isEmployeeRegister ? t("login.employee.subtitle") : t("login.register.subtitle"))
+                  : t("login.subtitle")}
               </p>
             </div>
 
@@ -119,9 +121,9 @@ export default function Login() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/50 text-sm">اسم المستخدم</FormLabel>
+                      <FormLabel className="text-white/50 text-sm">{t("login.username")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="user123" {...field} className={inputClasses} />
+                        <Input placeholder="user123" {...field} className={inputClasses} data-testid="input-username" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -135,9 +137,9 @@ export default function Login() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">الاسم الكامل</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">{t("login.fullName")}</FormLabel>
                           <FormControl>
-                            <Input placeholder="محمد أحمد" {...field} className={inputClasses} />
+                            <Input placeholder="John Doe" {...field} className={inputClasses} data-testid="input-fullName" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -148,9 +150,9 @@ export default function Login() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">البريد الإلكتروني</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">{t("login.email")}</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="name@example.com" {...field} className={inputClasses} />
+                            <Input type="email" placeholder="name@example.com" {...field} className={inputClasses} data-testid="input-email" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -162,21 +164,21 @@ export default function Login() {
                         name="role"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/50 text-sm">الدور الوظيفي</FormLabel>
+                            <FormLabel className="text-white/50 text-sm">{t("login.role")}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger className={inputClasses}>
-                                  <SelectValue placeholder="اختر الدور" />
+                                  <SelectValue />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="admin">مدير</SelectItem>
-                                <SelectItem value="employee_manager">محاسب</SelectItem>
-                                <SelectItem value="employee_sales">مدير مبيعات</SelectItem>
-                                <SelectItem value="employee_sales_exec">مبيعات</SelectItem>
-                                <SelectItem value="employee_dev">مبرمج</SelectItem>
-                                <SelectItem value="employee_design">مصمم</SelectItem>
-                                <SelectItem value="employee_support">دعم</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="employee_manager">Manager</SelectItem>
+                                <SelectItem value="employee_sales">Sales Manager</SelectItem>
+                                <SelectItem value="employee_sales_exec">Sales</SelectItem>
+                                <SelectItem value="employee_dev">Developer</SelectItem>
+                                <SelectItem value="employee_design">Designer</SelectItem>
+                                <SelectItem value="employee_support">Support</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -189,9 +191,9 @@ export default function Login() {
                       name="whatsappNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">رقم الواتساب</FormLabel>
+                          <FormLabel className="text-white/50 text-sm">{t("login.whatsapp")}</FormLabel>
                           <FormControl>
-                            <Input placeholder="+966" {...field} className={inputClasses} />
+                            <Input placeholder="+966" {...field} className={inputClasses} data-testid="input-whatsapp" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -204,9 +206,9 @@ export default function Login() {
                           name="country"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white/50 text-sm">الدولة</FormLabel>
+                              <FormLabel className="text-white/50 text-sm">{t("login.country")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="السعودية" {...field} className={inputClasses} />
+                                <Input placeholder="Saudi Arabia" {...field} className={inputClasses} data-testid="input-country" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -217,9 +219,9 @@ export default function Login() {
                           name="businessType"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white/50 text-sm">نوع النشاط</FormLabel>
+                              <FormLabel className="text-white/50 text-sm">{t("login.businessType")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="تجاري" {...field} className={inputClasses} />
+                                <Input placeholder="Commercial" {...field} className={inputClasses} data-testid="input-businessType" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -235,9 +237,9 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/50 text-sm">كلمة المرور</FormLabel>
+                      <FormLabel className="text-white/50 text-sm">{t("login.password")}</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} className={inputClasses} />
+                        <Input type="password" placeholder="••••••••" {...field} className={inputClasses} data-testid="input-password" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -250,9 +252,9 @@ export default function Login() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/50 text-sm">تأكيد كلمة المرور</FormLabel>
+                        <FormLabel className="text-white/50 text-sm">{t("login.confirmPassword")}</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} className={inputClasses} />
+                          <Input type="password" placeholder="••••••••" {...field} className={inputClasses} data-testid="input-confirmPassword" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -260,14 +262,14 @@ export default function Login() {
                   />
                 )}
 
-                <Button type="submit" className="w-full h-12 premium-btn rounded-xl font-semibold mt-6" disabled={isPending}>
+                <Button type="submit" className="w-full h-12 premium-btn rounded-xl font-semibold mt-6" disabled={isPending} data-testid="button-submit-login">
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      جاري المعالجة...
+                      {t("login.processing")}
                     </>
                   ) : (
-                    isRegister ? "إنشاء الحساب" : "دخول"
+                    isRegister ? t("login.submitRegister") : t("login.submit")
                   )}
                 </Button>
               </form>
@@ -275,9 +277,9 @@ export default function Login() {
           </div>
           <div className="py-5 text-center border-t border-white/5 bg-white/[0.02]">
             <span className="text-sm text-white/30">
-              {isRegister ? "لديك حساب بالفعل؟" : "ليس لديك حساب؟"}{" "}
+              {isRegister ? t("login.hasAccount") : t("login.noAccount")}{" "}
               <Link href={isRegister ? "/login" : "/register"} className="text-[#00D4FF] font-bold hover:underline">
-                {isRegister ? "سجل دخولك" : "أنشئ حساباً جديداً"}
+                {isRegister ? t("login.signIn") : t("login.createAccount")}
               </Link>
             </span>
           </div>

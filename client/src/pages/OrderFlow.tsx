@@ -13,11 +13,13 @@ import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useI18n } from "@/lib/i18n";
 
 export default function OrderFlow() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const serviceId = searchParams.get("service") || "";
+  const { t } = useI18n();
 
   const { data: user, isLoading: isUserLoading } = useUser();
   const { data: service, isLoading: isServiceLoading } = useService(serviceId);
@@ -59,15 +61,15 @@ export default function OrderFlow() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       toast({
-        title: "تم استلام طلبك بنجاح",
-        description: "سيتم التواصل معك قريباً لتأكيد التفاصيل.",
+        title: t("order.success"),
+        description: t("order.successDesc"),
       });
       setLocation("/dashboard");
     },
     onError: () => {
       toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من إرسال طلبك، حاول مرة أخرى.",
+        title: t("order.error"),
+        description: t("order.errorDesc"),
         variant: "destructive",
       });
     },
@@ -92,9 +94,9 @@ export default function OrderFlow() {
         <Navigation />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center" dir="rtl">
-            <p className="text-white/40 text-lg mb-4">الخدمة غير موجودة</p>
+            <p className="text-white/40 text-lg mb-4">{t("order.serviceNotFound")}</p>
             <Button onClick={() => setLocation("/services")} className="premium-btn" data-testid="button-back-services">
-              العودة للخدمات
+              {t("order.backToServices")}
             </Button>
           </div>
         </div>
@@ -116,7 +118,7 @@ export default function OrderFlow() {
     });
   };
 
-  const stepLabels = ["نوع المشروع", "المتطلبات", "المستندات", "الدفع", "تأكيد"];
+  const stepLabels = [t("order.step1"), t("order.step2"), t("order.step3"), t("order.step4"), t("order.step5")];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
@@ -151,14 +153,14 @@ export default function OrderFlow() {
           <div className="h-1 bg-gradient-to-r from-[#00D4FF] to-[#0099CC]" style={{ width: `${(step / 5) * 100}%`, transition: "width 0.3s" }} />
           <div className="p-6 md:p-8 border-b border-white/10">
             <h2 className="text-xl font-bold text-white">
-              {step === 1 && "نوع المشروع والقطاع"}
-              {step === 2 && "المتطلبات الفنية والنمط"}
-              {step === 3 && "رفع المستندات"}
-              {step === 4 && "اختر طريقة الدفع"}
-              {step === 5 && "ملخص الطلب"}
+              {step === 1 && t("order.step1.title")}
+              {step === 2 && t("order.step2.title")}
+              {step === 3 && t("order.step3.title")}
+              {step === 4 && t("order.step4.title")}
+              {step === 5 && t("order.step5.title")}
             </h2>
             <p className="text-sm text-white/30 mt-1">
-              الخدمة: <span className="text-[#00D4FF]">{service.title}</span>
+              {t("order.serviceLabel")}: <span className="text-[#00D4FF]">{service.title}</span>
             </p>
           </div>
 
@@ -167,9 +169,9 @@ export default function OrderFlow() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm mb-2 block text-white/60">نوع المشروع</Label>
+                    <Label className="text-sm mb-2 block text-white/60">{t("order.projectType")}</Label>
                     <Input
-                      placeholder="مثال: تطبيق توصيل"
+                      placeholder={t("order.projectTypePlaceholder")}
                       className="bg-white/5 border-white/10 text-white"
                       value={formData.projectType}
                       onChange={e => setFormData({ ...formData, projectType: e.target.value })}
@@ -177,9 +179,9 @@ export default function OrderFlow() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm mb-2 block text-white/60">القطاع</Label>
+                    <Label className="text-sm mb-2 block text-white/60">{t("order.sector")}</Label>
                     <Input
-                      placeholder="مثال: قطاع التجزئة"
+                      placeholder={t("order.sectorPlaceholder")}
                       className="bg-white/5 border-white/10 text-white"
                       value={formData.sector}
                       onChange={e => setFormData({ ...formData, sector: e.target.value })}
@@ -188,10 +190,10 @@ export default function OrderFlow() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm mb-2 block text-white/60">المنافسين</Label>
+                  <Label className="text-sm mb-2 block text-white/60">{t("order.competitors")}</Label>
                   <Input
                     className="bg-white/5 border-white/10 text-white"
-                    placeholder="اذكر أهم المنافسين..."
+                    placeholder={t("order.competitorsPlaceholder")}
                     value={formData.competitors}
                     onChange={e => setFormData({ ...formData, competitors: e.target.value })}
                     data-testid="input-competitors"
@@ -204,9 +206,9 @@ export default function OrderFlow() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm mb-2 block text-white/60">النمط البصري</Label>
+                    <Label className="text-sm mb-2 block text-white/60">{t("order.visualStyle")}</Label>
                     <Input
-                      placeholder="مودرن، كلاسيك..."
+                      placeholder={t("order.visualStylePlaceholder")}
                       className="bg-white/5 border-white/10 text-white"
                       value={formData.visualStyle}
                       onChange={e => setFormData({ ...formData, visualStyle: e.target.value })}
@@ -214,9 +216,9 @@ export default function OrderFlow() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm mb-2 block text-white/60">لغة الموقع</Label>
+                    <Label className="text-sm mb-2 block text-white/60">{t("order.siteLanguage")}</Label>
                     <Input
-                      placeholder="عربي، إنجليزي..."
+                      placeholder={t("order.siteLanguagePlaceholder")}
                       className="bg-white/5 border-white/10 text-white"
                       value={formData.siteLanguage}
                       onChange={e => setFormData({ ...formData, siteLanguage: e.target.value })}
@@ -225,10 +227,10 @@ export default function OrderFlow() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm mb-2 block text-white/60">الوظائف المطلوبة</Label>
+                  <Label className="text-sm mb-2 block text-white/60">{t("order.requiredFunctions")}</Label>
                   <Textarea
                     className="h-24 resize-none bg-white/5 border-white/10 text-white"
-                    placeholder="اشرح الوظائف التي تريدها..."
+                    placeholder={t("order.requiredFunctionsPlaceholder")}
                     value={formData.requiredFunctions}
                     onChange={e => setFormData({ ...formData, requiredFunctions: e.target.value })}
                     data-testid="input-requiredFunctions"
@@ -236,10 +238,10 @@ export default function OrderFlow() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { id: 'whatsapp', label: 'ربط واتس', field: 'whatsappIntegration' },
-                    { id: 'social', label: 'ربط سوشيال', field: 'socialIntegration' },
-                    { id: 'hosting', label: 'لديه استضافة', field: 'hasHosting' },
-                    { id: 'domain', label: 'لديه دومين', field: 'hasDomain' },
+                    { id: 'whatsapp', label: t("order.whatsapp"), field: 'whatsappIntegration' },
+                    { id: 'social', label: t("order.social"), field: 'socialIntegration' },
+                    { id: 'hosting', label: t("order.hasHosting"), field: 'hasHosting' },
+                    { id: 'domain', label: t("order.hasDomain"), field: 'hasDomain' },
                   ].map(item => (
                     <div key={item.id} className="flex items-center gap-2">
                       <input
@@ -259,18 +261,18 @@ export default function OrderFlow() {
 
             {step === 3 && (
               <div className="space-y-6">
-                <p className="text-sm text-white/30 mb-4">يمكنك رفع روابط المستندات هنا (أو تركها فارغة للمناقشة لاحقاً)</p>
+                <p className="text-sm text-white/30 mb-4">{t("order.docsNote")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { label: 'اللوجو', field: 'logoUrl' },
-                    { label: 'الهوية التجارية', field: 'brandIdentityUrl' },
-                    { label: 'المحتوى النصي', field: 'contentUrl' },
-                    { label: 'بيانات الدخول (اختياري)', field: 'accessCredentials' },
+                    { label: t("order.logo"), field: 'logoUrl' },
+                    { label: t("order.brandIdentity"), field: 'brandIdentityUrl' },
+                    { label: t("order.content"), field: 'contentUrl' },
+                    { label: t("order.accessCredentials"), field: 'accessCredentials' },
                   ].map(item => (
                     <div key={item.field}>
                       <Label className="text-sm mb-1 block text-white/60">{item.label}</Label>
                       <Input
-                        placeholder="رابط الملف..."
+                        placeholder={t("order.filePlaceholder")}
                         className="bg-white/5 border-white/10 text-white"
                         value={(formData as any)[item.field]}
                         onChange={e => setFormData({ ...formData, [item.field]: e.target.value })}
@@ -288,17 +290,17 @@ export default function OrderFlow() {
                   <div className="flex flex-col space-y-2 border border-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
                     <div className="flex items-center space-x-reverse space-x-3">
                       <RadioGroupItem value="bank_transfer" id="bank" data-testid="radio-bank" />
-                      <Label htmlFor="bank" className="flex-1 cursor-pointer font-medium text-white">تحويل بنكي (50% مقدم)</Label>
+                      <Label htmlFor="bank" className="flex-1 cursor-pointer font-medium text-white">{t("order.bankTransfer")}</Label>
                     </div>
                     {formData.paymentMethod === 'bank_transfer' && (
                       <div className="mt-4 p-4 bg-[#00D4FF]/5 rounded-lg border border-[#00D4FF]/20 text-xs text-white/60">
-                        <p className="font-bold text-[#00D4FF] mb-2">بيانات الحساب البنكي:</p>
+                        <p className="font-bold text-[#00D4FF] mb-2">{t("order.bankDetails")}</p>
                         <p className="font-mono">IBAN: SA0380205098017222121010</p>
-                        <p className="mt-1">بنك الراجحي السعودي (بشرط المحول غير راجحي)</p>
+                        <p className="mt-1">{t("order.bankNote")}</p>
                         <div className="mt-3">
-                          <Label className="mb-1 block text-white/50">رابط إيصال التحويل</Label>
+                          <Label className="mb-1 block text-white/50">{t("order.receiptLink")}</Label>
                           <Input
-                            placeholder="رابط صورة الإيصال..."
+                            placeholder={t("order.receiptPlaceholder")}
                             className="bg-white/5 border-white/10 text-white"
                             value={formData.paymentProofUrl}
                             onChange={e => setFormData({ ...formData, paymentProofUrl: e.target.value })}
@@ -310,7 +312,7 @@ export default function OrderFlow() {
                   </div>
                   <div className="flex items-center space-x-reverse space-x-3 border border-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
                     <RadioGroupItem value="paypal" id="paypal" data-testid="radio-paypal" />
-                    <Label htmlFor="paypal" className="flex-1 cursor-pointer font-medium text-white">PayPal (دفع كامل)</Label>
+                    <Label htmlFor="paypal" className="flex-1 cursor-pointer font-medium text-white">{t("order.paypal")}</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -320,27 +322,27 @@ export default function OrderFlow() {
               <div className="space-y-6">
                 <div className="bg-white/5 p-6 rounded-xl space-y-4 border border-white/10">
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-white/40">الخدمة</span>
+                    <span className="text-white/40">{t("order.serviceLabel")}</span>
                     <span className="font-bold text-[#00D4FF]">{service.title}</span>
                   </div>
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-white/40">نوع المشروع</span>
+                    <span className="text-white/40">{t("order.projectType")}</span>
                     <span className="font-bold text-white">{formData.projectType || "-"}</span>
                   </div>
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-white/40">طريقة الدفع</span>
+                    <span className="text-white/40">{t("order.paymentMethod")}</span>
                     <span className="font-bold text-white">
-                      {formData.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'PayPal'}
+                      {formData.paymentMethod === 'bank_transfer' ? t("order.bankTransfer") : t("order.paypal")}
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-white/40">السعر المبدئي</span>
-                    <span className="font-bold text-[#00D4FF]">{service.priceMin?.toLocaleString()} ر.س</span>
+                    <span className="text-white/40">{t("order.startingPrice")}</span>
+                    <span className="font-bold text-[#00D4FF]">{service.priceMin?.toLocaleString()} {t("order.sar")}</span>
                   </div>
                   <div className="pt-2">
-                    <span className="text-white/40 block mb-2">الوظائف المطلوبة</span>
+                    <span className="text-white/40 block mb-2">{t("order.functionsRequired")}</span>
                     <p className="text-xs text-white/60 bg-white/5 p-3 rounded-lg border border-white/10">
-                      {formData.requiredFunctions || "لا توجد تفاصيل إضافية"}
+                      {formData.requiredFunctions || t("order.noDetails")}
                     </p>
                   </div>
                 </div>
@@ -351,13 +353,13 @@ export default function OrderFlow() {
               {step > 1 ? (
                 <Button variant="outline" onClick={handleBack} className="min-w-[100px] border-white/10 text-white/60" data-testid="button-prev-step">
                   <ArrowRight className="ml-2 w-4 h-4" />
-                  السابق
+                  {t("order.prev")}
                 </Button>
               ) : <div></div>}
 
               {step < 5 ? (
                 <Button onClick={handleNext} className="premium-btn min-w-[100px]" data-testid="button-next-step">
-                  التالي
+                  {t("order.next")}
                   <ArrowLeft className="mr-2 w-4 h-4" />
                 </Button>
               ) : (
@@ -371,7 +373,7 @@ export default function OrderFlow() {
                   {createOrderMutation.isPending ? <Loader2 className="animate-spin" /> : (
                     <>
                       <CheckCircle className="w-4 h-4 ml-2" />
-                      تأكيد الطلب
+                      {t("order.confirm")}
                     </>
                   )}
                 </Button>

@@ -25,6 +25,12 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - Replaced splash screen and system icons with actual QIROX logo (attached_assets/QIROX_LOGO_1771674917456.png)
 - Updated Sidebar with admin templates management link
 - Enhanced About page with investor-focused content (tech stack, business model, sectors)
+- **SECURITY**: Removed all GitHub repository URLs from seed data, schema, models, and frontend (8 template references stripped)
+- **i18n**: Created full bilingual (Arabic/English) translation system (`client/src/lib/i18n.tsx`) with 100+ keys
+- **i18n**: Integrated i18n across Navigation, Services, OrderFlow, Login, Footer, Portfolio, Sidebar pages
+- **i18n**: Language toggle button in navigation and admin header with localStorage persistence
+- **Fix**: Changed order creation route from Drizzle-validated path to direct `/api/orders` for MongoDB string ObjectID compatibility
+- **Fix**: MongoDB migration to strip repoUrl from existing template documents
 
 ## User Preferences
 
