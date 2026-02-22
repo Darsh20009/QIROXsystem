@@ -70,15 +70,15 @@ export default function Services() {
                   variants={fadeUp}
                   custom={idx}
                 >
-                  <div className="group p-7 rounded-2xl flex flex-col h-full border border-black/[0.06] bg-white hover:shadow-lg hover:shadow-black/[0.04] transition-all">
+                  <div className="group p-7 rounded-2xl flex flex-col h-full border border-black/[0.06] bg-white hover:shadow-lg hover:shadow-black/[0.04] transition-all" data-testid={`card-service-${service.id}`}>
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/[0.04] mb-5">
                       <Icon className="w-5 h-5 text-black/40" />
                     </div>
-                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-black/[0.03] text-black/40 self-start mb-4">
+                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-black/[0.03] text-black/40 self-start mb-4" data-testid={`text-category-${service.id}`}>
                       {catKey ? t(catKey) : service.category}
                     </span>
-                    <h3 className="text-lg font-bold font-heading text-black mb-3">{service.title}</h3>
-                    <p className="text-sm text-black/40 mb-6 leading-relaxed flex-1">{service.description}</p>
+                    <h3 className="text-lg font-bold font-heading text-black mb-3" data-testid={`text-title-${service.id}`}>{service.title}</h3>
+                    <p className="text-sm text-black/40 mb-6 leading-relaxed flex-1" data-testid={`text-description-${service.id}`}>{service.description}</p>
 
                     <div className="space-y-2.5 mb-6">
                       {service.features?.slice(0, 4).map((feature, i) => (
@@ -89,13 +89,26 @@ export default function Services() {
                       ))}
                     </div>
 
-                    <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-4">
+                    {(service.priceMin || service.priceMax) && (
+                      <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-2" data-testid={`text-price-range-${service.id}`}>
+                        <span className="text-xs text-black/25">{t("services.price") || "Price Range"}</span>
+                        <span className="text-sm font-semibold text-black">
+                          {service.priceMin && service.priceMax
+                            ? `${service.priceMin.toLocaleString()} - ${service.priceMax.toLocaleString()} SAR`
+                            : service.priceMin
+                              ? `${t("services.from") || "From"} ${service.priceMin.toLocaleString()} SAR`
+                              : `${t("services.upTo") || "Up to"} ${service.priceMax!.toLocaleString()} SAR`}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-4" data-testid={`text-duration-${service.id}`}>
                       <span className="text-xs text-black/25">{t("services.duration")}</span>
                       <span className="text-sm font-semibold text-black">{service.estimatedDuration}</span>
                     </div>
 
                     <Link href={`/order?service=${service.id}`} className="w-full">
-                      <Button className="w-full h-12 premium-btn rounded-xl font-semibold">
+                      <Button className="w-full h-12 premium-btn rounded-xl font-semibold" data-testid={`button-order-service-${service.id}`}>
                         {t("services.orderService")}
                         <ArrowLeft className="w-4 h-4 mr-2" />
                       </Button>

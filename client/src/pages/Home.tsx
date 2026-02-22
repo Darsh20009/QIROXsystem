@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
 import { useTemplates } from "@/hooks/use-templates";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -35,6 +36,7 @@ const stagger = {
 
 export default function Home() {
   const { data: templates } = useTemplates();
+  const { t, lang, dir } = useI18n();
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeCarouselIdx, setActiveCarouselIdx] = useState(0);
 
@@ -90,9 +92,9 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="text-lg sm:text-xl text-black/50 mb-10 max-w-2xl mx-auto leading-relaxed"
-              dir="rtl"
+              dir={dir}
             >
-              مصنع الأنظمة الرقمية — نبني بنية تحتية رقمية متكاملة
+              {t("home.hero.subtitleFull")}
             </motion.p>
 
             <motion.div
@@ -107,7 +109,7 @@ export default function Home() {
                   className="h-14 px-10 text-base rounded-md gap-2 font-semibold bg-black text-white hover:bg-gray-900 no-default-hover-elevate no-default-active-elevate"
                   data-testid="button-start-project"
                 >
-                  ابدأ مشروعك
+                  {t("home.startProject")}
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
@@ -118,7 +120,7 @@ export default function Home() {
                   className="h-14 px-10 text-base border-black/10 text-black/60 rounded-md font-semibold bg-transparent hover:bg-black/[0.03]"
                   data-testid="button-explore-solutions"
                 >
-                  استعرض الأنظمة
+                  {t("home.exploreSystems")}
                 </Button>
               </Link>
             </motion.div>
@@ -130,8 +132,8 @@ export default function Home() {
               className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/[0.06] bg-black/[0.02]"
               data-testid="promo-banner"
             >
-              <span className="text-[11px] font-bold tracking-wider text-black bg-black/[0.06] px-2.5 py-0.5 rounded-full">NEW</span>
-              <span className="text-black/40 text-sm" dir="rtl">باقة Enterprise متاحة الآن</span>
+              <span className="text-[11px] font-bold tracking-wider text-black bg-black/[0.06] px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
+              <span className="text-black/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
               <ArrowLeft className="w-3.5 h-3.5 text-black/20" />
             </motion.div>
           </div>
@@ -150,16 +152,16 @@ export default function Home() {
           >
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.06] rtl:divide-x-reverse">
               {[
-                { value: `${templates?.length || 8}+`, label: "أنظمة جاهزة" },
-                { value: "6+", label: "قطاعات" },
-                { value: "3", label: "باقات" },
-                { value: "2", label: "السعودية ومصر" },
+                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems") },
+                { value: "6+", label: t("home.stats.sectorsCount") },
+                { value: "3", label: t("home.stats.packages") },
+                { value: "2", label: t("home.stats.locations") },
               ].map((stat, idx) => (
                 <div key={idx} className="px-6 py-8 text-center" data-testid={`stat-card-${idx}`}>
                   <div className="text-3xl md:text-4xl font-black mb-2 font-heading text-black">
                     {stat.value}
                   </div>
-                  <div className="text-black/35 text-sm" dir="rtl">{stat.label}</div>
+                  <div className="text-black/35 text-sm" dir={dir}>{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -178,13 +180,13 @@ export default function Home() {
             className="rounded-[24px] border border-black/[0.06] bg-[#fafafa] overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="p-10 md:p-14 flex flex-col justify-center" dir="rtl">
-                <span className="text-black/40 text-sm font-semibold mb-3">ابدأ هنا</span>
+              <div className="p-10 md:p-14 flex flex-col justify-center" dir={dir}>
+                <span className="text-black/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
                 <h2 className="text-3xl md:text-4xl font-bold font-heading text-black mb-4 leading-tight">
-                  ابدأ مشروعك الرقمي الآن
+                  {t("home.pathfinder.title")}
                 </h2>
                 <p className="text-black/40 text-base leading-relaxed mb-8 max-w-md">
-                  نحوّل فكرتك إلى نظام رقمي متكامل يعمل من أول يوم. ابدأ بباقة تناسبك واحصل على نظامك خلال أيام.
+                  {t("home.pathfinder.desc")}
                 </p>
                 <div>
                   <Link href="/contact">
@@ -193,28 +195,28 @@ export default function Home() {
                       className="h-13 px-8 text-base rounded-md gap-2 font-semibold bg-black text-white hover:bg-gray-900"
                       data-testid="button-pathfinder-cta"
                     >
-                      ابدأ الآن
+                      {t("home.pathfinder.cta")}
                       <ArrowLeft className="w-5 h-5" />
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              <div className="p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06]" dir="rtl">
-                <h3 className="text-black/40 text-sm font-semibold mb-8 tracking-wider uppercase">روابط سريعة</h3>
+              <div className="p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06]" dir={dir}>
+                <h3 className="text-black/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
                 <div className="space-y-1">
                   {[
-                    { href: "/portfolio", label: "الأنظمة" },
-                    { href: "/prices", label: "الباقات" },
-                    { href: "/about", label: "عن المنصة" },
-                    { href: "/contact", label: "تواصل" },
+                    { href: "/portfolio", labelKey: "home.pathfinder.systems" as const },
+                    { href: "/prices", labelKey: "home.pathfinder.packages" as const },
+                    { href: "/about", labelKey: "home.pathfinder.aboutPlatform" as const },
+                    { href: "/contact", labelKey: "home.pathfinder.contact" as const },
                   ].map((link) => (
                     <Link key={link.href} href={link.href}>
                       <div
                         className="flex items-center justify-between py-4 px-4 rounded-md text-black/50 hover:text-black hover:bg-black/[0.03] transition-all cursor-pointer group"
                         data-testid={`pathfinder-link-${link.href.replace("/", "")}`}
                       >
-                        <span className="text-base font-medium">{link.label}</span>
+                        <span className="text-base font-medium">{t(link.labelKey)}</span>
                         <ArrowLeft className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </Link>
@@ -235,15 +237,15 @@ export default function Home() {
             variants={stagger}
           >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-3" dir="rtl">
+              <div className="lg:col-span-3" dir={dir}>
                 <motion.div variants={fadeUp} custom={0}>
-                  <span className="text-black/40 text-sm font-semibold mb-3 block">الأنظمة</span>
+                  <span className="text-black/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
                   <h2 className="text-3xl md:text-4xl font-bold font-heading text-black mb-4 leading-tight">
-                    أنظمة جاهزة{" "}
-                    <span className="text-gray-400">للنشر</span>
+                    {t("home.carousel.title")}{" "}
+                    <span className="text-gray-400">{t("home.carousel.titleHighlight")}</span>
                   </h2>
                   <p className="text-black/40 text-sm leading-relaxed mb-8">
-                    أنظمة مصممة بعناية، قابلة للتخصيص الكامل حسب احتياجك. اختر النظام المناسب وابدأ فوراً.
+                    {t("home.carousel.desc")}
                   </p>
                   <div className="flex gap-2">
                     {templates?.slice(0, 5).map((_, idx) => (
@@ -295,9 +297,9 @@ export default function Home() {
                           <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] mb-6">
                             <Icon className="w-5 h-5 text-black/40" />
                           </div>
-                          <h3 className="text-lg font-bold text-black mb-2" dir="rtl">{template.nameAr}</h3>
-                          <p className="text-sm text-black/40 leading-relaxed mb-6 line-clamp-3" dir="rtl">
-                            {template.descriptionAr}
+                          <h3 className="text-lg font-bold text-black mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
+                          <p className="text-sm text-black/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
+                            {lang === "ar" ? template.descriptionAr : (template.description || template.descriptionAr)}
                           </p>
                           <div className="flex items-center justify-between">
                             <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] text-black/40 font-medium">
@@ -326,17 +328,17 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             variants={stagger}
           >
-            <div className="text-center mb-16" dir="rtl">
+            <div className="text-center mb-16" dir={dir}>
               <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-5">
                 <Zap className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">المسارات الرئيسية</span>
+                <span className="text-black/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
               </motion.div>
               <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black mb-4">
-                4 مسارات{" "}
-                <span className="text-gray-400">خدمية متخصصة</span>
+                {t("home.services.title")}{" "}
+                <span className="text-gray-400">{t("home.services.titleHighlight")}</span>
               </motion.h2>
               <motion.p variants={fadeUp} custom={2} className="text-black/35 max-w-xl mx-auto text-base">
-                حلول رقمية متكاملة مصممة خصيصاً لتلبي احتياجات عملك
+                {t("home.services.subtitle")}
               </motion.p>
             </div>
 
@@ -344,34 +346,34 @@ export default function Home() {
               {[
                 {
                   icon: UtensilsCrossed,
-                  title: "المطاعم والكافيهات",
-                  desc: "نظام إدارة متكامل: قائمة طعام إلكترونية، حجوزات، طلبات أونلاين، نظام كاشير، وإدارة مخزون.",
-                  features: ["قائمة QR", "نظام طلبات", "إدارة فروع", "تقارير مبيعات"],
+                  title: t("home.services.restaurants.title"),
+                  desc: t("home.services.restaurants.desc"),
+                  features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
                 },
                 {
                   icon: Store,
-                  title: "المتاجر والبراندات",
-                  desc: "متجر إلكتروني احترافي: كتالوج منتجات، سلة مشتريات، بوابات دفع، شحن وتتبع.",
-                  features: ["متجر إلكتروني", "بوابات دفع", "تتبع شحن", "تحليلات"],
+                  title: t("home.services.stores.title"),
+                  desc: t("home.services.stores.desc"),
+                  features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
                 },
                 {
                   icon: GraduationCap,
-                  title: "التعليم والتدريب",
-                  desc: "منصة تعليمية شاملة: دورات، اختبارات، شهادات، بث مباشر، وإدارة طلاب.",
-                  features: ["منصة دورات", "اختبارات", "شهادات", "بث مباشر"],
+                  title: t("home.services.education.title"),
+                  desc: t("home.services.education.desc"),
+                  features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
                 },
                 {
                   icon: Building2,
-                  title: "المؤسسات والشركات",
-                  desc: "نظام مؤسسي متكامل: إدارة موظفين، مشاريع، مالية، تقارير، وبوابة عملاء.",
-                  features: ["بوابة عملاء", "إدارة مشاريع", "نظام مالي", "تقارير ذكية"],
+                  title: t("home.services.enterprise.title"),
+                  desc: t("home.services.enterprise.desc"),
+                  features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
                 },
               ].map((path, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
                     className="rounded-[24px] border border-black/[0.06] bg-white p-10 h-full group transition-all duration-300 hover:border-black/[0.1] hover:shadow-lg hover:shadow-black/[0.04]"
                     data-testid={`service-path-${idx}`}
-                    dir="rtl"
+                    dir={dir}
                   >
                     <div className="flex items-start justify-between mb-8">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/[0.04] transition-all duration-300">
@@ -409,30 +411,30 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             variants={stagger}
           >
-            <div className="text-center mb-16" dir="rtl">
+            <div className="text-center mb-16" dir={dir}>
               <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-5">
                 <Sparkles className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">لماذا نحن</span>
+                <span className="text-black/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
               </motion.div>
               <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black mb-4">
-                لماذا{" "}
+                {t("home.why.title")}{" "}
                 <span className="text-gray-400">QIROX</span>
-                ؟
+                {lang === "ar" ? "؟" : "?"}
               </motion.h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
               {[
-                { icon: Layers, title: "بنية قابلة للتوسع", desc: "أنظمة مبنية بطريقة ذكية تنمو مع نمو مشروعك بدون قيود." },
-                { icon: Palette, title: "تصميم يعبّر عنك", desc: "هوية بصرية فريدة تعكس شخصية علامتك التجارية وتميّزك عن المنافسين." },
-                { icon: Headphones, title: "دعم مستمر", desc: "فريق متخصص يرافقك من البداية حتى بعد الإطلاق لضمان نجاح مشروعك." },
-                { icon: Shield, title: "حماية متكاملة", desc: "أمان على أعلى مستوى لحماية بيانات عملائك ومعاملاتك." },
+                { icon: Layers, title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc") },
+                { icon: Palette, title: t("home.why.design.title"), desc: t("home.why.design.desc") },
+                { icon: Headphones, title: t("home.why.support.title"), desc: t("home.why.support.desc") },
+                { icon: Shield, title: t("home.why.security.title"), desc: t("home.why.security.desc") },
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
                     className="rounded-[24px] border border-black/[0.06] bg-white p-8 h-full transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]"
                     data-testid={`why-card-${idx}`}
-                    dir="rtl"
+                    dir={dir}
                   >
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-black/[0.04]">
                       <item.icon className="w-5 h-5 text-black/40" />
@@ -460,11 +462,11 @@ export default function Home() {
               <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
 
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6" dir="rtl">
-                  ابدأ مشروعك الآن
+                <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6" dir={dir}>
+                  {t("home.spotlight.title")}
                 </h2>
-                <p className="text-white/50 text-lg max-w-2xl mx-auto mb-10" dir="rtl">
-                  نحوّل فكرتك إلى نظام رقمي متكامل يعمل من أول يوم.
+                <p className="text-white/50 text-lg max-w-2xl mx-auto mb-10" dir={dir}>
+                  {t("home.spotlight.desc")}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/contact">
@@ -473,7 +475,7 @@ export default function Home() {
                       className="h-14 px-10 text-base rounded-md gap-2 font-semibold bg-white text-black hover:bg-gray-100"
                       data-testid="button-cta-start"
                     >
-                      ابدأ مشروعك
+                      {t("home.spotlight.cta")}
                       <ArrowLeft className="w-5 h-5" />
                     </Button>
                   </Link>
@@ -484,7 +486,7 @@ export default function Home() {
                       className="h-14 px-10 text-base border-white/15 text-white/70 rounded-md font-semibold bg-transparent hover:bg-white/10"
                       data-testid="button-cta-prices"
                     >
-                      الباقات والأسعار
+                      {t("home.spotlight.prices")}
                     </Button>
                   </Link>
                 </div>
@@ -492,9 +494,9 @@ export default function Home() {
                 <div className="mt-14 flex flex-wrap items-center justify-center gap-6 text-sm text-white/25">
                   <span>www.qiroxstudio.online</span>
                   <span className="w-1 h-1 rounded-full bg-white/10" />
-                  <span>الرياض</span>
+                  <span>{t("home.spotlight.riyadh")}</span>
                   <span className="w-1 h-1 rounded-full bg-white/10" />
-                  <span>القاهرة</span>
+                  <span>{t("home.spotlight.cairo")}</span>
                 </div>
               </div>
             </div>

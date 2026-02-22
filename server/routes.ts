@@ -573,6 +573,115 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // === ADMIN STATS API ===
+  app.get("/api/admin/stats", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    try {
+      const [allOrders, allProjects, allUsers, allServices, allModRequests] = await Promise.all([
+        storage.getOrders(),
+        storage.getProjects(),
+        storage.getUsers(),
+        storage.getServices(),
+        storage.getModificationRequests(),
+      ]);
+
+      const totalOrders = allOrders.length;
+      const pendingOrders = allOrders.filter(o => o.status === "pending").length;
+      const activeProjects = allProjects.filter(p => p.status !== "closed" && p.status !== "delivery").length;
+      const totalRevenue = allOrders.reduce((sum, o) => {
+        if (o.status === "completed" || o.status === "approved" || o.status === "in_progress") {
+          return sum + Number(o.totalAmount || 0);
+        }
+        return sum;
+      }, 0);
+      const totalClients = allUsers.filter(u => u.role === "client").length;
+      const totalEmployees = allUsers.filter(u => u.role !== "client" && u.role !== "admin").length;
+      const totalServices = allServices.length;
+
+      const recentOrders = allOrders
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+      const recentModRequests = allModRequests.slice(0, 5);
+
+      res.json({
+        totalOrders,
+        pendingOrders,
+        activeProjects,
+        totalRevenue,
+        totalClients,
+        totalEmployees,
+        totalServices,
+        recentOrders,
+        recentModRequests,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch stats" });
+    }
+  });
+
+  // === MODIFICATION REQUESTS API ===
+  app.get("/api/modification-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const requests = user.role === "admin"
+      ? await storage.getModificationRequests()
+      : await storage.getModificationRequests(String(user.id));
+    res.json(requests);
+  });
+
+  app.post("/api/modification-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { title, description, projectId, orderId, priority, attachments } = req.body;
+    if (!title || !description) {
+      return res.status(400).json({ error: "Title and description are required" });
+    }
+    const request = await storage.createModificationRequest({
+      userId: String(user.id),
+      title,
+      description,
+      projectId,
+      orderId,
+      priority,
+      attachments,
+    });
+    res.status(201).json(request);
+  });
+
+  app.patch("/api/modification-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    try {
+      if (user.role === "admin") {
+        const updated = await storage.updateModificationRequest(req.params.id, req.body);
+        return res.json(updated);
+      }
+      const existing = await storage.getModificationRequests(String(user.id));
+      const own = existing.find(r => r.id === req.params.id);
+      if (!own) return res.sendStatus(404);
+      if (own.status !== "pending") {
+        return res.status(400).json({ error: "Can only edit pending requests" });
+      }
+      const { title, description, projectId, orderId, priority, attachments } = req.body;
+      const updated = await storage.updateModificationRequest(req.params.id, {
+        title, description, projectId, orderId, priority, attachments,
+      });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to update request" });
+    }
+  });
+
+  app.delete("/api/modification-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.sendStatus(403);
+    }
+    await storage.deleteModificationRequest(req.params.id);
+    res.sendStatus(204);
+  });
+
   // === PAYPAL ROUTES === (blueprint:javascript_paypal)
   app.get("/paypal/setup", async (req, res) => {
     await loadPaypalDefault(req, res);

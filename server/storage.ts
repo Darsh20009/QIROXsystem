@@ -6,11 +6,12 @@ import {
   type ProjectMember, type InsertProjectMember,
   type News, type InsertNews, type Job, type InsertJob, type Application, type InsertApplication,
   type SectorTemplate, type InsertSectorTemplate, type PricingPlan, type InsertPricingPlan,
-  type Partner, type InsertPartner
+  type Partner, type InsertPartner,
+  type ModificationRequest, type InsertModificationRequest
 } from "@shared/schema";
 import {
   UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel,
-  NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel
+  NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel, ModificationRequestModel
 } from "./models";
 
 export interface IStorage {
@@ -96,6 +97,12 @@ export interface IStorage {
   createPartner(partner: InsertPartner): Promise<Partner>;
   updatePartner(id: string, updates: Partial<InsertPartner>): Promise<Partner>;
   deletePartner(id: string): Promise<void>;
+
+  // Modification Requests
+  getModificationRequests(userId?: string): Promise<ModificationRequest[]>;
+  createModificationRequest(data: InsertModificationRequest): Promise<ModificationRequest>;
+  updateModificationRequest(id: string, data: Partial<InsertModificationRequest>): Promise<ModificationRequest>;
+  deleteModificationRequest(id: string): Promise<void>;
 }
 
 export class MongoStorage implements IStorage {
@@ -381,6 +388,26 @@ export class MongoStorage implements IStorage {
 
   async deletePartner(id: string): Promise<void> {
     await PartnerModel.findByIdAndDelete(id);
+  }
+
+  async getModificationRequests(userId?: string): Promise<ModificationRequest[]> {
+    const query = userId ? { userId } : {};
+    const items = await ModificationRequestModel.find(query).sort({ createdAt: -1 });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as ModificationRequest[];
+  }
+
+  async createModificationRequest(data: InsertModificationRequest): Promise<ModificationRequest> {
+    const item = await ModificationRequestModel.create(data);
+    return { ...item.toObject(), id: item._id.toString() } as any;
+  }
+
+  async updateModificationRequest(id: string, data: Partial<InsertModificationRequest>): Promise<ModificationRequest> {
+    const item = await ModificationRequestModel.findByIdAndUpdate(id, data, { new: true });
+    return { ...item.toObject(), id: item._id.toString() } as any;
+  }
+
+  async deleteModificationRequest(id: string): Promise<void> {
+    await ModificationRequestModel.findByIdAndDelete(id);
   }
 }
 

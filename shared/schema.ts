@@ -309,6 +309,40 @@ export interface InsertPartner {
   isActive?: boolean;
 }
 
+// --- Modification Requests (MongoDB) ---
+export const modificationRequestPriorities = ['low', 'medium', 'high', 'urgent'] as const;
+export type ModificationRequestPriority = (typeof modificationRequestPriorities)[number];
+
+export const modificationRequestStatuses = ['pending', 'in_review', 'in_progress', 'completed', 'rejected'] as const;
+export type ModificationRequestStatus = (typeof modificationRequestStatuses)[number];
+
+export interface ModificationRequest {
+  id: string;
+  userId: string;
+  projectId?: string;
+  orderId?: string;
+  title: string;
+  description: string;
+  priority: ModificationRequestPriority;
+  status: ModificationRequestStatus;
+  adminNotes?: string;
+  attachments?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface InsertModificationRequest {
+  userId: string;
+  projectId?: string;
+  orderId?: string;
+  title: string;
+  description: string;
+  priority?: ModificationRequestPriority;
+  status?: ModificationRequestStatus;
+  adminNotes?: string;
+  attachments?: string[];
+}
+
 // --- Schemas & Types ---
 export const insertNewsSchema = createInsertSchema(news).omit({ id: true, publishedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });

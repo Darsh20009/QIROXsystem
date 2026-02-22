@@ -109,19 +109,55 @@ export default function Partners() {
               data-testid={`partner-db-card-${partner.id}`}
             >
               <div className="rounded-2xl border border-black/[0.06] bg-white p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]">
-                <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
-                  <img
-                    src={partner.logoUrl}
-                    alt={partner.name}
-                    className="max-w-full max-h-full object-contain"
-                    loading="lazy"
-                  />
-                </div>
-                <h3 className="text-sm font-bold text-black text-center">{partner.name}</h3>
+                {partner.websiteUrl ? (
+                  <a
+                    href={partner.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden cursor-pointer"
+                    data-testid={`link-partner-logo-${partner.id}`}
+                  >
+                    <img
+                      src={partner.logoUrl}
+                      alt={partner.name}
+                      className="max-w-full max-h-full object-contain"
+                      loading="lazy"
+                    />
+                  </a>
+                ) : (
+                  <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
+                    <img
+                      src={partner.logoUrl}
+                      alt={partner.name}
+                      className="max-w-full max-h-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+                {partner.websiteUrl ? (
+                  <a
+                    href={partner.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-bold text-black text-center hover:underline"
+                    data-testid={`link-partner-name-${partner.id}`}
+                  >
+                    {partner.name}
+                  </a>
+                ) : (
+                  <h3 className="text-sm font-bold text-black text-center">{partner.name}</h3>
+                )}
                 {partner.nameAr && <p className="text-xs text-black/40 text-center mt-1" dir="rtl">{partner.nameAr}</p>}
                 {partner.websiteUrl && (
-                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="mt-2 text-black/30 hover:text-black transition-colors">
+                  <a
+                    href={partner.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-black/30 hover:text-black transition-colors"
+                    data-testid={`link-partner-website-${partner.id}`}
+                  >
                     <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="text-[10px]">{(() => { try { return new URL(partner.websiteUrl!).hostname.replace('www.', ''); } catch { return partner.websiteUrl; } })()}</span>
                   </a>
                 )}
               </div>
