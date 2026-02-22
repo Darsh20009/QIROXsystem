@@ -39,20 +39,18 @@ export default function Navigation() {
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? "py-2"
-            : "py-4"
+          scrolled ? "py-2" : "py-4"
         }`}
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className={`mx-auto transition-all duration-500 rounded-2xl px-6 ${
             scrolled
-              ? "glass-strong shadow-lg shadow-black/20 max-w-4xl"
+              ? "glass-strong max-w-4xl"
               : "bg-transparent max-w-6xl"
           }`}>
             <div className="flex justify-between items-center h-14">
               <Link href="/" className="flex items-center gap-2 group" data-testid="link-logo">
-                <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
+                <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
               </Link>
 
               <div className="hidden md:flex items-center gap-1">
@@ -60,13 +58,13 @@ export default function Navigation() {
                   <Link key={link.href} href={link.href}>
                     <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       location === link.href
-                        ? "text-white"
-                        : "text-white/40 hover:text-white/80"
+                        ? "text-black"
+                        : "text-black/40 hover:text-black/70"
                     }`} data-testid={`nav-link-${link.href.replace('/', '') || 'home'}`}>
                       {location === link.href && (
                         <motion.div
                           layoutId="nav-active"
-                          className="absolute inset-0 rounded-xl bg-white/10"
+                          className="absolute inset-0 rounded-xl bg-black/[0.05]"
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
@@ -79,22 +77,22 @@ export default function Navigation() {
               <div className="hidden md:flex items-center gap-3">
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+                  className="p-2 rounded-lg text-black/30 hover:text-black/60 hover:bg-black/[0.04] transition-all"
                   data-testid="button-lang-toggle-nav"
                 >
                   <Globe className="w-4 h-4" />
                 </button>
                 {user ? (
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-                      <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold" style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)", color: "#0A0A0F" }}>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/[0.03] border border-black/[0.06]">
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold bg-black text-white">
                         {user.fullName[0]}
                       </div>
-                      <span className="text-sm text-white/70">{user.fullName.split(' ')[0]}</span>
+                      <span className="text-sm text-black/60">{user.fullName.split(' ')[0]}</span>
                     </div>
                     <button
                       onClick={() => logout()}
-                      className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+                      className="p-2 rounded-lg text-black/30 hover:text-black/60 hover:bg-black/[0.04] transition-all"
                       data-testid="button-logout"
                     >
                       <LogOut className="w-4 h-4" />
@@ -103,7 +101,7 @@ export default function Navigation() {
                 ) : (
                   <>
                     <Link href="/login">
-                      <Button variant="ghost" size="sm" className="text-white/50 hover:text-white hover:bg-white/5 font-medium rounded-xl" data-testid="button-login-nav">
+                      <Button variant="ghost" size="sm" className="text-black/50 hover:text-black hover:bg-black/[0.04] font-medium rounded-xl" data-testid="button-login-nav">
                         {t("nav.login")}
                       </Button>
                     </Link>
@@ -119,7 +117,7 @@ export default function Navigation() {
 
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 rounded-xl text-white/70 hover:bg-white/5 transition-colors"
+                className="md:hidden p-2 rounded-xl text-black/70 hover:bg-black/[0.04] transition-colors"
                 data-testid="button-mobile-menu"
               >
                 {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -136,7 +134,7 @@ export default function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden fixed inset-0 z-[60] bg-[#0A0A0F]/95 backdrop-blur-2xl"
+            className="md:hidden fixed inset-0 z-[60] bg-white/95 backdrop-blur-2xl"
           >
             <div className="flex flex-col h-full pt-20 px-6">
               <div className="space-y-1 flex-1">
@@ -150,8 +148,8 @@ export default function Navigation() {
                     <Link href={link.href} onClick={() => setIsOpen(false)}>
                       <div className={`block px-5 py-4 rounded-xl text-lg font-medium transition-all ${
                         location === link.href
-                          ? "text-white bg-white/10"
-                          : "text-white/40 hover:text-white hover:bg-white/5"
+                          ? "text-black bg-black/[0.05]"
+                          : "text-black/40 hover:text-black hover:bg-black/[0.03]"
                       }`}>
                         {link.label}
                       </div>
@@ -161,10 +159,10 @@ export default function Navigation() {
               </div>
 
               <div className="pb-8 space-y-3">
-                <div className="h-px bg-white/10 mb-4" />
+                <div className="h-px bg-black/[0.06] mb-4" />
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="w-full text-center py-2 text-white/40 text-sm hover:text-white/70 transition-colors"
+                  className="w-full text-center py-2 text-black/40 text-sm hover:text-black/60 transition-colors"
                   data-testid="button-lang-toggle-mobile"
                 >
                   {lang === "ar" ? "English" : "عربي"}
@@ -172,7 +170,7 @@ export default function Navigation() {
                 {user ? (
                   <Button
                     variant="outline"
-                    className="w-full justify-center gap-2 border-white/10 text-white/70 hover:bg-white/5 rounded-xl h-12"
+                    className="w-full justify-center gap-2 border-black/[0.08] text-black/60 hover:bg-black/[0.03] rounded-xl h-12"
                     onClick={() => { logout(); setIsOpen(false); }}
                   >
                     <LogOut className="w-4 h-4" />
@@ -181,7 +179,7 @@ export default function Navigation() {
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Link href="/login" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full border-white/10 text-white/70 rounded-xl h-12">{t("nav.login")}</Button>
+                      <Button variant="outline" className="w-full border-black/[0.08] text-black/60 rounded-xl h-12">{t("nav.login")}</Button>
                     </Link>
                     <Link href="/register" onClick={() => setIsOpen(false)}>
                       <Button className="w-full premium-btn rounded-xl h-12">{t("nav.startProject")}</Button>
@@ -192,7 +190,7 @@ export default function Navigation() {
 
               <button
                 onClick={() => setIsOpen(false)}
-                className="absolute top-6 left-6 p-2 rounded-xl text-white/50 hover:bg-white/5"
+                className="absolute top-6 left-6 p-2 rounded-xl text-black/50 hover:bg-black/[0.04]"
               >
                 <X className="w-6 h-6" />
               </button>

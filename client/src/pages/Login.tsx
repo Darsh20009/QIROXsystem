@@ -72,12 +72,11 @@ export default function Login() {
     }
   };
 
-  const inputClasses = "h-12 bg-white/5 border-white/10 focus:border-[#00D4FF]/50 text-white placeholder:text-white/20 rounded-xl";
+  const inputClasses = "h-12 bg-black/[0.02] border-black/[0.08] focus:border-black/20 text-black placeholder:text-black/25 rounded-xl";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F] px-4 py-12 relative overflow-hidden">
-      <div className="absolute inset-0 gradient-mesh opacity-30" />
-      <div className="absolute inset-0 dot-grid opacity-10" />
+    <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-4 py-12 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -88,19 +87,18 @@ export default function Login() {
         <div className="text-center mb-10">
           <Link href="/">
             <div className="inline-flex items-center gap-2.5 cursor-pointer group">
-              <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-10 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
             </div>
           </Link>
         </div>
 
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="h-[2px]" style={{ background: "linear-gradient(90deg, transparent, #00D4FF, transparent)" }} />
+        <div className="bg-white border border-black/[0.06] rounded-2xl overflow-hidden shadow-sm">
           <div className="p-8">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold font-heading text-white mb-2">
+              <h1 className="text-2xl font-bold font-heading text-black mb-2">
                 {isRegister ? (isEmployeeRegister ? t("login.employee.title") : t("login.register.title")) : t("login.title")}
               </h1>
-              <p className="text-sm text-white/30">
+              <p className="text-sm text-black/40">
                 {isRegister
                   ? (isEmployeeRegister ? t("login.employee.subtitle") : t("login.register.subtitle"))
                   : t("login.subtitle")}
@@ -108,7 +106,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <Alert variant="destructive" className="mb-6 bg-red-500/10 border-red-500/20 text-red-400">
+              <Alert variant="destructive" className="mb-6 bg-red-50 border-red-200 text-red-600">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error.message}</AlertDescription>
               </Alert>
@@ -121,7 +119,7 @@ export default function Login() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/50 text-sm">{t("login.username")}</FormLabel>
+                      <FormLabel className="text-black/50 text-sm">{t("login.username")}</FormLabel>
                       <FormControl>
                         <Input placeholder="user123" {...field} className={inputClasses} data-testid="input-username" />
                       </FormControl>
@@ -137,7 +135,7 @@ export default function Login() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">{t("login.fullName")}</FormLabel>
+                          <FormLabel className="text-black/50 text-sm">{t("login.fullName")}</FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" {...field} className={inputClasses} data-testid="input-fullName" />
                           </FormControl>
@@ -150,7 +148,7 @@ export default function Login() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">{t("login.email")}</FormLabel>
+                          <FormLabel className="text-black/50 text-sm">{t("login.email")}</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="name@example.com" {...field} className={inputClasses} data-testid="input-email" />
                           </FormControl>
@@ -164,7 +162,7 @@ export default function Login() {
                         name="role"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/50 text-sm">{t("login.role")}</FormLabel>
+                            <FormLabel className="text-black/50 text-sm">{t("login.role")}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger className={inputClasses}>
@@ -191,7 +189,7 @@ export default function Login() {
                       name="whatsappNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/50 text-sm">{t("login.whatsapp")}</FormLabel>
+                          <FormLabel className="text-black/50 text-sm">{t("login.whatsapp")}</FormLabel>
                           <FormControl>
                             <Input placeholder="+966" {...field} className={inputClasses} data-testid="input-whatsapp" />
                           </FormControl>
@@ -206,7 +204,7 @@ export default function Login() {
                           name="country"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white/50 text-sm">{t("login.country")}</FormLabel>
+                              <FormLabel className="text-black/50 text-sm">{t("login.country")}</FormLabel>
                               <FormControl>
                                 <Input placeholder="Saudi Arabia" {...field} className={inputClasses} data-testid="input-country" />
                               </FormControl>
@@ -219,7 +217,7 @@ export default function Login() {
                           name="businessType"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white/50 text-sm">{t("login.businessType")}</FormLabel>
+                              <FormLabel className="text-black/50 text-sm">{t("login.businessType")}</FormLabel>
                               <FormControl>
                                 <Input placeholder="Commercial" {...field} className={inputClasses} data-testid="input-businessType" />
                               </FormControl>
@@ -237,7 +235,7 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/50 text-sm">{t("login.password")}</FormLabel>
+                      <FormLabel className="text-black/50 text-sm">{t("login.password")}</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} className={inputClasses} data-testid="input-password" />
                       </FormControl>
@@ -252,7 +250,7 @@ export default function Login() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white/50 text-sm">{t("login.confirmPassword")}</FormLabel>
+                        <FormLabel className="text-black/50 text-sm">{t("login.confirmPassword")}</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="••••••••" {...field} className={inputClasses} data-testid="input-confirmPassword" />
                         </FormControl>
@@ -275,10 +273,10 @@ export default function Login() {
               </form>
             </Form>
           </div>
-          <div className="py-5 text-center border-t border-white/5 bg-white/[0.02]">
-            <span className="text-sm text-white/30">
+          <div className="py-5 text-center border-t border-black/[0.04] bg-black/[0.01]">
+            <span className="text-sm text-black/40">
               {isRegister ? t("login.hasAccount") : t("login.noAccount")}{" "}
-              <Link href={isRegister ? "/login" : "/register"} className="text-[#00D4FF] font-bold hover:underline">
+              <Link href={isRegister ? "/login" : "/register"} className="text-black font-bold hover:underline">
                 {isRegister ? t("login.signIn") : t("login.createAccount")}
               </Link>
             </span>

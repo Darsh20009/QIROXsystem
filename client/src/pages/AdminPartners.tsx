@@ -127,7 +127,7 @@ export default function AdminPartners() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin w-8 h-8 text-[#00D4FF]" />
+        <Loader2 className="animate-spin w-8 h-8 text-black/40" />
       </div>
     );
   }
@@ -135,8 +135,8 @@ export default function AdminPartners() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Handshake className="w-7 h-7 text-[#00D4FF]" />
+        <h1 className="text-2xl font-bold text-black flex items-center gap-3">
+          <Handshake className="w-7 h-7 text-black/40" />
           إدارة الشركاء
         </h1>
         <Button
@@ -149,49 +149,49 @@ export default function AdminPartners() {
         </Button>
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="border border-black/[0.06] bg-white rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">الشريك</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">اللوجو</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">الموقع</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">الترتيب</th>
-                <th className="text-left p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">إجراءات</th>
+              <tr className="border-b border-black/[0.06]">
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الشريك</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">اللوجو</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الموقع</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الترتيب</th>
+                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {partners?.map((partner) => (
-                <tr key={partner.id} className="border-b border-white/5 hover:bg-white/5 transition-colors" data-testid={`row-partner-${partner.id}`}>
+                <tr key={partner.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-partner-${partner.id}`}>
                   <td className="p-4">
                     <div>
-                      <p className="font-semibold text-white text-sm">{partner.name}</p>
-                      {partner.nameAr && <p className="text-xs text-white/40 mt-0.5">{partner.nameAr}</p>}
+                      <p className="font-semibold text-black text-sm">{partner.name}</p>
+                      {partner.nameAr && <p className="text-xs text-black/40 mt-0.5">{partner.nameAr}</p>}
                     </div>
                   </td>
                   <td className="p-4">
-                    <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden">
+                    <div className="w-12 h-12 rounded-lg bg-black/[0.03] flex items-center justify-center overflow-hidden">
                       <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
                     </div>
                   </td>
                   <td className="p-4">
                     {partner.websiteUrl ? (
-                      <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[#00D4FF] text-sm flex items-center gap-1">
+                      <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-black/60 text-sm flex items-center gap-1">
                         <ExternalLink className="w-3 h-3" />
                         رابط
                       </a>
                     ) : (
-                      <span className="text-white/20 text-sm">—</span>
+                      <span className="text-black/20 text-sm">—</span>
                     )}
                   </td>
-                  <td className="p-4 text-sm text-white/60">{partner.sortOrder}</td>
+                  <td className="p-4 text-sm text-black/60">{partner.sortOrder}</td>
                   <td className="p-4">
                     <div className="flex gap-1">
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-[#00D4FF] hover:bg-[#00D4FF]/10 h-8 w-8"
+                        className="text-black/60"
                         onClick={() => handleEdit(partner)}
                         data-testid={`button-edit-partner-${partner.id}`}
                       >
@@ -200,7 +200,7 @@ export default function AdminPartners() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-red-400 hover:bg-red-400/10 h-8 w-8"
+                        className="text-red-500"
                         onClick={() => deleteMutation.mutate(partner.id)}
                         disabled={deleteMutation.isPending}
                         data-testid={`button-delete-partner-${partner.id}`}
@@ -213,7 +213,7 @@ export default function AdminPartners() {
               ))}
               {(!partners || partners.length === 0) && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-white/30">
+                  <td colSpan={5} className="p-8 text-center text-black/30">
                     لا يوجد شركاء بعد. الشركاء الثابتون يظهرون في صفحة الشركاء تلقائياً.
                   </td>
                 </tr>
@@ -224,71 +224,65 @@ export default function AdminPartners() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[#12121A] border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">
+            <DialogTitle className="text-xl font-bold text-black">
               {editingId ? "تعديل شريك" : "إضافة شريك جديد"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">اسم الشريك (إنجليزي) *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الشريك (إنجليزي) *</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
                 placeholder="Partner Name"
                 data-testid="input-partner-name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">اسم الشريك (عربي)</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الشريك (عربي)</label>
               <Input
                 value={formData.nameAr}
                 onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
                 placeholder="اسم الشريك"
                 data-testid="input-partner-nameAr"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">رابط اللوجو *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط اللوجو *</label>
               <Input
                 value={formData.logoUrl}
                 onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
                 placeholder="https://example.com/logo.png"
                 data-testid="input-partner-logo"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">رابط الموقع</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط الموقع</label>
               <Input
                 value={formData.websiteUrl}
                 onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                className="bg-white/5 border-white/10 text-white"
                 placeholder="https://example.com"
                 data-testid="input-partner-website"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">الفئة</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">الفئة</label>
                 <Input
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="bg-white/5 border-white/10 text-white"
                   placeholder="مطاعم، تعليم..."
                   data-testid="input-partner-category"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">الترتيب</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">الترتيب</label>
                 <Input
                   type="number"
                   value={formData.sortOrder}
                   onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
-                  className="bg-white/5 border-white/10 text-white"
                   placeholder="0"
                   data-testid="input-partner-sort"
                 />
@@ -307,7 +301,6 @@ export default function AdminPartners() {
               <Button
                 type="button"
                 variant="outline"
-                className="border-white/10 text-white/60 hover:bg-white/5"
                 onClick={() => setOpen(false)}
                 data-testid="button-cancel-partner"
               >

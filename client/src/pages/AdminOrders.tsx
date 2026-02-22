@@ -23,11 +23,11 @@ interface OrderData {
 }
 
 const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد المراجعة", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
-  approved: { label: "تمت الموافقة", color: "bg-green-500/10 text-green-400 border-green-500/20" },
-  in_progress: { label: "قيد التنفيذ", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  completed: { label: "مكتمل", color: "bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20" },
-  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-400 border-red-500/20" },
+  pending: { label: "قيد المراجعة", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  approved: { label: "تمت الموافقة", color: "bg-green-500/10 text-green-600 border-green-500/20" },
+  in_progress: { label: "قيد التنفيذ", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  completed: { label: "مكتمل", color: "bg-black/[0.06] text-black/60 border-black/[0.08]" },
+  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20" },
 };
 
 const paymentMethods: Record<string, string> = {
@@ -61,7 +61,7 @@ export default function AdminOrders() {
     },
   });
 
-  const handleQuickStatus = (id: number, status: string) => {
+  const handleQuickStatus = (id: string, status: string) => {
     updateMutation.mutate({ id, updates: { status } });
   };
 
@@ -82,7 +82,7 @@ export default function AdminOrders() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin w-8 h-8 text-[#00D4FF]" />
+        <Loader2 className="animate-spin w-8 h-8 text-black/40" />
       </div>
     );
   }
@@ -90,12 +90,12 @@ export default function AdminOrders() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <FileText className="w-7 h-7 text-[#00D4FF]" />
+        <h1 className="text-2xl font-bold text-black flex items-center gap-3">
+          <FileText className="w-7 h-7 text-black/40" />
           إدارة الطلبات
         </h1>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-white/40">
+          <div className="text-sm text-black/40">
             {orders?.length || 0} طلب
           </div>
         </div>
@@ -103,52 +103,52 @@ export default function AdminOrders() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { key: "pending", icon: Clock, label: "قيد المراجعة", color: "text-yellow-400" },
-          { key: "approved", icon: CheckCircle, label: "تمت الموافقة", color: "text-green-400" },
-          { key: "in_progress", icon: Loader2, label: "قيد التنفيذ", color: "text-blue-400" },
-          { key: "completed", icon: CheckCircle, label: "مكتمل", color: "text-[#00D4FF]" },
+          { key: "pending", icon: Clock, label: "قيد المراجعة", color: "text-yellow-600" },
+          { key: "approved", icon: CheckCircle, label: "تمت الموافقة", color: "text-green-600" },
+          { key: "in_progress", icon: Loader2, label: "قيد التنفيذ", color: "text-blue-600" },
+          { key: "completed", icon: CheckCircle, label: "مكتمل", color: "text-black/60" },
         ].map((stat) => (
-          <div key={stat.key} className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div key={stat.key} className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
             <stat.icon className={`w-5 h-5 ${stat.color}`} />
             <div>
-              <p className="text-lg font-bold text-white">
+              <p className="text-lg font-bold text-black">
                 {orders?.filter(o => o.status === stat.key).length || 0}
               </p>
-              <p className="text-xs text-white/40">{stat.label}</p>
+              <p className="text-xs text-black/40">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="border border-black/[0.06] bg-white rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">#</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">النوع</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">الحالة</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">الدفع</th>
-                <th className="text-right p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">المبلغ</th>
-                <th className="text-left p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">إجراءات</th>
+              <tr className="border-b border-black/[0.06]">
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">#</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">النوع</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الحالة</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الدفع</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المبلغ</th>
+                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {orders?.map((order) => (
-                <tr key={order.id} className="border-b border-white/5 hover:bg-white/5 transition-colors" data-testid={`row-order-${order.id}`}>
-                  <td className="p-4 text-sm text-white/60">#{order.id}</td>
+                <tr key={order.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-order-${order.id}`}>
+                  <td className="p-4 text-sm text-black/60">#{order.id}</td>
                   <td className="p-4">
-                    <p className="text-sm font-medium text-white">{order.projectType || order.sector || "—"}</p>
+                    <p className="text-sm font-medium text-black">{order.projectType || order.sector || "—"}</p>
                   </td>
                   <td className="p-4">
-                    <span className={`text-xs px-2.5 py-1 rounded-full border ${statusMap[order.status]?.color || "bg-white/5 text-white/40 border-white/10"}`}>
+                    <span className={`text-xs px-2.5 py-1 rounded-full border ${statusMap[order.status]?.color || "bg-black/[0.03] text-black/40 border-black/[0.06]"}`}>
                       {statusMap[order.status]?.label || order.status}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-white/60">
+                  <td className="p-4 text-sm text-black/60">
                     {paymentMethods[order.paymentMethod || ""] || order.paymentMethod || "—"}
                   </td>
-                  <td className="p-4 text-sm text-white/60">
+                  <td className="p-4 text-sm text-black/60">
                     {order.totalAmount ? `${Number(order.totalAmount).toLocaleString()} ر.س` : "—"}
                   </td>
                   <td className="p-4">
@@ -156,7 +156,7 @@ export default function AdminOrders() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-[#00D4FF] hover:bg-[#00D4FF]/10 h-8 w-8"
+                        className="text-black/60"
                         onClick={() => openDetail(order)}
                         data-testid={`button-view-${order.id}`}
                       >
@@ -167,7 +167,7 @@ export default function AdminOrders() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-green-400 hover:bg-green-400/10 h-8 text-xs px-2"
+                            className="text-green-600 h-8 text-xs px-2"
                             onClick={() => handleQuickStatus(order.id, "approved")}
                             disabled={updateMutation.isPending}
                             data-testid={`button-approve-${order.id}`}
@@ -178,7 +178,7 @@ export default function AdminOrders() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-red-400 hover:bg-red-400/10 h-8 text-xs px-2"
+                            className="text-red-500 h-8 text-xs px-2"
                             onClick={() => handleQuickStatus(order.id, "cancelled")}
                             disabled={updateMutation.isPending}
                             data-testid={`button-reject-${order.id}`}
@@ -194,7 +194,7 @@ export default function AdminOrders() {
               ))}
               {(!orders || orders.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-white/30">
+                  <td colSpan={6} className="p-8 text-center text-black/30">
                     لا توجد طلبات بعد
                   </td>
                 </tr>
@@ -205,53 +205,53 @@ export default function AdminOrders() {
       </div>
 
       <Dialog open={!!selectedOrder} onOpenChange={(v) => !v && setSelectedOrder(null)}>
-        <DialogContent className="bg-[#12121A] border-white/10 text-white max-w-md">
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">
+            <DialogTitle className="text-xl font-bold text-black">
               تفاصيل الطلب #{selectedOrder?.id}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className="glass-card rounded-lg p-3">
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">الحالة</p>
+                <div className="border border-black/[0.06] bg-white rounded-lg p-3">
+                  <p className="text-[10px] text-black/30 uppercase tracking-wider mb-1">الحالة</p>
                   <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white h-9" data-testid="select-order-status">
+                    <SelectTrigger className="h-9" data-testid="select-order-status">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#1a1a2e] border-white/10">
+                    <SelectContent>
                       {Object.entries(statusMap).map(([key, val]) => (
-                        <SelectItem key={key} value={key} className="text-white/80">{val.label}</SelectItem>
+                        <SelectItem key={key} value={key}>{val.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="glass-card rounded-lg p-3">
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">المبلغ (ر.س)</p>
+                <div className="border border-black/[0.06] bg-white rounded-lg p-3">
+                  <p className="text-[10px] text-black/30 uppercase tracking-wider mb-1">المبلغ (ر.س)</p>
                   <Input
                     type="number"
                     value={editAmount}
                     onChange={(e) => setEditAmount(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white h-9"
+                    className="h-9"
                     data-testid="input-order-amount"
                   />
                 </div>
               </div>
 
-              <div className="glass-card rounded-lg p-3 space-y-2">
+              <div className="border border-black/[0.06] bg-white rounded-lg p-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">طريقة الدفع</span>
-                  <span className="text-white">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</span>
+                  <span className="text-black/40">طريقة الدفع</span>
+                  <span className="text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/40">دفعة مقدمة</span>
-                  <span className="text-white">{selectedOrder.isDepositPaid ? "نعم" : "لا"}</span>
+                  <span className="text-black/40">دفعة مقدمة</span>
+                  <span className="text-black">{selectedOrder.isDepositPaid ? "نعم" : "لا"}</span>
                 </div>
                 {selectedOrder.paymentProofUrl && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/40">إثبات الدفع</span>
-                    <a href={selectedOrder.paymentProofUrl} target="_blank" rel="noreferrer" className="text-[#00D4FF] underline">عرض</a>
+                    <span className="text-black/40">إثبات الدفع</span>
+                    <a href={selectedOrder.paymentProofUrl} target="_blank" rel="noreferrer" className="text-black/60 underline">عرض</a>
                   </div>
                 )}
               </div>
@@ -268,7 +268,6 @@ export default function AdminOrders() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-white/10 text-white/60 hover:bg-white/5"
                   onClick={() => setSelectedOrder(null)}
                 >
                   إغلاق

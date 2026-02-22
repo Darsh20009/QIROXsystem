@@ -184,7 +184,7 @@ export default function PayPalButton({
 
   if (status === "success") {
     return (
-      <div className="flex items-center justify-center gap-2 py-4 text-green-400">
+      <div className="flex items-center justify-center gap-2 py-4 text-green-600">
         <CheckCircle className="w-5 h-5" />
         <span className="font-medium text-sm">Payment completed successfully</span>
       </div>
@@ -194,13 +194,13 @@ export default function PayPalButton({
   if (status === "error") {
     return (
       <div className="flex flex-col items-center gap-2 py-4">
-        <div className="flex items-center gap-2 text-red-400">
+        <div className="flex items-center gap-2 text-red-500">
           <AlertCircle className="w-5 h-5" />
           <span className="text-sm">{errorMsg}</span>
         </div>
         <button
           onClick={() => window.location.reload()}
-          className="text-xs text-[#00D4FF] hover:underline mt-1"
+          className="text-xs text-black/40 hover:underline mt-1"
           data-testid="button-retry-paypal"
         >
           Retry
@@ -213,8 +213,8 @@ export default function PayPalButton({
     <div className="flex flex-col items-center gap-3">
       {status === "loading" && (
         <div className="flex items-center gap-2 py-2">
-          <Loader2 className="w-4 h-4 animate-spin text-[#00D4FF]" />
-          <span className="text-xs text-white/40">Loading PayPal...</span>
+          <Loader2 className="w-4 h-4 animate-spin text-black/40" />
+          <span className="text-xs text-black/40">Loading PayPal...</span>
         </div>
       )}
       <paypal-button

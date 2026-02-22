@@ -48,22 +48,21 @@ export default function Partners() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
+    <div className="min-h-screen flex flex-col bg-white">
       <Navigation />
 
       <section className="pt-36 pb-16 relative overflow-hidden" data-testid="section-partners-hero">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0A0A0F] to-transparent" />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, black 1px, transparent 0)", backgroundSize: "40px 40px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] mb-6">
-              <Handshake className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span className="text-white/40 text-xs tracking-wider uppercase">Partners</span>
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.04] mb-6">
+              <Handshake className="w-3.5 h-3.5 text-black/40" />
+              <span className="text-black/40 text-xs tracking-wider uppercase">Partners</span>
             </motion.div>
-            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-white mb-6 tracking-tight" dir="rtl">
-              شركاؤنا <span style={{ background: "linear-gradient(90deg, #00D4FF, #0099CC)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>في النجاح</span>
+            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-black mb-6 tracking-tight" dir="rtl">
+              شركاؤنا <span className="text-gray-400">في النجاح</span>
             </motion.h1>
-            <motion.p variants={fadeUp} custom={2} className="text-white/30 text-lg max-w-2xl mx-auto" dir="rtl">
+            <motion.p variants={fadeUp} custom={2} className="text-black/40 text-lg max-w-2xl mx-auto" dir="rtl">
               نفتخر بثقة عملائنا وشركائنا الذين اختاروا QIROX لبناء أنظمتهم الرقمية
             </motion.p>
           </motion.div>
@@ -86,7 +85,7 @@ export default function Partners() {
               className="group"
               data-testid={`partner-card-${idx}`}
             >
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 group-hover:border-[#00D4FF]/20 group-hover:bg-white/[0.04]">
+              <div className="rounded-2xl border border-black/[0.06] bg-white p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]">
                 <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
                   <img
                     src={partner.logo}
@@ -95,8 +94,8 @@ export default function Partners() {
                     loading="lazy"
                   />
                 </div>
-                <h3 className="text-sm font-bold text-white text-center">{partner.name}</h3>
-                <p className="text-xs text-white/30 text-center mt-1" dir="rtl">{partner.nameAr}</p>
+                <h3 className="text-sm font-bold text-black text-center">{partner.name}</h3>
+                <p className="text-xs text-black/40 text-center mt-1" dir="rtl">{partner.nameAr}</p>
               </div>
             </motion.div>
           ))}
@@ -109,7 +108,7 @@ export default function Partners() {
               className="group"
               data-testid={`partner-db-card-${partner.id}`}
             >
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 group-hover:border-[#00D4FF]/20 group-hover:bg-white/[0.04]">
+              <div className="rounded-2xl border border-black/[0.06] bg-white p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]">
                 <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
                   <img
                     src={partner.logoUrl}
@@ -118,10 +117,10 @@ export default function Partners() {
                     loading="lazy"
                   />
                 </div>
-                <h3 className="text-sm font-bold text-white text-center">{partner.name}</h3>
-                {partner.nameAr && <p className="text-xs text-white/30 text-center mt-1" dir="rtl">{partner.nameAr}</p>}
+                <h3 className="text-sm font-bold text-black text-center">{partner.name}</h3>
+                {partner.nameAr && <p className="text-xs text-black/40 text-center mt-1" dir="rtl">{partner.nameAr}</p>}
                 {partner.websiteUrl && (
-                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="mt-2 text-[#00D4FF]/50 hover:text-[#00D4FF] transition-colors">
+                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="mt-2 text-black/30 hover:text-black transition-colors">
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
@@ -139,19 +138,18 @@ export default function Partners() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="rounded-[24px] border border-white/[0.08] bg-white/[0.02] p-10 md:p-14 text-center"
+            className="rounded-[24px] bg-black p-10 md:p-14 text-center"
           >
             <h2 className="text-2xl md:text-3xl font-bold font-heading text-white mb-4" dir="rtl">
               كن شريكنا القادم
             </h2>
-            <p className="text-white/40 text-base mb-8 max-w-lg mx-auto" dir="rtl">
+            <p className="text-white/60 text-base mb-8 max-w-lg mx-auto" dir="rtl">
               انضم لعائلة QIROX وابدأ رحلة التحول الرقمي مع مصنع الأنظمة الأول
             </p>
             <Link href="/contact">
               <Button
                 size="lg"
-                className="h-14 px-10 text-base rounded-md gap-2 font-semibold"
-                style={{ background: "linear-gradient(135deg, #00D4FF, #0099CC)", color: "#0A0A0F", border: "1px solid #00D4FF" }}
+                className="h-14 px-10 text-base rounded-md gap-2 font-semibold bg-white text-black hover:bg-white/90"
                 data-testid="button-become-partner"
               >
                 تواصل معنا

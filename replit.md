@@ -12,6 +12,12 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 
 ## Recent Changes (Feb 2026)
 
+- **COMPLETE UI/UX REDESIGN**: Converted entire frontend from dark theme (bg-[#0A0A0F], cyan accents) to light theme (white background, black/gray color scheme). Affected: index.css, all components (Navigation, Footer, Sidebar, Splash), and all pages (Home, Services, Portfolio, Prices, Login, About, Contact, OrderFlow, Admin pages).
+  - Design tokens: bg-white, text-black, borders: black/[0.06], accents: gray-400, premium buttons: bg-black text-white
+  - Navigation: transparent → glass-strong on scroll, active indicator with layoutId animation
+  - Splash screen: typewriter effect with black/gray on white, minimal animations
+  - Cards: white bg with subtle borders and hover shadows instead of dark glass
+  - CTA sections: bg-black with white text (inverted from main)
 - Added SectorTemplate and PricingPlan MongoDB models with 8 seeded industry templates
 - Built Portfolio page with category filtering and sector cards
 - Built Pricing page with 3 plans (Starter 5K, Business 15K, Enterprise 40K SAR)

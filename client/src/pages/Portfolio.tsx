@@ -48,22 +48,21 @@ export default function Portfolio() {
   const catLabel = (cat: string) => categoryLabelsMap[cat]?.[lang] || cat;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
+    <div className="min-h-screen flex flex-col bg-white">
       <Navigation />
 
       <section className="pt-36 pb-24 relative overflow-hidden">
-        <div className="absolute inset-0 gradient-mesh opacity-40" />
-        <div className="absolute inset-0 animated-grid-dark opacity-20" />
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-white/10 mb-6">
-              <Layers className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span className="text-white/40 text-xs tracking-wider uppercase">{t("portfolio.badge")}</span>
+            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-6">
+              <Layers className="w-3.5 h-3.5 text-black/40" />
+              <span className="text-black/40 text-xs tracking-wider uppercase">{t("portfolio.badge")}</span>
             </motion.div>
-            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-white mb-6 tracking-tight">
-              {t("portfolio.title1")} <span className="text-gradient">{t("portfolio.title2")}</span>
+            <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-black mb-6 tracking-tight">
+              {t("portfolio.title1")} <span className="text-gray-400">{t("portfolio.title2")}</span>
             </motion.h1>
-            <motion.p variants={fadeUp} custom={2} className="text-white/30 text-lg max-w-2xl mx-auto leading-relaxed">
+            <motion.p variants={fadeUp} custom={2} className="text-black/40 text-lg max-w-2xl mx-auto leading-relaxed">
               {t("portfolio.subtitle")}
             </motion.p>
 
@@ -74,20 +73,19 @@ export default function Portfolio() {
                 { value: "100%", label: t("portfolio.customizable") },
               ].map((stat, i) => (
                 <div key={i} className="text-center">
-                  <div className="text-2xl font-black text-white">{stat.value}</div>
-                  <div className="text-white/20 text-xs mt-1">{stat.label}</div>
+                  <div className="text-2xl font-black text-black">{stat.value}</div>
+                  <div className="text-black/25 text-xs mt-1">{stat.label}</div>
                 </div>
               ))}
             </motion.div>
           </motion.div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0A0A0F] to-transparent" />
       </section>
 
-      <section className="py-3 glass sticky top-0 z-30 border-b border-white/5">
+      <section className="py-3 bg-white/90 backdrop-blur-lg sticky top-0 z-30 border-b border-black/[0.04]">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <Filter className="w-4 h-4 text-white/20 flex-shrink-0" />
+            <Filter className="w-4 h-4 text-black/20 flex-shrink-0" />
             {categories.map(cat => (
               <button
                 key={cat}
@@ -95,8 +93,8 @@ export default function Portfolio() {
                 data-testid={`filter-${cat}`}
                 className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeFilter === cat
-                    ? "bg-[#00D4FF] text-[#0A0A0F] font-semibold"
-                    : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70"
+                    ? "bg-black text-white font-semibold"
+                    : "bg-black/[0.04] text-black/40 hover:bg-black/[0.08] hover:text-black/60"
                 }`}
               >
                 {catLabel(cat)}
@@ -109,7 +107,7 @@ export default function Portfolio() {
       <section className="py-12 container mx-auto px-4">
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-[#00D4FF]" />
+            <Loader2 className="w-8 h-8 animate-spin text-black/30" />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -124,50 +122,50 @@ export default function Portfolio() {
                   custom={idx}
                 >
                   <div
-                    className="glass-card group p-6 rounded-2xl flex flex-col h-full"
+                    className="group p-6 rounded-2xl flex flex-col h-full border border-black/[0.06] bg-white hover:shadow-lg hover:shadow-black/[0.04] transition-all"
                     data-testid={`card-template-${template.slug}`}
                   >
                     <div className="flex items-start justify-between mb-5">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 group-hover:bg-[#00D4FF]/10 transition-all duration-500">
-                        <Icon className="w-5 h-5 text-white/40 group-hover:text-[#00D4FF] transition-colors duration-500" />
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/[0.04]">
+                        <Icon className="w-5 h-5 text-black/40" />
                       </div>
-                      <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-white/30">
+                      <span className="text-[10px] px-2.5 py-1 rounded-full bg-black/[0.03] text-black/35">
                         {catLabel(template.category)}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold font-heading text-white mb-1">
+                    <h3 className="text-base font-bold font-heading text-black mb-1">
                       {lang === "ar" ? template.nameAr : template.name}
                     </h3>
-                    <p className="text-[10px] text-white/20 font-mono mb-3">
+                    <p className="text-[10px] text-black/25 font-mono mb-3">
                       {lang === "ar" ? template.name : template.nameAr}
                     </p>
-                    <p className="text-sm text-white/30 leading-relaxed mb-5 line-clamp-2 flex-1">
+                    <p className="text-sm text-black/40 leading-relaxed mb-5 line-clamp-2 flex-1">
                       {lang === "ar" ? template.descriptionAr : template.description}
                     </p>
 
                     <div className="space-y-2 mb-5">
                       {(lang === "ar" ? template.featuresAr : template.features)?.slice(0, 3).map((feature, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-white/30">
-                          <Check className="w-3 h-3 text-[#00D4FF]/60 flex-shrink-0" />
+                        <div key={i} className="flex items-center gap-2 text-xs text-black/35">
+                          <Check className="w-3 h-3 text-black/25 flex-shrink-0" />
                           <span>{feature}</span>
                         </div>
                       ))}
                       {((lang === "ar" ? template.featuresAr : template.features)?.length || 0) > 3 && (
-                        <div className="text-[10px] text-white/15">
+                        <div className="text-[10px] text-black/20">
                           +{((lang === "ar" ? template.featuresAr : template.features)?.length || 0) - 3} {t("portfolio.moreFeatures")}
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-auto pt-4 border-t border-white/5">
+                    <div className="mt-auto pt-4 border-t border-black/[0.04]">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] text-white/20">{t("portfolio.startFrom")}</span>
-                        <span className="font-bold text-white text-sm">{template.priceMin?.toLocaleString()} <span className="text-white/30 text-xs">{template.currency}</span></span>
+                        <span className="text-[10px] text-black/25">{t("portfolio.startFrom")}</span>
+                        <span className="font-bold text-black text-sm">{template.priceMin?.toLocaleString()} <span className="text-black/35 text-xs">{template.currency}</span></span>
                       </div>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] text-white/20">{t("portfolio.duration")}</span>
-                        <span className="text-xs text-white/30">{template.estimatedDuration}</span>
+                        <span className="text-[10px] text-black/25">{t("portfolio.duration")}</span>
+                        <span className="text-xs text-black/35">{template.estimatedDuration}</span>
                       </div>
                       <div className="flex gap-2">
                         <Link href="/order" className="flex-1">
@@ -186,13 +184,12 @@ export default function Portfolio() {
         )}
       </section>
 
-      <section className="py-28 relative overflow-hidden">
-        <div className="absolute inset-0 gradient-mesh opacity-30" />
+      <section className="py-28 relative overflow-hidden bg-[#fafafa]">
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
-            {t("portfolio.readyTitle")} <span className="text-gradient">{t("portfolio.readyHighlight")}</span>
+          <h2 className="text-3xl md:text-5xl font-bold font-heading text-black mb-6">
+            {t("portfolio.readyTitle")} <span className="text-gray-400">{t("portfolio.readyHighlight")}</span>
           </h2>
-          <p className="text-white/30 text-lg max-w-2xl mx-auto mb-12">
+          <p className="text-black/35 text-lg max-w-2xl mx-auto mb-12">
             {t("portfolio.readySubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -203,7 +200,7 @@ export default function Portfolio() {
               </Button>
             </Link>
             <Link href="/contact">
-              <Button variant="outline" size="lg" className="h-14 px-10 border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl font-semibold bg-transparent" data-testid="button-contact-us">
+              <Button variant="outline" size="lg" className="h-14 px-10 border-black/[0.08] text-black/50 hover:text-black hover:bg-black/[0.03] rounded-xl font-semibold bg-transparent" data-testid="button-contact-us">
                 {t("portfolio.contactUs")}
               </Button>
             </Link>
