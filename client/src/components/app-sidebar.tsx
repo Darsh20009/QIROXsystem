@@ -15,8 +15,9 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
-  Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package
+  Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -58,11 +59,13 @@ export function AppSidebar() {
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "client" },
     { title: "الأجهزة والإضافات", icon: Cpu, url: "/devices", group: "client" },
     { title: "سلة التسوق", icon: ShoppingCart, url: "/cart", group: "client" },
+    { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "client" },
 
     // Employee pages (visible to ALL non-client roles)
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
     { title: "الطلبات", icon: FileText, url: "/admin/orders", group: "employee" },
     { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
+    { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "employee" },
 
     // Finance role pages
     { title: "المالية", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },
@@ -146,9 +149,12 @@ export function AppSidebar() {
   return (
     <Sidebar side="right" className="bg-white border-l border-black/[0.06]">
       <SidebarHeader className="p-4 border-b border-black/[0.06]">
-        <Link href="/" className="flex items-center gap-2">
-          <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain" />
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain" />
+          </Link>
+          {user && <NotificationBell />}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {/* Employee / Client menu items */}

@@ -41,10 +41,12 @@ import Devices from "@/pages/Devices";
 import Cart from "@/pages/Cart";
 import Partners from "@/pages/Partners";
 import InternalGate from "@/pages/InternalGate";
+import ForgotPassword from "@/pages/ForgotPassword";
+import Inbox from "@/pages/Inbox";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices"];
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password"];
 
 function PublicRouter() {
   return (
@@ -69,6 +71,7 @@ function PublicRouter() {
       <Route path="/order" component={OrderFlow} />
       <Route path="/internal-gate" component={InternalGate} />
       <Route path="/devices" component={Devices} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -93,6 +96,7 @@ function AdminRouter() {
       <Route path="/admin/customers" component={AdminCustomers} />
       <Route path="/admin/products" component={AdminProducts} />
       <Route path="/cart" component={Cart} />
+      <Route path="/inbox" component={Inbox} />
       <Route component={NotFound} />
     </Switch>
   );

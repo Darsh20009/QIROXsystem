@@ -317,7 +317,47 @@ const orderSpecsSchema = new mongoose.Schema({
   customVars: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema].forEach(s => {
+const otpSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  code: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+  used: { type: Boolean, default: false },
+}, { timestamps: true });
+
+const notificationSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system'], default: 'system' },
+  title: { type: String, required: true },
+  body: { type: String, required: true },
+  link: String,
+  read: { type: Boolean, default: false },
+  icon: String,
+}, { timestamps: true });
+
+const inboxMessageSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
+  fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  body: { type: String, required: true },
+  read: { type: Boolean, default: false },
+  attachmentUrl: String,
+}, { timestamps: true });
+
+const invoiceSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  invoiceNumber: { type: String, required: true, unique: true },
+  amount: { type: Number, required: true },
+  vatAmount: { type: Number, default: 0 },
+  totalAmount: { type: Number, required: true },
+  status: { type: String, enum: ['unpaid', 'paid', 'cancelled'], default: 'unpaid' },
+  dueDate: Date,
+  paidAt: Date,
+  notes: String,
+  items: [{ name: String, qty: Number, unitPrice: Number, total: Number }],
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -341,3 +381,7 @@ export const ModificationRequestModel = mongoose.models.ModificationRequest || m
 export const QiroxProductModel = mongoose.models.QiroxProduct || mongoose.model("QiroxProduct", qiroxProductSchema);
 export const CartModel = mongoose.models.Cart || mongoose.model("Cart", cartSchema);
 export const OrderSpecsModel = mongoose.models.OrderSpecs || mongoose.model("OrderSpecs", orderSpecsSchema);
+export const OtpModel = mongoose.models.Otp || mongoose.model("Otp", otpSchema);
+export const NotificationModel = mongoose.models.Notification || mongoose.model("Notification", notificationSchema);
+export const InboxMessageModel = mongoose.models.InboxMessage || mongoose.model("InboxMessage", inboxMessageSchema);
+export const InvoiceModel = mongoose.models.Invoice || mongoose.model("Invoice", invoiceSchema);

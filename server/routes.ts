@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
+import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail } from "./email";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -113,6 +114,10 @@ export async function registerRoutes(
 
       req.login(user, (err) => {
         if (err) return next(err);
+        // Send welcome email (async, don't block response)
+        if (user.email) {
+          sendWelcomeEmail(user.email, user.fullName || user.username).catch(console.error);
+        }
         res.status(201).json(user);
       });
     } catch (err) {
@@ -362,6 +367,18 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const order = await storage.updateOrder(req.params.id, req.body);
+    // Send email + notification when status changes
+    if (req.body.status && order) {
+      try {
+        const { NotificationModel, UserModel } = await import("./models");
+        const clientUser = await UserModel.findById((order as any).userId).select("email fullName username");
+        if (clientUser?.email) {
+          sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order.id), req.body.status).catch(console.error);
+        }
+        const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'تمت الموافقة', in_progress: 'قيد التنفيذ', review: 'مراجعة العميل', completed: 'مكتمل', rejected: 'مرفوض' };
+        await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
+      } catch (e) { console.error("[OrderStatus]", e); }
+    }
     res.json(order);
   });
 
@@ -387,7 +404,16 @@ export async function registerRoutes(
 
   app.post("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const order = await storage.createOrder({ ...req.body, userId: String((req.user as User).id) });
+    const user = req.user as User;
+    const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
+    // Send order confirmation email
+    if ((user as any).email) {
+      const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
+      sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
+      // Create in-app notification
+      const { NotificationModel } = await import("./models");
+      await NotificationModel.create({ userId: user.id, type: 'order', title: 'تم استلام طلبك', body: `تم استلام طلبك بنجاح، سنتواصل معك قريباً.`, link: '/dashboard', icon: '📦' });
+    }
     res.status(201).json(order);
   });
 
@@ -910,6 +936,212 @@ export async function registerRoutes(
     }
     const specs = await storage.getOrderSpecs(req.params.id);
     res.json(specs || {});
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === OTP / FORGOT PASSWORD / RESET PASSWORD ===
+  // ═══════════════════════════════════════════════════════════
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
+      const { OtpModel, UserModel } = await import("./models");
+      const user = await UserModel.findOne({ email: email.toLowerCase().trim() });
+      // Always return 200 to prevent email enumeration
+      if (!user) return res.json({ ok: true });
+      // Invalidate previous OTPs for this email
+      await OtpModel.updateMany({ email: email.toLowerCase(), used: false }, { used: true });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await OtpModel.create({ email: email.toLowerCase(), code, expiresAt });
+      await sendOtpEmail(email, user.fullName || user.username, code);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[OTP] forgot-password error:", err);
+      res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
+    }
+  });
+
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
+      const { OtpModel } = await import("./models");
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      res.json({ valid: true });
+    } catch (err) {
+      res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { email, code, newPassword } = req.body;
+      if (!email || !code || !newPassword) return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      if (newPassword.length < 6) return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
+      const { OtpModel, UserModel } = await import("./models");
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      const hashed = await hashPassword(newPassword);
+      await UserModel.updateOne({ email: email.toLowerCase() }, { password: hashed });
+      await OtpModel.updateOne({ _id: otp._id }, { used: true });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[OTP] reset-password error:", err);
+      res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === NOTIFICATIONS ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/notifications", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    const notifs = await NotificationModel.find({ userId: (req.user as any).id }).sort({ createdAt: -1 }).limit(50);
+    res.json(notifs);
+  });
+
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    const count = await NotificationModel.countDocuments({ userId: (req.user as any).id, read: false });
+    res.json({ count });
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    await NotificationModel.updateOne({ _id: req.params.id, userId: (req.user as any).id }, { read: true });
+    res.json({ ok: true });
+  });
+
+  app.patch("/api/notifications/read-all", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    await NotificationModel.updateMany({ userId: (req.user as any).id, read: false }, { read: true });
+    res.json({ ok: true });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === INBOX MESSAGES ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/inbox", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InboxMessageModel } = await import("./models");
+    const uid = (req.user as any).id;
+    const msgs = await InboxMessageModel.find({ $or: [{ fromUserId: uid }, { toUserId: uid }] })
+      .populate("fromUserId", "username fullName role")
+      .populate("toUserId", "username fullName role")
+      .sort({ createdAt: -1 })
+      .limit(100);
+    res.json(msgs);
+  });
+
+  app.get("/api/inbox/unread-count", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InboxMessageModel } = await import("./models");
+    const count = await InboxMessageModel.countDocuments({ toUserId: (req.user as any).id, read: false });
+    res.json({ count });
+  });
+
+  app.get("/api/inbox/thread/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InboxMessageModel } = await import("./models");
+    const me = (req.user as any).id;
+    const other = req.params.userId;
+    const msgs = await InboxMessageModel.find({
+      $or: [{ fromUserId: me, toUserId: other }, { fromUserId: other, toUserId: me }]
+    }).populate("fromUserId", "username fullName role").sort({ createdAt: 1 }).limit(200);
+    // Mark as read
+    await InboxMessageModel.updateMany({ fromUserId: other, toUserId: me, read: false }, { read: true });
+    res.json(msgs);
+  });
+
+  app.post("/api/inbox", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InboxMessageModel, NotificationModel, UserModel } = await import("./models");
+    const { toUserId, body, orderId } = req.body;
+    if (!toUserId || !body?.trim()) return res.status(400).json({ error: "المستقبل والرسالة مطلوبان" });
+    const me = req.user as any;
+    const msg = await InboxMessageModel.create({ fromUserId: me.id, toUserId, body: body.trim(), orderId: orderId || undefined });
+    // Create notification for receiver
+    await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: body.slice(0, 100), link: '/inbox', icon: '💬' });
+    // Send email if recipient has one
+    const toUser = await UserModel.findById(toUserId).select("email fullName username");
+    if (toUser?.email) {
+      sendMessageNotificationEmail(toUser.email, toUser.fullName || toUser.username, me.fullName || me.username, body).catch(console.error);
+    }
+    const populated = await InboxMessageModel.findById(msg._id).populate("fromUserId", "username fullName role").populate("toUserId", "username fullName role");
+    res.status(201).json(populated);
+  });
+
+  // Admin can get all users to send messages to
+  app.get("/api/inbox/contacts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { UserModel, InboxMessageModel } = await import("./models");
+    const me = req.user as any;
+    // Find all users who have had conversations with me
+    const msgs = await InboxMessageModel.find({ $or: [{ fromUserId: me.id }, { toUserId: me.id }] }).select("fromUserId toUserId");
+    const userIds = new Set<string>();
+    for (const m of msgs) {
+      const fid = String(m.fromUserId);
+      const tid = String(m.toUserId);
+      if (fid !== String(me.id)) userIds.add(fid);
+      if (tid !== String(me.id)) userIds.add(tid);
+    }
+    const users = await UserModel.find({ _id: { $in: [...userIds] } }).select("username fullName role id");
+    res.json(users);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === INVOICES ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/invoices", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InvoiceModel } = await import("./models");
+    const user = req.user as any;
+    const query = user.role === "client" ? { userId: user.id } : {};
+    const invoices = await InvoiceModel.find(query).populate("userId", "username fullName email").populate("orderId", "projectType sector").sort({ createdAt: -1 });
+    res.json(invoices);
+  });
+
+  app.post("/api/invoices", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel } = await import("./models");
+    const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
+    const vatAmount = (req.body.amount || 0) * 0.15;
+    const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount, totalAmount: (req.body.amount || 0) + vatAmount });
+    res.status(201).json(invoice);
+  });
+
+  app.patch("/api/invoices/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel } = await import("./models");
+    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) }, { new: true });
+    res.json(invoice);
+  });
+
+  app.get("/api/admin/finance/summary", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel, OrderModel, UserModel } = await import("./models");
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [totalRevenue, monthRevenue, unpaidTotal, totalOrders, activeClients] = await Promise.all([
+      InvoiceModel.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
+      InvoiceModel.aggregate([{ $match: { status: 'paid', paidAt: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
+      InvoiceModel.aggregate([{ $match: { status: 'unpaid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
+      OrderModel.countDocuments(),
+      UserModel.countDocuments({ role: 'client' }),
+    ]);
+    res.json({
+      totalRevenue: totalRevenue[0]?.total || 0,
+      monthRevenue: monthRevenue[0]?.total || 0,
+      unpaidTotal: unpaidTotal[0]?.total || 0,
+      totalOrders,
+      activeClients,
+    });
   });
 
   // Initialize seed data

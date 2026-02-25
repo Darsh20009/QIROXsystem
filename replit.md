@@ -10,6 +10,17 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 25, 2026 - Session 8)
+
+- **OTP / Forgot Password Flow**: Full 3-step recovery page (`/forgot-password`): email → 6-digit OTP verification → new password reset → done. Backend routes: `POST /api/auth/forgot-password` (sends OTP via SMTP2GO), `POST /api/auth/verify-otp`, `POST /api/auth/reset-password`. OTPs expire in 10 minutes, invalidated on use.
+- **Login Page**: Added "نسيت كلمة المرور؟" link next to password label, linking to `/forgot-password`.
+- **Notifications System**: `NotificationBell` component in sidebar header — shows unread badge count, dropdown with list, mark-as-read per item and "قراءة الكل". Backend: `GET /api/notifications`, `GET /api/notifications/unread-count`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`. Notifications auto-created when: order placed (client), order status changes (client).
+- **Inbox Messaging**: Full `Inbox` page (`/inbox`) with contacts sidebar + real-time chat thread. Auto-refreshes every 5s. Backend: `GET /api/inbox`, `GET /api/inbox/unread-count`, `GET /api/inbox/thread/:userId`, `POST /api/inbox`. Sends email notification + in-app notification to recipient.
+- **Invoices & Finance API**: `GET /api/invoices`, `POST /api/invoices`, `PATCH /api/invoices/:id`, `GET /api/admin/finance/summary` (totalRevenue, monthRevenue, unpaidTotal, totalOrders, activeClients).
+- **Email Triggers**: Order confirmation email fires on new order; order status update email fires when admin changes status. Both also create in-app notifications.
+- **Sidebar**: Added "الرسائل" link for client and employee sections; `NotificationBell` shown in header when user is logged in.
+- **Auth security**: Exported `hashPassword` from `auth.ts` for clean reuse in reset-password route (instead of reinvoking setupAuth).
+
 ## Latest Changes (Feb 25, 2026 - Session 7)
 
 - **Employee Specs Sheet Expanded**: `specsForm` now has 30+ fields in 6 organized sections: 1) معلومات المشروع (name, email, budget, paid, dates, hours, status) — black card, 2) البنية التقنية (stack, framework, language, DB, hosting), 3) Infrastructure (GitHub, DB URI, server IP, credentials, staging/production URLs, SSL/CDN checkboxes), 4) Env Variables (monospace textarea), 5) Project Concept (idea, audience, features, references, color palette), 6) Notes (public + internal team notes). Sheet widened to `max-w-3xl`. Save button is sticky at bottom.
