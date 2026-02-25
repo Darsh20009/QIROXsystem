@@ -1,242 +1,168 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "paypal-button": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-    }
-  }
-}
 
 interface PayPalButtonProps {
   amount: string;
-  currency: string;
-  intent: string;
+  currency?: string;
+  intent?: string;
   onPaymentSuccess?: (data: any) => void;
   onPaymentError?: (error: any) => void;
 }
 
 export default function PayPalButton({
   amount,
-  currency,
-  intent,
+  currency = "USD",
+  intent = "CAPTURE",
   onPaymentSuccess,
   onPaymentError,
 }: PayPalButtonProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
-
-  const createOrder = async () => {
-    const orderPayload = {
-      amount: amount,
-      currency: currency,
-      intent: intent,
-    };
-    const response = await fetch("/paypal/order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderPayload),
-    });
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Failed to create PayPal order");
-    }
-    const output = await response.json();
-    return { orderId: output.id };
-  };
-
-  const captureOrder = async (orderId: string) => {
-    const response = await fetch(`/paypal/order/${orderId}/capture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const data = await response.json();
-    return data;
-  };
-
-  const onApprove = async (data: any) => {
-    try {
-      const orderData = await captureOrder(data.orderId);
-      setStatus("success");
-      onPaymentSuccess?.(orderData);
-    } catch (e) {
-      console.error("Capture error:", e);
-      setStatus("error");
-      setErrorMsg("Payment capture failed");
-      onPaymentError?.(e);
-    }
-  };
-
-  const onCancel = async (_data: any) => {
-    setStatus("ready");
-  };
-
-  const onError = async (data: any) => {
-    console.error("PayPal error:", data);
-    setStatus("error");
-    setErrorMsg("Payment failed");
-    onPaymentError?.(data);
-  };
+  const rendered = useRef(false);
 
   useEffect(() => {
-    let cleanupFn: (() => void) | undefined;
+    if (rendered.current) return;
 
-    const loadPayPalSDK = async () => {
+    const initPayPal = async () => {
       try {
-        if (!(window as any).paypal) {
-          const script = document.createElement("script");
-          const isLive = import.meta.env.PROD || import.meta.env.VITE_PAYPAL_ENV === "live";
-          script.src = isLive
-            ? "https://www.paypal.com/web-sdk/v6/core"
-            : "https://www.sandbox.paypal.com/web-sdk/v6/core";
-          script.async = true;
-          script.onload = async () => {
-            cleanupFn = await initPayPal();
-          };
-          script.onerror = () => {
+        const idRes = await fetch("/paypal/client-id");
+        if (!idRes.ok) {
+          setStatus("error");
+          setErrorMsg("PayPal غير مفعّل");
+          return;
+        }
+        const { clientId } = await idRes.json();
+
+        const isLive = import.meta.env.PROD || import.meta.env.VITE_PAYPAL_ENV === "live";
+        const scriptId = "paypal-sdk-v2";
+
+        const loadScript = (): Promise<void> =>
+          new Promise((resolve, reject) => {
+            if (document.getElementById(scriptId)) {
+              resolve();
+              return;
+            }
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${currency}&intent=${intent.toLowerCase()}&disable-funding=credit,card`;
+            if (!isLive) {
+              script.setAttribute("data-namespace", "paypal");
+            }
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
+            document.body.appendChild(script);
+          });
+
+        await loadScript();
+
+        const paypal = (window as any).paypal;
+        if (!paypal || !paypal.Buttons) {
+          setStatus("error");
+          setErrorMsg("تعذّر تحميل PayPal");
+          return;
+        }
+
+        if (!containerRef.current) return;
+
+        rendered.current = true;
+
+        paypal.Buttons({
+          style: {
+            layout: "vertical",
+            color: "blue",
+            shape: "rect",
+            label: "pay",
+            height: 44,
+          },
+          createOrder: async () => {
+            const res = await fetch("/paypal/order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount, currency, intent }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || "فشل إنشاء الطلب");
+            }
+            const order = await res.json();
+            return order.id;
+          },
+          onApprove: async (data: any) => {
+            try {
+              const res = await fetch(`/paypal/order/${data.orderID}/capture`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              });
+              const captured = await res.json();
+              setStatus("success");
+              onPaymentSuccess?.(captured);
+            } catch (e) {
+              console.error("Capture error:", e);
+              setStatus("error");
+              setErrorMsg("فشل تأكيد الدفع");
+              onPaymentError?.(e);
+            }
+          },
+          onCancel: () => {
+            setStatus("ready");
+          },
+          onError: (err: any) => {
+            console.error("PayPal error:", err);
             setStatus("error");
-            setErrorMsg("Failed to load PayPal");
-          };
-          document.body.appendChild(script);
-        } else {
-          cleanupFn = await initPayPal();
-        }
-      } catch (e) {
-        console.error("Failed to load PayPal SDK", e);
-        setStatus("error");
-        setErrorMsg("Failed to load PayPal");
-      }
-    };
-
-    const initPayPal = async (): Promise<(() => void) | undefined> => {
-      try {
-        const res = await fetch("/paypal/setup");
-        if (!res.ok) {
-          setStatus("error");
-          setErrorMsg("PayPal not configured");
-          return;
-        }
-        const data = await res.json();
-        const clientToken = data.clientToken;
-
-        if (!clientToken) {
-          setStatus("error");
-          setErrorMsg("PayPal not available");
-          return;
-        }
-
-        const sdkInstance = await (window as any).paypal.createInstance({
-          clientToken,
-          components: ["paypal-payments"],
-        });
-
-        const paypalCheckout = sdkInstance.createPayPalOneTimePaymentSession({
-          onApprove,
-          onCancel,
-          onError,
-        });
+            setErrorMsg("حدث خطأ في الدفع");
+            onPaymentError?.(err);
+          },
+        }).render(containerRef.current);
 
         setStatus("ready");
-
-        const onClick = async () => {
-          try {
-            setStatus("loading");
-            const checkoutOptionsPromise = createOrder();
-            await paypalCheckout.start(
-              { paymentFlow: "auto" },
-              checkoutOptionsPromise,
-            );
-          } catch (e) {
-            console.error(e);
-            setStatus("ready");
-          }
-        };
-
-        const paypalButton = document.getElementById("paypal-button");
-        if (paypalButton) {
-          paypalButton.addEventListener("click", onClick);
-        }
-
-        return () => {
-          if (paypalButton) {
-            paypalButton.removeEventListener("click", onClick);
-          }
-        };
-      } catch (e) {
-        console.error("PayPal init error:", e);
+      } catch (e: any) {
+        console.error("PayPal init error:", e?.message || e);
         setStatus("error");
-        setErrorMsg("Failed to initialize PayPal");
-        return undefined;
+        setErrorMsg(e?.message || "تعذّر تهيئة PayPal");
       }
     };
 
-    loadPayPalSDK();
-
-    return () => {
-      if (cleanupFn) cleanupFn();
-    };
+    initPayPal();
   }, []);
 
   if (status === "success") {
     return (
-      <div className="flex items-center justify-center gap-2 py-4 text-green-600">
+      <div className="flex items-center justify-center gap-2 py-4 text-green-600" data-testid="paypal-success">
         <CheckCircle className="w-5 h-5" />
-        <span className="font-medium text-sm">Payment completed successfully</span>
+        <span className="font-medium text-sm">تمّت عملية الدفع بنجاح</span>
       </div>
     );
   }
 
   if (status === "error") {
     return (
-      <div className="flex flex-col items-center gap-2 py-4">
+      <div className="flex flex-col items-center gap-2 py-4" data-testid="paypal-error">
         <div className="flex items-center gap-2 text-red-500">
           <AlertCircle className="w-5 h-5" />
           <span className="text-sm">{errorMsg}</span>
         </div>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => { rendered.current = false; setStatus("loading"); }}
           className="text-xs text-black/40 hover:underline mt-1"
           data-testid="button-retry-paypal"
         >
-          Retry
+          إعادة المحاولة
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="w-full" data-testid="paypal-button-wrapper">
       {status === "loading" && (
-        <div className="flex items-center gap-2 py-2">
+        <div className="flex items-center justify-center gap-2 py-3">
           <Loader2 className="w-4 h-4 animate-spin text-black/40" />
-          <span className="text-xs text-black/40">Loading PayPal...</span>
+          <span className="text-xs text-black/40">جاري تحميل PayPal...</span>
         </div>
       )}
-      <paypal-button
-        id="paypal-button"
-        data-testid="paypal-button"
-        style={{
-          display: status === "ready" ? "block" : "none",
-          cursor: "pointer",
-          width: "100%",
-          padding: "12px 24px",
-          background: "linear-gradient(135deg, #0070ba, #003087)",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "bold",
-          textAlign: "center" as const,
-        }}
-      >
-        Pay with PayPal
-      </paypal-button>
+      <div ref={containerRef} className="w-full" data-testid="paypal-button-container" />
     </div>
   );
 }

@@ -753,6 +753,12 @@ export async function registerRoutes(
   });
 
   // === PAYPAL ROUTES === (blueprint:javascript_paypal)
+  app.get("/paypal/client-id", (req, res) => {
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    if (!clientId) return res.status(503).json({ error: "PayPal not configured" });
+    res.json({ clientId });
+  });
+
   app.get("/paypal/setup", async (req, res) => {
     await loadPaypalDefault(req, res);
   });
