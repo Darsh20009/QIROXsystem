@@ -258,12 +258,16 @@ export interface PricingPlan {
   description?: string;
   descriptionAr?: string;
   price: number;
+  originalPrice?: number;
+  offerLabel?: string;
   currency: string;
   billingCycle: "monthly" | "yearly" | "one_time";
   features?: string[];
   featuresAr?: string[];
+  addonsAr?: string[];
   maxProjects?: number;
   isPopular: boolean;
+  isCustom?: boolean;
   status: "active" | "archived";
   sortOrder: number;
   createdAt?: Date;
@@ -276,12 +280,16 @@ export interface InsertPricingPlan {
   description?: string;
   descriptionAr?: string;
   price: number;
+  originalPrice?: number;
+  offerLabel?: string;
   currency?: string;
   billingCycle?: "monthly" | "yearly" | "one_time";
   features?: string[];
   featuresAr?: string[];
+  addonsAr?: string[];
   maxProjects?: number;
   isPopular?: boolean;
+  isCustom?: boolean;
   status?: "active" | "archived";
   sortOrder?: number;
 }

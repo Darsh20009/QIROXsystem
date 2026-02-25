@@ -997,63 +997,131 @@ export async function seedDatabase() {
     console.log("8 sector templates seeded successfully");
   }
 
-  // Seed Pricing Plans
+  // Seed Pricing Plans — always re-seed to keep pricing current
   const existingPlans = await storage.getPricingPlans();
-  if (existingPlans.length === 0) {
+  const PLANS_VERSION = 2;
+  const needsReseed = existingPlans.length === 0 || existingPlans.length < 4;
+  if (needsReseed) {
+    for (const p of existingPlans) {
+      await storage.deletePricingPlan((p as any).id);
+    }
     const plans = [
       {
-        name: "Starter",
-        nameAr: "الأساسية",
-        slug: "starter",
-        description: "Perfect for small businesses starting their digital journey",
-        descriptionAr: "مثالية للشركات الصغيرة التي تبدأ رحلتها الرقمية",
-        price: 5000,
+        name: "E-Commerce Store",
+        nameAr: "باقة المتاجر الإلكترونية",
+        slug: "ecommerce",
+        description: "Complete e-commerce solution with all essentials",
+        descriptionAr: "حل متجر إلكتروني متكامل يشمل كل ما تحتاجه",
+        price: 1000,
+        originalPrice: 1500,
+        offerLabel: "وفر 33%",
         currency: "SAR",
-        billingCycle: "one_time" as const,
-        features: ["Basic Website", "Mobile Responsive", "SEO Setup", "1 Month Support"],
-        featuresAr: ["موقع أساسي", "متجاوب مع الجوال", "إعداد SEO", "دعم شهر واحد"],
-        maxProjects: 1,
-        isPopular: false,
+        billingCycle: "yearly" as const,
+        featuresAr: [
+          "متجر إلكتروني احترافي كامل",
+          "لوحة تحكم متقدمة",
+          "تكامل بوابات الدفع",
+          "إدارة المخزون والطلبات",
+          "متجاوب مع جميع الأجهزة",
+          "6 أشهر مجاناً فوق السنة",
+          "بزنس إيميل لمدة شهرين مجاناً",
+          "خدمة بريد لمدة 3 أشهر مجاناً",
+        ],
+        addonsAr: [
+          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
+          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        ],
+        isPopular: true,
+        isCustom: false,
         status: "active" as const,
         sortOrder: 1,
       },
       {
-        name: "Business",
-        nameAr: "الأعمال",
-        slug: "business",
-        description: "Comprehensive solution for growing businesses",
-        descriptionAr: "حل شامل للشركات النامية",
-        price: 15000,
+        name: "Education Platform",
+        nameAr: "المنصة التعليمية",
+        slug: "education",
+        description: "Full e-learning platform for academies and institutions",
+        descriptionAr: "منصة تعليمية متكاملة للأكاديميات والمؤسسات التعليمية",
+        price: 2200,
         currency: "SAR",
         billingCycle: "one_time" as const,
-        features: ["Advanced Website", "Admin Dashboard", "Payment Integration", "Database Setup", "3 Months Support", "Custom Domain"],
-        featuresAr: ["موقع متقدم", "لوحة تحكم", "تكامل الدفع", "إعداد قاعدة البيانات", "دعم 3 أشهر", "دومين مخصص"],
-        maxProjects: 3,
-        isPopular: true,
+        featuresAr: [
+          "منصة تعليمية احترافية متكاملة",
+          "إدارة الطلاب والمعلمين",
+          "دورات وفصول مباشرة",
+          "نظام اختبارات وتقييم",
+          "شهادات إتمام تلقائية",
+          "تحليلات وتقارير شاملة",
+          "بوابة أولياء الأمور",
+          "تصميم مخصص للهوية البصرية",
+        ],
+        addonsAr: [
+          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
+          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        ],
+        isPopular: false,
+        isCustom: false,
         status: "active" as const,
         sortOrder: 2,
       },
       {
-        name: "Enterprise",
-        nameAr: "المؤسسات",
-        slug: "enterprise",
-        description: "Full-scale digital infrastructure for large organizations",
-        descriptionAr: "بنية تحتية رقمية كاملة للمؤسسات الكبيرة",
-        price: 40000,
+        name: "Restaurants & Cafes",
+        nameAr: "المطاعم والمقاهي",
+        slug: "restaurant",
+        description: "Smart restaurant management system with digital menu and QR ordering",
+        descriptionAr: "نظام مطاعم ذكي مع قائمة رقمية وطلب عبر QR",
+        price: 1199,
         currency: "SAR",
         billingCycle: "one_time" as const,
-        features: ["Custom Platform", "API Integration", "White-label", "Dedicated Support", "6 Months Support", "Priority Updates", "Training"],
-        featuresAr: ["منصة مخصصة", "تكامل API", "علامة بيضاء", "دعم مخصص", "دعم 6 أشهر", "تحديثات أولوية", "تدريب"],
-        maxProjects: 10,
+        featuresAr: [
+          "قائمة طعام رقمية تفاعلية",
+          "طلب عبر QR Code",
+          "إدارة الطاولات والحجوزات",
+          "نظام الطلبات والمطبخ",
+          "تقارير المبيعات اليومية",
+          "إشعارات فورية للطلبات",
+          "دعم التوصيل والاستلام",
+          "تصميم يعكس هوية المطعم",
+        ],
+        addonsAr: [
+          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
+          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        ],
         isPopular: false,
+        isCustom: false,
         status: "active" as const,
         sortOrder: 3,
+      },
+      {
+        name: "Companies & Institutions",
+        nameAr: "الشركات والمؤسسات",
+        slug: "enterprise",
+        description: "Custom enterprise solution tailored to your specific needs",
+        descriptionAr: "حل مؤسسي مخصص يُبنى حسب متطلباتك دون قيود",
+        price: 0,
+        currency: "SAR",
+        billingCycle: "one_time" as const,
+        featuresAr: [
+          "أي تصميم في ذهنك ننفذه",
+          "نبني موقعاً مثل أي موقع تعجبك",
+          "لا قيود على الميزات والتصميم",
+          "تكامل مع أنظمة الشركة الحالية",
+          "API مخصص وحلول تقنية متقدمة",
+          "دعم مخصص وأولوية في التنفيذ",
+          "تدريب الفريق واستلام المشروع",
+          "ضمان ما بعد التسليم",
+        ],
+        addonsAr: [],
+        isPopular: false,
+        isCustom: true,
+        status: "active" as const,
+        sortOrder: 4,
       },
     ];
 
     for (const p of plans) {
       await storage.createPricingPlan(p);
     }
-    console.log("3 pricing plans seeded successfully");
+    console.log("4 pricing plans seeded successfully (v2)");
   }
 }
