@@ -344,8 +344,17 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") {
       return res.sendStatus(403);
     }
-    const orders = await storage.getOrders();
+    const orders = await storage.getOrdersWithUsers();
     res.json(orders);
+  });
+
+  app.get("/api/admin/orders/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") {
+      return res.sendStatus(403);
+    }
+    const order = await storage.getOrderWithUser(req.params.id);
+    if (!order) return res.sendStatus(404);
+    res.json(order);
   });
 
   app.patch("/api/admin/orders/:id", async (req, res) => {
@@ -368,12 +377,11 @@ export async function registerRoutes(
   app.get("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    // Employees and admins see all orders; clients see only their own
     if (user.role === "client") {
       const orders = await storage.getOrders(String(user.id));
       return res.json(orders);
     }
-    const orders = await storage.getOrders();
+    const orders = await storage.getOrdersWithUsers();
     res.json(orders);
   });
 
@@ -877,7 +885,7 @@ export async function registerRoutes(
     res.json(cart);
   });
 
-  // === ORDER SPECS (for employees to fill) ===
+  // === ORDER SPECS (for employees to fill / clients to view) ===
   app.get("/api/admin/orders/:id/specs", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const specs = await storage.getOrderSpecs(req.params.id);
@@ -888,6 +896,20 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const specs = await storage.upsertOrderSpecs(req.params.id, req.body);
     res.json(specs);
+  });
+
+  // Client can view specs for their own orders
+  app.get("/api/orders/:id/specs", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const order = await storage.getOrderWithUser(req.params.id);
+    if (!order) return res.sendStatus(404);
+    // Clients can only see their own order specs
+    if (user.role === "client" && String(order.userId?._id || order.userId) !== String(user.id)) {
+      return res.sendStatus(403);
+    }
+    const specs = await storage.getOrderSpecs(req.params.id);
+    res.json(specs || {});
   });
 
   // Initialize seed data

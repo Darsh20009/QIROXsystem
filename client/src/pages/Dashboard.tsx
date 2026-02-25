@@ -6,10 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3 } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -355,20 +359,59 @@ function EmployeeDashboard({ user }: { user: any }) {
   const { toast } = useToast();
   const [ip, setIp] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [specsOrder, setSpecsOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("details");
   const [specsForm, setSpecsForm] = useState({ techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" });
+  const [statusUpdate, setStatusUpdate] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+
+  const { data: selectedOrderSpecs, isLoading: isLoadingSpecs } = useQuery<any>({
+    queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'],
+    enabled: !!selectedOrder?.id,
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/specs`, { credentials: 'include' });
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (selectedOrderSpecs) {
+      setSpecsForm({
+        techStack: selectedOrderSpecs.techStack || "",
+        database: selectedOrderSpecs.database || "",
+        hosting: selectedOrderSpecs.hosting || "",
+        domain: selectedOrderSpecs.domain || "",
+        projectConcept: selectedOrderSpecs.projectConcept || "",
+        variables: selectedOrderSpecs.variables || "",
+        notes: selectedOrderSpecs.notes || "",
+      });
+    }
+  }, [selectedOrderSpecs]);
 
   const saveSpecsMutation = useMutation({
     mutationFn: async (data: { orderId: string; specs: any }) => {
-      const res = await apiRequest("POST", `/api/admin/orders/${data.orderId}/specs`, data.specs);
+      const res = await apiRequest("PUT", `/api/admin/orders/${data.orderId}/specs`, data.specs);
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      setSpecsOrder(null);
-      toast({ title: "تم حفظ المواصفات التقنية بنجاح" });
+      toast({ title: "تم حفظ المواصفات التقنية بنجاح ✓" });
     },
     onError: () => toast({ title: "خطأ في حفظ المواصفات", variant: "destructive" }),
+  });
+
+  const updateOrderMutation = useMutation({
+    mutationFn: async (data: { orderId: string; status?: string; adminNotes?: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/orders/${data.orderId}`, { status: data.status, adminNotes: data.adminNotes });
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setSelectedOrder((prev: any) => prev ? { ...prev, ...updated } : null);
+      toast({ title: "تم تحديث الطلب بنجاح" });
+    },
+    onError: () => toast({ title: "خطأ في تحديث الطلب", variant: "destructive" }),
   });
 
   useEffect(() => {
@@ -377,6 +420,14 @@ function EmployeeDashboard({ user }: { user: any }) {
       .then(data => setIp(data.ip))
       .catch(() => {});
   }, []);
+
+  const openOrder = (order: any) => {
+    setSelectedOrder(order);
+    setActiveTab("details");
+    setStatusUpdate(order.status || "pending");
+    setAdminNotes(order.adminNotes || "");
+    setSpecsForm({ techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" });
+  };
 
   const handleCheckIn = () => {
     if ("geolocation" in navigator) {
@@ -408,8 +459,38 @@ function EmployeeDashboard({ user }: { user: any }) {
     { label: "مكتملة", value: allOrders.filter(o => o.status === "completed").length, color: "bg-green-50 text-green-600", icon: CheckCircle2 },
   ];
 
+  const booleanFields = [
+    { key: "whatsappIntegration", label: "تكامل WhatsApp" },
+    { key: "socialIntegration", label: "ربط السوشيال ميديا" },
+    { key: "hasLogo", label: "لديه لوغو" },
+    { key: "needsLogoDesign", label: "يحتاج تصميم لوغو" },
+    { key: "hasHosting", label: "لديه استضافة" },
+    { key: "hasDomain", label: "لديه دومين" },
+  ];
+
+  const textFields = [
+    { key: "projectType", label: "نوع المشروع" },
+    { key: "sector", label: "القطاع" },
+    { key: "competitors", label: "المنافسون" },
+    { key: "visualStyle", label: "الأسلوب البصري" },
+    { key: "favoriteExamples", label: "أمثلة مفضلة" },
+    { key: "requiredFunctions", label: "الوظائف المطلوبة" },
+    { key: "requiredSystems", label: "الأنظمة المطلوبة" },
+    { key: "siteLanguage", label: "لغة الموقع" },
+  ];
+
+  const fileFields = [
+    { key: "logoUrl", label: "اللوغو" },
+    { key: "brandIdentityUrl", label: "الهوية البصرية" },
+    { key: "filesUrl", label: "الملفات" },
+    { key: "contentUrl", label: "المحتوى" },
+    { key: "imagesUrl", label: "الصور" },
+    { key: "videoUrl", label: "الفيديو" },
+    { key: "paymentProofUrl", label: "إثبات الدفع" },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" data-testid="employee-dashboard">
+    <div className="min-h-screen bg-[#f8f8f8]" data-testid="employee-dashboard" dir="rtl">
       <div className="bg-white border-b border-black/[0.06] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -423,13 +504,11 @@ function EmployeeDashboard({ user }: { user: any }) {
             <div className="flex items-center gap-2 bg-black/[0.02] p-1.5 rounded-xl border border-black/[0.06]">
               {!attendanceStatus || attendanceStatus.checkOut ? (
                 <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs h-8 px-4" onClick={handleCheckIn} disabled={checkInMutation.isPending} data-testid="button-check-in">
-                  <LogIn className="w-3.5 h-3.5 ml-1.5" />
-                  تسجيل حضور
+                  <LogIn className="w-3.5 h-3.5 ml-1.5" />تسجيل حضور
                 </Button>
               ) : (
                 <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-xs h-8 px-4" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
-                  <LogOut className="w-3.5 h-3.5 ml-1.5" />
-                  تسجيل انصراف
+                  <LogOut className="w-3.5 h-3.5 ml-1.5" />تسجيل انصراف
                 </Button>
               )}
               {attendanceStatus && !attendanceStatus.checkOut && (
@@ -466,18 +545,13 @@ function EmployeeDashboard({ user }: { user: any }) {
               <p className="text-sm font-bold text-black">
                 {myOrders.length > 0 ? "الطلبات المعينة لي" : "جميع الطلبات"}
               </p>
-              {myOrders.length === 0 && (
-                <p className="text-[10px] text-black/35 mt-0.5">عرض جميع الطلبات — لا توجد طلبات معينة لك حتى الآن</p>
-              )}
+              <p className="text-[10px] text-black/35 mt-0.5">اضغط على أي طلب لعرض تفاصيله الكاملة</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {["all", "pending", "in_progress", "completed"].map(s => (
-                <button
-                  key={s}
-                  onClick={() => setFilterStatus(s)}
+                <button key={s} onClick={() => setFilterStatus(s)}
                   className={`text-[10px] font-medium px-3 py-1.5 rounded-lg transition-colors ${filterStatus === s ? 'bg-black text-white' : 'bg-white border border-black/[0.08] text-black/50 hover:bg-black/[0.04]'}`}
-                  data-testid={`filter-${s}`}
-                >
+                  data-testid={`filter-${s}`}>
                   {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "in_progress" ? "جاري" : "مكتمل"}
                 </button>
               ))}
@@ -486,59 +560,55 @@ function EmployeeDashboard({ user }: { user: any }) {
 
           <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
             {isLoadingOrders ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-6 h-6 animate-spin text-black/20" />
-              </div>
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
             ) : filteredOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-12 h-12 bg-black/[0.03] rounded-xl flex items-center justify-center mb-3">
-                  <FileText className="w-5 h-5 text-black/15" />
-                </div>
+                <FileText className="w-8 h-8 text-black/10 mb-3" />
                 <p className="text-sm text-black/30">لا توجد طلبات</p>
               </div>
             ) : (
               <div className="divide-y divide-black/[0.04]">
                 {filteredOrders.map((order: any, i) => {
                   const st = orderStatusColors[order.status] || orderStatusColors['pending'];
-                  const isMyOrder = order.assignedTo === user.id;
+                  const isMyOrder = (order.assignedTo?._id || order.assignedTo) === user.id;
+                  const clientName = order.client?.fullName || order.client?.username || "عميل";
+                  const hasSpecs = order.specs && Object.values(order.specs).some(v => v);
                   return (
-                    <motion.div
-                      key={order.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="flex items-center justify-between px-5 py-4 hover:bg-black/[0.01] transition-colors"
-                      data-testid={`employee-order-row-${order.id}`}
-                    >
+                    <motion.div key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                      className="flex items-center justify-between px-5 py-4 hover:bg-black/[0.02] cursor-pointer transition-colors group"
+                      onClick={() => openOrder(order)}
+                      data-testid={`employee-order-row-${order.id}`}>
                       <div className="flex items-center gap-4 min-w-0">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${order.status === 'completed' ? 'bg-green-500' : order.status === 'in_progress' ? 'bg-blue-500' : order.status === 'pending' ? 'bg-amber-400' : 'bg-gray-300'}`} />
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${order.status === 'completed' ? 'bg-green-50' : order.status === 'in_progress' ? 'bg-blue-50' : 'bg-amber-50'}`}>
+                          <FileText className={`w-3.5 h-3.5 ${order.status === 'completed' ? 'text-green-500' : order.status === 'in_progress' ? 'text-blue-500' : 'text-amber-500'}`} />
+                        </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <p className="text-xs font-bold text-black">طلب #{order.id?.toString().slice(-6)}</p>
                             {isMyOrder && <span className="text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">معين لي</span>}
+                            {hasSpecs && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">مكتمل المواصفات</span>}
                           </div>
-                          <p className="text-[10px] text-black/35 truncate max-w-[200px]">
-                            {order.projectType || order.sector || "طلب خدمة"}
-                            {order.createdAt && ` · ${new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}`}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[10px] text-black/50 font-medium">{clientName}</p>
+                            <span className="text-black/15">·</span>
+                            <p className="text-[10px] text-black/35 truncate max-w-[160px]">
+                              {order.projectType || order.sector || "طلب خدمة"}
+                            </p>
+                            {order.createdAt && (
+                              <>
+                                <span className="text-black/15">·</span>
+                                <p className="text-[10px] text-black/25">{new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}</p>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 flex-shrink-0">
+                      <div className="flex items-center gap-3 flex-shrink-0">
                         {order.totalAmount > 0 && (
-                          <p className="text-xs font-semibold text-black/50 hidden md:block">
-                            {Number(order.totalAmount).toLocaleString()} ر.س
-                          </p>
+                          <p className="text-xs font-semibold text-black/40 hidden md:block">{Number(order.totalAmount).toLocaleString()} ر.س</p>
                         )}
-                        <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>
-                          {st.label}
-                        </span>
-                        <button
-                          onClick={() => { setSpecsOrder(order); setSpecsForm({ techStack: order.specs?.techStack || "", database: order.specs?.database || "", hosting: order.specs?.hosting || "", domain: order.specs?.domain || "", projectConcept: order.specs?.projectConcept || "", variables: order.specs?.variables || "", notes: order.specs?.notes || "" }); }}
-                          className="text-[10px] text-black/35 hover:text-black border border-black/[0.08] hover:border-black/20 px-2.5 py-1 rounded-lg transition-all"
-                          data-testid={`button-specs-${order.id}`}
-                        >
-                          مواصفات
-                        </button>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>{st.label}</span>
+                        <ChevronRight className="w-4 h-4 text-black/20 group-hover:text-black/50 transition-colors" />
                       </div>
                     </motion.div>
                   );
@@ -549,116 +619,281 @@ function EmployeeDashboard({ user }: { user: any }) {
         </motion.div>
       </div>
 
-      {/* Specs Dialog */}
-      <Dialog open={!!specsOrder} onOpenChange={(open) => !open && setSpecsOrder(null)}>
-        <DialogContent className="max-w-lg" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-black">
-              مواصفات المشروع — طلب #{specsOrder?.id?.toString().slice(-6)}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">Stack التقني</label>
-              <Input
-                placeholder="مثال: React, Next.js, Node.js, MongoDB"
-                value={specsForm.techStack}
-                onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))}
-                className="text-sm"
-                data-testid="input-specs-techstack"
-              />
+      {/* Order Detail Sheet */}
+      <Sheet open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <SheetContent side="left" className="w-full sm:max-w-2xl p-0 overflow-hidden" dir="rtl">
+          {selectedOrder && (
+            <div className="flex flex-col h-full">
+              {/* Sheet Header */}
+              <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <SheetTitle className="text-base font-bold text-black font-heading">
+                      طلب #{selectedOrder.id?.toString().slice(-6)}
+                    </SheetTitle>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${(orderStatusColors[selectedOrder.status] || orderStatusColors['pending']).bg} ${(orderStatusColors[selectedOrder.status] || orderStatusColors['pending']).text}`}>
+                        {(orderStatusColors[selectedOrder.status] || orderStatusColors['pending']).label}
+                      </span>
+                      {selectedOrder.totalAmount > 0 && (
+                        <span className="text-[10px] text-black/40 font-medium">{Number(selectedOrder.totalAmount).toLocaleString()} ر.س</span>
+                      )}
+                      {selectedOrder.createdAt && (
+                        <span className="text-[10px] text-black/30">
+                          {new Date(selectedOrder.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
+                <TabsList className="w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0">
+                  <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                    تفاصيل الطلب
+                  </TabsTrigger>
+                  <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                    المواصفات التقنية
+                  </TabsTrigger>
+                  <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
+                    إدارة الطلب
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Tab 1: Order Details */}
+                <TabsContent value="details" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5 space-y-6">
+
+                      {/* Client Info */}
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات العميل</p>
+                        <div className="bg-black/[0.02] rounded-xl p-4 space-y-3 border border-black/[0.04]">
+                          {selectedOrder.client ? (
+                            <>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                  {selectedOrder.client.fullName?.charAt(0) || "?"}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-black">{selectedOrder.client.fullName || selectedOrder.client.username}</p>
+                                  <p className="text-[10px] text-black/40">@{selectedOrder.client.username}</p>
+                                </div>
+                              </div>
+                              <Separator className="opacity-30" />
+                              {selectedOrder.client.email && (
+                                <div className="flex items-center gap-2.5">
+                                  <Mail className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
+                                  <p className="text-xs text-black/70">{selectedOrder.client.email}</p>
+                                </div>
+                              )}
+                              {selectedOrder.client.phone && (
+                                <div className="flex items-center gap-2.5">
+                                  <Phone className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
+                                  <p className="text-xs text-black/70">{selectedOrder.client.phone}</p>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-xs text-black/35">بيانات العميل غير متاحة</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Project Details from Questionnaire */}
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">تفاصيل المشروع</p>
+                        <div className="space-y-2">
+                          {textFields.map(f => selectedOrder[f.key] ? (
+                            <div key={f.key} className="flex gap-3 py-2 border-b border-black/[0.04] last:border-0">
+                              <p className="text-[10px] font-bold text-black/40 w-28 flex-shrink-0 pt-0.5">{f.label}</p>
+                              <p className="text-xs text-black/80 flex-1">{selectedOrder[f.key]}</p>
+                            </div>
+                          ) : null)}
+                          {textFields.every(f => !selectedOrder[f.key]) && (
+                            <p className="text-xs text-black/25 py-3 text-center">لم يُملأ الاستبيان بعد</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Boolean Flags */}
+                      {booleanFields.some(f => selectedOrder[f.key]) && (
+                        <div>
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">الخصائص</p>
+                          <div className="flex flex-wrap gap-2">
+                            {booleanFields.filter(f => selectedOrder[f.key]).map(f => (
+                              <span key={f.key} className="text-[10px] bg-black text-white px-2.5 py-1 rounded-full font-medium">{f.label}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Files & Attachments */}
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">الملفات والمرفقات</p>
+                        <div className="space-y-2">
+                          {fileFields.map(f => selectedOrder[f.key] ? (
+                            <a key={f.key} href={selectedOrder[f.key]} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center justify-between p-3 bg-white rounded-xl border border-black/[0.06] hover:border-black/20 transition-colors group">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 bg-black/[0.04] rounded-lg flex items-center justify-center">
+                                  <Link2 className="w-3.5 h-3.5 text-black/40" />
+                                </div>
+                                <p className="text-xs font-medium text-black">{f.label}</p>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/60 transition-colors" />
+                            </a>
+                          ) : null)}
+                          {fileFields.every(f => !selectedOrder[f.key]) && (
+                            <div className="py-6 text-center border border-dashed border-black/[0.08] rounded-xl">
+                              <p className="text-xs text-black/25">لا توجد ملفات مرفقة</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Payment */}
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
+                        <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-black/50">طريقة الدفع</p>
+                            <p className="text-xs font-bold text-black">
+                              {selectedOrder.paymentMethod === "bank_transfer" ? "تحويل بنكي" : selectedOrder.paymentMethod === "paypal" ? "PayPal" : "—"}
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-black/50">الإجمالي</p>
+                            <p className="text-xs font-bold text-black">{selectedOrder.totalAmount ? `${Number(selectedOrder.totalAmount).toLocaleString()} ر.س` : "—"}</p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-black/50">حالة الدفعة الأولى</p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {selectedOrder.isDepositPaid ? "مدفوع" : "لم يُدفع"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Tab 2: Technical Specs */}
+                <TabsContent value="specs" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5 space-y-4">
+                      <p className="text-[10px] text-black/40">أدخل المواصفات التقنية للمشروع — ستظهر للعميل في لوحة التحكم الخاصة به</p>
+                      {isLoadingSpecs && (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-5 h-5 animate-spin text-black/30" />
+                          <p className="text-xs text-black/30 mr-2">جاري تحميل المواصفات...</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">Stack التقني</label>
+                        <Input placeholder="مثال: React, Next.js, Node.js, MongoDB" value={specsForm.techStack}
+                          onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))} className="text-sm" data-testid="input-specs-techstack" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">قاعدة البيانات</label>
+                        <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
+                          <SelectTrigger className="text-sm" data-testid="select-specs-database"><SelectValue placeholder="اختر قاعدة البيانات" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MongoDB Atlas M0 (Free)">MongoDB Atlas M0 (Free)</SelectItem>
+                            <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10</SelectItem>
+                            <SelectItem value="MongoDB Atlas M20">MongoDB Atlas M20</SelectItem>
+                            <SelectItem value="MongoDB Atlas M30">MongoDB Atlas M30</SelectItem>
+                            <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
+                            <SelectItem value="MySQL">MySQL</SelectItem>
+                            <SelectItem value="Redis">Redis</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">الاستضافة</label>
+                        <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
+                          <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder="اختر الاستضافة" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AWS EC2 t3.micro">AWS EC2 t3.micro ($8/mo)</SelectItem>
+                            <SelectItem value="AWS EC2 t3.small">AWS EC2 t3.small ($17/mo)</SelectItem>
+                            <SelectItem value="AWS EC2 t3.medium">AWS EC2 t3.medium ($34/mo)</SelectItem>
+                            <SelectItem value="AWS EC2 t3.large">AWS EC2 t3.large ($67/mo)</SelectItem>
+                            <SelectItem value="AWS EC2 c5.xlarge">AWS EC2 c5.xlarge ($170/mo)</SelectItem>
+                            <SelectItem value="Vercel">Vercel</SelectItem>
+                            <SelectItem value="DigitalOcean">DigitalOcean</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">الدومين</label>
+                        <Input placeholder="مثال: example.com" value={specsForm.domain}
+                          onChange={e => setSpecsForm(f => ({ ...f, domain: e.target.value }))} className="text-sm" data-testid="input-specs-domain" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">فكرة المشروع وتفاصيله</label>
+                        <Textarea placeholder="اشرح فكرة المشروع، هدفه، الجمهور المستهدف..." value={specsForm.projectConcept}
+                          onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))} className="text-sm resize-none h-24" data-testid="textarea-specs-concept" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">المتغيرات والإعدادات</label>
+                        <Textarea placeholder="مثال: API_KEY=xxx (كل متغير في سطر)" value={specsForm.variables}
+                          onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))} className="text-sm resize-none h-20 font-mono text-xs" data-testid="textarea-specs-variables" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية</label>
+                        <Textarea placeholder="أي تفاصيل إضافية..." value={specsForm.notes}
+                          onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))} className="text-sm resize-none h-16" data-testid="textarea-specs-notes" />
+                      </div>
+                      <Button className="w-full bg-black text-white hover:bg-black/80 font-bold"
+                        onClick={() => saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: specsForm })}
+                        disabled={saveSpecsMutation.isPending} data-testid="button-save-specs">
+                        {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Server className="w-4 h-4 ml-2" />}
+                        حفظ المواصفات
+                      </Button>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Tab 3: Manage Order */}
+                <TabsContent value="manage" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5 space-y-5">
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">تحديث حالة الطلب</p>
+                        <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                          <SelectTrigger className="text-sm" data-testid="select-order-status"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">قيد المراجعة</SelectItem>
+                            <SelectItem value="approved">تمت الموافقة</SelectItem>
+                            <SelectItem value="in_progress">قيد التنفيذ</SelectItem>
+                            <SelectItem value="completed">مكتمل</SelectItem>
+                            <SelectItem value="rejected">مرفوض</SelectItem>
+                            <SelectItem value="cancelled">ملغي</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">ملاحظات داخلية</p>
+                        <Textarea placeholder="ملاحظات للفريق (لا تظهر للعميل)..." value={adminNotes}
+                          onChange={e => setAdminNotes(e.target.value)} className="text-sm resize-none h-28" data-testid="textarea-admin-notes" />
+                      </div>
+                      <Button className="w-full bg-black text-white hover:bg-black/80 font-bold"
+                        onClick={() => updateOrderMutation.mutate({ orderId: selectedOrder.id, status: statusUpdate, adminNotes })}
+                        disabled={updateOrderMutation.isPending} data-testid="button-update-order">
+                        {updateOrderMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
+                        حفظ التغييرات
+                      </Button>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
             </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">قاعدة البيانات</label>
-              <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
-                <SelectTrigger className="text-sm" data-testid="select-specs-database">
-                  <SelectValue placeholder="اختر قاعدة البيانات" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MongoDB Atlas M0 (Free)">MongoDB Atlas M0 (Free)</SelectItem>
-                  <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10</SelectItem>
-                  <SelectItem value="MongoDB Atlas M20">MongoDB Atlas M20</SelectItem>
-                  <SelectItem value="MongoDB Atlas M30">MongoDB Atlas M30</SelectItem>
-                  <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
-                  <SelectItem value="MySQL">MySQL</SelectItem>
-                  <SelectItem value="Redis">Redis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">الاستضافة</label>
-              <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
-                <SelectTrigger className="text-sm" data-testid="select-specs-hosting">
-                  <SelectValue placeholder="اختر الاستضافة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="AWS EC2 t3.micro">AWS EC2 t3.micro ($8/mo)</SelectItem>
-                  <SelectItem value="AWS EC2 t3.small">AWS EC2 t3.small ($17/mo)</SelectItem>
-                  <SelectItem value="AWS EC2 t3.medium">AWS EC2 t3.medium ($34/mo)</SelectItem>
-                  <SelectItem value="AWS EC2 t3.large">AWS EC2 t3.large ($67/mo)</SelectItem>
-                  <SelectItem value="AWS EC2 c5.xlarge">AWS EC2 c5.xlarge ($170/mo)</SelectItem>
-                  <SelectItem value="Vercel">Vercel</SelectItem>
-                  <SelectItem value="DigitalOcean">DigitalOcean</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">الدومين</label>
-              <Input
-                placeholder="مثال: example.com"
-                value={specsForm.domain}
-                onChange={e => setSpecsForm(f => ({ ...f, domain: e.target.value }))}
-                className="text-sm"
-                data-testid="input-specs-domain"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">فكرة المشروع وتفاصيله</label>
-              <Textarea
-                placeholder="اشرح فكرة المشروع، هدفه، الجمهور المستهدف، والرؤية العامة..."
-                value={specsForm.projectConcept}
-                onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))}
-                className="text-sm resize-none h-24"
-                data-testid="textarea-specs-concept"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">المتغيرات والإعدادات</label>
-              <Textarea
-                placeholder="مثال: API_KEY=xxx, DB_NAME=yyy, PORT=3000 (كل متغير في سطر)"
-                value={specsForm.variables}
-                onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
-                className="text-sm resize-none h-20 font-mono text-xs"
-                data-testid="textarea-specs-variables"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية إضافية</label>
-              <Textarea
-                placeholder="أي تفاصيل تقنية إضافية..."
-                value={specsForm.notes}
-                onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))}
-                className="text-sm resize-none h-16"
-                data-testid="textarea-specs-notes"
-              />
-            </div>
-            <div className="flex gap-3 pt-1">
-              <Button
-                className="flex-1 bg-black text-white hover:bg-black/80"
-                onClick={() => saveSpecsMutation.mutate({ orderId: specsOrder.id, specs: specsForm })}
-                disabled={saveSpecsMutation.isPending}
-                data-testid="button-save-specs"
-              >
-                {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-                حفظ المواصفات
-              </Button>
-              <Button variant="outline" onClick={() => setSpecsOrder(null)} data-testid="button-cancel-specs">
-                إلغاء
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -678,6 +913,16 @@ export default function Dashboard() {
   const [modDescription, setModDescription] = useState("");
   const [modPriority, setModPriority] = useState<string>("medium");
   const [modProjectId, setModProjectId] = useState<string>("");
+  const [clientSpecsOrderId, setClientSpecsOrderId] = useState<string | null>(null);
+
+  const { data: clientOrderSpecs, isLoading: isLoadingClientSpecs } = useQuery<any>({
+    queryKey: ['/api/orders', clientSpecsOrderId, 'specs'],
+    enabled: !!clientSpecsOrderId,
+    queryFn: async () => {
+      const res = await fetch(`/api/orders/${clientSpecsOrderId}/specs`, { credentials: 'include' });
+      return res.json();
+    },
+  });
 
   const { data: modRequests, isLoading: isLoadingModRequests } = useQuery<ModificationRequest[]>({
     queryKey: ['/api/modification-requests'],
@@ -1037,18 +1282,29 @@ export default function Dashboard() {
                       const st = statusMap[order.status] || statusMap['pending'];
                       const StatusIcon = st.icon;
                       return (
-                        <div key={order.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-black/[0.01] transition-colors" data-testid={`order-item-${order.id}`}>
-                          <div className={`w-8 h-8 rounded-lg ${st.bg} border ${st.bg.replace('bg-', 'border-').replace('/50', '/30')} flex items-center justify-center flex-shrink-0`}>
-                            <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
+                        <div key={order.id} className="px-4 py-3.5 hover:bg-black/[0.01] transition-colors" data-testid={`order-item-${order.id}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg ${st.bg} border ${st.bg.replace('bg-', 'border-').replace('/50', '/30')} flex items-center justify-center flex-shrink-0`}>
+                              <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-black">طلب #{(order.id as string)?.slice?.(-6) || order.id}</p>
+                              <p className="text-[10px] text-black/30">
+                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
+                                {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ر.س` : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge className={`text-[9px] px-2 py-0.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
+                              <button
+                                onClick={() => setClientSpecsOrderId(String(order.id))}
+                                className="text-[9px] px-2 py-1 rounded-lg border border-black/[0.08] text-black/40 hover:border-black/20 hover:text-black transition-all"
+                                data-testid={`button-view-specs-${order.id}`}
+                              >
+                                المواصفات
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-black">طلب #{(order.id as string)?.slice?.(-6) || order.id}</p>
-                            <p className="text-[10px] text-black/30">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
-                              {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ر.س` : ''}
-                            </p>
-                          </div>
-                          <Badge className={`text-[9px] px-2 py-0.5 border ${st.bg} ${st.color} flex-shrink-0`}>{st.label}</Badge>
                         </div>
                       );
                     })}
@@ -1170,6 +1426,79 @@ export default function Dashboard() {
               إرسال الطلب
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Specs Dialog */}
+      <Dialog open={!!clientSpecsOrderId} onOpenChange={(open) => !open && setClientSpecsOrderId(null)}>
+        <DialogContent className="sm:max-w-[520px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-black flex items-center gap-2">
+              <Server className="w-4 h-4 text-black/40" />
+              مواصفات المشروع — طلب #{clientSpecsOrderId?.slice(-6)}
+            </DialogTitle>
+          </DialogHeader>
+          {isLoadingClientSpecs ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-black/30" />
+              <p className="text-xs text-black/30 mr-2">جاري التحميل...</p>
+            </div>
+          ) : !clientOrderSpecs || Object.keys(clientOrderSpecs).filter(k => k !== '_id' && k !== 'orderId' && k !== '__v' && clientOrderSpecs[k]).length === 0 ? (
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 bg-black/[0.03] rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Server className="w-5 h-5 text-black/15" />
+              </div>
+              <p className="text-sm font-medium text-black/40">المواصفات التقنية لم تُضف بعد</p>
+              <p className="text-xs text-black/25 mt-1.5">يعمل فريقنا على تجهيز مواصفات مشروعك</p>
+            </div>
+          ) : (
+            <div className="space-y-3 mt-1">
+              {clientOrderSpecs.projectConcept && (
+                <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04]">
+                  <p className="text-[10px] font-bold text-black/40 mb-1.5">فكرة المشروع</p>
+                  <p className="text-xs text-black/80 leading-relaxed">{clientOrderSpecs.projectConcept}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {clientOrderSpecs.techStack && (
+                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
+                    <p className="text-[9px] font-bold text-black/35 mb-1">Stack التقني</p>
+                    <p className="text-xs font-medium text-black">{clientOrderSpecs.techStack}</p>
+                  </div>
+                )}
+                {clientOrderSpecs.database && (
+                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
+                    <p className="text-[9px] font-bold text-black/35 mb-1">قاعدة البيانات</p>
+                    <p className="text-xs font-medium text-black">{clientOrderSpecs.database}</p>
+                  </div>
+                )}
+                {clientOrderSpecs.hosting && (
+                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
+                    <p className="text-[9px] font-bold text-black/35 mb-1">الاستضافة</p>
+                    <p className="text-xs font-medium text-black">{clientOrderSpecs.hosting}</p>
+                  </div>
+                )}
+                {clientOrderSpecs.domain && (
+                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
+                    <p className="text-[9px] font-bold text-black/35 mb-1">الدومين</p>
+                    <p className="text-xs font-medium text-black">{clientOrderSpecs.domain}</p>
+                  </div>
+                )}
+              </div>
+              {clientOrderSpecs.variables && (
+                <div className="bg-black rounded-xl p-4">
+                  <p className="text-[9px] font-bold text-white/50 mb-2">المتغيرات والإعدادات</p>
+                  <pre className="text-xs text-green-400 font-mono leading-relaxed whitespace-pre-wrap">{clientOrderSpecs.variables}</pre>
+                </div>
+              )}
+              {clientOrderSpecs.notes && (
+                <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04]">
+                  <p className="text-[9px] font-bold text-black/40 mb-1.5">ملاحظات تقنية</p>
+                  <p className="text-xs text-black/70 leading-relaxed">{clientOrderSpecs.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

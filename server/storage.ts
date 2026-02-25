@@ -40,6 +40,8 @@ export interface IStorage {
 
   // Orders
   getOrders(userId?: string): Promise<Order[]>;
+  getOrdersWithUsers(): Promise<any[]>;
+  getOrderWithUser(id: string): Promise<any | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order>;
 
@@ -223,6 +225,20 @@ export class MongoStorage implements IStorage {
     const query = userId ? { userId } : {};
     const orders = await OrderModel.find(query);
     return orders.map(o => ({ ...o.toObject(), id: o._id.toString() })) as any;
+  }
+
+  async getOrdersWithUsers(): Promise<any[]> {
+    const orders = await OrderModel.find({}).populate('userId', 'fullName email phone username').lean();
+    return orders.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
+  }
+
+  async getOrderWithUser(id: string): Promise<any | undefined> {
+    try {
+      const order = await OrderModel.findById(id).populate('userId', 'fullName email phone username').lean();
+      if (!order) return undefined;
+      const o = order as any;
+      return { ...o, id: o._id.toString(), client: o.userId };
+    } catch { return undefined; }
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
