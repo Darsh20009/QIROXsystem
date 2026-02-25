@@ -10,6 +10,12 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 25, 2026 - Session 7)
+
+- **Employee Specs Sheet Expanded**: `specsForm` now has 30+ fields in 6 organized sections: 1) معلومات المشروع (name, email, budget, paid, dates, hours, status) — black card, 2) البنية التقنية (stack, framework, language, DB, hosting), 3) Infrastructure (GitHub, DB URI, server IP, credentials, staging/production URLs, SSL/CDN checkboxes), 4) Env Variables (monospace textarea), 5) Project Concept (idea, audience, features, references, color palette), 6) Notes (public + internal team notes). Sheet widened to `max-w-3xl`. Save button is sticky at bottom.
+- **Client Project File Sheet**: Client "المواصفات" now opens a `Sheet` (max-w-2xl) instead of a Dialog. Shows organized sections: black card (name, status, budget, dates), tech tags, clickable URLs (GitHub/staging/production/domain), project concept, notes. Hides sensitive fields (passwords, team notes, server IP, DB URI).
+- **Cart Page Redesign**: Full redesign of `/cart`. New layout: 2-col (items + right summary). Cart items: cleaner row design with icon, type badge, qty control (hidden for services), price, remove. Add-ons section: shows starting price upfront. Right summary panel: black header with total, line-by-line breakdown, coupon, checkout button. Checkout replaces toast with full success screen showing order confirmation, items, and "سيتواصل فريقنا" message. All add-on dialogs redesigned with selected=black style.
+
 ## Latest Changes (Feb 25, 2026 - Session 6)
 
 - **Services Page - Full Flow**: Rebuilt to 3-step flow (1. pick service → 2. add products → 3. checkout). Services displayed as card grid (not expandable rows). Clicking a service opens a full detail panel below with: features/customization section, linked admin products, gifts, MongoDB Atlas tiers (M0→M30), AWS EC2 tiers (t3.micro→c5.xlarge), domain products from admin, email products from admin (with fallback email plans). All items have "أضف للسلة" buttons.

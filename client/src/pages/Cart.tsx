@@ -1,10 +1,14 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, ShoppingCart, Trash2, Plus, Minus, Globe, Mail, Server, Cpu, Gift, Code2, Package, Database, Cloud, CheckCircle2, ArrowLeft, ShoppingBag, Tag } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Loader2, ShoppingCart, Trash2, Plus, Minus, Globe, Mail, Server,
+  Cpu, Gift, Code2, Package, Database, Cloud, CheckCircle2, ArrowLeft,
+  ShoppingBag, Tag, Phone, ChevronLeft, Sparkles, Shield, Clock3,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,44 +17,43 @@ import { Link } from "wouter";
 import type { Cart, CartItem } from "@shared/schema";
 import { useUser } from "@/hooks/use-auth";
 
+/* ─── Type meta ─────────────────────────────────────────────────── */
 const typeIcons: Record<string, any> = {
   service: Code2, product: Cpu, domain: Globe, email: Mail, hosting: Server, gift: Gift,
 };
 const typeLabels: Record<string, string> = {
-  service: "خدمة", product: "منتج", domain: "دومين", email: "بريد إلكتروني", hosting: "استضافة", gift: "هدية",
+  service: "خدمة برمجية", product: "منتج", domain: "دومين", email: "بريد أعمال", hosting: "استضافة", gift: "هدية",
 };
 const typeColors: Record<string, string> = {
-  service: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  product: "bg-blue-50 text-blue-700 border-blue-200",
-  domain: "bg-green-50 text-green-700 border-green-200",
-  email: "bg-orange-50 text-orange-700 border-orange-200",
-  hosting: "bg-purple-50 text-purple-700 border-purple-200",
-  gift: "bg-pink-50 text-pink-700 border-pink-200",
+  service: "bg-violet-50 text-violet-600 border-violet-200",
+  product: "bg-blue-50 text-blue-600 border-blue-200",
+  domain: "bg-emerald-50 text-emerald-600 border-emerald-200",
+  email: "bg-amber-50 text-amber-600 border-amber-200",
+  hosting: "bg-indigo-50 text-indigo-600 border-indigo-200",
+  gift: "bg-pink-50 text-pink-600 border-pink-200",
 };
 
+/* ─── Add-on data ────────────────────────────────────────────────── */
 const mongoTiers = [
   { id: "M0", name: "M0 Free", price: 0, ram: "مشترك", storage: "512 MB", note: "تطوير فقط" },
   { id: "M2", name: "M2 Shared", price: 9, ram: "مشترك", storage: "2 GB", note: "مشاريع صغيرة" },
   { id: "M5", name: "M5 Shared", price: 25, ram: "مشترك", storage: "5 GB", note: "مشاريع متوسطة" },
-  { id: "M10", name: "M10 Dedicated", price: 57, ram: "2 GB", storage: "10 GB", note: "إنتاج - موصى به" },
+  { id: "M10", name: "M10 Dedicated", price: 57, ram: "2 GB", storage: "10 GB", note: "إنتاج — موصى به" },
   { id: "M20", name: "M20 Dedicated", price: 140, ram: "4 GB", storage: "20 GB", note: "مشاريع متقدمة" },
-  { id: "M30", name: "M30 Dedicated", price: 410, ram: "8 GB", storage: "40 GB", note: "حجم تجاري كبير" },
+  { id: "M30", name: "M30 Dedicated", price: 410, ram: "8 GB", storage: "40 GB", note: "حجم تجاري" },
 ];
-
 const awsTiers = [
   { id: "t3.micro", name: "t3.micro", price: 8, cpu: "2 vCPU", ram: "1 GB", note: "اختبار" },
   { id: "t3.small", name: "t3.small", price: 17, cpu: "2 vCPU", ram: "2 GB", note: "تطبيقات خفيفة" },
   { id: "t3.medium", name: "t3.medium", price: 33, cpu: "2 vCPU", ram: "4 GB", note: "مواقع متوسطة" },
-  { id: "t3.large", name: "t3.large", price: 66, cpu: "2 vCPU", ram: "8 GB", note: "تطبيقات متقدمة - موصى به" },
+  { id: "t3.large", name: "t3.large", price: 66, cpu: "2 vCPU", ram: "8 GB", note: "متقدم — موصى به" },
   { id: "m5.large", name: "m5.large", price: 96, cpu: "2 vCPU", ram: "8 GB", note: "أداء محسّن" },
-  { id: "c5.xlarge", name: "c5.xlarge", price: 170, cpu: "4 vCPU", ram: "8 GB", note: "تطبيقات حسابية مكثفة" },
+  { id: "c5.xlarge", name: "c5.xlarge", price: 170, cpu: "4 vCPU", ram: "8 GB", note: "حسابي مكثف" },
 ];
-
 const domainExtensions = [
   { ext: ".com", price: 45 }, { ext: ".sa", price: 150 }, { ext: ".net", price: 55 },
   { ext: ".org", price: 50 }, { ext: ".store", price: 120 }, { ext: ".io", price: 250 },
 ];
-
 const emailPlans = [
   { id: "basic", name: "أساسي", price: 35, users: 1, storage: "15 GB" },
   { id: "business", name: "أعمال", price: 99, users: 5, storage: "50 GB" },
@@ -59,6 +62,7 @@ const emailPlans = [
 
 const VAT_RATE = 0.15;
 
+/* ─── Component ──────────────────────────────────────────────────── */
 export default function Cart() {
   const { data: user } = useUser();
   const { toast } = useToast();
@@ -69,452 +73,501 @@ export default function Cart() {
   const [domainName, setDomainName] = useState("");
   const [domainExt, setDomainExt] = useState(".com");
   const [selectedEmail, setSelectedEmail] = useState<typeof emailPlans[0] | null>(null);
+  const [checkoutDone, setCheckoutDone] = useState(false);
 
   const { data: cart, isLoading } = useQuery<Cart>({ queryKey: ["/api/cart"] });
 
   const removeMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      const res = await apiRequest("DELETE", `/api/cart/items/${itemId}`);
-      return res.json();
-    },
+    mutationFn: async (itemId: string) => { const r = await apiRequest("DELETE", `/api/cart/items/${itemId}`); return r.json(); },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cart"] }),
     onError: () => toast({ title: "خطأ في الحذف", variant: "destructive" }),
   });
 
   const updateQtyMutation = useMutation({
     mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
-      const res = await apiRequest("PATCH", `/api/cart/items/${itemId}`, { qty });
-      return res.json();
+      const r = await apiRequest("PATCH", `/api/cart/items/${itemId}`, { qty }); return r.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cart"] }),
   });
 
   const addItemMutation = useMutation({
     mutationFn: async (item: Partial<CartItem>) => {
-      const res = await apiRequest("POST", "/api/cart/items", item);
-      return res.json();
+      const r = await apiRequest("POST", "/api/cart/items", item); return r.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       setAddOnDialog(null);
+      setSelectedDb(null); setSelectedAws(null); setSelectedEmail(null); setDomainName("");
     },
   });
 
   const clearMutation = useMutation({
     mutationFn: async () => { await apiRequest("DELETE", "/api/cart"); },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({ title: "تم إفراغ السلة" });
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); },
   });
 
   const couponMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/cart/coupon", { couponCode: coupon, discount: 50 });
-      return res.json();
+      const r = await apiRequest("POST", "/api/cart/coupon", { couponCode: coupon, discount: 50 }); return r.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({ title: "تم تطبيق الكوبون!" });
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); toast({ title: "✓ تم تطبيق الكوبون بنجاح" }); },
     onError: () => toast({ title: "كوبون غير صالح", variant: "destructive" }),
   });
 
-  const addDbToCart = () => {
-    if (!selectedDb) return;
-    addItemMutation.mutate({
-      type: 'hosting',
-      name: `MongoDB Atlas ${selectedDb.name}`,
-      nameAr: `قاعدة بيانات ${selectedDb.name}`,
-      price: selectedDb.price,
-      qty: 1,
-      config: { dbType: 'mongodb_atlas', tier: selectedDb.id, ram: selectedDb.ram, storage: selectedDb.storage },
-    });
-  };
-
-  const addAwsToCart = () => {
-    if (!selectedAws) return;
-    addItemMutation.mutate({
-      type: 'hosting',
-      name: `AWS EC2 ${selectedAws.name}`,
-      nameAr: `خادم AWS ${selectedAws.name}`,
-      price: selectedAws.price,
-      qty: 1,
-      config: { hostingType: 'aws_ec2', tier: selectedAws.id, cpu: selectedAws.cpu, ram: selectedAws.ram },
-    });
-  };
-
-  const addDomainToCart = () => {
-    if (!domainName.trim()) return;
-    const ext = domainExtensions.find(d => d.ext === domainExt);
-    addItemMutation.mutate({
-      type: 'domain',
-      name: `Domain: ${domainName}${domainExt}`,
-      nameAr: `دومين: ${domainName}${domainExt}`,
-      price: ext?.price || 45,
-      qty: 1,
-      config: { domain: `${domainName}${domainExt}`, extension: domainExt },
-    });
-  };
-
-  const addEmailToCart = () => {
-    if (!selectedEmail) return;
-    addItemMutation.mutate({
-      type: 'email',
-      name: `Business Email ${selectedEmail.name}`,
-      nameAr: `بريد أعمال ${selectedEmail.name}`,
-      price: selectedEmail.price,
-      qty: 1,
-      config: { emailPlan: selectedEmail.id, users: selectedEmail.users, storage: selectedEmail.storage },
-    });
-  };
-
   const items = cart?.items || [];
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = cart?.discountAmount || 0;
   const afterDiscount = subtotal - discount;
   const vat = afterDiscount * VAT_RATE;
   const total = afterDiscount + vat;
 
+  const fmt = (n: number) => n.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  /* ─── Not logged in ─── */
   if (!user) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
-      <div className="text-center">
-        <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-black/15" />
-        <h2 className="text-xl font-bold text-black mb-2">سجل دخولك أولاً</h2>
-        <p className="text-black/40 text-sm mb-6">يجب تسجيل الدخول لعرض سلة التسوق</p>
-        <Link href="/login"><Button className="premium-btn">تسجيل الدخول</Button></Link>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] p-6">
+      <div className="text-center max-w-sm">
+        <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <ShoppingCart className="w-9 h-9 text-white" />
+        </div>
+        <h2 className="text-xl font-black text-black mb-2">سجّل دخولك أولاً</h2>
+        <p className="text-black/40 text-sm mb-8">للوصول إلى سلة التسوق يجب أن تكون مسجلاً</p>
+        <Link href="/login"><Button className="premium-btn px-8" data-testid="button-login-redirect">تسجيل الدخول</Button></Link>
       </div>
     </div>
   );
 
   if (isLoading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
       <Loader2 className="animate-spin w-8 h-8 text-black/20" />
     </div>
   );
 
+  /* ─── Checkout Done State ─── */
+  if (checkoutDone) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] p-6">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
+        <div className="w-24 h-24 bg-black rounded-3xl flex items-center justify-center mx-auto mb-6 relative">
+          <CheckCircle2 className="w-12 h-12 text-white" />
+          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-xs font-bold">✓</span>
+          </div>
+        </div>
+        <h2 className="text-2xl font-black text-black mb-3">تم استلام طلبك!</h2>
+        <p className="text-black/50 text-sm mb-2 leading-relaxed">
+          شكراً لك — سيتواصل معك فريقنا خلال <span className="text-black font-bold">24 ساعة</span> لإتمام عملية الدفع والبدء في تنفيذ مشروعك.
+        </p>
+        <div className="bg-white border border-black/[0.07] rounded-2xl p-5 mt-6 mb-8 text-right space-y-3">
+          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">ملخص الطلب</p>
+          {items.map((item, i) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span className="text-black/60">{item.nameAr || item.name}</span>
+              <span className="font-bold text-black">{(item.price * item.qty).toLocaleString()} ر.س</span>
+            </div>
+          ))}
+          <div className="h-px bg-black/[0.06] my-2" />
+          <div className="flex justify-between">
+            <span className="font-bold text-black">الإجمالي شامل الضريبة</span>
+            <span className="font-black text-black">{fmt(total)} ر.س</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 mb-6">
+          <Phone className="w-4 h-4 text-green-600" />
+          <span className="text-sm font-bold text-green-700">سيتصل بك فريقنا على رقمك المسجّل</span>
+        </div>
+        <Link href="/dashboard">
+          <Button className="premium-btn px-8" data-testid="button-go-dashboard">العودة للوحة التحكم</Button>
+        </Link>
+      </motion.div>
+    </div>
+  );
+
+  /* ─── Main Cart ─── */
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
-      {/* Header */}
-      <div className="bg-white border-b border-black/[0.06] px-6 py-5 sticky top-0 z-30">
-        <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-[#f8f8f8]" dir="rtl">
+      {/* Sticky Header */}
+      <div className="bg-white/95 backdrop-blur border-b border-black/[0.06] sticky top-0 z-30">
+        <div className="max-w-[1100px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/services">
-              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl">
-                <ArrowLeft className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl" data-testid="button-back">
+                <ChevronLeft className="w-4 h-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg font-bold text-black flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-black/40" />
+              <h1 className="text-base font-black text-black flex items-center gap-2">
                 سلة التسوق
+                {items.length > 0 && (
+                  <span className="w-5 h-5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">{items.length}</span>
+                )}
               </h1>
-              <p className="text-[11px] text-black/35">{items.length} عنصر</p>
+              <p className="text-[10px] text-black/35 mt-0.5">راجع طلبك قبل الإتمام</p>
             </div>
           </div>
           {items.length > 0 && (
-            <Button variant="ghost" className="text-red-400 hover:text-red-600 text-xs" onClick={() => clearMutation.mutate()} disabled={clearMutation.isPending} data-testid="button-clear-cart">
-              <Trash2 className="w-3.5 h-3.5 ml-1" />
+            <Button variant="ghost" className="text-red-400 hover:text-red-600 text-xs gap-1.5 h-8" onClick={() => clearMutation.mutate()} disabled={clearMutation.isPending} data-testid="button-clear-cart">
+              <Trash2 className="w-3.5 h-3.5" />
               إفراغ السلة
             </Button>
           )}
         </div>
       </div>
 
-      <div className="max-w-[1100px] mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-4">
-          {items.length === 0 ? (
-            <div className="bg-white rounded-3xl p-16 flex flex-col items-center text-center border border-black/[0.06]">
-              <div className="w-20 h-20 bg-black/[0.03] rounded-3xl flex items-center justify-center mb-6">
-                <ShoppingCart className="w-10 h-10 text-black/15" />
+      {/* Empty Cart */}
+      {items.length === 0 ? (
+        <div className="max-w-[500px] mx-auto px-4 py-20 text-center">
+          <div className="w-24 h-24 bg-white border border-black/[0.07] rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <ShoppingCart className="w-11 h-11 text-black/15" />
+          </div>
+          <h3 className="text-xl font-black text-black mb-2">السلة فارغة</h3>
+          <p className="text-black/40 text-sm mb-10 leading-relaxed">لم تضف أي خدمات بعد. تصفح خدماتنا واختر ما يناسب مشروعك</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/services">
+              <Button className="premium-btn gap-2 px-6" data-testid="button-browse-services">
+                <Code2 className="w-4 h-4" />
+                تصفح الخدمات
+              </Button>
+            </Link>
+            <Link href="/devices">
+              <Button variant="outline" className="gap-2 rounded-xl px-6" data-testid="button-browse-devices">
+                <Package className="w-4 h-4" />
+                الأجهزة والمنتجات
+              </Button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-[1100px] mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+
+          {/* ── Left: Items + Add-ons ── */}
+          <div className="space-y-4">
+
+            {/* Cart Items */}
+            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-black/[0.05] flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-black/30" />
+                <span className="text-sm font-bold text-black">عناصر الطلب</span>
               </div>
-              <h3 className="text-lg font-bold text-black mb-2">السلة فارغة</h3>
-              <p className="text-black/35 text-sm mb-8 max-w-xs">لم تضف أي خدمات أو منتجات بعد. تصفح خدماتنا وأجهزتنا المتاحة</p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/services">
-                  <Button className="premium-btn gap-2" data-testid="button-browse-services">
-                    <Code2 className="w-4 h-4" />
-                    تصفح الخدمات
-                  </Button>
-                </Link>
-                <Link href="/devices">
-                  <Button variant="outline" className="gap-2 rounded-xl" data-testid="button-browse-devices">
-                    <Package className="w-4 h-4" />
-                    تصفح الأجهزة
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {items.map((item, i) => {
-                const Icon = typeIcons[item.type] || Package;
-                const colorCls = typeColors[item.type] || typeColors.product;
-                return (
-                  <motion.div
-                    key={item.id || i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -20, height: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="bg-white border border-black/[0.06] rounded-2xl p-5 flex items-start gap-4"
-                    data-testid={`cart-item-${item.id}`}
-                  >
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 border ${colorCls}`}>
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.nameAr || item.name} className="w-full h-full object-cover rounded-2xl" />
-                      ) : (
-                        <Icon className="w-5 h-5" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-bold text-sm text-black">{item.nameAr || item.name}</p>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${colorCls}`}>{typeLabels[item.type]}</span>
+              <AnimatePresence>
+                {items.map((item, i) => {
+                  const Icon = typeIcons[item.type] || Package;
+                  const colorCls = typeColors[item.type] || typeColors.product;
+                  const isService = item.type === 'service';
+                  return (
+                    <motion.div
+                      key={item.id || i}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                      transition={{ delay: i * 0.04 }}
+                      className={`px-5 py-4 flex items-center gap-4 ${i < items.length - 1 ? 'border-b border-black/[0.04]' : ''}`}
+                      data-testid={`cart-item-${item.id}`}
+                    >
+                      {/* Icon */}
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border ${colorCls}`}>
+                        {item.imageUrl
+                          ? <img src={item.imageUrl} alt={item.nameAr || item.name} className="w-full h-full object-cover rounded-xl" />
+                          : <Icon className="w-5 h-5" />}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-black leading-tight">{item.nameAr || item.name}</p>
+                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 ${colorCls}`}>{typeLabels[item.type] || item.type}</span>
+                        {item.config && Object.keys(item.config).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {Object.entries(item.config).slice(0, 3).map(([k, v]) => (
+                              <span key={k} className="text-[9px] bg-black/[0.03] border border-black/[0.05] px-1.5 py-0.5 rounded text-black/40 font-mono">
+                                {String(v)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Qty + Price + Remove */}
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {!isService && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => item.id && item.qty > 1 && updateQtyMutation.mutate({ itemId: item.id, qty: item.qty - 1 })}
+                              disabled={item.qty <= 1 || updateQtyMutation.isPending}
+                              className="w-7 h-7 rounded-lg border border-black/[0.08] flex items-center justify-center hover:bg-black/[0.04] transition-colors disabled:opacity-30"
+                              data-testid={`button-qty-minus-${item.id}`}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-sm font-black w-5 text-center">{item.qty}</span>
+                            <button
+                              onClick={() => item.id && updateQtyMutation.mutate({ itemId: item.id, qty: item.qty + 1 })}
+                              disabled={updateQtyMutation.isPending}
+                              className="w-7 h-7 rounded-lg border border-black/[0.08] flex items-center justify-center hover:bg-black/[0.04] transition-colors"
+                              data-testid={`button-qty-plus-${item.id}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        <div className="text-right min-w-[80px]">
+                          <p className="font-black text-sm text-black">
+                            {item.price === 0 ? "مجاني" : `${(item.price * item.qty).toLocaleString()} ر.س`}
+                          </p>
+                          {item.price > 0 && item.qty > 1 && (
+                            <p className="text-[10px] text-black/35">{item.price.toLocaleString()} × {item.qty}</p>
+                          )}
                         </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="w-7 h-7 text-red-400 hover:text-red-600 flex-shrink-0"
+                        <button
                           onClick={() => item.id && removeMutation.mutate(item.id)}
                           disabled={removeMutation.isPending}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl text-black/20 hover:text-red-500 hover:bg-red-50 transition-all"
                           data-testid={`button-remove-${item.id}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      {item.config && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {Object.entries(item.config).map(([k, v]) => (
-                            <span key={k} className="text-[9px] bg-black/[0.03] border border-black/[0.05] px-1.5 py-0.5 rounded text-black/40">
-                              {k}: {String(v)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => item.id && item.qty > 1 && updateQtyMutation.mutate({ itemId: item.id, qty: item.qty - 1 })}
-                            className="w-7 h-7 rounded-lg border border-black/[0.08] flex items-center justify-center hover:bg-black/[0.04] transition-colors disabled:opacity-40"
-                            disabled={item.qty <= 1 || updateQtyMutation.isPending}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-sm font-bold w-6 text-center">{item.qty}</span>
-                          <button
-                            onClick={() => item.id && updateQtyMutation.mutate({ itemId: item.id, qty: item.qty + 1 })}
-                            className="w-7 h-7 rounded-lg border border-black/[0.08] flex items-center justify-center hover:bg-black/[0.04] transition-colors"
-                            disabled={updateQtyMutation.isPending}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <p className="text-base font-black text-black">
-                          {(item.price * item.qty).toLocaleString()} <span className="text-xs font-normal text-black/35">ر.س</span>
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
 
-          {/* Add-ons section */}
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-5">
-            <h3 className="font-bold text-sm text-black mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-black/40" />
-              إضافات البنية التحتية
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
+            {/* ── Add-ons ── */}
+            <div className="bg-white border border-black/[0.07] rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-black/30" />
+                <span className="text-sm font-bold text-black">أضف لطلبك</span>
+                <span className="text-[10px] text-black/35 mr-auto">بنية تحتية متكاملة</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: 'db', icon: Database, label: "MongoDB Atlas", sub: "من $0/شهر", color: "text-green-600 bg-green-50" },
+                  { key: 'aws', icon: Cloud, label: "Amazon EC2", sub: "من $8/شهر", color: "text-orange-500 bg-orange-50" },
+                  { key: 'domain', icon: Globe, label: "تسجيل دومين", sub: "من 45 ر.س/سنة", color: "text-blue-600 bg-blue-50" },
+                  { key: 'email', icon: Mail, label: "بريد أعمال", sub: "من 35 ر.س/شهر", color: "text-violet-600 bg-violet-50" },
+                ].map(a => {
+                  const Icon = a.icon;
+                  return (
+                    <button key={a.key} onClick={() => setAddOnDialog(a.key as any)}
+                      className="flex items-center gap-3 p-3.5 rounded-xl border border-black/[0.07] hover:border-black/20 hover:shadow-sm transition-all text-right bg-white"
+                      data-testid={`button-addon-${a.key}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${a.color}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-black">{a.label}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5">{a.sub}</p>
+                      </div>
+                      <Plus className="w-3.5 h-3.5 text-black/20 mr-auto flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Guarantees row */}
+            <div className="grid grid-cols-3 gap-3">
               {[
-                { key: 'db', icon: Database, label: "MongoDB Atlas", sublabel: "قاعدة بيانات سحابية", color: "bg-green-50 text-green-700" },
-                { key: 'aws', icon: Cloud, label: "Amazon AWS", sublabel: "خادم EC2 مخصص", color: "bg-orange-50 text-orange-700" },
-                { key: 'domain', icon: Globe, label: "تسجيل دومين", sublabel: "نطاق احترافي", color: "bg-blue-50 text-blue-700" },
-                { key: 'email', icon: Mail, label: "بريد أعمال", sublabel: "بريد احترافي", color: "bg-purple-50 text-purple-700" },
-              ].map(addon => {
-                const Icon = addon.icon;
+                { icon: Shield, label: "دفع آمن", sub: "معاملات مشفّرة" },
+                { icon: Clock3, label: "استجابة خلال 24 ساعة", sub: "نتواصل معك فوراً" },
+                { icon: CheckCircle2, label: "ضمان الجودة", sub: "نتيجة مضمونة" },
+              ].map(g => {
+                const Icon = g.icon;
                 return (
-                  <button
-                    key={addon.key}
-                    onClick={() => setAddOnDialog(addon.key as any)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border border-black/[0.06] hover:border-black/20 hover:shadow-sm transition-all text-right`}
-                    data-testid={`button-addon-${addon.key}`}
-                  >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${addon.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-black">{addon.label}</p>
-                      <p className="text-[10px] text-black/35">{addon.sublabel}</p>
-                    </div>
-                  </button>
+                  <div key={g.label} className="bg-white border border-black/[0.07] rounded-2xl p-4 text-center">
+                    <Icon className="w-5 h-5 text-black/25 mx-auto mb-2" />
+                    <p className="text-[10px] font-bold text-black/50">{g.label}</p>
+                    <p className="text-[9px] text-black/25 mt-0.5">{g.sub}</p>
+                  </div>
                 );
               })}
             </div>
           </div>
-        </div>
 
-        {/* Order Summary */}
-        <div className="space-y-4">
-          <div className="bg-white border border-black/[0.06] rounded-2xl p-5 sticky top-24">
-            <h3 className="font-bold text-sm text-black mb-4">ملخص الطلب</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between text-black/50">
-                <span>المجموع الفرعي</span>
-                <span>{subtotal.toLocaleString()} ر.س</span>
+          {/* ── Right: Order Summary ── */}
+          <div className="space-y-4">
+            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden sticky top-[72px]">
+
+              {/* Summary header */}
+              <div className="bg-black px-5 py-4">
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">ملخص الطلب</p>
+                <p className="text-2xl font-black text-white">{fmt(total)} <span className="text-sm font-normal text-white/50">ر.س</span></p>
+                <p className="text-[10px] text-white/30 mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
               </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>خصم الكوبون</span>
-                  <span>- {discount.toLocaleString()} ر.س</span>
+
+              <div className="px-5 py-4 space-y-3">
+                {/* Line items */}
+                <div className="space-y-2">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span className="text-black/50 truncate max-w-[160px]">{item.nameAr || item.name}</span>
+                      <span className="font-bold text-black flex-shrink-0 mr-2">
+                        {item.price === 0 ? "مجاني" : `${(item.price * item.qty).toLocaleString()} ر.س`}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              <div className="flex justify-between text-black/50">
-                <span>ضريبة القيمة المضافة (15%)</span>
-                <span>{vat.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</span>
-              </div>
-              <div className="h-px bg-black/[0.06]" />
-              <div className="flex justify-between font-bold text-black text-base">
-                <span>الإجمالي</span>
-                <span>{total.toLocaleString('ar-SA', { minimumFractionDigits: 2 })} ر.س</span>
+
+                <div className="h-px bg-black/[0.05]" />
+
+                {/* Subtotal / discount / VAT */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between text-black/40">
+                    <span>المجموع الجزئي</span>
+                    <span>{subtotal.toLocaleString()} ر.س</span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-green-600 font-medium">
+                      <span>خصم الكوبون</span>
+                      <span>- {discount.toLocaleString()} ر.س</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-black/40">
+                    <span>ضريبة القيمة المضافة (15%)</span>
+                    <span>{fmt(vat)} ر.س</span>
+                  </div>
+                  <div className="h-px bg-black/[0.05]" />
+                  <div className="flex justify-between font-black text-black text-sm pt-0.5">
+                    <span>الإجمالي</span>
+                    <span>{fmt(total)} ر.س</span>
+                  </div>
+                </div>
+
+                {/* Coupon */}
+                {!cart?.couponCode ? (
+                  <div className="flex gap-2 pt-1">
+                    <Input
+                      value={coupon}
+                      onChange={e => setCoupon(e.target.value)}
+                      placeholder="كوبون الخصم"
+                      className="h-9 text-xs flex-1"
+                      data-testid="input-coupon"
+                    />
+                    <Button size="sm" variant="outline" onClick={() => couponMutation.mutate()} disabled={!coupon || couponMutation.isPending} className="h-9 px-3" data-testid="button-apply-coupon">
+                      {couponMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Tag className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                    كوبون «{cart.couponCode}» مطبّق — خصم {discount.toLocaleString()} ر.س
+                  </div>
+                )}
+
+                {/* Checkout button */}
+                <Button
+                  className="w-full bg-black hover:bg-black/85 text-white font-black h-12 rounded-xl text-sm mt-2 gap-2"
+                  disabled={items.length === 0}
+                  onClick={() => setCheckoutDone(true)}
+                  data-testid="button-checkout"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  إتمام الطلب والتواصل
+                </Button>
+
+                <p className="text-[10px] text-black/25 text-center pt-1 leading-relaxed">
+                  لن يُطلب منك الدفع الآن — سيتواصل فريقنا لإتمام الطلب
+                </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Coupon */}
-            {!cart?.couponCode && (
-              <div className="mt-4 flex gap-2">
-                <Input
-                  value={coupon}
-                  onChange={e => setCoupon(e.target.value)}
-                  placeholder="كوبون خصم..."
-                  className="h-9 text-xs flex-1"
-                  data-testid="input-coupon"
-                />
-                <Button size="sm" variant="outline" onClick={() => couponMutation.mutate()} disabled={!coupon || couponMutation.isPending} className="text-xs" data-testid="button-apply-coupon">
-                  <Tag className="w-3.5 h-3.5" />
-                </Button>
+      {/* ═══════ Add-on Dialogs ═══════ */}
+
+      {/* MongoDB */}
+      <Dialog open={addOnDialog === 'db'} onOpenChange={() => setAddOnDialog(null)}>
+        <DialogContent className="max-w-md max-h-[88vh]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                <Database className="w-4 h-4 text-green-600" />
               </div>
-            )}
-            {cart?.couponCode && (
-              <div className="mt-3 flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                كوبون "{cart.couponCode}" مطبّق
-              </div>
-            )}
-
-            <Button
-              className="w-full premium-btn mt-5 h-12 text-sm font-bold rounded-2xl"
-              disabled={items.length === 0}
-              onClick={() => toast({ title: "سيتم إنهاء الطلب قريباً", description: "سنتواصل معك لإكمال عملية الدفع" })}
-              data-testid="button-checkout"
-            >
-              <ShoppingBag className="w-4 h-4 ml-2" />
-              إتمام الطلب
-            </Button>
-
-            <p className="text-[10px] text-black/30 text-center mt-3">
-              بالمتابعة أنت توافق على شروط الخدمة
-            </p>
-
-            <div className="mt-4 flex justify-center gap-4">
-              {["✓ دفع آمن", "✓ دعم فوري", "✓ ضمان الجودة"].map(v => (
-                <span key={v} className="text-[10px] text-black/30">{v}</span>
+              MongoDB Atlas
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[55vh]">
+            <div className="space-y-2 px-1">
+              {mongoTiers.map(t => (
+                <button key={t.id} onClick={() => setSelectedDb(t)}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedDb?.id === t.id ? 'border-black bg-black text-white' : 'border-black/[0.08] hover:border-black/20 bg-white'}`}
+                  data-testid={`db-tier-${t.id}`}>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-bold text-sm font-mono ${selectedDb?.id === t.id ? 'text-white' : 'text-black'}`}>{t.name}</p>
+                      {t.note.includes('موصى') && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedDb?.id === t.id ? 'bg-white text-black' : 'bg-black text-white'}`}>موصى به</span>}
+                    </div>
+                    <p className={`text-[11px] mt-0.5 ${selectedDb?.id === t.id ? 'text-white/60' : 'text-black/40'}`}>{t.storage} · {t.note}</p>
+                  </div>
+                  <p className={`font-black text-sm flex-shrink-0 mr-4 ${selectedDb?.id === t.id ? 'text-white' : 'text-black'}`}>{t.price === 0 ? "مجاني" : `$${t.price}/شهر`}</p>
+                </button>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* MongoDB Atlas Dialog */}
-      <Dialog open={addOnDialog === 'db'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-bold">
-              <Database className="w-5 h-5 text-green-600" />
-              MongoDB Atlas — اختر الخطة
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 mt-2">
-            {mongoTiers.map(tier => (
-              <button
-                key={tier.id}
-                onClick={() => setSelectedDb(tier)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedDb?.id === tier.id ? 'border-black bg-black/[0.02]' : 'border-black/[0.08] hover:border-black/20'}`}
-                data-testid={`db-tier-${tier.id}`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-sm text-black">{tier.name}</p>
-                    {tier.note.includes('موصى') && <span className="text-[9px] bg-black text-white px-1.5 py-0.5 rounded-full">موصى به</span>}
-                  </div>
-                  <p className="text-[11px] text-black/40 mt-0.5">RAM: {tier.ram} · تخزين: {tier.storage} · {tier.note}</p>
-                </div>
-                <div className="text-right flex-shrink-0 mr-3">
-                  <p className="font-black text-black">{tier.price === 0 ? "مجاني" : `$${tier.price}/شهر`}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-          <Button className="w-full premium-btn mt-4" onClick={addDbToCart} disabled={!selectedDb || addItemMutation.isPending} data-testid="button-add-db">
-            {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-            إضافة للسلة {selectedDb ? `— ${selectedDb.name}` : ""}
+          </ScrollArea>
+          <Button className="w-full bg-black text-white h-11 font-bold rounded-xl" onClick={() => { if (!selectedDb) return; addItemMutation.mutate({ type: 'hosting', name: `MongoDB Atlas ${selectedDb.name}`, nameAr: `قاعدة بيانات ${selectedDb.name}`, price: selectedDb.price, qty: 1, config: { dbType: 'mongodb_atlas', tier: selectedDb.id, storage: selectedDb.storage } }); }} disabled={!selectedDb || addItemMutation.isPending} data-testid="button-add-db">
+            {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+            {selectedDb ? `إضافة ${selectedDb.name} — ${selectedDb.price === 0 ? "مجاني" : `$${selectedDb.price}/شهر`}` : "اختر خطة أولاً"}
           </Button>
         </DialogContent>
       </Dialog>
 
-      {/* AWS EC2 Dialog */}
+      {/* AWS */}
       <Dialog open={addOnDialog === 'aws'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[88vh]" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-bold">
-              <Cloud className="w-5 h-5 text-orange-500" />
-              Amazon AWS EC2 — اختر الخادم
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
+                <Cloud className="w-4 h-4 text-orange-500" />
+              </div>
+              Amazon AWS EC2
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 mt-2">
-            {awsTiers.map(tier => (
-              <button
-                key={tier.id}
-                onClick={() => setSelectedAws(tier)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedAws?.id === tier.id ? 'border-black bg-black/[0.02]' : 'border-black/[0.08] hover:border-black/20'}`}
-                data-testid={`aws-tier-${tier.id}`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-sm text-black font-mono">{tier.name}</p>
-                    {tier.note.includes('موصى') && <span className="text-[9px] bg-black text-white px-1.5 py-0.5 rounded-full">موصى به</span>}
+          <ScrollArea className="max-h-[55vh]">
+            <div className="space-y-2 px-1">
+              {awsTiers.map(t => (
+                <button key={t.id} onClick={() => setSelectedAws(t)}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedAws?.id === t.id ? 'border-black bg-black text-white' : 'border-black/[0.08] hover:border-black/20 bg-white'}`}
+                  data-testid={`aws-tier-${t.id}`}>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-bold text-sm font-mono ${selectedAws?.id === t.id ? 'text-white' : 'text-black'}`}>{t.name}</p>
+                      {t.note.includes('موصى') && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedAws?.id === t.id ? 'bg-white text-black' : 'bg-black text-white'}`}>موصى به</span>}
+                    </div>
+                    <p className={`text-[11px] mt-0.5 ${selectedAws?.id === t.id ? 'text-white/60' : 'text-black/40'}`}>{t.cpu} · RAM {t.ram} · {t.note}</p>
                   </div>
-                  <p className="text-[11px] text-black/40 mt-0.5">{tier.cpu} · RAM: {tier.ram} · {tier.note}</p>
-                </div>
-                <div className="text-right flex-shrink-0 mr-3">
-                  <p className="font-black text-black">${tier.price}/شهر</p>
-                </div>
-              </button>
-            ))}
-          </div>
-          <Button className="w-full premium-btn mt-4" onClick={addAwsToCart} disabled={!selectedAws || addItemMutation.isPending} data-testid="button-add-aws">
-            {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-            إضافة للسلة {selectedAws ? `— ${selectedAws.name}` : ""}
+                  <p className={`font-black text-sm flex-shrink-0 mr-4 ${selectedAws?.id === t.id ? 'text-white' : 'text-black'}`}>${t.price}/شهر</p>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+          <Button className="w-full bg-black text-white h-11 font-bold rounded-xl" onClick={() => { if (!selectedAws) return; addItemMutation.mutate({ type: 'hosting', name: `AWS EC2 ${selectedAws.name}`, nameAr: `خادم AWS ${selectedAws.name}`, price: selectedAws.price, qty: 1, config: { hostingType: 'aws_ec2', tier: selectedAws.id, cpu: selectedAws.cpu, ram: selectedAws.ram } }); }} disabled={!selectedAws || addItemMutation.isPending} data-testid="button-add-aws">
+            {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+            {selectedAws ? `إضافة ${selectedAws.name} — $${selectedAws.price}/شهر` : "اختر خادماً أولاً"}
           </Button>
         </DialogContent>
       </Dialog>
 
-      {/* Domain Dialog */}
+      {/* Domain */}
       <Dialog open={addOnDialog === 'domain'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-bold">
-              <Globe className="w-5 h-5 text-blue-600" />
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+                <Globe className="w-4 h-4 text-blue-600" />
+              </div>
               تسجيل دومين
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4">
             <div className="flex gap-2">
-              <Input value={domainName} onChange={e => setDomainName(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase())} placeholder="اسم-موقعك" className="flex-1 text-sm" data-testid="input-domain-name" />
+              <Input
+                value={domainName}
+                onChange={e => setDomainName(e.target.value.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase())}
+                placeholder="اسم-موقعك"
+                className="flex-1 text-sm font-mono"
+                dir="ltr"
+                data-testid="input-domain-name"
+              />
               <Select value={domainExt} onValueChange={setDomainExt}>
                 <SelectTrigger className="w-28" data-testid="select-domain-ext"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -522,50 +575,56 @@ export default function Cart() {
                 </SelectContent>
               </Select>
             </div>
-            {domainName && <p className="text-sm font-mono text-black/60 bg-black/[0.03] px-3 py-2 rounded-lg">{domainName}{domainExt}</p>}
+            {domainName && (
+              <div className="bg-black rounded-xl px-4 py-3 text-center">
+                <p className="font-mono text-white font-bold">{domainName}{domainExt}</p>
+                <p className="text-[10px] text-white/40 mt-1">{domainExtensions.find(d => d.ext === domainExt)?.price || 45} ر.س / سنة</p>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2">
               {domainExtensions.map(d => (
-                <button key={d.ext} onClick={() => setDomainExt(d.ext)} className={`p-2.5 rounded-xl border text-center transition-all ${domainExt === d.ext ? 'border-black bg-black/[0.02]' : 'border-black/[0.08] hover:border-black/20'}`}>
-                  <p className="font-bold text-sm text-black">{d.ext}</p>
-                  <p className="text-[10px] text-black/40">{d.price} ر.س/سنة</p>
+                <button key={d.ext} onClick={() => setDomainExt(d.ext)}
+                  className={`p-2.5 rounded-xl border text-center transition-all ${domainExt === d.ext ? 'border-black bg-black text-white' : 'border-black/[0.08] hover:border-black/20'}`}
+                  data-testid={`domain-ext-${d.ext.replace('.', '')}`}>
+                  <p className={`font-bold text-sm ${domainExt === d.ext ? 'text-white' : 'text-black'}`}>{d.ext}</p>
+                  <p className={`text-[9px] ${domainExt === d.ext ? 'text-white/50' : 'text-black/35'}`}>{d.price} ر.س</p>
                 </button>
               ))}
             </div>
-            <Button className="w-full premium-btn" onClick={addDomainToCart} disabled={!domainName || addItemMutation.isPending} data-testid="button-add-domain">
+            <Button className="w-full bg-black text-white h-11 font-bold rounded-xl" onClick={() => { if (!domainName.trim()) return; const ext = domainExtensions.find(d => d.ext === domainExt); addItemMutation.mutate({ type: 'domain', name: `Domain: ${domainName}${domainExt}`, nameAr: `دومين: ${domainName}${domainExt}`, price: ext?.price || 45, qty: 1, config: { domain: `${domainName}${domainExt}`, extension: domainExt } }); }} disabled={!domainName.trim() || addItemMutation.isPending} data-testid="button-add-domain">
               {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Globe className="w-4 h-4 ml-2" />}
-              إضافة الدومين
+              {domainName ? `إضافة ${domainName}${domainExt}` : "أدخل اسم الدومين"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Email Dialog */}
+      {/* Email */}
       <Dialog open={addOnDialog === 'email'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-bold">
-              <Mail className="w-5 h-5 text-purple-600" />
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center">
+                <Mail className="w-4 h-4 text-violet-600" />
+              </div>
               بريد الأعمال
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 mt-2">
-            {emailPlans.map(plan => (
-              <button
-                key={plan.id}
-                onClick={() => setSelectedEmail(plan)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedEmail?.id === plan.id ? 'border-black bg-black/[0.02]' : 'border-black/[0.08] hover:border-black/20'}`}
-                data-testid={`email-plan-${plan.id}`}
-              >
+          <div className="space-y-3">
+            {emailPlans.map(p => (
+              <button key={p.id} onClick={() => setSelectedEmail(p)}
+                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-right ${selectedEmail?.id === p.id ? 'border-black bg-black text-white' : 'border-black/[0.08] hover:border-black/20 bg-white'}`}
+                data-testid={`email-plan-${p.id}`}>
                 <div>
-                  <p className="font-bold text-sm text-black">{plan.name}</p>
-                  <p className="text-[11px] text-black/40">{plan.users} مستخدم · {plan.storage}</p>
+                  <p className={`font-bold text-sm ${selectedEmail?.id === p.id ? 'text-white' : 'text-black'}`}>{p.name}</p>
+                  <p className={`text-[11px] mt-0.5 ${selectedEmail?.id === p.id ? 'text-white/60' : 'text-black/40'}`}>{p.users} مستخدم · {p.storage}</p>
                 </div>
-                <p className="font-black text-black">{plan.price} ر.س/شهر</p>
+                <p className={`font-black text-sm flex-shrink-0 mr-4 ${selectedEmail?.id === p.id ? 'text-white' : 'text-black'}`}>{p.price} ر.س/شهر</p>
               </button>
             ))}
-            <Button className="w-full premium-btn" onClick={addEmailToCart} disabled={!selectedEmail || addItemMutation.isPending} data-testid="button-add-email">
+            <Button className="w-full bg-black text-white h-11 font-bold rounded-xl" onClick={() => { if (!selectedEmail) return; addItemMutation.mutate({ type: 'email', name: `Business Email ${selectedEmail.name}`, nameAr: `بريد أعمال ${selectedEmail.name}`, price: selectedEmail.price, qty: 1, config: { emailPlan: selectedEmail.id, users: selectedEmail.users, storage: selectedEmail.storage } }); }} disabled={!selectedEmail || addItemMutation.isPending} data-testid="button-add-email">
               {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
-              إضافة البريد {selectedEmail ? `— ${selectedEmail.name}` : ""}
+              {selectedEmail ? `إضافة ${selectedEmail.name} — ${selectedEmail.price} ر.س/شهر` : "اختر خطة أولاً"}
             </Button>
           </div>
         </DialogContent>
