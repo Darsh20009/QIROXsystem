@@ -91,7 +91,8 @@ export default function PayPalButton({
       try {
         if (!(window as any).paypal) {
           const script = document.createElement("script");
-          script.src = import.meta.env.PROD
+          const isLive = import.meta.env.PROD || import.meta.env.VITE_PAYPAL_ENV === "live";
+          script.src = isLive
             ? "https://www.paypal.com/web-sdk/v6/core"
             : "https://www.sandbox.paypal.com/web-sdk/v6/core";
           script.async = true;

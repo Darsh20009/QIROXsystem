@@ -45,6 +45,8 @@ waitForPort = 5000
 
 [userenv.shared]
 MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM"
+PAYPAL_ENV = "live"
+VITE_PAYPAL_ENV = "live"
 
 [agent]
 expertMode = true

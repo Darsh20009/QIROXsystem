@@ -41,7 +41,7 @@ async function initPayPal() {
       },
       timeout: 0,
       environment:
-        process.env.NODE_ENV === "production"
+        (process.env.PAYPAL_ENV === "live" || process.env.NODE_ENV === "production")
           ? EnvironmentEnum?.Production
           : EnvironmentEnum?.Sandbox,
       logging: {
