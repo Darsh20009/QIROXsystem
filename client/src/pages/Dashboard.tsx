@@ -361,7 +361,16 @@ function EmployeeDashboard({ user }: { user: any }) {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
-  const [specsForm, setSpecsForm] = useState({ techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" });
+  const [specsForm, setSpecsForm] = useState({
+    projectName: "", clientEmail: "", totalBudget: "", paidAmount: "", projectStatus: "planning",
+    techStack: "", database: "", hosting: "", framework: "", language: "",
+    githubRepoUrl: "", databaseUri: "", serverIp: "", deploymentUsername: "", deploymentPassword: "",
+    customDomain: "", stagingUrl: "", productionUrl: "", sslEnabled: false, cdnEnabled: false,
+    variables: "",
+    projectConcept: "", targetAudience: "", mainFeatures: "", referenceLinks: "", colorPalette: "",
+    estimatedHours: "", deadline: "", startDate: "",
+    notes: "", teamNotes: "",
+  });
   const [statusUpdate, setStatusUpdate] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
 
@@ -376,14 +385,39 @@ function EmployeeDashboard({ user }: { user: any }) {
 
   useEffect(() => {
     if (selectedOrderSpecs) {
+      const s = selectedOrderSpecs;
       setSpecsForm({
-        techStack: selectedOrderSpecs.techStack || "",
-        database: selectedOrderSpecs.database || "",
-        hosting: selectedOrderSpecs.hosting || "",
-        domain: selectedOrderSpecs.domain || "",
-        projectConcept: selectedOrderSpecs.projectConcept || "",
-        variables: selectedOrderSpecs.variables || "",
-        notes: selectedOrderSpecs.notes || "",
+        projectName: s.projectName || "",
+        clientEmail: s.clientEmail || "",
+        totalBudget: s.totalBudget?.toString() || "",
+        paidAmount: s.paidAmount?.toString() || "",
+        projectStatus: s.projectStatus || "planning",
+        techStack: s.techStack || "",
+        database: s.database || "",
+        hosting: s.hosting || "",
+        framework: s.framework || "",
+        language: s.language || "",
+        githubRepoUrl: s.githubRepoUrl || "",
+        databaseUri: s.databaseUri || "",
+        serverIp: s.serverIp || "",
+        deploymentUsername: s.deploymentUsername || "",
+        deploymentPassword: s.deploymentPassword || "",
+        customDomain: s.customDomain || "",
+        stagingUrl: s.stagingUrl || "",
+        productionUrl: s.productionUrl || "",
+        sslEnabled: s.sslEnabled || false,
+        cdnEnabled: s.cdnEnabled || false,
+        variables: s.variables || "",
+        projectConcept: s.projectConcept || "",
+        targetAudience: s.targetAudience || "",
+        mainFeatures: s.mainFeatures || "",
+        referenceLinks: s.referenceLinks || "",
+        colorPalette: s.colorPalette || "",
+        estimatedHours: s.estimatedHours?.toString() || "",
+        deadline: s.deadline ? new Date(s.deadline).toISOString().split('T')[0] : "",
+        startDate: s.startDate ? new Date(s.startDate).toISOString().split('T')[0] : "",
+        notes: s.notes || "",
+        teamNotes: s.teamNotes || "",
       });
     }
   }, [selectedOrderSpecs]);
@@ -621,7 +655,7 @@ function EmployeeDashboard({ user }: { user: any }) {
 
       {/* Order Detail Sheet */}
       <Sheet open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <SheetContent side="left" className="w-full sm:max-w-2xl p-0 overflow-hidden" dir="rtl">
+        <SheetContent side="left" className="w-full sm:max-w-3xl p-0 overflow-hidden" dir="rtl">
           {selectedOrder && (
             <div className="flex flex-col h-full">
               {/* Sheet Header */}
@@ -780,80 +814,324 @@ function EmployeeDashboard({ user }: { user: any }) {
                   </ScrollArea>
                 </TabsContent>
 
-                {/* Tab 2: Technical Specs */}
+                {/* Tab 2: Project Setup (full specs) */}
                 <TabsContent value="specs" className="flex-1 overflow-hidden mt-0">
                   <ScrollArea className="h-full">
-                    <div className="px-6 py-5 space-y-4">
-                      <p className="text-[10px] text-black/40">أدخل المواصفات التقنية للمشروع — ستظهر للعميل في لوحة التحكم الخاصة به</p>
-                      {isLoadingSpecs && (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="w-5 h-5 animate-spin text-black/30" />
-                          <p className="text-xs text-black/30 mr-2">جاري تحميل المواصفات...</p>
-                        </div>
-                      )}
+                    {isLoadingSpecs ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+                        <p className="text-xs text-black/30 mr-2">جاري تحميل بيانات المشروع...</p>
+                      </div>
+                    ) : (
+                      <div className="px-6 py-5 space-y-5">
 
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">Stack التقني</label>
-                        <Input placeholder="مثال: React, Next.js, Node.js, MongoDB" value={specsForm.techStack}
-                          onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))} className="text-sm" data-testid="input-specs-techstack" />
+                        {/* Section 1: Project Info */}
+                        <div className="bg-black rounded-2xl p-5">
+                          <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            معلومات المشروع
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">اسم المشروع</label>
+                              <Input placeholder="مثال: نظام إدارة مطعم الروضة" value={specsForm.projectName}
+                                onChange={e => setSpecsForm(f => ({ ...f, projectName: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:bg-white/15" data-testid="input-project-name" />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">بريد العميل الرسمي للمشروع</label>
+                              <Input type="email" placeholder="client@example.com" value={specsForm.clientEmail}
+                                onChange={e => setSpecsForm(f => ({ ...f, clientEmail: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-client-email" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">الميزانية الكلية (ر.س)</label>
+                              <Input type="number" placeholder="5000" value={specsForm.totalBudget}
+                                onChange={e => setSpecsForm(f => ({ ...f, totalBudget: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-total-budget" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">المدفوع حالياً (ر.س)</label>
+                              <Input type="number" placeholder="2500" value={specsForm.paidAmount}
+                                onChange={e => setSpecsForm(f => ({ ...f, paidAmount: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-paid-amount" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">تاريخ البداية</label>
+                              <Input type="date" value={specsForm.startDate}
+                                onChange={e => setSpecsForm(f => ({ ...f, startDate: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-start-date" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">تاريخ التسليم</label>
+                              <Input type="date" value={specsForm.deadline}
+                                onChange={e => setSpecsForm(f => ({ ...f, deadline: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-deadline" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">الساعات المقدّرة</label>
+                              <Input type="number" placeholder="120" value={specsForm.estimatedHours}
+                                onChange={e => setSpecsForm(f => ({ ...f, estimatedHours: e.target.value }))}
+                                className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-estimated-hours" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">حالة المشروع</label>
+                              <Select value={specsForm.projectStatus} onValueChange={v => setSpecsForm(f => ({ ...f, projectStatus: v }))}>
+                                <SelectTrigger className="text-sm bg-white/10 border-white/20 text-white" data-testid="select-project-status">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="planning">تخطيط</SelectItem>
+                                  <SelectItem value="in_dev">قيد التطوير</SelectItem>
+                                  <SelectItem value="testing">اختبار</SelectItem>
+                                  <SelectItem value="delivery">تسليم</SelectItem>
+                                  <SelectItem value="closed">مغلق</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 2: Tech Stack */}
+                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Layers className="w-3.5 h-3.5" />
+                            البنية التقنية
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Stack التقني الكامل</label>
+                              <Input placeholder="مثال: React 18, Node.js, Express, MongoDB Atlas" value={specsForm.techStack}
+                                onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))}
+                                className="text-sm" data-testid="input-specs-techstack" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Framework الأساسي</label>
+                              <Input placeholder="مثال: Next.js 14, Laravel 11" value={specsForm.framework}
+                                onChange={e => setSpecsForm(f => ({ ...f, framework: e.target.value }))}
+                                className="text-sm" data-testid="input-framework" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">لغة البرمجة</label>
+                              <Select value={specsForm.language} onValueChange={v => setSpecsForm(f => ({ ...f, language: v }))}>
+                                <SelectTrigger className="text-sm" data-testid="select-language"><SelectValue placeholder="اختر اللغة" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="TypeScript">TypeScript</SelectItem>
+                                  <SelectItem value="JavaScript">JavaScript</SelectItem>
+                                  <SelectItem value="Python">Python</SelectItem>
+                                  <SelectItem value="PHP">PHP</SelectItem>
+                                  <SelectItem value="Dart">Dart (Flutter)</SelectItem>
+                                  <SelectItem value="Swift">Swift</SelectItem>
+                                  <SelectItem value="Kotlin">Kotlin</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">قاعدة البيانات</label>
+                              <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
+                                <SelectTrigger className="text-sm" data-testid="select-specs-database"><SelectValue placeholder="اختر قاعدة البيانات" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="MongoDB Atlas M0 (Free)">MongoDB Atlas M0 (Free)</SelectItem>
+                                  <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10 ($57/mo)</SelectItem>
+                                  <SelectItem value="MongoDB Atlas M20">MongoDB Atlas M20 ($140/mo)</SelectItem>
+                                  <SelectItem value="MongoDB Atlas M30">MongoDB Atlas M30 ($410/mo)</SelectItem>
+                                  <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
+                                  <SelectItem value="MySQL">MySQL</SelectItem>
+                                  <SelectItem value="Redis">Redis</SelectItem>
+                                  <SelectItem value="Firebase">Firebase Firestore</SelectItem>
+                                  <SelectItem value="Supabase">Supabase</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الاستضافة</label>
+                              <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
+                                <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder="اختر الاستضافة" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="AWS EC2 t3.micro">AWS EC2 t3.micro ($8/mo)</SelectItem>
+                                  <SelectItem value="AWS EC2 t3.small">AWS EC2 t3.small ($17/mo)</SelectItem>
+                                  <SelectItem value="AWS EC2 t3.medium">AWS EC2 t3.medium ($34/mo)</SelectItem>
+                                  <SelectItem value="AWS EC2 t3.large">AWS EC2 t3.large ($67/mo)</SelectItem>
+                                  <SelectItem value="AWS EC2 c5.xlarge">AWS EC2 c5.xlarge ($170/mo)</SelectItem>
+                                  <SelectItem value="Vercel">Vercel</SelectItem>
+                                  <SelectItem value="DigitalOcean">DigitalOcean Droplet</SelectItem>
+                                  <SelectItem value="Railway">Railway</SelectItem>
+                                  <SelectItem value="Render">Render</SelectItem>
+                                  <SelectItem value="VPS">VPS مخصص</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 3: Infrastructure & Repos */}
+                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Server className="w-3.5 h-3.5" />
+                            بيانات الاستضافة والمستودعات
+                          </p>
+                          <div className="grid grid-cols-1 gap-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">GitHub Repository URL</label>
+                              <Input placeholder="https://github.com/qirox/project-name" value={specsForm.githubRepoUrl}
+                                onChange={e => setSpecsForm(f => ({ ...f, githubRepoUrl: e.target.value }))}
+                                className="text-sm font-mono" dir="ltr" data-testid="input-github-repo" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">MongoDB Cluster URI / Database Connection String</label>
+                              <Input placeholder="mongodb+srv://user:pass@cluster.mongodb.net/dbname" value={specsForm.databaseUri}
+                                onChange={e => setSpecsForm(f => ({ ...f, databaseUri: e.target.value }))}
+                                className="text-sm font-mono text-xs" dir="ltr" data-testid="input-database-uri" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">IP السيرفر</label>
+                                <Input placeholder="192.168.1.1" value={specsForm.serverIp}
+                                  onChange={e => setSpecsForm(f => ({ ...f, serverIp: e.target.value }))}
+                                  className="text-sm font-mono" dir="ltr" data-testid="input-server-ip" />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Custom Domain</label>
+                                <Input placeholder="example.com" value={specsForm.customDomain}
+                                  onChange={e => setSpecsForm(f => ({ ...f, customDomain: e.target.value }))}
+                                  className="text-sm font-mono" dir="ltr" data-testid="input-custom-domain" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Deployment Username</label>
+                                <Input placeholder="ubuntu / root / deploy" value={specsForm.deploymentUsername}
+                                  onChange={e => setSpecsForm(f => ({ ...f, deploymentUsername: e.target.value }))}
+                                  className="text-sm font-mono" dir="ltr" data-testid="input-deploy-username" />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Deployment Password / SSH Key</label>
+                                <Input type="password" placeholder="••••••••••" value={specsForm.deploymentPassword}
+                                  onChange={e => setSpecsForm(f => ({ ...f, deploymentPassword: e.target.value }))}
+                                  className="text-sm font-mono" dir="ltr" data-testid="input-deploy-password" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Staging URL (رابط الاختبار)</label>
+                                <Input placeholder="https://staging.example.com" value={specsForm.stagingUrl}
+                                  onChange={e => setSpecsForm(f => ({ ...f, stagingUrl: e.target.value }))}
+                                  className="text-sm font-mono text-xs" dir="ltr" data-testid="input-staging-url" />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Production URL (رابط الإنتاج)</label>
+                                <Input placeholder="https://example.com" value={specsForm.productionUrl}
+                                  onChange={e => setSpecsForm(f => ({ ...f, productionUrl: e.target.value }))}
+                                  className="text-sm font-mono text-xs" dir="ltr" data-testid="input-production-url" />
+                              </div>
+                            </div>
+                            <div className="flex gap-4 pt-1">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={specsForm.sslEnabled}
+                                  onChange={e => setSpecsForm(f => ({ ...f, sslEnabled: e.target.checked }))}
+                                  className="w-4 h-4 rounded" data-testid="checkbox-ssl" />
+                                <span className="text-xs text-black/60 font-medium">SSL مُفعّل (HTTPS)</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={specsForm.cdnEnabled}
+                                  onChange={e => setSpecsForm(f => ({ ...f, cdnEnabled: e.target.checked }))}
+                                  className="w-4 h-4 rounded" data-testid="checkbox-cdn" />
+                                <span className="text-xs text-black/60 font-medium">CDN مُفعّل</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 4: Environment Variables */}
+                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-1 flex items-center gap-2">
+                            <KeyRound className="w-3.5 h-3.5" />
+                            Environment Variables & Configs
+                          </p>
+                          <p className="text-[9px] text-black/30 mb-3">كل متغير في سطر بصيغة KEY=VALUE</p>
+                          <Textarea placeholder={"PORT=3000\nNODE_ENV=production\nJWT_SECRET=your_secret\nSTRIPE_KEY=sk_live_...\nSENDGRID_KEY=SG..."}
+                            value={specsForm.variables}
+                            onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
+                            className="text-xs resize-none h-40 font-mono bg-black/[0.02]" dir="ltr"
+                            data-testid="textarea-specs-variables" />
+                        </div>
+
+                        {/* Section 5: Project Concept */}
+                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                            تفاصيل المشروع والرؤية
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">فكرة المشروع والهدف منه</label>
+                              <Textarea placeholder="اشرح فكرة المشروع، هدفه، ومشكلته التي يحلها..." value={specsForm.projectConcept}
+                                onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))}
+                                className="text-sm resize-none h-20" data-testid="textarea-specs-concept" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الجمهور المستهدف</label>
+                              <Input placeholder="مثال: أصحاب المطاعم في المنطقة الشرقية" value={specsForm.targetAudience}
+                                onChange={e => setSpecsForm(f => ({ ...f, targetAudience: e.target.value }))}
+                                className="text-sm" data-testid="input-target-audience" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الميزات الأساسية</label>
+                              <Textarea placeholder="- لوحة تحكم المطعم&#10;- قائمة رقمية بـ QR&#10;- نظام الطلبات..." value={specsForm.mainFeatures}
+                                onChange={e => setSpecsForm(f => ({ ...f, mainFeatures: e.target.value }))}
+                                className="text-sm resize-none h-24" data-testid="textarea-main-features" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">روابط مرجعية (مواقع مشابهة)</label>
+                              <Textarea placeholder="https://example1.com&#10;https://example2.com" value={specsForm.referenceLinks}
+                                onChange={e => setSpecsForm(f => ({ ...f, referenceLinks: e.target.value }))}
+                                className="text-sm resize-none h-16 font-mono text-xs" dir="ltr" data-testid="textarea-reference-links" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">لوحة الألوان</label>
+                              <Input placeholder="مثال: #FF5733, #2C3E50, #27AE60" value={specsForm.colorPalette}
+                                onChange={e => setSpecsForm(f => ({ ...f, colorPalette: e.target.value }))}
+                                className="text-sm font-mono" dir="ltr" data-testid="input-color-palette" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 6: Notes */}
+                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4">الملاحظات</p>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">ملاحظات تقنية (تظهر للعميل)</label>
+                              <Textarea placeholder="ملاحظات تقنية مهمة يجب أن يعلمها العميل..." value={specsForm.notes}
+                                onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))}
+                                className="text-sm resize-none h-20" data-testid="textarea-specs-notes" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">ملاحظات الفريق الداخلية (لا تظهر للعميل)</label>
+                              <Textarea placeholder="ملاحظات داخلية للفريق فقط..." value={specsForm.teamNotes}
+                                onChange={e => setSpecsForm(f => ({ ...f, teamNotes: e.target.value }))}
+                                className="text-sm resize-none h-20 border-dashed" data-testid="textarea-team-notes" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="sticky bottom-0 bg-white/90 backdrop-blur pt-3 pb-5 -mx-6 px-6 border-t border-black/[0.06]">
+                          <Button className="w-full bg-black text-white hover:bg-black/80 font-bold h-11 text-sm rounded-xl"
+                            onClick={() => saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: {
+                              ...specsForm,
+                              totalBudget: specsForm.totalBudget ? Number(specsForm.totalBudget) : undefined,
+                              paidAmount: specsForm.paidAmount ? Number(specsForm.paidAmount) : undefined,
+                              estimatedHours: specsForm.estimatedHours ? Number(specsForm.estimatedHours) : undefined,
+                            }})}
+                            disabled={saveSpecsMutation.isPending} data-testid="button-save-specs">
+                            {saveSpecsMutation.isPending
+                              ? <><Loader2 className="w-4 h-4 animate-spin ml-2" />جاري الحفظ...</>
+                              : <><Server className="w-4 h-4 ml-2" />حفظ وتأسيس البنية التحتية 🚀</>}
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">قاعدة البيانات</label>
-                        <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
-                          <SelectTrigger className="text-sm" data-testid="select-specs-database"><SelectValue placeholder="اختر قاعدة البيانات" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MongoDB Atlas M0 (Free)">MongoDB Atlas M0 (Free)</SelectItem>
-                            <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10</SelectItem>
-                            <SelectItem value="MongoDB Atlas M20">MongoDB Atlas M20</SelectItem>
-                            <SelectItem value="MongoDB Atlas M30">MongoDB Atlas M30</SelectItem>
-                            <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
-                            <SelectItem value="MySQL">MySQL</SelectItem>
-                            <SelectItem value="Redis">Redis</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">الاستضافة</label>
-                        <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
-                          <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder="اختر الاستضافة" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AWS EC2 t3.micro">AWS EC2 t3.micro ($8/mo)</SelectItem>
-                            <SelectItem value="AWS EC2 t3.small">AWS EC2 t3.small ($17/mo)</SelectItem>
-                            <SelectItem value="AWS EC2 t3.medium">AWS EC2 t3.medium ($34/mo)</SelectItem>
-                            <SelectItem value="AWS EC2 t3.large">AWS EC2 t3.large ($67/mo)</SelectItem>
-                            <SelectItem value="AWS EC2 c5.xlarge">AWS EC2 c5.xlarge ($170/mo)</SelectItem>
-                            <SelectItem value="Vercel">Vercel</SelectItem>
-                            <SelectItem value="DigitalOcean">DigitalOcean</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">الدومين</label>
-                        <Input placeholder="مثال: example.com" value={specsForm.domain}
-                          onChange={e => setSpecsForm(f => ({ ...f, domain: e.target.value }))} className="text-sm" data-testid="input-specs-domain" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">فكرة المشروع وتفاصيله</label>
-                        <Textarea placeholder="اشرح فكرة المشروع، هدفه، الجمهور المستهدف..." value={specsForm.projectConcept}
-                          onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))} className="text-sm resize-none h-24" data-testid="textarea-specs-concept" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">المتغيرات والإعدادات</label>
-                        <Textarea placeholder="مثال: API_KEY=xxx (كل متغير في سطر)" value={specsForm.variables}
-                          onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))} className="text-sm resize-none h-20 font-mono text-xs" data-testid="textarea-specs-variables" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية</label>
-                        <Textarea placeholder="أي تفاصيل إضافية..." value={specsForm.notes}
-                          onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))} className="text-sm resize-none h-16" data-testid="textarea-specs-notes" />
-                      </div>
-                      <Button className="w-full bg-black text-white hover:bg-black/80 font-bold"
-                        onClick={() => saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: specsForm })}
-                        disabled={saveSpecsMutation.isPending} data-testid="button-save-specs">
-                        {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Server className="w-4 h-4 ml-2" />}
-                        حفظ المواصفات
-                      </Button>
-                    </div>
+                    )}
                   </ScrollArea>
                 </TabsContent>
 
@@ -1429,78 +1707,189 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Client Specs Dialog */}
-      <Dialog open={!!clientSpecsOrderId} onOpenChange={(open) => !open && setClientSpecsOrderId(null)}>
-        <DialogContent className="sm:max-w-[520px]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-black flex items-center gap-2">
-              <Server className="w-4 h-4 text-black/40" />
-              مواصفات المشروع — طلب #{clientSpecsOrderId?.slice(-6)}
-            </DialogTitle>
-          </DialogHeader>
-          {isLoadingClientSpecs ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-5 h-5 animate-spin text-black/30" />
-              <p className="text-xs text-black/30 mr-2">جاري التحميل...</p>
+      {/* Client Project File Sheet */}
+      <Sheet open={!!clientSpecsOrderId} onOpenChange={(open) => !open && setClientSpecsOrderId(null)}>
+        <SheetContent side="left" className="w-full sm:max-w-2xl p-0 overflow-hidden" dir="rtl">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
+              <SheetTitle className="font-heading text-base font-bold text-black flex items-center gap-2">
+                <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
+                  <Server className="w-3.5 h-3.5 text-white" />
+                </div>
+                ملف المشروع — طلب #{clientSpecsOrderId?.slice(-6)}
+              </SheetTitle>
+              <p className="text-[10px] text-black/35 mt-1">بيانات وتفاصيل مشروعك المُعدّة من الفريق</p>
             </div>
-          ) : !clientOrderSpecs || Object.keys(clientOrderSpecs).filter(k => k !== '_id' && k !== 'orderId' && k !== '__v' && clientOrderSpecs[k]).length === 0 ? (
-            <div className="py-10 text-center">
-              <div className="w-12 h-12 bg-black/[0.03] rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Server className="w-5 h-5 text-black/15" />
-              </div>
-              <p className="text-sm font-medium text-black/40">المواصفات التقنية لم تُضف بعد</p>
-              <p className="text-xs text-black/25 mt-1.5">يعمل فريقنا على تجهيز مواصفات مشروعك</p>
-            </div>
-          ) : (
-            <div className="space-y-3 mt-1">
-              {clientOrderSpecs.projectConcept && (
-                <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04]">
-                  <p className="text-[10px] font-bold text-black/40 mb-1.5">فكرة المشروع</p>
-                  <p className="text-xs text-black/80 leading-relaxed">{clientOrderSpecs.projectConcept}</p>
+
+            <ScrollArea className="flex-1">
+              {isLoadingClientSpecs ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+                  <p className="text-xs text-black/30 mr-2">جاري التحميل...</p>
+                </div>
+              ) : !clientOrderSpecs || Object.keys(clientOrderSpecs).filter(k => !['_id','orderId','__v','id','createdAt','updatedAt','deploymentPassword','teamNotes'].includes(k) && clientOrderSpecs[k]).length === 0 ? (
+                <div className="py-20 text-center px-6">
+                  <div className="w-16 h-16 bg-black/[0.03] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Server className="w-7 h-7 text-black/10" />
+                  </div>
+                  <p className="text-sm font-bold text-black/30">ملف المشروع لم يُعَدّ بعد</p>
+                  <p className="text-xs text-black/20 mt-2">يعمل فريقنا على تجهيز كافة تفاصيل مشروعك</p>
+                </div>
+              ) : (
+                <div className="px-6 py-5 space-y-5">
+                  {/* Project Info Card (black) */}
+                  {(clientOrderSpecs.projectName || clientOrderSpecs.totalBudget || clientOrderSpecs.paidAmount || clientOrderSpecs.deadline) && (
+                    <div className="bg-black rounded-2xl p-5">
+                      <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-4">معلومات المشروع</p>
+                      {clientOrderSpecs.projectName && (
+                        <p className="text-lg font-black text-white mb-3">{clientOrderSpecs.projectName}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        {clientOrderSpecs.projectStatus && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">حالة المشروع</p>
+                            <p className="text-xs font-bold text-white">
+                              {clientOrderSpecs.projectStatus === 'planning' ? 'تخطيط' : clientOrderSpecs.projectStatus === 'in_dev' ? 'قيد التطوير' : clientOrderSpecs.projectStatus === 'testing' ? 'اختبار' : clientOrderSpecs.projectStatus === 'delivery' ? 'تسليم' : 'مغلق'}
+                            </p>
+                          </div>
+                        )}
+                        {clientOrderSpecs.estimatedHours && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">الساعات المقدّرة</p>
+                            <p className="text-xs font-bold text-white">{clientOrderSpecs.estimatedHours} ساعة</p>
+                          </div>
+                        )}
+                        {clientOrderSpecs.totalBudget && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">الميزانية الكلية</p>
+                            <p className="text-xs font-bold text-white">{Number(clientOrderSpecs.totalBudget).toLocaleString()} ر.س</p>
+                          </div>
+                        )}
+                        {clientOrderSpecs.paidAmount && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">المدفوع حالياً</p>
+                            <p className="text-xs font-bold text-green-400">{Number(clientOrderSpecs.paidAmount).toLocaleString()} ر.س</p>
+                          </div>
+                        )}
+                        {clientOrderSpecs.startDate && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">تاريخ البداية</p>
+                            <p className="text-xs font-bold text-white">{new Date(clientOrderSpecs.startDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                          </div>
+                        )}
+                        {clientOrderSpecs.deadline && (
+                          <div className="bg-white/10 rounded-xl p-3">
+                            <p className="text-[9px] text-white/40 mb-1">تاريخ التسليم</p>
+                            <p className="text-xs font-bold text-amber-400">{new Date(clientOrderSpecs.deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tech Stack */}
+                  {(clientOrderSpecs.techStack || clientOrderSpecs.framework || clientOrderSpecs.language || clientOrderSpecs.database || clientOrderSpecs.hosting) && (
+                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5" />البنية التقنية
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          clientOrderSpecs.techStack,
+                          clientOrderSpecs.framework,
+                          clientOrderSpecs.language,
+                          clientOrderSpecs.database,
+                          clientOrderSpecs.hosting,
+                        ].filter(Boolean).map((tech: string, i: number) => (
+                          <span key={i} className="text-[10px] bg-black text-white px-2.5 py-1 rounded-full font-medium">{tech}</span>
+                        ))}
+                        {clientOrderSpecs.sslEnabled && <span className="text-[10px] bg-green-100 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-medium">SSL ✓</span>}
+                        {clientOrderSpecs.cdnEnabled && <span className="text-[10px] bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full font-medium">CDN ✓</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* URLs & Links */}
+                  {(clientOrderSpecs.githubRepoUrl || clientOrderSpecs.stagingUrl || clientOrderSpecs.productionUrl || clientOrderSpecs.customDomain) && (
+                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <Globe className="w-3.5 h-3.5" />الروابط والنطاقات
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          { label: "GitHub Repository", url: clientOrderSpecs.githubRepoUrl, icon: "⌥" },
+                          { label: "Staging (اختبار)", url: clientOrderSpecs.stagingUrl, icon: "🧪" },
+                          { label: "Production (إنتاج)", url: clientOrderSpecs.productionUrl, icon: "🚀" },
+                          { label: "الدومين المخصص", url: clientOrderSpecs.customDomain ? `https://${clientOrderSpecs.customDomain}` : null, icon: "🌐" },
+                        ].filter(l => l.url).map((link, i) => (
+                          <a key={i} href={link.url!} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3 bg-black/[0.02] rounded-xl hover:bg-black/[0.05] transition-colors group border border-black/[0.04]">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">{link.icon}</span>
+                              <div>
+                                <p className="text-[10px] font-bold text-black/50">{link.label}</p>
+                                <p className="text-xs font-mono text-black/70 truncate max-w-[280px]">{link.url}</p>
+                              </div>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/60 flex-shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Project Concept */}
+                  {(clientOrderSpecs.projectConcept || clientOrderSpecs.targetAudience || clientOrderSpecs.mainFeatures) && (
+                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <LayoutGrid className="w-3.5 h-3.5" />تفاصيل المشروع
+                      </p>
+                      {clientOrderSpecs.projectConcept && (
+                        <div className="mb-3">
+                          <p className="text-[10px] font-bold text-black/40 mb-1.5">فكرة المشروع</p>
+                          <p className="text-xs text-black/75 leading-relaxed">{clientOrderSpecs.projectConcept}</p>
+                        </div>
+                      )}
+                      {clientOrderSpecs.targetAudience && (
+                        <div className="mb-3">
+                          <p className="text-[10px] font-bold text-black/40 mb-1.5">الجمهور المستهدف</p>
+                          <p className="text-xs text-black/75">{clientOrderSpecs.targetAudience}</p>
+                        </div>
+                      )}
+                      {clientOrderSpecs.mainFeatures && (
+                        <div>
+                          <p className="text-[10px] font-bold text-black/40 mb-1.5">الميزات الأساسية</p>
+                          <pre className="text-xs text-black/75 whitespace-pre-wrap leading-relaxed font-sans">{clientOrderSpecs.mainFeatures}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {clientOrderSpecs.notes && (
+                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
+                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-3">ملاحظات تقنية</p>
+                      <p className="text-xs text-black/70 leading-relaxed">{clientOrderSpecs.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Client Email */}
+                  {clientOrderSpecs.clientEmail && (
+                    <div className="border border-black/[0.07] rounded-2xl p-4 bg-white flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-black/30 flex-shrink-0" />
+                      <div>
+                        <p className="text-[9px] font-bold text-black/40">بريد المشروع الرسمي</p>
+                        <p className="text-xs font-mono text-black/70 mt-0.5">{clientOrderSpecs.clientEmail}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-2">
-                {clientOrderSpecs.techStack && (
-                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
-                    <p className="text-[9px] font-bold text-black/35 mb-1">Stack التقني</p>
-                    <p className="text-xs font-medium text-black">{clientOrderSpecs.techStack}</p>
-                  </div>
-                )}
-                {clientOrderSpecs.database && (
-                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
-                    <p className="text-[9px] font-bold text-black/35 mb-1">قاعدة البيانات</p>
-                    <p className="text-xs font-medium text-black">{clientOrderSpecs.database}</p>
-                  </div>
-                )}
-                {clientOrderSpecs.hosting && (
-                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
-                    <p className="text-[9px] font-bold text-black/35 mb-1">الاستضافة</p>
-                    <p className="text-xs font-medium text-black">{clientOrderSpecs.hosting}</p>
-                  </div>
-                )}
-                {clientOrderSpecs.domain && (
-                  <div className="bg-black/[0.02] rounded-xl p-3 border border-black/[0.04]">
-                    <p className="text-[9px] font-bold text-black/35 mb-1">الدومين</p>
-                    <p className="text-xs font-medium text-black">{clientOrderSpecs.domain}</p>
-                  </div>
-                )}
-              </div>
-              {clientOrderSpecs.variables && (
-                <div className="bg-black rounded-xl p-4">
-                  <p className="text-[9px] font-bold text-white/50 mb-2">المتغيرات والإعدادات</p>
-                  <pre className="text-xs text-green-400 font-mono leading-relaxed whitespace-pre-wrap">{clientOrderSpecs.variables}</pre>
-                </div>
-              )}
-              {clientOrderSpecs.notes && (
-                <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04]">
-                  <p className="text-[9px] font-bold text-black/40 mb-1.5">ملاحظات تقنية</p>
-                  <p className="text-xs text-black/70 leading-relaxed">{clientOrderSpecs.notes}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            </ScrollArea>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

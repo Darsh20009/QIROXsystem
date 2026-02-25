@@ -263,27 +263,57 @@ const cartSchema = new mongoose.Schema({
 
 const orderSpecsSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, unique: true },
-  technologies: [String],
-  database: {
-    type: String,
-    tier: String,
-    notes: String,
-    estimatedCost: Number,
-  },
-  hosting: {
-    type: String,
-    tier: String,
-    region: String,
-    notes: String,
-    estimatedCost: Number,
-  },
-  features: [String],
+
+  // === PROJECT INFO ===
+  projectName: String,
+  clientEmail: String,
+  totalBudget: Number,
+  paidAmount: Number,
+  projectStatus: { type: String, default: "planning" }, // planning, in_dev, testing, delivery, closed
+
+  // === TECH STACK ===
+  techStack: String,
+  database: String,
+  hosting: String,
+  framework: String,
+  language: String,
+
+  // === INFRASTRUCTURE / DEVOPS ===
+  githubRepoUrl: String,
+  databaseUri: String,
+  serverIp: String,
+  deploymentUsername: String,
+  deploymentPassword: String,
+  customDomain: String,
+  stagingUrl: String,
+  productionUrl: String,
+  sslEnabled: { type: Boolean, default: false },
+  cdnEnabled: { type: Boolean, default: false },
+
+  // === ENVIRONMENT VARIABLES ===
+  variables: String,
+
+  // === PROJECT CONCEPT ===
+  projectConcept: String,
+  targetAudience: String,
+  mainFeatures: String,
+  referenceLinks: String,
+  colorPalette: String,
+
+  // === TIMELINE ===
   estimatedHours: Number,
+  deadline: Date,
+  startDate: Date,
+
+  // === NOTES ===
+  notes: String,
   teamNotes: String,
+
+  // === LEGACY COMPAT ===
+  technologies: [String],
+  features: [String],
   clientBrief: String,
   projectIdeas: String,
-  colorPalette: [String],
-  referenceLinks: [String],
   customVars: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
