@@ -1005,8 +1005,16 @@ export async function seedDatabase() {
 
   // Seed Pricing Plans — always re-seed to keep pricing current
   const existingPlans = await storage.getPricingPlans();
-  const PLANS_VERSION = 2;
-  const needsReseed = existingPlans.length === 0 || existingPlans.length < 4;
+  const ecommercePlan = existingPlans.find((p: any) => p.slug === "ecommerce");
+  const educationPlan = existingPlans.find((p: any) => p.slug === "education");
+  const needsReseed =
+    existingPlans.length < 4 ||
+    !ecommercePlan ||
+    (ecommercePlan as any).price !== 1000 ||
+    !(ecommercePlan as any).originalPrice ||
+    !(ecommercePlan as any).addonsAr?.length ||
+    !educationPlan ||
+    !(educationPlan as any).featuresAr?.includes("أي تصميم في ذهنك — ننفذه");
   if (needsReseed) {
     for (const p of existingPlans) {
       await storage.deletePricingPlan((p as any).id);
@@ -1047,7 +1055,7 @@ export async function seedDatabase() {
         nameAr: "المنصة التعليمية",
         slug: "education",
         description: "Full e-learning platform for academies and institutions",
-        descriptionAr: "منصة تعليمية متكاملة للأكاديميات والمؤسسات التعليمية",
+        descriptionAr: "منصة تعليمية متكاملة — أي تصميم في ذهنك ننفذه، ولو أعجبك موقع معين نبنيه لك",
         price: 2200,
         currency: "SAR",
         billingCycle: "one_time" as const,
@@ -1059,7 +1067,8 @@ export async function seedDatabase() {
           "شهادات إتمام تلقائية",
           "تحليلات وتقارير شاملة",
           "بوابة أولياء الأمور",
-          "تصميم مخصص للهوية البصرية",
+          "أي تصميم في ذهنك — ننفذه",
+          "أعجبك موقع معين؟ نبنيه لك",
         ],
         addonsAr: [
           "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
@@ -1102,8 +1111,8 @@ export async function seedDatabase() {
         name: "Companies & Institutions",
         nameAr: "الشركات والمؤسسات",
         slug: "enterprise",
-        description: "Custom enterprise solution tailored to your specific needs",
-        descriptionAr: "حل مؤسسي مخصص يُبنى حسب متطلباتك دون قيود",
+        description: "Custom enterprise solution — pricing after discussing your needs",
+        descriptionAr: "حل مؤسسي مخصص يُبنى حسب متطلباتك — السعر بعد مناقشة التفاصيل",
         price: 0,
         currency: "SAR",
         billingCycle: "one_time" as const,
@@ -1128,6 +1137,6 @@ export async function seedDatabase() {
     for (const p of plans) {
       await storage.createPricingPlan(p);
     }
-    console.log("4 pricing plans seeded successfully (v2)");
+    console.log("4 pricing plans seeded successfully (v3)");
   }
 }
