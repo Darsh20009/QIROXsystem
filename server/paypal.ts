@@ -1,21 +1,25 @@
-// PayPal integration - blueprint:javascript_paypal
-// Gracefully handles missing credentials
 import { Request, Response } from "express";
-
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET } = process.env;
 
 let ordersController: any = null;
 let oAuthAuthorizationController: any = null;
-let isInitialized = false;
+let initializedWithId: string | undefined = undefined;
 
 async function initPayPal() {
-  if (isInitialized) return;
-  isInitialized = true;
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+  if (!clientId || !clientSecret) {
     console.warn("PayPal credentials not configured. PayPal routes will return 503.");
+    ordersController = null;
+    oAuthAuthorizationController = null;
     return;
   }
+
+  if (initializedWithId === clientId && ordersController) return;
+
+  initializedWithId = clientId;
+  ordersController = null;
+  oAuthAuthorizationController = null;
 
   try {
     const sdk = await import("@paypal/paypal-server-sdk");
@@ -32,8 +36,8 @@ async function initPayPal() {
 
     const client = new ClientClass({
       clientCredentialsAuthCredentials: {
-        oAuthClientId: PAYPAL_CLIENT_ID,
-        oAuthClientSecret: PAYPAL_CLIENT_SECRET,
+        oAuthClientId: clientId,
+        oAuthClientSecret: clientSecret,
       },
       timeout: 0,
       environment:
@@ -51,6 +55,8 @@ async function initPayPal() {
     console.log("PayPal SDK initialized successfully");
   } catch (e) {
     console.error("Failed to initialize PayPal SDK:", e);
+    ordersController = null;
+    oAuthAuthorizationController = null;
   }
 }
 
@@ -58,9 +64,10 @@ export async function getClientToken() {
   await initPayPal();
   if (!oAuthAuthorizationController) throw new Error("PayPal not configured");
 
-  const auth = Buffer.from(
-    `${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`,
-  ).toString("base64");
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
   const { result } = await oAuthAuthorizationController.requestToken(
     { authorization: `Basic ${auth}` },
@@ -135,8 +142,8 @@ export async function loadPaypalDefault(req: Request, res: Response) {
   try {
     const clientToken = await getClientToken();
     res.json({ clientToken });
-  } catch (error) {
-    console.error("Failed to load PayPal setup:", error);
+  } catch (error: any) {
+    console.error("Failed to load PayPal setup:", error?.body || error?.message || error);
     res.status(503).json({ error: "PayPal not configured" });
   }
 }
