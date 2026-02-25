@@ -89,18 +89,20 @@ export default function Services() {
                       ))}
                     </div>
 
-                    {(service.priceMin || service.priceMax) && (
-                      <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-2" data-testid={`text-price-range-${service.id}`}>
-                        <span className="text-xs text-black/25">{t("services.price") || "Price Range"}</span>
-                        <span className="text-sm font-semibold text-black">
-                          {service.priceMin && service.priceMax
-                            ? `${service.priceMin.toLocaleString()} - ${service.priceMax.toLocaleString()} SAR`
-                            : service.priceMin
-                              ? `${t("services.from") || "From"} ${service.priceMin.toLocaleString()} SAR`
-                              : `${t("services.upTo") || "Up to"} ${service.priceMax!.toLocaleString()} SAR`}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-2" data-testid={`text-price-range-${service.id}`}>
+                      <span className="text-xs text-black/25">{t("services.price") || "السعر"}</span>
+                      <span className="text-sm font-semibold text-black">
+                        {(!service.priceMin && !service.priceMax)
+                          ? "السعر بعد مناقشة"
+                          : service.priceMin === service.priceMax
+                            ? `${service.priceMin!.toLocaleString()} ر.س`
+                            : service.priceMin && service.priceMax
+                              ? `${service.priceMin.toLocaleString()} - ${service.priceMax.toLocaleString()} ر.س`
+                              : service.priceMin
+                                ? `من ${service.priceMin.toLocaleString()} ر.س`
+                                : `حتى ${service.priceMax!.toLocaleString()} ر.س`}
+                      </span>
+                    </div>
 
                     <div className="flex items-center justify-between py-4 border-t border-black/[0.04] mb-4" data-testid={`text-duration-${service.id}`}>
                       <span className="text-xs text-black/25">{t("services.duration")}</span>

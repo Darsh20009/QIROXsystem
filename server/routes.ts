@@ -800,37 +800,43 @@ export async function seedDatabase() {
   }
 
   const existingServices = await storage.getServices();
-  if (existingServices.length === 0) {
+  const restaurantService = existingServices.find((s: any) => s.category === "restaurants");
+  const servicesNeedReseed = existingServices.length === 0 || (restaurantService && (restaurantService as any).priceMin !== 1199);
+  if (servicesNeedReseed) {
+    for (const s of existingServices) {
+      await storage.deleteService((s as any).id);
+    }
     await storage.createService({
-      title: "Restaurant & Cafe System",
-      description: "Complete digital solution for F&B businesses including menu, POS integration, and ordering system.",
+      title: "نظام المطاعم والكافيهات",
+      description: "حل رقمي متكامل لمطاعم وكافيهات مع قائمة رقمية وطلب QR ونظام نقطة البيع.",
       category: "restaurants",
-      priceMin: 5000,
-      priceMax: 15000,
-      estimatedDuration: "2-4 weeks",
-      features: ["Digital Menu", "QR Code", "POS Integration", "Kitchen Display"],
+      priceMin: 1199,
+      priceMax: 1199,
+      estimatedDuration: "2-4 أسابيع",
+      features: ["قائمة رقمية", "طلب QR", "نقطة البيع POS", "شاشة المطبخ"],
       icon: "Utensils"
     });
     await storage.createService({
-      title: "E-commerce Store",
-      description: "Full-featured online store with payment gateway, inventory management, and marketing tools.",
+      title: "المتجر الإلكتروني",
+      description: "متجر إلكتروني متكامل مع بوابة دفع وإدارة مخزون وأدوات تسويق.",
       category: "stores",
-      priceMin: 8000,
-      priceMax: 25000,
-      estimatedDuration: "3-6 weeks",
-      features: ["Payment Gateway", "Inventory Sync", "Mobile App", "SEO Optimization"],
+      priceMin: 1000,
+      priceMax: 1000,
+      estimatedDuration: "3-6 أسابيع",
+      features: ["بوابة الدفع", "إدارة المخزون", "تطبيق جوال", "SEO"],
       icon: "ShoppingBag"
     });
     await storage.createService({
-      title: "Corporate Platform",
-      description: "Professional web presence for institutions with internal systems and secure portals.",
+      title: "منصة الشركات والمؤسسات",
+      description: "حضور رقمي احترافي للمؤسسات مع أنظمة داخلية وبوابات آمنة. السعر يُحدد بعد مناقشة تفاصيل المشروع.",
       category: "institutions",
-      priceMin: 12000,
-      priceMax: 40000,
-      estimatedDuration: "4-8 weeks",
-      features: ["Employee Portal", "Document Management", "Secure Login", "Analytics Dashboard"],
+      priceMin: 0,
+      priceMax: 0,
+      estimatedDuration: "4-8 أسابيع",
+      features: ["بوابة الموظفين", "إدارة المستندات", "تسجيل دخول آمن", "لوحة التحليلات"],
       icon: "Building2"
     });
+    console.log("3 services reseeded with updated pricing");
   }
 
   // Clean repoUrl from existing templates (migration)
