@@ -10,6 +10,14 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 25, 2026 - Session 6)
+
+- **Services Page - Full Flow**: Rebuilt to 3-step flow (1. pick service → 2. add products → 3. checkout). Services displayed as card grid (not expandable rows). Clicking a service opens a full detail panel below with: features/customization section, linked admin products, gifts, MongoDB Atlas tiers (M0→M30), AWS EC2 tiers (t3.micro→c5.xlarge), domain products from admin, email products from admin (with fallback email plans). All items have "أضف للسلة" buttons.
+- **Client Dashboard - Creative Redesign**: New avatar-based top bar with greeting, date, role. Animated stats cards with gradient icons. Investment banner (black, shows total spent + active services). Projects with 4-phase progress indicator (التصميم/التطوير/الاختبار/التسليم). Quick actions grid (تصفح الخدمات/الأجهزة/طلب تعديل). Orders as timeline. Mod requests as compact cards. Final CTA band.
+- **Employee Specs Form Enhanced**: Added "فكرة المشروع" (project concept textarea) and "المتغيرات والإعدادات" (variables in KEY=VALUE format) to existing specs dialog. All 7 fields: techStack, database, hosting, domain, projectConcept, variables, notes.
+- **Cart Route Added**: `/cart` now properly serves the full cart page for logged-in users.
+- **Devices Page**: Beautiful product grid with category pills, search, featured section, and add-to-cart. Products come from admin (`/api/products`).
+
 ## Latest Changes (Feb 25, 2026 - Session 5)
 
 - **Admin Credentials Updated**: `admin_qirox`/`admin13579` → `qadmin`/`qadmin`. Auto-migration on server start updates existing DB records. AdminCredentialsCard updated to match.

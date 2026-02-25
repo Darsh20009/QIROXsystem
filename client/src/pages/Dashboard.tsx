@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3 } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -356,7 +356,7 @@ function EmployeeDashboard({ user }: { user: any }) {
   const [ip, setIp] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [specsOrder, setSpecsOrder] = useState<any>(null);
-  const [specsForm, setSpecsForm] = useState({ techStack: "", database: "", hosting: "", domain: "", notes: "" });
+  const [specsForm, setSpecsForm] = useState({ techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" });
 
   const saveSpecsMutation = useMutation({
     mutationFn: async (data: { orderId: string; specs: any }) => {
@@ -533,7 +533,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                           {st.label}
                         </span>
                         <button
-                          onClick={() => { setSpecsOrder(order); setSpecsForm({ techStack: order.specs?.techStack || "", database: order.specs?.database || "", hosting: order.specs?.hosting || "", domain: order.specs?.domain || "", notes: order.specs?.notes || "" }); }}
+                          onClick={() => { setSpecsOrder(order); setSpecsForm({ techStack: order.specs?.techStack || "", database: order.specs?.database || "", hosting: order.specs?.hosting || "", domain: order.specs?.domain || "", projectConcept: order.specs?.projectConcept || "", variables: order.specs?.variables || "", notes: order.specs?.notes || "" }); }}
                           className="text-[10px] text-black/35 hover:text-black border border-black/[0.08] hover:border-black/20 px-2.5 py-1 rounded-lg transition-all"
                           data-testid={`button-specs-${order.id}`}
                         >
@@ -613,12 +613,32 @@ function EmployeeDashboard({ user }: { user: any }) {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية</label>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">فكرة المشروع وتفاصيله</label>
+              <Textarea
+                placeholder="اشرح فكرة المشروع، هدفه، الجمهور المستهدف، والرؤية العامة..."
+                value={specsForm.projectConcept}
+                onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))}
+                className="text-sm resize-none h-24"
+                data-testid="textarea-specs-concept"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">المتغيرات والإعدادات</label>
+              <Textarea
+                placeholder="مثال: API_KEY=xxx, DB_NAME=yyy, PORT=3000 (كل متغير في سطر)"
+                value={specsForm.variables}
+                onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
+                className="text-sm resize-none h-20 font-mono text-xs"
+                data-testid="textarea-specs-variables"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية إضافية</label>
               <Textarea
                 placeholder="أي تفاصيل تقنية إضافية..."
                 value={specsForm.notes}
                 onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))}
-                className="text-sm resize-none h-20"
+                className="text-sm resize-none h-16"
                 data-testid="textarea-specs-notes"
               />
             </div>
@@ -757,385 +777,373 @@ export default function Dashboard() {
   const isEmployee = user.role !== 'client';
   const dateStr = currentTime.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
-            <p className="text-xs text-black/30 font-medium mb-1">{dateStr}</p>
-            <h1 className="text-2xl md:text-3xl font-bold text-black font-heading">
-              {getGreeting()}، <span className="text-black/60">{user.fullName}</span>
-            </h1>
-            <div className="flex items-center gap-3 mt-2">
-              <Badge className="bg-black/[0.04] text-black/50 border-0 text-[10px] font-medium px-2.5">
-                {user.role === 'client' ? 'عميل' : user.role === 'admin' ? 'مدير النظام' : user.role}
-              </Badge>
-              <span className="text-[10px] text-black/25">{user.email}</span>
-            </div>
-          </div>
+  const projectPhases = ["التصميم", "التطوير", "الاختبار", "التسليم"];
+  const getPhase = (progress: number) => Math.min(Math.floor(progress / 25), 3);
 
-          <div className="flex items-center gap-2">
-            {isEmployee && (
-              <div className="flex items-center gap-2 bg-black/[0.02] p-1.5 rounded-xl border border-black/[0.06]">
-                {!attendanceStatus || attendanceStatus.checkOut ? (
-                  <Button
-                    size="sm"
-                    className="bg-black text-white hover:bg-black/80 text-xs h-8 px-4"
-                    onClick={handleCheckIn}
-                    disabled={checkInMutation.isPending}
-                    data-testid="button-check-in"
-                  >
-                    <LogIn className="w-3.5 h-3.5 ml-1.5" />
-                    تسجيل دخول
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 text-xs h-8 px-4"
-                    onClick={handleCheckOut}
-                    disabled={checkOutMutation.isPending}
-                    data-testid="button-check-out"
-                  >
-                    <LogOut className="w-3.5 h-3.5 ml-1.5" />
-                    تسجيل خروج
-                  </Button>
-                )}
-                {attendanceStatus && !attendanceStatus.checkOut && (
-                  <div className="px-3 py-1 text-[10px] font-bold text-black/40 flex items-center gap-1.5">
-                    <Timer className="w-3 h-3 text-green-500 animate-pulse" />
-                    {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                )}
+  return (
+    <div className="min-h-screen bg-[#f8f8f8]" dir="rtl">
+      {/* Top Hero Banner */}
+      <div className="bg-white border-b border-black/[0.06]">
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">
+                {user.fullName?.charAt(0) || "U"}
               </div>
-            )}
-            <Link href="/order">
-              <Button className="bg-black text-white hover:bg-black/80 font-bold h-9 px-5 text-xs" data-testid="button-new-order">
-                <Plus className="w-4 h-4 ml-1.5" />
-                طلب جديد
-              </Button>
-            </Link>
+              <div>
+                <p className="text-[10px] text-black/30 mb-0.5">{dateStr}</p>
+                <h1 className="text-xl font-black text-black font-heading">
+                  {getGreeting()}، {user.fullName.split(" ")[0]}
+                </h1>
+                <p className="text-xs text-black/40 mt-0.5">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link href="/services">
+                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] hover:border-black/20 gap-2" data-testid="button-browse-services">
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  تصفح الخدمات
+                </Button>
+              </Link>
+              <Link href="/cart">
+                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] hover:border-black/20 gap-2">
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  السلة
+                </Button>
+              </Link>
+              <Link href="/order">
+                <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2 font-bold" data-testid="button-new-order">
+                  <Plus className="w-3.5 h-3.5" />
+                  طلب جديد
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
-      </motion.div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={FileText} label="إجمالي الطلبات" value={orders?.length || 0} color="bg-blue-50 text-blue-600" />
-        <StatCard icon={Layers} label="المشاريع النشطة" value={activeProjects.length} color="bg-indigo-50 text-indigo-600" />
-        <StatCard icon={Clock} label="قيد الانتظار" value={pendingOrders.length} color="bg-amber-50 text-amber-600" />
-        <StatCard icon={CheckCircle2} label="مكتملة" value={completedOrders.length} color="bg-green-50 text-green-600" />
       </div>
 
-      {totalSpent > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
-          <Card className="border border-black/[0.06] bg-gradient-to-l from-black/[0.02] to-transparent shadow-none">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-black/[0.04] rounded-xl">
-                  <CreditCard className="w-5 h-5 text-black/40" />
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "إجمالي الطلبات", value: orders?.length || 0, icon: FileText, color: "from-blue-500 to-blue-600", bg: "bg-blue-50", text: "text-blue-600" },
+            { label: "مشاريع نشطة", value: activeProjects.length, icon: Activity, color: "from-violet-500 to-indigo-600", bg: "bg-violet-50", text: "text-violet-600" },
+            { label: "قيد الانتظار", value: pendingOrders.length, icon: Clock, color: "from-amber-500 to-orange-500", bg: "bg-amber-50", text: "text-amber-600" },
+            { label: "مكتملة", value: completedOrders.length, icon: CheckCircle2, color: "from-green-500 to-emerald-600", bg: "bg-green-50", text: "text-green-600" },
+          ].map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+              <div className="bg-white rounded-2xl border border-black/[0.06] p-5 hover:shadow-md transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
+                    <s.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <span className={`text-xs font-bold ${s.text} ${s.bg} px-2 py-0.5 rounded-full`}>
+                    {s.value > 0 ? `+${s.value}` : "—"}
+                  </span>
+                </div>
+                <p className="text-3xl font-black text-black mb-1">{s.value}</p>
+                <p className="text-[11px] text-black/35 font-medium">{s.label}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Investment Banner */}
+        {totalSpent > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
+            <div className="bg-black rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-black/35 font-medium">إجمالي الاستثمار</p>
-                  <p className="text-2xl font-bold text-black tracking-tight">{totalSpent.toLocaleString()} <span className="text-sm text-black/30">ر.س</span></p>
+                  <p className="text-white/45 text-xs mb-0.5">إجمالي استثمارك في Qirox</p>
+                  <p className="text-3xl font-black text-white">{totalSpent.toLocaleString()} <span className="text-white/40 text-base font-normal">ر.س</span></p>
                 </div>
               </div>
-              <div className="text-left">
-                <p className="text-[10px] text-black/25">خدمات فعّالة</p>
-                <p className="text-lg font-bold text-black">{(orders?.filter(o => o.status !== 'pending' && o.status !== 'rejected').length) || 0}</p>
+              <div className="flex items-center gap-6 text-center">
+                <div>
+                  <p className="text-2xl font-black text-white">{orders?.filter(o => o.status !== 'pending' && o.status !== 'rejected').length || 0}</p>
+                  <p className="text-[10px] text-white/40">خدمات فعّالة</p>
+                </div>
+                <div className="w-px h-8 bg-white/10" />
+                <div>
+                  <p className="text-2xl font-black text-white">{activeProjects.length}</p>
+                  <p className="text-[10px] text-white/40">مشاريع جارية</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <div className="xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-black flex items-center gap-2">
-              <Package className="w-4 h-4 text-black/30" />
-              المشاريع الجارية
-            </h2>
-            {projects && projects.length > 0 && (
-              <Link href="/project/status">
-                <button className="text-[10px] text-black/30 hover:text-black/60 transition-colors flex items-center gap-1" data-testid="link-all-projects">
-                  عرض الكل
-                  <ArrowUpRight className="w-3 h-3" />
-                </button>
-              </Link>
-            )}
-          </div>
-
-          {isLoadingProjects ? (
-            <div className="p-12 text-center">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto text-black/15" />
             </div>
-          ) : !projects || projects.length === 0 ? (
-            <Card className="border-2 border-dashed border-black/[0.06] shadow-none bg-black/[0.01]">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 bg-black/[0.03] rounded-2xl flex items-center justify-center mb-4">
-                  <Layers className="w-8 h-8 text-black/15" />
-                </div>
-                <h3 className="text-sm font-bold text-black/60 mb-1">لا توجد مشاريع حالياً</h3>
-                <p className="text-xs text-black/30 mb-6 max-w-[250px]">ابدأ بطلب خدمة جديدة وسنبدأ بتنفيذ مشروعك فوراً</p>
-                <Link href="/order">
-                  <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs h-8 px-5" data-testid="button-browse-services">
-                    <Plus className="w-3.5 h-3.5 ml-1.5" />
-                    تصفح الخدمات
-                  </Button>
+          </motion.div>
+        )}
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+          {/* Projects */}
+          <div className="xl:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-black flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><Layers className="w-3.5 h-3.5 text-white" /></div>
+                مشاريعي الجارية
+              </h2>
+              {(projects?.length || 0) > 0 && (
+                <Link href="/project/status">
+                  <button className="text-[10px] text-black/30 hover:text-black/60 flex items-center gap-1" data-testid="link-all-projects">
+                    عرض الكل <ArrowUpRight className="w-3 h-3" />
+                  </button>
                 </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {projects.map((project, i) => (
-                <motion.div key={project.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all duration-300 bg-white overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="flex items-center gap-4 p-5">
-                        <div className="w-11 h-11 bg-black/[0.03] rounded-xl flex items-center justify-center shrink-0">
-                          <Activity className="w-5 h-5 text-black/25" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-bold text-sm text-black truncate">مشروع #{project.id}</h4>
-                            <Badge className={`text-[9px] h-4 px-1.5 border ${statusMap[project.status]?.bg || 'bg-gray-50 border-gray-200'} ${statusMap[project.status]?.color || 'text-gray-600'}`}>
-                              {statusMap[project.status]?.label || project.status}
-                            </Badge>
+              )}
+            </div>
+
+            {isLoadingProjects ? (
+              <div className="bg-white rounded-2xl p-16 text-center border border-black/[0.06]"><Loader2 className="w-6 h-6 animate-spin mx-auto text-black/20" /></div>
+            ) : !projects || projects.length === 0 ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-3xl bg-black/[0.03] flex items-center justify-center mb-5">
+                  <Layers className="w-10 h-10 text-black/10" />
+                </div>
+                <h3 className="font-bold text-black/50 mb-2">لا توجد مشاريع بعد</h3>
+                <p className="text-xs text-black/30 mb-6 max-w-xs">ابدأ باختيار الخدمة المناسبة لمشروعك وسيبدأ الفريق بالتنفيذ فوراً</p>
+                <div className="flex gap-3">
+                  <Link href="/services">
+                    <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      اختر خدمة
+                    </Button>
+                  </Link>
+                  <Link href="/order">
+                    <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08]">
+                      طلب مباشر
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {projects.map((project, i) => {
+                  const phase = getPhase(project.progress || 0);
+                  const st = statusMap[project.status] || statusMap['pending'];
+                  return (
+                    <motion.div key={project.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
+                      <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden hover:shadow-lg transition-all duration-300 group" data-testid={`project-card-${project.id}`}>
+                        <div className="p-6">
+                          <div className="flex items-start justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 bg-black/[0.03] rounded-xl flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-black/30" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-sm text-black">مشروع #{(project.id as string)?.slice?.(-6) || project.id}</h4>
+                                  <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
+                                </div>
+                                <p className="text-[10px] text-black/30 mt-0.5">
+                                  {project.createdAt ? new Date(project.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <Link href="/project/status">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/20 hover:text-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </Link>
                           </div>
-                          <div className="flex items-center gap-4 text-[10px] text-black/30">
-                            <span className="font-medium">التقدم: {project.progress}%</span>
-                            {project.createdAt && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-2.5 h-2.5" />
-                                {new Date(project.createdAt).toLocaleDateString('ar-SA')}
-                              </span>
-                            )}
+
+                          {/* Progress */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[11px] text-black/40">التقدم الكلي</p>
+                              <p className="text-sm font-black text-black">{project.progress || 0}%</p>
+                            </div>
+                            <div className="h-2 bg-black/[0.04] rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full bg-black rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${project.progress || 0}%` }}
+                                transition={{ duration: 1.2, ease: "easeOut", delay: i * 0.1 }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Phase Pills */}
+                          <div className="flex gap-2">
+                            {projectPhases.map((ph, pi) => (
+                              <div key={pi} className={`flex-1 text-center py-1.5 rounded-lg text-[10px] font-bold transition-all ${pi <= phase ? 'bg-black text-white' : 'bg-black/[0.03] text-black/25'}`}>
+                                {ph}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                        <Link href="/project/status">
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/20 hover:text-black/60" data-testid={`button-project-details-${project.id}`}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </Link>
                       </div>
-                      <div className="h-1 bg-black/[0.03] w-full">
-                        <motion.div
-                          className="h-full bg-black/80 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${project.progress}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                        />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { icon: ShoppingBag, label: "اختر خدمة", desc: "تصفح الخدمات والأنظمة", href: "/services", color: "from-violet-500 to-indigo-600" },
+                { icon: Package, label: "الأجهزة", desc: "منتجات وبنية تحتية", href: "/devices", color: "from-blue-500 to-blue-600" },
+                { icon: Wrench, label: "طلب تعديل", desc: "تعديل على مشروع حالي", action: () => setModDialogOpen(true), color: "from-amber-500 to-orange-500" },
+              ].map((action, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.05 }}>
+                  {action.href ? (
+                    <Link href={action.href}>
+                      <div className="bg-white rounded-xl border border-black/[0.06] p-4 hover:shadow-md transition-all cursor-pointer group">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-md`}>
+                          <action.icon className="w-4.5 h-4.5 text-white" />
+                        </div>
+                        <p className="font-bold text-xs text-black">{action.label}</p>
+                        <p className="text-[10px] text-black/35 mt-0.5">{action.desc}</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </Link>
+                  ) : (
+                    <div onClick={action.action} className="bg-white rounded-xl border border-black/[0.06] p-4 hover:shadow-md transition-all cursor-pointer group" data-testid="button-new-modification-request">
+                      <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-md`}>
+                        <action.icon className="w-4.5 h-4.5 text-white" />
+                      </div>
+                      <p className="font-bold text-xs text-black">{action.label}</p>
+                      <p className="text-[10px] text-black/35 mt-0.5">{action.desc}</p>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
-          )}
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-black flex items-center gap-2">
-              <FileText className="w-4 h-4 text-black/30" />
-              سجل الطلبات
-            </h2>
           </div>
 
-          <Card className="border border-black/[0.06] shadow-none bg-white">
-            <CardContent className="p-0">
-              {isLoadingOrders ? (
-                <div className="p-12 text-center">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-black/15" />
-                </div>
-              ) : !orders || orders.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-12 h-12 bg-black/[0.02] rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <FileText className="w-5 h-5 text-black/15" />
+          {/* Orders + Mod Requests Column */}
+          <div className="space-y-5">
+            {/* Orders Timeline */}
+            <div>
+              <h2 className="font-bold text-black flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><FileText className="w-3.5 h-3.5 text-white" /></div>
+                سجل الطلبات
+              </h2>
+              <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+                {isLoadingOrders ? (
+                  <div className="p-12 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-black/15" /></div>
+                ) : !orders || orders.length === 0 ? (
+                  <div className="p-10 text-center">
+                    <FileText className="w-8 h-8 mx-auto text-black/10 mb-3" />
+                    <p className="text-xs text-black/25">لا توجد طلبات بعد</p>
+                    <Link href="/order">
+                      <Button size="sm" className="mt-4 bg-black text-white rounded-xl text-xs h-8 px-4">أول طلب</Button>
+                    </Link>
                   </div>
-                  <p className="text-xs text-black/25">لا توجد طلبات سابقة</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-black/[0.04]">
-                  {orders.slice(0, 8).map((order, i) => {
-                    const st = statusMap[order.status] || statusMap['pending'];
-                    const StatusIcon = st.icon;
-                    return (
-                      <motion.div
-                        key={order.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.03 }}
-                        className="p-4 hover:bg-black/[0.01] transition-colors"
-                        data-testid={`order-item-${order.id}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 min-w-0 flex-1">
-                            <div className={`p-1.5 rounded-lg ${st.bg} border shrink-0 mt-0.5`}>
-                              <StatusIcon className={`w-3 h-3 ${st.color}`} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-xs text-black truncate">
-                                طلب #{order.id?.toString().slice(-6)}
-                              </p>
-                              <p className="text-[10px] text-black/25 mt-0.5">
-                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
-                              </p>
-                            </div>
+                ) : (
+                  <div className="divide-y divide-black/[0.04]">
+                    {orders.slice(0, 6).map((order, i) => {
+                      const st = statusMap[order.status] || statusMap['pending'];
+                      const StatusIcon = st.icon;
+                      return (
+                        <div key={order.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-black/[0.01] transition-colors" data-testid={`order-item-${order.id}`}>
+                          <div className={`w-8 h-8 rounded-lg ${st.bg} border ${st.bg.replace('bg-', 'border-').replace('/50', '/30')} flex items-center justify-center flex-shrink-0`}>
+                            <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
                           </div>
-                          <div className="text-left shrink-0">
-                            <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`}>
-                              {st.label}
-                            </Badge>
-                            {order.totalAmount ? (
-                              <p className="text-[10px] font-bold text-black/40 mt-1">{order.totalAmount.toLocaleString()} ر.س</p>
-                            ) : null}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-black">طلب #{(order.id as string)?.slice?.(-6) || order.id}</p>
+                            <p className="text-[10px] text-black/30">
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
+                              {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ر.س` : ''}
+                            </p>
                           </div>
+                          <Badge className={`text-[9px] px-2 py-0.5 border ${st.bg} ${st.color} flex-shrink-0`}>{st.label}</Badge>
                         </div>
-                        {order.paymentMethod && (
-                          <div className="mt-2 flex items-center gap-2 text-[10px] text-black/20">
-                            <CreditCard className="w-2.5 h-2.5" />
-                            {order.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'PayPal'}
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-black flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-black/30" />
-            طلبات التعديل
-          </h2>
-          <Button
-            size="sm"
-            className="bg-black text-white hover:bg-black/80 text-xs"
-            onClick={() => setModDialogOpen(true)}
-            data-testid="button-new-modification-request"
-          >
-            <Plus className="w-3.5 h-3.5 ml-1.5" />
-            طلب تعديل جديد
-          </Button>
-        </div>
-
-        {isLoadingModRequests ? (
-          <div className="p-12 text-center">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto text-black/15" />
-          </div>
-        ) : !modRequests || modRequests.length === 0 ? (
-          <Card className="border-2 border-dashed border-black/[0.06] shadow-none bg-black/[0.01]">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 bg-black/[0.03] rounded-2xl flex items-center justify-center mb-4">
-                <Wrench className="w-8 h-8 text-black/15" />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-bold text-black/60 mb-1">لا توجد طلبات تعديل</h3>
-              <p className="text-xs text-black/30 mb-6 max-w-[250px]">يمكنك إرسال طلب تعديل على مشروعك أو خدمة حالية</p>
-              <Button
-                size="sm"
-                className="bg-black text-white hover:bg-black/80 text-xs"
-                onClick={() => setModDialogOpen(true)}
-                data-testid="button-new-modification-request-empty"
-              >
-                <Plus className="w-3.5 h-3.5 ml-1.5" />
-                طلب تعديل جديد
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {modRequests.map((req, i) => {
-              const st = modStatusMap[req.status] || modStatusMap['pending'];
-              const pr = priorityMap[req.priority] || priorityMap['medium'];
-              return (
-                <motion.div key={req.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all duration-300 bg-white" data-testid={`modification-request-${req.id}`}>
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="w-10 h-10 bg-black/[0.03] rounded-xl flex items-center justify-center shrink-0">
-                            <Wrench className="w-4.5 h-4.5 text-black/25" />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-sm text-black truncate" data-testid={`text-mod-title-${req.id}`}>{req.title}</h4>
-                            <p className="text-[11px] text-black/40 mt-0.5 line-clamp-2">{req.description}</p>
-                            <div className="flex items-center flex-wrap gap-2 mt-2">
-                              {req.projectId && (
-                                <span className="text-[10px] text-black/30 flex items-center gap-1">
-                                  <Package className="w-2.5 h-2.5" />
-                                  مشروع #{req.projectId}
-                                </span>
-                              )}
-                              {req.createdAt && (
-                                <span className="text-[10px] text-black/25 flex items-center gap-1">
-                                  <Calendar className="w-2.5 h-2.5" />
-                                  {new Date(req.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5 shrink-0">
-                          <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`} data-testid={`badge-mod-status-${req.id}`}>
-                            {st.label}
-                          </Badge>
-                          <Badge className={`text-[9px] h-4 px-1.5 border ${pr.bg} ${pr.color}`} data-testid={`badge-mod-priority-${req.id}`}>
-                            {pr.label}
-                          </Badge>
+            </div>
+
+            {/* Mod Requests */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-black flex items-center gap-2">
+                  <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><Wrench className="w-3.5 h-3.5 text-white" /></div>
+                  طلبات التعديل
+                </h2>
+                <Button size="sm" onClick={() => setModDialogOpen(true)} className="bg-black text-white rounded-xl h-7 px-3 text-[10px] gap-1" data-testid="button-new-modification-request">
+                  <Plus className="w-3 h-3" /> جديد
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {isLoadingModRequests ? (
+                  <div className="bg-white rounded-xl p-8 text-center border border-black/[0.06]"><Loader2 className="w-4 h-4 animate-spin mx-auto text-black/20" /></div>
+                ) : !modRequests || modRequests.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-dashed border-black/[0.08] p-8 text-center">
+                    <Wrench className="w-8 h-8 mx-auto text-black/10 mb-2" />
+                    <p className="text-xs text-black/25">لا توجد طلبات تعديل</p>
+                  </div>
+                ) : modRequests.slice(0, 4).map((req) => {
+                  const st = modStatusMap[req.status] || modStatusMap['pending'];
+                  const pr = priorityMap[req.priority] || priorityMap['medium'];
+                  return (
+                    <div key={req.id} className="bg-white rounded-xl border border-black/[0.06] p-4" data-testid={`modification-request-${req.id}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-bold text-black truncate flex-1" data-testid={`text-mod-title-${req.id}`}>{req.title}</p>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${st.bg} ${st.color}`} data-testid={`badge-mod-status-${req.id}`}>{st.label}</Badge>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${pr.bg} ${pr.color}`} data-testid={`badge-mod-priority-${req.id}`}>{pr.label}</Badge>
                         </div>
                       </div>
+                      <p className="text-[10px] text-black/35 mt-1 line-clamp-1">{req.description}</p>
                       {req.adminNotes && (
-                        <div className="mt-3 p-3 bg-black/[0.02] rounded-lg border border-black/[0.04]">
-                          <p className="text-[10px] text-black/30 font-medium mb-0.5">ملاحظات الإدارة:</p>
-                          <p className="text-[11px] text-black/50">{req.adminNotes}</p>
+                        <div className="mt-2 p-2 bg-black/[0.02] rounded-lg border border-black/[0.04]">
+                          <p className="text-[10px] text-black/40">ملاحظة الإدارة: {req.adminNotes}</p>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        )}
-      </motion.div>
+        </div>
 
+        {/* CTA Band */}
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <div className="bg-black rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-white">
+              <h3 className="text-lg font-bold mb-1.5">هل تحتاج مساعدة في مشروعك؟</h3>
+              <p className="text-white/45 text-sm">فريقنا جاهز لتحويل فكرتك إلى واقع رقمي متكامل</p>
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              <Link href="/contact">
+                <Button className="bg-white text-black hover:bg-white/90 font-bold h-10 px-6 text-xs rounded-xl" data-testid="button-contact-support">
+                  تواصل معنا
+                </Button>
+              </Link>
+              <Link href="/services">
+                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 h-10 px-5 text-xs rounded-xl">
+                  الخدمات
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Modification Dialog */}
       <Dialog open={modDialogOpen} onOpenChange={setModDialogOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[480px]" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right text-base font-bold">طلب تعديل جديد</DialogTitle>
+            <DialogTitle className="text-base font-bold text-black">طلب تعديل جديد</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
               <label className="text-xs font-medium text-black/60 mb-1.5 block">العنوان</label>
-              <Input
-                value={modTitle}
-                onChange={(e) => setModTitle(e.target.value)}
-                placeholder="عنوان طلب التعديل"
-                data-testid="input-mod-title"
-              />
+              <Input value={modTitle} onChange={(e) => setModTitle(e.target.value)} placeholder="عنوان طلب التعديل" data-testid="input-mod-title" />
             </div>
             <div>
               <label className="text-xs font-medium text-black/60 mb-1.5 block">الوصف</label>
-              <Textarea
-                value={modDescription}
-                onChange={(e) => setModDescription(e.target.value)}
-                placeholder="اشرح التعديل المطلوب بالتفصيل..."
-                rows={4}
-                data-testid="input-mod-description"
-              />
+              <Textarea value={modDescription} onChange={(e) => setModDescription(e.target.value)} placeholder="اشرح التعديل المطلوب بالتفصيل..." rows={4} data-testid="input-mod-description" />
             </div>
             <div>
               <label className="text-xs font-medium text-black/60 mb-1.5 block">الأولوية</label>
               <Select value={modPriority} onValueChange={setModPriority}>
-                <SelectTrigger data-testid="select-mod-priority">
-                  <SelectValue placeholder="اختر الأولوية" />
-                </SelectTrigger>
+                <SelectTrigger data-testid="select-mod-priority"><SelectValue placeholder="اختر الأولوية" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">منخفض</SelectItem>
                   <SelectItem value="medium">متوسط</SelectItem>
@@ -1148,53 +1156,22 @@ export default function Dashboard() {
               <div>
                 <label className="text-xs font-medium text-black/60 mb-1.5 block">المشروع (اختياري)</label>
                 <Select value={modProjectId} onValueChange={setModProjectId}>
-                  <SelectTrigger data-testid="select-mod-project">
-                    <SelectValue placeholder="اختر المشروع" />
-                  </SelectTrigger>
+                  <SelectTrigger data-testid="select-mod-project"><SelectValue placeholder="اختر المشروع" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">بدون مشروع</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>مشروع #{p.id}</SelectItem>
-                    ))}
+                    {projects.map((p) => <SelectItem key={p.id} value={String(p.id)}>مشروع #{p.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
-            <Button
-              className="w-full bg-black text-white hover:bg-black/80 font-bold text-xs"
-              onClick={handleSubmitModRequest}
-              disabled={createModRequestMutation.isPending || !modTitle.trim() || !modDescription.trim()}
-              data-testid="button-submit-modification-request"
-            >
-              {createModRequestMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin ml-2" />
-              ) : (
-                <Plus className="w-4 h-4 ml-1.5" />
-              )}
+            <Button className="w-full bg-black text-white hover:bg-black/80 font-bold text-xs" onClick={handleSubmitModRequest}
+              disabled={createModRequestMutation.isPending || !modTitle.trim() || !modDescription.trim()} data-testid="button-submit-modification-request">
+              {createModRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-1.5" />}
               إرسال الطلب
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      {user.role === 'client' && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <Card className="border border-black/[0.06] shadow-none bg-black text-white overflow-hidden">
-            <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <h3 className="text-lg font-bold mb-1">هل تحتاج مساعدة في مشروعك؟</h3>
-                <p className="text-white/50 text-xs max-w-md">فريقنا جاهز لمساعدتك في تحويل فكرتك إلى واقع رقمي متكامل. تواصل معنا الآن.</p>
-              </div>
-              <Link href="/contact">
-                <Button className="bg-white text-black hover:bg-white/90 font-bold h-10 px-6 text-xs shrink-0" data-testid="button-contact-support">
-                  تواصل معنا
-                  <ArrowUpRight className="w-4 h-4 mr-1.5" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
     </div>
   );
 }
