@@ -2,8 +2,16 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.error || json.message || "حدث خطأ غير متوقع، حاول مجدداً");
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(text || res.statusText || "حدث خطأ غير متوقع، حاول مجدداً");
+      }
+      throw e;
+    }
   }
 }
 

@@ -15,6 +15,22 @@ import crypto from "crypto";
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+function translateError(err: any): string {
+  const msg: string = err?.message || err?.toString() || "";
+  if (msg.includes("E11000") || msg.includes("duplicate key")) {
+    if (msg.includes("email")) return "البريد الإلكتروني مستخدم من قبل، جرّب بريداً آخر";
+    if (msg.includes("username")) return "اسم المستخدم مستخدم من قبل، جرّب اسماً آخر";
+    return "هذه البيانات مستخدمة مسبقاً";
+  }
+  if (msg.includes("validation failed") || msg.includes("is required")) return "تأكد من تعبئة جميع الحقول المطلوبة";
+  if (msg.includes("Cast to ObjectId") || msg.includes("ObjectId")) return "معرّف غير صالح";
+  if (msg.includes("LIMIT_FILE_SIZE")) return "حجم الملف كبير جداً (الحد الأقصى 20 ميغابايت)";
+  if (msg.includes("No file") || msg.includes("No files")) return "لم يتم اختيار أي ملف";
+  if (msg.includes("ENOENT") || msg.includes("EACCES")) return "حدث خطأ في نظام الملفات";
+  if (msg.includes("connect") || msg.includes("network") || msg.includes("ECONNREFUSED")) return "تعذّر الاتصال بقاعدة البيانات، حاول مجدداً";
+  return "حدث خطأ غير متوقع، حاول مجدداً";
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadsDir),
@@ -30,7 +46,7 @@ const upload = multer({
     if (allowed.test(path.extname(file.originalname))) {
       cb(null, true);
     } else {
-      cb(new Error("File type not allowed"));
+      cb(new Error("نوع الملف غير مسموح به"));
     }
   },
 });
@@ -47,11 +63,11 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     upload.single("file")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large (max 20MB)" });
-        return res.status(400).json({ error: err.message });
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "حجم الملف كبير جداً (الحد الأقصى 20 ميغابايت)" });
+        return res.status(400).json({ error: translateError(err) });
       }
-      if (err) return res.status(400).json({ error: err.message || "Upload failed" });
-      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      if (err) return res.status(400).json({ error: translateError(err) });
+      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار أي ملف" });
       const url = `/uploads/${req.file.filename}`;
       res.json({ url, filename: req.file.originalname, size: req.file.size });
     });
@@ -61,12 +77,12 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     upload.array("files", 10)(req, res, (err) => {
       if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "File too large (max 20MB)" });
-        return res.status(400).json({ error: err.message });
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "حجم الملف كبير جداً (الحد الأقصى 20 ميغابايت)" });
+        return res.status(400).json({ error: translateError(err) });
       }
-      if (err) return res.status(400).json({ error: err.message || "Upload failed" });
+      if (err) return res.status(400).json({ error: translateError(err) });
       const files = req.files as Express.Multer.File[];
-      if (!files || files.length === 0) return res.status(400).json({ error: "No files uploaded" });
+      if (!files || files.length === 0) return res.status(400).json({ error: "لم يتم اختيار أي ملف" });
       const results = files.map(f => ({
         url: `/uploads/${f.filename}`,
         filename: f.originalname,
@@ -81,7 +97,7 @@ export async function registerRoutes(
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
-        return res.status(400).send("Username already exists");
+        return res.status(400).send("اسم المستخدم مستخدم من قبل");
       }
 
       // If registering as admin or employee via the standard route, force to client
@@ -123,17 +139,17 @@ export async function registerRoutes(
     try {
       const { username, password, email, fullName, role, phone } = req.body;
       if (!username || !password || !email || !fullName || !role) {
-        return res.status(400).json({ error: "Missing required fields" });
+        return res.status(400).json({ error: "جميع الحقول المطلوبة يجب تعبئتها" });
       }
       if (!allowedRoles.includes(role)) {
-        return res.status(400).json({ error: "Invalid role" });
+        return res.status(400).json({ error: "الصلاحية المختارة غير صالحة" });
       }
       if (password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
+        return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
       }
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
+        return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
       }
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
@@ -146,7 +162,7 @@ export async function registerRoutes(
       });
       res.status(201).json(user);
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to create user" });
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -162,11 +178,11 @@ export async function registerRoutes(
         }
       }
       if (sanitized.role && !allowedRoles.includes(sanitized.role)) {
-        return res.status(400).json({ error: "Invalid role" });
+        return res.status(400).json({ error: "الصلاحية المختارة غير صالحة" });
       }
       if (sanitized.password) {
         if (sanitized.password.length < 6) {
-          return res.status(400).json({ error: "Password must be at least 6 characters" });
+          return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
         }
         sanitized.password = await hashPassword(sanitized.password);
       }
@@ -174,7 +190,7 @@ export async function registerRoutes(
       if (!user) return res.sendStatus(404);
       res.json(user);
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to update user" });
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -186,12 +202,12 @@ export async function registerRoutes(
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) return res.sendStatus(404);
       if (targetUser.role === "admin") {
-        return res.status(400).json({ error: "Cannot delete admin users" });
+        return res.status(400).json({ error: "لا يمكن حذف حساب المدير" });
       }
       await storage.deleteUser(req.params.id);
       res.sendStatus(204);
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to delete user" });
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -210,7 +226,7 @@ export async function registerRoutes(
        import("passport").then((passport) => {
          passport.default.authenticate("local", (err: any, user: any, info: any) => {
           if (err) return next(err);
-          if (!user) return res.status(401).send("Invalid credentials");
+          if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
           req.login(user, (err: any) => {
             if (err) return next(err);
             res.status(200).json(user);
@@ -254,7 +270,7 @@ export async function registerRoutes(
     const latest = await storage.getLatestAttendance(String(user.id));
     
     if (!latest || latest.checkOut) {
-      return res.status(400).send("No active session found");
+      return res.status(400).send("لا توجد جلسة نشطة");
     }
 
     const checkOut = new Date();
@@ -542,7 +558,7 @@ export async function registerRoutes(
     try {
       const news = await storage.createNews({ ...req.body, authorId: (req.user as any).id });
       res.status(201).json(news);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   app.patch("/api/admin/news/:id", async (req, res) => {
@@ -550,7 +566,7 @@ export async function registerRoutes(
     try {
       const news = await storage.updateNews(req.params.id, req.body);
       res.json(news);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   app.delete("/api/admin/news/:id", async (req, res) => {
@@ -558,7 +574,7 @@ export async function registerRoutes(
     try {
       await storage.deleteNews(req.params.id);
       res.sendStatus(204);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === JOBS API ===
@@ -572,7 +588,7 @@ export async function registerRoutes(
     try {
       const job = await storage.createJob(req.body);
       res.status(201).json(job);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   app.patch("/api/admin/jobs/:id", async (req, res) => {
@@ -580,7 +596,7 @@ export async function registerRoutes(
     try {
       const job = await storage.updateJob(req.params.id, req.body);
       res.json(job);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   app.delete("/api/admin/jobs/:id", async (req, res) => {
@@ -588,7 +604,7 @@ export async function registerRoutes(
     try {
       await storage.deleteJob(req.params.id);
       res.sendStatus(204);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === APPLICATIONS API ===
@@ -603,7 +619,7 @@ export async function registerRoutes(
     try {
       const application = await storage.updateApplication(req.params.id, req.body);
       res.json(application);
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === ADMIN CUSTOMERS API ===
@@ -687,7 +703,7 @@ export async function registerRoutes(
         recentModRequests,
       });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to fetch stats" });
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -706,7 +722,7 @@ export async function registerRoutes(
     const user = req.user as User;
     const { title, description, projectId, orderId, priority, attachments } = req.body;
     if (!title || !description) {
-      return res.status(400).json({ error: "Title and description are required" });
+      return res.status(400).json({ error: "العنوان والوصف مطلوبان" });
     }
     const request = await storage.createModificationRequest({
       userId: String(user.id),
@@ -732,7 +748,7 @@ export async function registerRoutes(
       const own = existing.find(r => r.id === req.params.id);
       if (!own) return res.sendStatus(404);
       if (own.status !== "pending") {
-        return res.status(400).json({ error: "Can only edit pending requests" });
+        return res.status(400).json({ error: "لا يمكن تعديل هذا الطلب" });
       }
       const { title, description, projectId, orderId, priority, attachments } = req.body;
       const updated = await storage.updateModificationRequest(req.params.id, {
@@ -740,7 +756,7 @@ export async function registerRoutes(
       });
       res.json(updated);
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to update request" });
+      res.status(500).json({ error: translateError(err) });
     }
   });
 
@@ -755,7 +771,7 @@ export async function registerRoutes(
   // === PAYPAL ROUTES === (blueprint:javascript_paypal)
   app.get("/paypal/client-id", (req, res) => {
     const clientId = process.env.PAYPAL_CLIENT_ID;
-    if (!clientId) return res.status(503).json({ error: "PayPal not configured" });
+    if (!clientId) return res.status(503).json({ error: "بوابة الدفع PayPal غير مفعّلة حالياً" });
     res.json({ clientId });
   });
 
