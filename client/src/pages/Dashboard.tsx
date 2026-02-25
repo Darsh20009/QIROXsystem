@@ -9,14 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, UserCog, KeyRound, Copy, Check } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { ModificationRequest, Order } from "@shared/schema";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
@@ -97,13 +96,6 @@ const adminOrderStatusMap: Record<string, { label: string; color: string; bg: st
   cancelled: { label: "ملغي", color: "text-gray-500", bg: "bg-gray-50 border-gray-200" },
 };
 
-const quickActions = [
-  { label: "إدارة الخدمات", href: "/admin/services", icon: Settings, desc: "إضافة وتعديل الخدمات" },
-  { label: "إدارة الطلبات", href: "/admin/orders", icon: ShoppingBag, desc: "متابعة جميع الطلبات" },
-  { label: "إدارة الموظفين", href: "/admin/employees", icon: UserCog, desc: "إدارة فريق العمل" },
-  { label: "إدارة القوالب", href: "/admin/templates", icon: LayoutGrid, desc: "قوالب القطاعات" },
-  { label: "إدارة الشركاء", href: "/admin/partners", icon: Handshake, desc: "شركاء النجاح" },
-];
 
 function AdminCredentialsCard() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -124,280 +116,213 @@ function AdminCredentialsCard() {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
-      <div className="border border-black/[0.06] rounded-2xl bg-[#fafafa] overflow-hidden">
-        <button
-          onClick={() => setVisible(v => !v)}
-          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-black/[0.02] transition-colors"
-          data-testid="button-toggle-credentials"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
-              <KeyRound className="w-4 h-4 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-bold text-black">بيانات تسجيل الدخول</p>
-              <p className="text-[10px] text-black/35">بيانات الحساب الإداري وبوابة الموظفين</p>
-            </div>
+    <div className="border border-black/[0.06] rounded-2xl bg-white overflow-hidden">
+      <button
+        onClick={() => setVisible(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-black/[0.02] transition-colors"
+        data-testid="button-toggle-credentials"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+            <KeyRound className="w-4 h-4 text-white" />
           </div>
-          <span className="text-[10px] text-black/30 font-medium">{visible ? "إخفاء ▲" : "عرض ▼"}</span>
-        </button>
+          <div className="text-right">
+            <p className="text-sm font-bold text-black">بيانات الدخول</p>
+            <p className="text-[10px] text-black/35">اضغط للعرض أو الإخفاء</p>
+          </div>
+        </div>
+        <span className="text-[10px] text-black/30 font-medium">{visible ? "إخفاء ▲" : "عرض ▼"}</span>
+      </button>
 
-        {visible && (
-          <div className="px-5 pb-4 pt-1 border-t border-black/[0.04]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {credentials.map(c => (
-                <div key={c.key} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-black/[0.05]">
-                  <div>
-                    <p className="text-[10px] text-black/30 mb-0.5">{c.label}</p>
-                    <p className="text-sm font-mono font-medium text-black tracking-wide" data-testid={`text-cred-${c.key}`}>
-                      {c.secret && !visible ? "••••••••" : c.value}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(c.value, c.key)}
-                    className="w-7 h-7 rounded-lg bg-black/[0.04] hover:bg-black/[0.08] flex items-center justify-center transition-colors flex-shrink-0 mr-2"
-                    data-testid={`button-copy-${c.key}`}
-                  >
-                    {copied === c.key
-                      ? <Check className="w-3.5 h-3.5 text-green-600" />
-                      : <Copy className="w-3.5 h-3.5 text-black/40" />
-                    }
-                  </button>
-                </div>
-              ))}
+      {visible && (
+        <div className="px-4 pb-4 pt-2 border-t border-black/[0.04] space-y-2">
+          {credentials.map(c => (
+            <div key={c.key} className="flex items-center justify-between bg-[#f8f8f8] rounded-xl px-3 py-2.5 border border-black/[0.04]">
+              <div>
+                <p className="text-[10px] text-black/30 mb-0.5">{c.label}</p>
+                <p className="text-xs font-mono font-semibold text-black tracking-wide" data-testid={`text-cred-${c.key}`}>
+                  {c.value}
+                </p>
+              </div>
+              <button
+                onClick={() => copyToClipboard(c.value, c.key)}
+                className="w-7 h-7 rounded-lg bg-white hover:bg-black/[0.05] border border-black/[0.06] flex items-center justify-center transition-colors flex-shrink-0 mr-2"
+                data-testid={`button-copy-${c.key}`}
+              >
+                {copied === c.key
+                  ? <Check className="w-3 h-3 text-green-600" />
+                  : <Copy className="w-3 h-3 text-black/35" />
+                }
+              </button>
             </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
+
+const adminSections = [
+  { label: "الطلبات", desc: "إدارة طلبات العملاء", href: "/admin/orders", icon: ShoppingBag, accent: "bg-blue-50", iconColor: "text-blue-600", badge: "totalOrders" },
+  { label: "العملاء", desc: "قائمة العملاء المسجلين", href: "/admin/customers", icon: Users, accent: "bg-violet-50", iconColor: "text-violet-600", badge: "totalClients" },
+  { label: "الموظفون", desc: "فريق العمل والصلاحيات", href: "/admin/employees", icon: UserCog, accent: "bg-slate-50", iconColor: "text-slate-600", badge: "totalEmployees" },
+  { label: "الخدمات", desc: "الخدمات والباقات المعروضة", href: "/admin/services", icon: Settings, accent: "bg-orange-50", iconColor: "text-orange-600", badge: null },
+  { label: "الأنظمة الجاهزة", desc: "قوالب القطاعات المختلفة", href: "/admin/templates", icon: LayoutGrid, accent: "bg-emerald-50", iconColor: "text-emerald-600", badge: null },
+  { label: "المالية", desc: "الإيرادات والمدفوعات", href: "/admin/finance", icon: DollarSign, accent: "bg-green-50", iconColor: "text-green-600", badge: null },
+  { label: "طلبات التعديل", desc: "تعديلات المشاريع القائمة", href: "/admin/mod-requests", icon: Wrench, accent: "bg-amber-50", iconColor: "text-amber-600", badge: null },
+  { label: "الشركاء", desc: "شركاء النجاح والتعاون", href: "/admin/partners", icon: Handshake, accent: "bg-indigo-50", iconColor: "text-indigo-600", badge: null },
+  { label: "الأخبار", desc: "المقالات والتحديثات", href: "/admin/news", icon: Newspaper, accent: "bg-rose-50", iconColor: "text-rose-600", badge: null },
+  { label: "الوظائف", desc: "فرص العمل والتقديمات", href: "/admin/jobs", icon: Briefcase, accent: "bg-red-50", iconColor: "text-red-600", badge: null },
+];
 
 function AdminDashboard({ user }: { user: any }) {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
   });
 
-  const currentTime = new Date();
-  const dateStr = currentTime.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-  const chartData = [
-    { name: "الطلبات", value: stats?.totalOrders || 0 },
-    { name: "المشاريع", value: stats?.activeProjects || 0 },
-    { name: "العملاء", value: stats?.totalClients || 0 },
-    { name: "الموظفين", value: stats?.totalEmployees || 0 },
-    { name: "الخدمات", value: stats?.totalServices || 0 },
-  ];
+  const dateStr = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-black/20" />
+          <Loader2 className="w-7 h-7 animate-spin mx-auto text-black/20" />
           <p className="text-xs text-black/30 mt-3">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
+  const statItems = [
+    { label: "الطلبات", value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: "text-blue-600 bg-blue-50" },
+    { label: "المشاريع", value: stats?.activeProjects ?? 0, icon: Activity, color: "text-indigo-600 bg-indigo-50" },
+    { label: "الإيرادات", value: `${(stats?.totalRevenue ?? 0).toLocaleString()} ر.س`, icon: DollarSign, color: "text-green-600 bg-green-50" },
+    { label: "العملاء", value: stats?.totalClients ?? 0, icon: Users, color: "text-violet-600 bg-violet-50" },
+    { label: "الموظفون", value: stats?.totalEmployees ?? 0, icon: UserCog, color: "text-slate-600 bg-slate-50" },
+  ];
+
+  const badgeMap: Record<string, number> = {
+    totalOrders: stats?.totalOrders ?? 0,
+    totalClients: stats?.totalClients ?? 0,
+    totalEmployees: stats?.totalEmployees ?? 0,
+  };
+
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto" data-testid="admin-dashboard">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <p className="text-xs text-black/30 font-medium mb-1">{dateStr}</p>
-        <h1 className="text-2xl md:text-3xl font-bold text-black font-heading" data-testid="text-admin-greeting">
-          مرحباً، <span className="text-black/60">{user.fullName}</span>
-        </h1>
-        <div className="flex items-center flex-wrap gap-3 mt-2">
-          <Badge className="bg-black text-white border-0 text-[10px] font-medium px-2.5">
-            مدير النظام
-          </Badge>
-          <span className="text-[10px] text-black/25">{user.email}</span>
-          <span className="text-[10px] text-black/25">|</span>
-          <span className="text-[10px] text-black/30 font-medium">{stats?.totalOrders || 0} طلب · {stats?.totalClients || 0} عميل · {stats?.totalEmployees || 0} موظف</span>
-        </div>
-      </motion.div>
-
-      <AdminCredentialsCard />
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={FileText} label="إجمالي الطلبات" value={stats?.totalOrders || 0} color="bg-blue-50 text-blue-600" />
-        <StatCard icon={Activity} label="المشاريع النشطة" value={stats?.activeProjects || 0} color="bg-indigo-50 text-indigo-600" />
-        <StatCard icon={DollarSign} label="إجمالي الإيرادات (ر.س)" value={stats?.totalRevenue || 0} color="bg-green-50 text-green-600" />
-        <StatCard icon={Users} label="إجمالي العملاء" value={stats?.totalClients || 0} color="bg-amber-50 text-amber-600" />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <div className="xl:col-span-2">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-black flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-black/30" />
-                أحدث الطلبات
-              </h2>
-              <Link href="/admin/orders">
-                <button className="text-[10px] text-black/30 hover:text-black/60 transition-colors flex items-center gap-1" data-testid="link-admin-all-orders">
-                  عرض الكل
-                  <ArrowUpRight className="w-3 h-3" />
-                </button>
-              </Link>
-            </div>
-            <Card className="border border-black/[0.06] shadow-none bg-white">
-              <CardContent className="p-0">
-                {!stats?.recentOrders || stats.recentOrders.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <div className="w-12 h-12 bg-black/[0.02] rounded-xl flex items-center justify-center mx-auto mb-3">
-                      <ShoppingBag className="w-5 h-5 text-black/15" />
-                    </div>
-                    <p className="text-xs text-black/25">لا توجد طلبات بعد</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-right" data-testid="table-recent-orders">
-                      <thead>
-                        <tr className="border-b border-black/[0.06]">
-                          <th className="p-4 text-[10px] font-bold text-black/40 uppercase tracking-wider">رقم الطلب</th>
-                          <th className="p-4 text-[10px] font-bold text-black/40 uppercase tracking-wider">الحالة</th>
-                          <th className="p-4 text-[10px] font-bold text-black/40 uppercase tracking-wider">المبلغ</th>
-                          <th className="p-4 text-[10px] font-bold text-black/40 uppercase tracking-wider">التاريخ</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-black/[0.04]">
-                        {stats.recentOrders.map((order: any, i: number) => {
-                          const st = adminOrderStatusMap[order.status] || adminOrderStatusMap['pending'];
-                          return (
-                            <motion.tr
-                              key={order.id || i}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: i * 0.05 }}
-                              className="hover:bg-black/[0.01] transition-colors"
-                              data-testid={`admin-order-row-${order.id}`}
-                            >
-                              <td className="p-4 text-xs font-bold text-black">#{order.id?.toString().slice(-6)}</td>
-                              <td className="p-4">
-                                <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`}>
-                                  {st.label}
-                                </Badge>
-                              </td>
-                              <td className="p-4 text-xs font-bold text-black/60">{Number(order.totalAmount || 0).toLocaleString()} ر.س</td>
-                              <td className="p-4 text-[10px] text-black/30">
-                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : '-'}
-                              </td>
-                            </motion.tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        <div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <h2 className="text-base font-bold text-black flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-black/30" />
-              نظرة عامة
-            </h2>
-            <Card className="border border-black/[0.06] shadow-none bg-white">
-              <CardContent className="p-5">
-                <div className="h-[200px]" data-testid="chart-overview">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                      <XAxis type="number" hide />
-                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 11, fill: "rgba(0,0,0,0.4)" }} axisLine={false} tickLine={false} />
-                      <Tooltip
-                        contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)", boxShadow: "none" }}
-                        cursor={{ fill: "rgba(0,0,0,0.02)" }}
-                      />
-                      <Bar dataKey="value" fill="rgba(0,0,0,0.8)" radius={[0, 4, 4, 0]} barSize={16} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-black flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-black/30" />
-            أحدث طلبات التعديل
-          </h2>
-        </div>
-        {!stats?.recentModRequests || stats.recentModRequests.length === 0 ? (
-          <Card className="border-2 border-dashed border-black/[0.06] shadow-none bg-black/[0.01]">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 bg-black/[0.03] rounded-xl flex items-center justify-center mb-3">
-                <Wrench className="w-5 h-5 text-black/15" />
-              </div>
-              <p className="text-xs text-black/25">لا توجد طلبات تعديل</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {stats.recentModRequests.map((req: any, i: number) => {
-              const st = modStatusMap[req.status] || modStatusMap['pending'];
-              const pr = priorityMap[req.priority] || priorityMap['medium'];
-              return (
-                <motion.div key={req.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all duration-300 bg-white" data-testid={`admin-mod-request-${req.id}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h4 className="font-bold text-xs text-black truncate flex-1">{req.title}</h4>
-                        <Badge className={`text-[9px] h-4 px-1.5 border shrink-0 ${st.bg} ${st.color}`}>
-                          {st.label}
-                        </Badge>
-                      </div>
-                      <p className="text-[10px] text-black/35 line-clamp-2 mb-3">{req.description}</p>
-                      <div className="flex items-center justify-between">
-                        <Badge className={`text-[9px] h-4 px-1.5 border ${pr.bg} ${pr.color}`}>
-                          {pr.label}
-                        </Badge>
-                        {req.createdAt && (
-                          <span className="text-[10px] text-black/25 flex items-center gap-1">
-                            <Calendar className="w-2.5 h-2.5" />
-                            {new Date(req.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
+    <div className="min-h-screen bg-[#f8f8f8]" data-testid="admin-dashboard">
+      <div className="bg-white border-b border-black/[0.06] px-6 py-5">
+        <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-[10px] text-black/30 mb-0.5">{dateStr}</p>
+            <h1 className="text-xl font-bold text-black font-heading" data-testid="text-admin-greeting">
+              مرحباً، {user.fullName}
+            </h1>
           </div>
-        )}
-      </motion.div>
+          <Badge className="bg-black text-white border-0 text-xs font-medium px-3 py-1.5">مدير النظام</Badge>
+        </div>
+      </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <h2 className="text-base font-bold text-black flex items-center gap-2 mb-4">
-          <LayoutGrid className="w-4 h-4 text-black/30" />
-          إجراءات سريعة
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {quickActions.map((action, i) => (
-            <motion.div key={action.href} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.05 }}>
-              <Link href={action.href}>
-                <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all duration-300 bg-white cursor-pointer group" data-testid={`link-admin-action-${action.href.replace(/\//g, '-')}`}>
-                  <CardContent className="p-4 text-center">
-                    <div className="w-10 h-10 bg-black/[0.03] rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-black/[0.06] transition-colors">
-                      <action.icon className="w-5 h-5 text-black/30" />
-                    </div>
-                    <h4 className="font-bold text-xs text-black mb-0.5">{action.label}</h4>
-                    <p className="text-[10px] text-black/30">{action.desc}</p>
-                  </CardContent>
-                </Card>
-              </Link>
+      <div className="max-w-[1300px] mx-auto px-4 md:px-6 py-6 space-y-6">
+
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {statItems.map((s, i) => (
+            <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <div className="bg-white rounded-2xl border border-black/[0.06] px-4 py-4 flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>
+                  <s.icon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-black/35 font-medium truncate">{s.label}</p>
+                  <p className="text-lg font-bold text-black leading-tight">{s.value}</p>
+                </div>
+              </div>
             </motion.div>
           ))}
-        </div>
-      </motion.div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">إدارة النظام</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {adminSections.map((section, i) => (
+              <motion.div key={section.href} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 + i * 0.04 }}>
+                <Link href={section.href}>
+                  <div
+                    className="bg-white rounded-2xl border border-black/[0.06] p-4 cursor-pointer hover:border-black/[0.15] hover:shadow-sm transition-all duration-200 group relative"
+                    data-testid={`link-admin-section-${section.href.replace(/\//g, '-')}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${section.accent}`}>
+                        <section.icon className={`w-5 h-5 ${section.iconColor}`} />
+                      </div>
+                      {section.badge && badgeMap[section.badge] > 0 && (
+                        <span className="text-[10px] font-bold bg-black text-white rounded-full w-5 h-5 flex items-center justify-center">
+                          {badgeMap[section.badge]}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-black mb-0.5">{section.label}</p>
+                    <p className="text-[10px] text-black/35 leading-relaxed">{section.desc}</p>
+                    <ChevronLeft className="w-3.5 h-3.5 text-black/20 absolute bottom-4 left-4 group-hover:text-black/40 transition-colors" />
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider">أحدث الطلبات</p>
+              <Link href="/admin/orders">
+                <span className="text-[10px] text-black/40 hover:text-black/70 transition-colors flex items-center gap-1 cursor-pointer" data-testid="link-admin-all-orders">
+                  عرض الكل <ArrowUpRight className="w-3 h-3" />
+                </span>
+              </Link>
+            </div>
+            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden" data-testid="table-recent-orders">
+              {!stats?.recentOrders?.length ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-10 h-10 bg-black/[0.03] rounded-xl flex items-center justify-center mb-2">
+                    <ShoppingBag className="w-4 h-4 text-black/15" />
+                  </div>
+                  <p className="text-xs text-black/25">لا توجد طلبات بعد</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-black/[0.04]">
+                  {stats.recentOrders.map((order: any, i: number) => {
+                    const st = adminOrderStatusMap[order.status] || adminOrderStatusMap['pending'];
+                    return (
+                      <div key={order.id || i} className="flex items-center justify-between px-4 py-3 hover:bg-black/[0.01] transition-colors" data-testid={`admin-order-row-${order.id}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-black/[0.03] rounded-lg flex items-center justify-center">
+                            <FileText className="w-3.5 h-3.5 text-black/30" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-black">#{order.id?.toString().slice(-6)}</p>
+                            <p className="text-[10px] text-black/30">
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-xs font-semibold text-black/50">{Number(order.totalAmount || 0).toLocaleString()} ر.س</p>
+                          <Badge className={`text-[9px] h-5 px-2 border ${st.bg} ${st.color}`}>{st.label}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">بيانات الدخول</p>
+            <AdminCredentialsCard />
+          </div>
+        </motion.div>
+
+      </div>
     </div>
   );
 }
