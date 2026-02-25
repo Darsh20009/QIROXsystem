@@ -37,10 +37,11 @@ import AdminJobs from "@/pages/AdminJobs";
 import AdminModRequests from "@/pages/AdminModRequests";
 import AdminCustomers from "@/pages/AdminCustomers";
 import Partners from "@/pages/Partners";
+import InternalGate from "@/pages/InternalGate";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order"];
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate"];
 
 function PublicRouter() {
   return (
@@ -63,6 +64,7 @@ function PublicRouter() {
       <Route path="/register" component={Login} />
       <Route path="/employee/register-secret" component={Login} />
       <Route path="/order" component={OrderFlow} />
+      <Route path="/internal-gate" component={InternalGate} />
       <Route component={NotFound} />
     </Switch>
   );

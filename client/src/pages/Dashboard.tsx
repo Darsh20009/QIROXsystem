@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, UserCog } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, UserCog, KeyRound, Copy, Check } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -105,6 +105,75 @@ const quickActions = [
   { label: "إدارة الشركاء", href: "/admin/partners", icon: Handshake, desc: "شركاء النجاح" },
 ];
 
+function AdminCredentialsCard() {
+  const [copied, setCopied] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const credentials = [
+    { label: "رابط الدخول", value: "/login", key: "url" },
+    { label: "اسم المستخدم", value: "admin_qirox", key: "user" },
+    { label: "كلمة المرور", value: "admin13579", key: "pass", secret: true },
+    { label: "بوابة الموظفين", value: "/internal-gate", key: "gate-url" },
+    { label: "كلمة مرور البوابة", value: "qirox2026", key: "gate", secret: true },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
+      <div className="border border-black/[0.06] rounded-2xl bg-[#fafafa] overflow-hidden">
+        <button
+          onClick={() => setVisible(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-black/[0.02] transition-colors"
+          data-testid="button-toggle-credentials"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+              <KeyRound className="w-4 h-4 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold text-black">بيانات تسجيل الدخول</p>
+              <p className="text-[10px] text-black/35">بيانات الحساب الإداري وبوابة الموظفين</p>
+            </div>
+          </div>
+          <span className="text-[10px] text-black/30 font-medium">{visible ? "إخفاء ▲" : "عرض ▼"}</span>
+        </button>
+
+        {visible && (
+          <div className="px-5 pb-4 pt-1 border-t border-black/[0.04]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {credentials.map(c => (
+                <div key={c.key} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-black/[0.05]">
+                  <div>
+                    <p className="text-[10px] text-black/30 mb-0.5">{c.label}</p>
+                    <p className="text-sm font-mono font-medium text-black tracking-wide" data-testid={`text-cred-${c.key}`}>
+                      {c.secret && !visible ? "••••••••" : c.value}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(c.value, c.key)}
+                    className="w-7 h-7 rounded-lg bg-black/[0.04] hover:bg-black/[0.08] flex items-center justify-center transition-colors flex-shrink-0 mr-2"
+                    data-testid={`button-copy-${c.key}`}
+                  >
+                    {copied === c.key
+                      ? <Check className="w-3.5 h-3.5 text-green-600" />
+                      : <Copy className="w-3.5 h-3.5 text-black/40" />
+                    }
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 function AdminDashboard({ user }: { user: any }) {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -148,6 +217,8 @@ function AdminDashboard({ user }: { user: any }) {
           <span className="text-[10px] text-black/30 font-medium">{stats?.totalOrders || 0} طلب · {stats?.totalClients || 0} عميل · {stats?.totalEmployees || 0} موظف</span>
         </div>
       </motion.div>
+
+      <AdminCredentialsCard />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={FileText} label="إجمالي الطلبات" value={stats?.totalOrders || 0} color="bg-blue-50 text-blue-600" />

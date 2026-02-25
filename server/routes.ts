@@ -841,7 +841,12 @@ export async function seedDatabase() {
 
   // Seed Sector Templates
   const existingTemplates = await storage.getSectorTemplates();
-  if (existingTemplates.length === 0) {
+  const firstEduTemplate = existingTemplates.find((t: any) => t.slug === "quran-academy");
+  const templatesNeedReseed = existingTemplates.length === 0 || (firstEduTemplate && (firstEduTemplate as any).priceMin !== 2200);
+  if (templatesNeedReseed) {
+    for (const t of existingTemplates) {
+      await storage.deleteSectorTemplate((t as any).id);
+    }
     const templates = [
       {
         name: "Quran Academy System",
@@ -854,8 +859,8 @@ export async function seedDatabase() {
         features: ["Student Progress Tracking", "Teacher Dashboard", "Quran Memorization Plans", "Parent Portal", "Attendance System"],
         featuresAr: ["تتبع تقدم الطلاب", "لوحة تحكم المعلمين", "خطط حفظ القرآن", "بوابة أولياء الأمور", "نظام الحضور"],
         tags: ["education", "quran", "academy"],
-        priceMin: 8000,
-        priceMax: 20000,
+        priceMin: 2200,
+        priceMax: 2200,
         currency: "SAR",
         estimatedDuration: "3-5 أسابيع",
         status: "active" as const,
@@ -873,8 +878,8 @@ export async function seedDatabase() {
         features: ["Course Builder", "Live Classes", "Quiz Engine", "Certificates", "Student Analytics"],
         featuresAr: ["منشئ الدورات", "فصول مباشرة", "محرك اختبارات", "شهادات", "تحليلات الطلاب"],
         tags: ["education", "e-learning", "courses"],
-        priceMin: 12000,
-        priceMax: 30000,
+        priceMin: 2200,
+        priceMax: 2200,
         currency: "SAR",
         estimatedDuration: "4-6 أسابيع",
         status: "active" as const,
@@ -892,8 +897,8 @@ export async function seedDatabase() {
         features: ["Question Banks", "Auto Grading", "Timer System", "Analytics Dashboard", "Anti-Cheat"],
         featuresAr: ["بنوك الأسئلة", "تصحيح تلقائي", "نظام المؤقت", "لوحة التحليلات", "منع الغش"],
         tags: ["education", "exams", "assessment"],
-        priceMin: 10000,
-        priceMax: 25000,
+        priceMin: 2200,
+        priceMax: 2200,
         currency: "SAR",
         estimatedDuration: "3-5 أسابيع",
         status: "active" as const,
@@ -911,8 +916,8 @@ export async function seedDatabase() {
         features: ["Workout Plans", "Nutrition Tracker", "Membership System", "Trainer Profiles", "Progress Photos"],
         featuresAr: ["خطط التمارين", "تتبع التغذية", "نظام العضويات", "ملفات المدربين", "صور التقدم"],
         tags: ["fitness", "health", "gym"],
-        priceMin: 7000,
-        priceMax: 18000,
+        priceMin: 1199,
+        priceMax: 1199,
         currency: "SAR",
         estimatedDuration: "2-4 أسابيع",
         status: "active" as const,
@@ -930,8 +935,8 @@ export async function seedDatabase() {
         features: ["Responsive Design", "Project Showcase", "Skills Section", "Contact Form", "Downloadable CV"],
         featuresAr: ["تصميم متجاوب", "عرض المشاريع", "قسم المهارات", "نموذج اتصال", "تحميل السيرة الذاتية"],
         tags: ["personal", "resume", "portfolio"],
-        priceMin: 3000,
-        priceMax: 8000,
+        priceMin: 999,
+        priceMax: 999,
         currency: "SAR",
         estimatedDuration: "1-2 أسابيع",
         status: "active" as const,
@@ -949,8 +954,8 @@ export async function seedDatabase() {
         features: ["Donation System", "Volunteer Management", "Campaign Tracker", "Impact Reports", "Event Calendar"],
         featuresAr: ["نظام التبرعات", "إدارة المتطوعين", "تتبع الحملات", "تقارير الأثر", "تقويم الفعاليات"],
         tags: ["charity", "ngo", "nonprofit"],
-        priceMin: 8000,
-        priceMax: 22000,
+        priceMin: 2200,
+        priceMax: 2200,
         currency: "SAR",
         estimatedDuration: "3-5 أسابيع",
         status: "active" as const,
@@ -968,8 +973,8 @@ export async function seedDatabase() {
         features: ["Product Catalog", "Shopping Cart", "Payment Gateway", "Order Tracking", "Inventory Management"],
         featuresAr: ["كتالوج المنتجات", "سلة التسوق", "بوابة الدفع", "تتبع الطلبات", "إدارة المخزون"],
         tags: ["ecommerce", "shop", "store"],
-        priceMin: 10000,
-        priceMax: 30000,
+        priceMin: 1000,
+        priceMax: 1000,
         currency: "SAR",
         estimatedDuration: "4-6 أسابيع",
         status: "active" as const,
@@ -987,8 +992,8 @@ export async function seedDatabase() {
         features: ["Digital Menu", "QR Ordering", "Kitchen Display", "Table Management", "Real-time Analytics"],
         featuresAr: ["قائمة رقمية", "طلب QR", "شاشة المطبخ", "إدارة الطاولات", "تحليلات مباشرة"],
         tags: ["restaurant", "cafe", "food"],
-        priceMin: 6000,
-        priceMax: 18000,
+        priceMin: 1199,
+        priceMax: 1199,
         currency: "SAR",
         estimatedDuration: "2-4 أسابيع",
         status: "active" as const,
