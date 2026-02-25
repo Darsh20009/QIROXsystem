@@ -317,6 +317,87 @@ export interface InsertPartner {
   isActive?: boolean;
 }
 
+// --- Qirox Products / Devices (MongoDB) ---
+export interface QiroxProduct {
+  id: string;
+  name: string;
+  nameAr: string;
+  description?: string;
+  descriptionAr?: string;
+  category: 'device' | 'domain' | 'email' | 'hosting' | 'gift' | 'software' | 'other';
+  price: number;
+  currency: string;
+  images?: string[];
+  serviceSlug?: string;
+  badge?: string;
+  isActive: boolean;
+  featured: boolean;
+  specs?: Record<string, any>;
+  stock: number;
+  displayOrder: number;
+  createdAt?: Date;
+}
+
+export interface InsertQiroxProduct {
+  name: string;
+  nameAr: string;
+  description?: string;
+  descriptionAr?: string;
+  category: 'device' | 'domain' | 'email' | 'hosting' | 'gift' | 'software' | 'other';
+  price: number;
+  currency?: string;
+  images?: string[];
+  serviceSlug?: string;
+  badge?: string;
+  isActive?: boolean;
+  featured?: boolean;
+  specs?: Record<string, any>;
+  stock?: number;
+  displayOrder?: number;
+}
+
+// --- Client Cart (MongoDB) ---
+export interface CartItem {
+  id?: string;
+  type: 'service' | 'product' | 'domain' | 'email' | 'hosting' | 'gift';
+  refId?: string;
+  name: string;
+  nameAr?: string;
+  price: number;
+  qty: number;
+  config?: Record<string, any>;
+  imageUrl?: string;
+}
+
+export interface Cart {
+  id: string;
+  userId: string;
+  items: CartItem[];
+  couponCode?: string;
+  discountAmount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// --- Order Specs (MongoDB) ---
+export interface OrderSpecs {
+  id: string;
+  orderId: string;
+  technologies?: string[];
+  database?: { type?: string; tier?: string; notes?: string; estimatedCost?: number };
+  hosting?: { type?: string; tier?: string; region?: string; notes?: string; estimatedCost?: number };
+  features?: string[];
+  estimatedHours?: number;
+  teamNotes?: string;
+  clientBrief?: string;
+  projectIdeas?: string;
+  colorPalette?: string[];
+  referenceLinks?: string[];
+  customVars?: Record<string, any>;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // --- Modification Requests (MongoDB) ---
 export const modificationRequestPriorities = ['low', 'medium', 'high', 'urgent'] as const;
 export type ModificationRequestPriority = (typeof modificationRequestPriorities)[number];

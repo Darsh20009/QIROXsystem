@@ -109,8 +109,8 @@ function AdminCredentialsCard() {
 
   const credentials = [
     { label: "رابط الدخول", value: "/login", key: "url" },
-    { label: "اسم المستخدم", value: "admin_qirox", key: "user" },
-    { label: "كلمة المرور", value: "admin13579", key: "pass", secret: true },
+    { label: "اسم المستخدم", value: "qadmin", key: "user" },
+    { label: "كلمة المرور", value: "qadmin", key: "pass", secret: true },
     { label: "بوابة الموظفين", value: "/internal-gate", key: "gate-url" },
     { label: "كلمة مرور البوابة", value: "qirox2026", key: "gate", secret: true },
   ];
@@ -355,6 +355,21 @@ function EmployeeDashboard({ user }: { user: any }) {
   const { toast } = useToast();
   const [ip, setIp] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [specsOrder, setSpecsOrder] = useState<any>(null);
+  const [specsForm, setSpecsForm] = useState({ techStack: "", database: "", hosting: "", domain: "", notes: "" });
+
+  const saveSpecsMutation = useMutation({
+    mutationFn: async (data: { orderId: string; specs: any }) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${data.orderId}/specs`, data.specs);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setSpecsOrder(null);
+      toast({ title: "تم حفظ المواصفات التقنية بنجاح" });
+    },
+    onError: () => toast({ title: "خطأ في حفظ المواصفات", variant: "destructive" }),
+  });
 
   useEffect(() => {
     fetch("https://api.ipify.org?format=json")
@@ -517,6 +532,13 @@ function EmployeeDashboard({ user }: { user: any }) {
                         <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>
                           {st.label}
                         </span>
+                        <button
+                          onClick={() => { setSpecsOrder(order); setSpecsForm({ techStack: order.specs?.techStack || "", database: order.specs?.database || "", hosting: order.specs?.hosting || "", domain: order.specs?.domain || "", notes: order.specs?.notes || "" }); }}
+                          className="text-[10px] text-black/35 hover:text-black border border-black/[0.08] hover:border-black/20 px-2.5 py-1 rounded-lg transition-all"
+                          data-testid={`button-specs-${order.id}`}
+                        >
+                          مواصفات
+                        </button>
                       </div>
                     </motion.div>
                   );
@@ -526,6 +548,97 @@ function EmployeeDashboard({ user }: { user: any }) {
           </div>
         </motion.div>
       </div>
+
+      {/* Specs Dialog */}
+      <Dialog open={!!specsOrder} onOpenChange={(open) => !open && setSpecsOrder(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-black">
+              مواصفات المشروع — طلب #{specsOrder?.id?.toString().slice(-6)}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">Stack التقني</label>
+              <Input
+                placeholder="مثال: React, Next.js, Node.js, MongoDB"
+                value={specsForm.techStack}
+                onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))}
+                className="text-sm"
+                data-testid="input-specs-techstack"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">قاعدة البيانات</label>
+              <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
+                <SelectTrigger className="text-sm" data-testid="select-specs-database">
+                  <SelectValue placeholder="اختر قاعدة البيانات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MongoDB Atlas M0 (Free)">MongoDB Atlas M0 (Free)</SelectItem>
+                  <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10</SelectItem>
+                  <SelectItem value="MongoDB Atlas M20">MongoDB Atlas M20</SelectItem>
+                  <SelectItem value="MongoDB Atlas M30">MongoDB Atlas M30</SelectItem>
+                  <SelectItem value="PostgreSQL">PostgreSQL</SelectItem>
+                  <SelectItem value="MySQL">MySQL</SelectItem>
+                  <SelectItem value="Redis">Redis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">الاستضافة</label>
+              <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
+                <SelectTrigger className="text-sm" data-testid="select-specs-hosting">
+                  <SelectValue placeholder="اختر الاستضافة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AWS EC2 t3.micro">AWS EC2 t3.micro ($8/mo)</SelectItem>
+                  <SelectItem value="AWS EC2 t3.small">AWS EC2 t3.small ($17/mo)</SelectItem>
+                  <SelectItem value="AWS EC2 t3.medium">AWS EC2 t3.medium ($34/mo)</SelectItem>
+                  <SelectItem value="AWS EC2 t3.large">AWS EC2 t3.large ($67/mo)</SelectItem>
+                  <SelectItem value="AWS EC2 c5.xlarge">AWS EC2 c5.xlarge ($170/mo)</SelectItem>
+                  <SelectItem value="Vercel">Vercel</SelectItem>
+                  <SelectItem value="DigitalOcean">DigitalOcean</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">الدومين</label>
+              <Input
+                placeholder="مثال: example.com"
+                value={specsForm.domain}
+                onChange={e => setSpecsForm(f => ({ ...f, domain: e.target.value }))}
+                className="text-sm"
+                data-testid="input-specs-domain"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/50 mb-1.5 block">ملاحظات تقنية</label>
+              <Textarea
+                placeholder="أي تفاصيل تقنية إضافية..."
+                value={specsForm.notes}
+                onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))}
+                className="text-sm resize-none h-20"
+                data-testid="textarea-specs-notes"
+              />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <Button
+                className="flex-1 bg-black text-white hover:bg-black/80"
+                onClick={() => saveSpecsMutation.mutate({ orderId: specsOrder.id, specs: specsForm })}
+                disabled={saveSpecsMutation.isPending}
+                data-testid="button-save-specs"
+              >
+                {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+                حفظ المواصفات
+              </Button>
+              <Button variant="outline" onClick={() => setSpecsOrder(null)} data-testid="button-cancel-specs">
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

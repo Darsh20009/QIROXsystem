@@ -225,7 +225,69 @@ const modificationRequestSchema = new mongoose.Schema({
   attachments: [String],
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema].forEach(s => {
+const qiroxProductSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  nameAr: { type: String, required: true },
+  description: String,
+  descriptionAr: String,
+  category: { type: String, enum: ['device', 'domain', 'email', 'hosting', 'gift', 'software', 'other'], required: true },
+  price: { type: Number, required: true },
+  currency: { type: String, default: 'SAR' },
+  images: [String],
+  serviceSlug: String,
+  badge: String,
+  isActive: { type: Boolean, default: true },
+  featured: { type: Boolean, default: false },
+  specs: { type: mongoose.Schema.Types.Mixed },
+  stock: { type: Number, default: -1 },
+  displayOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const cartItemSchema = new mongoose.Schema({
+  type: { type: String, enum: ['service', 'product', 'domain', 'email', 'hosting', 'gift'], required: true },
+  refId: String,
+  name: { type: String, required: true },
+  nameAr: String,
+  price: { type: Number, required: true },
+  qty: { type: Number, default: 1 },
+  config: { type: mongoose.Schema.Types.Mixed },
+  imageUrl: String,
+}, { _id: true });
+
+const cartSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  items: [cartItemSchema],
+  couponCode: String,
+  discountAmount: { type: Number, default: 0 },
+}, { timestamps: true });
+
+const orderSpecsSchema = new mongoose.Schema({
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, unique: true },
+  technologies: [String],
+  database: {
+    type: String,
+    tier: String,
+    notes: String,
+    estimatedCost: Number,
+  },
+  hosting: {
+    type: String,
+    tier: String,
+    region: String,
+    notes: String,
+    estimatedCost: Number,
+  },
+  features: [String],
+  estimatedHours: Number,
+  teamNotes: String,
+  clientBrief: String,
+  projectIdeas: String,
+  colorPalette: [String],
+  referenceLinks: [String],
+  customVars: { type: mongoose.Schema.Types.Mixed },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -246,3 +308,6 @@ export const SectorTemplateModel = mongoose.models.SectorTemplate || mongoose.mo
 export const PricingPlanModel = mongoose.models.PricingPlan || mongoose.model("PricingPlan", pricingPlanSchema);
 export const PartnerModel = mongoose.models.Partner || mongoose.model("Partner", partnerSchema);
 export const ModificationRequestModel = mongoose.models.ModificationRequest || mongoose.model("ModificationRequest", modificationRequestSchema);
+export const QiroxProductModel = mongoose.models.QiroxProduct || mongoose.model("QiroxProduct", qiroxProductSchema);
+export const CartModel = mongoose.models.Cart || mongoose.model("Cart", cartSchema);
+export const OrderSpecsModel = mongoose.models.OrderSpecs || mongoose.model("OrderSpecs", orderSpecsSchema);

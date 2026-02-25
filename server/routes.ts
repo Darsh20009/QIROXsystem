@@ -801,6 +801,95 @@ export async function registerRoutes(
     await capturePaypalOrder(req, res);
   });
 
+  // === QIROX PRODUCTS / DEVICES ===
+  app.get("/api/products", async (req, res) => {
+    const { category, serviceSlug } = req.query as any;
+    const products = await storage.getQiroxProducts({ category, serviceSlug, active: true });
+    res.json(products);
+  });
+
+  app.get("/api/admin/products", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { category, serviceSlug } = req.query as any;
+    const products = await storage.getQiroxProducts({ category, serviceSlug });
+    res.json(products);
+  });
+
+  app.post("/api/admin/products", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const product = await storage.createQiroxProduct(req.body);
+    res.status(201).json(product);
+  });
+
+  app.patch("/api/admin/products/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const product = await storage.updateQiroxProduct(req.params.id, req.body);
+    res.json(product);
+  });
+
+  app.delete("/api/admin/products/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    await storage.deleteQiroxProduct(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // === CART ===
+  app.get("/api/cart", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    const cart = await storage.getCart(userId);
+    res.json(cart || { items: [], discountAmount: 0 });
+  });
+
+  app.post("/api/cart/items", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    const cart = await storage.upsertCartItem(userId, req.body);
+    res.json(cart);
+  });
+
+  app.delete("/api/cart/items/:itemId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    const cart = await storage.removeCartItem(userId, req.params.itemId);
+    res.json(cart);
+  });
+
+  app.patch("/api/cart/items/:itemId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    const cart = await storage.updateCartItem(userId, req.params.itemId, req.body.qty);
+    res.json(cart);
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    await storage.clearCart(userId);
+    res.sendStatus(204);
+  });
+
+  app.post("/api/cart/coupon", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = String((req.user as any).id);
+    const { couponCode, discount } = req.body;
+    const cart = await storage.applyCoupon(userId, couponCode, discount);
+    res.json(cart);
+  });
+
+  // === ORDER SPECS (for employees to fill) ===
+  app.get("/api/admin/orders/:id/specs", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const specs = await storage.getOrderSpecs(req.params.id);
+    res.json(specs || {});
+  });
+
+  app.put("/api/admin/orders/:id/specs", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const specs = await storage.upsertOrderSpecs(req.params.id, req.body);
+    res.json(specs);
+  });
+
   // Initialize seed data
   await seedDatabase();
 
@@ -810,15 +899,23 @@ export async function registerRoutes(
 // Seed data function to be called from index.ts if needed
 export async function seedDatabase() {
   // Initial Admin Account
-  const adminUsername = "admin_qirox";
+  const adminUsername = "qadmin";
   const adminEmail = "admin@qirox.tech";
+  const { setupAuth } = await import("./auth");
+  const { hashPassword } = setupAuth({ use: () => {}, get: () => "development", set: () => {} } as any);
+
+  // Migrate old admin username if exists
+  const oldAdmin = await storage.getUserByUsername("admin_qirox");
+  if (oldAdmin) {
+    const { UserModel } = await import("./models");
+    const newPw = await hashPassword("qadmin");
+    await UserModel.updateOne({ username: "admin_qirox" }, { $set: { username: "qadmin", password: newPw } });
+    console.log("Admin account migrated: admin_qirox → qadmin");
+  }
+
   const existingAdmin = await storage.getUserByUsername(adminUsername);
-  
   if (!existingAdmin) {
-    const { setupAuth } = await import("./auth");
-    const { hashPassword } = setupAuth({ use: () => {}, get: () => "development", set: () => {} } as any);
-    const hashedPassword = await hashPassword("admin13579");
-    
+    const hashedPassword = await hashPassword("qadmin");
     await storage.createUser({
       username: adminUsername,
       password: hashedPassword,
@@ -830,12 +927,7 @@ export async function seedDatabase() {
   }
 
   const existingServices = await storage.getServices();
-  const restaurantService = existingServices.find((s: any) => s.category === "restaurants");
-  const servicesNeedReseed = existingServices.length === 0 || (restaurantService && (restaurantService as any).priceMin !== 1199);
-  if (servicesNeedReseed) {
-    for (const s of existingServices) {
-      await storage.deleteService((s as any).id);
-    }
+  if (existingServices.length === 0) {
     await storage.createService({
       title: "نظام المطاعم والكافيهات",
       description: "حل رقمي متكامل لمطاعم وكافيهات مع قائمة رقمية وطلب QR ونظام نقطة البيع.",

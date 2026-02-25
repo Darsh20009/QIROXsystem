@@ -10,6 +10,15 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 25, 2026 - Session 5)
+
+- **Admin Credentials Updated**: `admin_qirox`/`admin13579` → `qadmin`/`qadmin`. Auto-migration on server start updates existing DB records. AdminCredentialsCard updated to match.
+- **Services Seeding Fixed**: Changed from destructive reseed (deleting all services) to safe seed only when `existingServices.length === 0` — preserves user-added services.
+- **New Routes in App.tsx**: Added `/devices` (public), `/cart` (authenticated), `/admin/products` (admin-only).
+- **Sidebar Updated**: Clients now see "الأجهزة والإضافات" and "سلة التسوق" links. Management sees "المنتجات والأجهزة" admin link.
+- **Services Page Rebuilt**: New expandable card design with category filter pills, hero, features list by category (stores get storeFeatures, restaurants get restaurantFeatures, customizable categories show "custom" message), add-to-cart for logged-in users, related products display.
+- **Employee Specs Form**: Added "مواصفات" button on each order row in EmployeeDashboard. Opens a dialog with fields: techStack, database (select), hosting (select), domain, notes. Saves to `/api/admin/orders/:id/specs`.
+
 ## Recent Changes (Feb 2026)
 
 - **COMPLETE UI/UX REDESIGN**: Converted entire frontend from dark theme (bg-[#0A0A0F], cyan accents) to light theme (white background, black/gray color scheme). Affected: index.css, all components (Navigation, Footer, Sidebar, Splash), and all pages (Home, Services, Portfolio, Prices, Login, About, Contact, OrderFlow, Admin pages).

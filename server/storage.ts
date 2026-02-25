@@ -7,11 +7,13 @@ import {
   type News, type InsertNews, type Job, type InsertJob, type Application, type InsertApplication,
   type SectorTemplate, type InsertSectorTemplate, type PricingPlan, type InsertPricingPlan,
   type Partner, type InsertPartner,
-  type ModificationRequest, type InsertModificationRequest
+  type ModificationRequest, type InsertModificationRequest,
+  type QiroxProduct, type InsertQiroxProduct, type Cart, type CartItem, type OrderSpecs
 } from "@shared/schema";
 import {
   UserModel, ServiceModel, OrderModel, ProjectModel, TaskModel, MessageModel, AttendanceModel, ProjectVaultModel, ProjectMemberModel,
-  NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel, ModificationRequestModel
+  NewsModel, JobModel, ApplicationModel, SectorTemplateModel, PricingPlanModel, PartnerModel, ModificationRequestModel,
+  QiroxProductModel, CartModel, OrderSpecsModel
 } from "./models";
 
 export interface IStorage {
@@ -105,6 +107,25 @@ export interface IStorage {
   createModificationRequest(data: InsertModificationRequest): Promise<ModificationRequest>;
   updateModificationRequest(id: string, data: Partial<InsertModificationRequest>): Promise<ModificationRequest>;
   deleteModificationRequest(id: string): Promise<void>;
+
+  // Qirox Products
+  getQiroxProducts(filters?: { category?: string; serviceSlug?: string; active?: boolean }): Promise<QiroxProduct[]>;
+  getQiroxProduct(id: string): Promise<QiroxProduct | undefined>;
+  createQiroxProduct(product: InsertQiroxProduct): Promise<QiroxProduct>;
+  updateQiroxProduct(id: string, updates: Partial<InsertQiroxProduct>): Promise<QiroxProduct>;
+  deleteQiroxProduct(id: string): Promise<void>;
+
+  // Cart
+  getCart(userId: string): Promise<Cart | undefined>;
+  upsertCartItem(userId: string, item: CartItem): Promise<Cart>;
+  removeCartItem(userId: string, itemId: string): Promise<Cart>;
+  updateCartItem(userId: string, itemId: string, qty: number): Promise<Cart>;
+  clearCart(userId: string): Promise<void>;
+  applyCoupon(userId: string, couponCode: string, discount: number): Promise<Cart>;
+
+  // Order Specs
+  getOrderSpecs(orderId: string): Promise<OrderSpecs | undefined>;
+  upsertOrderSpecs(orderId: string, data: Partial<OrderSpecs>): Promise<OrderSpecs>;
 }
 
 export class MongoStorage implements IStorage {
@@ -418,6 +439,99 @@ export class MongoStorage implements IStorage {
 
   async deleteModificationRequest(id: string): Promise<void> {
     await ModificationRequestModel.findByIdAndDelete(id);
+  }
+
+  // Qirox Products
+  async getQiroxProducts(filters?: { category?: string; serviceSlug?: string; active?: boolean }): Promise<QiroxProduct[]> {
+    const query: any = {};
+    if (filters?.category) query.category = filters.category;
+    if (filters?.serviceSlug) query.serviceSlug = filters.serviceSlug;
+    if (filters?.active !== undefined) query.isActive = filters.active;
+    const items = await QiroxProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as QiroxProduct[];
+  }
+
+  async getQiroxProduct(id: string): Promise<QiroxProduct | undefined> {
+    const item = await QiroxProductModel.findById(id);
+    return item ? { ...item.toObject(), id: item._id.toString() } as QiroxProduct : undefined;
+  }
+
+  async createQiroxProduct(product: InsertQiroxProduct): Promise<QiroxProduct> {
+    const item = await QiroxProductModel.create(product);
+    return { ...item.toObject(), id: item._id.toString() } as any;
+  }
+
+  async updateQiroxProduct(id: string, updates: Partial<InsertQiroxProduct>): Promise<QiroxProduct> {
+    const item = await QiroxProductModel.findByIdAndUpdate(id, updates, { new: true });
+    return { ...item.toObject(), id: item._id.toString() } as any;
+  }
+
+  async deleteQiroxProduct(id: string): Promise<void> {
+    await QiroxProductModel.findByIdAndDelete(id);
+  }
+
+  // Cart
+  async getCart(userId: string): Promise<Cart | undefined> {
+    const cart = await CartModel.findOne({ userId });
+    return cart ? { ...cart.toObject(), id: cart._id.toString(), items: cart.items.map((i: any) => ({ ...i.toObject ? i.toObject() : i, id: i._id?.toString() })) } as any : undefined;
+  }
+
+  async upsertCartItem(userId: string, item: CartItem): Promise<Cart> {
+    let cart = await CartModel.findOne({ userId });
+    if (!cart) {
+      cart = await CartModel.create({ userId, items: [item] });
+    } else {
+      cart.items.push(item as any);
+      await cart.save();
+    }
+    return { ...cart.toObject(), id: cart._id.toString(), items: cart.items.map((i: any) => ({ ...i, id: i._id?.toString() })) } as any;
+  }
+
+  async removeCartItem(userId: string, itemId: string): Promise<Cart> {
+    const cart = await CartModel.findOneAndUpdate(
+      { userId },
+      { $pull: { items: { _id: itemId } } },
+      { new: true }
+    );
+    return { ...cart.toObject(), id: cart._id.toString(), items: cart.items.map((i: any) => ({ ...i, id: i._id?.toString() })) } as any;
+  }
+
+  async updateCartItem(userId: string, itemId: string, qty: number): Promise<Cart> {
+    const cart = await CartModel.findOne({ userId });
+    if (cart) {
+      const item = cart.items.find((i: any) => i._id?.toString() === itemId);
+      if (item) { (item as any).qty = qty; }
+      await cart.save();
+    }
+    return { ...cart.toObject(), id: cart._id.toString(), items: cart.items.map((i: any) => ({ ...i, id: i._id?.toString() })) } as any;
+  }
+
+  async clearCart(userId: string): Promise<void> {
+    await CartModel.findOneAndUpdate({ userId }, { items: [], couponCode: null, discountAmount: 0 });
+  }
+
+  async applyCoupon(userId: string, couponCode: string, discount: number): Promise<Cart> {
+    const cart = await CartModel.findOneAndUpdate(
+      { userId },
+      { couponCode, discountAmount: discount },
+      { new: true, upsert: true }
+    );
+    return { ...cart.toObject(), id: cart._id.toString(), items: cart.items.map((i: any) => ({ ...i, id: i._id?.toString() })) } as any;
+  }
+
+  // Order Specs
+  async getOrderSpecs(orderId: string): Promise<OrderSpecs | undefined> {
+    const specs = await OrderSpecsModel.findOne({ orderId });
+    return specs ? { ...specs.toObject(), id: specs._id.toString() } as any : undefined;
+  }
+
+  async upsertOrderSpecs(orderId: string, data: Partial<OrderSpecs>): Promise<OrderSpecs> {
+    const specs = await OrderSpecsModel.findOneAndUpdate(
+      { orderId },
+      { ...data, orderId },
+      { new: true, upsert: true }
+    );
+    return { ...specs.toObject(), id: specs._id.toString() } as any;
   }
 }
 

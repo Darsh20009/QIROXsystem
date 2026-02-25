@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
-  Newspaper, Wrench, Globe
+  Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,6 +56,8 @@ export function AppSidebar() {
 
     // Client-only pages
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "client" },
+    { title: "الأجهزة والإضافات", icon: Cpu, url: "/devices", group: "client" },
+    { title: "سلة التسوق", icon: ShoppingCart, url: "/cart", group: "client" },
 
     // Employee pages (visible to ALL non-client roles)
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
@@ -72,6 +74,7 @@ export function AppSidebar() {
     { title: "لوحة الإدارة", icon: LayoutDashboard, url: "/admin", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "القوالب", icon: Layers, url: "/admin/templates", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الخدمات", icon: Briefcase, url: "/admin/services", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "المنتجات والأجهزة", icon: Package, url: "/admin/products", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الموظفون", icon: Users, url: "/admin/employees", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الشركاء", icon: Handshake, url: "/admin/partners", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الأخبار", icon: Newspaper, url: "/admin/news", group: "admin", allowedRoles: MANAGEMENT_ROLES },
