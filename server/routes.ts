@@ -356,10 +356,24 @@ export async function registerRoutes(
     res.json(order);
   });
 
+  // === EMPLOYEE LIST (for assignment dropdowns) ===
+  app.get("/api/employees", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const allUsers = await storage.getUsers();
+    const employees = allUsers.filter((u: any) => u.role !== "client");
+    res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role })));
+  });
+
   // === ORDERS API ===
   app.get("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const orders = await storage.getOrders(String((req.user as User).id));
+    const user = req.user as User;
+    // Employees and admins see all orders; clients see only their own
+    if (user.role === "client") {
+      const orders = await storage.getOrders(String(user.id));
+      return res.json(orders);
+    }
+    const orders = await storage.getOrders();
     res.json(orders);
   });
 

@@ -62,6 +62,9 @@ const orderSchema = new mongoose.Schema({
   totalAmount: Number,
   isDepositPaid: { type: Boolean, default: false },
   requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
+  // Assignment
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  adminNotes: String,
 }, { timestamps: true });
 
 const projectSchema = new mongoose.Schema({

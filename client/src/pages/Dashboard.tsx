@@ -327,6 +327,209 @@ function AdminDashboard({ user }: { user: any }) {
   );
 }
 
+const employeeRoleLabels: Record<string, string> = {
+  admin: "مدير النظام",
+  manager: "مدير",
+  developer: "مطور",
+  designer: "مصمم",
+  support: "دعم فني",
+  sales: "مبيعات",
+  sales_manager: "مدير مبيعات",
+  accountant: "محاسب",
+};
+
+const orderStatusColors: Record<string, { bg: string; text: string; label: string }> = {
+  pending: { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", label: "قيد المراجعة" },
+  approved: { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", label: "موافق عليه" },
+  in_progress: { bg: "bg-indigo-50 border-indigo-200", text: "text-indigo-700", label: "قيد التنفيذ" },
+  completed: { bg: "bg-green-50 border-green-200", text: "text-green-700", label: "مكتمل" },
+  cancelled: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "ملغي" },
+  rejected: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "مرفوض" },
+};
+
+function EmployeeDashboard({ user }: { user: any }) {
+  const { data: orders, isLoading: isLoadingOrders } = useOrders();
+  const { data: attendanceStatus } = useAttendanceStatus();
+  const checkInMutation = useCheckIn();
+  const checkOutMutation = useCheckOut();
+  const { toast } = useToast();
+  const [ip, setIp] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(data => setIp(data.ip))
+      .catch(() => {});
+  }, []);
+
+  const handleCheckIn = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        checkInMutation.mutate({ ipAddress: ip, location: { lat: position.coords.latitude, lng: position.coords.longitude } }, {
+          onSuccess: () => toast({ title: "تم تسجيل الحضور بنجاح" })
+        });
+      }, () => {
+        checkInMutation.mutate({ ipAddress: ip }, { onSuccess: () => toast({ title: "تم تسجيل الحضور" }) });
+      });
+    } else {
+      checkInMutation.mutate({ ipAddress: ip });
+    }
+  };
+
+  const handleCheckOut = () => {
+    checkOutMutation.mutate(undefined, { onSuccess: () => toast({ title: "تم تسجيل الانصراف" }) });
+  };
+
+  const myOrders = orders?.filter(o => (o as any).assignedTo === user.id) || [];
+  const allOrders = orders || [];
+  const displayOrders = myOrders.length > 0 ? myOrders : allOrders;
+  const filteredOrders = filterStatus === "all" ? displayOrders : displayOrders.filter(o => o.status === filterStatus);
+
+  const stats = [
+    { label: "إجمالي الطلبات", value: allOrders.length, color: "bg-blue-50 text-blue-600", icon: FileText },
+    { label: "معين لي", value: myOrders.length, color: "bg-violet-50 text-violet-600", icon: UserCog },
+    { label: "قيد التنفيذ", value: allOrders.filter(o => o.status === "in_progress").length, color: "bg-indigo-50 text-indigo-600", icon: Activity },
+    { label: "مكتملة", value: allOrders.filter(o => o.status === "completed").length, color: "bg-green-50 text-green-600", icon: CheckCircle2 },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f8f8f8]" data-testid="employee-dashboard">
+      <div className="bg-white border-b border-black/[0.06] px-6 py-5">
+        <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-[10px] text-black/30 mb-0.5">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <h1 className="text-xl font-bold text-black font-heading">مرحباً، {user.fullName}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge className="bg-black/[0.06] text-black/60 border-0 text-xs px-3 py-1.5">
+              {employeeRoleLabels[user.role] || user.role}
+            </Badge>
+            <div className="flex items-center gap-2 bg-black/[0.02] p-1.5 rounded-xl border border-black/[0.06]">
+              {!attendanceStatus || attendanceStatus.checkOut ? (
+                <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs h-8 px-4" onClick={handleCheckIn} disabled={checkInMutation.isPending} data-testid="button-check-in">
+                  <LogIn className="w-3.5 h-3.5 ml-1.5" />
+                  تسجيل حضور
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-xs h-8 px-4" onClick={handleCheckOut} disabled={checkOutMutation.isPending} data-testid="button-check-out">
+                  <LogOut className="w-3.5 h-3.5 ml-1.5" />
+                  تسجيل انصراف
+                </Button>
+              )}
+              {attendanceStatus && !attendanceStatus.checkOut && (
+                <div className="px-3 py-1 text-[10px] font-bold text-black/40 flex items-center gap-1.5">
+                  <Timer className="w-3 h-3 text-green-500 animate-pulse" />
+                  {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1300px] mx-auto px-4 md:px-6 py-6 space-y-6">
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {stats.map((s, i) => (
+            <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+              <div className="bg-white rounded-2xl border border-black/[0.06] px-4 py-4 flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>
+                  <s.icon className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-black/35 font-medium">{s.label}</p>
+                  <p className="text-xl font-bold text-black leading-tight">{s.value}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+            <div>
+              <p className="text-sm font-bold text-black">
+                {myOrders.length > 0 ? "الطلبات المعينة لي" : "جميع الطلبات"}
+              </p>
+              {myOrders.length === 0 && (
+                <p className="text-[10px] text-black/35 mt-0.5">عرض جميع الطلبات — لا توجد طلبات معينة لك حتى الآن</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {["all", "pending", "in_progress", "completed"].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`text-[10px] font-medium px-3 py-1.5 rounded-lg transition-colors ${filterStatus === s ? 'bg-black text-white' : 'bg-white border border-black/[0.08] text-black/50 hover:bg-black/[0.04]'}`}
+                  data-testid={`filter-${s}`}
+                >
+                  {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "in_progress" ? "جاري" : "مكتمل"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+            {isLoadingOrders ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-12 h-12 bg-black/[0.03] rounded-xl flex items-center justify-center mb-3">
+                  <FileText className="w-5 h-5 text-black/15" />
+                </div>
+                <p className="text-sm text-black/30">لا توجد طلبات</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-black/[0.04]">
+                {filteredOrders.map((order: any, i) => {
+                  const st = orderStatusColors[order.status] || orderStatusColors['pending'];
+                  const isMyOrder = order.assignedTo === user.id;
+                  return (
+                    <motion.div
+                      key={order.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.03 }}
+                      className="flex items-center justify-between px-5 py-4 hover:bg-black/[0.01] transition-colors"
+                      data-testid={`employee-order-row-${order.id}`}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${order.status === 'completed' ? 'bg-green-500' : order.status === 'in_progress' ? 'bg-blue-500' : order.status === 'pending' ? 'bg-amber-400' : 'bg-gray-300'}`} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-xs font-bold text-black">طلب #{order.id?.toString().slice(-6)}</p>
+                            {isMyOrder && <span className="text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">معين لي</span>}
+                          </div>
+                          <p className="text-[10px] text-black/35 truncate max-w-[200px]">
+                            {order.projectType || order.sector || "طلب خدمة"}
+                            {order.createdAt && ` · ${new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        {order.totalAmount > 0 && (
+                          <p className="text-xs font-semibold text-black/50 hidden md:block">
+                            {Number(order.totalAmount).toLocaleString()} ر.س
+                          </p>
+                        )}
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: user } = useUser();
   const { data: orders, isLoading: isLoadingOrders } = useOrders();
@@ -399,6 +602,10 @@ export default function Dashboard() {
 
   if (user.role === 'admin') {
     return <AdminDashboard user={user} />;
+  }
+
+  if (user.role !== 'client') {
+    return <EmployeeDashboard user={user} />;
   }
 
   const handleCheckIn = () => {
