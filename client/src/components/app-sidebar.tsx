@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
-  LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image
+  LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
+  Newspaper, Wrench
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,10 @@ export function AppSidebar() {
     { title: t("admin.finance"), icon: Wallet, url: "/admin/finance", group: "admin" },
     { title: t("admin.employees"), icon: Users, url: "/admin/employees", group: "admin" },
     { title: t("admin.partners"), icon: Handshake, url: "/admin/partners", group: "admin" },
+    { title: "إدارة العملاء", icon: Users, url: "/admin/customers", group: "admin" },
+    { title: "الأخبار والمدونة", icon: Newspaper, url: "/admin/news", group: "admin" },
+    { title: "الوظائف", icon: Briefcase, url: "/admin/jobs", group: "admin" },
+    { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "admin" },
   ];
 
   const { data: attendanceStatus } = useQuery({

@@ -68,11 +68,13 @@ export interface IStorage {
   getNews(): Promise<News[]>;
   createNews(news: InsertNews): Promise<News>;
   updateNews(id: string, updates: Partial<InsertNews>): Promise<News>;
+  deleteNews(id: string): Promise<void>;
 
   // Recruitment
   getJobs(): Promise<Job[]>;
   createJob(job: InsertJob): Promise<Job>;
   updateJob(id: string, updates: Partial<InsertJob>): Promise<Job>;
+  deleteJob(id: string): Promise<void>;
   getApplications(jobId?: string): Promise<Application[]>;
   createApplication(application: InsertApplication): Promise<Application>;
   updateApplication(id: string, updates: Partial<InsertApplication>): Promise<Application>;
@@ -283,6 +285,10 @@ export class MongoStorage implements IStorage {
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
+  async deleteNews(id: string): Promise<void> {
+    await NewsModel.findByIdAndDelete(id);
+  }
+
   // Jobs
   async getJobs(): Promise<Job[]> {
     const items = await JobModel.find().sort({ createdAt: -1 });
@@ -297,6 +303,10 @@ export class MongoStorage implements IStorage {
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job> {
     const item = await JobModel.findByIdAndUpdate(id, updates, { new: true });
     return { ...item.toObject(), id: item._id.toString() } as any;
+  }
+
+  async deleteJob(id: string): Promise<void> {
+    await JobModel.findByIdAndDelete(id);
   }
 
   async getApplications(jobId?: string): Promise<Application[]> {

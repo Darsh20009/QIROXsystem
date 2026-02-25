@@ -537,10 +537,80 @@ export async function registerRoutes(
     res.json(news);
   });
 
+  app.post("/api/admin/news", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const news = await storage.createNews({ ...req.body, authorId: (req.user as any).id });
+      res.status(201).json(news);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/news/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const news = await storage.updateNews(req.params.id, req.body);
+      res.json(news);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/news/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      await storage.deleteNews(req.params.id);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // === JOBS API ===
   app.get("/api/jobs", async (req, res) => {
     const jobs = await storage.getJobs();
     res.json(jobs);
+  });
+
+  app.post("/api/admin/jobs", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const job = await storage.createJob(req.body);
+      res.status(201).json(job);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/jobs/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const job = await storage.updateJob(req.params.id, req.body);
+      res.json(job);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/jobs/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      await storage.deleteJob(req.params.id);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // === APPLICATIONS API ===
+  app.get("/api/admin/applications", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const applications = await storage.getApplications();
+    res.json(applications);
+  });
+
+  app.patch("/api/admin/applications/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const application = await storage.updateApplication(req.params.id, req.body);
+      res.json(application);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // === ADMIN CUSTOMERS API ===
+  app.get("/api/admin/customers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const users = await storage.getUsers();
+    res.json(users.filter((u: any) => u.role === "client"));
   });
 
   // === PARTNERS API ===

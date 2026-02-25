@@ -22,6 +22,7 @@ import About from "@/pages/About";
 import Prices from "@/pages/Prices";
 import Portfolio from "@/pages/Portfolio";
 import Customers from "@/pages/Customers";
+
 import News from "@/pages/News";
 import Jobs from "@/pages/Jobs";
 import JoinUs from "@/pages/JoinUs";
@@ -31,6 +32,10 @@ import Terms from "@/pages/Terms";
 import Segments from "@/pages/Segments";
 import AdminTemplates from "@/pages/AdminTemplates";
 import AdminPartners from "@/pages/AdminPartners";
+import AdminNews from "@/pages/AdminNews";
+import AdminJobs from "@/pages/AdminJobs";
+import AdminModRequests from "@/pages/AdminModRequests";
+import AdminCustomers from "@/pages/AdminCustomers";
 import Partners from "@/pages/Partners";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -76,6 +81,10 @@ function AdminRouter() {
       <Route path="/admin/finance" component={AdminFinance} />
       <Route path="/admin/templates" component={AdminTemplates} />
       <Route path="/admin/partners" component={AdminPartners} />
+      <Route path="/admin/news" component={AdminNews} />
+      <Route path="/admin/jobs" component={AdminJobs} />
+      <Route path="/admin/mod-requests" component={AdminModRequests} />
+      <Route path="/admin/customers" component={AdminCustomers} />
       <Route component={NotFound} />
     </Switch>
   );
