@@ -4,9 +4,11 @@ import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n";
 import {
-  Loader2, Check, ArrowLeft, Star, Zap, Crown, GraduationCap,
-  UtensilsCrossed, ShoppingBag, Building2, Globe, Phone, Tag, Gift, Plus
+  Loader2, Check, ArrowLeft, Star, Zap,
+  GraduationCap, UtensilsCrossed, ShoppingBag, Building2,
+  Globe, Phone, Tag, Gift, Plus
 } from "lucide-react";
 
 const planIcons: Record<string, any> = {
@@ -42,32 +44,41 @@ const fadeUp = {
 
 export default function Prices() {
   const { data: plans, isLoading } = usePricingPlans();
+  const { t, lang, dir } = useI18n();
 
   const regularPlans = plans?.filter(p => !p.isCustom) ?? [];
   const customPlan = plans?.find(p => p.isCustom);
 
+  const billingLabel = (cycle: string) => {
+    if (cycle === "yearly") return t("prices.per.yearly");
+    if (cycle === "monthly") return t("prices.per.monthly");
+    return t("prices.per.once");
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-white" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-white" dir={dir}>
       <Navigation />
 
+      {/* Hero */}
       <section className="pt-36 pb-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.07] bg-black/[0.02] mb-6">
               <Tag className="w-3.5 h-3.5 text-black/40" />
-              <span className="text-black/40 text-xs tracking-wider">الباقات والأسعار</span>
+              <span className="text-black/40 text-xs tracking-wider">{t("prices.badge")}</span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-black mb-5 tracking-tight">
-              اختر الباقة <span className="text-black/25">المناسبة</span>
+              {t("prices.hero.title")} <span className="text-black/25">{t("prices.hero.titleHighlight")}</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-black/40 text-lg max-w-xl mx-auto">
-              أسعار واضحة بدون رسوم مخفية — كل باقة تشمل تصميماً احترافياً ودعماً فنياً مستمراً
+              {t("prices.hero.subtitle")}
             </motion.p>
           </motion.div>
         </div>
       </section>
 
+      {/* Plans Grid */}
       <section className="pb-24 container mx-auto px-4">
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -94,7 +105,7 @@ export default function Prices() {
                     {plan.isPopular && (
                       <div className="absolute -top-3 right-1/2 translate-x-1/2 z-10">
                         <span className="bg-black text-white text-[11px] font-bold px-5 py-1.5 rounded-full shadow-lg inline-block whitespace-nowrap">
-                          الأكثر طلباً
+                          {t("prices.popular")}
                         </span>
                       </div>
                     )}
@@ -119,27 +130,29 @@ export default function Prices() {
                         <Icon className={`w-5 h-5 ${iconColor}`} />
                       </div>
 
-                      <h3 className="text-lg font-bold font-heading text-black mb-1">{plan.nameAr}</h3>
-                      <p className="text-xs text-black/35 mb-6 leading-relaxed">{plan.descriptionAr}</p>
+                      <h3 className="text-lg font-bold font-heading text-black mb-1">
+                        {lang === "ar" ? plan.nameAr : (plan.name || plan.nameAr)}
+                      </h3>
+                      <p className="text-xs text-black/35 mb-6 leading-relaxed">
+                        {lang === "ar" ? plan.descriptionAr : (plan.description || plan.descriptionAr)}
+                      </p>
 
                       <div className="mb-6">
                         {plan.originalPrice && (
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm text-black/30 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>
-                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">عرض الآن</span>
+                            <span className="text-sm text-black/30 line-through">{plan.originalPrice.toLocaleString()} {t("prices.sar")}</span>
+                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">{t("prices.offerNow")}</span>
                           </div>
                         )}
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-4xl font-black text-black">{plan.price.toLocaleString()}</span>
-                          <span className="text-black/35 text-sm">ر.س</span>
-                          <span className="text-black/25 text-xs">
-                            / {plan.billingCycle === "yearly" ? "سنوياً" : plan.billingCycle === "monthly" ? "شهرياً" : "مرة واحدة"}
-                          </span>
+                          <span className="text-black/35 text-sm">{t("prices.sar")}</span>
+                          <span className="text-black/25 text-xs">/ {billingLabel(plan.billingCycle)}</span>
                         </div>
                       </div>
 
                       <div className="space-y-2.5 flex-1 mb-5">
-                        {plan.featuresAr?.map((feature, i) => (
+                        {(lang === "ar" ? plan.featuresAr : (plan.features || plan.featuresAr))?.map((feature: string, i: number) => (
                           <div key={i} className="flex items-start gap-2.5 text-sm text-black/50">
                             <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                               plan.isPopular ? "bg-black/[0.08]" : "bg-black/[0.04]"
@@ -154,10 +167,10 @@ export default function Prices() {
                       {plan.addonsAr && plan.addonsAr.length > 0 && (
                         <div className="mb-5 pt-4 border-t border-black/[0.05]">
                           <p className="text-[10px] text-black/30 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                            <Plus className="w-3 h-3" /> إضافات متاحة
+                            <Plus className="w-3 h-3" /> {t("prices.addons.label")}
                           </p>
                           <div className="space-y-1.5">
-                            {plan.addonsAr.map((addon, i) => (
+                            {(lang === "ar" ? plan.addonsAr : (plan.addons || plan.addonsAr))?.map((addon: string, i: number) => (
                               <div key={i} className="text-xs text-black/40 flex items-center gap-1.5">
                                 <Globe className="w-3 h-3 flex-shrink-0 text-black/25" />
                                 {addon}
@@ -176,7 +189,7 @@ export default function Prices() {
                           }`}
                           data-testid={`button-select-${plan.slug}`}
                         >
-                          اختر هذه الباقة
+                          {t("prices.select")}
                           <ArrowLeft className="w-4 h-4 mr-2" />
                         </Button>
                       </Link>
@@ -201,13 +214,17 @@ export default function Prices() {
                       <Building2 className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold font-heading text-black mb-1">{customPlan.nameAr}</h3>
-                      <p className="text-black/40 text-sm leading-relaxed max-w-2xl">{customPlan.descriptionAr}</p>
+                      <h3 className="text-xl font-bold font-heading text-black mb-1">
+                        {lang === "ar" ? customPlan.nameAr : (customPlan.name || customPlan.nameAr)}
+                      </h3>
+                      <p className="text-black/40 text-sm leading-relaxed max-w-2xl">
+                        {lang === "ar" ? customPlan.descriptionAr : (customPlan.description || customPlan.descriptionAr)}
+                      </p>
                     </div>
                     <div className="flex-shrink-0">
                       <Link href="/contact">
                         <Button className="premium-btn h-12 px-8 rounded-xl font-semibold" data-testid="button-contact-enterprise">
-                          تواصل معنا
+                          {t("prices.contact")}
                           <Phone className="w-4 h-4 mr-2" />
                         </Button>
                       </Link>
@@ -215,7 +232,7 @@ export default function Prices() {
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-                    {customPlan.featuresAr?.map((feature, i) => (
+                    {(lang === "ar" ? customPlan.featuresAr : (customPlan.features || customPlan.featuresAr))?.map((feature: string, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-sm text-black/45">
                         <Check className="w-4 h-4 flex-shrink-0 mt-0.5 text-black/30" />
                         <span className="leading-snug">{feature}</span>
@@ -229,15 +246,16 @@ export default function Prices() {
         )}
       </section>
 
+      {/* Domain Pricing */}
       <section className="py-16 bg-[#fafafa] border-t border-black/[0.04]">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.07] bg-white mb-4">
               <Gift className="w-3.5 h-3.5 text-black/40" />
-              <span className="text-black/40 text-xs">النطاقات والإضافات</span>
+              <span className="text-black/40 text-xs">{t("prices.domains.badge")}</span>
             </div>
-            <h2 className="text-2xl font-bold font-heading text-black">أسعار الدومينات</h2>
-            <p className="text-black/35 text-sm mt-2">متاحة كإضافة مع أي باقة — بأسعار تفضيلية خلال العرض الحالي</p>
+            <h2 className="text-2xl font-bold font-heading text-black">{t("prices.domains.title")}</h2>
+            <p className="text-black/35 text-sm mt-2">{t("prices.domains.subtitle")}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -247,16 +265,16 @@ export default function Prices() {
                   <Globe className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-black text-sm">دومين سعودي محلي</h4>
+                  <h4 className="font-bold text-black text-sm">{t("prices.localDomain.title")}</h4>
                   <p className="text-xs text-black/35">.sa | .com.sa | .net.sa</p>
                 </div>
               </div>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-3xl font-black text-black">100</span>
-                <span className="text-black/35 text-sm">ر.س / سنة</span>
+                <span className="text-black/35 text-sm">{t("prices.sar")} {t("prices.year")}</span>
                 <span className="text-sm text-black/30 line-through mr-1">150</span>
               </div>
-              <p className="text-[11px] text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full inline-block">لفترة محدودة</p>
+              <p className="text-[11px] text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full inline-block">{t("prices.limited")}</p>
             </div>
 
             <div className="bg-white rounded-2xl border border-black/[0.07] p-6" data-testid="card-domain-global">
@@ -265,32 +283,33 @@ export default function Prices() {
                   <Globe className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-black text-sm">دومين عالمي</h4>
+                  <h4 className="font-bold text-black text-sm">{t("prices.globalDomain.title")}</h4>
                   <p className="text-xs text-black/35">.com | .net | .org | .io</p>
                 </div>
               </div>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-3xl font-black text-black">45</span>
-                <span className="text-black/35 text-sm">ر.س / سنة</span>
+                <span className="text-black/35 text-sm">{t("prices.sar")} {t("prices.year")}</span>
                 <span className="text-sm text-black/30 line-through mr-1">60</span>
               </div>
-              <p className="text-[11px] text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded-full inline-block">لفترة محدودة</p>
+              <p className="text-[11px] text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded-full inline-block">{t("prices.limited")}</p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Custom CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold font-heading text-black mb-4">
-            تحتاج <span className="text-black/25">حلاً مخصصاً؟</span>
+            {t("prices.custom.title")}
           </h2>
           <p className="text-black/35 text-base mb-8 max-w-md mx-auto">
-            تواصل معنا وسنبني لك ما تحتاجه بالضبط — بأي تصميم وأي ميزات
+            {t("prices.custom.subtitle")}
           </p>
           <Link href="/contact">
             <Button size="lg" className="premium-btn h-13 px-10 rounded-xl font-semibold" data-testid="button-custom-pricing">
-              طلب عرض سعر
+              {t("prices.custom.cta")}
               <ArrowLeft className="w-5 h-5 mr-2" />
             </Button>
           </Link>

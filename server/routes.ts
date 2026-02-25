@@ -1144,6 +1144,25 @@ export async function registerRoutes(
     });
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === EMAIL TEST (Admin only) ===
+  // ═══════════════════════════════════════════════════════════
+  app.post("/api/admin/test-email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { type = "welcome", to } = req.body;
+    const user = req.user as any;
+    const targetEmail = to || user.email;
+    if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للإرسال إليه" });
+    let ok = false;
+    if (type === "welcome") ok = await sendWelcomeEmail(targetEmail, user.fullName || "مدير");
+    else if (type === "otp") ok = await sendOtpEmail(targetEmail, user.fullName || "مدير", "123456");
+    else if (type === "order") ok = await sendOrderConfirmationEmail(targetEmail, user.fullName || "مدير", "TEST001", ["خدمة اختبارية", "إضافة تجريبية"]);
+    else if (type === "status") ok = await sendOrderStatusEmail(targetEmail, user.fullName || "مدير", "TEST001", "approved");
+    else if (type === "message") ok = await sendMessageNotificationEmail(targetEmail, user.fullName || "مدير", "فريق Qirox", "هذا اختبار لنظام الرسائل");
+    if (ok) res.json({ ok: true, message: `تم إرسال البريد التجريبي بنجاح إلى ${targetEmail}` });
+    else res.status(500).json({ error: "فشل إرسال البريد — تحقق من إعدادات SMTP2GO" });
+  });
+
   // Initialize seed data
   await seedDatabase();
 
