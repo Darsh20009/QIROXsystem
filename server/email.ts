@@ -1,5 +1,5 @@
 const API_KEY = process.env.SMTP2GO_API_KEY || "";
-const SENDER = process.env.SMTP2GO_SENDER || "noreply@qirox.studio";
+const SENDER = process.env.SMTP2GO_SENDER || "noreply@qiroxstudio.online";
 const SENDER_NAME = process.env.SMTP2GO_SENDER_NAME || "Qirox";
 const BASE_URL = "https://api.smtp2go.com/v3/email/send";
 const LOGO_URL = "https://qirox.studio/logo.png";

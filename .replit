@@ -48,7 +48,7 @@ MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvj
 PAYPAL_ENV = "live"
 VITE_PAYPAL_ENV = "live"
 SMTP2GO_API_KEY = "api-5CC7EFCFDA564ABAA365F3C7660DD332"
-SMTP2GO_SENDER = "noreply@qirox.studio"
+SMTP2GO_SENDER = "noreply@qiroxstudio.online"
 SMTP2GO_SENDER_NAME = "Qirox"
 
 [agent]
