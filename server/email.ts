@@ -37,9 +37,9 @@ function baseTemplate(content: string) {
 <style>
   body{margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;}
   .wrap{max-width:580px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e2e2;box-shadow:0 2px 16px rgba(0,0,0,0.07);}
-  .header{background:#000;padding:28px 32px;text-align:center;}
-  .header img{max-width:200px;width:100%;height:auto;display:block;margin:0 auto;}
-  .header-fallback{color:#fff;font-size:28px;font-weight:900;letter-spacing:3px;}
+  .header{background:#ffffff;padding:28px 32px;text-align:center;border-bottom:3px solid #000;}
+  .header img{max-width:220px;width:100%;height:auto;display:block;margin:0 auto;}
+  .header-fallback{color:#000;font-size:28px;font-weight:900;letter-spacing:3px;}
   .body{padding:36px 32px;}
   .title{font-size:20px;font-weight:800;color:#111;margin-bottom:12px;}
   .text{font-size:14px;color:#555;line-height:1.8;margin-bottom:16px;}
