@@ -1,9 +1,41 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, readdir } from "fs/promises";
+import { execSync } from "child_process";
+import { existsSync } from "fs";
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
+async function cleanStaleTempDirs() {
+  if (!existsSync("node_modules")) return;
+  try {
+    const entries = await readdir("node_modules");
+    let cleaned = 0;
+    for (const entry of entries) {
+      if (entry.startsWith(".") && entry !== ".bin" && entry !== ".cache") {
+        await rm(`node_modules/${entry}`, { recursive: true, force: true });
+        cleaned++;
+      }
+    }
+    if (cleaned > 0) console.log(`[build] Removed ${cleaned} stale npm temp dir(s)`);
+  } catch {
+    // ignore
+  }
+}
+
+async function ensureDeps() {
+  const viteFdir = "node_modules/vite/node_modules/fdir";
+  const rootFdir = "node_modules/fdir";
+  const jiti = "node_modules/jiti";
+
+  const depsOk = (existsSync(viteFdir) || existsSync(rootFdir)) && existsSync(jiti);
+
+  if (!depsOk) {
+    console.log("[build] Incomplete dependencies detected — fixing npm install...");
+    await cleanStaleTempDirs();
+    execSync("npm install --prefer-offline=false", { stdio: "inherit" });
+    console.log("[build] Dependencies restored successfully");
+  }
+}
+
 const allowlist = [
   "@google/generative-ai",
   "axios",
@@ -35,6 +67,8 @@ const allowlist = [
 ];
 
 async function buildAll() {
+  await ensureDeps();
+
   await rm("dist", { recursive: true, force: true });
 
   console.log("building client...");
