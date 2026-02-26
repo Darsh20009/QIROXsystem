@@ -9,8 +9,6 @@ import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 type Step = "email" | "otp" | "reset" | "done";
 
-const isDev = import.meta.env.DEV;
-
 export default function ForgotPassword() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("email");
@@ -301,29 +299,6 @@ export default function ForgotPassword() {
                       لم تستلم الرمز؟ إعادة إرسال
                     </button>
 
-                    {isDev && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const r = await fetch(`/api/auth/dev-otp/${encodeURIComponent(email)}`);
-                            const d = await r.json();
-                            if (d.code) {
-                              setOtp(d.code.split("").slice(0, 6));
-                              toast({ title: `رمز التطوير: ${d.code}`, description: "تم ملء الرمز تلقائياً" });
-                            } else {
-                              toast({ title: "لا يوجد رمز نشط", variant: "destructive" });
-                            }
-                          } catch {
-                            toast({ title: "خطأ في جلب الرمز", variant: "destructive" });
-                          }
-                        }}
-                        className="w-full text-xs text-blue-500/60 hover:text-blue-600 transition-colors py-1 border border-dashed border-blue-200 rounded-lg"
-                        data-testid="button-dev-fetch-otp"
-                      >
-                        🛠 عرض الرمز (وضع التطوير فقط)
-                      </button>
-                    )}
                   </div>
 
                   <button
