@@ -6,7 +6,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus, Trash2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +24,24 @@ export default function ProjectDetails() {
   const project = Array.isArray(projectOrProjects) ? projectOrProjects[0] : projectOrProjects;
   const { data: tasks, isLoading: isLoadingTasks } = useTasks(project?.id);
   const { data: vaultItems, isLoading: isLoadingVault } = useVault(project?.id);
+  const { toast } = useToast();
   const [messageContent, setMessageContent] = useState("");
+
+  const deleteVaultMutation = useMutation({
+    mutationFn: async (vaultId: string) => {
+      await apiRequest("DELETE", `/api/projects/${project?.id}/vault/${vaultId}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "vault"] }),
+    onError: () => toast({ title: "فشل حذف العنصر", variant: "destructive" }),
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      await apiRequest("DELETE", `/api/projects/${project?.id}/tasks/${taskId}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "tasks"] }),
+    onError: () => toast({ title: "فشل حذف المهمة", variant: "destructive" }),
+  });
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
     queryKey: ["/api/projects", project?.id, "messages"],
@@ -159,7 +178,7 @@ export default function ProjectDetails() {
                     {isLoadingTasks ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 
                      tasks?.length === 0 ? <p className="text-center text-slate-400 py-8">لا توجد مهام حالياً</p> :
                      tasks?.map((task: any) => (
-                      <div key={task.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors">
+                      <div key={task.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors group">
                         <div className="flex items-center gap-3">
                           <CheckCircle2 className={`w-5 h-5 ${task.status === 'completed' ? 'text-green-500' : 'text-slate-300'}`} />
                           <div>
@@ -167,9 +186,21 @@ export default function ProjectDetails() {
                             <p className="text-xs text-slate-500">{task.priority === 'high' ? 'أولوية قصوى' : task.priority}</p>
                           </div>
                         </div>
-                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                          {task.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                            {task.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}
+                          </Badge>
+                          {(user as any)?.role !== 'client' && (
+                            <button
+                              onClick={() => deleteTaskMutation.mutate(task.id)}
+                              disabled={deleteTaskMutation.isPending}
+                              className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
+                              data-testid={`button-delete-task-${task.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -312,7 +343,21 @@ export default function ProjectDetails() {
                           <div className="mt-4 p-3 bg-slate-900 rounded-lg text-xs font-mono text-cyan-400 break-all">
                             {item.isSecret ? "••••••••••••" : item.content}
                           </div>
-                          <Button variant="ghost" size="sm" className="w-full mt-4 text-xs">عرض المحتوى</Button>
+                          <div className="flex gap-2 mt-4">
+                            <Button variant="ghost" size="sm" className="flex-1 text-xs">عرض المحتوى</Button>
+                            {(user as any)?.role !== 'client' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-400 hover:text-red-600 hover:bg-red-50 px-2"
+                                onClick={() => deleteVaultMutation.mutate(item.id || item._id)}
+                                disabled={deleteVaultMutation.isPending}
+                                data-testid={`button-delete-vault-${item.id || item._id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     ))}

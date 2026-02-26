@@ -10,6 +10,23 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 26, 2026 - Session 11)
+
+### New Features & Bug Fixes
+- **Contact Form**: Fully connected to backend — `POST /api/contact` sends email to `info@qirox.tech` via SMTP2GO with sender details. Success/error states with animated feedback.
+- **Cart Checkout**: Now creates a real order via `POST /api/orders` (instead of just UI simulation). Cart is cleared after successful order. Loading state on button.
+- **Join Us Page (JoinUs.tsx)**: Completely rebuilt from stub — hero section, 4 perks cards, list of open jobs from API, job application dialog with form (name, email, phone, resume URL, cover letter), open application banner. `POST /api/apply` creates application in DB and emails HR team.
+- **Backend: Missing Routes Added**:
+  - `POST /api/contact` — Public contact form email sender
+  - `POST /api/apply` — Public job application submission
+  - `DELETE /api/projects/:projectId/tasks/:taskId` — Delete a task
+  - `DELETE /api/projects/:projectId/vault/:vaultId` — Delete a vault item
+  - `DELETE /api/projects/:projectId/members/:memberId` — Remove project member
+  - `POST /api/admin/projects` — Admin creates project from scratch
+- **ProjectDetails**: Added delete buttons (Trash2) for tasks and vault items (only visible to non-client roles). Hover-to-show on task rows.
+- **Dark Mode CSS**: Added `.dark` variants for all component classes (`.glass`, `.glass-strong`, `.glass-card`, `.section-dark`, `.section-darker`, etc.) in `index.css`.
+- **Home.tsx**: Full dark mode pass — all sections (hero, stats, pathfinder, carousel, services, why) now have `dark:` Tailwind variants.
+
 ## Latest Changes (Feb 26, 2026 - Session 10)
 
 - **Dark Mode**: Added `.dark` CSS variable block in `index.css` with full sidebar/card/border theming. `tailwind.config.ts` already had `darkMode: ["class"]`. `ThemeProvider` in `lib/theme.tsx` manages localStorage + `document.documentElement.classList`.

@@ -345,6 +345,29 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // === CONTACT FORM ===
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      if (!name || !email || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
+      await sendDirectEmail("info@qirox.tech", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${name}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${email}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${subject || '—'}</td></tr>
+          </table>
+          <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;border:1px solid #eee;">
+            <p style="color:#111;line-height:1.7;white-space:pre-wrap;">${message}</p>
+          </div>
+          <p style="color:#999;font-size:12px;margin-top:24px;">تم الإرسال من موقع QIROX Studio</p>
+        </div>
+      `);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: "فشل إرسال الرسالة، يرجى المحاولة مرة أخرى" }); }
+  });
+
   // === ADMIN ORDERS API ===
   app.get("/api/admin/orders", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") {
@@ -428,6 +451,17 @@ export async function registerRoutes(
     const user = req.user as User;
     const projects = await storage.getProjects(String(user.id), user.role);
     res.json(projects);
+  });
+
+  app.post("/api/admin/projects", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (role === "client") return res.sendStatus(403);
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await ProjectModel.create(req.body);
+      res.status(201).json(project);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   app.get(api.projects.get.path, async (req, res) => {
@@ -550,6 +584,18 @@ export async function registerRoutes(
     } catch (e) { console.error("[Email] task update email error:", e); }
   });
 
+  app.delete("/api/projects/:projectId/tasks/:taskId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { TaskModel } = await import("./models");
+      const task = await TaskModel.findById(req.params.taskId);
+      if (!task) return res.sendStatus(404);
+      if (String(task.projectId) !== req.params.projectId) return res.sendStatus(403);
+      await TaskModel.findByIdAndDelete(req.params.taskId);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
   // === PROJECT MEMBERS API ===
   app.get("/api/projects/:projectId/members", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -564,6 +610,15 @@ export async function registerRoutes(
       projectId: req.params.projectId
     });
     res.status(201).json(member);
+  });
+
+  app.delete("/api/projects/:projectId/members/:memberId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectMemberModel } = await import("./models");
+      await ProjectMemberModel.findByIdAndDelete(req.params.memberId);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === MESSAGES API ===
@@ -598,6 +653,15 @@ export async function registerRoutes(
       projectId: req.params.projectId
     });
     res.status(201).json(item);
+  });
+
+  app.delete("/api/projects/:projectId/vault/:vaultId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectVaultModel } = await import("./models");
+      await ProjectVaultModel.findByIdAndDelete(req.params.vaultId);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === CHAT API ===
@@ -742,6 +806,29 @@ export async function registerRoutes(
     try {
       await storage.deleteJob(req.params.id);
       res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // Public job application
+  app.post("/api/apply", async (req, res) => {
+    try {
+      const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
+      if (!jobId || !fullName || !email) return res.status(400).json({ error: "يرجى تعبئة الحقول المطلوبة" });
+      const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "" });
+      sendDirectEmail("info@qirox.tech", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          <h2 style="color:#111;">طلب توظيف جديد</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="color:#111;">${fullName}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="color:#111;">${email}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الهاتف:</td><td style="color:#111;">${phone || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">المعرف الوظيفي:</td><td style="color:#111;">${jobId}</td></tr>
+            ${resumeUrl ? `<tr><td style="padding:8px 0;color:#666;font-weight:bold;">السيرة الذاتية:</td><td style="color:#111;"><a href="${resumeUrl}">${resumeUrl}</a></td></tr>` : ''}
+          </table>
+          ${coverLetter ? `<div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;"><p style="color:#111;line-height:1.7;">${coverLetter}</p></div>` : ''}
+        </div>
+      `).catch(console.error);
+      res.status(201).json(application);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, CheckCircle, Clock, XCircle, Eye, UserCheck, DollarSign, Calendar } from "lucide-react";
+import { Loader2, FileText, CheckCircle, Clock, XCircle, Eye, UserCheck, DollarSign, Calendar, FolderPlus } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -108,6 +108,23 @@ export default function AdminOrders() {
     if (editAdminNotes !== undefined) updates.adminNotes = editAdminNotes;
     updateMutation.mutate({ id: selectedOrder.id, updates });
   };
+
+  const convertToProjectMutation = useMutation({
+    mutationFn: async (order: OrderData) => {
+      const res = await apiRequest("POST", "/api/admin/projects", {
+        orderId: order.id,
+        clientId: order.userId,
+        status: "new",
+        progress: 0,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم إنشاء المشروع بنجاح — ستجده في قائمة المشاريع" });
+      setSelectedOrder(null);
+    },
+    onError: () => toast({ title: "فشل إنشاء المشروع", variant: "destructive" }),
+  });
 
   const openDetail = (order: OrderData) => {
     setSelectedOrder(order);
@@ -399,6 +416,21 @@ export default function AdminOrders() {
                   إغلاق
                 </Button>
               </div>
+
+              {["approved", "in_progress"].includes(selectedOrder.status) && (
+                <div className="pt-2 border-t border-black/[0.05]">
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 gap-2 text-sm border-black/10 hover:border-black/20 hover:bg-black/[0.02]"
+                    onClick={() => convertToProjectMutation.mutate(selectedOrder)}
+                    disabled={convertToProjectMutation.isPending}
+                    data-testid="button-convert-to-project"
+                  >
+                    {convertToProjectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
+                    تحويل إلى مشروع
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

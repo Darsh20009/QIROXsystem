@@ -114,6 +114,26 @@ export default function Cart() {
     onError: () => toast({ title: "كوبون غير صالح", variant: "destructive" }),
   });
 
+  const checkoutMutation = useMutation({
+    mutationFn: async () => {
+      const itemNames = items.map(i => i.nameAr || i.name);
+      const r = await apiRequest("POST", "/api/orders", {
+        projectType: items.find(i => i.type === "service")?.name || "خدمة رقمية",
+        sector: "general",
+        totalAmount: Math.round(total),
+        items: itemNames,
+        paymentMethod: "bank_transfer",
+        notes: `طلب من السلة — ${items.length} عنصر`,
+      });
+      return r.json();
+    },
+    onSuccess: async () => {
+      await clearMutation.mutateAsync();
+      setCheckoutDone(true);
+    },
+    onError: () => toast({ title: "فشل إرسال الطلب، يرجى المحاولة مرة أخرى", variant: "destructive" }),
+  });
+
   const items = cart?.items || [];
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = cart?.discountAmount || 0;
@@ -456,12 +476,12 @@ export default function Cart() {
                 {/* Checkout button */}
                 <Button
                   className="w-full bg-black hover:bg-black/85 text-white font-black h-12 rounded-xl text-sm mt-2 gap-2"
-                  disabled={items.length === 0}
-                  onClick={() => setCheckoutDone(true)}
+                  disabled={items.length === 0 || checkoutMutation.isPending}
+                  onClick={() => checkoutMutation.mutate()}
                   data-testid="button-checkout"
                 >
-                  <ShoppingBag className="w-4 h-4" />
-                  إتمام الطلب والتواصل
+                  {checkoutMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
+                  {checkoutMutation.isPending ? "جاري إرسال الطلب..." : "إتمام الطلب والتواصل"}
                 </Button>
 
                 <p className="text-[10px] text-black/25 text-center pt-1 leading-relaxed">
