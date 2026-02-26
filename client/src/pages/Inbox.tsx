@@ -5,9 +5,10 @@ import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MessageSquare, Send, ChevronLeft, Users, Search } from "lucide-react";
-import { useQuery as useQ } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, MessageSquare, Send, Users, Search, Mail, X } from "lucide-react";
 
 function timeAgo(date: string) {
   const d = new Date(date);
@@ -41,6 +42,11 @@ export default function Inbox() {
   const [messageText, setMessageText] = useState("");
   const [search, setSearch] = useState("");
   const [newContactId, setNewContactId] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeToName, setComposeToName] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Fetch all messages (for contacts list)
@@ -104,6 +110,16 @@ export default function Inbox() {
     c.fullName.toLowerCase().includes(search.toLowerCase())
   );
 
+  const { data: emailRecipients = [] } = useQuery<any[]>({
+    queryKey: ["/api/employee/email-recipients"],
+    queryFn: async () => {
+      const r = await fetch("/api/employee/email-recipients");
+      if (!r.ok) return [];
+      return r.json();
+    },
+    enabled: !!user && (user as any).role !== "client",
+  });
+
   const sendMutation = useMutation({
     mutationFn: async () => {
       if (!messageText.trim() || !activeContact?.id) return;
@@ -116,6 +132,25 @@ export default function Inbox() {
       queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContact?.id] });
     },
     onError: () => toast({ title: "تعذّر إرسال الرسالة", variant: "destructive" }),
+  });
+
+  const emailMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/employee/send-email", {
+        to: composeTo,
+        toName: composeToName || composeTo,
+        subject: composeSubject,
+        body: composeBody,
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || "فشل الإرسال"); }
+      return r.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم إرسال البريد بنجاح ✓" });
+      setComposeOpen(false);
+      setComposeTo(""); setComposeToName(""); setComposeSubject(""); setComposeBody("");
+    },
+    onError: (e: any) => toast({ title: e.message || "فشل إرسال البريد", variant: "destructive" }),
   });
 
   useEffect(() => {
@@ -132,15 +167,116 @@ export default function Inbox() {
 
   return (
     <div className="h-screen bg-[#f8f8f8] flex flex-col" dir="rtl">
+      {/* Compose Email Dialog */}
+      {me?.role !== "client" && (
+        <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+          <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-black flex items-center gap-2">
+                <Mail className="w-5 h-5 text-black/30" />
+                إنشاء بريد إلكتروني
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-black/50 mb-1.5">إلى (البريد)</label>
+                  <div className="flex gap-1">
+                    <Input
+                      value={composeTo}
+                      onChange={e => setComposeTo(e.target.value)}
+                      placeholder="name@example.com"
+                      className="h-9 text-sm"
+                      data-testid="input-compose-to"
+                    />
+                  </div>
+                  {emailRecipients.length > 0 && (
+                    <select
+                      onChange={e => {
+                        const r = emailRecipients.find((x: any) => x.email === e.target.value);
+                        if (r) { setComposeTo(r.email); setComposeToName(r.name); }
+                      }}
+                      className="mt-1 w-full h-8 text-xs border border-black/[0.08] rounded-lg px-2 bg-white text-black/60"
+                    >
+                      <option value="">اختر من قائمة المستخدمين...</option>
+                      {emailRecipients.map((r: any) => (
+                        <option key={r.id} value={r.email}>{r.name} — {r.email}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-black/50 mb-1.5">اسم المستلم</label>
+                  <Input
+                    value={composeToName}
+                    onChange={e => setComposeToName(e.target.value)}
+                    placeholder="الاسم الكامل"
+                    className="h-9 text-sm"
+                    data-testid="input-compose-toname"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-black/50 mb-1.5">الموضوع</label>
+                <Input
+                  value={composeSubject}
+                  onChange={e => setComposeSubject(e.target.value)}
+                  placeholder="موضوع الرسالة..."
+                  className="h-9 text-sm"
+                  data-testid="input-compose-subject"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-black/50 mb-1.5">المحتوى</label>
+                <Textarea
+                  value={composeBody}
+                  onChange={e => setComposeBody(e.target.value)}
+                  placeholder="اكتب محتوى الرسالة هنا..."
+                  rows={6}
+                  className="text-sm resize-none"
+                  data-testid="input-compose-body"
+                />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button
+                  className="flex-1 premium-btn"
+                  onClick={() => emailMutation.mutate()}
+                  disabled={emailMutation.isPending || !composeTo || !composeSubject || !composeBody}
+                  data-testid="button-send-compose"
+                >
+                  {emailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                  إرسال البريد
+                </Button>
+                <Button variant="outline" onClick={() => setComposeOpen(false)}>إلغاء</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Page Header */}
-      <div className="bg-white border-b border-black/[0.06] px-5 py-4 flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center">
-          <MessageSquare className="w-4 h-4 text-white" />
+      <div className="bg-white border-b border-black/[0.06] px-5 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center">
+            <MessageSquare className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h1 className="font-black text-black text-sm">صندوق الرسائل</h1>
+            <p className="text-[10px] text-black/35">تواصل مباشر مع الفريق</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-black text-black text-sm">صندوق الرسائل</h1>
-          <p className="text-[10px] text-black/35">تواصل مباشر مع الفريق</p>
-        </div>
+        {me?.role !== "client" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs border-black/[0.1] hover:bg-black/[0.03]"
+            onClick={() => setComposeOpen(true)}
+            data-testid="button-compose-email"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            إنشاء بريد
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">

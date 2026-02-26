@@ -1362,6 +1362,30 @@ export async function registerRoutes(
     res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
   });
 
+  // === EMPLOYEE SEND EMAIL (all non-client roles) ===
+  app.post("/api/employee/send-email", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { to, toName, subject, body } = req.body;
+    if (!to || !subject || !body) return res.status(400).json({ error: "البريد الإلكتروني والعنوان والمحتوى مطلوبة" });
+    const senderName = user.fullName || user.username;
+    const fullBody = `من: ${senderName}\n\n${body}`;
+    const ok = await sendDirectEmail(to, toName || to, subject, fullBody);
+    if (ok) res.json({ ok: true });
+    else res.status(500).json({ error: "فشل إرسال البريد" });
+  });
+
+  // === EMAIL RECIPIENTS FOR EMPLOYEES ===
+  app.get("/api/employee/email-recipients", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { UserModel } = await import("./models");
+    const users = await UserModel.find({ email: { $exists: true, $ne: "" } }).select("email fullName username role").limit(200);
+    res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
+  });
+
   // ═══════════════════════════════════════════════════════════
   // === ACTIVITY LOG ===
   // ═══════════════════════════════════════════════════════════
@@ -1615,6 +1639,7 @@ export async function seedDatabase() {
     console.log("Admin account migrated: admin_qirox → qadmin");
   }
 
+  const { UserModel } = await import("./models");
   const existingAdmin = await storage.getUserByUsername(adminUsername);
   if (!existingAdmin) {
     const hashedPassword = await hashPassword("qadmin");
@@ -1626,6 +1651,10 @@ export async function seedDatabase() {
       fullName: "System Admin",
     });
     console.log("Admin account created: admin@qirox.tech");
+  } else {
+    const hashedPassword = await hashPassword("qadmin");
+    await UserModel.updateOne({ username: adminUsername }, { $set: { password: hashedPassword, role: "admin" } });
+    console.log("Admin password reset to default on startup");
   }
 
   const existingServices = await storage.getServices();
