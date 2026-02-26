@@ -65,6 +65,8 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     },
   });
 
+  const [sendEmail, setSendEmail] = useState(true);
+
   const [form, setForm] = useState({
     userId: "",
     orderId: "",
@@ -108,9 +110,18 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       });
       return r.json();
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "تم إنشاء الفاتورة بنجاح" });
+      if (sendEmail && data?.id) {
+        try {
+          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          toast({ title: "تم إنشاء الفاتورة وإرسالها بالبريد ✅" });
+        } catch {
+          toast({ title: "تم إنشاء الفاتورة، لكن فشل إرسال البريد", variant: "destructive" });
+        }
+      } else {
+        toast({ title: "تم إنشاء الفاتورة بنجاح" });
+      }
       onClose();
     },
     onError: () => toast({ title: "فشل إنشاء الفاتورة", variant: "destructive" }),
@@ -198,13 +209,24 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder="ملاحظات اختيارية..." />
       </div>
 
+      <label className="flex items-center gap-2.5 cursor-pointer select-none" data-testid="checkbox-send-email-invoice">
+        <input
+          type="checkbox"
+          checked={sendEmail}
+          onChange={e => setSendEmail(e.target.checked)}
+          className="w-4 h-4 accent-black rounded"
+        />
+        <span className="text-xs text-black/60 font-medium">إرسال الفاتورة للعميل بالبريد الإلكتروني بعد الإنشاء</span>
+        <Mail className="w-3.5 h-3.5 text-black/30" />
+      </label>
+
       <Button
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending || !form.userId || (finalAmount <= 0)}
         className="w-full bg-black text-white h-10 rounded-xl font-bold"
         data-testid="button-create-invoice"
       >
-        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "إنشاء الفاتورة"}
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? "إنشاء وإرسال بالبريد" : "إنشاء الفاتورة"}
       </Button>
     </div>
   );

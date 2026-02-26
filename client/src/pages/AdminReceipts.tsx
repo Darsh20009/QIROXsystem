@@ -57,6 +57,7 @@ interface Invoice { id: string; invoiceNumber: string; totalAmount: number; }
 function ReceiptForm({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [sendEmail, setSendEmail] = useState(true);
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users"],
@@ -105,10 +106,19 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
       });
       return r.json();
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       qc.invalidateQueries({ queryKey: ["/api/receipts"] });
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "تم إنشاء سند القبض بنجاح" });
+      if (sendEmail && data?.id) {
+        try {
+          await fetch(`/api/receipts/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          toast({ title: "تم إصدار السند وإرساله بالبريد ✅" });
+        } catch {
+          toast({ title: "تم إصدار السند، لكن فشل إرسال البريد", variant: "destructive" });
+        }
+      } else {
+        toast({ title: "تم إنشاء سند القبض بنجاح" });
+      }
       onClose();
     },
     onError: () => toast({ title: "فشل إنشاء السند", variant: "destructive" }),
@@ -197,13 +207,24 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
         <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder="اختياري..." />
       </div>
 
+      <label className="flex items-center gap-2.5 cursor-pointer select-none" data-testid="checkbox-send-email-receipt">
+        <input
+          type="checkbox"
+          checked={sendEmail}
+          onChange={e => setSendEmail(e.target.checked)}
+          className="w-4 h-4 accent-black rounded"
+        />
+        <span className="text-xs text-black/60 font-medium">إرسال سند القبض للعميل بالبريد الإلكتروني بعد الإصدار</span>
+        <Mail className="w-3.5 h-3.5 text-black/30" />
+      </label>
+
       <Button
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending || !form.userId || amountNum <= 0}
         className="w-full bg-black text-white h-10 rounded-xl font-bold"
         data-testid="button-create-receipt"
       >
-        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "إصدار سند القبض"}
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? "إصدار وإرسال بالبريد" : "إصدار سند القبض"}
       </Button>
     </div>
   );

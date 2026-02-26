@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Wallet, TrendingUp, Users, CreditCard, Mail, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Wallet, TrendingUp, Users, CreditCard, Mail, CheckCircle, XCircle, Clock, Ban } from "lucide-react";
 import { type Order } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,13 @@ export default function AdminFinance() {
   const { data: orders, isLoading } = useQuery<Order[]>({ queryKey: ["/api/orders"] });
 
   const { data: summary } = useQuery<{
-    totalRevenue: number; monthRevenue: number; unpaidTotal: number; totalOrders: number; activeClients: number;
+    totalRevenue: number;
+    monthRevenue: number;
+    unpaidTotal: number;
+    totalOrders: number;
+    activeClients: number;
+    cancelledTotal?: number;
+    monthlyBreakdown?: { name: string; value: number }[];
   }>({
     queryKey: ["/api/admin/finance/summary"],
     queryFn: async () => {
@@ -50,16 +56,24 @@ export default function AdminFinance() {
     </div>
   );
 
-  const totalRevenue = summary?.totalRevenue || orders?.reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
-  const pendingPayments = orders?.filter(o => !(o as any).isDepositPaid).reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
+  const cancelledStatuses = ["cancelled", "rejected"];
 
-  const chartData = [
-    { name: "يناير", value: 4000 },
-    { name: "فبراير", value: 3000 },
-    { name: "مارس", value: 2000 },
-    { name: "أبريل", value: 2780 },
-    { name: "مايو", value: summary?.monthRevenue || 1890 },
-  ];
+  const totalRevenue = summary?.totalRevenue
+    ?? (orders?.filter(o => o.status === "completed").reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0);
+
+  const pendingAmount = summary?.unpaidTotal
+    ?? (orders?.filter(o => !cancelledStatuses.includes(o.status || "") && o.status !== "completed").reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0);
+
+  const cancelledAmount = orders?.filter(o => cancelledStatuses.includes(o.status || "")).reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
+
+  const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const now = new Date();
+  const defaultChart = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
+    return { name: monthNames[d.getMonth()], value: i === 4 ? (summary?.monthRevenue || 0) : 0 };
+  });
+
+  const chartData = summary?.monthlyBreakdown || defaultChart;
 
   const emailTypes = [
     { value: "welcome", label: "ترحيب" },
@@ -82,35 +96,48 @@ export default function AdminFinance() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-black/60">إجمالي الأرباح</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-black">{totalRevenue.toLocaleString()} ر.س</div>
-            <p className="text-xs text-black/30 mt-1">من جميع الفواتير المدفوعة</p>
+            <div className="text-2xl font-black text-black" data-testid="text-total-revenue">{totalRevenue.toLocaleString()} ر.س</div>
+            <p className="text-xs text-black/30 mt-1">من الفواتير المدفوعة فقط</p>
           </CardContent>
         </Card>
+
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-black/60">مستحق هذا الشهر</CardTitle>
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-black">{(summary?.monthRevenue || 0).toLocaleString()} ر.س</div>
+            <div className="text-2xl font-black text-black" data-testid="text-month-revenue">{(summary?.monthRevenue || 0).toLocaleString()} ر.س</div>
             <p className="text-xs text-black/30 mt-1">{summary?.activeClients || 0} عميل نشط</p>
           </CardContent>
         </Card>
-        <Card className="border-black/[0.07] shadow-none rounded-2xl">
+
+        <Card className="border-amber-100 shadow-none rounded-2xl bg-amber-50/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-black/60">دفعات قيد الانتظار</CardTitle>
-            <CreditCard className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium text-amber-700">أموال معلقة</CardTitle>
+            <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-black">{pendingPayments.toLocaleString()} ر.س</div>
-            <p className="text-xs text-black/30 mt-1">من {orders?.filter(o => !(o as any).isDepositPaid).length || 0} طلبات</p>
+            <div className="text-2xl font-black text-amber-800" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} ر.س</div>
+            <p className="text-xs text-amber-600/70 mt-1">فواتير غير مدفوعة بعد</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-100 shadow-none rounded-2xl bg-red-50/40">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-red-600">ملغاة / مرفوضة</CardTitle>
+            <Ban className="h-4 w-4 text-red-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-black text-red-700" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} ر.س</div>
+            <p className="text-xs text-red-400/70 mt-1">لا تُحتسب في الأرباح</p>
           </CardContent>
         </Card>
       </div>
@@ -196,9 +223,9 @@ export default function AdminFinance() {
 
           <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-xs space-y-1">
             <p className="font-bold text-black/50 mb-2">إعدادات SMTP2GO الحالية:</p>
-            <p className="text-black/35">المرسل: <span className="font-mono text-black/60">noreply@qirox.tech</span></p>
+            <p className="text-black/35">المرسل: <span className="font-mono text-black/60">noreply@qiroxstudio.online</span></p>
             <p className="text-black/35">API: <span className="font-mono text-black/60">api-5CC7...D332 ✓</span></p>
-            <p className="text-black/35 mt-2 text-[10px]">تأكد من أن النطاق qirox.tech معتمد في حساب SMTP2GO تحت Senders → Verified Senders</p>
+            <p className="text-black/35 mt-2 text-[10px]">تأكد من أن النطاق qiroxstudio.online معتمد في حساب SMTP2GO تحت Senders → Verified Senders</p>
           </div>
         </div>
       </div>

@@ -1508,19 +1508,43 @@ export async function registerRoutes(
     const { InvoiceModel, OrderModel, UserModel } = await import("./models");
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const [totalRevenue, monthRevenue, unpaidTotal, totalOrders, activeClients] = await Promise.all([
+
+    // build last 6 months range
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const [totalRevenue, monthRevenue, unpaidTotal, cancelledTotal, totalOrders, activeClients, monthlyRaw] = await Promise.all([
       InvoiceModel.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'paid', paidAt: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
       InvoiceModel.aggregate([{ $match: { status: 'unpaid' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
-      OrderModel.countDocuments(),
+      InvoiceModel.aggregate([{ $match: { status: 'cancelled' } }, { $group: { _id: null, total: { $sum: '$totalAmount' } } }]),
+      OrderModel.countDocuments({ status: { $nin: ['cancelled', 'rejected'] } }),
       UserModel.countDocuments({ role: 'client' }),
+      InvoiceModel.aggregate([
+        { $match: { status: 'paid', paidAt: { $gte: sixMonthsAgo } } },
+        { $group: { _id: { year: { $year: '$paidAt' }, month: { $month: '$paidAt' } }, total: { $sum: '$totalAmount' } } },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ])
     ]);
+
+    const arMonths = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    const monthlyMap: Record<string, number> = {};
+    for (const r of monthlyRaw) {
+      monthlyMap[`${r._id.year}-${r._id.month}`] = r.total;
+    }
+    const monthlyBreakdown = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      return { name: arMonths[d.getMonth()], value: monthlyMap[key] || 0 };
+    });
+
     res.json({
       totalRevenue: totalRevenue[0]?.total || 0,
       monthRevenue: monthRevenue[0]?.total || 0,
       unpaidTotal: unpaidTotal[0]?.total || 0,
+      cancelledTotal: cancelledTotal[0]?.total || 0,
       totalOrders,
       activeClients,
+      monthlyBreakdown,
     });
   });
 
