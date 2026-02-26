@@ -50,6 +50,8 @@ VITE_PAYPAL_ENV = "live"
 SMTP2GO_API_KEY = "api-5CC7EFCFDA564ABAA365F3C7660DD332"
 SMTP2GO_SENDER = "noreply@qiroxstudio.online"
 SMTP2GO_SENDER_NAME = "Qirox"
+EMAIL_LOGO_URL = "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png"
+EMAIL_SITE_URL = "https://qiroxstudio.online"
 
 [agent]
 expertMode = true

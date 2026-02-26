@@ -10,6 +10,30 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 26, 2026 - Session 9)
+
+- **Email System Overhaul**: Full automatic email notifications via SMTP2GO (`noreply@qiroxstudio.online`).
+  - Logo URL: GitHub raw (`https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png`) — works in all email clients
+  - Auto emails triggered: welcome (new user), OTP (password reset), order confirmed, order status change, project status/progress update (→ client), task assigned (→ employee), task completed (→ client)
+  - Admin direct email panel in Dashboard with form and test buttons for all 7 email types
+  - New APIs: `POST /api/admin/send-email` (direct), `GET /api/admin/email-recipients`, `POST /api/admin/test-email`
+  - Env vars: `SMTP2GO_API_KEY`, `SMTP2GO_SENDER` (noreply@qiroxstudio.online), `SMTP2GO_SENDER_NAME`, `EMAIL_LOGO_URL`, `EMAIL_SITE_URL`
+- **Render Deployment Fix**: Changed build command to `npm ci && npm run build` (fixes ENOTEMPTY npm cache bug). Added `render.yaml` with all required env vars. Added `.npmrc` with `prefer-offline=false`.
+
+## Render Deployment Requirements
+
+Set these env vars manually in Render dashboard (they are marked `sync: false` in render.yaml):
+- `MONGODB_URI` — MongoDB Atlas connection string
+- `SMTP2GO_API_KEY` — `api-5CC7EFCFDA564ABAA365F3C7660DD332`
+- `SESSION_SECRET` — any long random string
+
+These are pre-set in render.yaml and don't need manual entry:
+- `NODE_ENV=production`
+- `SMTP2GO_SENDER=noreply@qiroxstudio.online`
+- `SMTP2GO_SENDER_NAME=Qirox`
+- `EMAIL_LOGO_URL=https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png`
+- `EMAIL_SITE_URL=https://qiroxstudio.online`
+
 ## Latest Changes (Feb 25, 2026 - Session 8)
 
 - **OTP / Forgot Password Flow**: Full 3-step recovery page (`/forgot-password`): email → 6-digit OTP verification → new password reset → done. Backend routes: `POST /api/auth/forgot-password` (sends OTP via SMTP2GO), `POST /api/auth/verify-otp`, `POST /api/auth/reset-password`. OTPs expire in 10 minutes, invalidated on use.
