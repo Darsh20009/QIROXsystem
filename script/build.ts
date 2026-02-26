@@ -1,5 +1,3 @@
-import { build as esbuild } from "esbuild";
-import { build as viteBuild } from "vite";
 import { rm, readFile, readdir } from "fs/promises";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
@@ -8,14 +6,12 @@ async function cleanStaleTempDirs() {
   if (!existsSync("node_modules")) return;
   try {
     const entries = await readdir("node_modules");
-    let cleaned = 0;
     for (const entry of entries) {
-      if (entry.startsWith(".") && entry !== ".bin" && entry !== ".cache") {
+      if (entry.startsWith(".") && entry !== ".bin" && entry !== ".cache" && entry !== ".package-lock.json") {
         await rm(`node_modules/${entry}`, { recursive: true, force: true });
-        cleaned++;
       }
     }
-    if (cleaned > 0) console.log(`[build] Removed ${cleaned} stale npm temp dir(s)`);
+    console.log("[build] Cleaned stale npm temp dirs");
   } catch {
     // ignore
   }
@@ -67,14 +63,18 @@ const allowlist = [
 ];
 
 async function buildAll() {
+  // Fix broken deps BEFORE importing vite (dynamic import below)
   await ensureDeps();
 
   await rm("dist", { recursive: true, force: true });
 
+  // Dynamic import so vite loads AFTER deps are fixed
   console.log("building client...");
+  const { build: viteBuild } = await import("vite");
   await viteBuild();
 
   console.log("building server...");
+  const { build: esbuild } = await import("esbuild");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [
     ...Object.keys(pkg.dependencies || {}),
