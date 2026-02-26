@@ -1374,6 +1374,133 @@ export async function registerRoutes(
     res.json(invoice);
   });
 
+  app.get("/api/invoices/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InvoiceModel } = await import("./models");
+    const invoice = await InvoiceModel.findById(req.params.id)
+      .populate("userId", "username fullName email whatsappNumber country")
+      .populate("orderId", "projectType sector services");
+    if (!invoice) return res.sendStatus(404);
+    res.json(invoice);
+  });
+
+  app.delete("/api/invoices/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { InvoiceModel } = await import("./models");
+    await InvoiceModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // Send invoice by email
+  app.post("/api/invoices/:id/send-email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { InvoiceModel, UserModel } = await import("./models");
+      const invoice = await InvoiceModel.findById(req.params.id).populate("userId", "fullName email username");
+      if (!invoice) return res.status(404).json({ error: "الفاتورة غير موجودة" });
+      const user = (invoice as any).userId;
+      if (!user?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
+      const { sendInvoiceEmail } = await import("./email");
+      await sendInvoiceEmail(user.email, user.fullName || user.username, {
+        invoiceNumber: (invoice as any).invoiceNumber,
+        amount: (invoice as any).amount,
+        vatAmount: (invoice as any).vatAmount,
+        totalAmount: (invoice as any).totalAmount,
+        status: (invoice as any).status,
+        dueDate: (invoice as any).dueDate,
+        notes: (invoice as any).notes,
+        items: (invoice as any).items,
+        createdAt: (invoice as any).createdAt,
+      });
+      res.json({ ok: true, message: "تم إرسال الفاتورة بنجاح" });
+    } catch (err) {
+      console.error("[INVOICE EMAIL]", err);
+      res.status(500).json({ error: "فشل إرسال البريد" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === RECEIPT VOUCHERS (سندات القبض) ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/receipts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { ReceiptVoucherModel } = await import("./models");
+    const user = req.user as any;
+    const query = user.role === "client" ? { userId: user.id } : {};
+    const receipts = await ReceiptVoucherModel.find(query)
+      .populate("userId", "username fullName email")
+      .populate("invoiceId", "invoiceNumber")
+      .sort({ createdAt: -1 });
+    res.json(receipts);
+  });
+
+  app.get("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { ReceiptVoucherModel } = await import("./models");
+    const receipt = await ReceiptVoucherModel.findById(req.params.id)
+      .populate("userId", "username fullName email whatsappNumber country")
+      .populate("invoiceId", "invoiceNumber amount totalAmount")
+      .populate("orderId", "projectType sector");
+    if (!receipt) return res.sendStatus(404);
+    res.json(receipt);
+  });
+
+  app.post("/api/receipts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ReceiptVoucherModel } = await import("./models");
+      const rcptNum = `RCV-${Date.now().toString(36).toUpperCase()}`;
+      const receipt = await ReceiptVoucherModel.create({ ...req.body, receiptNumber: rcptNum });
+      // Auto mark invoice as paid if linked
+      if (req.body.invoiceId) {
+        const { InvoiceModel } = await import("./models");
+        await InvoiceModel.findByIdAndUpdate(req.body.invoiceId, { status: 'paid', paidAt: new Date() });
+      }
+      res.status(201).json(receipt);
+    } catch (err) {
+      res.status(500).json({ error: "فشل إنشاء السند" });
+    }
+  });
+
+  app.patch("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { ReceiptVoucherModel } = await import("./models");
+    const receipt = await ReceiptVoucherModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(receipt);
+  });
+
+  app.delete("/api/receipts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { ReceiptVoucherModel } = await import("./models");
+    await ReceiptVoucherModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // Send receipt by email
+  app.post("/api/receipts/:id/send-email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ReceiptVoucherModel } = await import("./models");
+      const receipt = await ReceiptVoucherModel.findById(req.params.id).populate("userId", "fullName email username");
+      if (!receipt) return res.status(404).json({ error: "السند غير موجود" });
+      const user = (receipt as any).userId;
+      if (!user?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
+      const { sendReceiptEmail } = await import("./email");
+      await sendReceiptEmail(user.email, user.fullName || user.username, {
+        receiptNumber: (receipt as any).receiptNumber,
+        amount: (receipt as any).amount,
+        amountInWords: (receipt as any).amountInWords,
+        paymentMethod: (receipt as any).paymentMethod,
+        description: (receipt as any).description,
+        createdAt: (receipt as any).createdAt,
+      });
+      res.json({ ok: true, message: "تم إرسال السند بنجاح" });
+    } catch (err) {
+      console.error("[RECEIPT EMAIL]", err);
+      res.status(500).json({ error: "فشل إرسال البريد" });
+    }
+  });
+
   app.get("/api/admin/finance/summary", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel, OrderModel, UserModel } = await import("./models");

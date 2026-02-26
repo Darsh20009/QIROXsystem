@@ -16,7 +16,7 @@ import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
-  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard
+  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -74,6 +74,8 @@ export function AppSidebar() {
 
     // Finance role pages
     { title: "المالية", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },
+    { title: "الفواتير", icon: FileText, url: "/admin/invoices", group: "employee", allowedRoles: FINANCE_ROLES },
+    { title: "سندات القبض", icon: FileCheck, url: "/admin/receipts", group: "employee", allowedRoles: FINANCE_ROLES },
     { title: "كشف الرواتب", icon: Banknote, url: "/admin/payroll", group: "employee", allowedRoles: FINANCE_ROLES },
 
     // Sales role pages
@@ -87,6 +89,8 @@ export function AppSidebar() {
     { title: "المنتجات والأجهزة", icon: Package, url: "/admin/products", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الموظفون", icon: Users, url: "/admin/employees", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الرواتب", icon: Banknote, url: "/admin/payroll", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "الفواتير", icon: FileText, url: "/admin/invoices", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "سندات القبض", icon: FileCheck, url: "/admin/receipts", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "تذاكر الدعم", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "سجل النشاط", icon: Activity, url: "/admin/activity-log", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الشركاء", icon: Handshake, url: "/admin/partners", group: "admin", allowedRoles: MANAGEMENT_ROLES },

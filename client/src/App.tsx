@@ -55,6 +55,10 @@ import SupportTickets from "@/pages/SupportTickets";
 import EmployeeProfile from "@/pages/EmployeeProfile";
 import EmployeeNewOrder from "@/pages/EmployeeNewOrder";
 import PaymentHistory from "@/pages/PaymentHistory";
+import AdminInvoices from "@/pages/AdminInvoices";
+import InvoicePrint from "@/pages/InvoicePrint";
+import AdminReceipts from "@/pages/AdminReceipts";
+import ReceiptPrint from "@/pages/ReceiptPrint";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
@@ -111,6 +115,10 @@ function AdminRouter() {
       <Route path="/admin/activity-log" component={AdminActivityLog} />
       <Route path="/admin/support-tickets" component={AdminSupportTickets} />
       <Route path="/admin/payroll" component={AdminPayroll} />
+      <Route path="/admin/invoices" component={AdminInvoices} />
+      <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
+      <Route path="/admin/receipts" component={AdminReceipts} />
+      <Route path="/admin/receipt-print/:id" component={ReceiptPrint} />
       <Route path="/support" component={SupportTickets} />
       <Route path="/employee/profile" component={EmployeeProfile} />
       <Route path="/employee/new-order" component={EmployeeNewOrder} />

@@ -408,7 +408,22 @@ const payrollRecordSchema = new mongoose.Schema({
   notes: String,
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema].forEach(s => {
+const receiptVoucherSchema = new mongoose.Schema({
+  receiptNumber: { type: String, required: true, unique: true },
+  invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  amountInWords: { type: String },
+  paymentMethod: { type: String, enum: ['bank_transfer', 'cash', 'paypal', 'stc_pay', 'apple_pay', 'other'], default: 'bank_transfer' },
+  paymentRef: { type: String },
+  description: { type: String },
+  receivedBy: { type: String },
+  notes: { type: String },
+  status: { type: String, enum: ['issued', 'cancelled'], default: 'issued' },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -440,3 +455,4 @@ export const ActivityLogModel = mongoose.models.ActivityLog || mongoose.model("A
 export const SupportTicketModel = mongoose.models.SupportTicket || mongoose.model("SupportTicket", supportTicketSchema);
 export const EmployeeProfileModel = mongoose.models.EmployeeProfile || mongoose.model("EmployeeProfile", employeeProfileSchema);
 export const PayrollRecordModel = mongoose.models.PayrollRecord || mongoose.model("PayrollRecord", payrollRecordSchema);
+export const ReceiptVoucherModel = mongoose.models.ReceiptVoucher || mongoose.model("ReceiptVoucher", receiptVoucherSchema);

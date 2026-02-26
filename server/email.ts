@@ -292,6 +292,83 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
   return sendEmail(to, name, "بيانات حسابك في Qirox 🚀", html);
 }
 
+export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
+  invoiceNumber: string; amount: number; vatAmount: number; totalAmount: number;
+  status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  orderId?: string; createdAt?: string;
+}): Promise<boolean> {
+  const itemsHtml = invoice.items && invoice.items.length > 0
+    ? `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;">
+        <thead><tr style="background:#f9f9f9;">
+          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #eee;color:#555;">الوصف</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">الكمية</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">سعر الوحدة</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">الإجمالي</th>
+        </tr></thead>
+        <tbody>${invoice.items.map(i => `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+        </tr>`).join("")}</tbody>
+      </table>`
+    : "";
+  const statusBadge = invoice.status === 'paid'
+    ? `<span class="badge badge-green">مدفوع ✅</span>`
+    : `<span class="badge" style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">غير مدفوع ⏳</span>`;
+  const html = baseTemplate(`
+    <div class="tag">فاتورة</div>
+    <div class="title">فاتورة رقم ${invoice.invoiceNumber}</div>
+    <p class="text">عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة أدناه:</p>
+    <div class="info-grid">
+      <div class="info-row"><div class="info-label">رقم الفاتورة</div><div class="info-value" style="font-family:monospace;font-weight:900;">${invoice.invoiceNumber}</div></div>
+      <div class="info-row"><div class="info-label">تاريخ الإصدار</div><div class="info-value">${invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')}</div></div>
+      ${invoice.dueDate ? `<div class="info-row"><div class="info-label">تاريخ الاستحقاق</div><div class="info-value">${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</div></div>` : ""}
+      <div class="info-row"><div class="info-label">الحالة</div><div class="info-value">${statusBadge}</div></div>
+    </div>
+    ${itemsHtml}
+    <div class="otp-box" style="margin-top:16px;">
+      <div class="info-grid" style="margin:0;">
+        <div class="info-row"><div class="info-label">المبلغ</div><div class="info-value">${invoice.amount.toLocaleString()} ر.س</div></div>
+        ${invoice.vatAmount > 0 ? `<div class="info-row"><div class="info-label">ضريبة القيمة المضافة (15%)</div><div class="info-value">${invoice.vatAmount.toLocaleString()} ر.س</div></div>` : ""}
+        <div class="info-row"><div class="info-label" style="font-weight:900;color:#111;">الإجمالي</div><div class="info-value" style="font-weight:900;color:#111;font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</div></div>
+      </div>
+    </div>
+    ${invoice.notes ? `<p class="text" style="margin-top:12px;font-size:13px;"><strong>ملاحظات:</strong> ${invoice.notes}</p>` : ""}
+    <p class="text" style="font-size:12px;color:#9ca3af;">معلومات التحويل البنكي: IBAN: SA0380205098017222121010</p>
+    <a href="${SITE_URL}/dashboard" class="btn">عرض الفاتورة في لوحة التحكم</a>
+  `);
+  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} — QIROX`, html);
+}
+
+export async function sendReceiptEmail(to: string, clientName: string, receipt: {
+  receiptNumber: string; amount: number; amountInWords?: string;
+  paymentMethod: string; description?: string; createdAt?: string;
+}): Promise<boolean> {
+  const methodLabels: Record<string, string> = {
+    bank_transfer: "تحويل بنكي", cash: "نقداً", paypal: "PayPal",
+    stc_pay: "STC Pay", apple_pay: "Apple Pay", other: "أخرى"
+  };
+  const html = baseTemplate(`
+    <div class="tag">سند قبض</div>
+    <div class="title">سند قبض رقم ${receipt.receiptNumber}</div>
+    <p class="text">عزيزي ${clientName}، تم استلام مبلغك بنجاح. تفاصيل سند القبض:</p>
+    <div class="otp-box">
+      <div style="font-size:28px;font-weight:900;color:#111;text-align:center;margin-bottom:4px;">${receipt.amount.toLocaleString()} ر.س</div>
+      ${receipt.amountInWords ? `<div style="text-align:center;color:#555;font-size:13px;margin-bottom:8px;">${receipt.amountInWords}</div>` : ""}
+    </div>
+    <div class="info-grid">
+      <div class="info-row"><div class="info-label">رقم السند</div><div class="info-value" style="font-family:monospace;font-weight:900;">${receipt.receiptNumber}</div></div>
+      <div class="info-row"><div class="info-label">تاريخ الاستلام</div><div class="info-value">${receipt.createdAt ? new Date(receipt.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')}</div></div>
+      <div class="info-row"><div class="info-label">طريقة الدفع</div><div class="info-value">${methodLabels[receipt.paymentMethod] || receipt.paymentMethod}</div></div>
+      ${receipt.description ? `<div class="info-row"><div class="info-label">الوصف</div><div class="info-value">${receipt.description}</div></div>` : ""}
+    </div>
+    <p class="text" style="color:#16a34a;font-size:13px;font-weight:700;">✅ تم استلام المبلغ بنجاح — شكراً لثقتك في QIROX</p>
+    <a href="${SITE_URL}/dashboard" class="btn">عرض لوحة التحكم</a>
+  `);
+  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} — QIROX`, html);
+}
+
 export async function sendTestEmail(to: string, name: string): Promise<boolean> {
   const html = baseTemplate(`
     <div class="tag">بريد تجريبي</div>
