@@ -54,6 +54,7 @@ import AdminPayroll from "@/pages/AdminPayroll";
 import SupportTickets from "@/pages/SupportTickets";
 import EmployeeProfile from "@/pages/EmployeeProfile";
 import EmployeeNewOrder from "@/pages/EmployeeNewOrder";
+import DevChecklist from "@/pages/DevChecklist";
 import PaymentHistory from "@/pages/PaymentHistory";
 import AdminInvoices from "@/pages/AdminInvoices";
 import InvoicePrint from "@/pages/InvoicePrint";
@@ -122,6 +123,7 @@ function AdminRouter() {
       <Route path="/support" component={SupportTickets} />
       <Route path="/employee/profile" component={EmployeeProfile} />
       <Route path="/employee/new-order" component={EmployeeNewOrder} />
+      <Route path="/employee/checklist" component={DevChecklist} />
       <Route path="/payment-history" component={PaymentHistory} />
       <Route path="/cart" component={Cart} />
       <Route path="/inbox" component={Inbox} />

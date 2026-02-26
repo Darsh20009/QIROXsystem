@@ -16,7 +16,7 @@ import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
-  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck
+  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -71,6 +71,7 @@ export function AppSidebar() {
     { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
     { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "employee" },
     { title: "ملفي الشخصي", icon: User, url: "/employee/profile", group: "employee" },
+    { title: "أدواتي ومهامي", icon: ListChecks, url: "/employee/checklist", group: "employee" },
 
     // Finance role pages
     { title: "المالية", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },

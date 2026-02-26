@@ -132,7 +132,7 @@ export default function InvoicePrint() {
               <div>
                 <p className="text-xs font-bold text-black/30 uppercase tracking-wider mb-2">من</p>
                 <p className="font-black text-black text-base">QIROX Studio</p>
-                <p className="text-xs text-black/40 mt-1">info@qiroxstudio.online</p>
+                <p className="text-xs text-black/40 mt-1">support@qiroxstudio.online</p>
                 <p className="text-xs text-black/40">qiroxstudio.online</p>
                 <p className="text-xs text-black/40">المملكة العربية السعودية</p>
               </div>
@@ -223,7 +223,7 @@ export default function InvoicePrint() {
                 </div>
                 <div>
                   <p className="text-black/30">بريد التواصل</p>
-                  <p className="font-bold text-black/70">info@qiroxstudio.online</p>
+                  <p className="font-bold text-black/70">support@qiroxstudio.online</p>
                 </div>
               </div>
             </div>

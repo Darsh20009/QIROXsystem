@@ -163,7 +163,7 @@ export default function Contact() {
                 <Mail className="w-5 h-5 text-black/40 dark:text-white/40" />
               </div>
               <h3 className="font-bold text-black dark:text-white text-sm mb-2">البريد الإلكتروني</h3>
-              <p className="text-sm text-black/40 dark:text-white/40">info@qirox.tech</p>
+              <p className="text-sm text-black/40 dark:text-white/40">support@qiroxstudio.online</p>
             </div>
             <div className="bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm">
               <div className="w-12 h-12 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-5">

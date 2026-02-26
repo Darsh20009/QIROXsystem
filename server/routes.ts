@@ -13,6 +13,7 @@ import express from "express";
 import crypto from "crypto";
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail } from "./email";
 import { pushNotification, broadcastNotification } from "./ws";
+import { sendPushToUser, VAPID_PUBLIC } from "./push";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -360,7 +361,7 @@ export async function registerRoutes(
     try {
       const { name, email, subject, message } = req.body;
       if (!name || !email || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
-      await sendDirectEmail("info@qiroxstudio.online", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
+      await sendDirectEmail("support@qiroxstudio.online", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -580,6 +581,7 @@ export async function registerRoutes(
         const taskTitle = (task as any).title || "مهمة جديدة";
         await NotificationModel.create({ userId: input.assignedTo, type: 'task', title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, link: `/projects/${(task as any).projectId}`, icon: '✅' }).catch(() => {});
         pushNotification(String(input.assignedTo), { title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, icon: '✅', link: `/projects/${(task as any).projectId}` });
+        sendPushToUser(String(input.assignedTo), { title: `✅ مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, data: { url: `/projects/${(task as any).projectId}` } }).catch(() => {});
       }
       if (input.status === "done" && (!oldTask || (oldTask as any).status !== "done")) {
         const project = await ProjectModel?.findById((task as any).projectId).select("name clientId");
@@ -834,7 +836,7 @@ export async function registerRoutes(
       const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
       if (!jobId || !fullName || !email) return res.status(400).json({ error: "يرجى تعبئة الحقول المطلوبة" });
       const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "" });
-      sendDirectEmail("info@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
+      sendDirectEmail("support@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;">طلب توظيف جديد</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -1907,6 +1909,107 @@ export async function registerRoutes(
       (InvoiceModel as any).find({ userId: uid }).sort({ createdAt: -1 }),
     ]);
     res.json({ orders, invoices });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === PWA PUSH NOTIFICATIONS ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/push/vapid-key", (req, res) => {
+    res.json({ publicKey: VAPID_PUBLIC });
+  });
+
+  app.post("/api/push/subscribe", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PushSubscriptionModel } = await import("./models");
+      const user = req.user as any;
+      const { endpoint, keys, userAgent } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: "بيانات الاشتراك غير كاملة" });
+      await PushSubscriptionModel.findOneAndUpdate(
+        { endpoint },
+        { userId: user._id || user.id, endpoint, keys, userAgent: userAgent || req.headers["user-agent"] || "" },
+        { upsert: true, new: true }
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: "فشل الاشتراك" });
+    }
+  });
+
+  app.delete("/api/push/unsubscribe", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PushSubscriptionModel } = await import("./models");
+      const { endpoint } = req.body;
+      if (endpoint) await PushSubscriptionModel.deleteOne({ endpoint });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: "فشل إلغاء الاشتراك" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === DEVELOPER CHECKLIST ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/checklist", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ChecklistItemModel } = await import("./models");
+      const user = req.user as any;
+      const items = await (ChecklistItemModel as any).find({ userId: user._id || user.id }).sort({ order: 1, createdAt: -1 });
+      res.json(items);
+    } catch (err) {
+      res.status(500).json({ error: "خطأ في تحميل القائمة" });
+    }
+  });
+
+  app.post("/api/checklist", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ChecklistItemModel } = await import("./models");
+      const user = req.user as any;
+      const { title, description, priority, category, projectId, dueDate } = req.body;
+      if (!title) return res.status(400).json({ error: "العنوان مطلوب" });
+      const item = await (ChecklistItemModel as any).create({
+        userId: user._id || user.id,
+        title, description, priority: priority || "medium",
+        category: category || "عام",
+        ...(projectId && { projectId }),
+        ...(dueDate && { dueDate: new Date(dueDate) }),
+      });
+      res.status(201).json(item);
+    } catch (err) {
+      res.status(500).json({ error: "فشل إنشاء المهمة" });
+    }
+  });
+
+  app.patch("/api/checklist/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ChecklistItemModel } = await import("./models");
+      const user = req.user as any;
+      const item = await (ChecklistItemModel as any).findOneAndUpdate(
+        { _id: req.params.id, userId: user._id || user.id },
+        { $set: req.body },
+        { new: true }
+      );
+      if (!item) return res.status(404).json({ error: "العنصر غير موجود" });
+      res.json(item);
+    } catch (err) {
+      res.status(500).json({ error: "فشل التحديث" });
+    }
+  });
+
+  app.delete("/api/checklist/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ChecklistItemModel } = await import("./models");
+      const user = req.user as any;
+      await (ChecklistItemModel as any).findOneAndDelete({ _id: req.params.id, userId: user._id || user.id });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: "فشل الحذف" });
+    }
   });
 
   // Initialize seed data

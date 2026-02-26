@@ -184,7 +184,7 @@ export default function ReceiptPrint() {
 
             {/* Footer */}
             <div className="border-t border-black/[0.06] pt-4 mt-8 text-center text-xs text-black/25">
-              <p>QIROX Studio — qiroxstudio.online — info@qiroxstudio.online</p>
+              <p>QIROX Studio — qiroxstudio.online — support@qiroxstudio.online</p>
               <p className="mt-0.5">هذا السند صادر إلكترونياً ويُعدّ مستنداً رسمياً لاستلام المبلغ المذكور</p>
             </div>
           </div>
