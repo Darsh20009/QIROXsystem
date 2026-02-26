@@ -2,6 +2,7 @@ services:
   - type: web
     name: qirox
     runtime: node
+    nodeVersion: 20.20.0
     buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
