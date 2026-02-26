@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
-  Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare
+  Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
+  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -60,25 +61,33 @@ export function AppSidebar() {
     { title: "الأجهزة والإضافات", icon: Cpu, url: "/devices", group: "client" },
     { title: "سلة التسوق", icon: ShoppingCart, url: "/cart", group: "client" },
     { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "client" },
+    { title: "الدعم الفني", icon: LifeBuoy, url: "/support", group: "client" },
+    { title: "سجل المدفوعات", icon: Receipt, url: "/payment-history", group: "client" },
 
     // Employee pages (visible to ALL non-client roles)
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
     { title: "الطلبات", icon: FileText, url: "/admin/orders", group: "employee" },
     { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
     { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "employee" },
+    { title: "ملفي الشخصي", icon: User, url: "/employee/profile", group: "employee" },
 
     // Finance role pages
     { title: "المالية", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },
+    { title: "كشف الرواتب", icon: Banknote, url: "/admin/payroll", group: "employee", allowedRoles: FINANCE_ROLES },
 
     // Sales role pages
     { title: "العملاء", icon: Users, url: "/admin/customers", group: "employee", allowedRoles: SALES_ROLES },
 
     // Management-only pages
     { title: "لوحة الإدارة", icon: LayoutDashboard, url: "/admin", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "التحليلات المتقدمة", icon: BarChart3, url: "/admin/analytics", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "القوالب", icon: Layers, url: "/admin/templates", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الخدمات", icon: Briefcase, url: "/admin/services", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "المنتجات والأجهزة", icon: Package, url: "/admin/products", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الموظفون", icon: Users, url: "/admin/employees", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "الرواتب", icon: Banknote, url: "/admin/payroll", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "تذاكر الدعم", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "سجل النشاط", icon: Activity, url: "/admin/activity-log", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الشركاء", icon: Handshake, url: "/admin/partners", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الأخبار", icon: Newspaper, url: "/admin/news", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الوظائف", icon: Briefcase, url: "/admin/jobs", group: "admin", allowedRoles: MANAGEMENT_ROLES },

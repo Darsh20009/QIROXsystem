@@ -357,7 +357,58 @@ const invoiceSchema = new mongoose.Schema({
   items: [{ name: String, qty: Number, unitPrice: Number, total: Number }],
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema].forEach(s => {
+const activityLogSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  action: { type: String, required: true },
+  entity: { type: String, required: true },
+  entityId: String,
+  details: { type: mongoose.Schema.Types.Mixed },
+  ip: String,
+}, { timestamps: true });
+
+const supportTicketSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  subject: { type: String, required: true },
+  category: { type: String, enum: ['technical', 'billing', 'general', 'complaint'], default: 'general' },
+  body: { type: String, required: true },
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  status: { type: String, enum: ['open', 'in_review', 'resolved', 'closed'], default: 'open' },
+  adminReply: String,
+  repliedAt: Date,
+  closedAt: Date,
+}, { timestamps: true });
+
+const employeeProfileSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  bio: String,
+  skills: [String],
+  hourlyRate: { type: Number, default: 0 },
+  vacationDays: { type: Number, default: 21 },
+  vacationUsed: { type: Number, default: 0 },
+  bankName: String,
+  bankAccount: String,
+  bankIBAN: String,
+  nationalId: String,
+  hireDate: Date,
+  jobTitle: String,
+}, { timestamps: true });
+
+const payrollRecordSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  month: { type: Number, required: true },
+  year: { type: Number, required: true },
+  workHours: { type: Number, default: 0 },
+  hourlyRate: { type: Number, default: 0 },
+  baseSalary: { type: Number, default: 0 },
+  bonuses: { type: Number, default: 0 },
+  deductions: { type: Number, default: 0 },
+  netSalary: { type: Number, default: 0 },
+  status: { type: String, enum: ['pending', 'approved', 'paid'], default: 'pending' },
+  paidAt: Date,
+  notes: String,
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -385,3 +436,7 @@ export const OtpModel = mongoose.models.Otp || mongoose.model("Otp", otpSchema);
 export const NotificationModel = mongoose.models.Notification || mongoose.model("Notification", notificationSchema);
 export const InboxMessageModel = mongoose.models.InboxMessage || mongoose.model("InboxMessage", inboxMessageSchema);
 export const InvoiceModel = mongoose.models.Invoice || mongoose.model("Invoice", invoiceSchema);
+export const ActivityLogModel = mongoose.models.ActivityLog || mongoose.model("ActivityLog", activityLogSchema);
+export const SupportTicketModel = mongoose.models.SupportTicket || mongoose.model("SupportTicket", supportTicketSchema);
+export const EmployeeProfileModel = mongoose.models.EmployeeProfile || mongoose.model("EmployeeProfile", employeeProfileSchema);
+export const PayrollRecordModel = mongoose.models.PayrollRecord || mongoose.model("PayrollRecord", payrollRecordSchema);

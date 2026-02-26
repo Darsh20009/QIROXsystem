@@ -10,6 +10,15 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 26, 2026 - Session 10)
+
+- **Dark Mode**: Added `.dark` CSS variable block in `index.css` with full sidebar/card/border theming. `tailwind.config.ts` already had `darkMode: ["class"]`. `ThemeProvider` in `lib/theme.tsx` manages localStorage + `document.documentElement.classList`.
+- **Header Upgraded**: `App.tsx` now has a sticky header with dark mode toggle (🌙/☀️), language toggle (AR/EN), and a global search bar for orders/projects (shows results dropdown, min 2 chars).
+- **New Pages Wired in App.tsx**: AdminAnalytics `/admin/analytics`, AdminActivityLog `/admin/activity-log`, AdminSupportTickets `/admin/support-tickets`, AdminPayroll `/admin/payroll`, SupportTickets `/support`, EmployeeProfile `/employee/profile`, PaymentHistory `/payment-history`.
+- **Sidebar Updated**: New links added — Analytics, ActivityLog, SupportTickets, Payroll (admin), Payroll (finance role), EmployeeProfile (employee), SupportTickets + PaymentHistory (client).
+- **Architecture Fix**: `QueryClientProvider` moved to top-level `App()` function so `useUser()` and `useWebSocket()` can be called inside `AppInner` without provider errors.
+- **WebSocket**: `useWebSocket(user?.id)` hooked into `AppInner` — auto-connects to `/ws` and sends `{ type: "auth", userId }`.
+
 ## Latest Changes (Feb 26, 2026 - Session 9)
 
 - **Email System Overhaul**: Full automatic email notifications via SMTP2GO (`noreply@qiroxstudio.online`).

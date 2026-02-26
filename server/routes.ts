@@ -1260,6 +1260,236 @@ export async function registerRoutes(
     res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === ACTIVITY LOG ===
+  // ═══════════════════════════════════════════════════════════
+  async function logActivity(userId: any, action: string, entity: string, entityId?: string, details?: any, ip?: string) {
+    try {
+      const { ActivityLogModel } = await import("./models");
+      await ActivityLogModel.create({ userId, action, entity, entityId, details, ip });
+    } catch (e) {}
+  }
+
+  app.get("/api/admin/activity-log", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { ActivityLogModel } = await import("./models");
+    const logs = await ActivityLogModel.find()
+      .sort({ createdAt: -1 }).limit(200)
+      .populate("userId", "fullName role username");
+    res.json(logs);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === ADVANCED ANALYTICS ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/admin/analytics", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { OrderModel, UserModel, AttendanceModel } = await import("./models");
+      const now = new Date();
+      const months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        return { year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }) };
+      });
+      const monthlyData = await Promise.all(months.map(async ({ year, month, label }) => {
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0, 23, 59, 59);
+        const ords = await (OrderModel as any).find({ createdAt: { $gte: start, $lte: end } });
+        const revenue = ords.reduce((acc: number, o: any) => acc + (o.totalAmount || 0), 0);
+        return { label, orders: ords.length, revenue };
+      }));
+      const [totalUsers, totalEmployees, totalOrders, pendingOrders] = await Promise.all([
+        (UserModel as any).countDocuments({ role: 'client' }),
+        (UserModel as any).countDocuments({ role: { $ne: 'client' } }),
+        (OrderModel as any).countDocuments(),
+        (OrderModel as any).countDocuments({ status: 'pending' }),
+      ]);
+      const allOrders = await (OrderModel as any).find().select('totalAmount');
+      const totalRevenue = allOrders.reduce((acc: number, o: any) => acc + (o.totalAmount || 0), 0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const attendanceSummary = await (AttendanceModel as any).aggregate([
+        { $match: { createdAt: { $gte: startOfMonth }, checkOut: { $ne: null } } },
+        { $group: { _id: '$userId', totalHours: { $sum: '$workHours' }, days: { $sum: 1 } } },
+      ]);
+      const statusDist = await (OrderModel as any).aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]);
+      res.json({ monthlyData, stats: { totalUsers, totalEmployees, totalOrders, pendingOrders, totalRevenue }, attendanceSummary, statusDist });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === SUPPORT TICKETS ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/support-tickets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { SupportTicketModel } = await import("./models");
+    const isAdmin = (req.user as any).role !== 'client';
+    const query = isAdmin ? {} : { userId: (req.user as any)._id || (req.user as any).id };
+    const tickets = await (SupportTicketModel as any).find(query)
+      .sort({ createdAt: -1 }).populate('userId', 'fullName email username');
+    res.json(tickets);
+  });
+
+  app.post("/api/support-tickets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { SupportTicketModel } = await import("./models");
+    const { subject, category, body, priority } = req.body;
+    if (!subject || !body) return res.status(400).json({ error: 'الموضوع والمحتوى مطلوبان' });
+    const ticket = await (SupportTicketModel as any).create({
+      userId: (req.user as any)._id || (req.user as any).id,
+      subject, category: category || 'general', body, priority: priority || 'medium',
+    });
+    await logActivity((req.user as any)._id, 'create_ticket', 'support_ticket', ticket._id?.toString(), { subject }, req.ip);
+    res.json(ticket);
+  });
+
+  app.patch("/api/admin/support-tickets/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { SupportTicketModel } = await import("./models");
+    const { adminReply, status } = req.body;
+    const update: any = {};
+    if (status) update.status = status;
+    if (adminReply) { update.adminReply = adminReply; update.repliedAt = new Date(); }
+    if (status === 'closed' || status === 'resolved') update.closedAt = new Date();
+    const ticket = await (SupportTicketModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+    await logActivity((req.user as any)._id, 'update_ticket', 'support_ticket', req.params.id, { status, hasReply: !!adminReply }, req.ip);
+    res.json(ticket);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === EMPLOYEE PROFILE ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/employee/profile", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    let profile = await (EmployeeProfileModel as any).findOne({ userId: uid });
+    if (!profile) profile = await (EmployeeProfileModel as any).create({ userId: uid });
+    res.json(profile);
+  });
+
+  app.patch("/api/employee/profile", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const allowed = ['bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
+    const update: any = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const profile = await (EmployeeProfileModel as any).findOneAndUpdate({ userId: uid }, update, { new: true, upsert: true });
+    res.json(profile);
+  });
+
+  app.get("/api/admin/employee-profiles", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const profiles = await (EmployeeProfileModel as any).find().populate('userId', 'fullName email role username');
+    res.json(profiles);
+  });
+
+  app.patch("/api/admin/employee-profiles/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const allowed = ['hourlyRate', 'vacationDays', 'vacationUsed', 'bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
+    const update: any = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const profile = await (EmployeeProfileModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+    await logActivity((req.user as any)._id, 'update_employee_profile', 'employee_profile', req.params.id, update, req.ip);
+    res.json(profile);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === PAYROLL ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/admin/payroll", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { PayrollRecordModel } = await import("./models");
+    const records = await (PayrollRecordModel as any).find()
+      .sort({ year: -1, month: -1 })
+      .populate('userId', 'fullName email role username');
+    res.json(records);
+  });
+
+  app.post("/api/admin/payroll/generate", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { PayrollRecordModel, AttendanceModel, EmployeeProfileModel, UserModel } = await import("./models");
+    const { month, year } = req.body;
+    if (!month || !year) return res.status(400).json({ error: 'الشهر والسنة مطلوبان' });
+    const employees = await (UserModel as any).find({ role: { $ne: 'client' } });
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const results = await Promise.all(employees.map(async (emp: any) => {
+      const exists = await (PayrollRecordModel as any).findOne({ userId: emp._id, month, year });
+      if (exists) return exists;
+      const atts = await (AttendanceModel as any).find({ userId: emp._id, checkIn: { $gte: startDate, $lte: endDate }, checkOut: { $ne: null } });
+      const workHours = atts.reduce((acc: number, a: any) => acc + (a.workHours || 0), 0);
+      const profile = await (EmployeeProfileModel as any).findOne({ userId: emp._id });
+      const hourlyRate = profile?.hourlyRate || 0;
+      const baseSalary = workHours * hourlyRate;
+      return (PayrollRecordModel as any).create({ userId: emp._id, month, year, workHours, hourlyRate, baseSalary, netSalary: baseSalary });
+    }));
+    await logActivity((req.user as any)._id, 'generate_payroll', 'payroll', undefined, { month, year }, req.ip);
+    res.json(results);
+  });
+
+  app.patch("/api/admin/payroll/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { PayrollRecordModel } = await import("./models");
+    const rec = await (PayrollRecordModel as any).findById(req.params.id);
+    if (!rec) return res.sendStatus(404);
+    const { bonuses, deductions, status, notes } = req.body;
+    if (bonuses !== undefined) rec.bonuses = bonuses;
+    if (deductions !== undefined) rec.deductions = deductions;
+    if (notes !== undefined) rec.notes = notes;
+    rec.netSalary = (rec.baseSalary + (rec.bonuses || 0)) - (rec.deductions || 0);
+    if (status) { rec.status = status; if (status === 'paid') rec.paidAt = new Date(); }
+    await rec.save();
+    await logActivity((req.user as any)._id, 'update_payroll', 'payroll', req.params.id, { status }, req.ip);
+    res.json(rec);
+  });
+
+  app.get("/api/employee/payroll", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { PayrollRecordModel } = await import("./models");
+    const records = await (PayrollRecordModel as any).find({ userId: (req.user as any)._id || (req.user as any).id }).sort({ year: -1, month: -1 });
+    res.json(records);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === GLOBAL SEARCH ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/search", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const q = ((req.query.q as string) || '').trim();
+    if (!q || q.length < 2) return res.json({ orders: [], projects: [] });
+    const { OrderModel, ProjectModel } = await import("./models");
+    const regex = new RegExp(q, 'i');
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const isAdmin = (req.user as any).role !== 'client';
+    const orderQ = isAdmin
+      ? { $or: [{ projectType: regex }, { sector: regex }, { adminNotes: regex }, { status: regex }] }
+      : { userId: uid, $or: [{ projectType: regex }, { sector: regex }, { status: regex }] };
+    const [orders, projects] = await Promise.all([
+      (OrderModel as any).find(orderQ).limit(6).select('projectType sector status totalAmount createdAt'),
+      (ProjectModel as any).find(isAdmin ? { $or: [{ status: regex }] } : { clientId: uid }).limit(6).select('status progress startDate deadline'),
+    ]);
+    res.json({ orders, projects });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === CLIENT PAYMENT HISTORY ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/client/payments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { OrderModel, InvoiceModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const [orders, invoices] = await Promise.all([
+      (OrderModel as any).find({ userId: uid }).sort({ createdAt: -1 }).select('projectType sector totalAmount isDepositPaid paymentMethod status createdAt'),
+      (InvoiceModel as any).find({ userId: uid }).sort({ createdAt: -1 }),
+    ]);
+    res.json({ orders, invoices });
+  });
+
   // Initialize seed data
   await seedDatabase();
 
