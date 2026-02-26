@@ -96,6 +96,13 @@ These are pre-set in render.yaml and don't need manual entry:
 
 ## Recent Changes (Feb 2026)
 
+- **AUTH UI LUXURY REDESIGN + PHONE/COUNTRY INPUTS**:
+  - `Login.tsx`: Full luxury redesign — split screen (black decorative panel with stats + white form). Added eye toggle for password, icons in inputs, business type dropdown, show/hide confirm password
+  - `Register.tsx` (same file): Phone input with country dial code + emoji flag selector (`CountryPhoneInput.tsx`). Country dropdown with search (`CountrySelect.tsx`). Business type now dropdown (not text). Shows `منصتك الرقمية تبدأ من هنا` on black panel
+  - `ForgotPassword.tsx`: Full luxury redesign — split screen, 3-step OTP flow with animated boxes (filled = black/white). Password strength indicator. Paste OTP from clipboard. Better error messages on wrong OTP. Dev-only fetch-OTP button for testing
+  - New components: `client/src/components/CountryPhoneInput.tsx` (28 countries with flags + dial codes, searchable), `client/src/components/CountrySelect.tsx` (searchable country list)
+  - **Email/OTP status**: SMTP2GO is configured and sending correctly — OTP codes are logged in server console. If emails go to spam, user should whitelist the domain. Dev mode has "عرض الرمز (وضع التطوير فقط)" button
+
 - **PACKAGES & OFFERS SYSTEM (Professional)**: Full redesign of pricing and offers:
   - `Prices.tsx`: Rebuilt with trust badges, billing-cycle filter toggle (all/one-time/monthly/yearly), animated plan cards with discount %, offer badges, "what's included" section, domain pricing with savings display, and a black CTA footer
   - `AdminTemplates.tsx`: Added full `PlanForm` component with: offer label, original price + auto-calculated discount %, per-line features editor, isPopular/isCustom toggles (Switch), billing cycle selector, sortOrder; plan cards now show discount badge; edit button on each plan now works
