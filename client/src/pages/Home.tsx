@@ -62,11 +62,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Navigation />
 
       <section className="relative w-full min-h-[80vh] flex items-center justify-center pt-28 pb-16" data-testid="section-hero">
-        <div className="absolute inset-0 bg-white" />
+        <div className="absolute inset-0 bg-white dark:bg-gray-950" />
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "40px 40px" }} />
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -76,7 +76,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <h1 dir="ltr" className="text-5xl sm:text-6xl md:text-8xl font-black font-heading text-black leading-[1.05] mb-1 tracking-tight">
+              <h1 dir="ltr" className="text-5xl sm:text-6xl md:text-8xl font-black font-heading text-black dark:text-white leading-[1.05] mb-1 tracking-tight">
                 Build Systems.
               </h1>
               <h1
@@ -91,7 +91,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-lg sm:text-xl text-black/50 mb-10 max-w-2xl mx-auto leading-relaxed"
+              className="text-lg sm:text-xl text-black/50 dark:text-white/50 mb-10 max-w-2xl mx-auto leading-relaxed"
               dir={dir}
             >
               {t("home.hero.subtitleFull")}
@@ -129,12 +129,12 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/[0.06] bg-black/[0.02]"
+              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02]"
               data-testid="promo-banner"
             >
-              <span className="text-[11px] font-bold tracking-wider text-black bg-black/[0.06] px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
-              <span className="text-black/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
-              <ArrowLeft className="w-3.5 h-3.5 text-black/20" />
+              <span className="text-[11px] font-bold tracking-wider text-black dark:text-white bg-black/[0.06] dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
+              <span className="text-black/40 dark:text-white/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-black/20 dark:text-white/20" />
             </motion.div>
           </div>
         </div>
@@ -148,9 +148,9 @@ export default function Home() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="border border-black/[0.06] rounded-md overflow-hidden"
+            className="border border-black/[0.06] dark:border-white/[0.06] rounded-md overflow-hidden bg-white dark:bg-gray-900/50"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.06] rtl:divide-x-reverse">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.06] dark:divide-white/[0.06] rtl:divide-x-reverse">
               {[
                 { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems") },
                 { value: "6+", label: t("home.stats.sectorsCount") },
@@ -158,10 +158,10 @@ export default function Home() {
                 { value: "2", label: t("home.stats.locations") },
               ].map((stat, idx) => (
                 <div key={idx} className="px-6 py-8 text-center" data-testid={`stat-card-${idx}`}>
-                  <div className="text-3xl md:text-4xl font-black mb-2 font-heading text-black">
+                  <div className="text-3xl md:text-4xl font-black mb-2 font-heading text-black dark:text-white">
                     {stat.value}
                   </div>
-                  <div className="text-black/35 text-sm" dir={dir}>{stat.label}</div>
+                  <div className="text-black/35 dark:text-white/35 text-sm" dir={dir}>{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -177,15 +177,15 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeUp}
             custom={0}
-            className="rounded-[24px] border border-black/[0.06] bg-[#fafafa] overflow-hidden"
+            className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/50 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="p-10 md:p-14 flex flex-col justify-center" dir={dir}>
-                <span className="text-black/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
-                <h2 className="text-3xl md:text-4xl font-bold font-heading text-black mb-4 leading-tight">
+                <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
+                <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
                   {t("home.pathfinder.title")}
                 </h2>
-                <p className="text-black/40 text-base leading-relaxed mb-8 max-w-md">
+                <p className="text-black/40 dark:text-white/40 text-base leading-relaxed mb-8 max-w-md">
                   {t("home.pathfinder.desc")}
                 </p>
                 <div>
@@ -202,8 +202,8 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06]" dir={dir}>
-                <h3 className="text-black/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
+              <div className="p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] dark:border-white/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06] dark:rtl:border-white/[0.06]" dir={dir}>
+                <h3 className="text-black/40 dark:text-white/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
                 <div className="space-y-1">
                   {[
                     { href: "/portfolio", labelKey: "home.pathfinder.systems" as const },
@@ -213,7 +213,7 @@ export default function Home() {
                   ].map((link) => (
                     <Link key={link.href} href={link.href}>
                       <div
-                        className="flex items-center justify-between py-4 px-4 rounded-md text-black/50 hover:text-black hover:bg-black/[0.03] transition-all cursor-pointer group"
+                        className="flex items-center justify-between py-4 px-4 rounded-md text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all cursor-pointer group"
                         data-testid={`pathfinder-link-${link.href.replace("/", "")}`}
                       >
                         <span className="text-base font-medium">{t(link.labelKey)}</span>
@@ -239,12 +239,12 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <div className="lg:col-span-3" dir={dir}>
                 <motion.div variants={fadeUp} custom={0}>
-                  <span className="text-black/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
-                  <h2 className="text-3xl md:text-4xl font-bold font-heading text-black mb-4 leading-tight">
+                  <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
+                  <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
                     {t("home.carousel.title")}{" "}
-                    <span className="text-gray-400">{t("home.carousel.titleHighlight")}</span>
+                    <span className="text-gray-400 dark:text-gray-500">{t("home.carousel.titleHighlight")}</span>
                   </h2>
-                  <p className="text-black/40 text-sm leading-relaxed mb-8">
+                  <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed mb-8">
                     {t("home.carousel.desc")}
                   </p>
                   <div className="flex gap-2">
@@ -253,8 +253,8 @@ export default function Home() {
                         key={idx}
                         className={`rounded-full transition-all duration-300 ${
                           idx === activeCarouselIdx
-                            ? "w-6 h-2 bg-black"
-                            : "w-2 h-2 bg-black/10"
+                            ? "w-6 h-2 bg-black dark:bg-white"
+                            : "w-2 h-2 bg-black/10 dark:bg-white/10"
                         }`}
                       />
                     ))}
@@ -266,14 +266,14 @@ export default function Home() {
                 <div className="flex items-center gap-3 mb-4 justify-end">
                   <button
                     onClick={() => scrollCarousel("right")}
-                    className="w-10 h-10 rounded-full border border-black/10 flex items-center justify-center text-black/30 hover:text-black hover:border-black/20 transition-all"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
                     data-testid="button-carousel-prev"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => scrollCarousel("left")}
-                    className="w-10 h-10 rounded-full border border-black/10 flex items-center justify-center text-black/30 hover:text-black hover:border-black/20 transition-all"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
                     data-testid="button-carousel-next"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -290,23 +290,23 @@ export default function Home() {
                     return (
                       <Link key={template.id} href="/portfolio">
                         <div
-                          className="flex-shrink-0 w-[300px] bg-[#fafafa] rounded-[24px] p-8 cursor-pointer group snap-start border border-black/[0.04] hover:border-black/[0.08] transition-all hover:shadow-lg hover:shadow-black/[0.04]"
+                          className="flex-shrink-0 w-[300px] bg-[#fafafa] dark:bg-gray-900/60 rounded-[24px] p-8 cursor-pointer group snap-start border border-black/[0.04] dark:border-white/[0.04] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-lg hover:shadow-black/[0.04]"
                           data-testid={`carousel-card-${template.slug}`}
                           data-carousel-card
                         >
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] mb-6">
-                            <Icon className="w-5 h-5 text-black/40" />
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] mb-6">
+                            <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                           </div>
-                          <h3 className="text-lg font-bold text-black mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
-                          <p className="text-sm text-black/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
+                          <h3 className="text-lg font-bold text-black dark:text-white mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
+                          <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
                             {lang === "ar" ? template.descriptionAr : (template.description || template.descriptionAr)}
                           </p>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] text-black/40 font-medium">
+                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium">
                               {template.category}
                             </span>
-                            <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
-                              <ArrowUpRight className="w-4 h-4 text-black/30 group-hover:text-white transition-colors" />
+                            <div className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white group-hover:text-white transition-colors">
+                              <ArrowUpRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-white dark:group-hover:text-black transition-colors" />
                             </div>
                           </div>
                         </div>
@@ -329,15 +329,15 @@ export default function Home() {
             variants={stagger}
           >
             <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-5">
-                <Zap className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
+                <Zap className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black mb-4">
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
                 {t("home.services.title")}{" "}
-                <span className="text-gray-400">{t("home.services.titleHighlight")}</span>
+                <span className="text-gray-400 dark:text-gray-500">{t("home.services.titleHighlight")}</span>
               </motion.h2>
-              <motion.p variants={fadeUp} custom={2} className="text-black/35 max-w-xl mx-auto text-base">
+              <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 max-w-xl mx-auto text-base">
                 {t("home.services.subtitle")}
               </motion.p>
             </div>
@@ -371,25 +371,25 @@ export default function Home() {
               ].map((path, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className="rounded-[24px] border border-black/[0.06] bg-white p-10 h-full group transition-all duration-300 hover:border-black/[0.1] hover:shadow-lg hover:shadow-black/[0.04]"
+                    className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-10 h-full group transition-all duration-300 hover:border-black/[0.1] dark:hover:border-white/[0.1] hover:shadow-lg hover:shadow-black/[0.04]"
                     data-testid={`service-path-${idx}`}
                     dir={dir}
                   >
                     <div className="flex items-start justify-between mb-8">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/[0.04] transition-all duration-300">
-                        <path.icon className="w-6 h-6 text-black/40" />
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] transition-all duration-300">
+                        <path.icon className="w-6 h-6 text-black/40 dark:text-white/40" />
                       </div>
                       <Link href="/portfolio">
-                        <ArrowUpRight className="w-5 h-5 text-black/10 group-hover:text-black/40 transition-all duration-300 cursor-pointer" />
+                        <ArrowUpRight className="w-5 h-5 text-black/10 dark:text-white/10 group-hover:text-black/40 dark:group-hover:text-white/40 transition-all duration-300 cursor-pointer" />
                       </Link>
                     </div>
-                    <h3 className="text-xl font-bold font-heading text-black mb-3">{path.title}</h3>
-                    <p className="text-sm text-black/40 leading-relaxed mb-6">{path.desc}</p>
+                    <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-3">{path.title}</h3>
+                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6">{path.desc}</p>
                     <div className="flex flex-wrap gap-2">
                       {path.features.map((f, i) => (
                         <span
                           key={i}
-                          className="text-[11px] px-3.5 py-1.5 rounded-full border border-black/[0.06] text-black/40 bg-black/[0.02]"
+                          className="text-[11px] px-3.5 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] text-black/40 dark:text-white/40 bg-black/[0.02] dark:bg-white/[0.02]"
                         >
                           {f}
                         </span>
@@ -403,7 +403,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20 md:py-28 relative bg-[#fafafa]" data-testid="section-why">
+      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-why">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -412,13 +412,13 @@ export default function Home() {
             variants={stagger}
           >
             <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 mb-5">
+                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black mb-4">
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
                 {t("home.why.title")}{" "}
-                <span className="text-gray-400">QIROX</span>
+                <span className="text-gray-400 dark:text-gray-500">QIROX</span>
                 {lang === "ar" ? "؟" : "?"}
               </motion.h2>
             </div>
@@ -432,15 +432,15 @@ export default function Home() {
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className="rounded-[24px] border border-black/[0.06] bg-white p-8 h-full transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]"
+                    className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-8 h-full transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]"
                     data-testid={`why-card-${idx}`}
                     dir={dir}
                   >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-black/[0.04]">
-                      <item.icon className="w-5 h-5 text-black/40" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-black/[0.04] dark:bg-white/[0.04]">
+                      <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                     </div>
-                    <h3 className="text-base font-bold font-heading text-black mb-3">{item.title}</h3>
-                    <p className="text-sm text-black/35 leading-relaxed">{item.desc}</p>
+                    <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title}</h3>
+                    <p className="text-sm text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
                   </div>
                 </motion.div>
               ))}

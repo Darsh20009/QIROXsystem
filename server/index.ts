@@ -3,7 +3,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
+import { registerSocket, unregisterSocket } from "./ws";
 
 const app = express();
 const httpServer = createServer(app);
@@ -35,25 +36,23 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-// WebSocket server for real-time notifications
 const wss = new WebSocketServer({ noServer: true });
-const userSockets = new Map<string, WebSocket>();
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", (ws) => {
   let userId: string | null = null;
 
   ws.on("message", (data) => {
     try {
       const msg = JSON.parse(data.toString());
       if (msg.type === "auth" && msg.userId) {
-        userId = msg.userId;
-        userSockets.set(userId, ws);
+        userId = String(msg.userId);
+        registerSocket(userId, ws);
       }
     } catch {}
   });
 
   ws.on("close", () => {
-    if (userId) userSockets.delete(userId);
+    if (userId) unregisterSocket(userId);
   });
 });
 
@@ -66,13 +65,6 @@ httpServer.on("upgrade", (req, socket, head) => {
     socket.destroy();
   }
 });
-
-export function pushNotification(userId: string, payload: object) {
-  const ws = userSockets.get(userId);
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: "notification", ...payload }));
-  }
-}
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -92,7 +84,7 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
+      if (logLine.length > 200) logLine = logLine.slice(0, 200) + "…";
       log(logLine);
     }
   });
@@ -107,13 +99,8 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     console.error("Internal Server Error:", err);
-
-    if (res.headersSent) {
-      return next(err);
-    }
-
+    if (res.headersSent) return next(err);
     return res.status(status).json({ message });
   });
 
@@ -125,14 +112,7 @@ app.use((req, res, next) => {
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  httpServer.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

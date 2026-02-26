@@ -285,6 +285,72 @@
     background: #fff;
     position: relative;
   }
+
+  .dark .glass {
+    background: rgba(15, 20, 40, 0.8);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .dark .glass-strong {
+    background: rgba(15, 20, 40, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .glass-card {
+    background: rgba(20, 27, 48, 0.8);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .gradient-border {
+    background: rgba(20, 27, 48, 0.8);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .section-dark {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .dark .section-darker {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .section-card {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .dark .animated-grid-dark {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  }
+
+  .dark .dot-grid {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #0a0f1e;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .dark ::selection {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
 }
 
 ::-webkit-scrollbar {

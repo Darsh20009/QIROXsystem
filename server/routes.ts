@@ -12,6 +12,7 @@ import fs from "fs";
 import express from "express";
 import crypto from "crypto";
 import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail } from "./email";
+import { pushNotification, broadcastNotification } from "./ws";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -376,7 +377,11 @@ export async function registerRoutes(
           sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order.id), req.body.status).catch(console.error);
         }
         const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'تمت الموافقة', in_progress: 'قيد التنفيذ', review: 'مراجعة العميل', completed: 'مكتمل', rejected: 'مرفوض' };
-        await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
+        const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
+        await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: notifTitle, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
+        pushNotification(String((order as any).userId), { title: notifTitle, body: 'تم تحديث حالة طلبك', icon: '📋', link: '/dashboard' });
+        const { ActivityLogModel } = await import("./models");
+        ActivityLogModel.create({ userId: (req.user as any)?.id, action: 'update_order_status', entity: 'order', entityId: String(order.id), details: { status: req.body.status }, ip: req.ip }).catch(() => {});
       } catch (e) { console.error("[OrderStatus]", e); }
     }
     res.json(order);
@@ -443,7 +448,7 @@ export async function registerRoutes(
       const statusChanged = input.status && oldProject?.status !== input.status;
       const progressChanged = input.progress !== undefined && oldProject?.progress !== input.progress;
       if ((statusChanged || progressChanged) && (project as any).clientId) {
-        const { UserModel } = await import("./models");
+        const { UserModel, NotificationModel } = await import("./models");
         const clientUser = await UserModel.findById((project as any).clientId).select("email fullName username");
         if (clientUser?.email) {
           sendProjectUpdateEmail(
@@ -455,6 +460,9 @@ export async function registerRoutes(
             input.status && statusChanged ? `تم تغيير حالة المشروع إلى: ${input.status}` : undefined
           ).catch(console.error);
         }
+        const notifMsg = statusChanged ? `تم تغيير حالة المشروع` : `تحديث تقدم المشروع: ${(project as any).progress || 0}%`;
+        await NotificationModel.create({ userId: (project as any).clientId, type: 'project', title: notifMsg, body: (project as any).name || "مشروعك", link: `/projects/${req.params.id}`, icon: '🚀' }).catch(() => {});
+        pushNotification(String((project as any).clientId), { title: notifMsg, body: (project as any).name || "مشروعك", icon: '🚀', link: `/projects/${req.params.id}` });
       }
     } catch (e) { console.error("[Email] project update email error:", e); }
   });
@@ -502,6 +510,7 @@ export async function registerRoutes(
     // Email project client if task is completed
     try {
       const { UserModel, ProjectModel } = await import("./models");
+      const { NotificationModel } = await import("./models");
       if (input.assignedTo && (!oldTask || (oldTask as any).assignedTo?.toString() !== input.assignedTo)) {
         const assignee = await UserModel.findById(input.assignedTo).select("email fullName username");
         const project = await ProjectModel?.findById((task as any).projectId).select("name");
@@ -515,6 +524,9 @@ export async function registerRoutes(
             (task as any).deadline
           ).catch(console.error);
         }
+        const taskTitle = (task as any).title || "مهمة جديدة";
+        await NotificationModel.create({ userId: input.assignedTo, type: 'task', title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, link: `/projects/${(task as any).projectId}`, icon: '✅' }).catch(() => {});
+        pushNotification(String(input.assignedTo), { title: `مهمة جديدة: ${taskTitle}`, body: `في مشروع: ${project?.name || 'المشروع'}`, icon: '✅', link: `/projects/${(task as any).projectId}` });
       }
       if (input.status === "done" && (!oldTask || (oldTask as any).status !== "done")) {
         const project = await ProjectModel?.findById((task as any).projectId).select("name clientId");
@@ -530,6 +542,9 @@ export async function registerRoutes(
               completedBy
             ).catch(console.error);
           }
+          const doneTitle = `اكتملت مهمة: ${(task as any).title || 'مهمة'}`;
+          await NotificationModel.create({ userId: project.clientId, type: 'task', title: doneTitle, body: `في مشروع: ${project.name || 'المشروع'}`, link: `/projects/${(task as any).projectId}`, icon: '🎉' }).catch(() => {});
+          pushNotification(String(project.clientId), { title: doneTitle, body: `في مشروع: ${project.name || 'المشروع'}`, icon: '🎉', link: `/projects/${(task as any).projectId}` });
         }
       }
     } catch (e) { console.error("[Email] task update email error:", e); }
