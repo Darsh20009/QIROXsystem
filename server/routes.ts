@@ -11,7 +11,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail } from "./email";
+import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail } from "./email";
 import { pushNotification, broadcastNotification } from "./ws";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -121,9 +121,9 @@ export async function registerRoutes(
           const { OtpModel } = await import("./models");
           const code = Math.floor(100000 + Math.random() * 900000).toString();
           const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
-          await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false }, { used: true });
+          await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false, type: "email_verify" }, { used: true });
           await OtpModel.create({ email: user.email.toLowerCase(), code, expiresAt, type: "email_verify" });
-          sendOtpEmail(user.email, user.fullName || user.username, code).catch(console.error);
+          sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
           console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
           // Notify admin
           const adminEmail = "info@qiroxstudio.online";
@@ -1144,11 +1144,11 @@ export async function registerRoutes(
       const { OtpModel, UserModel } = await import("./models");
       const user = await UserModel.findOne({ email: email.toLowerCase().trim() });
       if (!user) return res.status(404).json({ error: "لا يوجد حساب مرتبط بهذا البريد الإلكتروني" });
-      // Invalidate previous OTPs for this email
-      await OtpModel.updateMany({ email: email.toLowerCase(), used: false }, { used: true });
+      // Invalidate previous forgot-password OTPs for this email only
+      await OtpModel.updateMany({ email: email.toLowerCase(), used: false, type: "forgot_password" }, { used: true });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-      await OtpModel.create({ email: email.toLowerCase(), code, expiresAt });
+      await OtpModel.create({ email: email.toLowerCase(), code, expiresAt, type: "forgot_password" });
       const emailSent = await sendOtpEmail(email, user.fullName || user.username, code);
       if (emailSent) {
         console.log(`[OTP] ✅ Code for ${email}: ${code} (expires in 10 min)`);
@@ -1178,7 +1178,7 @@ export async function registerRoutes(
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
       const { OtpModel, UserModel } = await import("./models");
-      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, type: "email_verify", expiresAt: { $gt: new Date() } });
       if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       await OtpModel.updateOne({ _id: otp._id }, { used: true });
       const user = await UserModel.findOneAndUpdate(
@@ -1201,11 +1201,11 @@ export async function registerRoutes(
       const user = req.user as any;
       if (!req.isAuthenticated() || !user?.email) return res.status(400).json({ error: "غير مسجّل الدخول" });
       const { OtpModel } = await import("./models");
-      await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false }, { used: true });
+      await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false, type: "email_verify" }, { used: true });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       await OtpModel.create({ email: user.email.toLowerCase(), code, expiresAt, type: "email_verify" });
-      await sendOtpEmail(user.email, user.fullName || user.username, code);
+      await sendEmailVerificationEmail(user.email, user.fullName || user.username, code);
       console.log(`[EMAIL-VERIFY RESEND] Code for ${user.email}: ${code}`);
       res.json({ ok: true });
     } catch (err) {
@@ -1218,7 +1218,7 @@ export async function registerRoutes(
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
       const { OtpModel } = await import("./models");
-      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, type: "forgot_password", expiresAt: { $gt: new Date() } });
       if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       res.json({ valid: true });
     } catch (err) {
@@ -1232,7 +1232,7 @@ export async function registerRoutes(
       if (!email || !code || !newPassword) return res.status(400).json({ error: "جميع الحقول مطلوبة" });
       if (newPassword.length < 6) return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
       const { OtpModel, UserModel } = await import("./models");
-      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, type: "forgot_password", expiresAt: { $gt: new Date() } });
       if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       const hashed = await hashPassword(newPassword);
       await UserModel.updateOne({ email: email.toLowerCase() }, { password: hashed });

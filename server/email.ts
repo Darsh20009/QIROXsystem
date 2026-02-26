@@ -107,6 +107,20 @@ export async function sendOtpEmail(to: string, name: string, otp: string): Promi
   return sendEmail(to, name, "رمز التحقق — Qirox", html);
 }
 
+export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
+  const html = baseTemplate(`
+    <div class="tag">تأكيد البريد الإلكتروني</div>
+    <div class="title">أهلاً ${name}، رمز التفعيل الخاص بك</div>
+    <p class="text">شكراً لتسجيلك في Qirox! استخدم الرمز التالي لتأكيد بريدك الإلكتروني:</p>
+    <div class="otp-box">
+      <div class="otp">${otp}</div>
+      <div class="otp-note">صالح لمدة 30 دقيقة فقط — لا تشاركه مع أحد</div>
+    </div>
+    <p class="text">إذا لم تقم بإنشاء حساب في Qirox، تجاهل هذا البريد.</p>
+  `);
+  return sendEmail(to, name, "تأكيد بريدك الإلكتروني — Qirox", html);
+}
+
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
   const itemsList = items.map(i => `<div class="highlight">• ${i}</div>`).join("");
   const html = baseTemplate(`

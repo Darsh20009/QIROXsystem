@@ -322,6 +322,7 @@ const otpSchema = new mongoose.Schema({
   code: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
+  type: { type: String, enum: ["email_verify", "forgot_password"], default: "forgot_password" },
 }, { timestamps: true });
 
 const notificationSchema = new mongoose.Schema({
