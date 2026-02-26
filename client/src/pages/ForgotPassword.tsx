@@ -301,14 +301,6 @@ export default function ForgotPassword() {
 
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => { setStep("email"); setOtp(["", "", "", "", "", ""]); }}
-                    className="w-full text-xs text-black/25 hover:text-black/50 transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    تغيير البريد الإلكتروني
-                  </button>
                 </form>
               </motion.div>
             )}
