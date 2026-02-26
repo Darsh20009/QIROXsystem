@@ -2,6 +2,7 @@ import { useUser } from "@/hooks/use-auth";
 import { useOrders } from "@/hooks/use-orders";
 import { useProjects } from "@/hooks/use-projects";
 import { useAttendanceStatus, useCheckIn, useCheckOut } from "@/hooks/use-attendance";
+import { usePricingPlans } from "@/hooks/use-templates";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1430,6 +1431,8 @@ export default function Dashboard() {
     });
   };
 
+  const { data: pricingPlans } = usePricingPlans();
+
   const pendingOrders = orders?.filter(o => o.status === 'pending') || [];
   const activeProjects = projects?.filter(p => (p.status as string) !== 'completed') || [];
   const completedOrders = orders?.filter(o => (o.status as string) === 'completed') || [];
@@ -1778,6 +1781,116 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* ─── Packages / Offers Section ─── */}
+        {pricingPlans && pricingPlans.filter(p => !p.isCustom).length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-black flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-3.5 h-3.5 text-white" />
+                </div>
+                الباقات والعروض المتاحة
+              </h2>
+              <Link href="/prices">
+                <button className="text-[10px] text-black/30 hover:text-black/60 flex items-center gap-1" data-testid="link-all-plans">
+                  عرض الكل <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pricingPlans.filter(p => !p.isCustom).slice(0, 3).map((plan, i) => {
+                const discount = plan.originalPrice && plan.price
+                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
+                  : 0;
+                const billingLabel = plan.billingCycle === "monthly" ? "/شهر" : plan.billingCycle === "yearly" ? "/سنة" : "";
+                return (
+                  <motion.div key={plan.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.06 }}>
+                    <div className={`bg-white rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 shadow-md" : "border-black/[0.06]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
+                      {plan.isPopular && (
+                        <div className="bg-black px-4 py-1.5 flex items-center gap-2">
+                          <Check className="w-3 h-3 text-white" />
+                          <span className="text-white text-[10px] font-bold">الأكثر طلباً</span>
+                        </div>
+                      )}
+                      {plan.offerLabel && !plan.isPopular && (
+                        <div className="bg-emerald-500 px-4 py-1.5 flex items-center gap-2">
+                          <Package className="w-3 h-3 text-white" />
+                          <span className="text-white text-[10px] font-bold">{plan.offerLabel}</span>
+                        </div>
+                      )}
+                      <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-bold text-black text-sm mb-0.5">{plan.nameAr}</h3>
+                            <p className="text-[10px] text-black/35 leading-relaxed line-clamp-2">{plan.descriptionAr}</p>
+                          </div>
+                        </div>
+
+                        <div className="mb-4">
+                          {plan.originalPrice && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-black/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>
+                              {discount > 0 && (
+                                <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black text-black">{plan.price.toLocaleString()}</span>
+                            <span className="text-xs text-black/35">ر.س {billingLabel}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 mb-4">
+                          {plan.featuresAr?.slice(0, 4).map((f: string, fi: number) => (
+                            <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50">
+                              <div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] flex items-center justify-center flex-shrink-0">
+                                <Check className="w-2 h-2 text-black/50" />
+                              </div>
+                              {f}
+                            </div>
+                          ))}
+                          {(plan.featuresAr?.length || 0) > 4 && (
+                            <p className="text-[10px] text-black/20 mr-5">+{(plan.featuresAr?.length || 0) - 4} مزايا أخرى</p>
+                          )}
+                        </div>
+
+                        <Link href="/order">
+                          <Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] hover:bg-black/[0.08] text-black border border-black/[0.08]"}`} data-testid={`button-select-plan-${plan.slug}`}>
+                            اختر الباقة
+                            <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {(pricingPlans?.find(p => p.isCustom)) && (
+              <div className="mt-4 bg-white rounded-2xl border border-black/[0.06] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-black text-sm">{pricingPlans.find(p => p.isCustom)?.nameAr}</h4>
+                    <p className="text-[10px] text-black/35">{pricingPlans.find(p => p.isCustom)?.descriptionAr}</p>
+                  </div>
+                </div>
+                <Link href="/contact">
+                  <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs font-semibold whitespace-nowrap" data-testid="button-enterprise-contact">
+                    <Phone className="w-3.5 h-3.5 ml-1.5" />
+                    تواصل للتخصيص
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* CTA Band */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

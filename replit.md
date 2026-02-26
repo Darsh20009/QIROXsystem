@@ -96,6 +96,11 @@ These are pre-set in render.yaml and don't need manual entry:
 
 ## Recent Changes (Feb 2026)
 
+- **PACKAGES & OFFERS SYSTEM (Professional)**: Full redesign of pricing and offers:
+  - `Prices.tsx`: Rebuilt with trust badges, billing-cycle filter toggle (all/one-time/monthly/yearly), animated plan cards with discount %, offer badges, "what's included" section, domain pricing with savings display, and a black CTA footer
+  - `AdminTemplates.tsx`: Added full `PlanForm` component with: offer label, original price + auto-calculated discount %, per-line features editor, isPopular/isCustom toggles (Switch), billing cycle selector, sortOrder; plan cards now show discount badge; edit button on each plan now works
+  - `Dashboard.tsx` (client view): Added "الباقات والعروض المتاحة" section showing up to 3 plans with offer banners, popular badge, discount %, features preview, and "اختر الباقة" CTA; enterprise plan shown separately with contact button
+
 - **COMPLETE UI/UX REDESIGN**: Converted entire frontend from dark theme (bg-[#0A0A0F], cyan accents) to light theme (white background, black/gray color scheme). Affected: index.css, all components (Navigation, Footer, Sidebar, Splash), and all pages (Home, Services, Portfolio, Prices, Login, About, Contact, OrderFlow, Admin pages).
   - Design tokens: bg-white, text-black, borders: black/[0.06], accents: gray-400, premium buttons: bg-black text-white
   - Navigation: transparent → glass-strong on scroll, active indicator with layoutId animation
