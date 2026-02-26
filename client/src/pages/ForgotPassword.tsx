@@ -171,6 +171,28 @@ export default function ForgotPassword() {
                 <button type="button" onClick={() => handleSendOtp({ preventDefault: () => {} } as any)} className="w-full text-xs text-black/40 hover:text-black/70 transition-colors" disabled={loading}>
                   لم تستلم الرمز؟ إعادة إرسال
                 </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const r = await fetch(`/api/auth/dev-otp/${encodeURIComponent(email)}`);
+                      const d = await r.json();
+                      if (d.code) {
+                        const newOtp = d.code.split("").slice(0, 6);
+                        setOtp(newOtp);
+                        toast({ title: `الرمز: ${d.code}`, description: "تم ملء الرمز تلقائياً" });
+                      } else {
+                        toast({ title: "لا يوجد رمز نشط — أعد الإرسال أولاً", variant: "destructive" });
+                      }
+                    } catch {
+                      toast({ title: "تعذّر جلب الرمز", variant: "destructive" });
+                    }
+                  }}
+                  className="w-full text-xs text-blue-500/70 hover:text-blue-600 transition-colors"
+                  data-testid="button-dev-fetch-otp"
+                >
+                  عرض الرمز مباشرة (وضع التطوير)
+                </button>
               </motion.form>
             )}
 

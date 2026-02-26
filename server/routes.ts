@@ -1132,12 +1132,23 @@ export async function registerRoutes(
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       await OtpModel.create({ email: email.toLowerCase(), code, expiresAt });
       await sendOtpEmail(email, user.fullName || user.username, code);
+      console.log(`[OTP] Code for ${email}: ${code} (expires in 10 min)`);
       res.json({ ok: true });
     } catch (err) {
       console.error("[OTP] forgot-password error:", err);
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
     }
   });
+
+  // Dev-only: get latest OTP for testing (remove in production)
+  if (process.env.NODE_ENV !== "production") {
+    app.get("/api/auth/dev-otp/:email", async (req, res) => {
+      const { OtpModel } = await import("./models");
+      const otp = await OtpModel.findOne({ email: req.params.email.toLowerCase(), used: false, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
+      if (!otp) return res.status(404).json({ error: "لا يوجد رمز نشط" });
+      res.json({ code: (otp as any).code, expiresAt: (otp as any).expiresAt });
+    });
+  }
 
   app.post("/api/auth/verify-otp", async (req, res) => {
     try {
