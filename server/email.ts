@@ -1,9 +1,9 @@
 const API_KEY = process.env.SMTP2GO_API_KEY || "";
-const SENDER = process.env.SMTP2GO_SENDER || "noreply@qirox.tech";
+const SENDER = process.env.SMTP2GO_SENDER || "noreply@qirox.studio";
 const SENDER_NAME = process.env.SMTP2GO_SENDER_NAME || "Qirox";
 const BASE_URL = "https://api.smtp2go.com/v3/email/send";
-const LOGO_URL = "https://qirox.tech/logo.png";
-const SITE_URL = "https://qirox.tech";
+const LOGO_URL = "https://qirox.studio/logo.png";
+const SITE_URL = "https://qirox.studio";
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
   try {
