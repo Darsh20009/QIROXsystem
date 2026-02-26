@@ -507,6 +507,7 @@ function EmployeeDashboard({ user }: { user: any }) {
     techStack: "", database: "", hosting: "", framework: "", language: "",
     githubRepoUrl: "", databaseUri: "", serverIp: "", deploymentUsername: "", deploymentPassword: "",
     customDomain: "", stagingUrl: "", productionUrl: "", sslEnabled: false, cdnEnabled: false,
+    domain: "",
     variables: "",
     projectConcept: "", targetAudience: "", mainFeatures: "", referenceLinks: "", colorPalette: "",
     estimatedHours: "", deadline: "", startDate: "",
@@ -548,6 +549,7 @@ function EmployeeDashboard({ user }: { user: any }) {
         productionUrl: s.productionUrl || "",
         sslEnabled: s.sslEnabled || false,
         cdnEnabled: s.cdnEnabled || false,
+        domain: s.domain || "",
         variables: s.variables || "",
         projectConcept: s.projectConcept || "",
         targetAudience: s.targetAudience || "",
@@ -601,7 +603,7 @@ function EmployeeDashboard({ user }: { user: any }) {
     setActiveTab("details");
     setStatusUpdate(order.status || "pending");
     setAdminNotes(order.adminNotes || "");
-    setSpecsForm({ techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" });
+    setSpecsForm(prev => ({ ...prev, techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" }));
   };
 
   const handleCheckIn = () => {
@@ -1429,11 +1431,11 @@ export default function Dashboard() {
   };
 
   const pendingOrders = orders?.filter(o => o.status === 'pending') || [];
-  const activeProjects = projects?.filter(p => p.status !== 'completed') || [];
-  const completedOrders = orders?.filter(o => o.status === 'completed') || [];
+  const activeProjects = projects?.filter(p => (p.status as string) !== 'completed') || [];
+  const completedOrders = orders?.filter(o => (o.status as string) === 'completed') || [];
   const totalSpent = orders?.reduce((sum, o) => {
-    if (o.status === 'completed' || o.status === 'approved' || o.status === 'in_progress') {
-      return sum + (o.totalAmount || 0);
+    if ((o.status as string) === 'completed' || (o.status as string) === 'approved' || o.status === 'in_progress') {
+      return sum + Number(o.totalAmount || 0);
     }
     return sum;
   }, 0) || 0;
@@ -1597,7 +1599,7 @@ export default function Dashboard() {
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-sm text-black">مشروع #{(project.id as string)?.slice?.(-6) || project.id}</h4>
+                                  <h4 className="font-bold text-sm text-black">مشروع #{String(project.id)?.slice(-6) || project.id}</h4>
                                   <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                                 </div>
                                 <p className="text-[10px] text-black/30 mt-0.5">
@@ -1707,7 +1709,7 @@ export default function Dashboard() {
                               <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-black">طلب #{(order.id as string)?.slice?.(-6) || order.id}</p>
+                              <p className="text-xs font-bold text-black">طلب #{String(order.id)?.slice(-6) || order.id}</p>
                               <p className="text-[10px] text-black/30">
                                 {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
                                 {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ر.س` : ''}

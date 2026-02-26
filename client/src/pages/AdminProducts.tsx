@@ -89,7 +89,7 @@ export default function AdminProducts() {
   const openEdit = (p: QiroxProduct) => {
     setForm({
       name: p.name, nameAr: p.nameAr, description: p.description || "",
-      descriptionAr: p.descriptionAr || "", category: p.category, price: String(p.price),
+      descriptionAr: p.descriptionAr || "", category: p.category as any, price: String(p.price),
       currency: p.currency, images: p.images?.length ? p.images : [""],
       serviceSlug: p.serviceSlug || "", badge: p.badge || "", isActive: p.isActive,
       featured: p.featured, specs: p.specs ? JSON.stringify(p.specs, null, 2) : "",

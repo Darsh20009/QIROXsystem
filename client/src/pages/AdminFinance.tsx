@@ -50,8 +50,8 @@ export default function AdminFinance() {
     </div>
   );
 
-  const totalRevenue = summary?.totalRevenue || orders?.reduce((acc, o) => acc + (o.totalAmount || 0), 0) || 0;
-  const pendingPayments = orders?.filter(o => !(o as any).isDepositPaid).reduce((acc, o) => acc + (o.totalAmount || 0), 0) || 0;
+  const totalRevenue = summary?.totalRevenue || orders?.reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
+  const pendingPayments = orders?.filter(o => !(o as any).isDepositPaid).reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
 
   const chartData = [
     { name: "يناير", value: 4000 },

@@ -154,7 +154,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
         <label className="text-sm font-medium text-slate-700 block mb-1">الحالة</label>
         <select 
           value={formData.status} 
-          onChange={e => setFormData({...formData, status: e.target.value})}
+          onChange={e => setFormData({...formData, status: e.target.value as "active" | "coming_soon" | "archived"})}
           className="w-full h-10 rounded-md border border-slate-200 px-3 text-sm"
           data-testid="select-template-status"
         >

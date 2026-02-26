@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Bell, BellRing, Check, CheckCheck, Package, MessageSquare, FileText, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLink } from "wouter";
 
 function NotifIcon({ type }: { type: string }) {
   if (type === "order") return <Package className="w-3.5 h-3.5 text-blue-500" />;

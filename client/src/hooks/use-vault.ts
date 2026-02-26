@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type InsertProjectVaultItem } from "@shared/schema";
+import { type InsertProjectVault } from "@shared/schema";
 
 export function useVault(projectId: string) {
   return useQuery({
@@ -16,7 +16,7 @@ export function useVault(projectId: string) {
 export function useCreateVaultItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ projectId, data }: { projectId: string; data: InsertProjectVaultItem }) => {
+    mutationFn: async ({ projectId, data }: { projectId: string; data: InsertProjectVault }) => {
       const res = await fetch(`/api/projects/${projectId}/vault`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

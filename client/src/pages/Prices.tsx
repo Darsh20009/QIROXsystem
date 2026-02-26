@@ -170,7 +170,7 @@ export default function Prices() {
                             <Plus className="w-3 h-3" /> {t("prices.addons.label")}
                           </p>
                           <div className="space-y-1.5">
-                            {(lang === "ar" ? plan.addonsAr : (plan.addons || plan.addonsAr))?.map((addon: string, i: number) => (
+                            {(lang === "ar" ? plan.addonsAr : ((plan as any).addons || plan.addonsAr))?.map((addon: string, i: number) => (
                               <div key={i} className="text-xs text-black/40 flex items-center gap-1.5">
                                 <Globe className="w-3 h-3 flex-shrink-0 text-black/25" />
                                 {addon}
