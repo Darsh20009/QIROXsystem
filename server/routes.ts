@@ -11,7 +11,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail } from "./email";
+import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail } from "./email";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -435,8 +435,28 @@ export async function registerRoutes(
   app.patch(api.projects.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.projects.update.input.parse(req.body);
+    const oldProject = await storage.getProject(req.params.id);
     const project = await storage.updateProject(req.params.id, input);
     res.json(project);
+    // Send email to client if status or progress changed
+    try {
+      const statusChanged = input.status && oldProject?.status !== input.status;
+      const progressChanged = input.progress !== undefined && oldProject?.progress !== input.progress;
+      if ((statusChanged || progressChanged) && (project as any).clientId) {
+        const { UserModel } = await import("./models");
+        const clientUser = await UserModel.findById((project as any).clientId).select("email fullName username");
+        if (clientUser?.email) {
+          sendProjectUpdateEmail(
+            clientUser.email,
+            clientUser.fullName || clientUser.username,
+            (project as any).name || "مشروعك",
+            (project as any).status || "in_progress",
+            (project as any).progress || 0,
+            input.status && statusChanged ? `تم تغيير حالة المشروع إلى: ${input.status}` : undefined
+          ).catch(console.error);
+        }
+      }
+    } catch (e) { console.error("[Email] project update email error:", e); }
   });
 
   // === TASKS API ===
@@ -451,13 +471,68 @@ export async function registerRoutes(
     const input = api.tasks.create.input.parse(req.body);
     const task = await storage.createTask({ ...input, projectId: req.params.projectId });
     res.status(201).json(task);
+    // Email assignee when task is created with assignment
+    try {
+      if ((task as any).assignedTo) {
+        const { UserModel, ProjectModel } = await import("./models");
+        const assignee = await UserModel.findById((task as any).assignedTo).select("email fullName username");
+        const project = await ProjectModel?.findById(req.params.projectId).select("name");
+        if (assignee?.email) {
+          sendTaskAssignedEmail(
+            assignee.email,
+            assignee.fullName || assignee.username,
+            (task as any).title || "مهمة جديدة",
+            project?.name || "المشروع",
+            (task as any).priority || "medium",
+            (task as any).deadline
+          ).catch(console.error);
+        }
+      }
+    } catch (e) { console.error("[Email] task assigned email error:", e); }
   });
 
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);
+    const { TaskModel } = await import("./models");
+    const oldTask = await TaskModel?.findById(req.params.id).lean().catch(() => null);
     const task = await storage.updateTask(req.params.id, input);
     res.json(task);
+    // Email assignee if task is newly assigned
+    // Email project client if task is completed
+    try {
+      const { UserModel, ProjectModel } = await import("./models");
+      if (input.assignedTo && (!oldTask || (oldTask as any).assignedTo?.toString() !== input.assignedTo)) {
+        const assignee = await UserModel.findById(input.assignedTo).select("email fullName username");
+        const project = await ProjectModel?.findById((task as any).projectId).select("name");
+        if (assignee?.email) {
+          sendTaskAssignedEmail(
+            assignee.email,
+            assignee.fullName || assignee.username,
+            (task as any).title || "مهمة",
+            project?.name || "المشروع",
+            (task as any).priority || "medium",
+            (task as any).deadline
+          ).catch(console.error);
+        }
+      }
+      if (input.status === "done" && (!oldTask || (oldTask as any).status !== "done")) {
+        const project = await ProjectModel?.findById((task as any).projectId).select("name clientId");
+        if (project?.clientId) {
+          const clientUser = await UserModel.findById(project.clientId).select("email fullName username");
+          const completedBy = (req.user as any)?.fullName || (req.user as any)?.username || "الفريق";
+          if (clientUser?.email) {
+            sendTaskCompletedEmail(
+              clientUser.email,
+              clientUser.fullName || clientUser.username,
+              (task as any).title || "مهمة",
+              project.name || "المشروع",
+              completedBy
+            ).catch(console.error);
+          }
+        }
+      }
+    } catch (e) { console.error("[Email] task update email error:", e); }
   });
 
   // === PROJECT MEMBERS API ===
@@ -1149,18 +1224,40 @@ export async function registerRoutes(
   // ═══════════════════════════════════════════════════════════
   app.post("/api/admin/test-email", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
-    const { type = "welcome", to } = req.body;
+    const { type = "test", to } = req.body;
     const user = req.user as any;
     const targetEmail = to || user.email;
     if (!targetEmail) return res.status(400).json({ error: "لا يوجد بريد إلكتروني للإرسال إليه" });
     let ok = false;
-    if (type === "welcome") ok = await sendWelcomeEmail(targetEmail, user.fullName || "مدير");
-    else if (type === "otp") ok = await sendOtpEmail(targetEmail, user.fullName || "مدير", "123456");
-    else if (type === "order") ok = await sendOrderConfirmationEmail(targetEmail, user.fullName || "مدير", "TEST001", ["خدمة اختبارية", "إضافة تجريبية"]);
-    else if (type === "status") ok = await sendOrderStatusEmail(targetEmail, user.fullName || "مدير", "TEST001", "approved");
-    else if (type === "message") ok = await sendMessageNotificationEmail(targetEmail, user.fullName || "مدير", "فريق Qirox", "هذا اختبار لنظام الرسائل");
+    const name = user.fullName || "مدير";
+    if (type === "test") ok = await sendTestEmail(targetEmail, name);
+    else if (type === "welcome") ok = await sendWelcomeEmail(targetEmail, name);
+    else if (type === "otp") ok = await sendOtpEmail(targetEmail, name, "123456");
+    else if (type === "order") ok = await sendOrderConfirmationEmail(targetEmail, name, "TEST001", ["خدمة اختبارية", "إضافة تجريبية"]);
+    else if (type === "status") ok = await sendOrderStatusEmail(targetEmail, name, "TEST001", "approved");
+    else if (type === "message") ok = await sendMessageNotificationEmail(targetEmail, name, "فريق Qirox", "هذا اختبار لنظام الرسائل");
+    else if (type === "project") ok = await sendProjectUpdateEmail(targetEmail, name, "نظام إدارة المخزون", "in_progress", 65, "تم الانتهاء من تصميم قاعدة البيانات");
+    else if (type === "task") ok = await sendTaskAssignedEmail(targetEmail, name, "تصميم واجهة المستخدم", "تطبيق الجوال", "high");
     if (ok) res.json({ ok: true, message: `تم إرسال البريد التجريبي بنجاح إلى ${targetEmail}` });
     else res.status(500).json({ error: "فشل إرسال البريد — تحقق من إعدادات SMTP2GO" });
+  });
+
+  // === ADMIN DIRECT EMAIL ===
+  app.post("/api/admin/send-email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { to, toName, subject, body } = req.body;
+    if (!to || !subject || !body) return res.status(400).json({ error: "البريد الإلكتروني والعنوان والمحتوى مطلوبة" });
+    const ok = await sendDirectEmail(to, toName || to, subject, body);
+    if (ok) res.json({ ok: true, message: `تم إرسال البريد بنجاح إلى ${to}` });
+    else res.status(500).json({ error: "فشل إرسال البريد — تحقق من إعدادات SMTP2GO" });
+  });
+
+  // === ADMIN EMAIL RECIPIENTS (users with emails) ===
+  app.get("/api/admin/email-recipients", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { UserModel } = await import("./models");
+    const users = await UserModel.find({ email: { $exists: true, $ne: "" } }).select("email fullName username role").limit(200);
+    res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
   });
 
   // Initialize seed data

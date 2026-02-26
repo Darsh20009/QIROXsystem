@@ -179,6 +179,141 @@ const adminSections = [
   { label: "الوظائف", desc: "فرص العمل والتقديمات", href: "/admin/jobs", icon: Briefcase, accent: "bg-red-50", iconColor: "text-red-600", badge: null },
 ];
 
+function AdminEmailPanel() {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ to: "", toName: "", subject: "", body: "" });
+  const [testType, setTestType] = useState("test");
+
+  const sendDirectMutation = useMutation({
+    mutationFn: async (data: typeof form) => {
+      const res = await apiRequest("POST", "/api/admin/send-email", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: data.message || "تم الإرسال بنجاح ✓" });
+      setForm({ to: "", toName: "", subject: "", body: "" });
+    },
+    onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
+  });
+
+  const testMutation = useMutation({
+    mutationFn: async ({ type, to }: { type: string; to?: string }) => {
+      const res = await apiRequest("POST", "/api/admin/test-email", { type, to });
+      return res.json();
+    },
+    onSuccess: (data) => toast({ title: data.message || "تم إرسال البريد التجريبي ✓" }),
+    onError: () => toast({ title: "فشل إرسال البريد التجريبي", variant: "destructive" }),
+  });
+
+  const emailTypes = [
+    { value: "test",    label: "اختبار النظام" },
+    { value: "welcome", label: "ترحيب بالعضو" },
+    { value: "order",   label: "تأكيد طلب" },
+    { value: "status",  label: "تحديث حالة طلب" },
+    { value: "project", label: "تحديث مشروع" },
+    { value: "task",    label: "إسناد مهمة" },
+    { value: "message", label: "إشعار رسالة" },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden" data-testid="admin-email-panel">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[0.05]">
+        <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+          <Mail className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-black">إرسال البريد الإلكتروني المباشر</p>
+          <p className="text-[10px] text-black/35">أرسل رسائل مباشرة لأي عنوان بريدي</p>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] text-black/40 font-semibold block mb-1.5">البريد الإلكتروني *</label>
+            <Input
+              value={form.to}
+              onChange={e => setForm(f => ({ ...f, to: e.target.value }))}
+              placeholder="example@email.com"
+              type="email"
+              className="text-sm h-9 border-black/[0.1]"
+              data-testid="input-email-to"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-black/40 font-semibold block mb-1.5">الاسم</label>
+            <Input
+              value={form.toName}
+              onChange={e => setForm(f => ({ ...f, toName: e.target.value }))}
+              placeholder="اسم المستلم"
+              className="text-sm h-9 border-black/[0.1]"
+              data-testid="input-email-toname"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] text-black/40 font-semibold block mb-1.5">عنوان الرسالة *</label>
+          <Input
+            value={form.subject}
+            onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+            placeholder="موضوع الرسالة"
+            className="text-sm h-9 border-black/[0.1]"
+            data-testid="input-email-subject"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-black/40 font-semibold block mb-1.5">محتوى الرسالة *</label>
+          <Textarea
+            value={form.body}
+            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+            placeholder="اكتب محتوى الرسالة هنا..."
+            className="text-sm border-black/[0.1] resize-none"
+            rows={4}
+            data-testid="textarea-email-body"
+          />
+        </div>
+        <Button
+          onClick={() => sendDirectMutation.mutate(form)}
+          disabled={sendDirectMutation.isPending || !form.to || !form.subject || !form.body}
+          className="w-full bg-black text-white hover:bg-black/80 h-9 text-sm font-semibold"
+          data-testid="button-send-direct-email"
+        >
+          {sendDirectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
+          إرسال البريد
+        </Button>
+
+        <div className="border-t border-black/[0.05] pt-3">
+          <p className="text-[10px] text-black/35 font-semibold mb-2.5">إرسال بريد تجريبي لاختبار النظام</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Select value={testType} onValueChange={setTestType}>
+                <SelectTrigger className="h-8 text-xs border-black/[0.1]" data-testid="select-test-email-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {emailTypes.map(t => (
+                    <SelectItem key={t.value} value={t.value} className="text-xs">{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => testMutation.mutate({ type: testType })}
+              disabled={testMutation.isPending}
+              className="h-8 text-xs border-black/[0.1] hover:bg-black/[0.04]"
+              data-testid="button-send-test-email"
+            >
+              {testMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin ml-1" /> : null}
+              إرسال تجريبي
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminDashboard({ user }: { user: any }) {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -320,9 +455,15 @@ function AdminDashboard({ user }: { user: any }) {
             </div>
           </div>
 
-          <div>
-            <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">بيانات الدخول</p>
-            <AdminCredentialsCard />
+          <div className="space-y-4">
+            <div>
+              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">بيانات الدخول</p>
+              <AdminCredentialsCard />
+            </div>
+            <div>
+              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">البريد الإلكتروني</p>
+              <AdminEmailPanel />
+            </div>
           </div>
         </motion.div>
 
