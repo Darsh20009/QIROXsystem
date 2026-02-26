@@ -9,6 +9,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Service } from "@shared/schema";
 import { useState } from "react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 const categories = [
   { value: "restaurants", label: "مطاعم وكافيهات" },
@@ -338,12 +339,11 @@ export default function AdminServices() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">صور المحفظة (روابط مفصولة بفاصلة)</label>
-              <Input
-                value={formData.portfolioImages}
-                onChange={(e) => setFormData({ ...formData, portfolioImages: e.target.value })}
-                placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
-                data-testid="input-portfolio-images"
+              <ImageUpload
+                label="صور المحفظة"
+                multiple
+                value={formData.portfolioImages ? formData.portfolioImages.split(",").map(s => s.trim()).filter(Boolean) : []}
+                onChange={(urls) => setFormData({ ...formData, portfolioImages: urls.join(", ") })}
               />
             </div>
             <div>

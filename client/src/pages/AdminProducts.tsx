@@ -10,6 +10,7 @@ import { Loader2, Plus, Pencil, Trash2, Package, Search, Star, Image as ImageIco
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { ImageUpload } from "@/components/ImageUpload";
 import type { QiroxProduct } from "@shared/schema";
 import { motion } from "framer-motion";
 
@@ -314,14 +315,11 @@ export default function AdminProducts() {
               <Input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} placeholder="الأكثر مبيعاً" data-testid="input-product-badge" />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-black/50 mb-1 block">روابط الصور (رابط واحد لكل سطر)</label>
-              <Textarea
-                value={form.images.join("\n")}
-                onChange={e => setForm(f => ({ ...f, images: e.target.value.split("\n") }))}
-                placeholder="https://example.com/image1.jpg"
-                rows={3}
-                className="resize-none text-xs"
-                data-testid="input-product-images"
+              <ImageUpload
+                label="صور المنتج"
+                multiple
+                value={form.images.filter(Boolean)}
+                onChange={(urls) => setForm(f => ({ ...f, images: urls }))}
               />
             </div>
             <div className="col-span-2">

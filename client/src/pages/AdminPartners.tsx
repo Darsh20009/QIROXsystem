@@ -7,6 +7,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Partner } from "@shared/schema";
 import { useState } from "react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface FormData {
   name: string;
@@ -250,12 +251,10 @@ export default function AdminPartners() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط اللوجو *</label>
-              <Input
+              <ImageUpload
+                label="لوجو الشريك *"
                 value={formData.logoUrl}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                placeholder="https://example.com/logo.png"
-                data-testid="input-partner-logo"
+                onChange={(url) => setFormData({ ...formData, logoUrl: url })}
               />
             </div>
             <div>

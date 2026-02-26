@@ -9,6 +9,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type News } from "@shared/schema";
 import { useState } from "react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface FormData {
   title: string;
@@ -290,12 +291,10 @@ export default function AdminNews() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط الصورة</label>
-              <Input
+              <ImageUpload
+                label="صورة المقال"
                 value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                data-testid="input-news-image"
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
               />
             </div>
             <div>
