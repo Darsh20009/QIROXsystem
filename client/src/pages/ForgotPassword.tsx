@@ -41,13 +41,25 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email: email.toLowerCase().trim() }),
       });
       const data = await r.json();
+      if (r.status === 404) {
+        setEmailError("لا يوجد حساب مرتبط بهذا البريد الإلكتروني");
+        return;
+      }
       if (!r.ok) throw new Error(data.error || "حدث خطأ");
       setStep("otp");
       setResendCount(c => c + 1);
-      toast({
-        title: "تم إرسال رمز التحقق",
-        description: `راجع بريدك الإلكتروني${resendCount > 0 ? " — إعادة الإرسال" : ""}. قد يصل في الـ Spam.`,
-      });
+      if (data.emailSent === false) {
+        toast({
+          title: "تم إنشاء الرمز",
+          description: "تعذّر إرسال البريد الإلكتروني. استخدم زر عرض الرمز (وضع التطوير) للمتابعة.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: resendCount > 0 ? "تم إعادة إرسال الرمز" : "تم إرسال رمز التحقق",
+          description: "راجع بريدك الإلكتروني. قد يصل في مجلد الـ Spam.",
+        });
+      }
     } catch (err: any) {
       toast({ title: err.message || "حدث خطأ في الإرسال", variant: "destructive" });
     } finally {

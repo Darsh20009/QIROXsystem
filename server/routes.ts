@@ -111,6 +111,7 @@ export async function registerRoutes(
         ...req.body,
         role,
         password: hashedPassword,
+        email: req.body.email ? req.body.email.toLowerCase().trim() : req.body.email,
       });
 
       req.login(user, (err) => {
@@ -1124,16 +1125,19 @@ export async function registerRoutes(
       if (!email) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
       const { OtpModel, UserModel } = await import("./models");
       const user = await UserModel.findOne({ email: email.toLowerCase().trim() });
-      // Always return 200 to prevent email enumeration
-      if (!user) return res.json({ ok: true });
+      if (!user) return res.status(404).json({ error: "لا يوجد حساب مرتبط بهذا البريد الإلكتروني" });
       // Invalidate previous OTPs for this email
       await OtpModel.updateMany({ email: email.toLowerCase(), used: false }, { used: true });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       await OtpModel.create({ email: email.toLowerCase(), code, expiresAt });
-      await sendOtpEmail(email, user.fullName || user.username, code);
-      console.log(`[OTP] Code for ${email}: ${code} (expires in 10 min)`);
-      res.json({ ok: true });
+      const emailSent = await sendOtpEmail(email, user.fullName || user.username, code);
+      if (emailSent) {
+        console.log(`[OTP] ✅ Code for ${email}: ${code} (expires in 10 min)`);
+      } else {
+        console.error(`[OTP] ❌ Failed to send email to ${email} — Code: ${code}`);
+      }
+      res.json({ ok: true, emailSent });
     } catch (err) {
       console.error("[OTP] forgot-password error:", err);
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
