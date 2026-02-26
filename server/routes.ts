@@ -350,7 +350,7 @@ export async function registerRoutes(
     try {
       const { name, email, subject, message } = req.body;
       if (!name || !email || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
-      await sendDirectEmail("info@qirox.tech", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
+      await sendDirectEmail("info@qiroxstudio.online", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -815,7 +815,7 @@ export async function registerRoutes(
       const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
       if (!jobId || !fullName || !email) return res.status(400).json({ error: "يرجى تعبئة الحقول المطلوبة" });
       const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "" });
-      sendDirectEmail("info@qirox.tech", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
+      sendDirectEmail("info@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;">طلب توظيف جديد</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -1637,7 +1637,7 @@ export async function registerRoutes(
 export async function seedDatabase() {
   // Initial Admin Account
   const adminUsername = "qadmin";
-  const adminEmail = "admin@qirox.tech";
+  const adminEmail = "info@qiroxstudio.online";
   const { setupAuth } = await import("./auth");
   const { hashPassword } = setupAuth({ use: () => {}, get: () => "development", set: () => {} } as any);
 
@@ -1664,8 +1664,8 @@ export async function seedDatabase() {
     console.log("Admin account created: admin@qirox.tech");
   } else {
     const hashedPassword = await hashPassword("qadmin");
-    await UserModel.updateOne({ username: adminUsername }, { $set: { password: hashedPassword, role: "admin" } });
-    console.log("Admin password reset to default on startup");
+    await UserModel.updateOne({ username: adminUsername }, { $set: { password: hashedPassword, role: "admin", email: adminEmail } });
+    console.log(`Admin credentials reset: qadmin/qadmin — email: ${adminEmail}`);
   }
 
   const existingServices = await storage.getServices();
