@@ -45,9 +45,6 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
-
   return useMutation({
     mutationFn: async (userData: InsertUser) => {
       const res = await fetch(api.auth.register.path, {
@@ -62,10 +59,7 @@ export function useRegister() {
       }
       return await res.json();
     },
-    onSuccess: (user) => {
-      queryClient.setQueryData([api.auth.user.path], user);
-      setLocation("/dashboard");
-    },
+    // onSuccess handled by Login.tsx to show OTP verification step
   });
 }
 

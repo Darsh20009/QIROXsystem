@@ -114,15 +114,22 @@ export async function registerRoutes(
         email: req.body.email ? req.body.email.toLowerCase().trim() : req.body.email,
       });
 
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
         if (user.email) {
-          sendWelcomeEmail(user.email, user.fullName || user.username).catch(console.error);
+          // Send verification OTP instead of welcome email (welcome sent after verify)
+          const { OtpModel } = await import("./models");
+          const code = Math.floor(100000 + Math.random() * 900000).toString();
+          const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+          await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false }, { used: true });
+          await OtpModel.create({ email: user.email.toLowerCase(), code, expiresAt, type: "email_verify" });
+          sendOtpEmail(user.email, user.fullName || user.username, code).catch(console.error);
+          console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
           // Notify admin
           const adminEmail = "info@qiroxstudio.online";
           sendAdminNewClientEmail(adminEmail, user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
         }
-        res.status(201).json(user);
+        res.status(201).json({ ...user, emailVerified: false, needsVerification: true });
       });
     } catch (err) {
       next(err);
@@ -1164,6 +1171,47 @@ export async function registerRoutes(
       res.json({ code: (otp as any).code, expiresAt: (otp as any).expiresAt });
     });
   }
+
+  // Verify email OTP (after registration)
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
+      const { OtpModel, UserModel } = await import("./models");
+      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, expiresAt: { $gt: new Date() } });
+      if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      await OtpModel.updateOne({ _id: otp._id }, { used: true });
+      const user = await UserModel.findOneAndUpdate(
+        { email: email.toLowerCase() },
+        { emailVerified: true },
+        { new: true }
+      );
+      if (!user) return res.status(404).json({ error: "لم يتم إيجاد الحساب" });
+      // Send welcome email now that email is verified
+      sendWelcomeEmail(email, user.fullName || user.username).catch(console.error);
+      res.json({ ok: true, verified: true });
+    } catch (err) {
+      res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
+    }
+  });
+
+  // Resend email verification OTP
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!req.isAuthenticated() || !user?.email) return res.status(400).json({ error: "غير مسجّل الدخول" });
+      const { OtpModel } = await import("./models");
+      await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false }, { used: true });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+      await OtpModel.create({ email: user.email.toLowerCase(), code, expiresAt, type: "email_verify" });
+      await sendOtpEmail(user.email, user.fullName || user.username, code);
+      console.log(`[EMAIL-VERIFY RESEND] Code for ${user.email}: ${code}`);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
+    }
+  });
 
   app.post("/api/auth/verify-otp", async (req, res) => {
     try {

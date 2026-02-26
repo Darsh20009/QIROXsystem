@@ -6,30 +6,102 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
 
 export default function Login() {
   const [location] = useLocation();
+  const [, setLocation] = useLocation();
   const { t } = useI18n();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
+
+  // Email verification step state
+  const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
+  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
 
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
 
   const isPending = isLoginPending || isRegisterPending;
   const error = loginError || registerError;
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otpCode];
+    newOtp[index] = value.slice(-1);
+    setOtpCode(newOtp);
+    if (value && index < 5) {
+      document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpCode[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus();
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    const code = otpCode.join("");
+    if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
+    setIsVerifying(true);
+    setVerifyError("");
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyStep!.email, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setVerifyError(data.error || "الرمز غير صحيح"); return; }
+      // Refresh user data and redirect
+      const userRes = await fetch("/api/auth/user");
+      if (userRes.ok) {
+        const user = await userRes.json();
+        queryClient.setQueryData(["/api/auth/user"], user);
+      }
+      toast({ title: "تم التحقق بنجاح!", description: "مرحباً بك في QIROX" });
+      setLocation("/dashboard");
+    } catch {
+      setVerifyError("حدث خطأ، حاول مجدداً");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setVerifyError("");
+    try {
+      const res = await fetch("/api/auth/resend-verification", { method: "POST" });
+      if (res.ok) {
+        toast({ title: "تم الإرسال!", description: "تحقق من بريدك الإلكتروني" });
+        setOtpCode(["", "", "", "", "", ""]);
+      }
+    } catch {
+      setVerifyError("حدث خطأ أثناء الإرسال");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const registerSchema = z.object({
     username: z.string().min(3, "اسم المستخدم 3 أحرف على الأقل"),
@@ -71,7 +143,17 @@ export default function Login() {
   const onSubmit = (data: any) => {
     if (isRegister) {
       const { confirmPassword, ...userData } = data;
-      register(userData);
+      register(userData, {
+        onSuccess: (user: any) => {
+          if (user.email) {
+            setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
+          } else {
+            // Employee with no email — just log them in
+            queryClient.setQueryData(["/api/auth/user"], user);
+            setLocation(user.role === "client" ? "/dashboard" : "/admin");
+          }
+        },
+      });
     } else {
       login(data);
     }
@@ -154,9 +236,88 @@ export default function Login() {
           </Link>
         </div>
 
+        <AnimatePresence mode="wait">
+        {verifyStep ? (
+          <motion.div
+            key="verify-step"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
+                <ShieldCheck className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
+              <p className="text-black/40 text-sm leading-relaxed">
+                أرسلنا رمز التحقق إلى<br />
+                <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
+              </p>
+            </div>
+
+            {/* OTP boxes */}
+            <div className="flex justify-center gap-3 mb-6" dir="ltr">
+              {otpCode.map((digit, i) => (
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleOtpChange(i, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(i, e)}
+                  data-testid={`otp-box-${i}`}
+                  className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 outline-none transition-all duration-200 ${
+                    digit ? "border-black bg-black text-white" : "border-black/[0.15] bg-black/[0.02] text-black"
+                  } focus:border-black focus:ring-2 focus:ring-black/10`}
+                />
+              ))}
+            </div>
+
+            {verifyError && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+                <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">{verifyError}</AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            <Button
+              onClick={handleVerifyEmail}
+              disabled={isVerifying || otpCode.join("").length !== 6}
+              className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mb-4"
+              data-testid="button-verify-email"
+            >
+              {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد الحساب</>
+              )}
+            </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isResending}
+                className="text-sm text-black/40 hover:text-black transition-colors flex items-center gap-1.5 mx-auto"
+                data-testid="button-resend-otp"
+              >
+                {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                إعادة إرسال الرمز
+              </button>
+            </div>
+
+            <p className="text-center text-[11px] text-black/25 mt-4">الرمز صالح لمدة 30 دقيقة</p>
+          </motion.div>
+        ) : (
         <motion.div
+          key="main-form"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-md"
         >
@@ -455,6 +616,8 @@ export default function Login() {
             </p>
           )}
         </motion.div>
+        )}
+        </AnimatePresence>
       </div>
     </div>
   );

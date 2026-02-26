@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check, Briefcase, Upload, X, FileText, Image, Film, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -119,9 +120,113 @@ export default function OrderFlow() {
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
+  const SECTOR_FEATURES: Record<string, { id: string; label: string }[]> = {
+    restaurant: [
+      { id: "qr_menu", label: "قائمة QR تفاعلية" },
+      { id: "order_system", label: "نظام استقبال الطلبات إلكترونياً" },
+      { id: "kds", label: "شاشة المطبخ (KDS)" },
+      { id: "delivery", label: "نظام التوصيل وتتبع الطلبات" },
+      { id: "booking", label: "الحجز المسبق للطاولات" },
+      { id: "loyalty", label: "برنامج الولاء والنقاط" },
+      { id: "branches", label: "إدارة الفروع المتعددة" },
+      { id: "pos", label: "نقطة البيع (POS)" },
+      { id: "coupons", label: "كوبونات وعروض خاصة" },
+      { id: "reports", label: "تقارير المبيعات اليومية" },
+      { id: "whatsapp_order", label: "الطلب عبر واتساب" },
+      { id: "mobile_app", label: "تطبيق جوال للعملاء" },
+      { id: "staff_mgmt", label: "إدارة الموظفين والصلاحيات" },
+      { id: "epayment", label: "الدفع الإلكتروني (Apple Pay / STC)" },
+    ],
+    store: [
+      { id: "cart", label: "سلة مشتريات متكاملة" },
+      { id: "epayment", label: "Apple Pay / STC Pay / بطاقات" },
+      { id: "inventory", label: "إدارة المخزون والمستودعات" },
+      { id: "coupons", label: "كوبونات وخصومات" },
+      { id: "shipping", label: "تتبع الشحن والتوصيل" },
+      { id: "reviews", label: "تقييم ومراجعة المنتجات" },
+      { id: "filters", label: "فلترة وتصنيف المنتجات" },
+      { id: "loyalty", label: "برنامج الولاء والنقاط" },
+      { id: "installment", label: "الدفع بالتقسيط" },
+      { id: "reports", label: "تقارير المبيعات التفصيلية" },
+      { id: "returns", label: "إدارة الإرجاع والاستبدال" },
+      { id: "mobile_app", label: "تطبيق جوال للمتجر" },
+      { id: "push_notif", label: "إشعارات فورية للعملاء" },
+      { id: "social_shop", label: "ربط المتجر مع السوشيال ميديا" },
+    ],
+    education: [
+      { id: "lms", label: "منصة إدارة تعليمية (LMS)" },
+      { id: "live", label: "بث مباشر للدروس" },
+      { id: "quizzes", label: "اختبارات وتقييمات تفاعلية" },
+      { id: "certificates", label: "شهادات إلكترونية تلقائية" },
+      { id: "rooms", label: "غرف اجتماعات افتراضية" },
+      { id: "recordings", label: "تسجيل الدروس وحفظها" },
+      { id: "subscriptions", label: "نظام الدفع للاشتراكات والدورات" },
+      { id: "students", label: "إدارة الطلاب والمجموعات" },
+      { id: "forum", label: "منتدى نقاش للطلاب" },
+      { id: "mobile_app", label: "تطبيق جوال" },
+      { id: "reports", label: "تقارير الأداء والتقدم" },
+    ],
+    health: [
+      { id: "booking", label: "نظام حجز مواعيد ذكي" },
+      { id: "client_tracking", label: "متابعة تقدم العملاء" },
+      { id: "programs", label: "برامج تدريبية / علاجية مخصصة" },
+      { id: "epayment", label: "الدفع الإلكتروني للاشتراكات" },
+      { id: "reminders", label: "إشعارات تذكير تلقائية" },
+      { id: "reports", label: "تقارير الأداء والإحصاءات" },
+      { id: "staff_mgmt", label: "إدارة الموظفين والمدربين" },
+      { id: "mobile_app", label: "تطبيق جوال" },
+      { id: "diet", label: "خطط غذائية وتغذية" },
+      { id: "online_consult", label: "استشارات إلكترونية" },
+    ],
+    realestate: [
+      { id: "listings", label: "قائمة عقارات مع فلترة متقدمة" },
+      { id: "virtual_tour", label: "جولات افتراضية 360°" },
+      { id: "inquiry", label: "نظام حجز وتواصل فوري" },
+      { id: "compare", label: "مقارنة العقارات" },
+      { id: "maps", label: "خرائط تفاعلية" },
+      { id: "agents", label: "إدارة الوكلاء / المعلنين" },
+      { id: "reports", label: "تقارير الطلبات والاهتمام" },
+      { id: "mortgage_calc", label: "حاسبة التمويل والرهن" },
+      { id: "mobile_app", label: "تطبيق جوال" },
+    ],
+    other: [
+      { id: "contact_form", label: "نموذج تواصل متقدم" },
+      { id: "multilang", label: "واجهة متعددة اللغات" },
+      { id: "blog", label: "مدونة / نظام محتوى" },
+      { id: "seo", label: "تحسين محركات البحث (SEO)" },
+      { id: "admin_panel", label: "لوحة إدارة للمحتوى" },
+      { id: "analytics", label: "ربط Google Analytics" },
+      { id: "live_chat", label: "دردشة مباشرة مع الزوار" },
+      { id: "email_marketing", label: "التسويق عبر البريد الإلكتروني" },
+      { id: "social_feed", label: "عرض السوشيال ميديا" },
+      { id: "whatsapp", label: "ربط واتساب" },
+      { id: "booking", label: "نظام حجز / مواعيد" },
+    ],
+  };
+
+  const SECTORS = [
+    { value: "restaurant", label: "🍽️ مطاعم وكافيهات" },
+    { value: "store", label: "🛍️ متاجر إلكترونية" },
+    { value: "education", label: "📚 تعليم وأكاديميات" },
+    { value: "health", label: "🏥 صحة ولياقة" },
+    { value: "realestate", label: "🏢 عقارات" },
+    { value: "other", label: "📋 أخرى / مؤسسات" },
+  ];
+
+  const PROJECT_TYPES = [
+    { value: "website", label: "موقع ويب" },
+    { value: "ecommerce", label: "متجر إلكتروني" },
+    { value: "webapp", label: "تطبيق ويب" },
+    { value: "mobile_app", label: "تطبيق جوال" },
+    { value: "landing_page", label: "صفحة هبوط" },
+    { value: "platform", label: "منصة متكاملة" },
+    { value: "system", label: "نظام إداري" },
+  ];
+
   const [formData, setFormData] = useState({
     projectType: "",
     sector: "",
+    sectorFeatures: [] as string[],
     competitors: "",
     visualStyle: "",
     favoriteExamples: "",
@@ -138,6 +243,15 @@ export default function OrderFlow() {
     paymentMethod: "bank_transfer",
     paymentProofUrl: ""
   });
+
+  const toggleFeature = (featureId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sectorFeatures: prev.sectorFeatures.includes(featureId)
+        ? prev.sectorFeatures.filter(f => f !== featureId)
+        : [...prev.sectorFeatures, featureId],
+    }));
+  };
 
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFile[]>>({
     logo: [],
@@ -266,7 +380,29 @@ export default function OrderFlow() {
     );
   }
 
-  const handleNext = () => setStep(s => s + 1);
+  const handleNext = () => {
+    if (step === 1) {
+      if (!formData.projectType) {
+        toast({ title: "خانة مطلوبة", description: "الرجاء اختيار نوع المشروع", variant: "destructive" });
+        return;
+      }
+      if (!formData.sector) {
+        toast({ title: "خانة مطلوبة", description: "الرجاء اختيار القطاع", variant: "destructive" });
+        return;
+      }
+    }
+    if (step === 2) {
+      if (formData.sector && SECTOR_FEATURES[formData.sector] && formData.sectorFeatures.length === 0) {
+        toast({ title: "خانة مطلوبة", description: "الرجاء اختيار ميزة واحدة على الأقل", variant: "destructive" });
+        return;
+      }
+      if (!formData.visualStyle) {
+        toast({ title: "خانة مطلوبة", description: "الرجاء إدخال النمط البصري المطلوب", variant: "destructive" });
+        return;
+      }
+    }
+    setStep(s => s + 1);
+  };
   const handleBack = () => setStep(s => s - 1);
 
   const handleSubmit = () => {
@@ -338,24 +474,33 @@ export default function OrderFlow() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-sm mb-2 block text-black/60">{t("order.projectType")}</Label>
-                    <Input
-                      placeholder={t("order.projectTypePlaceholder")}
-                      className="bg-black/[0.02] border-black/[0.08] text-black placeholder:text-black/25"
-                      value={formData.projectType}
-                      onChange={e => setFormData({ ...formData, projectType: e.target.value })}
-                      data-testid="input-projectType"
-                    />
+                    <Label className="text-sm mb-2 block text-black/60 after:content-['*'] after:text-red-400 after:mr-1">{t("order.projectType")}</Label>
+                    <Select value={formData.projectType} onValueChange={v => setFormData({ ...formData, projectType: v })}>
+                      <SelectTrigger className="bg-black/[0.02] border-black/[0.08] text-black h-10" data-testid="input-projectType">
+                        <SelectValue placeholder="اختر نوع المشروع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROJECT_TYPES.map(pt => (
+                          <SelectItem key={pt.value} value={pt.value}>{pt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label className="text-sm mb-2 block text-black/60">{t("order.sector")}</Label>
-                    <Input
-                      placeholder={t("order.sectorPlaceholder")}
-                      className="bg-black/[0.02] border-black/[0.08] text-black placeholder:text-black/25"
+                    <Label className="text-sm mb-2 block text-black/60 after:content-['*'] after:text-red-400 after:mr-1">{t("order.sector")}</Label>
+                    <Select
                       value={formData.sector}
-                      onChange={e => setFormData({ ...formData, sector: e.target.value })}
-                      data-testid="input-sector"
-                    />
+                      onValueChange={v => setFormData({ ...formData, sector: v, sectorFeatures: [] })}
+                    >
+                      <SelectTrigger className="bg-black/[0.02] border-black/[0.08] text-black h-10" data-testid="input-sector">
+                        <SelectValue placeholder="اختر القطاع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECTORS.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div>
@@ -373,11 +518,47 @@ export default function OrderFlow() {
 
             {step === 2 && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sector features section */}
+                {formData.sector && SECTOR_FEATURES[formData.sector] && (
                   <div>
-                    <Label className="text-sm mb-2 block text-black/60">{t("order.visualStyle")}</Label>
+                    <Label className="text-sm mb-1 block text-black/70 font-semibold after:content-['*'] after:text-red-400 after:mr-1">
+                      اختر المميزات المطلوبة لمشروعك
+                    </Label>
+                    <p className="text-xs text-black/35 mb-4">يمكنك اختيار أكثر من ميزة</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {SECTOR_FEATURES[formData.sector].map(feature => {
+                        const isSelected = formData.sectorFeatures.includes(feature.id);
+                        return (
+                          <button
+                            key={feature.id}
+                            type="button"
+                            onClick={() => toggleFeature(feature.id)}
+                            data-testid={`feature-${feature.id}`}
+                            className={`flex items-center gap-3 p-3.5 rounded-xl border-2 text-right transition-all duration-150 ${
+                              isSelected
+                                ? "border-black bg-black text-white"
+                                : "border-black/[0.08] bg-black/[0.02] text-black/60 hover:border-black/25 hover:bg-black/[0.04]"
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all ${
+                              isSelected ? "border-white bg-white" : "border-black/20"
+                            }`}>
+                              {isSelected && <Check className="w-3 h-3 text-black" />}
+                            </div>
+                            <span className="text-sm font-medium">{feature.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Visual style */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm mb-2 block text-black/60 after:content-['*'] after:text-red-400 after:mr-1">{t("order.visualStyle")}</Label>
                     <Input
-                      placeholder={t("order.visualStylePlaceholder")}
+                      placeholder="حديث، كلاسيكي، بسيط، فاخر..."
                       className="bg-black/[0.02] border-black/[0.08] text-black placeholder:text-black/25"
                       value={formData.visualStyle}
                       onChange={e => setFormData({ ...formData, visualStyle: e.target.value })}
@@ -385,45 +566,63 @@ export default function OrderFlow() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm mb-2 block text-black/60">{t("order.siteLanguage")}</Label>
-                    <Input
-                      placeholder={t("order.siteLanguagePlaceholder")}
-                      className="bg-black/[0.02] border-black/[0.08] text-black placeholder:text-black/25"
-                      value={formData.siteLanguage}
-                      onChange={e => setFormData({ ...formData, siteLanguage: e.target.value })}
-                      data-testid="input-siteLanguage"
-                    />
+                    <Label className="text-sm mb-2 block text-black/60 after:content-['*'] after:text-red-400 after:mr-1">{t("order.siteLanguage")}</Label>
+                    <Select value={formData.siteLanguage} onValueChange={v => setFormData({ ...formData, siteLanguage: v })}>
+                      <SelectTrigger className="bg-black/[0.02] border-black/[0.08] text-black h-10" data-testid="input-siteLanguage">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ar">عربي فقط</SelectItem>
+                        <SelectItem value="en">إنجليزي فقط</SelectItem>
+                        <SelectItem value="ar_en">عربي + إنجليزي</SelectItem>
+                        <SelectItem value="other">أخرى</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+
+                {/* Required functions textarea */}
                 <div>
                   <Label className="text-sm mb-2 block text-black/60">{t("order.requiredFunctions")}</Label>
                   <Textarea
                     className="h-24 resize-none bg-black/[0.02] border-black/[0.08] text-black placeholder:text-black/25"
-                    placeholder={t("order.requiredFunctionsPlaceholder")}
+                    placeholder="اذكر أي وظائف أو متطلبات إضافية لا تجدها في القائمة أعلاه..."
                     value={formData.requiredFunctions}
                     onChange={e => setFormData({ ...formData, requiredFunctions: e.target.value })}
                     data-testid="input-requiredFunctions"
                   />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { id: 'whatsapp', label: t("order.whatsapp"), field: 'whatsappIntegration' },
-                    { id: 'social', label: t("order.social"), field: 'socialIntegration' },
-                    { id: 'hosting', label: t("order.hasHosting"), field: 'hasHosting' },
-                    { id: 'domain', label: t("order.hasDomain"), field: 'hasDomain' },
-                  ].map(item => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={item.id}
-                        checked={(formData as any)[item.field]}
-                        onChange={e => setFormData({ ...formData, [item.field]: e.target.checked })}
-                        className="accent-black"
+
+                {/* General toggles */}
+                <div>
+                  <Label className="text-sm mb-3 block text-black/60">معلومات إضافية</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'hosting', label: t("order.hasHosting"), field: 'hasHosting' },
+                      { id: 'domain', label: t("order.hasDomain"), field: 'hasDomain' },
+                      { id: 'whatsapp', label: t("order.whatsapp"), field: 'whatsappIntegration' },
+                      { id: 'social', label: t("order.social"), field: 'socialIntegration' },
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, [item.field]: !(formData as any)[item.field] })}
                         data-testid={`checkbox-${item.id}`}
-                      />
-                      <Label htmlFor={item.id} className="text-xs cursor-pointer text-black/50">{item.label}</Label>
-                    </div>
-                  ))}
+                        className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${
+                          (formData as any)[item.field]
+                            ? "border-black bg-black text-white"
+                            : "border-black/[0.08] bg-black/[0.02] text-black/50 hover:border-black/20"
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${
+                          (formData as any)[item.field] ? "border-white bg-white" : "border-black/20"
+                        }`}>
+                          {(formData as any)[item.field] && <Check className="w-2.5 h-2.5 text-black" />}
+                        </div>
+                        <span className="text-xs font-medium">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
