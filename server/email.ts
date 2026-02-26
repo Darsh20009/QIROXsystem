@@ -236,6 +236,62 @@ export async function sendDirectEmail(to: string, toName: string, subject: strin
   return sendEmail(to, toName || to, subject, html);
 }
 
+export async function sendAdminNewClientEmail(adminEmail: string, clientName: string, clientEmail: string, clientPhone: string, registeredBy?: string): Promise<boolean> {
+  const html = baseTemplate(`
+    <div class="tag">عميل جديد</div>
+    <div class="title">🎉 تم تسجيل عميل جديد</div>
+    <p class="text">تم إنشاء حساب عميل جديد على منصة Qirox${registeredBy ? ` عن طريق <strong>${registeredBy}</strong>` : ''}:</p>
+    <div class="info-grid">
+      <div class="info-row"><div class="info-label">الاسم</div><div class="info-value">${clientName}</div></div>
+      <div class="info-row"><div class="info-label">البريد الإلكتروني</div><div class="info-value">${clientEmail}</div></div>
+      <div class="info-row"><div class="info-label">الهاتف</div><div class="info-value">${clientPhone || '—'}</div></div>
+      <div class="info-row"><div class="info-label">التاريخ</div><div class="info-value">${new Date().toLocaleString('ar-SA')}</div></div>
+    </div>
+    <a href="${SITE_URL}/admin/customers" class="btn">عرض العميل</a>
+  `);
+  return sendEmail(adminEmail, "فريق Qirox", "عميل جديد — Qirox 🎉", html);
+}
+
+export async function sendAdminNewOrderEmail(adminEmail: string, clientName: string, clientEmail: string, orderId: string, services: string[], totalAmount?: number): Promise<boolean> {
+  const servicesList = services.map(s => `<div class="highlight">• ${s}</div>`).join("") || '<div class="highlight">—</div>';
+  const html = baseTemplate(`
+    <div class="tag">طلب جديد</div>
+    <div class="title">📦 طلب جديد بانتظار المراجعة</div>
+    <p class="text">وردَ طلب جديد من العميل <strong>${clientName}</strong> ويحتاج إلى مراجعة:</p>
+    <div class="info-grid">
+      <div class="info-row"><div class="info-label">العميل</div><div class="info-value">${clientName}</div></div>
+      <div class="info-row"><div class="info-label">البريد</div><div class="info-value">${clientEmail}</div></div>
+      <div class="info-row"><div class="info-label">رقم الطلب</div><div class="info-value">#${orderId.slice(-8).toUpperCase()}</div></div>
+      ${totalAmount ? `<div class="info-row"><div class="info-label">المبلغ</div><div class="info-value">${totalAmount.toLocaleString('ar-SA')} ر.س</div></div>` : ''}
+      <div class="info-row"><div class="info-label">التاريخ</div><div class="info-value">${new Date().toLocaleString('ar-SA')}</div></div>
+    </div>
+    <p class="text" style="font-weight:700;">الخدمات المطلوبة:</p>
+    ${servicesList}
+    <a href="${SITE_URL}/admin/orders" class="btn">مراجعة الطلب الآن</a>
+  `);
+  return sendEmail(adminEmail, "فريق Qirox", `طلب جديد من ${clientName} — Qirox 📦`, html);
+}
+
+export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
+  const html = baseTemplate(`
+    <div class="tag">مرحباً بك</div>
+    <div class="title">أهلاً بك في Qirox، ${name}! 🎉</div>
+    <p class="text">تم إنشاء حسابك على منصة Qirox بنجاح. إليك بيانات الدخول الخاصة بك:</p>
+    <div class="otp-box">
+      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:8px;">بيانات تسجيل الدخول</div>
+      <div class="info-grid" style="margin:0;">
+        <div class="info-row"><div class="info-label">اسم المستخدم</div><div class="info-value" style="font-family:monospace;font-weight:900;">${username}</div></div>
+        <div class="info-row"><div class="info-label">كلمة المرور</div><div class="info-value" style="font-family:monospace;font-weight:900;">${password}</div></div>
+      </div>
+    </div>
+    <p class="text" style="color:#ef4444;font-size:12px;">⚠️ يُرجى تغيير كلمة المرور فور تسجيل الدخول لأول مرة.</p>
+    <a href="${SITE_URL}/login" class="btn">تسجيل الدخول الآن</a>
+    <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;"/>
+    <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تطلب إنشاء هذا الحساب، تواصل معنا فوراً.</p>
+  `);
+  return sendEmail(to, name, "بيانات حسابك في Qirox 🚀", html);
+}
+
 export async function sendTestEmail(to: string, name: string): Promise<boolean> {
   const html = baseTemplate(`
     <div class="tag">بريد تجريبي</div>

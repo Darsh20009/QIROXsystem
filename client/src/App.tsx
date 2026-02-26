@@ -53,6 +53,7 @@ import AdminSupportTickets from "@/pages/AdminSupportTickets";
 import AdminPayroll from "@/pages/AdminPayroll";
 import SupportTickets from "@/pages/SupportTickets";
 import EmployeeProfile from "@/pages/EmployeeProfile";
+import EmployeeNewOrder from "@/pages/EmployeeNewOrder";
 import PaymentHistory from "@/pages/PaymentHistory";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -112,6 +113,7 @@ function AdminRouter() {
       <Route path="/admin/payroll" component={AdminPayroll} />
       <Route path="/support" component={SupportTickets} />
       <Route path="/employee/profile" component={EmployeeProfile} />
+      <Route path="/employee/new-order" component={EmployeeNewOrder} />
       <Route path="/payment-history" component={PaymentHistory} />
       <Route path="/cart" component={Cart} />
       <Route path="/inbox" component={Inbox} />

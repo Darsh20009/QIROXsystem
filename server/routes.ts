@@ -11,7 +11,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail } from "./email";
+import { sendWelcomeEmail, sendOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail } from "./email";
 import { pushNotification, broadcastNotification } from "./ws";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -116,9 +116,11 @@ export async function registerRoutes(
 
       req.login(user, (err) => {
         if (err) return next(err);
-        // Send welcome email (async, don't block response)
         if (user.email) {
           sendWelcomeEmail(user.email, user.fullName || user.username).catch(console.error);
+          // Notify admin
+          const adminEmail = "info@qiroxstudio.online";
+          sendAdminNewClientEmail(adminEmail, user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
         }
         res.status(201).json(user);
       });
@@ -435,14 +437,23 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
-    // Send order confirmation email
+    const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {
-      const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
+      // Confirm to client
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
       // Create in-app notification
       const { NotificationModel } = await import("./models");
       await NotificationModel.create({ userId: user.id, type: 'order', title: 'تم استلام طلبك', body: `تم استلام طلبك بنجاح، سنتواصل معك قريباً.`, link: '/dashboard', icon: '📦' });
     }
+    // Notify admin
+    sendAdminNewOrderEmail(
+      "info@qiroxstudio.online",
+      (user as any).fullName || (user as any).username,
+      (user as any).email || "",
+      String(order.id),
+      items,
+      req.body.totalAmount
+    ).catch(console.error);
     res.status(201).json(order);
   });
 
@@ -1399,6 +1410,98 @@ export async function registerRoutes(
     const { UserModel } = await import("./models");
     const users = await UserModel.find({ email: { $exists: true, $ne: "" } }).select("email fullName username role").limit(200);
     res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === EMPLOYEE: CREATE CLIENT ACCOUNT + ORDER ===
+  // ═══════════════════════════════════════════════════════════
+  app.post("/api/employee/create-client-order", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const actor = req.user as any;
+    if (actor.role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const {
+        // Client info
+        fullName, email, phone, username, password,
+        businessType, country,
+        // Order info
+        projectType, sector, idea, services, totalAmount, notes,
+      } = req.body;
+
+      if (!fullName || !email || !username || !password) {
+        return res.status(400).json({ error: "يجب إدخال الاسم الكامل والبريد والمستخدم وكلمة المرور" });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check if username already taken
+      const existingByUsername = await UserModel.findOne({ username: username.toLowerCase().trim() });
+      if (existingByUsername) return res.status(409).json({ error: "اسم المستخدم مستخدم من قبل" });
+
+      // Check if email already taken
+      const existingByEmail = await UserModel.findOne({ email: normalizedEmail });
+      if (existingByEmail) return res.status(409).json({ error: "البريد الإلكتروني مسجّل من قبل" });
+
+      const { hashPassword } = await import("./auth");
+      const hashedPassword = await hashPassword(password);
+
+      const newClient = await UserModel.create({
+        username: username.toLowerCase().trim(),
+        password: hashedPassword,
+        fullName,
+        email: normalizedEmail,
+        phone: phone || "",
+        role: "client",
+        businessType: businessType || "",
+        country: country || "",
+      });
+
+      // Send welcome email with credentials
+      sendWelcomeWithCredentialsEmail(normalizedEmail, fullName, username, password).catch(console.error);
+      // Notify admin
+      sendAdminNewClientEmail(
+        "info@qiroxstudio.online",
+        fullName, normalizedEmail, phone || "",
+        actor.fullName || actor.username
+      ).catch(console.error);
+
+      let createdOrder = null;
+      if (projectType || idea || (services && services.length > 0)) {
+        const serviceNames: string[] = (services || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+        const orderData = {
+          userId: String(newClient._id),
+          projectType: projectType || "طلب من موظف",
+          sector: sector || "عام",
+          notes: idea ? `الفكرة: ${idea}${notes ? `\n${notes}` : ""}` : (notes || ""),
+          totalAmount: totalAmount || 0,
+          status: "pending",
+          paymentMethod: "bank",
+          items: services || [],
+          adminNotes: `أُنشئ بواسطة الموظف: ${actor.fullName || actor.username}`,
+        };
+        createdOrder = await storage.createOrder(orderData);
+
+        // Confirm order to client
+        sendOrderConfirmationEmail(normalizedEmail, fullName, String(createdOrder.id), serviceNames).catch(console.error);
+        // Notify admin about order
+        sendAdminNewOrderEmail(
+          "info@qiroxstudio.online",
+          fullName, normalizedEmail,
+          String(createdOrder.id),
+          serviceNames,
+          totalAmount
+        ).catch(console.error);
+      }
+
+      res.status(201).json({
+        client: { id: String(newClient._id), username: newClient.username, fullName: newClient.fullName, email: newClient.email },
+        order: createdOrder,
+      });
+    } catch (err: any) {
+      console.error("[employee/create-client-order]", err);
+      res.status(500).json({ error: err.message || "حدث خطأ أثناء الإنشاء" });
+    }
   });
 
   // ═══════════════════════════════════════════════════════════

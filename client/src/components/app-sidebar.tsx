@@ -67,6 +67,7 @@ export function AppSidebar() {
     // Employee pages (visible to ALL non-client roles)
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
     { title: "الطلبات", icon: FileText, url: "/admin/orders", group: "employee" },
+    { title: "إنشاء عميل وطلب", icon: Users, url: "/employee/new-order", group: "employee" },
     { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
     { title: "الرسائل", icon: MessageSquare, url: "/inbox", group: "employee" },
     { title: "ملفي الشخصي", icon: User, url: "/employee/profile", group: "employee" },
