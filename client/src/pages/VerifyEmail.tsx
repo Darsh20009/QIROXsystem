@@ -57,32 +57,40 @@ export default function VerifyEmail() {
     if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
     setIsVerifying(true);
     setVerifyError("");
+
+    let res: Response;
     try {
-      const res = await fetch("/api/auth/verify-email", {
+      res = await fetch("/api/auth/verify-email", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: (user as any).email, code }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من الكود المُرسل إلى بريدك");
-        return;
-      }
-      // Refresh user session
+    } catch {
+      setVerifyError("تعذّر الوصول إلى الخادم، تحقق من اتصالك بالإنترنت وأعد المحاولة");
+      setIsVerifying(false);
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من آخر رسالة في بريدك");
+      setIsVerifying(false);
+      return;
+    }
+
+    // Refresh user session (non-critical — don't block success screen on this)
+    try {
       const userRes = await fetch("/api/auth/user", { credentials: "include" });
       if (userRes.ok) {
         const updatedUser = await userRes.json();
         queryClient.setQueryData(["/api/auth/user"], updatedUser);
       }
-      // Show welcome screen
-      setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
-      setTimeout(() => setLocation("/dashboard"), 3500);
-    } catch {
-      setVerifyError("فشل الاتصال بالخادم، تحقق من اتصالك وحاول مجدداً");
-    } finally {
-      setIsVerifying(false);
-    }
+    } catch { /* ignore — verification already succeeded */ }
+
+    setIsVerifying(false);
+    setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
+    setTimeout(() => setLocation("/dashboard"), 3500);
   };
 
   const handleResend = async () => {

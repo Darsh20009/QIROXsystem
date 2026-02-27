@@ -1215,10 +1215,12 @@ export async function registerRoutes(
   app.post("/api/auth/verify-email", async (req, res) => {
     try {
       const { email, code } = req.body;
+      console.log(`[OTP] verify-email called — email="${email}" code="${code}"`);
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
       const { OtpModel, UserModel } = await import("./models");
       const cleanCode = String(code).replace(/\s/g, "").trim();
       const cleanEmail = String(email).toLowerCase().trim();
+      console.log(`[OTP] verify-email cleaned — email="${cleanEmail}" code="${cleanCode}"`);
 
       // Find valid OTP
       const otp = await OtpModel.findOne({

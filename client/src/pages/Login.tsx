@@ -78,38 +78,45 @@ export default function Login() {
     if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
     setIsVerifying(true);
     setVerifyError("");
+
+    let res: Response;
     try {
-      const res = await fetch("/api/auth/verify-email", {
+      res = await fetch("/api/auth/verify-email", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: verifyStep!.email, code }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من الكود المُرسل إلى بريدك");
-        return;
-      }
-      // Refresh user data
+    } catch {
+      setVerifyError("تعذّر الوصول إلى الخادم، تحقق من اتصالك بالإنترنت وأعد المحاولة");
+      setIsVerifying(false);
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من آخر رسالة في بريدك");
+      setIsVerifying(false);
+      return;
+    }
+
+    // Refresh user data (non-critical — don't block success screen on this)
+    try {
       const userRes = await fetch("/api/auth/user", { credentials: "include" });
       if (userRes.ok) {
-        const user = await userRes.json();
-        queryClient.setQueryData(["/api/auth/user"], user);
+        const freshUser = await userRes.json();
+        queryClient.setQueryData(["/api/auth/user"], freshUser);
       }
-      // Show beautiful welcome screen before redirecting
-      const name = verifyStep!.name;
-      setVerifyStep(null);
-      setVerifySuccess({ name });
-      setTimeout(() => {
-        setVerifySuccess(null);
-        setLocation("/dashboard");
-      }, 3500);
-    } catch (err) {
-      console.error("Verify email error:", err);
-      setVerifyError("فشل الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً");
-    } finally {
-      setIsVerifying(false);
-    }
+    } catch { /* ignore — verification already succeeded */ }
+
+    setIsVerifying(false);
+    const name = verifyStep!.name;
+    setVerifyStep(null);
+    setVerifySuccess({ name });
+    setTimeout(() => {
+      setVerifySuccess(null);
+      setLocation("/dashboard");
+    }, 3500);
   };
 
   const handleResendOtp = async () => {
