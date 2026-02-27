@@ -38,6 +38,7 @@ import AdminTemplates from "@/pages/AdminTemplates";
 import AdminPartners from "@/pages/AdminPartners";
 import AdminNews from "@/pages/AdminNews";
 import AdminJobs from "@/pages/AdminJobs";
+import AdminBankSettings from "@/pages/AdminBankSettings";
 import AdminModRequests from "@/pages/AdminModRequests";
 import AdminCustomers from "@/pages/AdminCustomers";
 import AdminProducts from "@/pages/AdminProducts";
@@ -109,6 +110,7 @@ function AdminRouter() {
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/jobs" component={AdminJobs} />
+      <Route path="/admin/bank-settings" component={AdminBankSettings} />
       <Route path="/admin/mod-requests" component={AdminModRequests} />
       <Route path="/admin/customers" component={AdminCustomers} />
       <Route path="/admin/products" component={AdminProducts} />

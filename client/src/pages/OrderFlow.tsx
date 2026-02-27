@@ -18,14 +18,12 @@ import {
   Map, Navigation2, Flag, Compass, Coffee, Copy, ClipboardCheck, ArrowUpRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 
-const IBAN = "SA0380205098017222121010";
-const BANK_NAME = "بنك الراجحي";
-const BENEFICIARY = "QIROX Studio";
+const DEFAULT_BANK = { bankName: "بنك الراجحي", beneficiaryName: "QIROX Studio", iban: "SA0380205098017222121010", notes: "" };
 
 interface UploadedFile {
   url: string;
@@ -254,6 +252,10 @@ export default function OrderFlow() {
   const { data: service, isLoading: isServiceLoading } = useService(selectedServiceId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: bankSettings } = useQuery<typeof DEFAULT_BANK>({
+    queryKey: ["/api/bank-settings"],
+  });
+  const bank = bankSettings || DEFAULT_BANK;
 
   const [step, setStep] = useState(1);
   const [submittedOrder, setSubmittedOrder] = useState<{ id: string; amount: number } | null>(null);
@@ -261,7 +263,7 @@ export default function OrderFlow() {
   const [copiedIban, setCopiedIban] = useState(false);
 
   const copyIban = () => {
-    navigator.clipboard.writeText(IBAN).then(() => {
+    navigator.clipboard.writeText(bank.iban).then(() => {
       setCopiedIban(true);
       setTimeout(() => setCopiedIban(false), 2500);
     });
@@ -428,7 +430,7 @@ export default function OrderFlow() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">بيانات التحويل البنكي</p>
-                      <p className="text-white text-xl font-black">{BANK_NAME}</p>
+                      <p className="text-white text-xl font-black">{bank.bankName}</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
                       <CreditCard className="w-6 h-6 text-white/60" />
@@ -437,8 +439,8 @@ export default function OrderFlow() {
                 </div>
                 <div className="px-6 py-5 space-y-3">
                   {[
-                    { label: "البنك", value: BANK_NAME },
-                    { label: "اسم المستفيد", value: BENEFICIARY },
+                    { label: "البنك", value: bank.bankName },
+                    { label: "اسم المستفيد", value: bank.beneficiaryName },
                   ].map(row => (
                     <div key={row.label} className="flex justify-between py-2 border-b border-black/[0.04] last:border-0">
                       <span className="text-xs text-black/40">{row.label}</span>
@@ -449,7 +451,7 @@ export default function OrderFlow() {
                   <div className="flex justify-between items-center py-2">
                     <span className="text-xs text-black/40">رقم IBAN</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-black" dir="ltr">{IBAN}</span>
+                      <span className="font-mono text-sm font-bold text-black" dir="ltr">{bank.iban}</span>
                       <button
                         onClick={copyIban}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copiedIban ? 'bg-green-100 text-green-600' : 'bg-black/[0.05] text-black/40 hover:bg-black/10 hover:text-black'}`}
@@ -1106,8 +1108,8 @@ export default function OrderFlow() {
                     </div>
                     <div className="px-5 py-4 space-y-0">
                       {[
-                        { label: "البنك", value: BANK_NAME },
-                        { label: "اسم المستفيد", value: BENEFICIARY },
+                        { label: "البنك", value: bank.bankName },
+                        { label: "اسم المستفيد", value: bank.beneficiaryName },
                       ].map(row => (
                         <div key={row.label} className="flex items-center justify-between py-3 border-b border-black/[0.04]">
                           <span className="text-xs text-black/40">{row.label}</span>
@@ -1118,7 +1120,7 @@ export default function OrderFlow() {
                       <div className="flex items-center justify-between py-3">
                         <span className="text-xs text-black/40">رقم IBAN</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-bold text-black" dir="ltr">{IBAN}</span>
+                          <span className="font-mono text-sm font-bold text-black" dir="ltr">{bank.iban}</span>
                           <button
                             onClick={copyIban}
                             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copiedIban ? 'bg-green-100 text-green-600' : 'bg-black/[0.05] text-black/40 hover:bg-black/10 hover:text-black'}`}

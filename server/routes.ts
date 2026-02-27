@@ -2064,6 +2064,45 @@ export async function registerRoutes(
     }
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === BANK SETTINGS (Admin only to write, public to read) ===
+  // ═══════════════════════════════════════════════════════════
+
+  // Public: get bank settings (for OrderFlow payment step)
+  app.get("/api/bank-settings", async (_req, res) => {
+    try {
+      const { BankSettingsModel } = await import("./models");
+      let settings = await BankSettingsModel.findOne({ key: "main" });
+      if (!settings) {
+        settings = await BankSettingsModel.create({ key: "main" });
+      }
+      res.json(settings);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل إعدادات البنك" });
+    }
+  });
+
+  // Admin: update bank settings
+  app.put("/api/admin/bank-settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const allowedRoles = ["admin", "manager", "accountant"];
+    if (!allowedRoles.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { BankSettingsModel } = await import("./models");
+      const { bankName, beneficiaryName, iban, accountNumber, swiftCode, currency, notes } = req.body;
+      const settings = await BankSettingsModel.findOneAndUpdate(
+        { key: "main" },
+        { $set: { bankName, beneficiaryName, iban, accountNumber, swiftCode, currency, notes } },
+        { new: true, upsert: true }
+      );
+      await logActivity(user._id, 'update_bank_settings', 'bank_settings', 'main', req.body, req.ip);
+      res.json(settings);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحديث إعدادات البنك" });
+    }
+  });
+
   // Initialize seed data
   await seedDatabase();
 

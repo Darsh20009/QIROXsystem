@@ -446,7 +446,18 @@ const checklistItemSchema = new mongoose.Schema({
   order: { type: Number, default: 0 },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema].forEach(s => {
+const bankSettingsSchema = new mongoose.Schema({
+  key: { type: String, default: "main", unique: true },
+  bankName: { type: String, default: "بنك الراجحي" },
+  beneficiaryName: { type: String, default: "QIROX Studio" },
+  iban: { type: String, default: "SA0380205098017222121010" },
+  accountNumber: { type: String, default: "" },
+  swiftCode: { type: String, default: "" },
+  currency: { type: String, default: "SAR" },
+  notes: { type: String, default: "" },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -481,3 +492,4 @@ export const PayrollRecordModel = mongoose.models.PayrollRecord || mongoose.mode
 export const ReceiptVoucherModel = mongoose.models.ReceiptVoucher || mongoose.model("ReceiptVoucher", receiptVoucherSchema);
 export const PushSubscriptionModel = mongoose.models.PushSubscription || mongoose.model("PushSubscription", pushSubscriptionSchema);
 export const ChecklistItemModel = mongoose.models.ChecklistItem || mongoose.model("ChecklistItem", checklistItemSchema);
+export const BankSettingsModel = mongoose.models.BankSettings || mongoose.model("BankSettings", bankSettingsSchema);

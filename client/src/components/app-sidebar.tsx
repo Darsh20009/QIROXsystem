@@ -16,7 +16,7 @@ import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
-  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks
+  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -97,6 +97,7 @@ export function AppSidebar() {
     { title: "الشركاء", icon: Handshake, url: "/admin/partners", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الأخبار", icon: Newspaper, url: "/admin/news", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "الوظائف", icon: Briefcase, url: "/admin/jobs", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "إعدادات البنك", icon: Building2, url: "/admin/bank-settings", group: "admin", allowedRoles: MANAGEMENT_ROLES },
   ];
 
   const { data: attendanceStatus } = useQuery({
