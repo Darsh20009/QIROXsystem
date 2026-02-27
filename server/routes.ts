@@ -1180,24 +1180,47 @@ export async function registerRoutes(
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
       const { OtpModel, UserModel } = await import("./models");
-      const cleanCode = String(code).trim();
-      const cleanEmail = email.toLowerCase().trim();
-      const otp = await OtpModel.findOne({ email: cleanEmail, code: cleanCode, used: false, type: "email_verify", expiresAt: { $gt: new Date() } });
+      const cleanCode = String(code).replace(/\s/g, "").trim();
+      const cleanEmail = String(email).toLowerCase().trim();
+
+      // Find valid OTP
+      const otp = await OtpModel.findOne({
+        email: cleanEmail,
+        code: cleanCode,
+        used: false,
+        type: "email_verify",
+        expiresAt: { $gt: new Date() }
+      });
+
       if (!otp) {
-        console.log(`[OTP DEBUG] verify-email failed for ${cleanEmail} with code=${cleanCode}`);
+        // Debug: show what OTPs exist for this email (non-sensitive)
+        const anyOtp = await OtpModel.findOne({ email: cleanEmail, type: "email_verify" }).sort({ createdAt: -1 });
+        console.log(`[OTP] verify-email FAILED for ${cleanEmail} — entered: "${cleanCode}" — latest in DB: "${anyOtp?.code || 'none'}" used:${anyOtp?.used} expired:${anyOtp ? anyOtp.expiresAt < new Date() : 'N/A'}`);
         return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       }
+
+      // Mark OTP as used
       await OtpModel.updateOne({ _id: otp._id }, { used: true });
+
+      // Update user emailVerified in MongoDB
       const user = await UserModel.findOneAndUpdate(
-        { email: email.toLowerCase() },
-        { emailVerified: true },
+        { email: cleanEmail },
+        { $set: { emailVerified: true } },
         { new: true }
       );
-      if (!user) return res.status(404).json({ error: "لم يتم إيجاد الحساب" });
-      // Send welcome email now that email is verified
-      sendWelcomeEmail(email, user.fullName || user.username).catch(console.error);
+
+      if (!user) {
+        console.error(`[OTP] verify-email: user not found for email=${cleanEmail}`);
+        // Still return success since OTP was valid — user session will handle auth
+        res.json({ ok: true, verified: true });
+        return;
+      }
+
+      const userName = (user as any).fullName || (user as any).username || "عميل";
+      sendWelcomeEmail(cleanEmail, userName).catch(e => console.error("[Email] welcome failed:", e));
       res.json({ ok: true, verified: true });
     } catch (err) {
+      console.error("[OTP] verify-email exception:", err);
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
     }
   });

@@ -110,15 +110,29 @@ export async function sendOtpEmail(to: string, name: string, otp: string): Promi
 export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
   const html = baseTemplate(`
     <div class="tag">تأكيد البريد الإلكتروني</div>
-    <div class="title">أهلاً ${name}، رمز التفعيل الخاص بك</div>
-    <p class="text">شكراً لتسجيلك في Qirox! استخدم الرمز التالي لتأكيد بريدك الإلكتروني:</p>
+    <div class="title">أهلاً ${name}،<br/>رمز التفعيل الخاص بك 🔐</div>
+    <p class="text">
+      شكراً لانضمامك إلى <strong>QIROX Studio</strong> — منصتك الرقمية المتكاملة لبناء الأنظمة الاحترافية.
+      <br/>لإتمام تسجيل حسابك، استخدم رمز التحقق التالي:
+    </p>
     <div class="otp-box">
-      <div class="otp">${otp}</div>
-      <div class="otp-note">صالح لمدة 30 دقيقة فقط — لا تشاركه مع أحد</div>
+      <p style="font-size:12px;color:#9ca3af;margin:0 0 8px 0;">رمز التحقق — OTP Code</p>
+      <div class="otp" style="letter-spacing:16px;">${otp}</div>
+      <div class="otp-note">⏱ صالح لمدة <strong>30 دقيقة</strong> فقط &nbsp;•&nbsp; 🔒 لا تشاركه مع أحد</div>
     </div>
-    <p class="text">إذا لم تقم بإنشاء حساب في Qirox، تجاهل هذا البريد.</p>
+    <div class="highlight" style="background:#fff8e7;border-right-color:#f59e0b;color:#92400e;">
+      📌 إذا لم يظهر هذا البريد في صندوق الوارد، تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه.
+    </div>
+    <p class="text" style="margin-top:20px;">بعد التحقق ستتمكن من:</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <div class="highlight">📦 تقديم طلبك الأول ومتابعة مراحل التنفيذ</div>
+      <div class="highlight">💬 التواصل المباشر مع فريق QIROX</div>
+      <div class="highlight">📊 متابعة مشاريعك ونسبة إتمامها</div>
+    </div>
+    <hr class="divider"/>
+    <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء حساب في QIROX Studio، تجاهل هذا البريد بأمان — لن يتم اتخاذ أي إجراء.</p>
   `);
-  return sendEmail(to, name, "تأكيد بريدك الإلكتروني — Qirox", html);
+  return sendEmail(to, name, "🔐 رمز تفعيل حسابك في QIROX Studio", html);
 }
 
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {

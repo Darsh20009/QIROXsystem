@@ -73,28 +73,30 @@ export default function Login() {
   };
 
   const handleVerifyEmail = async () => {
-    const code = otpCode.join("");
+    const code = otpCode.join("").trim();
     if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
     setIsVerifying(true);
     setVerifyError("");
     try {
       const res = await fetch("/api/auth/verify-email", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: verifyStep!.email, code }),
       });
       const data = await res.json();
-      if (!res.ok) { setVerifyError(data.error || "الرمز غير صحيح"); return; }
+      if (!res.ok) { setVerifyError(data.error || "الرمز غير صحيح، تأكد من الكود المُرسل إلى بريدك"); return; }
       // Refresh user data and redirect
-      const userRes = await fetch("/api/auth/user");
+      const userRes = await fetch("/api/auth/user", { credentials: "include" });
       if (userRes.ok) {
         const user = await userRes.json();
         queryClient.setQueryData(["/api/auth/user"], user);
       }
-      toast({ title: "تم التحقق بنجاح!", description: "مرحباً بك في QIROX" });
+      toast({ title: "تم التحقق بنجاح!", description: "مرحباً بك في QIROX Studio" });
       setLocation("/dashboard");
-    } catch {
-      setVerifyError("حدث خطأ، حاول مجدداً");
+    } catch (err) {
+      console.error("Verify email error:", err);
+      setVerifyError("فشل الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً");
     } finally {
       setIsVerifying(false);
     }
@@ -265,9 +267,20 @@ export default function Login() {
               </div>
               <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
               <p className="text-black/40 text-sm leading-relaxed">
-                أرسلنا رمز التحقق إلى<br />
+                أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
                 <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
               </p>
+            </div>
+
+            {/* Spam warning */}
+            <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
+              <span className="text-amber-500 text-base mt-0.5 flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
+                <p className="text-amber-700 text-[11px] leading-relaxed">
+                  تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
+                </p>
+              </div>
             </div>
 
             {/* OTP boxes */}
