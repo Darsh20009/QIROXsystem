@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +32,7 @@ export default function Login() {
 
   // Email verification step state
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
+  const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -84,16 +85,25 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: verifyStep!.email, code }),
       });
-      const data = await res.json();
-      if (!res.ok) { setVerifyError(data.error || "الرمز غير صحيح، تأكد من الكود المُرسل إلى بريدك"); return; }
-      // Refresh user data and redirect
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setVerifyError(data.error || "الرمز غير صحيح أو منتهي الصلاحية، تأكد من الكود المُرسل إلى بريدك");
+        return;
+      }
+      // Refresh user data
       const userRes = await fetch("/api/auth/user", { credentials: "include" });
       if (userRes.ok) {
         const user = await userRes.json();
         queryClient.setQueryData(["/api/auth/user"], user);
       }
-      toast({ title: "تم التحقق بنجاح!", description: "مرحباً بك في QIROX Studio" });
-      setLocation("/dashboard");
+      // Show beautiful welcome screen before redirecting
+      const name = verifyStep!.name;
+      setVerifyStep(null);
+      setVerifySuccess({ name });
+      setTimeout(() => {
+        setVerifySuccess(null);
+        setLocation("/dashboard");
+      }, 3500);
     } catch (err) {
       console.error("Verify email error:", err);
       setVerifyError("فشل الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً");
@@ -106,13 +116,20 @@ export default function Login() {
     setIsResending(true);
     setVerifyError("");
     try {
-      const res = await fetch("/api/auth/resend-verification", { method: "POST" });
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        credentials: "include",
+      });
       if (res.ok) {
-        toast({ title: "تم الإرسال!", description: "تحقق من بريدك الإلكتروني" });
+        toast({ title: "تم إعادة الإرسال!", description: "تحقق من صندوق الوارد أو مجلد الإسبام" });
         setOtpCode(["", "", "", "", "", ""]);
+        document.getElementById("otp-0")?.focus();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setVerifyError(d.error || "تعذّر إرسال الرمز، تأكد من تسجيل الدخول وحاول مجدداً");
       }
     } catch {
-      setVerifyError("حدث خطأ أثناء الإرسال");
+      setVerifyError("حدث خطأ أثناء الإرسال، تحقق من اتصالك وحاول مجدداً");
     } finally {
       setIsResending(false);
     }
@@ -163,14 +180,20 @@ export default function Login() {
           if (user.email) {
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
-            // Employee with no email — just log them in
             queryClient.setQueryData(["/api/auth/user"], user);
             setLocation(user.role === "client" ? "/dashboard" : "/admin");
           }
         },
       });
     } else {
-      login(data);
+      login(data, {
+        onSuccess: (user: any) => {
+          // If client email is not verified, show OTP step
+          if (user.role === "client" && user.email && !user.emailVerified) {
+            setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
+          }
+        },
+      });
     }
   };
 
@@ -252,7 +275,89 @@ export default function Login() {
         </div>
 
         <AnimatePresence mode="wait">
-        {verifyStep ? (
+        {verifySuccess ? (
+          <motion.div
+            key="verify-success"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-md flex flex-col items-center text-center"
+          >
+            {/* Animated success icon */}
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.15, duration: 0.6, type: "spring", stiffness: 200 }}
+              className="relative mb-8"
+            >
+              <div className="w-24 h-24 rounded-3xl bg-black flex items-center justify-center shadow-2xl shadow-black/20">
+                <CheckCircle2 className="w-12 h-12 text-white" />
+              </div>
+              {/* Floating sparkles */}
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full bg-black/20"
+                  initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                  animate={{
+                    opacity: [0, 1, 0],
+                    scale: [0, 1, 0],
+                    x: Math.cos((i * 60 * Math.PI) / 180) * 55,
+                    y: Math.sin((i * 60 * Math.PI) / 180) * 55,
+                  }}
+                  transition={{ delay: 0.4 + i * 0.07, duration: 0.9, ease: "easeOut" }}
+                  style={{ top: "50%", left: "50%", marginTop: -4, marginLeft: -4 }}
+                />
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+            >
+              <h1 className="text-3xl font-black text-black font-heading mb-2">
+                أهلاً بك{verifySuccess.name ? `، ${verifySuccess.name.split(" ")[0]}` : ""}!
+              </h1>
+              <p className="text-black/40 text-sm mb-6 leading-relaxed">
+                تم تفعيل حسابك بنجاح — لوحة تحكمك جاهزة الآن
+              </p>
+
+              {/* Features preview */}
+              <div className="space-y-2.5 mb-8">
+                {[
+                  { icon: Star, text: "تقديم طلبك الأول ومتابعة مراحل التنفيذ" },
+                  { icon: Sparkles, text: "التواصل المباشر مع فريق QIROX Studio" },
+                  { icon: ArrowRight, text: "متابعة مشاريعك ونسبة الإتمام" },
+                ].map(({ icon: Icon, text }, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.55 + idx * 0.1, duration: 0.4 }}
+                    className="flex items-center gap-3 bg-black/[0.03] rounded-xl px-4 py-3 text-right"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm text-black/70 font-medium">{text}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="flex items-center justify-center gap-2 text-xs text-black/30"
+              >
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>جارٍ الانتقال للوحة التحكم...</span>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        ) : verifyStep ? (
           <motion.div
             key="verify-step"
             initial={{ opacity: 0, y: 16 }}

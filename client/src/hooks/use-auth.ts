@@ -35,6 +35,8 @@ export function useLogin() {
     },
     onSuccess: (user) => {
       queryClient.setQueryData([api.auth.user.path], user);
+      // If client email not verified, pause redirect — Login.tsx will show OTP step
+      if (user.role === 'client' && user.email && !user.emailVerified) return;
       if (user.role === 'client') {
         setLocation("/dashboard");
       } else {
