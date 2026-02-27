@@ -15,13 +15,17 @@ import {
   Globe, Store, GraduationCap, UtensilsCrossed, Building2, Heart,
   Dumbbell, MapPin, Laptop, Smartphone, ShoppingBag, BookOpen,
   Layers, Palette, Zap, Star, Package, BarChart, Shield, Sparkles,
-  Map, Navigation2, Flag, Compass, Coffee
+  Map, Navigation2, Flag, Compass, Coffee, Copy, ClipboardCheck, ArrowUpRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
+
+const IBAN = "SA0380205098017222121010";
+const BANK_NAME = "بنك الراجحي";
+const BENEFICIARY = "QIROX Studio";
 
 interface UploadedFile {
   url: string;
@@ -252,6 +256,16 @@ export default function OrderFlow() {
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
+  const [submittedOrder, setSubmittedOrder] = useState<{ id: string; amount: number } | null>(null);
+  const [postProofFiles, setPostProofFiles] = useState<UploadedFile[]>([]);
+  const [copiedIban, setCopiedIban] = useState(false);
+
+  const copyIban = () => {
+    navigator.clipboard.writeText(IBAN).then(() => {
+      setCopiedIban(true);
+      setTimeout(() => setCopiedIban(false), 2500);
+    });
+  };
 
   const [formData, setFormData] = useState({
     projectType: "",
@@ -315,15 +329,42 @@ export default function OrderFlow() {
       const res = await apiRequest("POST", "/api/orders", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (order: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      toast({ title: t("order.success"), description: t("order.successDesc") });
-      setLocation("/dashboard");
+      setSubmittedOrder({ id: order.id || order._id, amount: order.totalAmount || service?.priceMin || 0 });
     },
     onError: () => {
       toast({ title: t("order.error"), description: t("order.errorDesc"), variant: "destructive" });
     },
   });
+
+  const uploadProofMutation = useMutation({
+    mutationFn: async ({ orderId, proofUrl }: { orderId: string; proofUrl: string }) => {
+      const res = await apiRequest("PATCH", `/api/orders/${orderId}`, { paymentProofUrl: proofUrl, isDepositPaid: false });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      toast({ title: "تم إرفاق إيصال التحويل ✓", description: "سيراجع فريقنا الإيصال ويبدأ العمل قريباً" });
+    },
+    onError: () => toast({ title: "فشل رفع الإيصال", variant: "destructive" }),
+  });
+
+  const handlePostProofUpload = async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" });
+      if (!res.ok) throw new Error();
+      const data: UploadedFile = await res.json();
+      setPostProofFiles(prev => [...prev, data]);
+      if (submittedOrder?.id) {
+        uploadProofMutation.mutate({ orderId: submittedOrder.id, proofUrl: data.url });
+      }
+    } catch {
+      toast({ title: "فشل رفع الملف", variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     if (!isUserLoading && !user) setLocation("/login");
@@ -341,6 +382,171 @@ export default function OrderFlow() {
   }
 
   if (!user) return null;
+
+  // ── POST-SUBMISSION PAYMENT CONFIRMATION SCREEN ──────────────────────────
+  if (submittedOrder) {
+    const proofUploaded = postProofFiles.length > 0;
+    const postProofInputRef = { current: null as HTMLInputElement | null };
+
+    return (
+      <div className="min-h-screen flex flex-col bg-[#f9f9f9]" dir="rtl">
+        <Navigation />
+        <div className="flex-1 pt-24 pb-16 flex items-start justify-center">
+          <div className="w-full max-w-lg mx-auto px-4 pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-5"
+            >
+              {/* Success Header */}
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-black mb-5">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+                <h1 className="text-2xl font-black text-black mb-2">تم إرسال طلبك بنجاح! 🎉</h1>
+                <p className="text-black/40 text-sm">
+                  رقم الطلب:
+                  <span className="font-mono font-bold text-black mr-1.5">#{submittedOrder.id?.toString().slice(-8).toUpperCase()}</span>
+                </p>
+              </div>
+
+              {/* Payment Required Banner */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+                <span className="text-amber-500 text-xl flex-shrink-0 mt-0.5">⏳</span>
+                <div>
+                  <p className="text-amber-800 text-sm font-bold mb-1">بانتظار تأكيد التحويل</p>
+                  <p className="text-amber-700 text-xs leading-relaxed">
+                    قم بتحويل الدفعة الأولى إلى الحساب البنكي أدناه وارفع صورة/ملف الإيصال — سنبدأ العمل فور التأكيد.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bank Card */}
+              <div className="bg-white rounded-2xl border border-black/[0.07] overflow-hidden shadow-sm">
+                <div className="bg-black px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">بيانات التحويل البنكي</p>
+                      <p className="text-white text-xl font-black">{BANK_NAME}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-white/60" />
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 py-5 space-y-3">
+                  {[
+                    { label: "البنك", value: BANK_NAME },
+                    { label: "اسم المستفيد", value: BENEFICIARY },
+                  ].map(row => (
+                    <div key={row.label} className="flex justify-between py-2 border-b border-black/[0.04] last:border-0">
+                      <span className="text-xs text-black/40">{row.label}</span>
+                      <span className="text-sm font-semibold text-black">{row.value}</span>
+                    </div>
+                  ))}
+                  {/* IBAN Row with Copy */}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-xs text-black/40">رقم IBAN</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-black" dir="ltr">{IBAN}</span>
+                      <button
+                        onClick={copyIban}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copiedIban ? 'bg-green-100 text-green-600' : 'bg-black/[0.05] text-black/40 hover:bg-black/10 hover:text-black'}`}
+                        data-testid="button-copy-iban"
+                        title="نسخ IBAN"
+                      >
+                        {copiedIban ? <ClipboardCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {copiedIban && (
+                    <p className="text-[11px] text-green-600 text-center font-medium">✓ تم نسخ رقم IBAN</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Proof Section */}
+              <div className="bg-white rounded-2xl border border-black/[0.07] p-6 shadow-sm">
+                <p className="text-sm font-bold text-black mb-1">ارفع إيصال التحويل</p>
+                <p className="text-xs text-black/40 mb-4">صورة أو PDF لإيصال التحويل من تطبيق/موقع البنك</p>
+
+                {postProofFiles.length > 0 ? (
+                  <div className="space-y-2 mb-4">
+                    {postProofFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-200/60">
+                        <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-green-800 truncate">{f.filename}</p>
+                          <p className="text-[10px] text-green-600">تم الرفع بنجاح ✓</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                <label
+                  className={`flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
+                    uploadProofMutation.isPending
+                      ? 'border-black/10 bg-black/[0.02]'
+                      : 'border-black/[0.10] hover:border-black/30 hover:bg-black/[0.02]'
+                  }`}
+                  data-testid="upload-post-proof"
+                >
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf"
+                    disabled={uploadProofMutation.isPending}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) await handlePostProofUpload(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  {uploadProofMutation.isPending ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-6 h-6 animate-spin text-black/30" />
+                      <p className="text-xs text-black/30">جاري الرفع...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 rounded-xl bg-black/[0.05] flex items-center justify-center">
+                        <Upload className="w-5 h-5 text-black/40" />
+                      </div>
+                      <p className="text-sm font-semibold text-black/60">اضغط لرفع الإيصال</p>
+                      <p className="text-xs text-black/30">PNG, JPG, PDF — حجم أقصى 10 MB</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pb-8">
+                <Button
+                  onClick={() => {
+                    toast({ title: proofUploaded ? "✅ شكراً! سنبدأ العمل قريباً" : "يمكنك رفع الإيصال لاحقاً من لوحتك" });
+                    setLocation("/dashboard");
+                  }}
+                  className="w-full h-12 bg-black text-white rounded-xl font-bold hover:bg-gray-900 gap-2"
+                  data-testid="button-go-to-dashboard"
+                >
+                  {proofUploaded ? <CheckCircle className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                  {proofUploaded ? "رائع! انتقل إلى لوحة التحكم" : "المتابعة إلى لوحة التحكم"}
+                </Button>
+                {!proofUploaded && (
+                  <p className="text-center text-xs text-black/30">
+                    يمكنك رفع الإيصال لاحقاً من لوحة التحكم — لكن العمل لن يبدأ إلا بعد التأكيد
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!selectedServiceId || !service) {
     return (
@@ -877,35 +1083,60 @@ export default function OrderFlow() {
                     <p className="text-black/40 text-sm">نبدأ العمل فور استلام الدفعة وتأكيدها</p>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm overflow-hidden">
-                    <div className="bg-black p-6">
-                      <div className="flex items-center justify-between text-white">
-                        <div>
-                          <p className="text-white/40 text-xs mb-1">إجمالي المشروع يبدأ من</p>
-                          <p className="text-3xl font-black">{service.priceMin?.toLocaleString()} <span className="text-sm font-medium text-white/50">ر.س</span></p>
-                        </div>
-                        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                          <CreditCard className="w-6 h-6 text-white/60" />
+                  {/* Step indicator banner */}
+                  <div className="bg-black rounded-2xl p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                        <CreditCard className="w-5 h-5 text-white/70" />
+                      </div>
+                      <div>
+                        <p className="text-white font-bold text-base mb-1">قبل الإرسال — قم بالتحويل أولاً</p>
+                        <p className="text-white/50 text-xs leading-relaxed">حوّل الدفعة الأولى إلى الحساب أدناه، ثم ارفع صورة الإيصال في الخطوة التالية. العمل يبدأ فور التأكيد.</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-white/30 text-[10px]">إجمالي يبدأ من</span>
+                          <span className="text-white font-black text-lg">{service.priceMin?.toLocaleString()} ر.س</span>
                         </div>
                       </div>
                     </div>
-                    <div className="p-6 space-y-4">
-                      <p className="text-sm font-bold text-black">تفاصيل الحساب البنكي</p>
-                      <div className="space-y-3">
-                        {[
-                          { label: "البنك", value: "بنك الراجحي" },
-                          { label: "رقم IBAN", value: "SA0380205098017222121010" },
-                          { label: "اسم المستفيد", value: "QIROX Studio" },
-                        ].map(row => (
-                          <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-black/[0.05] last:border-0">
-                            <span className="text-xs text-black/40">{row.label}</span>
-                            <span className="font-mono text-sm font-semibold text-black">{row.value}</span>
-                          </div>
-                        ))}
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-black/[0.05]">
+                      <p className="text-xs font-bold text-black/50 uppercase tracking-widest">بيانات التحويل البنكي</p>
+                    </div>
+                    <div className="px-5 py-4 space-y-0">
+                      {[
+                        { label: "البنك", value: BANK_NAME },
+                        { label: "اسم المستفيد", value: BENEFICIARY },
+                      ].map(row => (
+                        <div key={row.label} className="flex items-center justify-between py-3 border-b border-black/[0.04]">
+                          <span className="text-xs text-black/40">{row.label}</span>
+                          <span className="text-sm font-semibold text-black">{row.value}</span>
+                        </div>
+                      ))}
+                      {/* IBAN row with copy */}
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-xs text-black/40">رقم IBAN</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-black" dir="ltr">{IBAN}</span>
+                          <button
+                            onClick={copyIban}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copiedIban ? 'bg-green-100 text-green-600' : 'bg-black/[0.05] text-black/40 hover:bg-black/10 hover:text-black'}`}
+                            data-testid="button-copy-iban-step4"
+                            title="نسخ IBAN"
+                          >
+                            {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
                       </div>
-                      <div className="mt-4 p-3 bg-amber-50 border border-amber-200/70 rounded-xl">
-                        <p className="text-xs text-amber-700 leading-relaxed">{t("order.bankNote")}</p>
-                      </div>
+                      {copiedIban && (
+                        <p className="text-[11px] text-green-600 text-center pb-2 font-medium">✓ تم نسخ رقم IBAN</p>
+                      )}
+                    </div>
+                    <div className="px-5 py-4 bg-amber-50 border-t border-amber-100">
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        ⚠️ تأكد من كتابة <strong>رقم طلبك</strong> في خانة ملاحظات التحويل. بعد إتمام التحويل، ارفع الإيصال في الحقل أدناه.
+                      </p>
                     </div>
                   </div>
 
