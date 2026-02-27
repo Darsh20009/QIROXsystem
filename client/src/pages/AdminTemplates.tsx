@@ -15,9 +15,18 @@ import {
   Loader2, Plus, Pencil, Trash2, Layers, CreditCard,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe, Star, BadgePercent,
-  Sparkles, Tag, Check
+  Sparkles, Tag, Check, UtensilsCrossed, ShoppingBag, Building2, Home, Infinity, Zap
 } from "lucide-react";
 import type { SectorTemplate, PricingPlan } from "@shared/schema";
+
+const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; bg: string }> = {
+  restaurant:  { labelAr: "مطاعم ومقاهي",   icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  ecommerce:   { labelAr: "متاجر إلكترونية", icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  education:   { labelAr: "منصات تعليمية",   icon: GraduationCap,   color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
+  corporate:   { labelAr: "شركات ومؤسسات",   icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
+  realestate:  { labelAr: "عقارات",          icon: Home,            color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
+  healthcare:  { labelAr: "صحة وعيادات",     icon: Heart,           color: "text-rose-600",   bg: "bg-rose-50 border-rose-200" },
+};
 
 const IconMap: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -122,6 +131,7 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
     description: plan?.description || "",
     descriptionAr: plan?.descriptionAr || "",
     tier: (plan as any)?.tier || "pro",
+    segment: (plan as any)?.segment || "restaurant",
     monthlyPrice: (plan as any)?.monthlyPrice?.toString() || "",
     sixMonthPrice: (plan as any)?.sixMonthPrice?.toString() || "",
     annualPrice: (plan as any)?.annualPrice?.toString() || "",
@@ -151,7 +161,7 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = formData.slug || formData.tier || formData.nameAr.toLowerCase().replace(/\s+/g, "-");
+    const slug = formData.slug || `${formData.segment}-${formData.tier}`;
     const payload = {
       name: formData.name || formData.nameAr,
       nameAr: formData.nameAr,
@@ -159,6 +169,7 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
       description: formData.description,
       descriptionAr: formData.descriptionAr,
       tier: formData.tier,
+      segment: formData.segment,
       price: Number(formData.lifetimePrice) || 0,
       monthlyPrice: Number(formData.monthlyPrice) || 0,
       sixMonthPrice: Number(formData.sixMonthPrice) || 0,
@@ -177,14 +188,34 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
   };
 
   const TIER_OPTIONS = [
-    { value: "lite", label: "لايت 🌟", desc: "الباقة الأساسية" },
-    { value: "pro", label: "برو ⚡", desc: "الأكثر طلباً" },
-    { value: "infinite", label: "إنفينتي ∞", desc: "الباقة الشاملة" },
-    { value: "custom", label: "مخصصة 🏢", desc: "Enterprise" },
+    { value: "lite",     label: "لايت 🌟",   desc: "الأساسية" },
+    { value: "pro",      label: "برو ⚡",     desc: "الأشهر" },
+    { value: "infinite", label: "إنفينتي ∞", desc: "الشاملة" },
+    { value: "custom",   label: "مخصصة 🏢",  desc: "Enterprise" },
   ];
+
+  const SEGMENT_OPTIONS = Object.entries(SEGMENT_META).map(([key, val]) => ({ value: key, labelAr: val.labelAr, icon: val.icon }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
+      {/* Segment selector */}
+      <div>
+        <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">نوع المشروع / القطاع *</label>
+        <div className="grid grid-cols-3 gap-2">
+          {SEGMENT_OPTIONS.map(opt => {
+            const Icon = opt.icon;
+            const isActive = formData.segment === opt.value;
+            return (
+              <button key={opt.value} type="button" onClick={() => setFormData({...formData, segment: opt.value})}
+                className={`flex items-center gap-2 p-2.5 rounded-xl border text-right transition-all ${isActive ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"}`}>
+                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[11px] font-bold truncate">{opt.labelAr}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Tier selector */}
       <div>
         <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">مستوى الباقة *</label>
@@ -197,6 +228,12 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Auto slug preview */}
+      <div className="flex items-center gap-2 text-[10px] text-black/30 dark:text-white/30 px-1">
+        <span>معرّف الباقة:</span>
+        <code className="bg-black/[0.04] px-2 py-0.5 rounded font-mono">{formData.segment}-{formData.tier}</code>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -289,6 +326,7 @@ export default function AdminTemplates() {
 
   const [planDialog, setPlanDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | undefined>(undefined);
+  const [segmentFilter, setSegmentFilter] = useState<string>("restaurant");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/templates/${id}`); },
@@ -327,98 +365,133 @@ export default function AdminTemplates() {
 
         {/* ─── Pricing Tab ─── */}
         <TabsContent value="pricing" className="mt-6">
-          <div className="flex justify-end mb-4">
+          <div className="flex items-center justify-between mb-5">
+            <div className="text-xs text-black/40 dark:text-white/40">
+              {plans?.length || 0} باقة موزّعة على {Object.keys(SEGMENT_META).length} قطاعات
+            </div>
             <Button onClick={openNewPlan} className="premium-btn" data-testid="button-add-plan">
-              <Plus className="w-4 h-4 ml-2" /> إضافة باقة جديدة
+              <Plus className="w-4 h-4 ml-2" /> إضافة باقة
             </Button>
+          </div>
+
+          {/* Segment filter */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {Object.entries(SEGMENT_META).map(([key, meta]) => {
+              const Icon = meta.icon;
+              const count = plans?.filter((p: any) => p.segment === key).length ?? 0;
+              return (
+                <button key={key} onClick={() => setSegmentFilter(key)} data-testid={`filter-segment-${key}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                    segmentFilter === key ? `${meta.bg} ${meta.color}` : "border-black/[0.07] text-black/40 hover:border-black/15"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {meta.labelAr}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${segmentFilter === key ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {plansLoading ? (
             <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-black/30 dark:text-white/30" /></div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {plans?.sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99)).map(plan => {
-                const p = plan as any;
-                const TIER_COLOR: Record<string, string> = {
-                  lite: "bg-teal-50 text-teal-700 border-teal-200",
-                  pro: "bg-violet-50 text-violet-700 border-violet-200",
-                  infinite: "bg-black text-white border-black",
-                  custom: "bg-gray-100 text-gray-700 border-gray-300",
-                };
-                const TIER_LABEL: Record<string, string> = {
-                  lite: "🌟 لايت", pro: "⚡ برو", infinite: "∞ إنفينتي", custom: "🏢 مخصصة",
-                };
-                return (
-                <Card key={plan.id} className={`border overflow-hidden transition-all hover:shadow-md dark:bg-gray-900 dark:border-white/[0.06] ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-sm" : ""}`} data-testid={`admin-plan-${plan.slug}`}>
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <h3 className="font-black text-black dark:text-white text-base">{plan.nameAr}</h3>
-                          {p.tier && (
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${TIER_COLOR[p.tier] || TIER_COLOR.custom}`}>
-                              {TIER_LABEL[p.tier] || p.tier}
-                            </span>
-                          )}
+          ) : (() => {
+            const segMeta = SEGMENT_META[segmentFilter];
+            const SegIcon = segMeta?.icon;
+            const filteredPlans = plans?.filter((p: any) => p.segment === segmentFilter)
+              .sort((a: any, b: any) => ({ lite:1, pro:2, infinite:3 }[a.tier ?? ""] ?? 9) - ({ lite:1, pro:2, infinite:3 }[b.tier ?? ""] ?? 9)) ?? [];
+
+            const TIER_PILL: Record<string, string> = {
+              lite:     "bg-teal-50 text-teal-700 border-teal-200",
+              pro:      "bg-violet-50 text-violet-700 border-violet-200",
+              infinite: "bg-black text-white border-black",
+              custom:   "bg-gray-100 text-gray-700 border-gray-300",
+            };
+            const TIER_LABEL: Record<string, string> = {
+              lite: "🌟 لايت", pro: "⚡ برو", infinite: "∞ إنفينتي", custom: "🏢 مخصصة",
+            };
+
+            return (
+              <div>
+                {/* Section header */}
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-5 ${segMeta?.bg || ""}`}>
+                  {SegIcon && <SegIcon className={`w-5 h-5 ${segMeta?.color}`} />}
+                  <div>
+                    <p className={`font-black text-sm ${segMeta?.color}`}>{segMeta?.labelAr}</p>
+                    <p className="text-[10px] text-black/40">{filteredPlans.length} باقة — يمكنك تعديل الأسعار والمزايا</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {filteredPlans.map((plan: any) => (
+                    <Card key={plan.id} className={`border overflow-hidden transition-all hover:shadow-md dark:bg-gray-900 dark:border-white/[0.06] ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : ""}`} data-testid={`admin-plan-${plan.slug}`}>
+                      <CardContent className="p-5">
+                        {/* Tier + popular */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${TIER_PILL[plan.tier] || TIER_PILL.custom}`}>
+                            {TIER_LABEL[plan.tier] || plan.tier}
+                          </span>
                           {plan.isPopular && (
-                            <Badge className="bg-black dark:bg-white text-white dark:text-black text-[10px]">
-                              <Sparkles className="w-2.5 h-2.5 ml-1" /> الأكثر طلباً
+                            <Badge className="bg-black text-white text-[10px] gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> الأشهر
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed line-clamp-1">{plan.descriptionAr}</p>
-                      </div>
-                    </div>
 
-                    {/* 4 pricing fields */}
-                    <div className="grid grid-cols-2 gap-1.5 mb-4 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04]">
-                      {[
-                        { label: "شهري", value: p.monthlyPrice, suffix: "/شهر" },
-                        { label: "نصف سنوي", value: p.sixMonthPrice, suffix: "/6أشهر" },
-                        { label: "سنوي", value: p.annualPrice, suffix: "/سنة" },
-                        { label: "مدى الحياة", value: p.lifetimePrice, suffix: "" },
-                      ].map(item => (
-                        <div key={item.label} className="text-center">
-                          <div className="text-[9px] text-black/30 dark:text-white/30 mb-0.5">{item.label}</div>
-                          <div className="text-sm font-black text-black dark:text-white">
-                            {item.value ? item.value.toLocaleString() : "—"}
-                            <span className="text-[9px] font-normal text-black/30"> {item.value ? "ر.س" + item.suffix : ""}</span>
-                          </div>
+                        <h3 className="font-black text-black dark:text-white mb-1">{plan.nameAr}</h3>
+                        <p className="text-[11px] text-black/35 line-clamp-1 mb-3">{plan.descriptionAr}</p>
+
+                        {/* 4 prices grid */}
+                        <div className="grid grid-cols-2 gap-1.5 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] mb-3">
+                          {[
+                            { label: "شهري", value: plan.monthlyPrice },
+                            { label: "نصف سنوي", value: plan.sixMonthPrice },
+                            { label: "سنوي", value: plan.annualPrice },
+                            { label: "مدى الحياة", value: plan.lifetimePrice },
+                          ].map(item => (
+                            <div key={item.label} className="text-center">
+                              <div className="text-[9px] text-black/30 dark:text-white/30 mb-0.5">{item.label}</div>
+                              <div className="text-sm font-black text-black dark:text-white">
+                                {item.value ? item.value.toLocaleString() : "—"}
+                                {item.value ? <span className="text-[9px] font-normal text-black/25"> ر.س</span> : null}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="space-y-1 mb-4 max-h-16 overflow-hidden">
-                      {plan.featuresAr?.slice(0, 3).map((f, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40">
-                          <Check className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
-                          {f}
+                        {/* Features preview */}
+                        <div className="space-y-1 mb-3 max-h-14 overflow-hidden">
+                          {plan.featuresAr?.slice(0, 3).map((f: string, i: number) => (
+                            <div key={i} className="flex items-center gap-1.5 text-[11px] text-black/40 dark:text-white/40">
+                              <Check className="w-3 h-3 flex-shrink-0" /> {f}
+                            </div>
+                          ))}
+                          {(plan.featuresAr?.length || 0) > 3 && (
+                            <p className="text-[10px] text-black/25 mr-4">+{(plan.featuresAr?.length || 0) - 3} مزايا</p>
+                          )}
                         </div>
-                      ))}
-                      {(plan.featuresAr?.length || 0) > 3 && (
-                        <p className="text-[10px] text-black/25 dark:text-white/25 mr-4">+{(plan.featuresAr?.length || 0) - 3} مزايا أخرى</p>
-                      )}
-                    </div>
 
-                    <div className="flex gap-2 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
-                      <Button variant="outline" size="sm" className="flex-1 text-xs h-8 dark:border-white/[0.08] dark:text-white/70" onClick={() => openEditPlan(plan)} data-testid={`button-edit-plan-${plan.slug}`}>
-                        <Pencil className="w-3 h-3 ml-1" /> تعديل
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:border-white/[0.08]" onClick={() => deletePlanMutation.mutate(plan.id)} disabled={deletePlanMutation.isPending} data-testid={`button-delete-plan-${plan.slug}`}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );})}
+                        <div className="flex gap-2 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                          <Button variant="outline" size="sm" className="flex-1 text-xs h-8 dark:border-white/[0.08] dark:text-white/70" onClick={() => openEditPlan(plan)} data-testid={`button-edit-plan-${plan.slug}`}>
+                            <Pencil className="w-3 h-3 ml-1" /> تعديل
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:border-white/[0.08]" onClick={() => deletePlanMutation.mutate(plan.id)} disabled={deletePlanMutation.isPending} data-testid={`button-delete-plan-${plan.slug}`}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
 
-              {/* Add new card */}
-              <button onClick={openNewPlan} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 dark:hover:border-white/20 hover:text-black/50 dark:hover:text-white/50 transition-all min-h-[200px]">
-                <Plus className="w-8 h-8" />
-                <span className="text-sm font-medium">إضافة باقة جديدة</span>
-              </button>
-            </div>
-          )}
+                  {/* Add new card */}
+                  <button onClick={openNewPlan} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 hover:text-black/50 transition-all min-h-[200px]">
+                    <Plus className="w-7 h-7" />
+                    <span className="text-sm font-medium">باقة جديدة لـ {segMeta?.labelAr}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* ─── Templates Tab ─── */}

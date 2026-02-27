@@ -2572,148 +2572,138 @@ export async function seedDatabase() {
     console.log("8 sector templates seeded successfully");
   }
 
-  // Seed Pricing Plans — Lite/Pro/Infinite tier system (v4)
+  // Seed Pricing Plans — Segment × Tier system (v5)
   const existingPlans = await storage.getPricingPlans();
-  const litePlan = existingPlans.find((p: any) => p.slug === "lite");
+  const restaurantLite = existingPlans.find((p: any) => p.slug === "restaurant-lite");
   const needsReseed =
-    !litePlan ||
-    !(litePlan as any).monthlyPrice ||
-    existingPlans.some((p: any) => p.slug === "ecommerce");
+    !restaurantLite ||
+    !(restaurantLite as any).segment ||
+    existingPlans.some((p: any) => p.slug === "ecommerce" || p.slug === "lite");
 
   if (needsReseed) {
     for (const p of existingPlans) {
       await storage.deletePricingPlan((p as any).id);
     }
-    const plans = [
+
+    type PlanDef = {
+      slug: string; name: string; nameAr: string; segment: string;
+      tier: string; descriptionAr: string;
+      monthlyPrice: number; sixMonthPrice: number; annualPrice: number; lifetimePrice: number;
+      featuresAr: string[]; isPopular: boolean; isCustom: boolean; sortOrder: number;
+    };
+
+    const SEGMENTS = [
       {
-        name: "Lite",
-        nameAr: "لايت",
-        slug: "lite",
-        tier: "lite",
-        description: "Perfect for small businesses and startups",
-        descriptionAr: "مثالية للأعمال الصغيرة والناشئة — موقع احترافي بأقل تكلفة",
-        price: 3999,
-        monthlyPrice: 199,
-        sixMonthPrice: 399,
-        annualPrice: 699,
-        lifetimePrice: 3999,
-        billingCycle: "lifetime" as const,
-        currency: "SAR",
-        featuresAr: [
-          "موقع إلكتروني احترافي",
-          "تصميم متجاوب مع الجوال",
-          "حتى 5 صفحات",
-          "نموذج تواصل",
-          "ربط بالسوشيال ميديا",
-          "دعم فني شهر واحد",
-          "SSL مجاني",
-        ],
-        features: [
-          "Professional website",
-          "Mobile responsive",
-          "Up to 5 pages",
-          "Contact form",
-          "Social media links",
-          "1-month support",
-          "Free SSL",
-        ],
-        addonsAr: [],
-        isPopular: false,
-        isCustom: false,
-        status: "active" as const,
-        sortOrder: 1,
+        segment: "restaurant",
+        plans: [
+          { tier: "lite", monthly: 199, sixmo: 380, annual: 699, lifetime: 3499, popular: false,
+            featuresAr: ["موقع مطعم احترافي", "قائمة طعام رقمية", "نموذج حجز طاولة", "ربط خرائط Google", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهر واحد"] },
+          { tier: "pro",     monthly: 349, sixmo: 650, annual: 1199, lifetime: 5999, popular: true,
+            featuresAr: ["كل مزايا لايت", "طلب عبر QR Code", "إدارة الطاولات", "نظام الطلبات والمطبخ", "تقارير المبيعات", "إشعارات فورية", "دعم توصيل واستلام", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 599, sixmo: 1100, annual: 1999, lifetime: 9999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال للمطعم", "بوابة دفع إلكتروني", "نظام ولاء ونقاط", "تكامل POS", "لوحة تحليلات متقدمة", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
       },
       {
-        name: "Pro",
-        nameAr: "برو",
-        slug: "pro",
-        tier: "pro",
-        description: "Best for growing businesses needing more features",
-        descriptionAr: "الأنسب للأعمال المتنامية التي تحتاج ميزات متقدمة ودعم مستمر",
-        price: 9999,
-        monthlyPrice: 499,
-        sixMonthPrice: 950,
-        annualPrice: 1699,
-        lifetimePrice: 9999,
-        billingCycle: "lifetime" as const,
-        currency: "SAR",
-        featuresAr: [
-          "كل مزايا لايت",
-          "صفحات غير محدودة",
-          "لوحة تحكم متكاملة",
-          "نظام إدارة المحتوى",
-          "تحسين SEO احترافي",
-          "ربط Google Analytics",
-          "دعم فني 6 أشهر",
-          "نسخ احتياطي أسبوعي",
-          "دومين مجاني سنة",
-        ],
-        features: [
-          "Everything in Lite",
-          "Unlimited pages",
-          "Full admin dashboard",
-          "Content management",
-          "Pro SEO optimization",
-          "Google Analytics",
-          "6-month support",
-          "Weekly backup",
-          "1-year free domain",
-        ],
-        addonsAr: [],
-        isPopular: true,
-        isCustom: false,
-        status: "active" as const,
-        sortOrder: 2,
+        segment: "ecommerce",
+        plans: [
+          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+            featuresAr: ["متجر إلكتروني أساسي", "حتى 100 منتج", "سلة تسوق", "إدارة الطلبات", "ربط سوشيال ميديا", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+            featuresAr: ["كل مزايا لايت", "منتجات غير محدودة", "تكامل بوابات الدفع", "إدارة المخزون", "كوبونات وخصومات", "تقارير المبيعات", "SEO احترافي", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال iOS وAndroid", "نظام ولاء ونقاط", "تكامل ERP", "تقارير متقدمة", "دعم متعدد العملات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
       },
       {
-        name: "Infinite",
-        nameAr: "إنفينتي",
-        slug: "infinite",
-        tier: "infinite",
-        description: "Complete solution for enterprises and large businesses",
-        descriptionAr: "الحل الكامل للمؤسسات والأعمال الكبيرة — كل شيء بلا حدود",
-        price: 19999,
-        monthlyPrice: 999,
-        sixMonthPrice: 1900,
-        annualPrice: 3499,
-        lifetimePrice: 19999,
-        billingCycle: "lifetime" as const,
-        currency: "SAR",
-        featuresAr: [
-          "كل مزايا برو",
-          "تطبيق جوال iOS وAndroid",
-          "بوابة دفع إلكتروني",
-          "نظام حجوزات متقدم",
-          "تقارير وإحصاءات متقدمة",
-          "تكاملات مخصصة",
-          "دعم فني أولوية 24/7",
-          "نسخ احتياطي يومي",
-          "دومين مجاني 3 سنوات",
-          "مدير حساب مخصص",
-        ],
-        features: [
-          "Everything in Pro",
-          "iOS & Android app",
-          "Payment gateway",
-          "Advanced booking system",
-          "Advanced analytics",
-          "Custom integrations",
-          "Priority 24/7 support",
-          "Daily backup",
-          "3-year free domain",
-          "Dedicated account manager",
-        ],
-        addonsAr: [],
-        isPopular: false,
-        isCustom: false,
-        status: "active" as const,
-        sortOrder: 3,
+        segment: "education",
+        plans: [
+          { tier: "lite", monthly: 399, sixmo: 750, annual: 1299, lifetime: 5999, popular: false,
+            featuresAr: ["منصة تعليمية أساسية", "حتى 5 كورسات", "إدارة الطلاب", "اختبارات بسيطة", "شهادات إتمام", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 699, sixmo: 1300, annual: 2299, lifetime: 10999, popular: true,
+            featuresAr: ["كل مزايا لايت", "كورسات غير محدودة", "فصول مباشرة Live", "نظام تقييم متقدم", "بوابة أولياء الأمور", "تقارير تفصيلية", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 1199, sixmo: 2300, annual: 3999, lifetime: 19999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال", "بوابة دفع إلكتروني", "نظام منح ومنح دراسية", "تكامل Zoom/Meet", "لوحة تحليلات تعليمية", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
+      },
+      {
+        segment: "corporate",
+        plans: [
+          { tier: "lite", monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: false,
+            featuresAr: ["موقع شركة احترافي", "صفحات تعريفية", "نموذج تواصل", "خريطة المكاتب", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 999, sixmo: 1900, annual: 3299, lifetime: 15999, popular: true,
+            featuresAr: ["كل مزايا لايت", "لوحة تحكم متكاملة", "إدارة الفريق", "بوابة العملاء", "مدونة الشركة", "SEO احترافي", "تقارير شهرية", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 1999, sixmo: 3800, annual: 6599, lifetime: 29999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال", "نظام ERP مبسط", "API مخصص", "تكاملات خارجية", "تقارير متقدمة", "دعم أولوية 24/7", "تدريب الفريق", "مدير حساب مخصص"] },
+        ]
+      },
+      {
+        segment: "realestate",
+        plans: [
+          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+            featuresAr: ["موقع عقاري احترافي", "قوائم العقارات", "بحث وفلترة", "نموذج تواصل", "خرائط تفاعلية", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+            featuresAr: ["كل مزايا لايت", "إدارة العقارات غير محدودة", "جدولة المعاينات", "حاسبة التقسيط", "بوابة المالك", "تقارير السوق", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال", "نظام CRM عقاري", "تكامل موالشي/إيجار", "تحليلات السوق", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
+      },
+      {
+        segment: "healthcare",
+        plans: [
+          { tier: "lite", monthly: 299, sixmo: 550, annual: 999, lifetime: 4999, popular: false,
+            featuresAr: ["موقع عيادة احترافي", "صفحة الأطباء", "حجز مواعيد بسيط", "معلومات الخدمات", "SSL مجاني", "دعم فني شهرين"] },
+          { tier: "pro",     monthly: 499, sixmo: 950, annual: 1699, lifetime: 7999, popular: true,
+            featuresAr: ["كل مزايا لايت", "نظام حجز متكامل", "ملف المريض", "إشعارات المواعيد", "تقارير العيادة", "بوابة المريض", "دعم فني 6 أشهر", "دومين مجاني سنة"] },
+          { tier: "infinite", monthly: 899, sixmo: 1700, annual: 2999, lifetime: 14999, popular: false,
+            featuresAr: ["كل مزايا برو", "تطبيق جوال", "سجل طبي إلكتروني", "وصفة طبية رقمية", "تكامل مختبرات", "دعم أولوية 24/7", "مدير حساب مخصص"] },
+        ]
       },
     ];
 
-    for (const p of plans) {
-      await storage.createPricingPlan(p as any);
+    const TIER_NAME: Record<string, { name: string; nameAr: string }> = {
+      lite:     { name: "Lite",     nameAr: "لايت" },
+      pro:      { name: "Pro",      nameAr: "برو" },
+      infinite: { name: "Infinite", nameAr: "إنفينتي" },
+    };
+    const TIER_DESC: Record<string, string> = {
+      lite:     "الباقة الأساسية — كل ما تحتاجه للبداية",
+      pro:      "الباقة المتكاملة — للأعمال المتنامية",
+      infinite: "الباقة الشاملة — بلا حدود وبميزات حصرية",
+    };
+    const TIER_ORDER: Record<string, number> = { lite: 1, pro: 2, infinite: 3 };
+
+    const allPlans: PlanDef[] = [];
+    SEGMENTS.forEach(({ segment, plans }) => {
+      plans.forEach(({ tier, monthly, sixmo, annual, lifetime, popular, featuresAr }) => {
+        allPlans.push({
+          slug: `${segment}-${tier}`,
+          name: TIER_NAME[tier].name,
+          nameAr: TIER_NAME[tier].nameAr,
+          segment,
+          tier,
+          descriptionAr: TIER_DESC[tier],
+          monthlyPrice: monthly,
+          sixMonthPrice: sixmo,
+          annualPrice: annual,
+          lifetimePrice: lifetime,
+          featuresAr,
+          isPopular: popular,
+          isCustom: false,
+          sortOrder: TIER_ORDER[tier],
+        });
+      });
+    });
+
+    for (const p of allPlans) {
+      await storage.createPricingPlan({
+        ...p,
+        price: p.lifetimePrice,
+        billingCycle: "lifetime",
+        currency: "SAR",
+        status: "active",
+      } as any);
     }
-    console.log("3 tier plans seeded (Lite/Pro/Infinite v4)");
+    console.log(`${allPlans.length} segment-tier plans seeded (v5)`);
   }
 }

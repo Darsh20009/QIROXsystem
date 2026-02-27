@@ -200,6 +200,7 @@ const pricingPlanSchema = new mongoose.Schema({
   currency: { type: String, default: "SAR" },
   billingCycle: { type: String, enum: ["monthly", "sixmonth", "yearly", "lifetime", "one_time"], default: "lifetime" },
   tier: { type: String, enum: ["lite", "pro", "infinite", "custom"], default: "pro" },
+  segment: { type: String, enum: ["restaurant", "ecommerce", "education", "corporate", "realestate", "healthcare", "general"], default: "general" },
   monthlyPrice: { type: Number, default: 0 },
   sixMonthPrice: { type: Number, default: 0 },
   annualPrice: { type: Number, default: 0 },
