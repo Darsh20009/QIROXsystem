@@ -56,8 +56,8 @@ export function useRegister() {
       });
 
       if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "فشل إنشاء الحساب");
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || "فشل إنشاء الحساب");
       }
       return await res.json();
     },

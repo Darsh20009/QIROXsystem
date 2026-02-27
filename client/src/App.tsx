@@ -47,6 +47,7 @@ import Cart from "@/pages/Cart";
 import Partners from "@/pages/Partners";
 import InternalGate from "@/pages/InternalGate";
 import ForgotPassword from "@/pages/ForgotPassword";
+import VerifyEmail from "@/pages/VerifyEmail";
 import Inbox from "@/pages/Inbox";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminActivityLog from "@/pages/AdminActivityLog";
@@ -64,7 +65,7 @@ import ReceiptPrint from "@/pages/ReceiptPrint";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password"];
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email"];
 
 function PublicRouter() {
   return (
@@ -90,6 +91,7 @@ function PublicRouter() {
       <Route path="/internal-gate" component={InternalGate} />
       <Route path="/devices" component={Devices} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route component={NotFound} />
     </Switch>
   );

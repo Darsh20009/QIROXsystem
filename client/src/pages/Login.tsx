@@ -178,6 +178,12 @@ export default function Login() {
       register(userData, {
         onSuccess: (user: any) => {
           if (user.email) {
+            if (user.resent) {
+              toast({
+                title: "حسابك موجود — تم إعادة إرسال الرمز",
+                description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
+              });
+            }
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
             queryClient.setQueryData(["/api/auth/user"], user);

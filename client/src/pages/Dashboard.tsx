@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -1322,6 +1322,15 @@ function EmployeeDashboard({ user }: { user: any }) {
 
 export default function Dashboard() {
   const { data: user } = useUser();
+  const [, setLocation] = useLocation();
+
+  // Redirect to email verification if account is not verified
+  useEffect(() => {
+    if (user && (user as any).emailVerified === false && (user as any).role === "client") {
+      setLocation("/verify-email");
+    }
+  }, [user]);
+
   const { data: orders, isLoading: isLoadingOrders } = useOrders();
   const { data: projects, isLoading: isLoadingProjects } = useProjects();
   const { data: attendanceStatus } = useAttendanceStatus();

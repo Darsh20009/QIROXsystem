@@ -98,35 +98,72 @@ export async function registerRoutes(
   // === AUTH API ===
   app.post(api.auth.register.path, async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
-        return res.status(400).send("اسم المستخدم مستخدم من قبل");
+      const { UserModel, OtpModel } = await import("./models");
+      const incomingEmail = req.body.email ? req.body.email.toLowerCase().trim() : null;
+
+      // Check if username already exists
+      const existingByUsername = await storage.getUserByUsername(req.body.username);
+      if (existingByUsername) {
+        const eu = existingByUsername as any;
+        if (!eu.emailVerified) {
+          // Account exists but not verified — re-login and resend OTP
+          return req.login(eu, async (err) => {
+            if (err) return next(err);
+            if (eu.email) {
+              const code = Math.floor(100000 + Math.random() * 900000).toString();
+              const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+              await OtpModel.updateMany({ email: eu.email.toLowerCase(), used: false, type: "email_verify" }, { used: true });
+              await OtpModel.create({ email: eu.email.toLowerCase(), code, expiresAt, type: "email_verify" });
+              sendEmailVerificationEmail(eu.email, eu.fullName || eu.username, code).catch(console.error);
+              console.log(`[EMAIL-VERIFY] Resend for existing unverified ${eu.email}: ${code}`);
+            }
+            return res.status(200).json({ ...eu, needsVerification: true, resent: true });
+          });
+        }
+        return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
       }
 
-      // If registering as admin or employee via the standard route, force to client
-      // unless it's a specific internal registration flow (which we'll handle by role-based validation)
+      // Check if email already exists
+      if (incomingEmail) {
+        const existingByEmail = await UserModel.findOne({ email: incomingEmail });
+        if (existingByEmail) {
+          const ee = existingByEmail as any;
+          if (!ee.emailVerified) {
+            // Email exists but not verified — re-login and resend OTP
+            return req.login(ee, async (err) => {
+              if (err) return next(err);
+              const code = Math.floor(100000 + Math.random() * 900000).toString();
+              const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+              await OtpModel.updateMany({ email: incomingEmail, used: false, type: "email_verify" }, { used: true });
+              await OtpModel.create({ email: incomingEmail, code, expiresAt, type: "email_verify" });
+              sendEmailVerificationEmail(incomingEmail, ee.fullName || ee.username, code).catch(console.error);
+              console.log(`[EMAIL-VERIFY] Resend for existing unverified email ${incomingEmail}: ${code}`);
+              return res.status(200).json({ ...ee.toJSON(), needsVerification: true, resent: true });
+            });
+          }
+          return res.status(400).json({ error: "البريد الإلكتروني مستخدم من قبل" });
+        }
+      }
+
+      // New account — create it
       const role = req.body.role || "client";
-      
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
         role,
         password: hashedPassword,
-        email: req.body.email ? req.body.email.toLowerCase().trim() : req.body.email,
+        email: incomingEmail || req.body.email,
       });
 
       req.login(user, async (err) => {
         if (err) return next(err);
         if (user.email) {
-          // Send verification OTP instead of welcome email (welcome sent after verify)
-          const { OtpModel } = await import("./models");
           const code = Math.floor(100000 + Math.random() * 900000).toString();
-          const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+          const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
           await OtpModel.updateMany({ email: user.email.toLowerCase(), used: false, type: "email_verify" }, { used: true });
           await OtpModel.create({ email: user.email.toLowerCase(), code, expiresAt, type: "email_verify" });
           sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
           console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
-          // Notify admin
           const adminEmail = "info@qiroxstudio.online";
           sendAdminNewClientEmail(adminEmail, user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
         }
