@@ -116,16 +116,17 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
 function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: plan?.name || "",
+    name: (plan as any)?.name || "",
     nameAr: plan?.nameAr || "",
     slug: plan?.slug || "",
     description: plan?.description || "",
     descriptionAr: plan?.descriptionAr || "",
-    price: plan?.price?.toString() || "",
-    originalPrice: plan?.originalPrice?.toString() || "",
+    tier: (plan as any)?.tier || "pro",
+    monthlyPrice: (plan as any)?.monthlyPrice?.toString() || "",
+    sixMonthPrice: (plan as any)?.sixMonthPrice?.toString() || "",
+    annualPrice: (plan as any)?.annualPrice?.toString() || "",
+    lifetimePrice: (plan as any)?.lifetimePrice?.toString() || "",
     offerLabel: plan?.offerLabel || "",
-    currency: plan?.currency || "SAR",
-    billingCycle: (plan?.billingCycle || "one_time") as "monthly" | "yearly" | "one_time",
     featuresAr: plan?.featuresAr?.join("\n") || "",
     features: plan?.features?.join("\n") || "",
     addonsAr: plan?.addonsAr?.join("\n") || "",
@@ -148,17 +149,26 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const discount = formData.originalPrice && formData.price
-    ? Math.round(((Number(formData.originalPrice) - Number(formData.price)) / Number(formData.originalPrice)) * 100)
-    : 0;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const slug = formData.slug || formData.tier || formData.nameAr.toLowerCase().replace(/\s+/g, "-");
     const payload = {
-      ...formData,
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+      name: formData.name || formData.nameAr,
+      nameAr: formData.nameAr,
+      slug,
+      description: formData.description,
+      descriptionAr: formData.descriptionAr,
+      tier: formData.tier,
+      price: Number(formData.lifetimePrice) || 0,
+      monthlyPrice: Number(formData.monthlyPrice) || 0,
+      sixMonthPrice: Number(formData.sixMonthPrice) || 0,
+      annualPrice: Number(formData.annualPrice) || 0,
+      lifetimePrice: Number(formData.lifetimePrice) || 0,
+      billingCycle: "lifetime",
+      offerLabel: formData.offerLabel,
       sortOrder: Number(formData.sortOrder),
+      isPopular: formData.isPopular,
+      isCustom: formData.isCustom,
       featuresAr: formData.featuresAr.split("\n").map(s => s.trim()).filter(Boolean),
       features: formData.features.split("\n").map(s => s.trim()).filter(Boolean),
       addonsAr: formData.addonsAr.split("\n").map(s => s.trim()).filter(Boolean),
@@ -166,70 +176,77 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
     plan ? updateMutation.mutate(payload) : createMutation.mutate(payload);
   };
 
+  const TIER_OPTIONS = [
+    { value: "lite", label: "لايت 🌟", desc: "الباقة الأساسية" },
+    { value: "pro", label: "برو ⚡", desc: "الأكثر طلباً" },
+    { value: "infinite", label: "إنفينتي ∞", desc: "الباقة الشاملة" },
+    { value: "custom", label: "مخصصة 🏢", desc: "Enterprise" },
+  ];
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">اسم الباقة (عربي) *</label><Input value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} placeholder="باقة البداية" required /></div>
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Plan Name (EN)</label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Starter Plan" /></div>
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
+      {/* Tier selector */}
+      <div>
+        <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">مستوى الباقة *</label>
+        <div className="grid grid-cols-4 gap-2">
+          {TIER_OPTIONS.map(opt => (
+            <button key={opt.value} type="button" onClick={() => setFormData({...formData, tier: opt.value})}
+              className={`p-2.5 rounded-xl border text-center transition-all ${formData.tier === opt.value ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20"}`}>
+              <div className="text-sm font-bold">{opt.label}</div>
+              <div className="text-[10px] opacity-60">{opt.desc}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Slug (معرّف فريد)</label>
-          <Input value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} placeholder="starter" />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">دورة الدفع</label>
-          <select value={formData.billingCycle} onChange={e => setFormData({...formData, billingCycle: e.target.value as any})} className="w-full h-10 rounded-lg border border-black/[0.08] dark:border-white/[0.08] px-3 text-sm dark:bg-gray-900 dark:text-white">
-            <option value="one_time">مرة واحدة</option>
-            <option value="monthly">شهري</option>
-            <option value="yearly">سنوي</option>
-          </select>
-        </div>
+        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">اسم الباقة (عربي) *</label><Input value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} placeholder="لايت / برو / إنفينتي" required /></div>
+        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Plan Name (EN)</label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Lite / Pro / Infinite" /></div>
       </div>
 
       <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">وصف الباقة (عربي)</label><Textarea rows={2} value={formData.descriptionAr} onChange={e => setFormData({...formData, descriptionAr: e.target.value})} placeholder="وصف مختصر للباقة..." /></div>
-      <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Package Description (EN)</label><Textarea rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Short description..." /></div>
 
-      {/* Pricing */}
+      {/* 4 Pricing fields */}
       <div className="p-4 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.01] space-y-3">
-        <p className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wide">التسعير والعروض</p>
+        <p className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wide">الأسعار (ريال سعودي)</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">السعر الحالي (ر.س) *</label>
-            <Input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="1999" required />
+            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📅 شهري</label>
+            <Input type="number" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} placeholder="199" />
           </div>
           <div>
-            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">السعر الأصلي (قبل الخصم)</label>
-            <Input type="number" value={formData.originalPrice} onChange={e => setFormData({...formData, originalPrice: e.target.value})} placeholder="2999" />
+            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📅 نصف سنوي (6 أشهر)</label>
+            <Input type="number" value={formData.sixMonthPrice} onChange={e => setFormData({...formData, sixMonthPrice: e.target.value})} placeholder="399" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📆 سنوي</label>
+            <Input type="number" value={formData.annualPrice} onChange={e => setFormData({...formData, annualPrice: e.target.value})} placeholder="699" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">∞ مدى الحياة</label>
+            <Input type="number" value={formData.lifetimePrice} onChange={e => setFormData({...formData, lifetimePrice: e.target.value})} placeholder="3999" />
           </div>
         </div>
-        {discount > 0 && (
-          <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
-            <BadgePercent className="w-4 h-4" />
-            نسبة الخصم: <span className="font-bold">{discount}%</span>
-            <span className="text-black/30 dark:text-white/30">— وفّر {Number(formData.originalPrice) - Number(formData.price)} ر.س</span>
-          </div>
+        {formData.monthlyPrice && formData.annualPrice && (
+          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+            <Check className="w-3 h-3" />
+            السنوي يوفّر {Math.round(((Number(formData.monthlyPrice)*12 - Number(formData.annualPrice)) / (Number(formData.monthlyPrice)*12)) * 100)}% مقارنةً بالشهري
+          </p>
         )}
         <div>
           <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">نص بادج العرض</label>
-          <Input value={formData.offerLabel} onChange={e => setFormData({...formData, offerLabel: e.target.value})} placeholder="عرض محدود الوقت" />
-          <p className="text-[10px] text-black/30 dark:text-white/30 mt-1">يظهر كشريط ملوّن على البطاقة</p>
+          <Input value={formData.offerLabel} onChange={e => setFormData({...formData, offerLabel: e.target.value})} placeholder="الأوفر / الأشهر / لفترة محدودة" />
         </div>
       </div>
 
       {/* Features */}
       <div>
         <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">المزايا (عربي) — سطر لكل ميزة</label>
-        <Textarea rows={5} value={formData.featuresAr} onChange={e => setFormData({...formData, featuresAr: e.target.value})} placeholder={"تصميم احترافي\nاستضافة مدفوعة سنة\nدعم فني 24/7\nلوحة تحكم"} className="text-sm" />
+        <Textarea rows={6} value={formData.featuresAr} onChange={e => setFormData({...formData, featuresAr: e.target.value})} placeholder={"تصميم احترافي\nاستضافة مدفوعة\nدعم فني 24/7\nلوحة تحكم"} className="text-sm" />
       </div>
       <div>
         <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Features (EN) — one per line</label>
-        <Textarea rows={4} value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} placeholder={"Professional design\n1-year hosting\n24/7 support"} className="text-sm" />
-      </div>
-      <div>
-        <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">الإضافات (اختيارية) — سطر لكل إضافة</label>
-        <Textarea rows={3} value={formData.addonsAr} onChange={e => setFormData({...formData, addonsAr: e.target.value})} placeholder={"تطبيق جوال\nقاعدة بيانات"} className="text-sm" />
+        <Textarea rows={4} value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} placeholder={"Professional design\nHosting\n24/7 support"} className="text-sm" />
       </div>
 
       {/* Flags */}
@@ -252,10 +269,9 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
 
       <div className="grid grid-cols-2 gap-3">
         <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">ترتيب العرض</label><Input type="number" value={formData.sortOrder} onChange={e => setFormData({...formData, sortOrder: e.target.value})} /></div>
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">العملة</label><Input value={formData.currency} onChange={e => setFormData({...formData, currency: e.target.value})} /></div>
       </div>
 
-      <Button type="submit" className="w-full premium-btn" disabled={isPending || !formData.nameAr || !formData.price}>
+      <Button type="submit" className="w-full premium-btn" disabled={isPending || !formData.nameAr}>
         {isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
         {plan ? "تحديث الباقة" : "إنشاء الباقة"}
       </Button>
@@ -321,52 +337,58 @@ export default function AdminTemplates() {
             <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-black/30 dark:text-white/30" /></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {plans?.map(plan => (
+              {plans?.sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99)).map(plan => {
+                const p = plan as any;
+                const TIER_COLOR: Record<string, string> = {
+                  lite: "bg-teal-50 text-teal-700 border-teal-200",
+                  pro: "bg-violet-50 text-violet-700 border-violet-200",
+                  infinite: "bg-black text-white border-black",
+                  custom: "bg-gray-100 text-gray-700 border-gray-300",
+                };
+                const TIER_LABEL: Record<string, string> = {
+                  lite: "🌟 لايت", pro: "⚡ برو", infinite: "∞ إنفينتي", custom: "🏢 مخصصة",
+                };
+                return (
                 <Card key={plan.id} className={`border overflow-hidden transition-all hover:shadow-md dark:bg-gray-900 dark:border-white/[0.06] ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-sm" : ""}`} data-testid={`admin-plan-${plan.slug}`}>
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 className="font-bold text-black dark:text-white text-sm truncate">{plan.nameAr}</h3>
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <h3 className="font-black text-black dark:text-white text-base">{plan.nameAr}</h3>
+                          {p.tier && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${TIER_COLOR[p.tier] || TIER_COLOR.custom}`}>
+                              {TIER_LABEL[p.tier] || p.tier}
+                            </span>
+                          )}
                           {plan.isPopular && (
-                            <Badge className="bg-black dark:bg-white text-white dark:text-black text-[10px] flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5" /> الأكثر طلباً
-                            </Badge>
-                          )}
-                          {plan.isCustom && (
-                            <Badge variant="outline" className="text-[10px]">Enterprise</Badge>
-                          )}
-                          {plan.offerLabel && (
-                            <Badge className="bg-emerald-500 text-white text-[10px] flex items-center gap-1">
-                              <Tag className="w-2.5 h-2.5" /> {plan.offerLabel}
+                            <Badge className="bg-black dark:bg-white text-white dark:text-black text-[10px]">
+                              <Sparkles className="w-2.5 h-2.5 ml-1" /> الأكثر طلباً
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed line-clamp-2">{plan.descriptionAr}</p>
+                        <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed line-clamp-1">{plan.descriptionAr}</p>
                       </div>
                     </div>
 
-                    <div className="mb-4">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span>
-                        <span className="text-xs text-black/35 dark:text-white/35">{plan.currency}</span>
-                        {plan.billingCycle !== "one_time" && (
-                          <span className="text-xs text-black/25 dark:text-white/25">
-                            /{plan.billingCycle === "monthly" ? "شهر" : "سنة"}
-                          </span>
-                        )}
-                      </div>
-                      {plan.originalPrice && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-black/25 dark:text-white/25 line-through">{plan.originalPrice.toLocaleString()}</span>
-                          <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
-                            -{discount(plan)}%
-                          </span>
+                    {/* 4 pricing fields */}
+                    <div className="grid grid-cols-2 gap-1.5 mb-4 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04]">
+                      {[
+                        { label: "شهري", value: p.monthlyPrice, suffix: "/شهر" },
+                        { label: "نصف سنوي", value: p.sixMonthPrice, suffix: "/6أشهر" },
+                        { label: "سنوي", value: p.annualPrice, suffix: "/سنة" },
+                        { label: "مدى الحياة", value: p.lifetimePrice, suffix: "" },
+                      ].map(item => (
+                        <div key={item.label} className="text-center">
+                          <div className="text-[9px] text-black/30 dark:text-white/30 mb-0.5">{item.label}</div>
+                          <div className="text-sm font-black text-black dark:text-white">
+                            {item.value ? item.value.toLocaleString() : "—"}
+                            <span className="text-[9px] font-normal text-black/30"> {item.value ? "ر.س" + item.suffix : ""}</span>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
 
-                    <div className="space-y-1 mb-4 max-h-20 overflow-hidden">
+                    <div className="space-y-1 mb-4 max-h-16 overflow-hidden">
                       {plan.featuresAr?.slice(0, 3).map((f, i) => (
                         <div key={i} className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40">
                           <Check className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
@@ -388,7 +410,7 @@ export default function AdminTemplates() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
 
               {/* Add new card */}
               <button onClick={openNewPlan} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 dark:hover:border-white/20 hover:text-black/50 dark:hover:text-white/50 transition-all min-h-[200px]">

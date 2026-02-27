@@ -2572,140 +2572,148 @@ export async function seedDatabase() {
     console.log("8 sector templates seeded successfully");
   }
 
-  // Seed Pricing Plans — always re-seed to keep pricing current
+  // Seed Pricing Plans — Lite/Pro/Infinite tier system (v4)
   const existingPlans = await storage.getPricingPlans();
-  const ecommercePlan = existingPlans.find((p: any) => p.slug === "ecommerce");
-  const educationPlan = existingPlans.find((p: any) => p.slug === "education");
+  const litePlan = existingPlans.find((p: any) => p.slug === "lite");
   const needsReseed =
-    existingPlans.length < 4 ||
-    !ecommercePlan ||
-    (ecommercePlan as any).price !== 1000 ||
-    !(ecommercePlan as any).originalPrice ||
-    !(ecommercePlan as any).addonsAr?.length ||
-    !educationPlan ||
-    !(educationPlan as any).featuresAr?.includes("أي تصميم في ذهنك — ننفذه");
+    !litePlan ||
+    !(litePlan as any).monthlyPrice ||
+    existingPlans.some((p: any) => p.slug === "ecommerce");
+
   if (needsReseed) {
     for (const p of existingPlans) {
       await storage.deletePricingPlan((p as any).id);
     }
     const plans = [
       {
-        name: "E-Commerce Store",
-        nameAr: "باقة المتاجر الإلكترونية",
-        slug: "ecommerce",
-        description: "Complete e-commerce solution with all essentials",
-        descriptionAr: "حل متجر إلكتروني متكامل يشمل كل ما تحتاجه",
-        price: 1000,
-        originalPrice: 1500,
-        offerLabel: "وفر 33%",
+        name: "Lite",
+        nameAr: "لايت",
+        slug: "lite",
+        tier: "lite",
+        description: "Perfect for small businesses and startups",
+        descriptionAr: "مثالية للأعمال الصغيرة والناشئة — موقع احترافي بأقل تكلفة",
+        price: 3999,
+        monthlyPrice: 199,
+        sixMonthPrice: 399,
+        annualPrice: 699,
+        lifetimePrice: 3999,
+        billingCycle: "lifetime" as const,
         currency: "SAR",
-        billingCycle: "yearly" as const,
         featuresAr: [
-          "متجر إلكتروني احترافي كامل",
-          "لوحة تحكم متقدمة",
-          "تكامل بوابات الدفع",
-          "إدارة المخزون والطلبات",
-          "متجاوب مع جميع الأجهزة",
-          "6 أشهر مجاناً فوق السنة",
-          "بزنس إيميل لمدة شهرين مجاناً",
-          "خدمة بريد لمدة 3 أشهر مجاناً",
+          "موقع إلكتروني احترافي",
+          "تصميم متجاوب مع الجوال",
+          "حتى 5 صفحات",
+          "نموذج تواصل",
+          "ربط بالسوشيال ميديا",
+          "دعم فني شهر واحد",
+          "SSL مجاني",
         ],
-        addonsAr: [
-          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
-          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        features: [
+          "Professional website",
+          "Mobile responsive",
+          "Up to 5 pages",
+          "Contact form",
+          "Social media links",
+          "1-month support",
+          "Free SSL",
         ],
-        isPopular: true,
+        addonsAr: [],
+        isPopular: false,
         isCustom: false,
         status: "active" as const,
         sortOrder: 1,
       },
       {
-        name: "Education Platform",
-        nameAr: "المنصة التعليمية",
-        slug: "education",
-        description: "Full e-learning platform for academies and institutions",
-        descriptionAr: "منصة تعليمية متكاملة — أي تصميم في ذهنك ننفذه، ولو أعجبك موقع معين نبنيه لك",
-        price: 2200,
+        name: "Pro",
+        nameAr: "برو",
+        slug: "pro",
+        tier: "pro",
+        description: "Best for growing businesses needing more features",
+        descriptionAr: "الأنسب للأعمال المتنامية التي تحتاج ميزات متقدمة ودعم مستمر",
+        price: 9999,
+        monthlyPrice: 499,
+        sixMonthPrice: 950,
+        annualPrice: 1699,
+        lifetimePrice: 9999,
+        billingCycle: "lifetime" as const,
         currency: "SAR",
-        billingCycle: "one_time" as const,
         featuresAr: [
-          "منصة تعليمية احترافية متكاملة",
-          "إدارة الطلاب والمعلمين",
-          "دورات وفصول مباشرة",
-          "نظام اختبارات وتقييم",
-          "شهادات إتمام تلقائية",
-          "تحليلات وتقارير شاملة",
-          "بوابة أولياء الأمور",
-          "أي تصميم في ذهنك — ننفذه",
-          "أعجبك موقع معين؟ نبنيه لك",
+          "كل مزايا لايت",
+          "صفحات غير محدودة",
+          "لوحة تحكم متكاملة",
+          "نظام إدارة المحتوى",
+          "تحسين SEO احترافي",
+          "ربط Google Analytics",
+          "دعم فني 6 أشهر",
+          "نسخ احتياطي أسبوعي",
+          "دومين مجاني سنة",
         ],
-        addonsAr: [
-          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
-          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        features: [
+          "Everything in Lite",
+          "Unlimited pages",
+          "Full admin dashboard",
+          "Content management",
+          "Pro SEO optimization",
+          "Google Analytics",
+          "6-month support",
+          "Weekly backup",
+          "1-year free domain",
         ],
-        isPopular: false,
+        addonsAr: [],
+        isPopular: true,
         isCustom: false,
         status: "active" as const,
         sortOrder: 2,
       },
       {
-        name: "Restaurants & Cafes",
-        nameAr: "المطاعم والمقاهي",
-        slug: "restaurant",
-        description: "Smart restaurant management system with digital menu and QR ordering",
-        descriptionAr: "نظام مطاعم ذكي مع قائمة رقمية وطلب عبر QR",
-        price: 1199,
+        name: "Infinite",
+        nameAr: "إنفينتي",
+        slug: "infinite",
+        tier: "infinite",
+        description: "Complete solution for enterprises and large businesses",
+        descriptionAr: "الحل الكامل للمؤسسات والأعمال الكبيرة — كل شيء بلا حدود",
+        price: 19999,
+        monthlyPrice: 999,
+        sixMonthPrice: 1900,
+        annualPrice: 3499,
+        lifetimePrice: 19999,
+        billingCycle: "lifetime" as const,
         currency: "SAR",
-        billingCycle: "one_time" as const,
         featuresAr: [
-          "قائمة طعام رقمية تفاعلية",
-          "طلب عبر QR Code",
-          "إدارة الطاولات والحجوزات",
-          "نظام الطلبات والمطبخ",
-          "تقارير المبيعات اليومية",
-          "إشعارات فورية للطلبات",
-          "دعم التوصيل والاستلام",
-          "تصميم يعكس هوية المطعم",
+          "كل مزايا برو",
+          "تطبيق جوال iOS وAndroid",
+          "بوابة دفع إلكتروني",
+          "نظام حجوزات متقدم",
+          "تقارير وإحصاءات متقدمة",
+          "تكاملات مخصصة",
+          "دعم فني أولوية 24/7",
+          "نسخ احتياطي يومي",
+          "دومين مجاني 3 سنوات",
+          "مدير حساب مخصص",
         ],
-        addonsAr: [
-          "دومين سعودي .sa — 100 ر.س (بدلاً من 150)",
-          "دومين عالمي .com — 45 ر.س (بدلاً من 60)",
+        features: [
+          "Everything in Pro",
+          "iOS & Android app",
+          "Payment gateway",
+          "Advanced booking system",
+          "Advanced analytics",
+          "Custom integrations",
+          "Priority 24/7 support",
+          "Daily backup",
+          "3-year free domain",
+          "Dedicated account manager",
         ],
+        addonsAr: [],
         isPopular: false,
         isCustom: false,
         status: "active" as const,
         sortOrder: 3,
       },
-      {
-        name: "Companies & Institutions",
-        nameAr: "الشركات والمؤسسات",
-        slug: "enterprise",
-        description: "Custom enterprise solution — pricing after discussing your needs",
-        descriptionAr: "حل مؤسسي مخصص يُبنى حسب متطلباتك — السعر بعد مناقشة التفاصيل",
-        price: 0,
-        currency: "SAR",
-        billingCycle: "one_time" as const,
-        featuresAr: [
-          "أي تصميم في ذهنك ننفذه",
-          "نبني موقعاً مثل أي موقع تعجبك",
-          "لا قيود على الميزات والتصميم",
-          "تكامل مع أنظمة الشركة الحالية",
-          "API مخصص وحلول تقنية متقدمة",
-          "دعم مخصص وأولوية في التنفيذ",
-          "تدريب الفريق واستلام المشروع",
-          "ضمان ما بعد التسليم",
-        ],
-        addonsAr: [],
-        isPopular: false,
-        isCustom: true,
-        status: "active" as const,
-        sortOrder: 4,
-      },
     ];
 
     for (const p of plans) {
-      await storage.createPricingPlan(p);
+      await storage.createPricingPlan(p as any);
     }
-    console.log("4 pricing plans seeded successfully (v3)");
+    console.log("3 tier plans seeded (Lite/Pro/Infinite v4)");
   }
 }
