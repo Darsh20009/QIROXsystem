@@ -5,9 +5,9 @@ export function useProjects() {
   return useQuery({
     queryKey: [api.projects.list.path],
     queryFn: async () => {
-      const res = await fetch(api.projects.list.path);
+      const res = await fetch(api.projects.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch projects");
-      return api.projects.list.responses[200].parse(await res.json());
+      return res.json();
     },
   });
 }
@@ -17,9 +17,9 @@ export function useProject(id: number) {
     queryKey: [api.projects.get.path, id],
     queryFn: async () => {
       const url = api.projects.get.path.replace(":id", id.toString());
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch project");
-      return api.projects.get.responses[200].parse(await res.json());
+      return res.json();
     },
     enabled: !!id,
   });
@@ -34,9 +34,10 @@ export function useUpdateProject() {
         method: api.projects.update.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update project");
-      return api.projects.update.responses[200].parse(await res.json());
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.projects.list.path] });

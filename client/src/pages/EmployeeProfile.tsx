@@ -33,7 +33,7 @@ export default function EmployeeProfile() {
   const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["/api/employee/profile"],
     queryFn: async () => {
-      const r = await fetch("/api/employee/profile");
+      const r = await fetch("/api/employee/profile", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },
@@ -42,7 +42,7 @@ export default function EmployeeProfile() {
   const { data: payroll } = useQuery({
     queryKey: ["/api/employee/payroll"],
     queryFn: async () => {
-      const r = await fetch("/api/employee/payroll");
+      const r = await fetch("/api/employee/payroll", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

@@ -4,7 +4,7 @@ export function useAttendanceStatus() {
   return useQuery({
     queryKey: ["/api/attendance/status"],
     queryFn: async () => {
-      const res = await fetch("/api/attendance/status");
+      const res = await fetch("/api/attendance/status", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch attendance status");
       return await res.json();
     },
@@ -19,6 +19,7 @@ export function useCheckIn() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to check in");
       return await res.json();
@@ -35,6 +36,7 @@ export function useCheckOut() {
     mutationFn: async () => {
       const res = await fetch("/api/attendance/check-out", {
         method: "POST",
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to check out");
       return await res.json();

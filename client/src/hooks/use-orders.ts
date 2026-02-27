@@ -5,9 +5,10 @@ export function useOrders() {
   return useQuery({
     queryKey: [api.orders.list.path],
     queryFn: async () => {
-      const res = await fetch(api.orders.list.path);
+      const res = await fetch(api.orders.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch orders");
-      return api.orders.list.responses[200].parse(await res.json());
+      const data = await res.json();
+      return data;
     },
   });
 }
@@ -20,9 +21,10 @@ export function useCreateOrder() {
         method: api.orders.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create order");
-      return api.orders.create.responses[201].parse(await res.json());
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });

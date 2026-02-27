@@ -5,7 +5,7 @@ export function useVault(projectId: string) {
   return useQuery({
     queryKey: ["/api/projects", projectId, "vault"],
     queryFn: async () => {
-      const res = await fetch(`/api/projects/${projectId}/vault`);
+      const res = await fetch(`/api/projects/${projectId}/vault`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch vault items");
       return await res.json();
     },
@@ -21,6 +21,7 @@ export function useCreateVaultItem() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create vault item");
       return await res.json();
