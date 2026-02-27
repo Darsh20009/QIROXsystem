@@ -2142,6 +2142,185 @@ export async function registerRoutes(
     }
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === SEGMENT PRICING ===
+  // ═══════════════════════════════════════════════════════════
+
+  // Public: get all segment pricings
+  app.get("/api/segment-pricing", async (_req, res) => {
+    try {
+      const { SegmentPricingModel } = await import("./models");
+      const plans = await SegmentPricingModel.find({ isActive: true }).sort({ sortOrder: 1 });
+      res.json(plans);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل الأسعار" });
+    }
+  });
+
+  // Admin: get all (including inactive)
+  app.get("/api/admin/segment-pricing", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SegmentPricingModel } = await import("./models");
+      const plans = await SegmentPricingModel.find().sort({ sortOrder: 1 });
+      res.json(plans);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل الأسعار" });
+    }
+  });
+
+  // Admin: create segment pricing
+  app.post("/api/admin/segment-pricing", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SegmentPricingModel } = await import("./models");
+      const plan = await SegmentPricingModel.create(req.body);
+      res.status(201).json(plan);
+    } catch (err: any) {
+      if (err.code === 11000) return res.status(400).json({ error: "مفتاح القطاع موجود مسبقاً" });
+      res.status(500).json({ error: "فشل الإنشاء" });
+    }
+  });
+
+  // Admin: update segment pricing
+  app.put("/api/admin/segment-pricing/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SegmentPricingModel } = await import("./models");
+      const plan = await SegmentPricingModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      if (!plan) return res.status(404).json({ error: "غير موجود" });
+      res.json(plan);
+    } catch (err) {
+      res.status(500).json({ error: "فشل التحديث" });
+    }
+  });
+
+  // Admin: delete segment pricing
+  app.delete("/api/admin/segment-pricing/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SegmentPricingModel } = await import("./models");
+      await SegmentPricingModel.findByIdAndDelete(req.params.id);
+      res.sendStatus(204);
+    } catch (err) {
+      res.status(500).json({ error: "فشل الحذف" });
+    }
+  });
+
+  // Admin: set/update client subscription
+  app.post("/api/admin/users/:id/subscription", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { segmentId, segmentNameAr, period, startDate, expiresAt } = req.body;
+      const user = await UserModel.findByIdAndUpdate(
+        req.params.id,
+        { $set: {
+          subscriptionSegmentId: segmentId,
+          subscriptionSegmentNameAr: segmentNameAr,
+          subscriptionPeriod: period,
+          subscriptionStartDate: new Date(startDate),
+          subscriptionExpiresAt: new Date(expiresAt),
+          subscriptionStatus: "active",
+        }},
+        { new: true }
+      );
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تعيين الاشتراك" });
+    }
+  });
+
+  // Admin: get all client subscriptions
+  app.get("/api/admin/subscriptions", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","accountant"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const users = await UserModel.find({ role: "client", subscriptionStatus: { $in: ["active","expired"] } })
+        .select("fullName email subscriptionSegmentNameAr subscriptionPeriod subscriptionStartDate subscriptionExpiresAt subscriptionStatus");
+      // Auto-update expired subscriptions
+      const now = new Date();
+      const toExpire = users.filter(u => (u as any).subscriptionExpiresAt && new Date((u as any).subscriptionExpiresAt) < now && (u as any).subscriptionStatus === "active");
+      if (toExpire.length > 0) {
+        await UserModel.updateMany({ _id: { $in: toExpire.map(u => u._id) } }, { $set: { subscriptionStatus: "expired" } });
+      }
+      const refreshed = await UserModel.find({ role: "client", subscriptionStatus: { $in: ["active","expired"] } })
+        .select("fullName email subscriptionSegmentNameAr subscriptionPeriod subscriptionStartDate subscriptionExpiresAt subscriptionStatus");
+      res.json(refreshed);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل الاشتراكات" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // === SUB-SERVICE REQUESTS ===
+  // ═══════════════════════════════════════════════════════════
+
+  // Client: submit sub-service request
+  app.post("/api/client/sub-service-request", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "client") return res.sendStatus(403);
+    try {
+      const { SubServiceRequestModel } = await import("./models");
+      const { projectId, projectLabel, serviceType, notes } = req.body;
+      if (!serviceType) return res.status(400).json({ error: "نوع الخدمة مطلوب" });
+      const request = await SubServiceRequestModel.create({
+        clientId: user.id || user._id,
+        projectId: projectId || null,
+        projectLabel: projectLabel || "",
+        serviceType,
+        notes: notes || "",
+      });
+      res.status(201).json(request);
+    } catch (err) {
+      res.status(500).json({ error: "فشل إرسال الطلب" });
+    }
+  });
+
+  // Client: get my sub-service requests
+  app.get("/api/client/sub-service-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    try {
+      const { SubServiceRequestModel } = await import("./models");
+      const requests = await SubServiceRequestModel.find({ clientId: user.id || user._id?.toString() }).sort({ createdAt: -1 });
+      res.json(requests);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل الطلبات" });
+    }
+  });
+
+  // Admin: get all sub-service requests
+  app.get("/api/admin/sub-service-requests", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SubServiceRequestModel } = await import("./models");
+      const requests = await SubServiceRequestModel.find().sort({ createdAt: -1 });
+      res.json(requests);
+    } catch (err) {
+      res.status(500).json({ error: "فشل تحميل الطلبات" });
+    }
+  });
+
+  // Admin: update sub-service request status
+  app.patch("/api/admin/sub-service-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { SubServiceRequestModel } = await import("./models");
+      const request = await SubServiceRequestModel.findByIdAndUpdate(
+        req.params.id,
+        { $set: { status: req.body.status, adminNotes: req.body.adminNotes || "" } },
+        { new: true }
+      );
+      if (!request) return res.status(404).json({ error: "غير موجود" });
+      res.json(request);
+    } catch (err) {
+      res.status(500).json({ error: "فشل التحديث" });
+    }
+  });
+
   // Initialize seed data
   await seedDatabase();
 

@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema({
   emailVerified: { type: Boolean, default: false },
   whatsappNumber: String,
   logoUrl: String,
+  subscriptionSegmentId: String,
+  subscriptionSegmentNameAr: String,
+  subscriptionPeriod: { type: String, enum: ["monthly", "6months", "annual", "renewal"], default: null },
+  subscriptionStartDate: Date,
+  subscriptionExpiresAt: Date,
+  subscriptionStatus: { type: String, enum: ["active", "expired", "none"], default: "none" },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({
@@ -457,7 +463,29 @@ const bankSettingsSchema = new mongoose.Schema({
   notes: { type: String, default: "" },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema].forEach(s => {
+const segmentPricingSchema = new mongoose.Schema({
+  segmentKey: { type: String, required: true, unique: true },
+  segmentNameAr: { type: String, required: true },
+  monthlyPrice: { type: Number, default: 0 },
+  sixMonthPrice: { type: Number, default: 0 },
+  annualPrice: { type: Number, default: 0 },
+  renewalPrice: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  notes: { type: String, default: "" },
+}, { timestamps: true });
+
+const subServiceRequestSchema = new mongoose.Schema({
+  clientId: { type: String, required: true },
+  projectId: { type: String },
+  projectLabel: { type: String },
+  serviceType: { type: String, required: true },
+  notes: { type: String, default: "" },
+  status: { type: String, enum: ["pending", "reviewing", "approved", "rejected"], default: "pending" },
+  adminNotes: { type: String, default: "" },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -493,3 +521,5 @@ export const ReceiptVoucherModel = mongoose.models.ReceiptVoucher || mongoose.mo
 export const PushSubscriptionModel = mongoose.models.PushSubscription || mongoose.model("PushSubscription", pushSubscriptionSchema);
 export const ChecklistItemModel = mongoose.models.ChecklistItem || mongoose.model("ChecklistItem", checklistItemSchema);
 export const BankSettingsModel = mongoose.models.BankSettings || mongoose.model("BankSettings", bankSettingsSchema);
+export const SegmentPricingModel = mongoose.models.SegmentPricing || mongoose.model("SegmentPricing", segmentPricingSchema);
+export const SubServiceRequestModel = mongoose.models.SubServiceRequest || mongoose.model("SubServiceRequest", subServiceRequestSchema);

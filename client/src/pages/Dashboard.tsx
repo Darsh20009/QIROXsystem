@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -1345,6 +1345,11 @@ export default function Dashboard() {
   const [modPriority, setModPriority] = useState<string>("medium");
   const [modProjectId, setModProjectId] = useState<string>("");
   const [clientSpecsOrderId, setClientSpecsOrderId] = useState<string | null>(null);
+  const [subSvcDialogOpen, setSubSvcDialogOpen] = useState(false);
+  const [subSvcProjectId, setSubSvcProjectId] = useState("");
+  const [subSvcProjectLabel, setSubSvcProjectLabel] = useState("");
+  const [subSvcType, setSubSvcType] = useState("");
+  const [subSvcNotes, setSubSvcNotes] = useState("");
 
   const { data: clientOrderSpecs, isLoading: isLoadingClientSpecs } = useQuery<any>({
     queryKey: ['/api/orders', clientSpecsOrderId, 'specs'],
@@ -1386,6 +1391,38 @@ export default function Dashboard() {
       priority: modPriority,
       ...(modProjectId && modProjectId !== "none" ? { projectId: modProjectId } : {}),
     });
+  };
+
+  const createSubSvcMutation = useMutation({
+    mutationFn: async (data: { projectId?: string; projectLabel?: string; serviceType: string; notes: string }) => {
+      const res = await apiRequest("POST", "/api/client/sub-service-request", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setSubSvcDialogOpen(false);
+      setSubSvcType("");
+      setSubSvcNotes("");
+      toast({ title: "تم إرسال طلبك بنجاح", description: "سيتواصل معك الفريق قريباً" });
+    },
+    onError: () => toast({ title: "خطأ في الإرسال", variant: "destructive" }),
+  });
+
+  const handleSubmitSubSvc = () => {
+    if (!subSvcType.trim()) return;
+    createSubSvcMutation.mutate({
+      projectId: subSvcProjectId || undefined,
+      projectLabel: subSvcProjectLabel || undefined,
+      serviceType: subSvcType,
+      notes: subSvcNotes,
+    });
+  };
+
+  const openSubSvcDialog = (projectId: string, projectLabel: string) => {
+    setSubSvcProjectId(projectId);
+    setSubSvcProjectLabel(projectLabel);
+    setSubSvcType("");
+    setSubSvcNotes("");
+    setSubSvcDialogOpen(true);
   };
 
   useEffect(() => {
@@ -1554,6 +1591,52 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {/* Subscription Countdown */}
+        {(user as any).subscriptionStatus === "active" && (user as any).subscriptionExpiresAt && (() => {
+          const expiresAt = new Date((user as any).subscriptionExpiresAt);
+          const now = new Date();
+          const daysLeft = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / 86400000));
+          const totalDays = (user as any).subscriptionPeriod === "monthly" ? 30 : (user as any).subscriptionPeriod === "6months" ? 180 : 365;
+          const pct = Math.max(0, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
+          const isWarning = daysLeft <= 30;
+          const isDanger = daysLeft <= 7;
+          return (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-8">
+              <div className={`rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 border ${isDanger ? "bg-red-50 border-red-200" : isWarning ? "bg-amber-50 border-amber-200" : "bg-gradient-to-l from-black/[0.03] to-transparent border-black/[0.06] bg-white"}`}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-red-100" : isWarning ? "bg-amber-100" : "bg-black"}`}>
+                  <Crown className={`w-5 h-5 ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-white"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className={`font-black text-sm ${isDanger ? "text-red-700" : isWarning ? "text-amber-700" : "text-black"}`}>
+                      اشتراكك في {(user as any).subscriptionSegmentNameAr || "قيروكس"}
+                    </p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-black/10 text-black/60"}`}>نشط</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-black/[0.06] rounded-full overflow-hidden max-w-xs">
+                      <motion.div
+                        className={`h-full rounded-full ${isDanger ? "bg-red-500" : isWarning ? "bg-amber-500" : "bg-black"}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1.2, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black"}`}>{pct}%</p>
+                  </div>
+                  <p className={`text-[11px] mt-1 ${isDanger ? "text-red-600 font-bold" : isWarning ? "text-amber-600 font-bold" : "text-black/40"}`}>
+                    {isDanger ? `⚠️ ينتهي خلال ${daysLeft} أيام فقط!` : isWarning ? `متبقي ${daysLeft} يوم على الانتهاء` : `متبقي ${daysLeft} يوم · ينتهي ${expiresAt.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}`}
+                  </p>
+                </div>
+                <div className="text-center flex-shrink-0">
+                  <p className={`text-3xl font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black"}`}>{daysLeft}</p>
+                  <p className={`text-[10px] ${isDanger ? "text-red-500" : isWarning ? "text-amber-500" : "text-black/30"}`}>يوم متبقي</p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {/* Main Content */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
           {/* Projects */}
@@ -1649,6 +1732,19 @@ export default function Dashboard() {
                                 {ph}
                               </div>
                             ))}
+                          </div>
+
+                          {/* Sub-Service Button */}
+                          <div className="mt-4 pt-3 border-t border-black/[0.04] flex items-center justify-between">
+                            <p className="text-[10px] text-black/30">هل تحتاج خدمة إضافية لهذا المشروع؟</p>
+                            <Button
+                              size="sm"
+                              onClick={() => openSubSvcDialog(project.id, `مشروع #${String(project.id)?.slice(-6)}`)}
+                              className="h-7 px-3 text-[11px] rounded-lg bg-black text-white hover:bg-black/80 gap-1 font-bold"
+                              data-testid={`button-sub-service-${project.id}`}
+                            >
+                              <Sparkles className="w-3 h-3" /> خدمة فرعية
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1968,6 +2064,68 @@ export default function Dashboard() {
               {createModRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-1.5" />}
               إرسال الطلب
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-Service Request Dialog */}
+      <Dialog open={subSvcDialogOpen} onOpenChange={setSubSvcDialogOpen}>
+        <DialogContent className="max-w-md rounded-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5" /> طلب خدمة فرعية
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {subSvcProjectLabel && (
+              <div className="bg-black/[0.03] rounded-xl px-4 py-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-black/40" />
+                <p className="text-sm text-black/60 font-bold">{subSvcProjectLabel}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-xs font-bold text-black/60 mb-1 block">نوع الخدمة الفرعية المطلوبة *</label>
+              <Select value={subSvcType} onValueChange={setSubSvcType}>
+                <SelectTrigger className="rounded-xl h-10 text-sm border-black/[0.08]" data-testid="select-sub-service-type">
+                  <SelectValue placeholder="اختر الخدمة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="تحسين محركات البحث (SEO)">تحسين محركات البحث (SEO)</SelectItem>
+                  <SelectItem value="نشر على App Store & Play Store">نشر على App Store & Play Store</SelectItem>
+                  <SelectItem value="تصوير احترافي للمنتجات">تصوير احترافي للمنتجات</SelectItem>
+                  <SelectItem value="إضافة صفحات جديدة">إضافة صفحات جديدة</SelectItem>
+                  <SelectItem value="تكامل مع منصة دفع">تكامل مع منصة دفع</SelectItem>
+                  <SelectItem value="حملة إعلانية رقمية">حملة إعلانية رقمية</SelectItem>
+                  <SelectItem value="تطوير تطبيق موبايل">تطوير تطبيق موبايل</SelectItem>
+                  <SelectItem value="دعم فني مستمر">دعم فني مستمر</SelectItem>
+                  <SelectItem value="صيانة وتحديثات دورية">صيانة وتحديثات دورية</SelectItem>
+                  <SelectItem value="أخرى">أخرى (حدد في الملاحظات)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/60 mb-1 block">ملاحظات إضافية (اختياري)</label>
+              <Textarea
+                value={subSvcNotes}
+                onChange={e => setSubSvcNotes(e.target.value)}
+                placeholder="أضف أي تفاصيل تساعدنا على فهم طلبك بشكل أفضل..."
+                className="rounded-xl text-sm border-black/[0.08] resize-none"
+                rows={3}
+                data-testid="textarea-sub-service-notes"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={handleSubmitSubSvc}
+                disabled={createSubSvcMutation.isPending || !subSvcType}
+                className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold gap-2"
+                data-testid="button-submit-sub-service"
+              >
+                {createSubSvcMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                إرسال الطلب
+              </Button>
+              <Button onClick={() => setSubSvcDialogOpen(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
