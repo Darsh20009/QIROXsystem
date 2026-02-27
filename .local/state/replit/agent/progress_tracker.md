@@ -16,3 +16,9 @@
 [x] 16. Add Demo/Trial plan (30 SAR) to Prices page
 [x] 17. Add App Store + Play Store add-on (+1000 SAR) to Prices page with full add-ons section
 [x] 18. Add premium add-ons section (SEO+Marketing, Logo & Brand Identity) to Prices page
+[x] 19. Completely redesign OrderFlow as an interactive journey map (5 steps with animations)
+[x] 20. Add visual card grids for project type selection (7 types) and sector selection (6 sectors)
+[x] 21. Add dynamic feature cards per sector (restaurant 14 features, store 14, education 11, etc.)
+[x] 22. Add visual style selection grid (6 styles: luxury, modern, bold, minimal, classic, custom)
+[x] 23. Add validation for all required fields with toast error messages
+[x] 24. Add animated step progress indicator with icons and connecting lines
