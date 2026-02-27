@@ -8,14 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CheckCircle, ArrowLeft, ArrowRight, Check, Briefcase, Upload, X, FileText, Image, Film, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
-import PayPalButton from "@/components/PayPalButton";
 
 interface UploadedFile {
   url: string;
@@ -682,57 +680,43 @@ export default function OrderFlow() {
 
             {step === 4 && (
               <div className="space-y-6">
-                <RadioGroup value={formData.paymentMethod} onValueChange={val => setFormData({ ...formData, paymentMethod: val })}>
-                  <div className="flex flex-col space-y-2 border border-black/[0.08] p-4 rounded-xl cursor-pointer hover:bg-black/[0.03] transition-colors">
-                    <div className="flex items-center space-x-reverse space-x-3">
-                      <RadioGroupItem value="bank_transfer" id="bank" data-testid="radio-bank" />
-                      <Label htmlFor="bank" className="flex-1 cursor-pointer font-medium text-black">{t("order.bankTransfer")}</Label>
+                <div className="rounded-2xl border-2 border-black bg-black/[0.02] p-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0">
+                      <CreditCard className="w-5 h-5 text-white" />
                     </div>
-                    {formData.paymentMethod === 'bank_transfer' && (
-                      <div className="mt-4 p-4 bg-black/[0.02] rounded-lg border border-black/[0.1] text-xs text-black/60">
-                        <p className="font-bold text-black/40 mb-2">{t("order.bankDetails")}</p>
-                        <p className="font-mono">IBAN: SA0380205098017222121010</p>
-                        <p className="mt-1">{t("order.bankNote")}</p>
-                        <div className="mt-3">
-                          <Label className="mb-1 block text-black/50">{t("order.receiptLink")}</Label>
-                          <FileUploadField
-                            label=""
-                            field="paymentProof"
-                            files={uploadedFiles.paymentProof || []}
-                            onUpload={handleFileUpload}
-                            onRemove={handleFileRemove}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col space-y-2 border border-black/[0.08] p-4 rounded-xl cursor-pointer hover:bg-black/[0.03] transition-colors">
-                    <div className="flex items-center space-x-reverse space-x-3">
-                      <RadioGroupItem value="paypal" id="paypal" data-testid="radio-paypal" />
-                      <Label htmlFor="paypal" className="flex-1 cursor-pointer font-medium text-black">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-black/40" />
-                          {t("order.paypal")}
-                        </div>
-                      </Label>
+                    <div>
+                      <p className="font-bold text-black text-sm">{t("order.bankTransfer")}</p>
+                      <p className="text-xs text-black/40">التحويل البنكي المباشر</p>
                     </div>
-                    {formData.paymentMethod === 'paypal' && service.priceMin && (
-                      <div className="mt-4 p-4 bg-black/[0.02] rounded-lg border border-black/[0.1]">
-                        <p className="text-sm text-black/60 mb-3">
-                          {t("order.paypalAmount")}: <span className="font-bold text-black/40">{service.priceMin.toLocaleString()} {t("order.sar")}</span>
-                        </p>
-                        <div className="paypal-button-wrapper">
-                          <PayPalButton
-                            amount={String(service.priceMin)}
-                            currency="USD"
-                            intent="CAPTURE"
-                          />
-                        </div>
-                        <p className="text-[10px] text-black/35 mt-2 text-center">{t("order.paypalNote")}</p>
-                      </div>
-                    )}
                   </div>
-                </RadioGroup>
+                  <div className="bg-white rounded-xl border border-black/[0.08] p-4 text-sm text-black/60 space-y-2">
+                    <p className="font-bold text-black/50 text-xs uppercase tracking-wider mb-3">{t("order.bankDetails")}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-black/40">البنك</span>
+                      <span className="font-mono text-black font-medium">بنك الراجحي</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-black/40">IBAN</span>
+                      <span className="font-mono text-black font-medium text-xs">SA0380205098017222121010</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-black/40">الاسم</span>
+                      <span className="font-medium text-black">QIROX Studio</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-black/35 mt-3">{t("order.bankNote")}</p>
+                  <div className="mt-4">
+                    <Label className="mb-2 block text-black/50 text-xs font-semibold">{t("order.receiptLink")} <span className="text-red-400">*</span></Label>
+                    <FileUploadField
+                      label=""
+                      field="paymentProof"
+                      files={uploadedFiles.paymentProof || []}
+                      onUpload={handleFileUpload}
+                      onRemove={handleFileRemove}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -749,9 +733,7 @@ export default function OrderFlow() {
                   </div>
                   <div className="flex justify-between border-b border-black/[0.08] pb-2">
                     <span className="text-black/40">{t("order.paymentMethod")}</span>
-                    <span className="font-bold text-black">
-                      {formData.paymentMethod === 'bank_transfer' ? t("order.bankTransfer") : t("order.paypal")}
-                    </span>
+                    <span className="font-bold text-black">{t("order.bankTransfer")}</span>
                   </div>
                   <div className="flex justify-between border-b border-black/[0.08] pb-2">
                     <span className="text-black/40">{t("order.startingPrice")}</span>

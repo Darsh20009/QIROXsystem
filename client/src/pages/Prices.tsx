@@ -10,7 +10,7 @@ import {
   Loader2, Check, ArrowLeft, Star, Zap,
   GraduationCap, UtensilsCrossed, ShoppingBag, Building2,
   Globe, Phone, Tag, Gift, Plus, Sparkles, Shield, Headphones,
-  Clock, BadgePercent, ChevronRight
+  Clock, BadgePercent, ChevronRight, Smartphone, Palette, TrendingUp
 } from "lucide-react";
 
 const planIcons: Record<string, any> = {
@@ -256,6 +256,60 @@ export default function Prices() {
         </div>
       </section>
 
+      {/* Demo / Trial Plan */}
+      <section className="pb-10 container mx-auto px-4 max-w-5xl">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
+          <div className="rounded-2xl border-2 border-dashed border-black/[0.1] dark:border-white/[0.1] bg-gradient-to-br from-emerald-50/60 to-teal-50/40 dark:from-emerald-900/10 dark:to-teal-900/10 p-8 relative overflow-hidden" data-testid="card-demo-plan">
+            <div className="absolute top-4 left-4 md:top-6 md:left-6">
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow">
+                <Sparkles className="w-3 h-3" />
+                {lang === "ar" ? "جرّب قبل أن تشتري" : "Try Before You Buy"}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center mt-8 md:mt-0" dir={dir}>
+              <div>
+                <h3 className="text-2xl md:text-3xl font-black font-heading text-black dark:text-white mb-3">
+                  {lang === "ar" ? "النسخة التجريبية" : "Demo Trial"}
+                  <span className="text-emerald-600 mr-2">🎯</span>
+                </h3>
+                <p className="text-black/50 dark:text-white/50 text-sm leading-relaxed mb-6">
+                  {lang === "ar"
+                    ? "جرّب نظامك قبل الشراء الكامل — نمنحك نسخة تجريبية حقيقية لمدة 7 أيام كاملة لتختبر كل المميزات وتتأكد من ملاءمة النظام لاحتياجاتك"
+                    : "Try your system before full purchase — get a real 7-day trial to test all features and ensure the system fits your needs"}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {(lang === "ar"
+                    ? ["7 أيام كاملة", "نظام حقيقي بالكامل", "دعم تقني خلال التجربة", "بدون تعهد بالشراء", "استرداد قيمتها عند الاشتراك"]
+                    : ["7 full days", "Real system", "Technical support", "No purchase commitment", "Deducted from subscription"]
+                  ).map(f => (
+                    <span key={f} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                      <Check className="w-3 h-3" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+                <Link href="/contact">
+                  <Button className="h-12 px-8 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
+                    {lang === "ar" ? "ابدأ تجربتك المجانية" : "Start Free Trial"}
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-7xl font-black text-emerald-600 mb-1">30</div>
+                  <div className="text-black/40 dark:text-white/40 text-lg font-semibold">{lang === "ar" ? "ريال فقط" : "SAR only"}</div>
+                  <div className="text-xs text-black/30 dark:text-white/30 mt-1">{lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price on subscription"}</div>
+                  <div className="mt-4 w-24 h-1 bg-emerald-500/20 rounded-full mx-auto">
+                    <div className="w-3/4 h-full bg-emerald-500 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
       {/* Plans Grid */}
       <section className="pb-24 container mx-auto px-4">
         {isLoading ? (
@@ -329,6 +383,130 @@ export default function Prices() {
             )}
           </>
         )}
+      </section>
+
+      {/* Add-ons Section */}
+      <section className="py-16 container mx-auto px-4 max-w-5xl">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-10" dir={dir}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 mb-4">
+            <Plus className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+            <span className="text-black/40 dark:text-white/40 text-xs tracking-wider">{lang === "ar" ? "إضافات على أي باقة" : "Add-ons on Any Plan"}</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold font-heading text-black dark:text-white mb-3">
+            {lang === "ar" ? "ارفع مستوى مشروعك" : "Elevate Your Project"}
+          </h2>
+          <p className="text-black/40 dark:text-white/40 text-sm max-w-lg mx-auto">
+            {lang === "ar" ? "أضف هذه الخدمات لأي باقة تختارها بتكلفة إضافية بسيطة" : "Add these services to any plan you choose at a small extra cost"}
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* App Store + Play Store */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
+            <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-gradient-to-br from-gray-950 to-black p-7 h-full relative overflow-hidden group hover:shadow-2xl hover:shadow-black/20 transition-all duration-300" data-testid="addon-mobile-app">
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/[0.02] -translate-y-1/2 translate-x-1/4" />
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-white/[0.07] flex items-center justify-center">
+                  <Smartphone className="w-6 h-6 text-white/70" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/40 font-semibold uppercase tracking-wider">تطبيق جوال</p>
+                  <p className="text-white font-bold text-sm">App Store + Play Store</p>
+                </div>
+              </div>
+              <div className="mb-5">
+                <div className="text-4xl font-black text-white mb-0.5">1,000+</div>
+                <div className="text-white/30 text-sm">{lang === "ar" ? "ريال يُضاف للباقة" : "SAR added to plan"}</div>
+              </div>
+              <div className="space-y-2.5 mb-5">
+                {(lang === "ar"
+                  ? ["نشر على App Store", "نشر على Google Play", "iOS و Android", "إشعارات Push", "تجربة مستخدم أصلية"]
+                  : ["App Store publish", "Google Play publish", "iOS & Android", "Push notifications", "Native UX"]
+                ).map(f => (
+                  <div key={f} className="flex items-center gap-2 text-xs text-white/50">
+                    <Check className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/contact">
+                <Button className="w-full h-10 rounded-xl bg-white text-black hover:bg-gray-100 font-bold text-xs" data-testid="button-addon-app">
+                  {lang === "ar" ? "أضف للطلب" : "Add to Order"}
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* SEO & Marketing */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={1}>
+            <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-gradient-to-br from-violet-50/60 to-purple-50/40 dark:from-violet-900/10 dark:to-purple-900/10 p-7 h-full relative overflow-hidden group hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300" data-testid="addon-seo">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-violet-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-violet-600/60 font-semibold uppercase tracking-wider">تسويق رقمي</p>
+                  <p className="text-black dark:text-white font-bold text-sm">SEO + Marketing</p>
+                </div>
+              </div>
+              <div className="mb-5">
+                <div className="text-4xl font-black text-black dark:text-white mb-0.5">500+</div>
+                <div className="text-black/30 dark:text-white/30 text-sm">{lang === "ar" ? "ريال يُضاف للباقة" : "SAR added to plan"}</div>
+              </div>
+              <div className="space-y-2.5 mb-5">
+                {(lang === "ar"
+                  ? ["تحسين محركات البحث SEO", "ربط Google Analytics", "خريطة موقع XML", "صفحات OG للسوشيال", "تقرير أداء شهري"]
+                  : ["SEO optimization", "Google Analytics setup", "XML sitemap", "OG social pages", "Monthly performance report"]
+                ).map(f => (
+                  <div key={f} className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50">
+                    <Check className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/contact">
+                <Button className="w-full h-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs" data-testid="button-addon-seo">
+                  {lang === "ar" ? "أضف للطلب" : "Add to Order"}
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Logo & Brand */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={2}>
+            <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-900/10 dark:to-orange-900/10 p-7 h-full relative overflow-hidden group hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300" data-testid="addon-brand">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                  <Palette className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-amber-600/60 font-semibold uppercase tracking-wider">هوية بصرية</p>
+                  <p className="text-black dark:text-white font-bold text-sm">Logo & Brand Identity</p>
+                </div>
+              </div>
+              <div className="mb-5">
+                <div className="text-4xl font-black text-black dark:text-white mb-0.5">800+</div>
+                <div className="text-black/30 dark:text-white/30 text-sm">{lang === "ar" ? "ريال يُضاف للباقة" : "SAR added to plan"}</div>
+              </div>
+              <div className="space-y-2.5 mb-5">
+                {(lang === "ar"
+                  ? ["تصميم شعار احترافي", "دليل الهوية البصرية", "ألوان وخطوط العلامة", "ملفات بجميع الصيغ", "تطبيق على القرطاسية"]
+                  : ["Professional logo design", "Brand guidelines", "Brand colors & fonts", "All format files", "Stationery application"]
+                ).map(f => (
+                  <div key={f} className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50">
+                    <Check className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/contact">
+                <Button className="w-full h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs" data-testid="button-addon-brand">
+                  {lang === "ar" ? "أضف للطلب" : "Add to Order"}
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* Domain Pricing */}

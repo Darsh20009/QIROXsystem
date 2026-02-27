@@ -10,3 +10,9 @@
 [x] 10. Add test email API with all email types
 [x] 11. Add direct email send API (/api/admin/send-email)
 [x] 12. Add email recipients lookup API (/api/admin/email-recipients)
+[x] 13. Fix OTP verification bug (add trim() to code comparison + paste support in frontend)
+[x] 14. Remove PayPal from OrderFlow - keep only bank transfer with premium design
+[x] 15. Redesign Home page - add cafe system showcase, store system, mobile app (App Store/Play Store) section
+[x] 16. Add Demo/Trial plan (30 SAR) to Prices page
+[x] 17. Add App Store + Play Store add-on (+1000 SAR) to Prices page with full add-ons section
+[x] 18. Add premium add-ons section (SEO+Marketing, Logo & Brand Identity) to Prices page

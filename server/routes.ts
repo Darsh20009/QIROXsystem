@@ -1180,8 +1180,13 @@ export async function registerRoutes(
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
       const { OtpModel, UserModel } = await import("./models");
-      const otp = await OtpModel.findOne({ email: email.toLowerCase(), code, used: false, type: "email_verify", expiresAt: { $gt: new Date() } });
-      if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      const cleanCode = String(code).trim();
+      const cleanEmail = email.toLowerCase().trim();
+      const otp = await OtpModel.findOne({ email: cleanEmail, code: cleanCode, used: false, type: "email_verify", expiresAt: { $gt: new Date() } });
+      if (!otp) {
+        console.log(`[OTP DEBUG] verify-email failed for ${cleanEmail} with code=${cleanCode}`);
+        return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      }
       await OtpModel.updateOne({ _id: otp._id }, { used: true });
       const user = await UserModel.findOneAndUpdate(
         { email: email.toLowerCase() },

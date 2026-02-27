@@ -59,6 +59,19 @@ export default function Login() {
     }
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newOtp = ["", "", "", "", "", ""];
+    pasted.split("").forEach((char, idx) => {
+      if (idx < 6) newOtp[idx] = char;
+    });
+    setOtpCode(newOtp);
+    const lastIndex = Math.min(pasted.length - 1, 5);
+    document.getElementById(`otp-${lastIndex}`)?.focus();
+  };
+
   const handleVerifyEmail = async () => {
     const code = otpCode.join("");
     if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
@@ -269,6 +282,7 @@ export default function Login() {
                   value={digit}
                   onChange={e => handleOtpChange(i, e.target.value)}
                   onKeyDown={e => handleOtpKeyDown(i, e)}
+                  onPaste={i === 0 ? handleOtpPaste : undefined}
                   data-testid={`otp-box-${i}`}
                   className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 outline-none transition-all duration-200 ${
                     digit ? "border-black bg-black text-white" : "border-black/[0.15] bg-black/[0.02] text-black"
