@@ -12,9 +12,49 @@ import {
   Loader2, Check, ShoppingCart, Sparkles, ArrowLeft, Globe, ShoppingBag,
   Utensils, Building2, GraduationCap, Briefcase, Server, Dumbbell, Coffee,
   ChevronDown, Plus, Package, Info, Database, Cloud, Mail, Gift, Cpu,
-  ArrowRight, CheckCircle2, Star, Layers, X, ZapIcon
+  ArrowRight, CheckCircle2, Star, Layers, X, ZapIcon,
+  Zap, Infinity, Crown, Home, Heart, UtensilsCrossed, Tag, ChevronLeft
 } from "lucide-react";
+import { usePricingPlans } from "@/hooks/use-templates";
 import type { QiroxProduct } from "@shared/schema";
+
+/* ── Packages section helpers ───────────────────────────────────────────── */
+type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
+
+const PKG_PERIODS: { key: BillingPeriod; label: string; badge?: string }[] = [
+  { key: "monthly",  label: "شهري" },
+  { key: "sixmonth", label: "نصف سنوي", badge: "وفّر 30%" },
+  { key: "annual",   label: "سنوي",     badge: "الأوفر" },
+  { key: "lifetime", label: "مدى الحياة", badge: "∞" },
+];
+
+const PKG_SEGMENTS = [
+  { key: "restaurant",  labelAr: "مطاعم",   icon: UtensilsCrossed, grad: "from-orange-500 to-red-500",    bg: "bg-orange-50",   text: "text-orange-600", border: "border-orange-200" },
+  { key: "ecommerce",   labelAr: "متاجر",   icon: ShoppingBag,     grad: "from-blue-500 to-cyan-500",     bg: "bg-blue-50",     text: "text-blue-600",   border: "border-blue-200" },
+  { key: "education",   labelAr: "تعليم",   icon: GraduationCap,   grad: "from-violet-500 to-purple-500", bg: "bg-violet-50",   text: "text-violet-600", border: "border-violet-200" },
+  { key: "corporate",   labelAr: "شركات",   icon: Building2,       grad: "from-slate-600 to-gray-700",    bg: "bg-slate-50",    text: "text-slate-600",  border: "border-slate-200" },
+  { key: "realestate",  labelAr: "عقارات",  icon: Home,            grad: "from-teal-500 to-emerald-500",  bg: "bg-teal-50",     text: "text-teal-600",   border: "border-teal-200" },
+  { key: "healthcare",  labelAr: "صحة",     icon: Heart,           grad: "from-rose-500 to-pink-500",     bg: "bg-rose-50",     text: "text-rose-600",   border: "border-rose-200" },
+];
+
+const PKG_TIERS: Record<string, { label: string; icon: any; grad: string; border: string; dark?: boolean }> = {
+  lite:     { label: "لايت",     icon: Zap,      grad: "from-teal-500 to-emerald-500",   border: "border-teal-200/70" },
+  pro:      { label: "برو",      icon: Star,     grad: "from-violet-600 to-purple-500",  border: "border-violet-300/70" },
+  infinite: { label: "إنفينتي", icon: Infinity,  grad: "from-gray-800 to-black",         border: "border-black/25", dark: true },
+};
+
+function pkgPrice(plan: any, period: BillingPeriod) {
+  if (period === "monthly")  return plan.monthlyPrice  ?? 0;
+  if (period === "sixmonth") return plan.sixMonthPrice ?? 0;
+  if (period === "annual")   return plan.annualPrice   ?? 0;
+  return plan.lifetimePrice ?? plan.price ?? 0;
+}
+function pkgSuffix(period: BillingPeriod) {
+  if (period === "monthly")  return "/ شهر";
+  if (period === "sixmonth") return "/ 6 أشهر";
+  if (period === "annual")   return "/ سنة";
+  return "";
+}
 
 interface Service {
   id: string;
@@ -102,8 +142,18 @@ export default function Services() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [selectedCat, setSelectedCat] = useState("all");
 
+  /* Packages state */
+  const [pkgSegment, setPkgSegment] = useState("restaurant");
+  const [pkgPeriod, setPkgPeriod]   = useState<BillingPeriod>("monthly");
+
   const { data: services, isLoading } = useQuery<Service[]>({ queryKey: ["/api/services"] });
   const { data: products } = useQuery<QiroxProduct[]>({ queryKey: ["/api/products"] });
+  const { data: plans } = usePricingPlans();
+
+  const tierOrder: Record<string, number> = { lite: 1, pro: 2, infinite: 3 };
+  const tierPlans = (plans as any[])?.filter(
+    (p: any) => p.segment === pkgSegment && ["lite","pro","infinite"].includes(p.tier ?? "")
+  ).sort((a: any, b: any) => (tierOrder[a.tier ?? ""] ?? 9) - (tierOrder[b.tier ?? ""] ?? 9)) ?? [];
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: any) => {
@@ -212,6 +262,168 @@ export default function Services() {
           </motion.div>
         </div>
       </section>
+
+      {/* ── PACKAGES SECTION ─────────────────────────────────────────────── */}
+      <section className="pb-16 container mx-auto px-4 max-w-6xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/[0.03] border border-black/[0.06] mb-3">
+              <Tag className="w-3 h-3 text-black/35" />
+              <span className="text-[11px] text-black/40 tracking-widest uppercase font-semibold">الباقات الجاهزة</span>
+            </div>
+            <h2 className="text-2xl font-black text-black font-heading">اختر باقتك المناسبة</h2>
+            <p className="text-black/40 text-sm mt-1">أنظمة متكاملة بأسعار ثابتة — اختر القطاع والمستوى</p>
+          </div>
+          <Link href="/prices">
+            <button className="flex items-center gap-1.5 text-sm font-bold text-black/50 hover:text-black transition-colors">
+              عرض الكل <ChevronLeft className="w-4 h-4" />
+            </button>
+          </Link>
+        </div>
+
+        {/* Segment pills */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {PKG_SEGMENTS.map(seg => {
+            const Icon = seg.icon;
+            const active = pkgSegment === seg.key;
+            return (
+              <button key={seg.key} onClick={() => setPkgSegment(seg.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-all ${active ? `${seg.bg} ${seg.border} ${seg.text}` : 'border-black/[0.08] text-black/50 hover:border-black/15 hover:bg-black/[0.02]'}`}
+                data-testid={`pkg-seg-${seg.key}`}>
+                <Icon className="w-3.5 h-3.5" />
+                {seg.labelAr}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Period tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-7 p-1.5 bg-black/[0.03] border border-black/[0.05] rounded-2xl w-fit">
+          {PKG_PERIODS.map(p => (
+            <button key={p.key} onClick={() => setPkgPeriod(p.key)}
+              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${pkgPeriod === p.key ? 'bg-black text-white shadow' : 'text-black/45 hover:text-black/70'}`}
+              data-testid={`pkg-period-${p.key}`}>
+              {p.label}
+              {p.badge && pkgPeriod !== p.key && (
+                <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-black leading-none">{p.badge}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tier cards */}
+        {tierPlans.length === 0 ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-black/20" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {tierPlans.map((plan: any, idx: number) => {
+              const tier = PKG_TIERS[plan.tier] || PKG_TIERS.lite;
+              const Icon = tier.icon;
+              const price = pkgPrice(plan, pkgPeriod);
+              const suffix = pkgSuffix(pkgPeriod);
+              const isDark = !!tier.dark;
+              const segCfg = PKG_SEGMENTS.find(s => s.key === pkgSegment)!;
+
+              const monthlyBase = plan.monthlyPrice ?? 0;
+              const monthlyEquiv = pkgPeriod === "monthly" ? price
+                : pkgPeriod === "sixmonth" ? Math.round(price / 6)
+                : pkgPeriod === "annual"   ? Math.round(price / 12)
+                : null;
+              const saving = monthlyEquiv && monthlyBase ? Math.round(((monthlyBase - monthlyEquiv) / monthlyBase) * 100) : 0;
+
+              return (
+                <motion.div key={plan._id || idx}
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.07, duration: 0.4 }}
+                  className={`relative rounded-2xl border overflow-hidden flex flex-col transition-all hover:-translate-y-1 hover:shadow-xl ${isDark ? 'bg-gradient-to-br from-gray-900 to-black border-white/10 hover:shadow-black/20' : `bg-white ${tier.border}`} ${plan.isPopular ? 'ring-2 ring-violet-400 shadow-lg shadow-violet-100' : ''}`}
+                  data-testid={`pkg-card-${plan.tier}`}
+                >
+                  {plan.isPopular && (
+                    <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-400 to-violet-600" />
+                  )}
+                  {plan.isPopular && (
+                    <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+                      <span className="inline-flex items-center gap-1 bg-black text-white text-[10px] font-black px-3 py-1 rounded-full shadow">
+                        <Crown className="w-2.5 h-2.5" /> الأكثر طلباً
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="p-6 flex flex-col flex-1">
+                    {/* Tier badge */}
+                    <div className="flex items-center justify-between mb-5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${tier.grad}`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <span className={`text-xs font-black px-3 py-1 rounded-full bg-gradient-to-r ${tier.grad} text-white`}>
+                        {tier.label}
+                      </span>
+                    </div>
+
+                    {/* Name & desc */}
+                    <p className={`text-lg font-black font-heading mb-1 ${isDark ? 'text-white' : 'text-black'}`}>{plan.nameAr}</p>
+                    <p className={`text-[11px] leading-relaxed mb-4 min-h-[32px] ${isDark ? 'text-white/40' : 'text-black/40'}`}>{plan.descriptionAr}</p>
+
+                    {/* Price */}
+                    <div className={`rounded-xl p-4 mb-5 ${isDark ? 'bg-white/[0.05] border border-white/[0.08]' : 'bg-black/[0.03] border border-black/[0.05]'}`}>
+                      <AnimatePresence mode="wait">
+                        <motion.div key={`${plan.tier}-${pkgPeriod}`} initial={{ opacity:0, y:4 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-4 }} transition={{ duration: 0.18 }}>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className={`text-3xl font-black ${isDark ? 'text-white' : 'text-black'}`}>{price.toLocaleString()}</span>
+                            <span className={`text-sm font-bold ${isDark ? 'text-white/40' : 'text-black/40'}`}>ريال</span>
+                            <span className={`text-xs ${isDark ? 'text-white/25' : 'text-black/25'}`}>{suffix}</span>
+                          </div>
+                          {monthlyEquiv && pkgPeriod !== "monthly" && (
+                            <p className={`text-[10px] mt-1 ${isDark ? 'text-white/30' : 'text-black/30'}`}>
+                              = <span className="font-bold">{monthlyEquiv.toLocaleString()} ر.س/شهر</span>
+                              {saving > 0 && <span className="text-emerald-500 mr-1"> — وفّر {saving}%</span>}
+                            </p>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Features (first 4) */}
+                    {plan.featuresAr?.length > 0 && (
+                      <ul className="space-y-1.5 mb-5 flex-1">
+                        {(plan.featuresAr as string[]).slice(0, 4).map((f, fi) => (
+                          <li key={fi} className={`flex items-start gap-2 text-xs ${isDark ? 'text-white/45' : 'text-black/55'}`}>
+                            <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br ${tier.grad}`}>
+                              <Check className="w-2 h-2 text-white" />
+                            </div>
+                            <span className="leading-snug">{f}</span>
+                          </li>
+                        ))}
+                        {plan.featuresAr?.length > 4 && (
+                          <li className={`text-[10px] mr-5 ${isDark ? 'text-white/25' : 'text-black/30'}`}>
+                            +{plan.featuresAr.length - 4} مميزات أخرى
+                          </li>
+                        )}
+                      </ul>
+                    )}
+
+                    {/* CTA */}
+                    <Link href={`/order?plan=${plan.tier}&segment=${pkgSegment}&period=${pkgPeriod}&price=${price}`}>
+                      <Button className={`w-full h-10 rounded-xl font-bold text-sm gap-1.5 ${isDark ? 'bg-white text-black hover:bg-white/90' : `bg-gradient-to-r ${tier.grad} text-white hover:opacity-90`}`}
+                        data-testid={`btn-pkg-order-${plan.tier}`}>
+                        اطلب الآن <ArrowLeft className="w-3.5 h-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Divider */}
+      <div className="container mx-auto px-4 max-w-6xl mb-12">
+        <div className="border-t border-black/[0.06]" />
+      </div>
 
       {/* Services Grid */}
       <section className="pb-8 container mx-auto px-4">
