@@ -11,18 +11,20 @@ function cleanName(name: string): string {
   return name;
 }
 
-async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
+async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string): Promise<boolean> {
   try {
+    const payload: Record<string, any> = {
+      api_key: API_KEY,
+      to: [`${toName} <${to}>`],
+      sender: `${SENDER_NAME} <${SENDER}>`,
+      subject,
+      html_body: htmlBody,
+      text_body: textBody || stripHtml(htmlBody),
+    };
     const res = await fetch(BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: API_KEY,
-        to: [`${toName} <${to}>`],
-        sender: `${SENDER_NAME} <${SENDER}>`,
-        subject,
-        html_body: htmlBody,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json() as any;
     if (data.data?.succeeded === 1) return true;
@@ -32,6 +34,20 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
     console.error("[Email] send error:", err);
     return false;
   }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s{2,}/g, "\n")
+    .trim();
 }
 
 function baseTemplate(content: string) {
@@ -112,7 +128,20 @@ export async function sendOtpEmail(to: string, name: string, otp: string): Promi
     </div>
     <p class="text">إذا لم تطلب إعادة تعيين كلمة المرور، تجاهل هذا البريد وسيبقى حسابك آمناً.</p>
   `);
-  return sendEmail(to, displayName, "رمز التحقق — Qirox", html);
+  const text = `Qirox - رمز التحقق
+
+مرحباً ${displayName}،
+
+رمز إعادة تعيين كلمة المرور:
+
+[ ${otp} ]
+
+صالح لمدة 10 دقائق فقط. لا تشاركه مع أحد.
+
+إذا لم تطلب هذا، تجاهل البريد.
+
+Qirox - qiroxstudio.online`;
+  return sendEmail(to, displayName, "رمز التحقق — Qirox", html, text);
 }
 
 export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
@@ -139,7 +168,20 @@ export async function sendEmailVerificationEmail(to: string, name: string, otp: 
     <hr class="divider"/>
     <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء حساب في QIROX Studio، تجاهل هذا البريد بأمان — لن يتم اتخاذ أي إجراء.</p>
   `);
-  return sendEmail(to, displayName, "🔐 رمز تفعيل حسابك في QIROX Studio", html);
+  const text = `QIROX Studio - رمز التفعيل
+
+أهلاً ${displayName}،
+
+رمز التحقق الخاص بك هو:
+
+[ ${otp} ]
+
+صالح لمدة 30 دقيقة فقط. لا تشاركه مع أحد.
+
+إذا لم تقم بإنشاء هذا الحساب، تجاهل هذا البريد.
+
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, "🔐 رمز تفعيل حسابك في QIROX Studio", html, text);
 }
 
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
