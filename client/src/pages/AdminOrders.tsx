@@ -505,6 +505,35 @@ export default function AdminOrders() {
                           )}
                         </div>
                       </div>
+
+                      {/* Client Documents — Logo & Trade License */}
+                      {(() => {
+                        const files = (selectedOrder as any).files || {};
+                        const logoUrls   = files.logo    || [];
+                        const licUrls    = files.license || [];
+                        const allDocs    = [
+                          ...logoUrls.map((u: string) => ({ label: "شعار الجهة", url: u, color: "bg-violet-500" })),
+                          ...licUrls.map((u: string)  => ({ label: "السجل التجاري", url: u, color: "bg-blue-500" })),
+                        ];
+                        if (!allDocs.length) return null;
+                        return (
+                          <div>
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">مستندات العميل</p>
+                            <div className="space-y-2">
+                              {allDocs.map((doc, i) => (
+                                <a key={i} href={doc.url} target="_blank" rel="noreferrer"
+                                  className="flex items-center gap-3 bg-black/[0.02] rounded-xl px-4 py-2.5 border border-black/[0.04] hover:bg-black/[0.05] transition-colors group">
+                                  <div className={`w-7 h-7 rounded-lg ${doc.color} flex items-center justify-center flex-shrink-0`}>
+                                    <span className="text-white text-[10px] font-black">{doc.label[0]}</span>
+                                  </div>
+                                  <span className="text-xs font-semibold text-black flex-1">{doc.label}</span>
+                                  <ExternalLink className="w-3.5 h-3.5 text-black/30 group-hover:text-black/60 transition-colors" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </ScrollArea>
                 </TabsContent>

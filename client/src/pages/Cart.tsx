@@ -117,11 +117,18 @@ export default function Cart() {
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const itemNames = items.map(i => i.nameAr || i.name);
+      const filesPayload: Record<string, string[]> = {};
+      items.forEach(item => {
+        const cfg = (item as any).config || {};
+        if (cfg.logoUrl)    { filesPayload.logo    = [...(filesPayload.logo    || []), cfg.logoUrl]; }
+        if (cfg.licenseUrl) { filesPayload.license = [...(filesPayload.license || []), cfg.licenseUrl]; }
+      });
       const r = await apiRequest("POST", "/api/orders", {
         projectType: items.find(i => i.type === "service")?.name || "خدمة رقمية",
         sector: "general",
         totalAmount: Math.round(total),
         items: itemNames,
+        files: Object.keys(filesPayload).length > 0 ? filesPayload : undefined,
         paymentMethod: "bank_transfer",
         notes: `طلب من السلة — ${items.length} عنصر`,
       });

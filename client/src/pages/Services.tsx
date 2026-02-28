@@ -7,12 +7,12 @@ import { Link, useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Loader2, Check, ShoppingCart, Sparkles, ArrowLeft, Globe, ShoppingBag,
   Utensils, Building2, GraduationCap, Briefcase, Server, Dumbbell, Coffee,
   ChevronDown, Plus, Package, Info, Database, Cloud, Mail, Gift, Cpu,
-  ArrowRight, CheckCircle2, Star, Layers, X, ZapIcon,
+  ArrowRight, CheckCircle2, Star, Layers, X, ZapIcon, Upload,
   Zap, Infinity, Crown, Home, Heart, UtensilsCrossed, Tag, ChevronLeft
 } from "lucide-react";
 import { usePricingPlans } from "@/hooks/use-templates";
@@ -146,6 +146,28 @@ export default function Services() {
   const [pkgSegment, setPkgSegment] = useState("restaurant");
   const [pkgPeriod, setPkgPeriod]   = useState<BillingPeriod>("monthly");
 
+  /* Required docs state (per selected service) */
+  const [logoFile,       setLogoFile]       = useState<{ url: string; filename: string } | null>(null);
+  const [licenseFile,    setLicenseFile]    = useState<{ url: string; filename: string } | null>(null);
+  const [docsUploading,  setDocsUploading]  = useState<"logo" | "license" | null>(null);
+  const [svcPeriod,      setSvcPeriod]      = useState<BillingPeriod>("monthly");
+
+  /* Reset docs when service selection changes */
+  useEffect(() => {
+    setLogoFile(null);
+    setLicenseFile(null);
+    setSvcPeriod("monthly");
+  }, [selectedServiceId]);
+
+  /* Category → Segment mapping */
+  const CAT_TO_SEGMENT: Record<string, string> = {
+    restaurants: "restaurant", food: "restaurant",
+    stores: "ecommerce",
+    education: "education",
+    institutions: "corporate", personal: "corporate",
+    health: "healthcare",
+  };
+
   const { data: services, isLoading } = useQuery<Service[]>({ queryKey: ["/api/services"] });
   const { data: products } = useQuery<QiroxProduct[]>({ queryKey: ["/api/products"] });
   const { data: plans } = usePricingPlans();
@@ -154,6 +176,32 @@ export default function Services() {
   const tierPlans = (plans as any[])?.filter(
     (p: any) => p.segment === pkgSegment && ["lite","pro","infinite"].includes(p.tier ?? "")
   ).sort((a: any, b: any) => (tierOrder[a.tier ?? ""] ?? 9) - (tierOrder[b.tier ?? ""] ?? 9)) ?? [];
+
+  /* Plans for selected service (derived from service category) */
+  const svcSegment   = selectedServiceId ? (CAT_TO_SEGMENT[services?.find(s => s.id === selectedServiceId)?.category || ""] || "") : "";
+  const svcTierPlans = (plans as any[])?.filter(
+    (p: any) => p.segment === svcSegment && ["lite","pro","infinite"].includes(p.tier ?? "")
+  ).sort((a: any, b: any) => (tierOrder[a.tier ?? ""] ?? 9) - (tierOrder[b.tier ?? ""] ?? 9)) ?? [];
+
+  /* Upload helper for required docs */
+  const uploadDoc = async (file: File, field: "logo" | "license") => {
+    if (!user) { setLocation("/login"); return; }
+    setDocsUploading(field);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (field === "logo")    setLogoFile(data);
+      if (field === "license") setLicenseFile(data);
+      toast({ title: field === "logo" ? "✓ تم رفع الشعار" : "✓ تم رفع السجل التجاري" });
+    } catch {
+      toast({ title: "فشل رفع الملف", variant: "destructive" });
+    } finally {
+      setDocsUploading(null);
+    }
+  };
 
   const addToCartMutation = useMutation({
     mutationFn: async (item: any) => {
@@ -175,7 +223,14 @@ export default function Services() {
     addToCartMutation.mutate({
       type: 'service', refId: service.id, name: service.title, nameAr: service.title,
       price: service.priceMin || 0, qty: 1,
-      config: { category: service.category, duration: service.estimatedDuration },
+      config: {
+        category: service.category,
+        duration: service.estimatedDuration,
+        logoUrl:      logoFile?.url || null,
+        logoFilename: logoFile?.filename || null,
+        licenseUrl:      licenseFile?.url || null,
+        licenseFilename: licenseFile?.filename || null,
+      },
     });
   };
 
@@ -667,6 +722,154 @@ export default function Services() {
                     </div>
                   );
                 })()}
+
+                {/* ── Service Packages ───────────────────────────────────── */}
+                {svcTierPlans.length > 0 && (
+                  <div>
+                    <SectionTitle icon={Tag} title="الباقات المتاحة لهذه الخدمة" subtitle="اختر المستوى المناسب لمشروعك" />
+
+                    {/* Period tabs */}
+                    <div className="flex flex-wrap gap-1.5 mb-5 p-1.5 bg-black/[0.03] border border-black/[0.05] rounded-2xl w-fit">
+                      {PKG_PERIODS.map(p => (
+                        <button key={p.key} onClick={() => setSvcPeriod(p.key)}
+                          className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${svcPeriod === p.key ? 'bg-black text-white shadow' : 'text-black/45 hover:text-black/70'}`}>
+                          {p.label}
+                          {p.badge && svcPeriod !== p.key && (
+                            <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-black leading-none">{p.badge}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {svcTierPlans.map((plan: any, idx: number) => {
+                        const tier = PKG_TIERS[plan.tier] || PKG_TIERS.lite;
+                        const Icon = tier.icon;
+                        const price = pkgPrice(plan, svcPeriod);
+                        const suffix = pkgSuffix(svcPeriod);
+                        const isDark = !!tier.dark;
+                        const monthlyBase = plan.monthlyPrice ?? 0;
+                        const monthlyEquiv = svcPeriod === "monthly" ? price
+                          : svcPeriod === "sixmonth" ? Math.round(price / 6)
+                          : svcPeriod === "annual"   ? Math.round(price / 12)
+                          : null;
+                        const saving = monthlyEquiv && monthlyBase ? Math.round(((monthlyBase - monthlyEquiv) / monthlyBase) * 100) : 0;
+                        return (
+                          <div key={plan._id || idx}
+                            className={`relative rounded-2xl border overflow-hidden flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg ${isDark ? 'bg-gradient-to-br from-gray-900 to-black border-white/10' : `bg-white ${tier.border}`} ${plan.isPopular ? 'ring-2 ring-violet-400' : ''}`}>
+                            {plan.isPopular && <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-400 to-violet-600" />}
+                            <div className="p-5 flex flex-col flex-1">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br ${tier.grad}`}>
+                                  <Icon className="w-4 h-4 text-white" />
+                                </div>
+                                <span className={`text-[11px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${tier.grad} text-white`}>{tier.label}</span>
+                              </div>
+                              <p className={`text-base font-black mb-1 ${isDark ? 'text-white' : 'text-black'}`}>{plan.nameAr}</p>
+                              <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-white/40' : 'text-black/40'}`}>{plan.descriptionAr}</p>
+                              <div className={`rounded-xl p-3 mb-4 ${isDark ? 'bg-white/[0.05] border border-white/[0.08]' : 'bg-black/[0.03] border border-black/[0.05]'}`}>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-black'}`}>{price.toLocaleString()}</span>
+                                  <span className={`text-xs font-bold ${isDark ? 'text-white/40' : 'text-black/40'}`}>ريال {suffix}</span>
+                                </div>
+                                {monthlyEquiv && svcPeriod !== "monthly" && saving > 0 && (
+                                  <p className="text-[10px] text-emerald-500 mt-0.5">وفّر {saving}%</p>
+                                )}
+                              </div>
+                              <ul className="space-y-1 flex-1 mb-4">
+                                {(plan.featuresAr as string[] || []).slice(0, 3).map((f: string, fi: number) => (
+                                  <li key={fi} className={`flex items-start gap-1.5 text-[11px] ${isDark ? 'text-white/45' : 'text-black/55'}`}>
+                                    <Check className={`w-3 h-3 flex-shrink-0 mt-0.5 ${isDark ? 'text-white/30' : 'text-black/30'}`} />
+                                    <span>{f}</span>
+                                  </li>
+                                ))}
+                                {(plan.featuresAr?.length || 0) > 3 && <li className={`text-[10px] mr-4 ${isDark ? 'text-white/25' : 'text-black/25'}`}>+{plan.featuresAr.length - 3} مميزات أخرى</li>}
+                              </ul>
+                              <Link href={`/order?plan=${plan.tier}&segment=${svcSegment}&period=${svcPeriod}&price=${price}`}>
+                                <Button size="sm" className={`w-full h-9 rounded-xl font-bold text-xs gap-1.5 ${isDark ? 'bg-white text-black hover:bg-white/90' : `bg-gradient-to-r ${tier.grad} text-white hover:opacity-90`}`}>
+                                  اطلب هذه الباقة <ArrowLeft className="w-3 h-3" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Required Documents ──────────────────────────────────── */}
+                <div>
+                  <SectionTitle icon={Info} title="المستندات المطلوبة" subtitle="مطلوبة قبل بدء العمل — تُحفظ في ملفك لدينا" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    {/* Logo Upload */}
+                    <div className={`bg-white rounded-2xl border p-5 transition-all ${logoFile ? 'border-green-300 bg-green-50/30' : 'border-black/[0.08] border-dashed'}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${logoFile ? 'bg-green-500' : 'bg-black/[0.06]'}`}>
+                          {logoFile ? <Check className="w-4 h-4 text-white" /> : <Package className="w-4 h-4 text-black/40" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-black">شعار الجهة / اللوجو</p>
+                          <p className="text-[10px] text-black/40">PNG أو SVG — أفضل جودة</p>
+                        </div>
+                        <span className="mr-auto text-[9px] bg-red-100 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-bold">مطلوب</span>
+                      </div>
+                      {logoFile ? (
+                        <div className="flex items-center gap-2 bg-green-100 rounded-xl px-3 py-2">
+                          <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                          <span className="text-xs text-green-800 font-medium truncate flex-1">{logoFile.filename}</span>
+                          <button onClick={() => setLogoFile(null)} className="text-green-600 hover:text-red-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-black/[0.08] cursor-pointer hover:border-black/20 hover:bg-black/[0.02] transition-all">
+                          <input type="file" className="hidden" accept="image/*,.svg,.pdf"
+                            disabled={docsUploading === "logo"}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadDoc(f, "logo"); e.target.value = ""; }} />
+                          {docsUploading === "logo"
+                            ? <Loader2 className="w-5 h-5 animate-spin text-black/30" />
+                            : <><Upload className="w-5 h-5 text-black/25 mb-1.5" /><span className="text-xs text-black/35">اضغط لرفع الشعار</span></>}
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Trade Registration Upload */}
+                    <div className={`bg-white rounded-2xl border p-5 transition-all ${licenseFile ? 'border-green-300 bg-green-50/30' : 'border-black/[0.08] border-dashed'}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${licenseFile ? 'bg-green-500' : 'bg-black/[0.06]'}`}>
+                          {licenseFile ? <Check className="w-4 h-4 text-white" /> : <Info className="w-4 h-4 text-black/40" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-black">السجل التجاري / الرخصة</p>
+                          <p className="text-[10px] text-black/40">صورة أو PDF واضحة</p>
+                        </div>
+                        <span className="mr-auto text-[9px] bg-red-100 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-bold">مطلوب</span>
+                      </div>
+                      {licenseFile ? (
+                        <div className="flex items-center gap-2 bg-green-100 rounded-xl px-3 py-2">
+                          <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                          <span className="text-xs text-green-800 font-medium truncate flex-1">{licenseFile.filename}</span>
+                          <button onClick={() => setLicenseFile(null)} className="text-green-600 hover:text-red-500 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-black/[0.08] cursor-pointer hover:border-black/20 hover:bg-black/[0.02] transition-all">
+                          <input type="file" className="hidden" accept="image/*,.pdf"
+                            disabled={docsUploading === "license"}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadDoc(f, "license"); e.target.value = ""; }} />
+                          {docsUploading === "license"
+                            ? <Loader2 className="w-5 h-5 animate-spin text-black/30" />
+                            : <><Upload className="w-5 h-5 text-black/25 mb-1.5" /><span className="text-xs text-black/35">اضغط لرفع السجل التجاري</span></>}
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                  {(!logoFile || !licenseFile) && (
+                    <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mt-3 flex items-center gap-2">
+                      <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                      يُطلب رفع الشعار والسجل التجاري قبل بدء تنفيذ المشروع — يمكن إكمالهما لاحقاً من حسابك
+                    </p>
+                  )}
+                </div>
 
                 {/* Infrastructure */}
                 <div>
