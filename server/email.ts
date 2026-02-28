@@ -5,6 +5,12 @@ const BASE_URL = "https://api.smtp2go.com/v3/email/send";
 const LOGO_URL = process.env.EMAIL_LOGO_URL || "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png";
 const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 
+function cleanName(name: string): string {
+  if (!name) return "عزيزي العميل";
+  if (name.includes("@")) return name.split("@")[0];
+  return name;
+}
+
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
   try {
     const res = await fetch(BASE_URL, {
@@ -81,36 +87,39 @@ function baseTemplate(content: string) {
 }
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
+  const displayName = cleanName(name);
   const html = baseTemplate(`
     <div class="tag">مرحباً بك</div>
-    <div class="title">أهلاً بك في Qirox، ${name}! 🎉</div>
+    <div class="title">أهلاً بك في Qirox، ${displayName}! 🎉</div>
     <p class="text">تم إنشاء حسابك بنجاح. أنت الآن جزء من منظومة Qirox لبناء الأنظمة الرقمية الاحترافية.</p>
     <div class="highlight">لوحة التحكم الخاصة بك جاهزة — تصفح خدماتنا وابدأ مشروعك الأول</div>
     <a href="${SITE_URL}/dashboard" class="btn">الذهاب للوحة التحكم</a>
     <hr class="divider"/>
     <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء هذا الحساب، تجاهل هذا البريد.</p>
   `);
-  return sendEmail(to, name, "مرحباً بك في Qirox 🚀", html);
+  return sendEmail(to, displayName, "مرحباً بك في Qirox 🚀", html);
 }
 
 export async function sendOtpEmail(to: string, name: string, otp: string): Promise<boolean> {
+  const displayName = cleanName(name);
   const html = baseTemplate(`
     <div class="tag">إعادة تعيين كلمة المرور</div>
     <div class="title">رمز التحقق الخاص بك</div>
-    <p class="text">طلبت إعادة تعيين كلمة المرور لحسابك في Qirox. استخدم الرمز التالي:</p>
+    <p class="text">مرحباً ${displayName}، طلبت إعادة تعيين كلمة المرور لحسابك في Qirox. استخدم الرمز التالي:</p>
     <div class="otp-box">
       <div class="otp">${otp}</div>
       <div class="otp-note">صالح لمدة 10 دقائق فقط — لا تشاركه مع أحد</div>
     </div>
     <p class="text">إذا لم تطلب إعادة تعيين كلمة المرور، تجاهل هذا البريد وسيبقى حسابك آمناً.</p>
   `);
-  return sendEmail(to, name, "رمز التحقق — Qirox", html);
+  return sendEmail(to, displayName, "رمز التحقق — Qirox", html);
 }
 
 export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
+  const displayName = cleanName(name);
   const html = baseTemplate(`
     <div class="tag">تأكيد البريد الإلكتروني</div>
-    <div class="title">أهلاً ${name}،<br/>رمز التفعيل الخاص بك 🔐</div>
+    <div class="title">أهلاً ${displayName}،<br/>رمز التفعيل الخاص بك 🔐</div>
     <p class="text">
       شكراً لانضمامك إلى <strong>QIROX Studio</strong> — منصتك الرقمية المتكاملة لبناء الأنظمة الاحترافية.
       <br/>لإتمام تسجيل حسابك، استخدم رمز التحقق التالي:
@@ -124,33 +133,33 @@ export async function sendEmailVerificationEmail(to: string, name: string, otp: 
       📌 إذا لم يظهر هذا البريد في صندوق الوارد، تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه.
     </div>
     <p class="text" style="margin-top:20px;">بعد التحقق ستتمكن من:</p>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-      <div class="highlight">📦 تقديم طلبك الأول ومتابعة مراحل التنفيذ</div>
-      <div class="highlight">💬 التواصل المباشر مع فريق QIROX</div>
-      <div class="highlight">📊 متابعة مشاريعك ونسبة إتمامها</div>
-    </div>
+    <div class="highlight">📦 تقديم طلبك الأول ومتابعة مراحل التنفيذ</div>
+    <div class="highlight">💬 التواصل المباشر مع فريق QIROX</div>
+    <div class="highlight">📊 متابعة مشاريعك ونسبة إتمامها</div>
     <hr class="divider"/>
     <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء حساب في QIROX Studio، تجاهل هذا البريد بأمان — لن يتم اتخاذ أي إجراء.</p>
   `);
-  return sendEmail(to, name, "🔐 رمز تفعيل حسابك في QIROX Studio", html);
+  return sendEmail(to, displayName, "🔐 رمز تفعيل حسابك في QIROX Studio", html);
 }
 
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
+  const displayName = cleanName(name);
   const itemsList = items.map(i => `<div class="highlight">• ${i}</div>`).join("");
   const html = baseTemplate(`
     <div class="tag">تأكيد الطلب</div>
     <div class="title">تم استلام طلبك! ✅</div>
-    <p class="text">شكراً ${name}، تم استلام طلبك بنجاح ورقم الطلب هو:</p>
+    <p class="text">شكراً ${displayName}، تم استلام طلبك بنجاح ورقم الطلب هو:</p>
     <div class="otp-box"><div style="font-size:18px;font-weight:900;color:#111;letter-spacing:3px;font-family:monospace;">#${orderId.slice(-8).toUpperCase()}</div></div>
     <p class="text">محتويات الطلب:</p>
     ${itemsList}
     <p class="text">سيتواصل معك فريق Qirox خلال <strong>24 ساعة</strong> لإتمام الدفع والبدء في التنفيذ.</p>
     <a href="${SITE_URL}/dashboard" class="btn">متابعة الطلب</a>
   `);
-  return sendEmail(to, name, `تأكيد طلبك — Qirox #${orderId.slice(-8).toUpperCase()}`, html);
+  return sendEmail(to, displayName, `تأكيد طلبك — Qirox #${orderId.slice(-8).toUpperCase()}`, html);
 }
 
 export async function sendOrderStatusEmail(to: string, name: string, orderId: string, status: string): Promise<boolean> {
+  const displayName = cleanName(name);
   const statusMap: Record<string, { label: string; icon: string; desc: string; badge: string }> = {
     pending:     { label: "قيد المراجعة",  icon: "🔄", desc: "طلبك قيد المراجعة من قِبَل فريقنا",            badge: "badge-amber" },
     approved:    { label: "تمت الموافقة",   icon: "✅", desc: "تمت الموافقة على طلبك وبدأ العمل عليه",         badge: "badge-blue" },
@@ -168,7 +177,7 @@ export async function sendOrderStatusEmail(to: string, name: string, orderId: st
     <div class="highlight">رقم الطلب: #${orderId.slice(-8).toUpperCase()}</div>
     <a href="${SITE_URL}/dashboard" class="btn">عرض الطلب</a>
   `);
-  return sendEmail(to, name, `تحديث طلبك: ${s.label} — Qirox`, html);
+  return sendEmail(to, displayName, `تحديث طلبك: ${s.label} — Qirox`, html);
 }
 
 export async function sendMessageNotificationEmail(to: string, name: string, senderName: string, preview: string): Promise<boolean> {
@@ -200,7 +209,7 @@ export async function sendProjectUpdateEmail(to: string, name: string, projectNa
   const html = baseTemplate(`
     <div class="tag">تحديث المشروع</div>
     <div class="title">${s.icon} تحديث على مشروعك</div>
-    <p class="text">مرحباً ${name}، هناك تحديث جديد على مشروعك:</p>
+    <p class="text">مرحباً ${cleanName(name)}، هناك تحديث جديد على مشروعك:</p>
     <div class="info-grid">
       <div class="info-row"><div class="info-label">اسم المشروع</div><div class="info-value">${projectName}</div></div>
       <div class="info-row"><div class="info-label">الحالة الحالية</div><div class="info-value"><span class="badge ${s.badge}">${s.label}</span></div></div>
@@ -225,7 +234,7 @@ export async function sendTaskAssignedEmail(to: string, name: string, taskTitle:
   const html = baseTemplate(`
     <div class="tag">مهمة جديدة</div>
     <div class="title">🎯 تم تكليفك بمهمة جديدة</div>
-    <p class="text">مرحباً ${name}، تم إسناد مهمة جديدة إليك في مشروع <strong>${projectName}</strong>:</p>
+    <p class="text">مرحباً ${cleanName(name)}، تم إسناد مهمة جديدة إليك في مشروع <strong>${projectName}</strong>:</p>
     <div class="info-grid">
       <div class="info-row"><div class="info-label">المهمة</div><div class="info-value">${taskTitle}</div></div>
       <div class="info-row"><div class="info-label">المشروع</div><div class="info-value">${projectName}</div></div>
@@ -241,7 +250,7 @@ export async function sendTaskCompletedEmail(to: string, name: string, taskTitle
   const html = baseTemplate(`
     <div class="tag">إنجاز مهمة</div>
     <div class="title">✅ تم إنجاز مهمة في مشروعك</div>
-    <p class="text">مرحباً ${name}، تم الانتهاء من مهمة في مشروع <strong>${projectName}</strong>:</p>
+    <p class="text">مرحباً ${cleanName(name)}، تم الانتهاء من مهمة في مشروع <strong>${projectName}</strong>:</p>
     <div class="info-grid">
       <div class="info-row"><div class="info-label">المهمة</div><div class="info-value">${taskTitle}</div></div>
       <div class="info-row"><div class="info-label">المشروع</div><div class="info-value">${projectName}</div></div>
@@ -301,9 +310,10 @@ export async function sendAdminNewOrderEmail(adminEmail: string, clientName: str
 }
 
 export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
+  const displayName = cleanName(name);
   const html = baseTemplate(`
     <div class="tag">مرحباً بك</div>
-    <div class="title">أهلاً بك في Qirox، ${name}! 🎉</div>
+    <div class="title">أهلاً بك في Qirox، ${displayName}! 🎉</div>
     <p class="text">تم إنشاء حسابك على منصة Qirox بنجاح. إليك بيانات الدخول الخاصة بك:</p>
     <div class="otp-box">
       <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:8px;">بيانات تسجيل الدخول</div>
@@ -317,7 +327,7 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
     <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;"/>
     <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تطلب إنشاء هذا الحساب، تواصل معنا فوراً.</p>
   `);
-  return sendEmail(to, name, "بيانات حسابك في Qirox 🚀", html);
+  return sendEmail(to, displayName, "بيانات حسابك في Qirox 🚀", html);
 }
 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
