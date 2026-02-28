@@ -149,7 +149,7 @@ function TierCard({ plan, period, idx, segmentColor }: { plan: any; period: Bill
             ))}
           </div>
 
-          <Link href="/order">
+          <Link href={`/order?plan=${plan.tier}&segment=${plan.segment}&period=${period}&price=${getPeriodPrice(plan, period)}`}>
             <Button className={`w-full h-11 rounded-xl font-bold text-sm gap-2 transition-all ${
               isDark ? "bg-white text-black hover:bg-white/90"
               : isPopular ? `bg-gradient-to-r ${cfg.headerGrad} text-white hover:opacity-90 shadow-lg`

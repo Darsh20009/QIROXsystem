@@ -240,27 +240,84 @@ const VISUAL_STYLES = [
   { value: "custom", label: "حسب هويتي", desc: "ألواني وخطوطي الخاصة" },
 ];
 
+/* ── Segment → Sector mapping (Prices page → OrderFlow) ── */
+const SEGMENT_TO_SECTOR: Record<string, string> = {
+  restaurant: "restaurant",
+  ecommerce: "store",
+  education: "education",
+  corporate: "other",
+  realestate: "realestate",
+  healthcare: "health",
+};
+const PLAN_LABELS: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينتي" };
+const PERIOD_LABELS: Record<string, string> = { monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة" };
+const SEGMENT_LABELS: Record<string, string> = {
+  restaurant: "مطاعم ومقاهي", ecommerce: "متاجر إلكترونية",
+  education: "منصات تعليمية", corporate: "شركات ومؤسسات",
+  realestate: "عقارات", healthcare: "صحة وعيادات",
+};
+
+const DEFAULT_FORM = (sector = "") => ({
+  projectType: "", sector,
+  sectorFeatures: [] as string[],
+  competitors: "", visualStyle: "", favoriteExamples: "",
+  requiredFunctions: "", businessName: "", targetAudience: "",
+  siteLanguage: "ar", whatsappIntegration: false, socialIntegration: false,
+  hasLogo: false, needsLogoDesign: false, hasHosting: false, hasDomain: false,
+  accessCredentials: "", paymentMethod: "bank_transfer", paymentProofUrl: "",
+});
+const DEFAULT_FILES = () => ({ logo: [], brandIdentity: [], content: [], images: [], video: [], paymentProof: [] });
+
 export default function OrderFlow() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
+
+  /* ── Plan params (from Prices page) ── */
+  const planFromUrl     = searchParams.get("plan") || "";
+  const segmentFromUrl  = searchParams.get("segment") || "";
+  const periodFromUrl   = searchParams.get("period") || "";
+  const priceFromUrl    = parseInt(searchParams.get("price") || "0");
+  const sectorFromPlan  = SEGMENT_TO_SECTOR[segmentFromUrl] || "";
+  const isPlanOrder     = !!(planFromUrl && segmentFromUrl);
+
+  /* ── Service params (direct service link) ── */
   const serviceIdFromUrl = searchParams.get("service") || "";
   const [selectedServiceId, setSelectedServiceId] = useState(serviceIdFromUrl);
-  const { t, lang } = useI18n();
 
+  /* ── Reset key — changes whenever the user selects a different plan/service ── */
+  const planKey = isPlanOrder
+    ? `plan:${planFromUrl}|${segmentFromUrl}|${periodFromUrl}`
+    : `svc:${serviceIdFromUrl}`;
+
+  const { t, lang } = useI18n();
   const { data: user, isLoading: isUserLoading } = useUser();
   const { data: services, isLoading: isServicesLoading } = useServices();
   const { data: service, isLoading: isServiceLoading } = useService(selectedServiceId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: bankSettings } = useQuery<typeof DEFAULT_BANK>({
-    queryKey: ["/api/bank-settings"],
-  });
+  const { data: bankSettings } = useQuery<typeof DEFAULT_BANK>({ queryKey: ["/api/bank-settings"] });
   const bank = bankSettings || DEFAULT_BANK;
 
   const [step, setStep] = useState(1);
   const [submittedOrder, setSubmittedOrder] = useState<{ id: string; amount: number } | null>(null);
   const [postProofFiles, setPostProofFiles] = useState<UploadedFile[]>([]);
   const [copiedIban, setCopiedIban] = useState(false);
+  const [formData, setFormData] = useState(DEFAULT_FORM(sectorFromPlan));
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFile[]>>(DEFAULT_FILES());
+
+  /* ── Reset ALL state when user navigates to a different plan/service ── */
+  const [trackedKey, setTrackedKey] = useState(planKey);
+  useEffect(() => {
+    if (planKey !== trackedKey) {
+      setTrackedKey(planKey);
+      setStep(1);
+      setFormData(DEFAULT_FORM(SEGMENT_TO_SECTOR[segmentFromUrl] || ""));
+      setUploadedFiles(DEFAULT_FILES());
+      setSubmittedOrder(null);
+      setPostProofFiles([]);
+      setSelectedServiceId(serviceIdFromUrl);
+    }
+  }, [planKey]);
 
   const copyIban = () => {
     navigator.clipboard.writeText(bank.iban).then(() => {
@@ -268,37 +325,6 @@ export default function OrderFlow() {
       setTimeout(() => setCopiedIban(false), 2500);
     });
   };
-
-  const [formData, setFormData] = useState({
-    projectType: "",
-    sector: "",
-    sectorFeatures: [] as string[],
-    competitors: "",
-    visualStyle: "",
-    favoriteExamples: "",
-    requiredFunctions: "",
-    businessName: "",
-    targetAudience: "",
-    siteLanguage: "ar",
-    whatsappIntegration: false,
-    socialIntegration: false,
-    hasLogo: false,
-    needsLogoDesign: false,
-    hasHosting: false,
-    hasDomain: false,
-    accessCredentials: "",
-    paymentMethod: "bank_transfer",
-    paymentProofUrl: ""
-  });
-
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFile[]>>({
-    logo: [],
-    brandIdentity: [],
-    content: [],
-    images: [],
-    video: [],
-    paymentProof: [],
-  });
 
   const toggleFeature = (featureId: string) => {
     setFormData(prev => ({
@@ -550,7 +576,8 @@ export default function OrderFlow() {
     );
   }
 
-  if (!selectedServiceId || !service) {
+  /* ── Service selection screen — only shown if NOT a plan-based order ── */
+  if (!isPlanOrder && (!selectedServiceId || !service)) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <Navigation />
@@ -646,14 +673,29 @@ export default function OrderFlow() {
       if (files.length > 0) filesPayload[key] = files.map(f => f.url);
     });
 
-    createOrderMutation.mutate({
-      serviceId: service.id,
-      ...formData,
-      files: filesPayload,
-      status: "pending",
-      isDepositPaid: false,
-      totalAmount: service.priceMin
-    });
+    const orderPayload = isPlanOrder
+      ? {
+          ...formData,
+          files: filesPayload,
+          status: "pending",
+          isDepositPaid: false,
+          totalAmount: priceFromUrl || 0,
+          projectType: formData.projectType || "platform",
+          planTier: planFromUrl,
+          planSegment: segmentFromUrl,
+          planPeriod: periodFromUrl,
+          notes: `باقة ${PLAN_LABELS[planFromUrl] || planFromUrl} - ${SEGMENT_LABELS[segmentFromUrl] || segmentFromUrl} - ${PERIOD_LABELS[periodFromUrl] || periodFromUrl}`,
+        }
+      : {
+          serviceId: service?.id,
+          ...formData,
+          files: filesPayload,
+          status: "pending",
+          isDepositPaid: false,
+          totalAmount: service?.priceMin,
+        };
+
+    createOrderMutation.mutate(orderPayload);
   };
 
   const progressPct = (step / 5) * 100;
@@ -666,22 +708,49 @@ export default function OrderFlow() {
         {/* Journey Map Header */}
         <div className="bg-white border-b border-black/[0.06] py-8 mb-8 shadow-sm">
           <div className="container mx-auto px-4 max-w-4xl">
-            {/* Service info */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center">
-                  <Map className="w-4 h-4 text-white" />
+            {/* Plan / Service info */}
+            {isPlanOrder ? (
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center">
+                    <Package className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-black/30 uppercase tracking-wider font-semibold">باقتك المختارة</p>
+                    <p className="text-sm font-bold text-black">
+                      باقة {PLAN_LABELS[planFromUrl] || planFromUrl} — {SEGMENT_LABELS[segmentFromUrl] || segmentFromUrl}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] text-black/30 uppercase tracking-wider font-semibold">خريطة رحلة مشروعك</p>
-                  <p className="text-sm font-bold text-black">{service.title}</p>
+                <div className="text-left flex items-center gap-3">
+                  {priceFromUrl > 0 && (
+                    <div>
+                      <p className="text-[11px] text-black/30">السعر</p>
+                      <p className="text-lg font-black text-black">{priceFromUrl.toLocaleString()} <span className="text-sm font-medium text-black/40">ر.س</span></p>
+                    </div>
+                  )}
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-black text-white font-bold">
+                    {PERIOD_LABELS[periodFromUrl] || periodFromUrl}
+                  </span>
                 </div>
               </div>
-              <div className="text-left">
-                <p className="text-[11px] text-black/30">السعر يبدأ من</p>
-                <p className="text-lg font-black text-black">{service.priceMin?.toLocaleString()} <span className="text-sm font-medium text-black/40">ر.س</span></p>
+            ) : (
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center">
+                    <Map className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-black/30 uppercase tracking-wider font-semibold">خريطة رحلة مشروعك</p>
+                    <p className="text-sm font-bold text-black">{service?.title}</p>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-[11px] text-black/30">السعر يبدأ من</p>
+                  <p className="text-lg font-black text-black">{service?.priceMin?.toLocaleString()} <span className="text-sm font-medium text-black/40">ر.س</span></p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Step journey map */}
             <div className="relative">
