@@ -10,6 +10,20 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 28, 2026 - Session 14)
+
+### Dark Mode (النظام الليلي) — Comprehensive Fix
+- **`client/src/index.css`** — Rewrote the entire dark mode global overrides section (from ~15 rules to 97 `!important` rules) covering:
+  - **Backgrounds**: `bg-white`, `bg-[#fafafa]`, `bg-gray-50/100/200/300`, `bg-zinc-*`, `bg-slate-*`, `bg-neutral-*`, `bg-black/*` opacity variants
+  - **Text colors**: `text-black`, `text-gray-500` through `text-gray-950`, `text-zinc/slate/neutral-700/800/900`, `text-black/*` opacity variants
+  - **Borders**: `border-gray-100/200/300`, `divide-gray-100/200`, `border-black/*` opacity variants
+  - **Custom classes**: `section-dark`, `section-darker`, `section-card`, all glass/gradient classes
+  - **Shadcn Table**: `thead`, `tbody tr`, `td`, `th` hover and border overrides
+  - **Shadcn components**: Tabs, Separator, Alert, Badge, Card, Toaster, Tooltip, HoverCard, Dropdown
+  - **Form inputs**: Full coverage including `select:focus`, `outline-color`
+  - **Hover states**: `hover:bg-gray-*`, `hover:bg-zinc-*`, `hover:bg-slate-*` overrides
+  - **Scrollbar**: Track, thumb, hover colors for dark mode
+
 ## Latest Changes (Feb 28, 2026 - Session 13)
 
 ### Credentials Display + Render/Replit Deployment

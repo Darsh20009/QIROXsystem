@@ -410,76 +410,125 @@
 }
 
 /* =====================================================
-   Dark Mode — Global Overrides (Admin / Employee Pages)
+   Dark Mode — Comprehensive Global Overrides
    ===================================================== */
 
-.dark .bg-white {
+/* ── Core Background Colors ── */
+.dark .bg-white,
+.dark .bg-\[#fff\],
+.dark .bg-\[#ffffff\] {
   background-color: hsl(222 47% 9%) !important;
 }
-.dark .bg-\[#fafafa\] {
+.dark .bg-\[#fafafa\],
+.dark .bg-\[#f9f9f9\],
+.dark .bg-\[#f8f8f8\],
+.dark .bg-\[#f7f7f7\] {
   background-color: hsl(222 47% 8%) !important;
 }
-.dark .bg-\[#f8f8f8\] {
-  background-color: hsl(222 47% 8%) !important;
-}
+.dark .bg-gray-50  { background-color: hsl(222 47% 8%)  !important; }
+.dark .bg-gray-100 { background-color: hsl(222 47% 10%) !important; }
+.dark .bg-gray-200 { background-color: hsl(222 47% 13%) !important; }
+.dark .bg-gray-300 { background-color: hsl(222 47% 17%) !important; }
+.dark .bg-zinc-50  { background-color: hsl(222 47% 8%)  !important; }
+.dark .bg-zinc-100 { background-color: hsl(222 47% 10%) !important; }
+.dark .bg-slate-50  { background-color: hsl(222 47% 8%)  !important; }
+.dark .bg-slate-100 { background-color: hsl(222 47% 10%) !important; }
+.dark .bg-neutral-50  { background-color: hsl(222 47% 8%)  !important; }
+.dark .bg-neutral-100 { background-color: hsl(222 47% 10%) !important; }
 
-.dark .text-black {
-  color: hsl(0 0% 88%) !important;
+/* ── opacity-based black backgrounds ── */
+.dark [class*="bg-black/"] {
+  background-color: hsl(222 47% 14%) !important;
 }
-.dark [class*="text-black\/"] {
-  color: hsl(0 0% 70%) !important;
-}
-
 .dark [class*="bg-black\/"] {
   background-color: hsl(222 47% 14%) !important;
 }
+.dark [class*="hover:bg-black/"]:hover,
 .dark [class*="hover\:bg-black\/"]:hover {
-  background-color: hsl(222 47% 17%) !important;
+  background-color: hsl(222 47% 18%) !important;
 }
 
+/* ── Text Colors ── */
+.dark .text-black  { color: hsl(0 0% 90%)  !important; }
+.dark .text-gray-950, .dark .text-gray-900  { color: hsl(0 0% 88%) !important; }
+.dark .text-gray-800 { color: hsl(0 0% 80%) !important; }
+.dark .text-gray-700 { color: hsl(0 0% 72%) !important; }
+.dark .text-gray-600 { color: hsl(0 0% 60%) !important; }
+.dark .text-gray-500 { color: hsl(0 0% 50%) !important; }
+.dark .text-zinc-900 { color: hsl(0 0% 88%) !important; }
+.dark .text-zinc-800 { color: hsl(0 0% 80%) !important; }
+.dark .text-zinc-700 { color: hsl(0 0% 70%) !important; }
+.dark .text-slate-900 { color: hsl(0 0% 88%) !important; }
+.dark .text-slate-800 { color: hsl(0 0% 80%) !important; }
+.dark .text-slate-700 { color: hsl(0 0% 68%) !important; }
+.dark .text-neutral-900 { color: hsl(0 0% 88%) !important; }
+.dark .text-neutral-800 { color: hsl(0 0% 80%) !important; }
+.dark .text-neutral-700 { color: hsl(0 0% 68%) !important; }
+
+.dark [class*="text-black/"],
+.dark [class*="text-black\/"] {
+  color: hsl(0 0% 65%) !important;
+}
+
+/* ── Border Colors ── */
+.dark [class*="border-black/"],
 .dark [class*="border-black\/"] {
   border-color: hsl(222 47% 18%) !important;
 }
+.dark .border-gray-100 { border-color: hsl(222 47% 14%) !important; }
+.dark .border-gray-200 { border-color: hsl(222 47% 17%) !important; }
+.dark .border-gray-300 { border-color: hsl(222 47% 21%) !important; }
+.dark .divide-gray-100 > * + * { border-color: hsl(222 47% 14%) !important; }
+.dark .divide-gray-200 > * + * { border-color: hsl(222 47% 17%) !important; }
 
+/* ── Custom component classes ── */
 .dark .glass-card {
-  background: hsl(222 47% 10%);
-  border-color: hsl(222 47% 17%);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  background: hsl(222 47% 10%) !important;
+  border-color: hsl(222 47% 17%) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
 }
 .dark .glass-card:hover {
-  border-color: hsl(222 47% 23%);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px);
+  border-color: hsl(222 47% 23%) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;
 }
 .dark .gradient-border {
-  background: hsl(222 47% 10%);
-  border-color: hsl(222 47% 17%);
+  background: hsl(222 47% 10%) !important;
+  border-color: hsl(222 47% 17%) !important;
 }
 .dark .glass {
-  background: rgba(8, 14, 38, 0.85);
-  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(8, 14, 38, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
 }
 .dark .glass-strong {
-  background: rgba(6, 11, 30, 0.93);
-  border-color: rgba(255, 255, 255, 0.09);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+  background: rgba(6, 11, 30, 0.93) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25) !important;
 }
+.dark .section-dark  { background: hsl(222 47% 7%)  !important; }
+.dark .section-darker { background: hsl(222 47% 6%) !important; }
+.dark .section-card  { background: hsl(222 47% 9%)  !important; }
+
 .dark .text-gradient {
-  background: linear-gradient(135deg, #c8d6f0, #8fa8cc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: linear-gradient(135deg, #c8d6f0, #8fa8cc) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
 }
 .dark .animated-grid-dark {
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px) !important;
 }
 .dark .dot-grid {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px) !important;
+}
+.dark .premium-btn {
+  background: linear-gradient(135deg, hsl(222 47% 75%), hsl(222 47% 90%)) !important;
+  color: hsl(222 47% 8%) !important;
 }
 
-.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+/* ── Form inputs ── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
 .dark textarea,
 .dark select {
   background-color: hsl(222 47% 11%) !important;
@@ -488,47 +537,139 @@
 }
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: hsl(0 0% 38%) !important;
+  color: hsl(0 0% 36%) !important;
 }
 .dark input:focus,
-.dark textarea:focus {
-  border-color: hsl(222 47% 28%) !important;
+.dark textarea:focus,
+.dark select:focus {
+  border-color: hsl(222 47% 30%) !important;
+  outline-color: hsl(222 47% 30%) !important;
 }
 
+/* ── Radix / Shadcn Portals & Dropdowns ── */
+.dark [role="dialog"],
+.dark [data-radix-dialog-overlay],
+.dark [data-radix-dialog-content] {
+  --background: 222 47% 9%;
+}
 .dark [role="dialog"] .bg-white,
 .dark [data-radix-dialog-content] .bg-white {
   background-color: hsl(222 47% 9%) !important;
 }
-
 .dark [data-radix-select-content],
 .dark [data-radix-popover-content],
-.dark [data-radix-dropdown-menu-content] {
+.dark [data-radix-dropdown-menu-content],
+.dark [data-radix-tooltip-content],
+.dark [data-radix-hover-card-content] {
   background-color: hsl(222 47% 10%) !important;
   border-color: hsl(222 47% 18%) !important;
   color: hsl(0 0% 88%) !important;
 }
 .dark [data-radix-select-item]:hover,
-.dark [data-radix-select-item][data-highlighted] {
+.dark [data-radix-select-item][data-highlighted],
+.dark [data-radix-dropdown-menu-item]:hover,
+.dark [data-radix-dropdown-menu-item][data-highlighted] {
   background-color: hsl(222 47% 15%) !important;
 }
+.dark [data-radix-select-separator],
+.dark [data-radix-dropdown-menu-separator] {
+  background-color: hsl(222 47% 18%) !important;
+}
 
+/* ── Shadcn Table ── */
+.dark [role="table"] thead tr,
+.dark thead tr,
+.dark table thead tr {
+  background-color: hsl(222 47% 8%) !important;
+}
+.dark [role="table"] thead tr th,
+.dark thead tr th,
+.dark table thead tr th {
+  color: hsl(0 0% 55%) !important;
+  border-color: hsl(222 47% 14%) !important;
+}
+.dark [role="row"],
+.dark tbody tr,
+.dark table tbody tr {
+  border-color: hsl(222 47% 13%) !important;
+}
+.dark [role="row"]:hover,
+.dark tbody tr:hover,
+.dark table tbody tr:hover {
+  background-color: hsl(222 47% 11%) !important;
+}
+.dark td, .dark th {
+  border-color: hsl(222 47% 13%) !important;
+}
+
+/* ── Shadcn Card ── */
+.dark [data-card] {
+  background-color: hsl(222 47% 9%) !important;
+  border-color: hsl(222 47% 15%) !important;
+}
+
+/* ── Shadcn Tabs ── */
+.dark [role="tablist"] {
+  background-color: hsl(222 47% 11%) !important;
+}
+.dark [role="tab"] {
+  color: hsl(0 0% 55%) !important;
+}
+.dark [role="tab"][data-state="active"] {
+  background-color: hsl(222 47% 14%) !important;
+  color: hsl(0 0% 88%) !important;
+}
+
+/* ── Shadcn Separator ── */
+.dark [role="separator"] {
+  background-color: hsl(222 47% 16%) !important;
+}
+
+/* ── Scrollbar ── */
 .dark ::-webkit-scrollbar-track {
-  background: hsl(222 47% 8%);
+  background: hsl(222 47% 7%);
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(222 47% 20%);
+  background: hsl(222 47% 19%);
 }
 .dark ::-webkit-scrollbar-thumb:hover {
   background: hsl(222 47% 26%);
 }
 .dark ::selection {
-  background: rgba(120, 150, 220, 0.25);
+  background: rgba(100, 140, 220, 0.3);
   color: hsl(0 0% 95%);
 }
 
-.dark .premium-btn {
-  background: linear-gradient(135deg, hsl(222 47% 75%), hsl(222 47% 90%));
-  color: hsl(222 47% 8%);
+/* ── Toaster / Toast notifications ── */
+.dark [data-sonner-toast],
+.dark [data-radix-toast-root] {
+  background-color: hsl(222 47% 11%) !important;
+  border-color: hsl(222 47% 19%) !important;
+  color: hsl(0 0% 88%) !important;
+}
+
+/* ── Shadcn Alert ── */
+.dark [role="alert"] {
+  background-color: hsl(222 47% 11%) !important;
+  border-color: hsl(222 47% 19%) !important;
+  color: hsl(0 0% 88%) !important;
+}
+
+/* ── Shadcn Badge lighter versions ── */
+.dark .bg-secondary {
+  background-color: hsl(222 47% 14%) !important;
+  color: hsl(0 0% 78%) !important;
+}
+.dark .bg-muted {
+  background-color: hsl(222 47% 12%) !important;
+  color: hsl(0 0% 58%) !important;
+}
+
+/* ── Hover on ghost buttons / link buttons ── */
+.dark [class*="hover:bg-gray-"]:hover,
+.dark [class*="hover:bg-zinc-"]:hover,
+.dark [class*="hover:bg-slate-"]:hover {
+  background-color: hsl(222 47% 15%) !important;
 }
 
 /* ===== MOBILE / PWA IMPROVEMENTS ===== */
