@@ -501,6 +501,9 @@ export async function registerRoutes(
   app.post("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
+    if (!(user as any).emailVerified) {
+      return res.status(403).json({ error: "account_not_verified", message: "يجب تفعيل حسابك أولاً قبل تقديم أي طلب" });
+    }
     const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
     const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {

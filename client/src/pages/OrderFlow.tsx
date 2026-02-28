@@ -15,7 +15,8 @@ import {
   Globe, Store, GraduationCap, UtensilsCrossed, Building2, Heart,
   Dumbbell, MapPin, Laptop, Smartphone, ShoppingBag, BookOpen,
   Layers, Palette, Zap, Star, Package, BarChart, Shield, Sparkles,
-  Map, Navigation2, Flag, Compass, Coffee, Copy, ClipboardCheck, ArrowUpRight
+  Map, Navigation2, Flag, Compass, Coffee, Copy, ClipboardCheck, ArrowUpRight,
+  Lock, Mail, RefreshCw, AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -319,6 +320,75 @@ export default function OrderFlow() {
     }
   }, [planKey]);
 
+  /* ── Verification gate state ── */
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [verifyError, setVerifyError] = useState("");
+  const [verifySuccess, setVerifySuccess] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendSent, setResendSent] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const verifyMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/auth/verify-email", { email: (user as any)?.email, code });
+      if (!res.ok) throw new Error("invalid");
+      return res.json();
+    },
+    onSuccess: () => {
+      setVerifySuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    },
+    onError: () => setVerifyError("الرمز غير صحيح أو انتهت صلاحيته، تحقق وأعد المحاولة"),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/auth/resend-verification", { email: (user as any)?.email });
+      return res.json();
+    },
+    onSuccess: () => {
+      setResendSent(true);
+      setResendCountdown(60);
+      setVerifyError("");
+      setOtpDigits(["", "", "", "", "", ""]);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    },
+  });
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const t = setTimeout(() => setResendCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCountdown]);
+
+  const handleOtpChange = (index: number, val: string) => {
+    const digit = val.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    setVerifyError("");
+    if (digit && index < 5) setTimeout(() => otpRefs.current[index + 1]?.focus(), 10);
+    if (next.every(d => d !== "")) {
+      verifyMutation.mutate(next.join(""));
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "ArrowLeft" && index < 5) otpRefs.current[index + 1]?.focus();
+    if (e.key === "ArrowRight" && index > 0) otpRefs.current[index - 1]?.focus();
+  };
+
+  const maskEmail = (email: string) => {
+    const [local, domain] = email.split("@");
+    if (!domain) return email;
+    const visible = local.slice(0, 2);
+    return `${visible}${"*".repeat(Math.max(local.length - 2, 3))}@${domain}`;
+  };
+
   const copyIban = () => {
     navigator.clipboard.writeText(bank.iban).then(() => {
       setCopiedIban(true);
@@ -410,6 +480,171 @@ export default function OrderFlow() {
   }
 
   if (!user) return null;
+
+  // ── VERIFICATION GATE — blocks unverified accounts (bank-style) ──────────
+  if (!(user as any).emailVerified && !verifySuccess) {
+    const email = (user as any).email || "";
+    const allFilled = otpDigits.every(d => d !== "");
+
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-12" dir="rtl">
+        {/* Ambient glow */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.02] blur-3xl" />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative w-full max-w-md"
+        >
+          {/* Card */}
+          <div className="bg-[#0a0a0a] border border-white/[0.07] rounded-3xl p-8 shadow-2xl">
+
+            {/* Security badge */}
+            <div className="flex justify-center mb-7">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center">
+                  <Lock className="w-9 h-9 text-white" strokeWidth={1.5} />
+                </div>
+                <motion.div
+                  className="absolute inset-0 rounded-2xl border border-white/20"
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0, 0.4] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="text-center mb-8">
+              <p className="text-white/30 text-[11px] uppercase tracking-[0.2em] font-semibold mb-3">QIROX SECURE ACCESS</p>
+              <h1 className="text-2xl font-black text-white mb-2">تحقق من هويتك</h1>
+              <p className="text-white/40 text-sm leading-relaxed">
+                لحماية حسابك وضمان أمان معاملاتك، يجب التحقق من عنوان بريدك الإلكتروني قبل تقديم أي طلب.
+              </p>
+            </div>
+
+            {/* Email display */}
+            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-3.5 flex items-center gap-3 mb-7">
+              <div className="w-8 h-8 rounded-xl bg-white/[0.07] flex items-center justify-center flex-shrink-0">
+                <Mail className="w-4 h-4 text-white/50" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">البريد الإلكتروني المُسجَّل</p>
+                <p className="text-white font-mono text-sm font-semibold truncate" dir="ltr">
+                  {email ? maskEmail(email) : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* OTP inputs */}
+            <div className="mb-2">
+              <p className="text-white/50 text-xs text-center mb-4">أدخل رمز التحقق المكوّن من 6 أرقام المُرسَل إلى بريدك</p>
+              <div className="flex justify-center gap-2.5" dir="ltr">
+                {otpDigits.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={el => { otpRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(i, e)}
+                    onFocus={e => e.target.select()}
+                    disabled={verifyMutation.isPending}
+                    data-testid={`otp-digit-${i}`}
+                    className={`w-11 h-14 rounded-xl text-center text-xl font-black font-mono transition-all outline-none
+                      ${verifyError
+                        ? 'bg-red-500/10 border-2 border-red-500/60 text-red-400'
+                        : digit
+                          ? 'bg-white/10 border-2 border-white/40 text-white'
+                          : 'bg-white/[0.05] border-2 border-white/[0.10] text-white focus:border-white/50 focus:bg-white/10'
+                      }
+                    `}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Error */}
+            <AnimatePresence>
+              {verifyError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 mb-1"
+                >
+                  <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+                    <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <p className="text-red-400 text-xs">{verifyError}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Verify button */}
+            <Button
+              onClick={() => verifyMutation.mutate(otpDigits.join(""))}
+              disabled={!allFilled || verifyMutation.isPending}
+              className="w-full h-13 mt-5 bg-white text-black font-black rounded-xl hover:bg-white/90 transition-all disabled:opacity-30"
+              data-testid="button-verify-otp"
+            >
+              {verifyMutation.isPending
+                ? <><Loader2 className="w-4 h-4 animate-spin ml-2" />جاري التحقق...</>
+                : <><Shield className="w-4 h-4 ml-2" />تفعيل الحساب</>
+              }
+            </Button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px bg-white/[0.07]" />
+              <span className="text-white/20 text-xs">أو</span>
+              <div className="flex-1 h-px bg-white/[0.07]" />
+            </div>
+
+            {/* Resend */}
+            <div className="text-center">
+              {resendSent && !resendMutation.isPending && (
+                <p className="text-green-400 text-xs mb-3">✓ تم إرسال رمز جديد إلى بريدك</p>
+              )}
+              {resendCountdown > 0 ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full border border-white/[0.10] flex items-center justify-center">
+                    <span className="text-white/40 text-xs font-mono font-bold">{resendCountdown}</span>
+                  </div>
+                  <p className="text-white/30 text-xs">إعادة الإرسال متاحة بعد {resendCountdown} ث</p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => resendMutation.mutate()}
+                  disabled={resendMutation.isPending}
+                  className="flex items-center gap-2 mx-auto text-white/50 hover:text-white/80 transition-colors text-sm disabled:opacity-40"
+                  data-testid="button-resend-otp"
+                >
+                  {resendMutation.isPending
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <RefreshCw className="w-3.5 h-3.5" />
+                  }
+                  إعادة إرسال رمز التحقق
+                </button>
+              )}
+            </div>
+
+            {/* Footer note */}
+            <p className="text-white/15 text-[10px] text-center mt-6 leading-relaxed">
+              QIROX STUDIO · نظام التحقق الآمن · جميع الجلسات مشفرة
+            </p>
+          </div>
+
+          {/* Bottom QIROX branding */}
+          <p className="text-white/20 text-xs text-center mt-5 font-mono tracking-widest">QIROX</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── POST-SUBMISSION PAYMENT CONFIRMATION SCREEN ──────────────────────────
   if (submittedOrder) {
