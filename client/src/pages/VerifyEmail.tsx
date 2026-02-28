@@ -64,7 +64,7 @@ export default function VerifyEmail() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: (user as any).email, code }),
+        body: JSON.stringify({ email: (user as any).email.trim().toLowerCase(), code: code.trim() }),
       });
     } catch {
       setVerifyError("تعذّر الوصول إلى الخادم، تحقق من اتصالك بالإنترنت وأعد المحاولة");

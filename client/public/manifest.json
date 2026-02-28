@@ -5,7 +5,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "ar",
@@ -45,5 +45,6 @@
   "handle_links": "preferred",
   "launch_handler": {
     "client_mode": "navigate-existing"
-  }
+  },
+  "display_override": ["window-controls-overlay", "minimal-ui"]
 }
