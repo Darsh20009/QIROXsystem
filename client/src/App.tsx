@@ -63,6 +63,8 @@ import AdminInvoices from "@/pages/AdminInvoices";
 import InvoicePrint from "@/pages/InvoicePrint";
 import AdminReceipts from "@/pages/AdminReceipts";
 import ReceiptPrint from "@/pages/ReceiptPrint";
+import EmployeeRoleDashboard from "@/pages/EmployeeRoleDashboard";
+import SalesMarketing from "@/pages/SalesMarketing";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -131,6 +133,8 @@ function AdminRouter() {
       <Route path="/employee/profile" component={EmployeeProfile} />
       <Route path="/employee/new-order" component={EmployeeNewOrder} />
       <Route path="/employee/checklist" component={DevChecklist} />
+      <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
+      <Route path="/sales/marketing" component={SalesMarketing} />
       <Route path="/payment-history" component={PaymentHistory} />
       <Route path="/cart" component={Cart} />
       <Route path="/inbox" component={Inbox} />

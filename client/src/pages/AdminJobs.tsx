@@ -4,11 +4,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Edit2, Trash2, Briefcase, Users, CheckCircle } from "lucide-react";
+import {
+  Loader2, Plus, Edit2, Trash2, Briefcase, Users, CheckCircle,
+  Mail, Phone, FileText, UserPlus, Shield, Star, Eye, X, Copy
+} from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Job, type Application } from "@shared/schema";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface JobFormData {
   title: string;
@@ -21,13 +25,9 @@ interface JobFormData {
 }
 
 const emptyForm: JobFormData = {
-  title: "",
-  description: "",
-  requirements: "",
+  title: "", description: "", requirements: "",
   location: "الرياض، المملكة العربية السعودية",
-  type: "full-time",
-  salaryRange: "",
-  status: "open",
+  type: "full-time", salaryRange: "", status: "open",
 };
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -37,19 +37,28 @@ const statusMap: Record<string, { label: string; color: string }> = {
 };
 
 const typeMap: Record<string, string> = {
-  "full-time": "دوام كامل",
-  "part-time": "دوام جزئي",
-  "remote": "عن بُعد",
-  "freelance": "مستقل",
-  "internship": "تدريب",
+  "full-time": "دوام كامل", "part-time": "دوام جزئي",
+  "remote": "عن بُعد", "freelance": "مستقل", "internship": "تدريب",
 };
 
-const appStatusMap: Record<string, { label: string; color: string }> = {
-  new: { label: "جديد", color: "bg-blue-100 text-blue-700" },
-  reviewing: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700" },
-  interview: { label: "مقابلة", color: "bg-purple-100 text-purple-700" },
-  accepted: { label: "مقبول", color: "bg-green-100 text-green-700" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-600" },
+const appStatusMap: Record<string, { label: string; color: string; icon: any }> = {
+  new: { label: "جديد", color: "bg-blue-100 text-blue-700", icon: Star },
+  reviewing: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700", icon: Eye },
+  interview: { label: "مقابلة", color: "bg-purple-100 text-purple-700", icon: Users },
+  accepted: { label: "مقبول ✓", color: "bg-green-100 text-green-700", icon: CheckCircle },
+  hired: { label: "تم التعيين ✓✓", color: "bg-emerald-100 text-emerald-800", icon: Shield },
+  rejected: { label: "مرفوض", color: "bg-red-100 text-red-600", icon: X },
+};
+
+const roleLabels: Record<string, string> = {
+  manager: "مدير",
+  accountant: "محاسب",
+  sales_manager: "مدير مبيعات",
+  sales: "موظف مبيعات",
+  developer: "مطور برمجيات",
+  designer: "مصمم",
+  support: "دعم فني",
+  merchant: "توصيل وتسليم",
 };
 
 export default function AdminJobs() {
@@ -59,60 +68,45 @@ export default function AdminJobs() {
   const [formData, setFormData] = useState<JobFormData>(emptyForm);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [appsOpen, setAppsOpen] = useState(false);
+  const [hireApp, setHireApp] = useState<Application | null>(null);
+  const [hireOpen, setHireOpen] = useState(false);
+  const [hireForm, setHireForm] = useState({ username: "", role: "developer" });
+  const [hired, setHired] = useState<{ username: string } | null>(null);
 
-  const { data: jobs, isLoading } = useQuery<Job[]>({
-    queryKey: ["/api/jobs"],
-  });
-
-  const { data: applications } = useQuery<Application[]>({
-    queryKey: ["/api/admin/applications"],
-  });
+  const { data: jobs, isLoading } = useQuery<Job[]>({ queryKey: ["/api/jobs"] });
+  const { data: applications } = useQuery<Application[]>({ queryKey: ["/api/admin/applications"] });
 
   const createMutation = useMutation({
     mutationFn: async (data: JobFormData) => {
-      const payload = {
-        ...data,
-        requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean),
-      };
+      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean) };
       const res = await apiRequest("POST", "/api/admin/jobs", payload);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({ title: "تم إضافة الوظيفة بنجاح" });
-      setOpen(false);
-      setFormData(emptyForm);
+      setOpen(false); setFormData(emptyForm);
     },
     onError: () => toast({ title: "خطأ في إضافة الوظيفة", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: JobFormData) => {
-      const payload = {
-        ...data,
-        requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean),
-      };
+      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean) };
       const res = await apiRequest("PATCH", `/api/admin/jobs/${editingId}`, payload);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       toast({ title: "تم تحديث الوظيفة بنجاح" });
-      setOpen(false);
-      setEditingId(null);
-      setFormData(emptyForm);
+      setOpen(false); setEditingId(null); setFormData(emptyForm);
     },
     onError: () => toast({ title: "خطأ في تحديث الوظيفة", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/jobs/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      toast({ title: "تم حذف الوظيفة" });
-    },
+    mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/jobs/${id}`); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: "تم حذف الوظيفة" }); },
     onError: () => toast({ title: "خطأ في حذف الوظيفة", variant: "destructive" }),
   });
 
@@ -128,36 +122,64 @@ export default function AdminJobs() {
     onError: () => toast({ title: "خطأ في تحديث الطلب", variant: "destructive" }),
   });
 
+  const hireMutation = useMutation({
+    mutationFn: async ({ appId, body }: { appId: string; body: any }) => {
+      const res = await apiRequest("POST", `/api/admin/applications/${appId}/hire`, body);
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "خطأ"); }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setHired({ username: data.username });
+    },
+    onError: (err: any) => toast({ title: "فشل التعيين", description: err.message, variant: "destructive" }),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
       toast({ title: "يرجى ملء عنوان الوظيفة والوصف", variant: "destructive" });
       return;
     }
-    if (editingId) {
-      updateMutation.mutate(formData);
-    } else {
-      createMutation.mutate(formData);
-    }
+    if (editingId) updateMutation.mutate(formData);
+    else createMutation.mutate(formData);
   };
 
   const handleEdit = (job: Job) => {
     setEditingId(job.id.toString());
     setFormData({
-      title: job.title,
-      description: job.description,
+      title: job.title, description: job.description,
       requirements: (job.requirements || []).join("\n"),
-      location: job.location || "",
-      type: job.type || "full-time",
-      salaryRange: job.salaryRange || "",
-      status: job.status,
+      location: job.location || "", type: job.type || "full-time",
+      salaryRange: job.salaryRange || "", status: job.status,
     });
     setOpen(true);
   };
 
-  const handleViewApps = (jobId: string) => {
-    setSelectedJobId(jobId);
-    setAppsOpen(true);
+  const openHireDialog = (app: Application) => {
+    setHireApp(app);
+    const suggestedUsername = app.email?.split("@")[0]?.replace(/[^a-z0-9_]/gi, "").toLowerCase().slice(0, 20) || "";
+    setHireForm({ username: suggestedUsername, role: "developer" });
+    setHired(null);
+    setHireOpen(true);
+  };
+
+  const handleHire = () => {
+    if (!hireApp || !hireForm.username || !hireForm.role) {
+      toast({ title: "يرجى ملء جميع الحقول", variant: "destructive" });
+      return;
+    }
+    hireMutation.mutate({
+      appId: hireApp.id?.toString(),
+      body: {
+        role: hireForm.role,
+        username: hireForm.username,
+        email: hireApp.email,
+        fullName: hireApp.fullName,
+        phone: hireApp.phone || "",
+      },
+    });
   };
 
   const jobApplications = applications?.filter(a => a.jobId?.toString() === selectedJobId);
@@ -173,7 +195,7 @@ export default function AdminJobs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Briefcase className="w-7 h-7 text-black/40" />
           إدارة الوظائف والتوظيف
@@ -185,34 +207,20 @@ export default function AdminJobs() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
-          <Briefcase className="w-5 h-5 text-green-500" />
-          <div>
-            <p className="text-lg font-bold text-black">{jobs?.filter(j => j.status === "open").length || 0}</p>
-            <p className="text-xs text-black/40">وظائف مفتوحة</p>
+        {[
+          { icon: Briefcase, val: jobs?.filter(j => j.status === "open").length || 0, label: "وظائف مفتوحة", color: "text-green-500" },
+          { icon: Users, val: applications?.length || 0, label: "إجمالي الطلبات", color: "text-blue-500" },
+          { icon: Star, val: applications?.filter(a => a.status === "new").length || 0, label: "طلبات جديدة", color: "text-amber-500" },
+          { icon: Shield, val: applications?.filter(a => a.status === "hired").length || 0, label: "تم تعيينهم", color: "text-emerald-500" },
+        ].map(({ icon: Icon, val, label, color }, i) => (
+          <div key={i} className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
+            <Icon className={`w-5 h-5 ${color}`} />
+            <div>
+              <p className="text-lg font-bold text-black">{val}</p>
+              <p className="text-xs text-black/40">{label}</p>
+            </div>
           </div>
-        </div>
-        <div className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
-          <Users className="w-5 h-5 text-blue-500" />
-          <div>
-            <p className="text-lg font-bold text-black">{applications?.length || 0}</p>
-            <p className="text-xs text-black/40">إجمالي الطلبات</p>
-          </div>
-        </div>
-        <div className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-amber-500" />
-          <div>
-            <p className="text-lg font-bold text-black">{applications?.filter(a => a.status === "new").length || 0}</p>
-            <p className="text-xs text-black/40">طلبات جديدة</p>
-          </div>
-        </div>
-        <div className="border border-black/[0.06] bg-white rounded-xl p-4 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-green-500" />
-          <div>
-            <p className="text-lg font-bold text-black">{applications?.filter(a => a.status === "accepted").length || 0}</p>
-            <p className="text-xs text-black/40">مقبولون</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="border border-black/[0.06] bg-white rounded-2xl overflow-hidden">
@@ -232,6 +240,7 @@ export default function AdminJobs() {
               {jobs?.map((job) => {
                 const st = statusMap[job.status] || statusMap["open"];
                 const appCount = applications?.filter(a => a.jobId?.toString() === job.id?.toString()).length || 0;
+                const acceptedCount = applications?.filter(a => a.jobId?.toString() === job.id?.toString() && (a.status === "accepted" || a.status === "hired")).length || 0;
                 return (
                   <tr key={job.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-job-${job.id}`}>
                     <td className="p-4">
@@ -241,38 +250,22 @@ export default function AdminJobs() {
                     <td className="p-4 text-sm text-black/60">{typeMap[job.type || ""] || job.type}</td>
                     <td className="p-4 text-sm text-black/60">{job.salaryRange || "—"}</td>
                     <td className="p-4">
-                      <button
-                        className="text-sm font-bold text-blue-600 hover:underline"
-                        onClick={() => handleViewApps(job.id?.toString())}
-                        data-testid={`button-view-apps-${job.id}`}
-                      >
+                      <button className="text-sm font-bold text-blue-600 hover:underline flex items-center gap-1"
+                        onClick={() => { setSelectedJobId(job.id?.toString()); setAppsOpen(true); }}
+                        data-testid={`button-view-apps-${job.id}`}>
                         {appCount} طلب
+                        {acceptedCount > 0 && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">{acceptedCount} مقبول</span>}
                       </button>
                     </td>
                     <td className="p-4">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${st.color}`}>
-                        {st.label}
-                      </span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${st.color}`}>{st.label}</span>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-black/60"
-                          onClick={() => handleEdit(job)}
-                          data-testid={`button-edit-job-${job.id}`}
-                        >
+                        <Button size="icon" variant="ghost" className="text-black/60" onClick={() => handleEdit(job)} data-testid={`button-edit-job-${job.id}`}>
                           <Edit2 className="w-3.5 h-3.5" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-red-500"
-                          onClick={() => deleteMutation.mutate(job.id?.toString())}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-job-${job.id}`}
-                        >
+                        <Button size="icon" variant="ghost" className="text-red-500" onClick={() => deleteMutation.mutate(job.id?.toString())} disabled={deleteMutation.isPending} data-testid={`button-delete-job-${job.id}`}>
                           {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                         </Button>
                       </div>
@@ -281,24 +274,21 @@ export default function AdminJobs() {
                 );
               })}
               {(!jobs || jobs.length === 0) && (
-                <tr>
-                  <td colSpan={6} className="p-12 text-center text-black/30">
-                    <Briefcase className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                    <p>لا توجد وظائف بعد. أضف أول وظيفة الآن.</p>
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="p-12 text-center text-black/30">
+                  <Briefcase className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                  <p>لا توجد وظائف بعد. أضف أول وظيفة الآن.</p>
+                </td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Job Form Dialog */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setEditingId(null); } }}>
         <DialogContent className="bg-white border-black/[0.06] text-black max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-black">
-              {editingId ? "تعديل الوظيفة" : "وظيفة جديدة"}
-            </DialogTitle>
+            <DialogTitle className="text-xl font-bold text-black">{editingId ? "تعديل الوظيفة" : "وظيفة جديدة"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
@@ -311,7 +301,7 @@ export default function AdminJobs() {
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">المتطلبات (كل متطلب في سطر)</label>
-              <Textarea value={formData.requirements} onChange={(e) => setFormData({ ...formData, requirements: e.target.value })} placeholder="خبرة 2+ سنة في React&#10;إتقان TypeScript&#10;خبرة في REST APIs" rows={4} data-testid="input-job-requirements" />
+              <Textarea value={formData.requirements} onChange={(e) => setFormData({ ...formData, requirements: e.target.value })} placeholder="خبرة 2+ سنة في React&#10;إتقان TypeScript" rows={4} data-testid="input-job-requirements" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -327,22 +317,14 @@ export default function AdminJobs() {
               <div>
                 <label className="block text-sm font-medium text-black/60 mb-1.5">نوع الدوام</label>
                 <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                  <SelectTrigger data-testid="select-job-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(typeMap).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectTrigger data-testid="select-job-type"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(typeMap).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-black/60 mb-1.5">الحالة</label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                  <SelectTrigger data-testid="select-job-status">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger data-testid="select-job-status"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="open">مفتوح</SelectItem>
                     <SelectItem value="paused">متوقف</SelectItem>
@@ -362,12 +344,11 @@ export default function AdminJobs() {
         </DialogContent>
       </Dialog>
 
+      {/* Applications Dialog */}
       <Dialog open={appsOpen} onOpenChange={setAppsOpen}>
         <DialogContent className="bg-white border-black/[0.06] text-black max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-black">
-              طلبات التوظيف — {selectedJob?.title}
-            </DialogTitle>
+            <DialogTitle className="text-xl font-bold text-black">طلبات التوظيف — {selectedJob?.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-4">
             {!jobApplications || jobApplications.length === 0 ? (
@@ -378,38 +359,210 @@ export default function AdminJobs() {
             ) : (
               jobApplications.map((app) => {
                 const st = appStatusMap[app.status] || appStatusMap["new"];
+                const StatusIcon = st.icon;
+                const isAccepted = app.status === "accepted";
+                const isHired = app.status === "hired";
                 return (
-                  <div key={app.id} className="border border-black/[0.06] bg-white rounded-xl p-4" data-testid={`row-app-${app.id}`}>
-                    <div className="flex items-start justify-between gap-4">
+                  <motion.div
+                    key={app.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`border rounded-2xl p-5 transition-all ${isAccepted ? "border-green-200 bg-green-50/50" : isHired ? "border-emerald-200 bg-emerald-50/30" : "border-black/[0.06] bg-white"}`}
+                    data-testid={`row-app-${app.id}`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-bold text-black">{app.fullName}</p>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <p className="font-bold text-black text-base">{app.fullName}</p>
+                          <span className={`inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-semibold ${st.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {st.label}
+                          </span>
                         </div>
-                        <p className="text-sm text-black/50">{app.email}</p>
-                        {app.phone && <p className="text-sm text-black/40">{app.phone}</p>}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2 bg-black/[0.03] rounded-xl px-3 py-2">
+                            <Mail className="w-4 h-4 text-blue-500 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-[10px] text-black/40 font-medium">البريد الإلكتروني</p>
+                              <p className="text-sm font-semibold text-black truncate" dir="ltr">{app.email}</p>
+                            </div>
+                          </div>
+                          {app.phone && (
+                            <div className="flex items-center gap-2 bg-black/[0.03] rounded-xl px-3 py-2">
+                              <Phone className="w-4 h-4 text-green-500 shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-[10px] text-black/40 font-medium">رقم الهاتف</p>
+                                <p className="text-sm font-semibold text-black" dir="ltr">{app.phone}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         {app.resumeUrl && (
-                          <a href={app.resumeUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline mt-1 block">
+                          <a href={app.resumeUrl} target="_blank" rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 underline mt-3">
+                            <FileText className="w-3.5 h-3.5" />
                             عرض السيرة الذاتية
                           </a>
                         )}
                       </div>
-                      <Select value={app.status} onValueChange={(v) => updateAppMutation.mutate({ id: app.id?.toString(), status: v })}>
-                        <SelectTrigger className="w-36 h-8 text-xs" data-testid={`select-app-status-${app.id}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(appStatusMap).map(([key, val]) => (
-                            <SelectItem key={key} value={key}>{val.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                      <div className="flex flex-col gap-2 items-end">
+                        <Select value={app.status} onValueChange={(v) => updateAppMutation.mutate({ id: app.id?.toString(), status: v })}>
+                          <SelectTrigger className="w-40 h-8 text-xs" data-testid={`select-app-status-${app.id}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(appStatusMap).map(([key, val]) => (
+                              <SelectItem key={key} value={key}>{val.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {isAccepted && !isHired && (
+                          <Button
+                            size="sm"
+                            className="premium-btn gap-2 text-xs h-8"
+                            onClick={() => openHireDialog(app)}
+                            data-testid={`button-hire-${app.id}`}
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            تعيين كموظف
+                          </Button>
+                        )}
+                        {isHired && (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold bg-emerald-100 px-3 py-1.5 rounded-lg">
+                            <Shield className="w-3.5 h-3.5" />
+                            تم التعيين
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hire Dialog */}
+      <Dialog open={hireOpen} onOpenChange={(v) => { if (!v) { setHireOpen(false); setHired(null); } }}>
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-black flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-black/40" />
+              تعيين موظف جديد
+            </DialogTitle>
+          </DialogHeader>
+
+          {hired ? (
+            <div className="py-6 text-center space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
+                <Shield className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-black text-lg mb-1">تم التعيين بنجاح! 🎉</h3>
+                <p className="text-black/50 text-sm">تم إرسال بيانات الدخول إلى بريد الموظف</p>
+              </div>
+              <div className="bg-black/[0.03] rounded-xl p-4 text-right space-y-2">
+                <p className="text-xs text-black/40">اسم المستخدم</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm font-bold text-black font-mono">{hired.username}</code>
+                  <button onClick={() => { navigator.clipboard.writeText(hired.username); toast({ title: "تم النسخ" }); }}>
+                    <Copy className="w-3.5 h-3.5 text-black/30 hover:text-black transition-colors" />
+                  </button>
+                </div>
+              </div>
+              <Button className="w-full premium-btn" onClick={() => { setHireOpen(false); setHired(null); }}>
+                إغلاق
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-5 mt-4">
+              {hireApp && (
+                <div className="bg-black/[0.03] rounded-2xl p-4 space-y-3">
+                  <p className="text-xs font-semibold text-black/40 uppercase tracking-wider">بيانات المتقدم</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center text-sm font-bold shrink-0">
+                        {hireApp.fullName[0]}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-black">{hireApp.fullName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-black/60">
+                      <Mail className="w-4 h-4 text-blue-500" />
+                      <span dir="ltr">{hireApp.email}</span>
+                    </div>
+                    {hireApp.phone && (
+                      <div className="flex items-center gap-2 text-sm text-black/60">
+                        <Phone className="w-4 h-4 text-green-500" />
+                        <span dir="ltr">{hireApp.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">اسم المستخدم في النظام *</label>
+                <Input
+                  value={hireForm.username}
+                  onChange={(e) => setHireForm({ ...hireForm, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })}
+                  placeholder="ahmed_developer"
+                  dir="ltr"
+                  data-testid="input-hire-username"
+                />
+                <p className="text-xs text-black/30 mt-1">أحرف إنجليزية وأرقام وشرطة سفلية فقط</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">دور الموظف في النظام *</label>
+                <Select value={hireForm.role} onValueChange={(v) => setHireForm({ ...hireForm, role: v })}>
+                  <SelectTrigger data-testid="select-hire-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(roleLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-3.5 h-3.5 text-black/30" />
+                          {label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-black/30 mt-1">سيتم إرسال كلمة المرور التلقائية إلى البريد: {hireApp?.email}</p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-3 flex items-start gap-3">
+                <Mail className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-amber-800 text-xs font-semibold mb-0.5">سيتم إرسال بريد تلقائي</p>
+                  <p className="text-amber-700 text-[11px] leading-relaxed">
+                    سيتلقى الموظف بريداً يحتوي على اسم المستخدم وكلمة المرور لتسجيل الدخول في النظام.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1 premium-btn gap-2"
+                  onClick={handleHire}
+                  disabled={hireMutation.isPending}
+                  data-testid="button-confirm-hire"
+                >
+                  {hireMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  تأكيد التعيين وإرسال البريد
+                </Button>
+                <Button variant="outline" onClick={() => setHireOpen(false)}>إلغاء</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

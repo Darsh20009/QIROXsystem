@@ -905,11 +905,89 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
 
+  // Hire applicant as employee → create account + send credentials
+  app.post("/api/admin/applications/:id/hire", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const { role, username, email, fullName, phone } = req.body;
+      if (!role || !username || !email || !fullName) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+      const allowedEmployeeRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant"];
+      if (!allowedEmployeeRoles.includes(role)) {
+        return res.status(400).json({ error: "دور غير مسموح به" });
+      }
+      const existingByUsername = await storage.getUserByUsername(username);
+      if (existingByUsername) return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
+
+      const rawPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase() + "!";
+      const hashedPassword = await hashPassword(rawPassword);
+
+      const newUser = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email,
+        fullName,
+        role,
+        phone: phone || "",
+        emailVerified: true,
+      });
+
+      sendWelcomeWithCredentialsEmail(email, fullName, username, rawPassword).catch(e => console.error("[HIRE] email failed:", e));
+      await storage.updateApplication(req.params.id, { status: "accepted" });
+
+      console.log(`[HIRE] New employee created: ${username} / role:${role} / email:${email}`);
+      res.json({ ok: true, userId: newUser.id, username });
+    } catch (err: any) {
+      console.error("[HIRE] error:", err);
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   // === ADMIN CUSTOMERS API ===
   app.get("/api/admin/customers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
     const users = await storage.getUsers();
     res.json(users.filter((u: any) => u.role === "client"));
+  });
+
+  // === MARKETING POSTS API ===
+  app.get("/api/marketing/posts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { MarketingPostModel } = await import("./models");
+      const posts = await MarketingPostModel.find().sort({ createdAt: -1 }).lean();
+      res.json(posts.map((p: any) => ({ ...p, id: p._id?.toString() })));
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/marketing/posts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const allowedRoles = ["admin", "manager", "sales_manager", "sales"];
+    if (!allowedRoles.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { MarketingPostModel } = await import("./models");
+      const { title, description, imageUrl, platform } = req.body;
+      if (!title || !imageUrl) return res.status(400).json({ error: "العنوان ورابط الصورة مطلوبان" });
+      const post = await MarketingPostModel.create({
+        title, description, imageUrl, platform: platform || "instagram",
+        uploadedBy: user.username, status: "published",
+      });
+      res.json({ ...post.toObject(), id: post._id?.toString() });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/marketing/posts/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const allowedRoles = ["admin", "manager", "sales_manager", "sales"];
+    if (!allowedRoles.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { MarketingPostModel } = await import("./models");
+      await MarketingPostModel.findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // === PARTNERS API ===

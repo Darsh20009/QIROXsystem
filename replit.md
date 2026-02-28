@@ -10,6 +10,21 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 28, 2026 - Session 12)
+
+### Employee Hiring System + Role-Based Dashboards
+- **AdminJobs.tsx** — Fully rewritten with hire-as-employee dialog. Shows applicant email + phone prominently. Accepted applicants get "تعيين كموظف" button that opens dialog with username + role selection. Auto-generates password and emails credentials.
+- **Backend: `POST /api/admin/applications/:id/hire`** — Creates user account, hashes password, sends `sendWelcomeWithCredentialsEmail`, marks application as accepted.
+- **EmployeeRoleDashboard.tsx** (NEW) — Role-specific dashboards:
+  - `merchant`: Delivery task pipeline (pending → in_progress → completed) with action buttons
+  - `developer`/`designer`: Modification requests queue + checklist link
+  - `accountant`: ERP view (revenue, pending invoices, paid/unpaid counts, receipts)
+  - `sales`/`sales_manager`: Marketing tools hub + customers + new order links
+- **SalesMarketing.tsx** (NEW) — Marketing tools page: Canva template links (6 sizes), QIROX gradient templates (4), poster upload/manage gallery (with preview, download, delete), platform filtering.
+- **Backend Marketing API**: `GET/POST/DELETE /api/marketing/posts` using MongoDB `MarketingPostModel`. Accessible to admin/manager/sales roles.
+- **App.tsx** — Added routes: `/employee/role-dashboard`, `/sales/marketing`
+- **app-sidebar.tsx** — Added "لوحتي المتخصصة" (role-specific nav, visible to merchant/developer/designer/accountant/sales roles), "أدوات التسويق" (visible to sales roles). Added `Palette` icon import.
+
 ## Latest Changes (Feb 26, 2026 - Session 11)
 
 ### New Features & Bug Fixes

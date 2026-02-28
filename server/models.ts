@@ -529,3 +529,14 @@ export const ChecklistItemModel = mongoose.models.ChecklistItem || mongoose.mode
 export const BankSettingsModel = mongoose.models.BankSettings || mongoose.model("BankSettings", bankSettingsSchema);
 export const SegmentPricingModel = mongoose.models.SegmentPricing || mongoose.model("SegmentPricing", segmentPricingSchema);
 export const SubServiceRequestModel = mongoose.models.SubServiceRequest || mongoose.model("SubServiceRequest", subServiceRequestSchema);
+
+const marketingPostSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: String,
+  imageUrl: { type: String, required: true },
+  platform: { type: String, default: "instagram" },
+  status: { type: String, default: "published" },
+  uploadedBy: String,
+  createdAt: { type: Date, default: Date.now },
+});
+export const MarketingPostModel = mongoose.models.MarketingPost || mongoose.model("MarketingPost", marketingPostSchema);

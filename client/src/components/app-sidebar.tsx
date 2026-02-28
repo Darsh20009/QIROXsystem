@@ -16,7 +16,7 @@ import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
-  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown
+  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -66,6 +66,7 @@ export function AppSidebar() {
 
     // Employee pages (visible to ALL non-client roles)
     { title: "لوحة التحكم", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
+    { title: "لوحتي المتخصصة", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
     { title: "الطلبات", icon: FileText, url: "/admin/orders", group: "employee" },
     { title: "إنشاء عميل وطلب", icon: Users, url: "/employee/new-order", group: "employee" },
     { title: "طلبات التعديل", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
@@ -81,6 +82,7 @@ export function AppSidebar() {
 
     // Sales role pages
     { title: "العملاء", icon: Users, url: "/admin/customers", group: "employee", allowedRoles: SALES_ROLES },
+    { title: "أدوات التسويق", icon: Palette, url: "/sales/marketing", group: "employee", allowedRoles: SALES_ROLES },
 
     // Management-only pages
     { title: "لوحة الإدارة", icon: LayoutDashboard, url: "/admin", group: "admin", allowedRoles: MANAGEMENT_ROLES },
