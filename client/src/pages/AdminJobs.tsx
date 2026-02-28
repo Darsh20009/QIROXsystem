@@ -71,7 +71,7 @@ export default function AdminJobs() {
   const [hireApp, setHireApp] = useState<Application | null>(null);
   const [hireOpen, setHireOpen] = useState(false);
   const [hireForm, setHireForm] = useState({ username: "", role: "developer" });
-  const [hired, setHired] = useState<{ username: string } | null>(null);
+  const [hired, setHired] = useState<{ username: string; password: string; email: string } | null>(null);
 
   const { data: jobs, isLoading } = useQuery<Job[]>({ queryKey: ["/api/jobs"] });
   const { data: applications } = useQuery<Application[]>({ queryKey: ["/api/admin/applications"] });
@@ -131,7 +131,7 @@ export default function AdminJobs() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      setHired({ username: data.username });
+      setHired({ username: data.username, password: data.rawPassword, email: data.email });
     },
     onError: (err: any) => toast({ title: "فشل التعيين", description: err.message, variant: "destructive" }),
   });
@@ -458,23 +458,54 @@ export default function AdminJobs() {
           </DialogHeader>
 
           {hired ? (
-            <div className="py-6 text-center space-y-4">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
-                <Shield className="w-8 h-8 text-emerald-600" />
+            <div className="py-4 space-y-4">
+              <div className="text-center">
+                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Shield className="w-7 h-7 text-emerald-600" />
+                </div>
+                <h3 className="font-bold text-black text-lg mb-1">تم التعيين بنجاح!</h3>
+                <p className="text-black/40 text-sm">احتفظ ببيانات الدخول — تم إرسالها بالبريد أيضاً</p>
               </div>
-              <div>
-                <h3 className="font-bold text-black text-lg mb-1">تم التعيين بنجاح! 🎉</h3>
-                <p className="text-black/50 text-sm">تم إرسال بيانات الدخول إلى بريد الموظف</p>
-              </div>
-              <div className="bg-black/[0.03] rounded-xl p-4 text-right space-y-2">
-                <p className="text-xs text-black/40">اسم المستخدم</p>
-                <div className="flex items-center gap-2">
-                  <code className="text-sm font-bold text-black font-mono">{hired.username}</code>
-                  <button onClick={() => { navigator.clipboard.writeText(hired.username); toast({ title: "تم النسخ" }); }}>
-                    <Copy className="w-3.5 h-3.5 text-black/30 hover:text-black transition-colors" />
+
+              <div className="bg-emerald-50 border border-emerald-200/60 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">بيانات دخول الموظف</p>
+
+                <div className="bg-white rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] text-black/40 font-medium mb-0.5">البريد الإلكتروني</p>
+                    <p className="text-sm font-bold text-black font-mono" dir="ltr">{hired.email}</p>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(hired.email); toast({ title: "تم نسخ البريد" }); }} className="w-7 h-7 rounded-lg bg-black/[0.04] hover:bg-black/10 flex items-center justify-center transition-colors">
+                    <Copy className="w-3.5 h-3.5 text-black/50" />
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] text-black/40 font-medium mb-0.5">اسم المستخدم</p>
+                    <p className="text-sm font-bold text-black font-mono" dir="ltr">{hired.username}</p>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(hired.username); toast({ title: "تم نسخ اسم المستخدم" }); }} className="w-7 h-7 rounded-lg bg-black/[0.04] hover:bg-black/10 flex items-center justify-center transition-colors">
+                    <Copy className="w-3.5 h-3.5 text-black/50" />
+                  </button>
+                </div>
+
+                <div className="bg-black rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] text-white/40 font-medium mb-0.5">كلمة المرور</p>
+                    <p className="text-sm font-black text-white font-mono tracking-wider" dir="ltr">{hired.password}</p>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(hired.password); toast({ title: "تم نسخ كلمة المرور" }); }} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <Copy className="w-3.5 h-3.5 text-white/60" />
                   </button>
                 </div>
               </div>
+
+              <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-amber-600 shrink-0" />
+                <p className="text-amber-700 text-xs">تم إرسال هذه البيانات إلى بريد الموظف تلقائياً</p>
+              </div>
+
               <Button className="w-full premium-btn" onClick={() => { setHireOpen(false); setHired(null); }}>
                 إغلاق
               </Button>

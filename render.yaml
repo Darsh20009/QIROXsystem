@@ -1,25 +1,35 @@
 services:
   - type: web
-    name: qirox
+    name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
     buildCommand: npm ci && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 5000
       - key: SMTP2GO_SENDER
         value: noreply@qiroxstudio.online
       - key: SMTP2GO_SENDER_NAME
-        value: Qirox
+        value: QIROX Studio
       - key: EMAIL_LOGO_URL
         value: https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png
       - key: EMAIL_SITE_URL
         value: https://qiroxstudio.online
+      # === SECRET ENV VARS (set manually in Render dashboard) ===
       - key: SMTP2GO_API_KEY
         sync: false
       - key: MONGODB_URI
         sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: SESSION_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
         sync: false
     autoDeploy: true

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff } from "lucide-react";
 import { type User } from "@shared/schema";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,7 @@ const roleLabels: Record<string, string> = {
   developer: "مطور",
   designer: "مصمم",
   support: "دعم فني",
+  merchant: "توصيل",
   client: "عميل",
 };
 
@@ -34,10 +36,11 @@ const roleColors: Record<string, string> = {
   sales_manager: "bg-amber-50 text-amber-700 border-amber-200",
   sales: "bg-orange-50 text-orange-700 border-orange-200",
   support: "bg-teal-50 text-teal-700 border-teal-200",
+  merchant: "bg-cyan-50 text-cyan-700 border-cyan-200",
   client: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
-const employeeRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support"];
+const employeeRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant"];
 
 interface EmployeeForm {
   username: string;
@@ -50,6 +53,14 @@ interface EmployeeForm {
 
 const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "" };
 
+interface CredentialResult {
+  username: string;
+  rawPassword: string;
+  email: string;
+  fullName?: string;
+  isReset?: boolean;
+}
+
 export default function AdminEmployees() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -58,22 +69,31 @@ export default function AdminEmployees() {
   const [form, setForm] = useState<EmployeeForm>(emptyForm);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [credResult, setCredResult] = useState<CredentialResult | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: users, isLoading } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
 
   const createMutation = useMutation({
-    mutationFn: (data: EmployeeForm) => apiRequest("POST", "/api/admin/users", data),
-    onSuccess: () => {
+    mutationFn: async (data: EmployeeForm) => {
+      const res = await apiRequest("POST", "/api/admin/users", data);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "خطأ");
+      return json;
+    },
+    onSuccess: (data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "تم إضافة الموظف بنجاح" });
+      setCredResult({ username: vars.username, rawPassword: vars.password, email: vars.email, fullName: vars.fullName });
       resetForm();
     },
     onError: (err: any) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EmployeeForm> }) =>
-      apiRequest("PATCH", `/api/admin/users/${id}`, data),
+    mutationFn: async ({ id, data }: { id: string; data: Partial<EmployeeForm> }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${id}`, data);
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "تم تحديث البيانات بنجاح" });
@@ -89,6 +109,20 @@ export default function AdminEmployees() {
       toast({ title: "تم حذف الموظف" });
     },
     onError: (err: any) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/admin/users/${id}/reset-password`, {});
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "خطأ");
+      return json;
+    },
+    onSuccess: (data) => {
+      setCredResult({ username: data.username, rawPassword: data.rawPassword, email: data.email, isReset: true });
+      toast({ title: "تم إعادة تعيين كلمة المرور وإرسالها بالبريد" });
+    },
+    onError: (err: any) => toast({ title: "فشل إعادة التعيين", description: err.message, variant: "destructive" }),
   });
 
   const resetForm = () => {
@@ -117,21 +151,17 @@ export default function AdminEmployees() {
 
   const startEdit = (emp: User) => {
     setEditingId(String(emp.id));
-    setForm({
-      username: emp.username,
-      password: "",
-      email: emp.email,
-      fullName: emp.fullName,
-      role: emp.role,
-      phone: emp.phone || "",
-    });
+    setForm({ username: emp.username, password: "", email: emp.email, fullName: emp.fullName, role: emp.role, phone: emp.phone || "" });
     setShowForm(true);
   };
 
   const handleDelete = (emp: User) => {
-    if (confirm(`هل أنت متأكد من حذف ${emp.fullName}؟`)) {
-      deleteMutation.mutate(String(emp.id));
-    }
+    if (confirm(`هل أنت متأكد من حذف ${emp.fullName}؟`)) deleteMutation.mutate(String(emp.id));
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `تم نسخ ${label}` });
   };
 
   const employees = users?.filter(u => u.role !== 'client') || [];
@@ -139,9 +169,8 @@ export default function AdminEmployees() {
 
   const filtered = (filterRole === 'all'
     ? employees
-    : filterRole === 'client'
-      ? clients
-      : employees.filter(e => e.role === filterRole)
+    : filterRole === 'client' ? clients
+    : employees.filter(e => e.role === filterRole)
   ).filter(e =>
     !search || e.fullName.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -182,46 +211,19 @@ export default function AdminEmployees() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">الاسم الكامل *</Label>
-                    <Input
-                      value={form.fullName}
-                      onChange={e => setForm({ ...form, fullName: e.target.value })}
-                      placeholder="أحمد محمد"
-                      className="h-9 text-xs border-black/[0.08]"
-                      data-testid="input-emp-fullname"
-                    />
+                    <Input value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} placeholder="أحمد محمد" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-fullname" />
                   </div>
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">اسم المستخدم *</Label>
-                    <Input
-                      value={form.username}
-                      onChange={e => setForm({ ...form, username: e.target.value })}
-                      placeholder="ahmed_dev"
-                      className="h-9 text-xs border-black/[0.08]"
-                      disabled={!!editingId}
-                      data-testid="input-emp-username"
-                    />
+                    <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="ahmed_dev" className="h-9 text-xs border-black/[0.08]" disabled={!!editingId} data-testid="input-emp-username" />
                   </div>
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">البريد الإلكتروني *</Label>
-                    <Input
-                      type="email"
-                      value={form.email}
-                      onChange={e => setForm({ ...form, email: e.target.value })}
-                      placeholder="ahmed@qirox.tech"
-                      className="h-9 text-xs border-black/[0.08]"
-                      data-testid="input-emp-email"
-                    />
+                    <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="ahmed@qirox.tech" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-email" />
                   </div>
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">{editingId ? "كلمة مرور جديدة (اختياري)" : "كلمة المرور *"}</Label>
-                    <Input
-                      type="password"
-                      value={form.password}
-                      onChange={e => setForm({ ...form, password: e.target.value })}
-                      placeholder="••••••••"
-                      className="h-9 text-xs border-black/[0.08]"
-                      data-testid="input-emp-password"
-                    />
+                    <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-password" />
                   </div>
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">الدور *</Label>
@@ -230,21 +232,13 @@ export default function AdminEmployees() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {employeeRoles.map(r => (
-                          <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>
-                        ))}
+                        {employeeRoles.map(r => <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label className="text-[11px] text-black/40 mb-1.5 block">رقم الهاتف</Label>
-                    <Input
-                      value={form.phone}
-                      onChange={e => setForm({ ...form, phone: e.target.value })}
-                      placeholder="+966 5xx xxx xxxx"
-                      className="h-9 text-xs border-black/[0.08]"
-                      data-testid="input-emp-phone"
-                    />
+                    <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+966 5xx xxx xxxx" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-phone" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-5">
@@ -268,13 +262,7 @@ export default function AdminEmployees() {
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/20" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="بحث بالاسم أو البريد..."
-            className="h-9 text-xs border-black/[0.08] pr-9"
-            data-testid="input-search-employees"
-          />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو البريد..." className="h-9 text-xs border-black/[0.08] pr-9" data-testid="input-search-employees" />
         </div>
         <Select value={filterRole} onValueChange={setFilterRole}>
           <SelectTrigger className="h-9 text-xs border-black/[0.08] w-full md:w-[180px]" data-testid="select-filter-role">
@@ -283,9 +271,7 @@ export default function AdminEmployees() {
           <SelectContent>
             <SelectItem value="all">جميع الموظفين</SelectItem>
             <SelectItem value="client">العملاء</SelectItem>
-            {employeeRoles.map(r => (
-              <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>
-            ))}
+            {employeeRoles.map(r => <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -299,15 +285,13 @@ export default function AdminEmployees() {
                 <TableHead className="text-[11px] font-bold text-black/40">الدور</TableHead>
                 <TableHead className="text-[11px] font-bold text-black/40 hidden md:table-cell">البريد</TableHead>
                 <TableHead className="text-[11px] font-bold text-black/40 hidden lg:table-cell">الهاتف</TableHead>
-                <TableHead className="text-[11px] font-bold text-black/40 text-left w-[100px]">إجراءات</TableHead>
+                <TableHead className="text-[11px] font-bold text-black/40 text-left w-[130px]">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-xs text-black/25">
-                    لا يوجد نتائج
-                  </TableCell>
+                  <TableCell colSpan={5} className="text-center py-12 text-xs text-black/25">لا يوجد نتائج</TableCell>
                 </TableRow>
               ) : filtered.map((emp) => (
                 <TableRow key={emp.id} className="border-b border-black/[0.04] hover:bg-black/[0.01]" data-testid={`row-employee-${emp.id}`}>
@@ -329,10 +313,18 @@ export default function AdminEmployees() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <span className="text-[11px] text-black/40 flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
-                      {emp.email}
-                    </span>
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-[11px] text-black/40 flex items-center gap-1">
+                        <Mail className="w-3 h-3" />
+                        {emp.email}
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(emp.email, "البريد")}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Copy className="w-3 h-3 text-black/30 hover:text-black/60" />
+                      </button>
+                    </div>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <span className="text-[11px] text-black/30 flex items-center gap-1">
@@ -348,20 +340,35 @@ export default function AdminEmployees() {
                         className="h-7 w-7 text-black/20 hover:text-black/60"
                         onClick={() => startEdit(emp)}
                         data-testid={`button-edit-${emp.id}`}
+                        title="تعديل"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
                       {emp.role !== 'admin' && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-black/20 hover:text-red-500"
-                          onClick={() => handleDelete(emp)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-${emp.id}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-blue-400 hover:text-blue-600 hover:bg-blue-50"
+                            onClick={() => resetPasswordMutation.mutate(String(emp.id))}
+                            disabled={resetPasswordMutation.isPending}
+                            data-testid={`button-reset-pw-${emp.id}`}
+                            title="إعادة تعيين كلمة المرور"
+                          >
+                            {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-black/20 hover:text-red-500"
+                            onClick={() => handleDelete(emp)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-${emp.id}`}
+                            title="حذف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -371,6 +378,82 @@ export default function AdminEmployees() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Credential Dialog */}
+      <Dialog open={!!credResult} onOpenChange={() => { setCredResult(null); setShowPassword(false); }}>
+        <DialogContent className="bg-white border-black/[0.06] text-black max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-black flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-black/40" />
+              {credResult?.isReset ? "تم إعادة تعيين كلمة المرور" : "تم إنشاء الحساب بنجاح"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-black/40">
+              {credResult?.isReset
+                ? "تم إرسال كلمة المرور الجديدة إلى بريد المستخدم تلقائياً"
+                : "احتفظ ببيانات الدخول — تم إرسالها بالبريد أيضاً"
+              }
+            </p>
+
+            <div className="bg-black/[0.03] rounded-2xl p-4 space-y-3">
+              {credResult?.fullName && (
+                <div className="text-center pb-2 border-b border-black/[0.06]">
+                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">{credResult.fullName[0]}</span>
+                  </div>
+                  <p className="font-bold text-black text-sm">{credResult.fullName}</p>
+                </div>
+              )}
+
+              {[
+                { label: "البريد الإلكتروني", value: credResult?.email || "", key: "email" },
+                { label: "اسم المستخدم", value: credResult?.username || "", key: "username" },
+              ].map(({ label, value, key }) => (
+                <div key={key} className="bg-white rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] text-black/40 font-medium mb-0.5">{label}</p>
+                    <p className="text-sm font-bold text-black font-mono" dir="ltr">{value}</p>
+                  </div>
+                  <button onClick={() => copyToClipboard(value, label)} className="w-7 h-7 rounded-lg bg-black/[0.04] hover:bg-black/10 flex items-center justify-center transition-colors">
+                    <Copy className="w-3.5 h-3.5 text-black/50" />
+                  </button>
+                </div>
+              ))}
+
+              <div className="bg-black rounded-xl p-3 flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-white/40 font-medium mb-0.5">كلمة المرور</p>
+                  <p className="text-sm font-black text-white font-mono tracking-wider" dir="ltr">
+                    {showPassword ? (credResult?.rawPassword || "") : "••••••••••••"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setShowPassword(!showPassword)} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5 text-white/60" /> : <Eye className="w-3.5 h-3.5 text-white/60" />}
+                  </button>
+                  <button onClick={() => copyToClipboard(credResult?.rawPassword || "", "كلمة المرور")} className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <Copy className="w-3.5 h-3.5 text-white/60" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/60 rounded-xl px-3 py-2">
+              <Mail className="w-4 h-4 text-amber-600 shrink-0" />
+              <p className="text-amber-700 text-xs">تم إرسال هذه البيانات إلى: <strong>{credResult?.email}</strong></p>
+            </div>
+
+            <Button
+              className="w-full bg-black text-white hover:bg-black/80"
+              onClick={() => { setCredResult(null); setShowPassword(false); }}
+            >
+              تم، إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

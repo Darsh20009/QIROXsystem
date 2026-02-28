@@ -10,6 +10,17 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Feb 28, 2026 - Session 13)
+
+### Credentials Display + Render/Replit Deployment
+- **Backend: `POST /api/admin/applications/:id/hire`** — Now returns `rawPassword` + `email` in response for admin display
+- **Backend: `POST /api/admin/users/:id/reset-password`** — Auto-generates new password, hashes & saves, sends via email, returns `rawPassword` + `username` + `email` to admin
+- **Backend: `GET /api/health`** — Health check endpoint for Render deployment monitoring
+- **AdminJobs.tsx** — Hire success screen now shows: email, username, password (with individual copy buttons per field). Password displayed in black card with high contrast.
+- **AdminEmployees.tsx** — Added `KeyRound` reset-password button per employee row. Credential dialog shows email + username + password (with show/hide toggle + copy buttons). Added `merchant` role to employeeRoles list and roleLabels/roleColors.
+- **render.yaml** — Updated with all required env vars including `DATABASE_URL`, `PORT`, `VAPID_PUBLIC_KEY/PRIVATE_KEY`. Service renamed to `qirox-studio`. Health check path set to `/api/health`.
+- **Replit Deployment** — Configured as autoscale with `npm run build` + `npm start`
+
 ## Latest Changes (Feb 28, 2026 - Session 12)
 
 ### Employee Hiring System + Role-Based Dashboards

@@ -62,6 +62,10 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
 
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString(), service: "QIROX Studio" });
+  });
+
   app.post("/api/upload", (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     upload.single("file")(req, res, (err) => {
@@ -260,6 +264,22 @@ export async function registerRoutes(
       }
       await storage.deleteUser(req.params.id);
       res.sendStatus(204);
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // Admin reset password for any user → auto-generate + send email + return to admin
+  app.post("/api/admin/users/:id/reset-password", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) return res.sendStatus(404);
+      const rawPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase() + "@Q";
+      const hashed = await hashPassword(rawPassword);
+      await storage.updateUser(req.params.id, { password: hashed });
+      sendWelcomeWithCredentialsEmail(targetUser.email, targetUser.fullName, targetUser.username, rawPassword).catch(e => console.error("[RESET] email failed:", e));
+      res.json({ ok: true, username: targetUser.username, rawPassword, email: targetUser.email });
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }
@@ -937,7 +957,7 @@ export async function registerRoutes(
       await storage.updateApplication(req.params.id, { status: "accepted" });
 
       console.log(`[HIRE] New employee created: ${username} / role:${role} / email:${email}`);
-      res.json({ ok: true, userId: newUser.id, username });
+      res.json({ ok: true, userId: newUser.id, username, rawPassword, email });
     } catch (err: any) {
       console.error("[HIRE] error:", err);
       res.status(500).json({ error: translateError(err) });
