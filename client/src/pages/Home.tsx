@@ -117,12 +117,12 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <h1 dir="ltr" className="text-5xl sm:text-7xl md:text-9xl font-black font-heading text-black dark:text-white leading-[1.0] mb-1 tracking-tight">
+              <h1 dir="ltr" className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black font-heading text-black dark:text-white leading-[1.1] mb-2 tracking-tight">
                 Build Systems.
               </h1>
               <h1
                 dir="ltr"
-                className="text-5xl sm:text-7xl md:text-9xl font-black font-heading leading-[1.0] mb-10 tracking-tight text-gray-300 dark:text-gray-700"
+                className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black font-heading leading-[1.1] mb-10 tracking-tight text-gray-300 dark:text-gray-700"
               >
                 .Stay Human
               </h1>

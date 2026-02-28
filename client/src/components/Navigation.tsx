@@ -28,11 +28,15 @@ export default function Navigation() {
     { href: "/services", label: t("nav.services") },
     { href: "/portfolio", label: t("nav.portfolio") },
     { href: "/prices", label: t("nav.prices") },
-    { href: "/partners", label: t("nav.partners") },
     { href: "/about", label: t("nav.about") },
     { href: "/contact", label: t("nav.contact") },
-    ...(user ? [{ href: "/dashboard", label: t("nav.dashboard") }] : []),
   ];
+
+  const adminLinks = user ? [
+    { href: "/dashboard", label: t("nav.dashboard") },
+  ] : [];
+
+  const allLinks = [...navLinks, ...adminLinks];
 
   return (
     <>
@@ -47,15 +51,15 @@ export default function Navigation() {
         <div className="container mx-auto px-4 sm:px-6">
           <div className={`mx-auto transition-all duration-500 rounded-2xl px-6 ${
             scrolled
-              ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-lg max-w-4xl"
+              ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-lg max-w-5xl"
               : "bg-transparent max-w-6xl"
           }`}>
-            <div className="flex justify-between items-center h-14">
-              <Link href="/" className="flex items-center gap-2 group" data-testid="link-logo">
-                <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity dark:brightness-[2]" />
+            <div className="flex justify-between items-center h-16">
+              <Link href="/" className="flex items-center gap-2 group shrink-0" data-testid="link-logo">
+                <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity dark:brightness-[2]" />
               </Link>
 
-              <div className="hidden md:flex items-center gap-1">
+              <div className="hidden lg:flex items-center gap-1">
                 {navLinks.map((link) => (
                   <Link key={link.href} href={link.href}>
                     <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
@@ -77,6 +81,17 @@ export default function Navigation() {
               </div>
 
               <div className="hidden md:flex items-center gap-2">
+                {adminLinks.map((link) => (
+                  <Link key={link.href} href={link.href}>
+                    <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                      location === link.href
+                        ? "text-black dark:text-white"
+                        : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
+                    }`} data-testid={`nav-link-admin-${link.href.replace('/', '')}`}>
+                      <span className="relative z-10">{link.label}</span>
+                    </div>
+                  </Link>
+                ))}
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}
                   className="p-2 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all"
@@ -145,11 +160,11 @@ export default function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden fixed inset-0 z-[60] bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl"
+            className="md:hidden fixed inset-0 z-[60] bg-white dark:bg-gray-950"
           >
-            <div className="flex flex-col h-full pt-20 px-6">
+            <div className="flex flex-col h-full pt-20 px-6 overflow-y-auto">
               <div className="space-y-1 flex-1">
-                {navLinks.map((link, i) => (
+                {allLinks.map((link, i) => (
                   <motion.div
                     key={link.href}
                     initial={{ opacity: 0, x: 20 }}
@@ -157,10 +172,10 @@ export default function Navigation() {
                     transition={{ delay: i * 0.05 }}
                   >
                     <Link href={link.href} onClick={() => setIsOpen(false)}>
-                      <div className={`block px-5 py-4 rounded-xl text-lg font-medium transition-all ${
+                      <div className={`block px-5 py-4 rounded-xl text-lg font-bold transition-all ${
                         location === link.href
                           ? "text-black dark:text-white bg-black/[0.05] dark:bg-white/[0.05]"
-                          : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                          : "text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
                       }`}>
                         {link.label}
                       </div>

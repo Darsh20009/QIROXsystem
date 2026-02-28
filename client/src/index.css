@@ -111,7 +111,21 @@
   }
 
   body {
-    @apply bg-white dark:bg-gray-950 text-foreground antialiased;
+    @apply bg-white dark:bg-gray-950 text-foreground antialiased overflow-x-hidden w-full;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
   }
 }
 

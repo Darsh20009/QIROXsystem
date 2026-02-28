@@ -1,5 +1,5 @@
 {
-  "name": "QIROX Studio - منصة بناء الأنظمة",
+  "name": "QIROX Studio",
   "short_name": "QIROX",
   "description": "منصة بناء الأنظمة الرقمية المتكاملة — نبني أنظمة، نبقى بشراً",
   "start_url": "/",
@@ -14,12 +14,6 @@
   "id": "qirox-studio-pwa",
   "icons": [
     {
-      "src": "/favicon.png",
-      "sizes": "64x64",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
       "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png",
@@ -30,6 +24,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -38,20 +38,6 @@
       "short_name": "Dashboard",
       "description": "الذهاب للوحة التحكم",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "الطلبات",
-      "short_name": "Orders",
-      "description": "عرض جميع الطلبات",
-      "url": "/admin/orders",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "قائمتي",
-      "short_name": "Checklist",
-      "description": "أدوات المطور والمهام",
-      "url": "/employee/checklist",
       "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
     }
   ],
