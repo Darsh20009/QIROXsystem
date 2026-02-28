@@ -50,70 +50,92 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+/* ── Inline style helpers (email-safe, no class names needed) ── */
+const S = {
+  wrap:       'max-width:580px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e2e2;font-family:Arial,Helvetica,sans-serif;direction:rtl;',
+  header:     'background:#000000;padding:24px 32px;text-align:center;',
+  logo:       'color:#ffffff;font-size:26px;font-weight:900;letter-spacing:4px;text-decoration:none;',
+  body:       'padding:36px 32px;background:#ffffff;',
+  footer:     'background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #f0f0f0;',
+  footerText: 'margin:0;font-size:11px;color:#9ca3af;',
+  tag:        'display:inline-block;background:#f3f4f6;color:#6b7280;padding:4px 12px;border-radius:20px;font-size:11px;margin-bottom:14px;',
+  title:      'margin:0 0 16px 0;font-size:20px;font-weight:800;color:#111111;',
+  text:       'margin:0 0 14px 0;font-size:14px;color:#555555;line-height:1.8;',
+  otpBox:     'background:#f3f4f6;border-radius:12px;padding:24px;text-align:center;margin:20px 0;',
+  otpCode:    'margin:0;font-size:44px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier New,Courier,monospace;',
+  otpNote:    'margin:10px 0 0 0;font-size:12px;color:#9ca3af;',
+  btn:        'display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:14px;margin:14px 0;',
+  divider:    'border:none;border-top:1px solid #f0f0f0;margin:22px 0;',
+  highlight:  'background:#fafafa;border-right:3px solid #000000;padding:11px 14px;margin:10px 0;font-size:13px;color:#374151;',
+  labelCell:  'padding:8px 12px;font-size:12px;color:#9ca3af;background:#f9fafb;border:1px solid #f0f0f0;font-weight:600;width:35%;text-align:right;',
+  valueCell:  'padding:8px 12px;font-size:13px;color:#111111;border:1px solid #f0f0f0;font-weight:600;text-align:right;',
+  badgeBlack: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#000000;color:#ffffff;',
+  badgeGreen: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#d1fae5;color:#065f46;',
+  badgeBlue:  'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#dbeafe;color:#1e40af;',
+  badgeAmber: 'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fef3c7;color:#92400e;',
+  badgeRed:   'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fee2e2;color:#991b1b;',
+};
+
 function baseTemplate(content: string) {
   return `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html>
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>
-  body{margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;}
-  .wrap{max-width:580px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e2e2;box-shadow:0 2px 16px rgba(0,0,0,0.07);}
-  .header{background:#ffffff;padding:28px 32px;text-align:center;border-bottom:3px solid #000;}
-  .header img{max-width:220px;width:100%;height:auto;display:block;margin:0 auto;}
-  .header-fallback{color:#000;font-size:28px;font-weight:900;letter-spacing:3px;}
-  .body{padding:36px 32px;}
-  .title{font-size:20px;font-weight:800;color:#111;margin-bottom:12px;}
-  .text{font-size:14px;color:#555;line-height:1.8;margin-bottom:16px;}
-  .otp-box{background:#f3f4f6;border-radius:12px;padding:20px;text-align:center;margin:20px 0;}
-  .otp{font-size:36px;font-weight:900;color:#111;letter-spacing:12px;font-family:monospace;}
-  .otp-note{font-size:12px;color:#9ca3af;margin-top:8px;}
-  .btn{display:inline-block;background:#000;color:#fff !important;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:14px;margin:16px 0;}
-  .divider{border:none;border-top:1px solid #f0f0f0;margin:24px 0;}
-  .footer{background:#f9fafb;padding:20px 32px;text-align:center;font-size:11px;color:#9ca3af;border-top:1px solid #f0f0f0;}
-  .footer a{color:#9ca3af;text-decoration:none;}
-  .tag{display:inline-block;background:#f3f4f6;color:#6b7280;padding:4px 12px;border-radius:20px;font-size:11px;margin-bottom:16px;}
-  .highlight{background:#fafafa;border-right:3px solid #000;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;color:#374151;}
-  .badge{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;margin:8px 0;}
-  .badge-black{background:#000;color:#fff;}
-  .badge-green{background:#d1fae5;color:#065f46;}
-  .badge-blue{background:#dbeafe;color:#1e40af;}
-  .badge-amber{background:#fef3c7;color:#92400e;}
-  .badge-red{background:#fee2e2;color:#991b1b;}
-  .info-grid{display:table;width:100%;border-collapse:collapse;margin:16px 0;}
-  .info-row{display:table-row;}
-  .info-label{display:table-cell;padding:8px 12px;font-size:12px;color:#9ca3af;background:#f9fafb;border:1px solid #f0f0f0;font-weight:600;width:35%;}
-  .info-value{display:table-cell;padding:8px 12px;font-size:13px;color:#111;border:1px solid #f0f0f0;font-weight:600;}
-</style>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 </head>
-<body>
-<div class="wrap">
-  <div class="header">
-    <img src="${LOGO_URL}" alt="QIROX" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
-    <div class="header-fallback" style="display:none;">QIROX</div>
-  </div>
-  <div class="body">${content}</div>
-  <div class="footer">
-    © 2026 Qirox — مصنع الأنظمة الرقمية<br/>
-    <a href="${SITE_URL}">qirox.tech</a>
-  </div>
-</div>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap}">
+  <tr><td style="${S.header}">
+    <span style="${S.logo}">QIROX</span>
+  </td></tr>
+  <tr><td style="${S.body}">${content}</td></tr>
+  <tr><td style="${S.footer}">
+    <p style="${S.footerText}">&#169; 2026 QIROX Studio &bull; <a href="${SITE_URL}" style="color:#9ca3af;text-decoration:none;">qiroxstudio.online</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 }
 
+function tag(text: string)                    { return `<p style="${S.tag}">${text}</p>`; }
+function title(html: string)                  { return `<p style="${S.title}">${html}</p>`; }
+function text(html: string, extra = '')        { return `<p style="${S.text}${extra}">${html}</p>`; }
+function highlight(html: string, extra = '')   { return `<p style="${S.highlight}${extra}">${html}</p>`; }
+function btn(url: string, label: string)       { return `<a href="${url}" style="${S.btn}">${label}</a>`; }
+function divider()                             { return `<hr style="${S.divider}" />`; }
+function badge(cls: keyof typeof S, lbl: string) { return `<span style="${S[cls]}">${lbl}</span>`; }
+function infoTable(rows: [string, string][])  {
+  const rowsHtml = rows.map(([l, v]) =>
+    `<tr><td style="${S.labelCell}">${l}</td><td style="${S.valueCell}">${v}</td></tr>`
+  ).join('');
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;">${rowsHtml}</table>`;
+}
+function otpBox(code: string, note: string)   {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+<tr><td style="${S.otpBox}">
+  <p style="${S.otpNote}">الرمز السري &mdash; OTP Code</p>
+  <p style="${S.otpCode}">${code}</p>
+  <p style="${S.otpNote}">${note}</p>
+</td></tr></table>`;
+}
+
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   const displayName = cleanName(name);
-  const html = baseTemplate(`
-    <div class="tag">مرحباً بك</div>
-    <div class="title">أهلاً بك في Qirox، ${displayName}! 🎉</div>
-    <p class="text">تم إنشاء حسابك بنجاح. أنت الآن جزء من منظومة Qirox لبناء الأنظمة الرقمية الاحترافية.</p>
-    <div class="highlight">لوحة التحكم الخاصة بك جاهزة — تصفح خدماتنا وابدأ مشروعك الأول</div>
-    <a href="${SITE_URL}/dashboard" class="btn">الذهاب للوحة التحكم</a>
-    <hr class="divider"/>
-    <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء هذا الحساب، تجاهل هذا البريد.</p>
-  `);
-  return sendEmail(to, displayName, "مرحباً بك في Qirox 🚀", html);
+  const html = baseTemplate(
+    tag("مرحباً بك") +
+    title(`اهلاً بك في QIROX، ${displayName}!`) +
+    text("تم انشاء حسابك بنجاح. انت الآن جزء من منظومة QIROX لبناء الانظمة الرقمية الاحترافية.") +
+    highlight("لوحة التحكم الخاصة بك جاهزة &mdash; تصفح خدماتنا وابدأ مشروعك الأول") +
+    btn(`${SITE_URL}/dashboard`, "الذهاب للوحة التحكم") +
+    divider() +
+    text("اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.", "font-size:12px;color:#9ca3af;")
+  );
+  return sendEmail(to, displayName, "مرحباً بك في QIROX", html);
 }
 
 export async function sendOtpEmail(to: string, name: string, otp: string): Promise<boolean> {
@@ -177,7 +199,7 @@ ${otp}
 اذا لم تطلب هذا، تجاهل البريد.
 
 QIROX Studio - qiroxstudio.online`;
-  return sendEmail(to, displayName, "رمز التحقق - Qirox", html, text);
+  return sendEmail(to, displayName, `${otp} - رمز التحقق | QIROX`, html, text);
 }
 
 export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
@@ -245,195 +267,200 @@ ${otp}
 اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.
 
 QIROX Studio - qiroxstudio.online`;
-  return sendEmail(to, displayName, "رمز تفعيل حسابك - QIROX Studio", html, text);
+  return sendEmail(to, displayName, `${otp} - رمز تفعيل حسابك | QIROX`, html, text);
 }
 
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
   const displayName = cleanName(name);
-  const itemsList = items.map(i => `<div class="highlight">• ${i}</div>`).join("");
-  const html = baseTemplate(`
-    <div class="tag">تأكيد الطلب</div>
-    <div class="title">تم استلام طلبك! ✅</div>
-    <p class="text">شكراً ${displayName}، تم استلام طلبك بنجاح ورقم الطلب هو:</p>
-    <div class="otp-box"><div style="font-size:18px;font-weight:900;color:#111;letter-spacing:3px;font-family:monospace;">#${orderId.slice(-8).toUpperCase()}</div></div>
-    <p class="text">محتويات الطلب:</p>
-    ${itemsList}
-    <p class="text">سيتواصل معك فريق Qirox خلال <strong>24 ساعة</strong> لإتمام الدفع والبدء في التنفيذ.</p>
-    <a href="${SITE_URL}/dashboard" class="btn">متابعة الطلب</a>
-  `);
-  return sendEmail(to, displayName, `تأكيد طلبك — Qirox #${orderId.slice(-8).toUpperCase()}`, html);
+  const itemsList = items.map(i => highlight(`&#8226; ${i}`)).join("");
+  const html = baseTemplate(
+    tag("تأكيد الطلب") +
+    title("تم استلام طلبك!") +
+    text(`شكراً ${displayName}، تم استلام طلبك بنجاح ورقم الطلب هو:`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:10px;padding:20px;text-align:center;">
+        <p style="margin:0;font-size:20px;font-weight:900;color:#111111;letter-spacing:3px;font-family:Courier New,Courier,monospace;">#${orderId.slice(-8).toUpperCase()}</p>
+      </td></tr>
+    </table>` +
+    text("محتويات الطلب:") +
+    itemsList +
+    text(`سيتواصل معك فريق QIROX خلال <strong>24 ساعة</strong> لإتمام الدفع والبدء في التنفيذ.`) +
+    btn(`${SITE_URL}/dashboard`, "متابعة الطلب")
+  );
+  return sendEmail(to, displayName, `تأكيد طلبك #${orderId.slice(-8).toUpperCase()} | QIROX`, html);
 }
 
 export async function sendOrderStatusEmail(to: string, name: string, orderId: string, status: string): Promise<boolean> {
   const displayName = cleanName(name);
-  const statusMap: Record<string, { label: string; icon: string; desc: string; badge: string }> = {
-    pending:     { label: "قيد المراجعة",  icon: "🔄", desc: "طلبك قيد المراجعة من قِبَل فريقنا",            badge: "badge-amber" },
-    approved:    { label: "تمت الموافقة",   icon: "✅", desc: "تمت الموافقة على طلبك وبدأ العمل عليه",         badge: "badge-blue" },
-    in_progress: { label: "قيد التنفيذ",    icon: "⚙️", desc: "يعمل فريقنا على تنفيذ مشروعك",                badge: "badge-blue" },
-    review:      { label: "مراجعة العميل", icon: "👁️", desc: "المشروع جاهز لمراجعتك",                        badge: "badge-amber" },
-    completed:   { label: "مكتمل",          icon: "🎉", desc: "تم تسليم مشروعك بنجاح",                        badge: "badge-green" },
-    rejected:    { label: "مرفوض",          icon: "❌", desc: "للأسف تم رفض الطلب. تواصل معنا للمزيد",        badge: "badge-red" },
+  const statusMap: Record<string, { label: string; icon: string; desc: string; badgeKey: keyof typeof S }> = {
+    pending:     { label: "قيد المراجعة",  icon: "◌", desc: "طلبك قيد المراجعة من قبل فريقنا",           badgeKey: "badgeAmber" },
+    approved:    { label: "تمت الموافقة",   icon: "✓", desc: "تمت الموافقة على طلبك وبدأ العمل عليه",      badgeKey: "badgeBlue" },
+    in_progress: { label: "قيد التنفيذ",    icon: "⚙", desc: "يعمل فريقنا على تنفيذ مشروعك",             badgeKey: "badgeBlue" },
+    review:      { label: "مراجعة العميل", icon: "◉", desc: "المشروع جاهز لمراجعتك",                     badgeKey: "badgeAmber" },
+    completed:   { label: "مكتمل",          icon: "✓", desc: "تم تسليم مشروعك بنجاح",                     badgeKey: "badgeGreen" },
+    rejected:    { label: "مرفوض",          icon: "✕", desc: "للأسف تم رفض الطلب. تواصل معنا للمزيد",    badgeKey: "badgeRed" },
   };
-  const s = statusMap[status] || { label: status, icon: "📌", desc: "تم تحديث حالة طلبك", badge: "badge-black" };
-  const html = baseTemplate(`
-    <div class="tag">تحديث حالة الطلب</div>
-    <div class="title">${s.icon} ${s.label}</div>
-    <span class="badge ${s.badge}">${s.label}</span>
-    <p class="text">${s.desc}</p>
-    <div class="highlight">رقم الطلب: #${orderId.slice(-8).toUpperCase()}</div>
-    <a href="${SITE_URL}/dashboard" class="btn">عرض الطلب</a>
-  `);
-  return sendEmail(to, displayName, `تحديث طلبك: ${s.label} — Qirox`, html);
+  const s = statusMap[status] || { label: status, icon: "•", desc: "تم تحديث حالة طلبك", badgeKey: "badgeBlack" as keyof typeof S };
+  const html = baseTemplate(
+    tag("تحديث حالة الطلب") +
+    title(`${s.icon} ${s.label}`) +
+    badge(s.badgeKey, s.label) +
+    text(s.desc) +
+    highlight(`رقم الطلب: #${orderId.slice(-8).toUpperCase()}`) +
+    btn(`${SITE_URL}/dashboard`, "عرض الطلب")
+  );
+  return sendEmail(to, displayName, `تحديث طلبك: ${s.label} | QIROX`, html);
 }
 
 export async function sendMessageNotificationEmail(to: string, name: string, senderName: string, preview: string): Promise<boolean> {
-  const html = baseTemplate(`
-    <div class="tag">رسالة جديدة</div>
-    <div class="title">لديك رسالة جديدة من ${senderName}</div>
-    <div class="highlight">"${preview.slice(0, 120)}${preview.length > 120 ? '...' : ''}"</div>
-    <a href="${SITE_URL}/dashboard" class="btn">الرد على الرسالة</a>
-  `);
-  return sendEmail(to, name, `رسالة من ${senderName} — Qirox`, html);
+  const html = baseTemplate(
+    tag("رسالة جديدة") +
+    title(`لديك رسالة جديدة من ${senderName}`) +
+    highlight(`&ldquo;${preview.slice(0, 120)}${preview.length > 120 ? '...' : ''}&rdquo;`) +
+    btn(`${SITE_URL}/dashboard`, "الرد على الرسالة")
+  );
+  return sendEmail(to, name, `رسالة من ${senderName} | QIROX`, html);
 }
 
 export async function sendProjectUpdateEmail(to: string, name: string, projectName: string, status: string, progress: number, note?: string): Promise<boolean> {
-  const statusLabels: Record<string, { label: string; icon: string; badge: string }> = {
-    planning:    { label: "التخطيط",      icon: "📋", badge: "badge-amber" },
-    in_progress: { label: "قيد التنفيذ",  icon: "⚙️", badge: "badge-blue" },
-    review:      { label: "المراجعة",     icon: "👁️", badge: "badge-amber" },
-    completed:   { label: "مكتمل",        icon: "🎉", badge: "badge-green" },
-    on_hold:     { label: "متوقف مؤقتاً", icon: "⏸️", badge: "badge-red" },
+  const statusLabels: Record<string, { label: string; icon: string; badgeKey: keyof typeof S }> = {
+    planning:    { label: "التخطيط",      icon: "◌", badgeKey: "badgeAmber" },
+    in_progress: { label: "قيد التنفيذ",  icon: "⚙", badgeKey: "badgeBlue" },
+    review:      { label: "المراجعة",     icon: "◉", badgeKey: "badgeAmber" },
+    completed:   { label: "مكتمل",        icon: "✓", badgeKey: "badgeGreen" },
+    on_hold:     { label: "متوقف مؤقتاً", icon: "⏸", badgeKey: "badgeRed" },
   };
-  const s = statusLabels[status] || { label: status, icon: "📌", badge: "badge-black" };
+  const s = statusLabels[status] || { label: status, icon: "•", badgeKey: "badgeBlack" as keyof typeof S };
   const progressBar = `
-    <div style="background:#f3f4f6;border-radius:999px;height:10px;margin:12px 0;overflow:hidden;">
-      <div style="background:#000;height:100%;width:${Math.min(progress, 100)}%;border-radius:999px;"></div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:999px;height:10px;overflow:hidden;">
+        <table height="10" cellpadding="0" cellspacing="0" border="0">
+          <tr><td width="${Math.min(progress, 100)}%" style="background:#000000;height:10px;border-radius:999px;"></td></tr>
+        </table>
+      </td></tr>
+    </table>
     <p style="font-size:12px;color:#6b7280;text-align:center;margin:4px 0;">${progress}% مكتمل</p>
   `;
-  const noteSection = note ? `<div class="highlight">📝 ${note}</div>` : "";
-  const html = baseTemplate(`
-    <div class="tag">تحديث المشروع</div>
-    <div class="title">${s.icon} تحديث على مشروعك</div>
-    <p class="text">مرحباً ${cleanName(name)}، هناك تحديث جديد على مشروعك:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">اسم المشروع</div><div class="info-value">${projectName}</div></div>
-      <div class="info-row"><div class="info-label">الحالة الحالية</div><div class="info-value"><span class="badge ${s.badge}">${s.label}</span></div></div>
-      <div class="info-row"><div class="info-label">نسبة الإنجاز</div><div class="info-value">${progress}%</div></div>
-    </div>
-    ${progressBar}
-    ${noteSection}
-    <a href="${SITE_URL}/dashboard" class="btn">متابعة المشروع</a>
-  `);
-  return sendEmail(to, name, `تحديث مشروع: ${projectName} — Qirox`, html);
+  const html = baseTemplate(
+    tag("تحديث المشروع") +
+    title(`${s.icon} تحديث على مشروعك`) +
+    text(`مرحباً ${cleanName(name)}، هناك تحديث جديد على مشروعك:`) +
+    infoTable([
+      ["اسم المشروع", projectName],
+      ["الحالة الحالية", badge(s.badgeKey, s.label)],
+      ["نسبة الإنجاز", `${progress}%`],
+    ]) +
+    progressBar +
+    (note ? highlight(`ملاحظة: ${note}`) : "") +
+    btn(`${SITE_URL}/dashboard`, "متابعة المشروع")
+  );
+  return sendEmail(to, name, `تحديث مشروع: ${projectName} | QIROX`, html);
 }
 
 export async function sendTaskAssignedEmail(to: string, name: string, taskTitle: string, projectName: string, priority: string, deadline?: string): Promise<boolean> {
-  const priorityLabels: Record<string, { label: string; badge: string }> = {
-    low:    { label: "منخفض", badge: "badge-black" },
-    medium: { label: "متوسط", badge: "badge-blue" },
-    high:   { label: "عالي",  badge: "badge-amber" },
-    urgent: { label: "عاجل",  badge: "badge-red" },
+  const priorityLabels: Record<string, { label: string; badgeKey: keyof typeof S }> = {
+    low:    { label: "منخفض", badgeKey: "badgeBlack" },
+    medium: { label: "متوسط", badgeKey: "badgeBlue" },
+    high:   { label: "عالي",  badgeKey: "badgeAmber" },
+    urgent: { label: "عاجل",  badgeKey: "badgeRed" },
   };
-  const p = priorityLabels[priority] || { label: priority, badge: "badge-black" };
-  const deadlineRow = deadline ? `<div class="info-row"><div class="info-label">الموعد النهائي</div><div class="info-value">${new Date(deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</div></div>` : "";
-  const html = baseTemplate(`
-    <div class="tag">مهمة جديدة</div>
-    <div class="title">🎯 تم تكليفك بمهمة جديدة</div>
-    <p class="text">مرحباً ${cleanName(name)}، تم إسناد مهمة جديدة إليك في مشروع <strong>${projectName}</strong>:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">المهمة</div><div class="info-value">${taskTitle}</div></div>
-      <div class="info-row"><div class="info-label">المشروع</div><div class="info-value">${projectName}</div></div>
-      <div class="info-row"><div class="info-label">الأولوية</div><div class="info-value"><span class="badge ${p.badge}">${p.label}</span></div></div>
-      ${deadlineRow}
-    </div>
-    <a href="${SITE_URL}/dashboard" class="btn">عرض المهمة</a>
-  `);
-  return sendEmail(to, name, `مهمة جديدة: ${taskTitle} — Qirox`, html);
+  const p = priorityLabels[priority] || { label: priority, badgeKey: "badgeBlack" as keyof typeof S };
+  const rows: [string, string][] = [
+    ["المهمة", taskTitle],
+    ["المشروع", projectName],
+    ["الأولوية", badge(p.badgeKey, p.label)],
+  ];
+  if (deadline) rows.push(["الموعد النهائي", new Date(deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })]);
+  const html = baseTemplate(
+    tag("مهمة جديدة") +
+    title("تم تكليفك بمهمة جديدة") +
+    text(`مرحباً ${cleanName(name)}، تم اسناد مهمة جديدة اليك في مشروع <strong>${projectName}</strong>:`) +
+    infoTable(rows) +
+    btn(`${SITE_URL}/dashboard`, "عرض المهمة")
+  );
+  return sendEmail(to, name, `مهمة جديدة: ${taskTitle} | QIROX`, html);
 }
 
 export async function sendTaskCompletedEmail(to: string, name: string, taskTitle: string, projectName: string, completedBy: string): Promise<boolean> {
-  const html = baseTemplate(`
-    <div class="tag">إنجاز مهمة</div>
-    <div class="title">✅ تم إنجاز مهمة في مشروعك</div>
-    <p class="text">مرحباً ${cleanName(name)}، تم الانتهاء من مهمة في مشروع <strong>${projectName}</strong>:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">المهمة</div><div class="info-value">${taskTitle}</div></div>
-      <div class="info-row"><div class="info-label">المشروع</div><div class="info-value">${projectName}</div></div>
-      <div class="info-row"><div class="info-label">أنجزها</div><div class="info-value">${completedBy}</div></div>
-      <div class="info-row"><div class="info-label">التاريخ</div><div class="info-value">${new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</div></div>
-    </div>
-    <a href="${SITE_URL}/dashboard" class="btn">متابعة المشروع</a>
-  `);
-  return sendEmail(to, name, `إنجاز مهمة: ${taskTitle} — Qirox`, html);
+  const html = baseTemplate(
+    tag("انجاز مهمة") +
+    title("تم انجاز مهمة في مشروعك") +
+    text(`مرحباً ${cleanName(name)}، تم الانتهاء من مهمة في مشروع <strong>${projectName}</strong>:`) +
+    infoTable([
+      ["المهمة", taskTitle],
+      ["المشروع", projectName],
+      ["انجزها", completedBy],
+      ["التاريخ", new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })],
+    ]) +
+    btn(`${SITE_URL}/dashboard`, "متابعة المشروع")
+  );
+  return sendEmail(to, name, `انجاز مهمة: ${taskTitle} | QIROX`, html);
 }
 
 export async function sendDirectEmail(to: string, toName: string, subject: string, body: string): Promise<boolean> {
-  const html = baseTemplate(`
-    <div class="tag">رسالة من فريق Qirox</div>
-    <div class="title">${subject}</div>
-    <div class="text" style="white-space:pre-line;">${body}</div>
-    <hr class="divider"/>
-    <p class="text" style="font-size:12px;color:#9ca3af;">هذه الرسالة أُرسلت إليك من فريق Qirox.</p>
-  `);
+  const html = baseTemplate(
+    tag("رسالة من فريق QIROX") +
+    title(subject) +
+    `<p style="margin:0 0 14px 0;font-size:14px;color:#555555;line-height:1.8;white-space:pre-line;">${body}</p>` +
+    divider() +
+    text("هذه الرسالة ارسلت اليك من فريق QIROX.", "font-size:12px;color:#9ca3af;")
+  );
   return sendEmail(to, toName || to, subject, html);
 }
 
 export async function sendAdminNewClientEmail(adminEmail: string, clientName: string, clientEmail: string, clientPhone: string, registeredBy?: string): Promise<boolean> {
-  const html = baseTemplate(`
-    <div class="tag">عميل جديد</div>
-    <div class="title">🎉 تم تسجيل عميل جديد</div>
-    <p class="text">تم إنشاء حساب عميل جديد على منصة Qirox${registeredBy ? ` عن طريق <strong>${registeredBy}</strong>` : ''}:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">الاسم</div><div class="info-value">${clientName}</div></div>
-      <div class="info-row"><div class="info-label">البريد الإلكتروني</div><div class="info-value">${clientEmail}</div></div>
-      <div class="info-row"><div class="info-label">الهاتف</div><div class="info-value">${clientPhone || '—'}</div></div>
-      <div class="info-row"><div class="info-label">التاريخ</div><div class="info-value">${new Date().toLocaleString('ar-SA')}</div></div>
-    </div>
-    <a href="${SITE_URL}/admin/customers" class="btn">عرض العميل</a>
-  `);
-  return sendEmail(adminEmail, "فريق Qirox", "عميل جديد — Qirox 🎉", html);
+  const html = baseTemplate(
+    tag("عميل جديد") +
+    title("تم تسجيل عميل جديد") +
+    text(`تم انشاء حساب عميل جديد على منصة QIROX${registeredBy ? ` عن طريق <strong>${registeredBy}</strong>` : ''}:`) +
+    infoTable([
+      ["الاسم", clientName],
+      ["البريد الالكتروني", clientEmail],
+      ["الهاتف", clientPhone || "—"],
+      ["التاريخ", new Date().toLocaleString('ar-SA')],
+    ]) +
+    btn(`${SITE_URL}/admin/customers`, "عرض العميل")
+  );
+  return sendEmail(adminEmail, "فريق QIROX", `عميل جديد: ${clientName} | QIROX`, html);
 }
 
 export async function sendAdminNewOrderEmail(adminEmail: string, clientName: string, clientEmail: string, orderId: string, services: string[], totalAmount?: number): Promise<boolean> {
-  const servicesList = services.map(s => `<div class="highlight">• ${s}</div>`).join("") || '<div class="highlight">—</div>';
-  const html = baseTemplate(`
-    <div class="tag">طلب جديد</div>
-    <div class="title">📦 طلب جديد بانتظار المراجعة</div>
-    <p class="text">وردَ طلب جديد من العميل <strong>${clientName}</strong> ويحتاج إلى مراجعة:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">العميل</div><div class="info-value">${clientName}</div></div>
-      <div class="info-row"><div class="info-label">البريد</div><div class="info-value">${clientEmail}</div></div>
-      <div class="info-row"><div class="info-label">رقم الطلب</div><div class="info-value">#${orderId.slice(-8).toUpperCase()}</div></div>
-      ${totalAmount ? `<div class="info-row"><div class="info-label">المبلغ</div><div class="info-value">${totalAmount.toLocaleString('ar-SA')} ر.س</div></div>` : ''}
-      <div class="info-row"><div class="info-label">التاريخ</div><div class="info-value">${new Date().toLocaleString('ar-SA')}</div></div>
-    </div>
-    <p class="text" style="font-weight:700;">الخدمات المطلوبة:</p>
-    ${servicesList}
-    <a href="${SITE_URL}/admin/orders" class="btn">مراجعة الطلب الآن</a>
-  `);
-  return sendEmail(adminEmail, "فريق Qirox", `طلب جديد من ${clientName} — Qirox 📦`, html);
+  const servicesList = services.map(s => highlight(`&#8226; ${s}`)).join("") || highlight("—");
+  const rows: [string, string][] = [
+    ["العميل", clientName],
+    ["البريد", clientEmail],
+    ["رقم الطلب", `#${orderId.slice(-8).toUpperCase()}`],
+  ];
+  if (totalAmount) rows.push(["المبلغ", `${totalAmount.toLocaleString('ar-SA')} ر.س`]);
+  rows.push(["التاريخ", new Date().toLocaleString('ar-SA')]);
+  const html = baseTemplate(
+    tag("طلب جديد") +
+    title("طلب جديد بانتظار المراجعة") +
+    text(`ورد طلب جديد من العميل <strong>${clientName}</strong> ويحتاج الى مراجعة:`) +
+    infoTable(rows) +
+    `<p style="${S.text}font-weight:700;">الخدمات المطلوبة:</p>` +
+    servicesList +
+    btn(`${SITE_URL}/admin/orders`, "مراجعة الطلب الآن")
+  );
+  return sendEmail(adminEmail, "فريق QIROX", `طلب جديد من ${clientName} | QIROX`, html);
 }
 
 export async function sendWelcomeWithCredentialsEmail(to: string, name: string, username: string, password: string): Promise<boolean> {
   const displayName = cleanName(name);
-  const html = baseTemplate(`
-    <div class="tag">مرحباً بك</div>
-    <div class="title">أهلاً بك في Qirox، ${displayName}! 🎉</div>
-    <p class="text">تم إنشاء حسابك على منصة Qirox بنجاح. إليك بيانات الدخول الخاصة بك:</p>
-    <div class="otp-box">
-      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:8px;">بيانات تسجيل الدخول</div>
-      <div class="info-grid" style="margin:0;">
-        <div class="info-row"><div class="info-label">اسم المستخدم</div><div class="info-value" style="font-family:monospace;font-weight:900;">${username}</div></div>
-        <div class="info-row"><div class="info-label">كلمة المرور</div><div class="info-value" style="font-family:monospace;font-weight:900;">${password}</div></div>
-      </div>
-    </div>
-    <p class="text" style="color:#ef4444;font-size:12px;">⚠️ يُرجى تغيير كلمة المرور فور تسجيل الدخول لأول مرة.</p>
-    <a href="${SITE_URL}/login" class="btn">تسجيل الدخول الآن</a>
-    <hr style="border:none;border-top:1px solid #f0f0f0;margin:20px 0;"/>
-    <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تطلب إنشاء هذا الحساب، تواصل معنا فوراً.</p>
-  `);
-  return sendEmail(to, displayName, "بيانات حسابك في Qirox 🚀", html);
+  const html = baseTemplate(
+    tag("مرحباً بك") +
+    title(`اهلاً بك في QIROX، ${displayName}!`) +
+    text("تم انشاء حسابك على منصة QIROX بنجاح. اليك بيانات الدخول الخاصة بك:") +
+    infoTable([
+      ["اسم المستخدم", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${username}</span>`],
+      ["كلمة المرور", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${password}</span>`],
+    ]) +
+    `<p style="margin:0 0 14px 0;font-size:13px;color:#ef4444;">يُرجى تغيير كلمة المرور فور تسجيل الدخول لأول مرة.</p>` +
+    btn(`${SITE_URL}/login`, "تسجيل الدخول الآن") +
+    divider() +
+    text("اذا لم تطلب انشاء هذا الحساب، تواصل معنا فوراً.", "font-size:12px;color:#9ca3af;")
+  );
+  return sendEmail(to, displayName, "بيانات حسابك في QIROX", html);
 }
 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
@@ -442,47 +469,45 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   orderId?: string; createdAt?: string;
 }): Promise<boolean> {
   const itemsHtml = invoice.items && invoice.items.length > 0
-    ? `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;">
-        <thead><tr style="background:#f9f9f9;">
-          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #eee;color:#555;">الوصف</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">الكمية</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">سعر الوحدة</th>
-          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #eee;color:#555;">الإجمالي</th>
-        </tr></thead>
-        <tbody>${invoice.items.map(i => `<tr>
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
+        <tr style="background:#f9fafb;">
+          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الوصف</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الاجمالي</th>
+        </tr>
+        ${invoice.items.map(i => `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
           <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
           <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
           <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
-        </tr>`).join("")}</tbody>
+        </tr>`).join("")}
       </table>`
     : "";
   const statusBadge = invoice.status === 'paid'
-    ? `<span class="badge badge-green">مدفوع ✅</span>`
-    : `<span class="badge" style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">غير مدفوع ⏳</span>`;
-  const html = baseTemplate(`
-    <div class="tag">فاتورة</div>
-    <div class="title">فاتورة رقم ${invoice.invoiceNumber}</div>
-    <p class="text">عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة أدناه:</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">رقم الفاتورة</div><div class="info-value" style="font-family:monospace;font-weight:900;">${invoice.invoiceNumber}</div></div>
-      <div class="info-row"><div class="info-label">تاريخ الإصدار</div><div class="info-value">${invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')}</div></div>
-      ${invoice.dueDate ? `<div class="info-row"><div class="info-label">تاريخ الاستحقاق</div><div class="info-value">${new Date(invoice.dueDate).toLocaleDateString('ar-SA')}</div></div>` : ""}
-      <div class="info-row"><div class="info-label">الحالة</div><div class="info-value">${statusBadge}</div></div>
-    </div>
-    ${itemsHtml}
-    <div class="otp-box" style="margin-top:16px;">
-      <div class="info-grid" style="margin:0;">
-        <div class="info-row"><div class="info-label">المبلغ</div><div class="info-value">${invoice.amount.toLocaleString()} ر.س</div></div>
-        ${invoice.vatAmount > 0 ? `<div class="info-row"><div class="info-label">ضريبة القيمة المضافة (15%)</div><div class="info-value">${invoice.vatAmount.toLocaleString()} ر.س</div></div>` : ""}
-        <div class="info-row"><div class="info-label" style="font-weight:900;color:#111;">الإجمالي</div><div class="info-value" style="font-weight:900;color:#111;font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</div></div>
-      </div>
-    </div>
-    ${invoice.notes ? `<p class="text" style="margin-top:12px;font-size:13px;"><strong>ملاحظات:</strong> ${invoice.notes}</p>` : ""}
-    <p class="text" style="font-size:12px;color:#9ca3af;">معلومات التحويل البنكي: IBAN: SA0380205098017222121010</p>
-    <a href="${SITE_URL}/dashboard" class="btn">عرض الفاتورة في لوحة التحكم</a>
-  `);
-  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} — QIROX`, html);
+    ? badge("badgeGreen", "مدفوع")
+    : badge("badgeAmber", "غير مدفوع");
+  const invoiceRows: [string, string][] = [
+    ["رقم الفاتورة", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${invoice.invoiceNumber}</span>`],
+    ["تاريخ الاصدار", invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')],
+  ];
+  if (invoice.dueDate) invoiceRows.push(["تاريخ الاستحقاق", new Date(invoice.dueDate).toLocaleDateString('ar-SA')]);
+  invoiceRows.push(["الحالة", statusBadge]);
+  const totalsRows: [string, string][] = [["المبلغ", `${invoice.amount.toLocaleString()} ر.س`]];
+  if (invoice.vatAmount > 0) totalsRows.push(["ضريبة القيمة المضافة (15%)", `${invoice.vatAmount.toLocaleString()} ر.س`]);
+  totalsRows.push(["الاجمالي", `<strong style="font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</strong>`]);
+  const html = baseTemplate(
+    tag("فاتورة") +
+    title(`فاتورة رقم ${invoice.invoiceNumber}`) +
+    text(`عزيزي ${clientName}، يُرجى الاطلاع على تفاصيل الفاتورة ادناه:`) +
+    infoTable(invoiceRows) +
+    itemsHtml +
+    infoTable(totalsRows) +
+    (invoice.notes ? text(`<strong>ملاحظات:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    text("معلومات التحويل البنكي: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
+    btn(`${SITE_URL}/dashboard`, "عرض الفاتورة في لوحة التحكم")
+  );
+  return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html);
 }
 
 export async function sendReceiptEmail(to: string, clientName: string, receipt: {
@@ -493,39 +518,42 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
     bank_transfer: "تحويل بنكي", cash: "نقداً", paypal: "PayPal",
     stc_pay: "STC Pay", apple_pay: "Apple Pay", other: "أخرى"
   };
-  const html = baseTemplate(`
-    <div class="tag">سند قبض</div>
-    <div class="title">سند قبض رقم ${receipt.receiptNumber}</div>
-    <p class="text">عزيزي ${clientName}، تم استلام مبلغك بنجاح. تفاصيل سند القبض:</p>
-    <div class="otp-box">
-      <div style="font-size:28px;font-weight:900;color:#111;text-align:center;margin-bottom:4px;">${receipt.amount.toLocaleString()} ر.س</div>
-      ${receipt.amountInWords ? `<div style="text-align:center;color:#555;font-size:13px;margin-bottom:8px;">${receipt.amountInWords}</div>` : ""}
-    </div>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">رقم السند</div><div class="info-value" style="font-family:monospace;font-weight:900;">${receipt.receiptNumber}</div></div>
-      <div class="info-row"><div class="info-label">تاريخ الاستلام</div><div class="info-value">${receipt.createdAt ? new Date(receipt.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')}</div></div>
-      <div class="info-row"><div class="info-label">طريقة الدفع</div><div class="info-value">${methodLabels[receipt.paymentMethod] || receipt.paymentMethod}</div></div>
-      ${receipt.description ? `<div class="info-row"><div class="info-label">الوصف</div><div class="info-value">${receipt.description}</div></div>` : ""}
-    </div>
-    <p class="text" style="color:#16a34a;font-size:13px;font-weight:700;">✅ تم استلام المبلغ بنجاح — شكراً لثقتك في QIROX</p>
-    <a href="${SITE_URL}/dashboard" class="btn">عرض لوحة التحكم</a>
-  `);
-  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} — QIROX`, html);
+  const rows: [string, string][] = [
+    ["رقم السند", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${receipt.receiptNumber}</span>`],
+    ["تاريخ الاستلام", receipt.createdAt ? new Date(receipt.createdAt).toLocaleDateString('ar-SA') : new Date().toLocaleDateString('ar-SA')],
+    ["طريقة الدفع", methodLabels[receipt.paymentMethod] || receipt.paymentMethod],
+  ];
+  if (receipt.description) rows.push(["الوصف", receipt.description]);
+  const html = baseTemplate(
+    tag("سند قبض") +
+    title(`سند قبض رقم ${receipt.receiptNumber}`) +
+    text(`عزيزي ${clientName}، تم استلام مبلغك بنجاح. تفاصيل سند القبض:`) +
+    `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;">
+      <tr><td style="background:#f3f4f6;border-radius:10px;padding:24px;text-align:center;">
+        <p style="margin:0 0 4px 0;font-size:32px;font-weight:900;color:#111111;">${receipt.amount.toLocaleString()} ر.س</p>
+        ${receipt.amountInWords ? `<p style="margin:0;text-align:center;color:#555555;font-size:13px;">${receipt.amountInWords}</p>` : ""}
+      </td></tr>
+    </table>` +
+    infoTable(rows) +
+    `<p style="margin:14px 0;font-size:13px;font-weight:700;color:#16a34a;">تم استلام المبلغ بنجاح &mdash; شكراً لثقتك في QIROX</p>` +
+    btn(`${SITE_URL}/dashboard`, "عرض لوحة التحكم")
+  );
+  return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html);
 }
 
 export async function sendTestEmail(to: string, name: string): Promise<boolean> {
-  const html = baseTemplate(`
-    <div class="tag">بريد تجريبي</div>
-    <div class="title">🧪 اختبار نظام البريد الإلكتروني</div>
-    <p class="text">مرحباً ${name}، هذا بريد تجريبي للتأكد من أن نظام إرسال البريد الإلكتروني في Qirox يعمل بشكل صحيح.</p>
-    <div class="info-grid">
-      <div class="info-row"><div class="info-label">النظام</div><div class="info-value">SMTP2GO</div></div>
-      <div class="info-row"><div class="info-label">المرسل</div><div class="info-value">${SENDER}</div></div>
-      <div class="info-row"><div class="info-label">التوقيت</div><div class="info-value">${new Date().toLocaleString('ar-SA')}</div></div>
-      <div class="info-row"><div class="info-label">الحالة</div><div class="info-value"><span class="badge badge-green">يعمل ✅</span></div></div>
-    </div>
-    <p class="text">جميع أنواع البريد الإلكتروني جاهزة: ترحيب، تأكيد طلب، تحديث حالة، إشعار مشروع، إسناد مهمة.</p>
-    <a href="${SITE_URL}/dashboard" class="btn">الذهاب للوحة التحكم</a>
-  `);
-  return sendEmail(to, name, "🧪 اختبار نظام البريد — Qirox", html);
+  const html = baseTemplate(
+    tag("بريد تجريبي") +
+    title("اختبار نظام البريد الالكتروني") +
+    text(`مرحباً ${name}، هذا بريد تجريبي للتأكد من ان نظام ارسال البريد الالكتروني في QIROX يعمل بشكل صحيح.`) +
+    infoTable([
+      ["النظام", "SMTP2GO"],
+      ["المرسل", SENDER],
+      ["التوقيت", new Date().toLocaleString('ar-SA')],
+      ["الحالة", badge("badgeGreen", "يعمل")],
+    ]) +
+    text("جميع انواع البريد الالكتروني جاهزة: ترحيب، تأكيد طلب، تحديث حالة، اشعار مشروع، اسناد مهمة.") +
+    btn(`${SITE_URL}/dashboard`, "الذهاب للوحة التحكم")
+  );
+  return sendEmail(to, name, "اختبار نظام البريد | QIROX", html);
 }
