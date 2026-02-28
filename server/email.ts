@@ -118,70 +118,134 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<boolea
 
 export async function sendOtpEmail(to: string, name: string, otp: string): Promise<boolean> {
   const displayName = cleanName(name);
-  const html = baseTemplate(`
-    <div class="tag">إعادة تعيين كلمة المرور</div>
-    <div class="title">رمز التحقق الخاص بك</div>
-    <p class="text">مرحباً ${displayName}، طلبت إعادة تعيين كلمة المرور لحسابك في Qirox. استخدم الرمز التالي:</p>
-    <div class="otp-box">
-      <div class="otp">${otp}</div>
-      <div class="otp-note">صالح لمدة 10 دقائق فقط — لا تشاركه مع أحد</div>
-    </div>
-    <p class="text">إذا لم تطلب إعادة تعيين كلمة المرور، تجاهل هذا البريد وسيبقى حسابك آمناً.</p>
-  `);
-  const text = `Qirox - رمز التحقق
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      <tr>
+        <td style="background:#000000;padding:24px 32px;text-align:center;">
+          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#6b7280;">اعادة تعيين كلمة المرور</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">رمز التحقق الخاص بك</h2>
+          <p style="margin:0 0 24px 0;font-size:15px;color:#555555;line-height:1.7;">
+            مرحبا ${displayName}، استخدم الرمز التالي لاعادة تعيين كلمة المرور:
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#f3f4f6;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">الرمز السري — OTP Code</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">صالح لمدة 10 دقائق فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:12px;color:#9ca3af;">
+            اذا لم تطلب هذا، تجاهل البريد وسيبقى حسابك آمنا.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio - رمز التحقق
 
-مرحباً ${displayName}،
+مرحبا ${displayName}،
 
-رمز إعادة تعيين كلمة المرور:
+رمز اعادة تعيين كلمة المرور:
 
-[ ${otp} ]
+${otp}
 
-صالح لمدة 10 دقائق فقط. لا تشاركه مع أحد.
+صالح لمدة 10 دقائق فقط. لا تشاركه مع احد.
 
-إذا لم تطلب هذا، تجاهل البريد.
+اذا لم تطلب هذا، تجاهل البريد.
 
-Qirox - qiroxstudio.online`;
-  return sendEmail(to, displayName, "رمز التحقق — Qirox", html, text);
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, "رمز التحقق - Qirox", html, text);
 }
 
 export async function sendEmailVerificationEmail(to: string, name: string, otp: string): Promise<boolean> {
   const displayName = cleanName(name);
-  const html = baseTemplate(`
-    <div class="tag">تأكيد البريد الإلكتروني</div>
-    <div class="title">أهلاً ${displayName}،<br/>رمز التفعيل الخاص بك 🔐</div>
-    <p class="text">
-      شكراً لانضمامك إلى <strong>QIROX Studio</strong> — منصتك الرقمية المتكاملة لبناء الأنظمة الاحترافية.
-      <br/>لإتمام تسجيل حسابك، استخدم رمز التحقق التالي:
-    </p>
-    <div class="otp-box">
-      <p style="font-size:12px;color:#9ca3af;margin:0 0 8px 0;">رمز التحقق — OTP Code</p>
-      <div class="otp" style="letter-spacing:16px;">${otp}</div>
-      <div class="otp-note">⏱ صالح لمدة <strong>30 دقيقة</strong> فقط &nbsp;•&nbsp; 🔒 لا تشاركه مع أحد</div>
-    </div>
-    <div class="highlight" style="background:#fff8e7;border-right-color:#f59e0b;color:#92400e;">
-      📌 إذا لم يظهر هذا البريد في صندوق الوارد، تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه.
-    </div>
-    <p class="text" style="margin-top:20px;">بعد التحقق ستتمكن من:</p>
-    <div class="highlight">📦 تقديم طلبك الأول ومتابعة مراحل التنفيذ</div>
-    <div class="highlight">💬 التواصل المباشر مع فريق QIROX</div>
-    <div class="highlight">📊 متابعة مشاريعك ونسبة إتمامها</div>
-    <hr class="divider"/>
-    <p class="text" style="font-size:12px;color:#9ca3af;">إذا لم تقم بإنشاء حساب في QIROX Studio، تجاهل هذا البريد بأمان — لن يتم اتخاذ أي إجراء.</p>
-  `);
-  const text = `QIROX Studio - رمز التفعيل
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      <!-- header -->
+      <tr>
+        <td style="background:#000000;padding:24px 32px;text-align:center;">
+          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
+        </td>
+      </tr>
+      <!-- body -->
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#6b7280;">رمز تفعيل الحساب</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">مرحباً ${displayName}</h2>
+          <p style="margin:0 0 24px 0;font-size:15px;color:#555555;line-height:1.7;">
+            رمز التحقق الخاص بك لتفعيل حسابك في QIROX Studio:
+          </p>
+          <!-- OTP box -->
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#f3f4f6;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">الرمز السري — OTP Code</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#111111;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">صالح لمدة 30 دقيقة فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:12px;color:#9ca3af;">
+            اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.
+          </p>
+        </td>
+      </tr>
+      <!-- footer -->
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio
 
-أهلاً ${displayName}،
+مرحبا ${displayName}،
 
-رمز التحقق الخاص بك هو:
+رمز التحقق الخاص بك:
 
-[ ${otp} ]
+${otp}
 
-صالح لمدة 30 دقيقة فقط. لا تشاركه مع أحد.
+صالح لمدة 30 دقيقة فقط. لا تشاركه مع احد.
 
-إذا لم تقم بإنشاء هذا الحساب، تجاهل هذا البريد.
+اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.
 
 QIROX Studio - qiroxstudio.online`;
-  return sendEmail(to, displayName, "🔐 رمز تفعيل حسابك في QIROX Studio", html, text);
+  return sendEmail(to, displayName, "رمز تفعيل حسابك - QIROX Studio", html, text);
 }
 
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
