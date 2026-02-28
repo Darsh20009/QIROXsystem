@@ -99,7 +99,7 @@ export async function registerRoutes(
   app.post(api.auth.register.path, async (req, res, next) => {
     try {
       const { UserModel, OtpModel } = await import("./models");
-      const incomingEmail = req.body.email ? req.body.String(email).toLowerCase().trim().trim() : null;
+      const incomingEmail = req.body.email ? String(req.body.email).toLowerCase().trim() : null;
 
       // Check if username already exists
       const existingByUsername = await storage.getUserByUsername(req.body.username);
@@ -160,8 +160,8 @@ export async function registerRoutes(
         if (user.email) {
           const code = Math.floor(100000 + Math.random() * 900000).toString();
           const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-          await OtpModel.updateMany({ email: user.String(email).toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
-          await OtpModel.create({ email: user.String(email).toLowerCase().trim(), code, expiresAt, type: "email_verify" });
+          await OtpModel.updateMany({ email: String(user.email).toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
+          await OtpModel.create({ email: String(user.email).toLowerCase().trim(), code, expiresAt, type: "email_verify" });
           sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
           console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
           const adminEmail = "info@qiroxstudio.online";
@@ -1205,7 +1205,7 @@ export async function registerRoutes(
   if (process.env.NODE_ENV !== "production") {
     app.get("/api/auth/dev-otp/:email", async (req, res) => {
       const { OtpModel } = await import("./models");
-      const otp = await OtpModel.findOne({ email: req.params.String(email).toLowerCase().trim(), used: false, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
+      const otp = await OtpModel.findOne({ email: String(req.params.email).toLowerCase().trim(), used: false, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
       if (!otp) return res.status(404).json({ error: "لا يوجد رمز نشط" });
       res.json({ code: (otp as any).code, expiresAt: (otp as any).expiresAt });
     });
@@ -1268,10 +1268,11 @@ export async function registerRoutes(
       const user = req.user as any;
       if (!req.isAuthenticated() || !user?.email) return res.status(400).json({ error: "غير مسجّل الدخول" });
       const { OtpModel } = await import("./models");
-      await OtpModel.updateMany({ email: user.String(email).toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
+      const cleanUserEmail = String(user.email).toLowerCase().trim();
+      await OtpModel.updateMany({ email: cleanUserEmail, used: false, type: "email_verify" }, { used: true });
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      await OtpModel.create({ email: user.String(email).toLowerCase().trim(), code, expiresAt, type: "email_verify" });
+      await OtpModel.create({ email: cleanUserEmail, code, expiresAt, type: "email_verify" });
       await sendEmailVerificationEmail(user.email, user.fullName || user.username, code);
       console.log(`[EMAIL-VERIFY RESEND] Code for ${user.email}: ${code}`);
       res.json({ ok: true });

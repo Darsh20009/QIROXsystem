@@ -1,18 +1,55 @@
 {
-  "name": "QIROX Studio",
+  "name": "QIROX Studio | مصنع الأنظمة الرقمية",
   "short_name": "QIROX",
   "description": "منصة بناء الأنظمة الرقمية المتكاملة — نبني أنظمة، نبقى بشراً",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "ar",
   "dir": "rtl",
-  "categories": ["business", "productivity"],
-  "id": "qirox-studio-pwa",
+  "categories": ["business", "productivity", "utilities"],
+  "id": "qirox-studio-pwa-v1",
   "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/logo.png",
       "sizes": "192x192",
@@ -21,15 +58,43 @@
     },
     {
       "src": "/logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
       "src": "/logo.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "لوحة تحكم QIROX Studio"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "720x540",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "لوحة تحكم QIROX Studio - سطح المكتب"
     }
   ],
   "shortcuts": [
@@ -37,14 +102,24 @@
       "name": "لوحة التحكم",
       "short_name": "Dashboard",
       "description": "الذهاب للوحة التحكم",
-      "url": "/dashboard",
-      "icons": [{ "src": "/logo.png", "sizes": "96x96" }]
+      "url": "/dashboard?source=shortcut",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96", "type": "image/png" }]
+    },
+    {
+      "name": "طلب جديد",
+      "short_name": "طلب",
+      "description": "تقديم طلب خدمة جديد",
+      "url": "/order?source=shortcut",
+      "icons": [{ "src": "/logo.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],
+  "protocol_handlers": [],
   "prefer_related_applications": false,
   "handle_links": "preferred",
   "launch_handler": {
-    "client_mode": "navigate-existing"
+    "client_mode": ["navigate-existing", "auto"]
   },
-  "display_override": ["window-controls-overlay", "minimal-ui"]
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

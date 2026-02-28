@@ -65,6 +65,7 @@ import AdminReceipts from "@/pages/AdminReceipts";
 import ReceiptPrint from "@/pages/ReceiptPrint";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email"];
 
@@ -250,18 +251,18 @@ function AppInner() {
         <div className={`min-h-screen flex w-full bg-white dark:bg-gray-950 ${dir}`}>
           <AppSidebar />
           <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-            <header className="h-16 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl flex items-center justify-between px-4 sticky top-0 z-40">
-              <div className="flex items-center gap-4">
+            <header className="h-14 md:h-16 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
+              <div className="flex items-center gap-2 md:gap-4">
                 <SidebarTrigger data-testid="button-sidebar-toggle" />
               </div>
-              <div className="flex items-center gap-2">
-                {user && <GlobalSearch />}
+              <div className="flex items-center gap-1.5 md:gap-2">
+                {user && <div className="hidden sm:block"><GlobalSearch /></div>}
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="bg-black/[0.03] dark:bg-white/[0.04] text-black/70 dark:text-white/70 border border-black/[0.08] dark:border-white/[0.08] px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
+                  className="bg-black/[0.03] dark:bg-white/[0.04] text-black/70 dark:text-white/70 border border-black/[0.08] dark:border-white/[0.08] px-2.5 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
                   data-testid="button-lang-toggle"
                 >
-                  {lang === "ar" ? "English" : "عربي"}
+                  {lang === "ar" ? "EN" : "ع"}
                 </button>
                 <button
                   onClick={toggle}
@@ -271,13 +272,21 @@ function AppInner() {
                 >
                   {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-black/50" />}
                 </button>
+                {user && (
+                  <div className="flex items-center gap-1.5 md:hidden">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black">
+                      {(user.fullName || "U")[0]}
+                    </div>
+                  </div>
+                )}
               </div>
             </header>
-            <main className="flex-1 overflow-auto p-6 md:p-8 dark:bg-gray-950">
+            <main className="flex-1 overflow-auto p-3 sm:p-5 md:p-8 dark:bg-gray-950 pb-20 md:pb-8">
               <div className="max-w-7xl mx-auto w-full">
                 <AdminRouter />
               </div>
             </main>
+            <MobileBottomNav />
             <Toaster />
           </div>
         </div>

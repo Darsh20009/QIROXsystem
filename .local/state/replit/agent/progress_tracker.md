@@ -22,3 +22,10 @@
 [x] 22. Add visual style selection grid (6 styles: luxury, modern, bold, minimal, classic, custom)
 [x] 23. Add validation for all required fields with toast error messages
 [x] 24. Add animated step progress indicator with icons and connecting lines
+[x] 25. Fix critical OTP bug — user.String(email) → String(user.email) in registration & resend routes
+[x] 26. Add mobile bottom navigation bar for dashboard (MobileBottomNav component)
+[x] 27. Improve PWA manifest for professional Android/Windows install experience
+[x] 28. Improve Service Worker caching strategy (stale-while-revalidate)
+[x] 29. Add mobile CSS improvements (touch targets, font-size, safe-area, overflow)
+[x] 30. Improve SEO - add structured data (Organization + WebSite schema), better meta tags
+[x] 31. Fix admin panel header for mobile (compact layout, user avatar shortcut)

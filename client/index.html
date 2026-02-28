@@ -7,7 +7,7 @@
     <meta name="description" content="QIROX Studio - منصة بناء الأنظمة الرقمية المتكاملة. حلول رقمية احترافية للمطاعم والمتاجر والمؤسسات التعليمية والشركات. نبني أنظمة، نبقى بشراً." />
     <meta name="keywords" content="تصميم مواقع, تطبيقات, أنظمة رقمية, مصنع أنظمة, QIROX, تطوير ويب, السعودية, مصر, SaaS, PWA, تطبيقات جوال" />
     <meta name="author" content="QIROX Studio" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://qiroxstudio.online" />
 
     <meta property="og:type" content="website" />
@@ -15,52 +15,91 @@
     <meta property="og:title" content="QIROX Studio | مصنع الأنظمة الرقمية المحترف" />
     <meta property="og:description" content="منصة تقنية متكاملة لبناء وإدارة الأنظمة الرقمية. حلول احترافية للمطاعم والمتاجر والمؤسسات بأعلى معايير الجودة." />
     <meta property="og:image" content="https://qiroxstudio.online/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="QIROX Studio" />
     <meta property="og:locale" content="ar_SA" />
 
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@QIROXStudio" />
     <meta name="twitter:title" content="QIROX Studio | ابتكار الأنظمة الرقمية" />
     <meta name="twitter:description" content="نحول رؤيتك إلى واقع رقمي ملموس من خلال أنظمة ذكية وتطبيقات متطورة." />
     <meta name="twitter:image" content="https://qiroxstudio.online/logo.png" />
 
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QIROX" />
     <meta name="application-name" content="QIROX Studio" />
+
     <meta name="msapplication-TileImage" content="/logo.png" />
     <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-starturl" content="/" />
+    <meta name="msapplication-navbutton-color" content="#000000" />
     <meta name="msapplication-config" content="none" />
-    <meta name="format-detection" content="telephone=no" />
 
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/logo.png" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+      html { background: #000; }
+      #root { min-height: 100vh; }
+    </style>
 
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@type": "Organization",
       "name": "QIROX Studio",
       "url": "https://qiroxstudio.online",
-      "description": "منصة بناء الأنظمة الرقمية المتكاملة",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
+      "logo": "https://qiroxstudio.online/logo.png",
+      "description": "منصة بناء الأنظمة الرقمية المتكاملة — نبني أنظمة، نبقى بشراً",
+      "foundingDate": "2024",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["Arabic", "English"]
+      },
+      "sameAs": ["https://qiroxstudio.online"],
       "offers": {
         "@type": "AggregateOffer",
         "lowPrice": "5000",
         "highPrice": "40000",
-        "priceCurrency": "SAR",
-        "offerCount": "3"
-      },
-      "provider": {
-        "@type": "Organization",
-        "name": "QIROX Studio",
-        "url": "https://qiroxstudio.online"
+        "priceCurrency": "SAR"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "QIROX Studio",
+      "url": "https://qiroxstudio.online",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://qiroxstudio.online/services?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
       }
     }
     </script>
