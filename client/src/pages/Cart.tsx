@@ -212,10 +212,10 @@ export default function Cart() {
 
   /* ─── Main Cart ─── */
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
-      <PageGraphics variant="minimal" />
+    <div className="min-h-screen bg-[#f8f8f8] relative" dir="rtl">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="minimal" /></div>
       {/* Sticky Header */}
-      <div className="bg-white/95 backdrop-blur border-b border-black/[0.06] sticky top-0 z-30">
+      <div className="bg-white border-b border-black/[0.06] sticky top-0 z-30">
         <div className="max-w-[1100px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/services">

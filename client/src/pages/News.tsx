@@ -77,7 +77,7 @@ function NewsCard({ item, index, onClick }: { item: NewsItem; index: number; onC
 function NewsModal({ item, onClose }: { item: NewsItem; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60" />
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}

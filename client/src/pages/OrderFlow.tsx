@@ -957,8 +957,8 @@ export default function OrderFlow() {
   const progressPct = (step / 5) * 100;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f9f9f9] relative overflow-hidden" dir="rtl">
-      <PageGraphics variant="minimal" />
+    <div className="min-h-screen flex flex-col bg-[#f9f9f9] relative" dir="rtl">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="minimal" /></div>
       <Navigation />
 
       <div className="flex-1 pt-24 pb-16">

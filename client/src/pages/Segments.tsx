@@ -47,7 +47,7 @@ export default function Segments() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {engines.map((engine, index) => (
-          <Card key={index} className="hover-elevate transition-all border-none bg-card/50 backdrop-blur">
+          <Card key={index} className="hover-elevate transition-all border-none bg-card">
             <CardHeader className="flex flex-row items-center gap-4">
               <div className={`p-3 rounded-xl ${engine.bg}`}>
                 <engine.icon className={`w-6 h-6 ${engine.color}`} />

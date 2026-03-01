@@ -256,8 +256,8 @@ function AppInner() {
       <SidebarProvider style={style as React.CSSProperties}>
         <div className={`min-h-screen flex w-full bg-white dark:bg-gray-950 ${dir}`}>
           <AppSidebar />
-          <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-            <header className="h-14 md:h-16 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
+          <div className="flex-1 flex flex-col min-h-screen">
+            <header className="h-14 md:h-16 border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 md:bg-white/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
               <div className="flex items-center gap-2 md:gap-4">
                 <SidebarTrigger data-testid="button-sidebar-toggle" />
               </div>

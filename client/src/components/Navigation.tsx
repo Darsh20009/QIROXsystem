@@ -51,7 +51,7 @@ export default function Navigation() {
         <div className="container mx-auto px-4 sm:px-6">
           <div className={`mx-auto transition-all duration-500 rounded-2xl px-6 ${
             scrolled
-              ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-lg max-w-5xl"
+              ? "bg-white dark:bg-gray-900 md:bg-white/90 md:dark:bg-gray-900/90 md:backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-lg max-w-5xl"
               : "bg-transparent max-w-6xl"
           }`}>
             <div className="flex justify-between items-center h-16">

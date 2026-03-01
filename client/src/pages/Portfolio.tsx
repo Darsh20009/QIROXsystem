@@ -52,8 +52,8 @@ export default function Portfolio() {
     <div className="min-h-screen flex flex-col bg-white">
       <Navigation />
 
-      <section className="pt-36 pb-24 relative overflow-hidden">
-        <PageGraphics variant="bars-corners" />
+      <section className="pt-36 pb-24 relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="bars-corners" /></div>
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">
@@ -84,7 +84,7 @@ export default function Portfolio() {
         </div>
       </section>
 
-      <section className="py-3 bg-white/90 backdrop-blur-lg sticky top-0 z-30 border-b border-black/[0.04]">
+      <section className="py-3 bg-white sticky top-0 z-30 border-b border-black/[0.04]">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <Filter className="w-4 h-4 text-black/20 flex-shrink-0" />

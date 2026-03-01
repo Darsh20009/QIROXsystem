@@ -16,11 +16,16 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **server/routes.ts** — Added `sanitizeUser()` helper that strips `password` field from all user-related API responses
 - Applied to: `POST /api/login`, `GET /api/user`, `GET /api/admin/users`, `GET /api/admin/customers`, `POST /api/admin/users`, `PATCH /api/admin/users/:id`, register endpoints, subscription endpoint
 
-### Mobile/Safari Performance Optimization
-- **AnimatedPageGraphics.tsx** — On mobile: renders only lightweight dot/grid pattern (no SVG animations). `GlowOrb` disabled entirely on Safari. `AnimatedBars`/`AnimatedRing` hidden on mobile. `AnimatedLine` simplified (smaller, no dots). SVG `feGaussianBlur` filters removed. `backdrop-blur-sm` removed from `FloatingMetrics`
-- **qirox-brand.tsx** — Added `MobileSplash` component: lightweight 3-second splash for mobile (vs 4.4s desktop). No SVG charts, just logo + stats + tagline. SVG filters removed from desktop splash too
-- **Home.tsx, Prices.tsx, OrderFlow.tsx** — `blur-3xl` decorative elements hidden on mobile (`hidden md:block`)
-- **Safari fix**: `transformOrigin: "50% 100%"` → `"center bottom"` for better SVG animation compatibility
+### Mobile/Safari Performance Optimization (Comprehensive)
+- **index.css** — Added `100dvh` fallback for `.min-h-screen`/`.h-screen` (iOS Safari address bar fix). Disabled all `backdrop-blur-*` classes on mobile via CSS `@media (max-width: 768px)`
+- **AnimatedPageGraphics.tsx** — On mobile: `AnimatedLine` renders static SVG (no `pathLength` animation). `GlowOrb` disabled on Safari. `AnimatedBars`/`AnimatedRing` hidden on mobile. `FloatingMetrics` hidden via `md:block`
+- **Navigation.tsx** — Solid `bg-white` on mobile, `backdrop-blur-xl` only on `md:` breakpoint
+- **MobileBottomNav.tsx** — Removed `backdrop-blur-xl`, uses solid `bg-white dark:bg-gray-950`
+- **App.tsx** — Sidebar header uses solid bg on mobile, removed `overflow-hidden` from main content wrapper (was breaking `sticky` on Safari)
+- **Dashboard.tsx, Cart.tsx, OrderFlow.tsx, Inbox.tsx, Portfolio.tsx** — Fixed `overflow-hidden` + `sticky` conflict: moved `overflow-hidden` to an absolute wrapper around `PageGraphics` only, so `sticky` elements work correctly on Safari
+- **Home.tsx** — `fadeUp`/`stagger` animation variants made instant on mobile (0 duration, no stagger delay). Reduces 78 simultaneous animations to static renders on mobile devices
+- **Layout.tsx, Portfolio.tsx, Segments.tsx, News.tsx** — Removed `backdrop-blur` from footer, sticky headers, cards, and modal overlays
+- **qirox-brand.tsx** — `MobileSplash` component: lightweight 3-second splash for mobile. SVG filters removed
 
 ## Latest Changes (Feb 28, 2026 - Session 14)
 

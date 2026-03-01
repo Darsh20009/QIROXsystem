@@ -41,7 +41,7 @@ export function MobileBottomNav() {
   const items = isManagement ? adminItems : isEmployee ? employeeItems : clientItems;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-t border-black/[0.06] dark:border-white/[0.06] safe-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-t border-black/[0.06] dark:border-white/[0.06] safe-bottom">
       <div className="flex items-stretch justify-around h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {items.map((item) => {
           const isActive = location === item.url;

@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   ArrowLeft, Globe, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -28,18 +28,23 @@ const sectorIcons: Record<string, any> = {
   User, Heart, ShoppingCart, Coffee, Globe
 };
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }
-  })
-};
+const isMobileDevice = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-const stagger = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
-};
+const fadeUp = isMobileDevice
+  ? { hidden: { opacity: 1, y: 0 }, visible: () => ({ opacity: 1, y: 0, transition: { duration: 0 } }) }
+  : {
+      hidden: { opacity: 0, y: 30 },
+      visible: (i: number) => ({
+        opacity: 1, y: 0,
+        transition: { duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }
+      })
+    };
+
+const stagger = isMobileDevice
+  ? { hidden: { opacity: 1 }, visible: { opacity: 1, transition: { staggerChildren: 0 } } }
+  : { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
+
+const mobileMotionProps = isMobileDevice ? { initial: { opacity: 1 }, animate: { opacity: 1 } } : {};
 
 export default function Home() {
   const { data: templates } = useTemplates();

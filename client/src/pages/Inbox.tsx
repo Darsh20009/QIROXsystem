@@ -167,8 +167,8 @@ export default function Inbox() {
   );
 
   return (
-    <div className="h-screen bg-[#f8f8f8] flex flex-col relative overflow-hidden" dir="rtl">
-      <PageGraphics variant="dashboard" />
+    <div className="h-screen bg-[#f8f8f8] flex flex-col relative" dir="rtl">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Compose Email Dialog */}
       {me?.role !== "client" && (
         <Dialog open={composeOpen} onOpenChange={setComposeOpen}>

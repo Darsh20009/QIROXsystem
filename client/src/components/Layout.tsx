@@ -14,7 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pt-16">
         {children}
       </main>
-      <footer className="py-12 border-t border-white/5 bg-card/30 backdrop-blur-lg">
+      <footer className="py-12 border-t border-white/5 bg-card">
         <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
           <p>© 2024 QIROX. All rights reserved.</p>
         </div>

@@ -349,8 +349,8 @@ function AdminDashboard({ user }: { user: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" data-testid="admin-dashboard">
-      <PageGraphics variant="dashboard" />
+    <div className="min-h-screen bg-[#f8f8f8] relative" data-testid="admin-dashboard">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       <div className="bg-white border-b border-black/[0.06] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -670,8 +670,8 @@ function EmployeeDashboard({ user }: { user: any }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" data-testid="employee-dashboard" dir="rtl">
-      <PageGraphics variant="dashboard" />
+    <div className="min-h-screen bg-[#f8f8f8] relative" data-testid="employee-dashboard" dir="rtl">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       <div className="bg-white border-b border-black/[0.06] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -1263,7 +1263,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
 
                         {/* Save Button */}
-                        <div className="sticky bottom-0 bg-white/90 backdrop-blur pt-3 pb-5 -mx-6 px-6 border-t border-black/[0.06]">
+                        <div className="sticky bottom-0 bg-white pt-3 pb-5 -mx-6 px-6 border-t border-black/[0.06]">
                           <Button className="w-full bg-black text-white hover:bg-black/80 font-bold h-11 text-sm rounded-xl"
                             onClick={() => saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: {
                               ...specsForm,
@@ -1499,8 +1499,8 @@ export default function Dashboard() {
   const getPhase = (progress: number) => Math.min(Math.floor(progress / 25), 3);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
-      <PageGraphics variant="dashboard" />
+    <div className="min-h-screen bg-[#f8f8f8] relative" dir="rtl">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
       <div className="bg-white border-b border-black/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-6">

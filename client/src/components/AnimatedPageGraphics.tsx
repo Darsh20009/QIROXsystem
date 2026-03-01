@@ -184,9 +184,20 @@ export function AnimatedLine({
     : { top: "rgba(0,0,0,0.06)", bottom: "rgba(0,0,0,0)" };
   const dotFill = dark ? "white" : "black";
 
+  if (isMobile) {
+    return (
+      <div className={`pointer-events-none ${className}`}>
+        <svg width="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: Math.min(height, 35) }}>
+          <path d={areaPath} fill={areaColors.top} opacity={0.5} />
+          <path d={linePath} fill="none" stroke={dark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"} strokeWidth="1.5" />
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <div ref={ref} className={`pointer-events-none ${className}`}>
-      <svg width="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: isMobile ? Math.min(height, 35) : height }}>
+      <svg width="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height }}>
         <defs>
           <linearGradient id={`lg-${idSuffix}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={areaColors.top} />
@@ -203,13 +214,13 @@ export function AnimatedLine({
         <motion.path d={linePath} fill="none" stroke={`url(#sg-${idSuffix})`} strokeWidth="1.5"
           initial={{ pathLength: 0 }} animate={inView ? { pathLength: 1 } : {}}
           transition={{ duration: 1.4, ease, delay: 0.1 }} />
-        {!isMobile && points.filter((_, i) => i % 3 === 0).map(([x, y], i) => (
+        {points.filter((_, i) => i % 3 === 0).map(([x, y], i) => (
           <motion.circle key={i} cx={x} cy={y} r={1.5} fill={dotFill}
             initial={{ scale: 0, opacity: 0 }} animate={inView ? { scale: 1, opacity: dark ? 1 : 0.5 } : {}}
             transition={{ delay: 0.5 + i * 0.12, duration: 0.4 }} />
         ))}
       </svg>
-      {label && !isMobile && (
+      {label && (
         <motion.p initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ duration: 0.4, delay: 0.6 }}
           className={`text-[8px] tracking-widest uppercase ${dark ? "text-white/15" : "text-black/15"} text-center mt-1`}
         >{label}</motion.p>
