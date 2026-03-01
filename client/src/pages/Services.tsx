@@ -218,7 +218,7 @@ export default function Services() {
   });
 
   const addService = (service: Service) => {
-    if (!user) { setLocation("/login"); return; }
+    if (!user) { sessionStorage.setItem("returnAfterLogin", "/services"); setLocation("/login"); return; }
     const key = `service-${service.id}`;
     addToCartMutation.mutate({
       type: 'service', refId: service.id, name: service.title, nameAr: service.title,
@@ -235,7 +235,7 @@ export default function Services() {
   };
 
   const addProduct = (p: QiroxProduct) => {
-    if (!user) { setLocation("/login"); return; }
+    if (!user) { sessionStorage.setItem("returnAfterLogin", "/services"); setLocation("/login"); return; }
     addToCartMutation.mutate({
       type: p.category === 'domain' ? 'domain' : p.category === 'email' ? 'email' : p.category === 'hosting' ? 'hosting' : p.category === 'gift' ? 'gift' : 'product',
       refId: p.id, name: p.name, nameAr: p.nameAr, price: p.price, qty: 1,
@@ -244,7 +244,7 @@ export default function Services() {
   };
 
   const addInfra = (item: any) => {
-    if (!user) { setLocation("/login"); return; }
+    if (!user) { sessionStorage.setItem("returnAfterLogin", "/services"); setLocation("/login"); return; }
     addToCartMutation.mutate(item);
   };
 

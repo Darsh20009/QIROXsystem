@@ -468,8 +468,11 @@ export default function OrderFlow() {
   };
 
   useEffect(() => {
-    if (!isUserLoading && !user) setLocation("/login");
-  }, [user, isUserLoading, setLocation]);
+    if (!isUserLoading && !user) {
+      sessionStorage.setItem("returnAfterLogin", location);
+      setLocation("/login");
+    }
+  }, [user, isUserLoading, setLocation, location]);
 
   if (isUserLoading || isServicesLoading) {
     return (

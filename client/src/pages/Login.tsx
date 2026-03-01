@@ -115,7 +115,13 @@ export default function Login() {
     setVerifySuccess({ name });
     setTimeout(() => {
       setVerifySuccess(null);
-      setLocation("/dashboard");
+      const returnUrl = sessionStorage.getItem("returnAfterLogin");
+      if (returnUrl) {
+        sessionStorage.removeItem("returnAfterLogin");
+        setLocation(returnUrl);
+      } else {
+        setLocation("/dashboard");
+      }
     }, 3500);
   };
 
@@ -194,7 +200,17 @@ export default function Login() {
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
             queryClient.setQueryData(["/api/auth/user"], user);
-            setLocation(user.role === "client" ? "/dashboard" : "/admin");
+            if (user.role === "client") {
+              const returnUrl = sessionStorage.getItem("returnAfterLogin");
+              if (returnUrl) {
+                sessionStorage.removeItem("returnAfterLogin");
+                setLocation(returnUrl);
+              } else {
+                setLocation("/dashboard");
+              }
+            } else {
+              setLocation("/admin");
+            }
           }
         },
       });

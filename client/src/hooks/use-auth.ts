@@ -38,7 +38,13 @@ export function useLogin() {
       // If client email not verified, pause redirect — Login.tsx will show OTP step
       if (user.role === 'client' && user.email && !user.emailVerified) return;
       if (user.role === 'client') {
-        setLocation("/dashboard");
+        const returnUrl = sessionStorage.getItem("returnAfterLogin");
+        if (returnUrl) {
+          sessionStorage.removeItem("returnAfterLogin");
+          setLocation(returnUrl);
+        } else {
+          setLocation("/dashboard");
+        }
       } else {
         setLocation("/admin");
       }
