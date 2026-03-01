@@ -65,11 +65,12 @@ import AdminReceipts from "@/pages/AdminReceipts";
 import ReceiptPrint from "@/pages/ReceiptPrint";
 import EmployeeRoleDashboard from "@/pages/EmployeeRoleDashboard";
 import SalesMarketing from "@/pages/SalesMarketing";
+import DevPortal from "@/pages/DevPortal";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email"];
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/partners", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers"];
 
 function PublicRouter() {
   return (
@@ -96,6 +97,7 @@ function PublicRouter() {
       <Route path="/devices" component={Devices} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/developers" component={DevPortal} />
       <Route component={NotFound} />
     </Switch>
   );
