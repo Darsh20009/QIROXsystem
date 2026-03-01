@@ -10,7 +10,18 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 1, 2026 - Session 15)
+## Latest Changes (Mar 1, 2026 - Session 16)
+
+### Performance: Code Splitting (React.lazy)
+- **App.tsx** — All 50+ page imports converted to `React.lazy()` with `Suspense` fallback (`PageLoader` spinner). Initial bundle drastically reduced — pages load on demand
+- **PageLoader** component shows centered spinner during lazy load
+
+### Partners Page → Home Marquee
+- **Removed** standalone `/partners` public route. Admin `/admin/partners` management kept
+- **Home.tsx** — Added `PartnersMarquee` component: auto-scrolling CSS logo strip with gradient edge fades, grayscale-to-color on hover, merges API partners (from admin) with static fallback logos
+- **index.css** — Added `@keyframes marquee` CSS animation (30s loop, respects `prefers-reduced-motion`)
+
+## Previous Changes (Mar 1, 2026 - Session 15)
 
 ### Security Fix: Password Hash Leak
 - **server/routes.ts** — Added `sanitizeUser()` helper that strips `password` field from all user-related API responses

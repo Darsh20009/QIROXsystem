@@ -8,6 +8,18 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Partner } from "@shared/schema";
+
+import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
+import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
+import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
+import tuwaiqLogo from "@assets/Screenshot_2026-02-20_030415_1771717262310.png";
+import blackRoseLogo from "@assets/Screenshot_2026-01-28_010045_1771717287296.png";
+import qodratakLogo from "@assets/Screenshot_2026-01-28_125929_1771717287296.png";
+import subwayLogo from "@assets/Screenshot_2026-01-28_130014_1771717301779.png";
+import maestroLogo from "@assets/Screenshot_2026-01-28_130058_1771717301779.png";
+import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png";
 import {
   ArrowLeft, Globe, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -27,6 +39,18 @@ const sectorIcons: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe
 };
+
+const staticPartners = [
+  { name: "QahwaCup", nameAr: "قهوة كوب", logo: qahwaCupLogo },
+  { name: "Gen M&Z", nameAr: "Gen M&Z", logo: genMZLogo },
+  { name: "Be Fluent", nameAr: "Be Fluent", logo: beFluentLogo },
+  { name: "جمعية طويق", nameAr: "جمعية طويق", logo: tuwaiqLogo },
+  { name: "Black Rose Cafe", nameAr: "بلاك روز كافيه", logo: blackRoseLogo },
+  { name: "Qodratak", nameAr: "قدراتك", logo: qodratakLogo },
+  { name: "Subway", nameAr: "صبواي", logo: subwayLogo },
+  { name: "Maestro", nameAr: "مايسترو", logo: maestroLogo },
+  { name: "InstaPay", nameAr: "إنستاباي", logo: instapayLogo },
+];
 
 const isMobileDevice = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -712,6 +736,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* PARTNERS MARQUEE */}
+      <PartnersMarquee lang={lang} dir={dir} />
+
       {/* FINAL CTA */}
       <section className="py-20 md:py-28 relative" data-testid="section-spotlight">
         <div className="container mx-auto px-4">
@@ -778,5 +805,72 @@ export default function Home() {
       <InstallPrompt />
       <Footer />
     </div>
+  );
+}
+
+function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
+  const { data: apiPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+
+  const allLogos = useMemo(() => {
+    const fromApi = (apiPartners || []).map(p => ({
+      name: lang === "ar" ? (p.nameAr || p.name) : p.name,
+      logo: p.logoUrl,
+      url: p.websiteUrl,
+    }));
+    const fromStatic = staticPartners.map(p => ({
+      name: lang === "ar" ? p.nameAr : p.name,
+      logo: p.logo,
+      url: undefined as string | undefined,
+    }));
+    const apiNames = new Set(fromApi.map(p => p.name));
+    const merged = [...fromApi, ...fromStatic.filter(s => !apiNames.has(s.name))];
+    return merged;
+  }, [apiPartners, lang]);
+
+  if (allLogos.length === 0) return null;
+
+  const doubled = [...allLogos, ...allLogos];
+
+  return (
+    <section className="py-16 md:py-20 relative overflow-hidden" data-testid="section-partners">
+      <div className="container mx-auto px-4 mb-10 text-center">
+        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold" dir={dir}>
+          {lang === "ar" ? "يثقون بنا" : "Trusted By"}
+        </p>
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+
+        <div className="flex animate-marquee hover:[animation-play-state:paused]" style={{ width: "max-content" }}>
+          {doubled.map((partner, i) => (
+            <div
+              key={`${partner.name}-${i}`}
+              className="flex-shrink-0 mx-6 md:mx-10 flex items-center justify-center group"
+              data-testid={`partner-logo-${i}`}
+            >
+              {partner.url ? (
+                <a href={partner.url} target="_blank" rel="noopener noreferrer" className="block">
+                  <img
+                    src={partner.logo}
+                    alt={partner.name}
+                    className="h-10 md:h-12 w-auto object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"
+                    loading="lazy"
+                  />
+                </a>
+              ) : (
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  className="h-10 md:h-12 w-auto object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"
+                  loading="lazy"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
