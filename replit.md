@@ -10,6 +10,18 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 1, 2026 - Session 15)
+
+### Security Fix: Password Hash Leak
+- **server/routes.ts** — Added `sanitizeUser()` helper that strips `password` field from all user-related API responses
+- Applied to: `POST /api/login`, `GET /api/user`, `GET /api/admin/users`, `GET /api/admin/customers`, `POST /api/admin/users`, `PATCH /api/admin/users/:id`, register endpoints, subscription endpoint
+
+### Mobile/Safari Performance Optimization
+- **AnimatedPageGraphics.tsx** — On mobile: renders only lightweight dot/grid pattern (no SVG animations). `GlowOrb` disabled entirely on Safari. `AnimatedBars`/`AnimatedRing` hidden on mobile. `AnimatedLine` simplified (smaller, no dots). SVG `feGaussianBlur` filters removed. `backdrop-blur-sm` removed from `FloatingMetrics`
+- **qirox-brand.tsx** — Added `MobileSplash` component: lightweight 3-second splash for mobile (vs 4.4s desktop). No SVG charts, just logo + stats + tagline. SVG filters removed from desktop splash too
+- **Home.tsx, Prices.tsx, OrderFlow.tsx** — `blur-3xl` decorative elements hidden on mobile (`hidden md:block`)
+- **Safari fix**: `transformOrigin: "50% 100%"` → `"center bottom"` for better SVG animation compatibility
+
 ## Latest Changes (Feb 28, 2026 - Session 14)
 
 ### Dark Mode (النظام الليلي) — Comprehensive Fix

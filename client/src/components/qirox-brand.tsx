@@ -11,6 +11,9 @@ const LINE_POINTS = [
 const RING_RADIUS = 88;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
+const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const isMobileDevice = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 function pointsToPath(pts: number[][]): string {
   if (pts.length < 2) return "";
   let d = `M ${pts[0][0]} ${pts[0][1]}`;
@@ -57,7 +60,117 @@ function AnimatedCounter({ target, duration = 1.8, delay = 0, suffix = "" }: {
   return <>{val.toLocaleString()}{suffix}</>;
 }
 
+function MobileSplash({ onComplete }: { onComplete: () => void }) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase(1), 100),
+      setTimeout(() => setPhase(2), 500),
+      setTimeout(() => setPhase(3), 1200),
+      setTimeout(() => setPhase(4), 2000),
+      setTimeout(onComplete, 3000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [onComplete]);
+
+  return (
+    <AnimatePresence mode="wait">
+      {phase < 4 && (
+        <motion.div
+          key="splash-mobile"
+          className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
+          style={{ background: "#000" }}
+          exit={{ opacity: 0, transition: { duration: 0.5 } }}
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)`,
+              backgroundSize: "32px 32px",
+            }}
+          />
+
+          <div className="relative z-10 flex flex-col items-center px-8">
+            <motion.div
+              className="relative w-[180px] flex items-center justify-center"
+              style={{ height: 100 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={phase >= 1 ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <img
+                src={qiroxNoBgPath}
+                alt="QIROX"
+                className="w-full h-auto object-contain"
+                data-testid="img-splash-logo"
+                style={{ filter: "brightness(0) invert(1)" }}
+              />
+            </motion.div>
+
+            <motion.div
+              className="flex items-center gap-5 mt-5"
+              initial={{ opacity: 0, y: 10 }}
+              animate={phase >= 2 ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6 }}
+            >
+              {[
+                { label: "عميل نشط", target: 1240, suffix: "+" },
+                { label: "مشروع مكتمل", target: 874, suffix: "" },
+                { label: "نسبة الرضا", target: 99, suffix: "%" },
+              ].map(({ label, target, suffix }, i) => (
+                <div key={label} className="text-center">
+                  <p className="text-white font-black text-base tabular-nums" style={{ fontFamily: "monospace" }}>
+                    {phase >= 2 && <AnimatedCounter target={target} delay={i * 0.15} suffix={suffix} />}
+                  </p>
+                  <p className="text-white/25 text-[8px] tracking-widest uppercase mt-0.5">{label}</p>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              className="w-16 h-px bg-white/10 my-4"
+              initial={{ scaleX: 0 }}
+              animate={phase >= 2 ? { scaleX: 1 } : {}}
+              transition={{ duration: 0.5 }}
+            />
+
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0 }}
+              animate={phase >= 3 ? { opacity: 1 } : {}}
+              transition={{ duration: 0.4 }}
+            >
+              <p className="text-[9px] tracking-[6px] uppercase text-white/40 font-medium">
+                BUILD SYSTEMS. STAY HUMAN.
+              </p>
+              <p className="text-[8px] tracking-[4px] text-white/20 mt-1">
+                مصنع الأنظمة الرقمية
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-24">
+            <div className="w-full h-[1px] bg-white/[0.06] rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-white/30 rounded-full"
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 2.5, ease: "linear" }}
+              />
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
+  if (isMobileDevice) {
+    return <MobileSplash onComplete={onComplete} />;
+  }
+
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -85,7 +198,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           style={{ background: "#000" }}
           exit={{ opacity: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }}
         >
-          {/* ── Subtle grid ── */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -95,7 +207,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             }}
           />
 
-          {/* ── Ambient center glow ── */}
           <motion.div
             className="absolute w-[500px] h-[500px] rounded-full pointer-events-none"
             style={{ background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)" }}
@@ -104,9 +215,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 2, ease: "easeOut" }}
           />
 
-          {/* ══════════════════════════════════════════════
-              BAR CHART — bottom left
-          ══════════════════════════════════════════════ */}
           <motion.div
             className="absolute bottom-12 left-8 md:left-16"
             initial={{ opacity: 0 }}
@@ -114,7 +222,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.5 }}
           >
             <svg width="180" height="90" viewBox="0 0 180 90">
-              {/* Axis lines */}
               <line x1="0" y1="88" x2="180" y2="88" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
               {[0, 1, 2, 3].map((i) => (
                 <line key={i} x1="0" y1={i * 22} x2="180" y2={i * 22}
@@ -134,7 +241,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                     initial={{ scaleY: 0 }}
                     animate={phase >= 1 ? { scaleY: 1 } : {}}
                     transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}
+                    style={{ transformBox: "fill-box", transformOrigin: "center bottom" }}
                   />
                 );
               })}
@@ -146,9 +253,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             >Revenue Growth</motion.p>
           </motion.div>
 
-          {/* ══════════════════════════════════════════════
-              BAR CHART — bottom right (inverted color scheme)
-          ══════════════════════════════════════════════ */}
           <motion.div
             className="absolute bottom-12 right-8 md:right-16"
             initial={{ opacity: 0 }}
@@ -173,7 +277,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                     initial={{ scaleY: 0 }}
                     animate={phase >= 1 ? { scaleY: 1 } : {}}
                     transition={{ duration: 0.7, delay: 0.2 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}
+                    style={{ transformBox: "fill-box", transformOrigin: "center bottom" }}
                   />
                 );
               })}
@@ -185,9 +289,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             >Orders / Month</motion.p>
           </motion.div>
 
-          {/* ══════════════════════════════════════════════
-              LINE CHART — top strip (full width)
-          ══════════════════════════════════════════════ */}
           <motion.div
             className="absolute top-10 left-0 right-0 px-8 md:px-20"
             initial={{ opacity: 0 }}
@@ -205,12 +306,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                   <stop offset="60%" stopColor="rgba(255,255,255,0.7)" />
                   <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
                 </linearGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-                  <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
               </defs>
-              {/* Area fill */}
               <motion.path
                 d={areaPath}
                 fill="url(#lineGrad)"
@@ -218,22 +314,19 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                 animate={phase >= 2 ? { opacity: 1 } : {}}
                 transition={{ duration: 1.2, delay: 0.3 }}
               />
-              {/* Line */}
               <motion.path
                 d={linePath}
                 fill="none"
                 stroke="url(#strokeGrad)"
                 strokeWidth="1.5"
-                filter="url(#glow)"
                 initial={{ pathLength: 0 }}
                 animate={phase >= 2 ? { pathLength: 1 } : {}}
                 transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
               />
-              {/* Data dots */}
               {LINE_POINTS.filter((_, i) => i % 3 === 0).map(([x, y], i) => (
                 <motion.circle
                   key={i} cx={x} cy={y} r={1.5}
-                  fill="white" filter="url(#glow)"
+                  fill="white"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={phase >= 2 ? { scale: 1, opacity: 1 } : {}}
                   transition={{ delay: 0.4 + i * 0.12, duration: 0.4 }}
@@ -247,19 +340,13 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             >System Performance Index</motion.p>
           </motion.div>
 
-          {/* ══════════════════════════════════════════════
-              CENTER CONTENT: Ring + Logo
-          ══════════════════════════════════════════════ */}
           <div className="relative z-10 flex flex-col items-center">
-
-            {/* Outer ring with animated arc */}
             <motion.div
               className="relative"
               initial={{ opacity: 0, scale: 0.85 }}
               animate={phase >= 3 ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              {/* SVG ring chart */}
               <svg
                 width="260" height="260"
                 viewBox="-110 -110 220 220"
@@ -271,24 +358,17 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                     <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
                     <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
                   </linearGradient>
-                  <filter id="arcGlow">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
                 </defs>
 
-                {/* Track */}
                 <circle cx="0" cy="0" r={RING_RADIUS}
                   fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1.5" />
 
-                {/* Animated arc ~87% */}
                 <motion.circle
                   cx="0" cy="0" r={RING_RADIUS}
                   fill="none"
                   stroke="url(#arcGrad)"
                   strokeWidth="1.5"
                   strokeLinecap="round"
-                  filter="url(#arcGlow)"
                   strokeDasharray={RING_CIRCUMFERENCE}
                   initial={{ strokeDashoffset: RING_CIRCUMFERENCE, rotate: -90 }}
                   animate={phase >= 3 ? {
@@ -299,7 +379,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                   transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
                 />
 
-                {/* Small tick marks */}
                 {Array.from({ length: 24 }).map((_, i) => {
                   const angle = (i / 24) * 2 * Math.PI - Math.PI / 2;
                   const inner = 92, outer = 96;
@@ -316,7 +395,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                   );
                 })}
 
-                {/* Percentage text */}
                 <motion.text
                   x="0" y="96"
                   textAnchor="middle"
@@ -332,7 +410,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                 </motion.text>
               </svg>
 
-              {/* Logo */}
               <motion.div
                 className="relative w-[200px] md:w-[240px] flex items-center justify-center"
                 style={{ height: 120 }}
@@ -350,7 +427,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
               </motion.div>
             </motion.div>
 
-            {/* ── Stats row ── */}
             <motion.div
               className="flex items-center gap-6 mt-6"
               initial={{ opacity: 0, y: 12 }}
@@ -371,7 +447,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
               ))}
             </motion.div>
 
-            {/* ── Divider ── */}
             <motion.div
               className="w-24 h-px bg-white/10 my-5"
               initial={{ scaleX: 0 }}
@@ -379,7 +454,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
               transition={{ duration: 0.6, delay: 0.2 }}
             />
 
-            {/* ── Tagline ── */}
             <motion.div
               className="text-center"
               initial={{ opacity: 0 }}
@@ -395,11 +469,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             </motion.div>
           </div>
 
-          {/* ══════════════════════════════════════════════
-              SIDE MINI CHARTS — left and right vertical
-          ══════════════════════════════════════════════ */}
-
-          {/* Left side: mini donut */}
           <motion.div
             className="absolute left-6 md:left-12 top-1/2 -translate-y-1/2"
             initial={{ opacity: 0, x: -20 }}
@@ -422,7 +491,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             <p className="text-[7px] tracking-widest text-white/20 text-center mt-1 uppercase">Projects</p>
           </motion.div>
 
-          {/* Right side: mini donut 2 */}
           <motion.div
             className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2"
             initial={{ opacity: 0, x: 20 }}
@@ -445,7 +513,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             <p className="text-[7px] tracking-widest text-white/20 text-center mt-1 uppercase">Uptime</p>
           </motion.div>
 
-          {/* ── Floating data points ── */}
           {phase >= 2 && [
             { top: "22%", left: "18%", val: "+12.4%", delay: 0 },
             { top: "30%", right: "20%", val: "SAR 2.1M", delay: 0.2 },
@@ -460,13 +527,12 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 + delay }}
             >
-              <div className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 backdrop-blur-sm">
+              <div className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5">
                 <p className="text-white/60 text-[10px] font-mono font-bold">{val}</p>
               </div>
             </motion.div>
           ))}
 
-          {/* ── Loading bar at very bottom ── */}
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-32">
             <div className="w-full h-[1px] bg-white/[0.06] rounded-full overflow-hidden">
               <motion.div

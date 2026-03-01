@@ -497,7 +497,7 @@ export default function OrderFlow() {
       <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-12" dir="rtl">
         {/* Ambient glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.02] blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.02] hidden md:block blur-3xl" />
         </div>
 
         <motion.div

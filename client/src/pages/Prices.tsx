@@ -183,8 +183,8 @@ export default function Prices() {
       <section className="pt-36 pb-10 relative overflow-hidden">
         <PageGraphics variant="hero-light" />
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="absolute top-20 left-1/4 w-80 h-80 bg-violet-500/[0.04] rounded-full blur-3xl" />
-        <div className="absolute top-32 right-1/4 w-60 h-60 bg-teal-500/[0.04] rounded-full blur-3xl" />
+        <div className="absolute top-20 left-1/4 w-80 h-80 bg-violet-500/[0.04] rounded-full hidden md:block blur-3xl" />
+        <div className="absolute top-32 right-1/4 w-60 h-60 bg-teal-500/[0.04] rounded-full hidden md:block blur-3xl" />
 
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">

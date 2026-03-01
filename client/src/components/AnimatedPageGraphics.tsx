@@ -1,7 +1,20 @@
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 
 const ease = [0.22, 1, 0.36, 1];
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return mobile;
+}
+
+const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
 function pointsToPath(pts: number[][]): string {
   if (pts.length < 2) return "";
@@ -75,6 +88,8 @@ export function GlowOrb({ position = "center", dark = false, size = 500, intensi
   position?: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
   dark?: boolean; size?: number; intensity?: number;
 }) {
+  if (isSafari) return null;
+
   const posMap: Record<string, string> = {
     center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
     "top-left": "top-0 left-0 -translate-x-1/3 -translate-y-1/3",
@@ -85,13 +100,9 @@ export function GlowOrb({ position = "center", dark = false, size = 500, intensi
   const color = dark ? `rgba(255,255,255,${intensity})` : `rgba(0,0,0,${intensity})`;
 
   return (
-    <motion.div
-      className={`absolute rounded-full pointer-events-none blur-3xl ${posMap[position]}`}
-      style={{ width: size, height: size, background: `radial-gradient(circle, ${color} 0%, transparent 70%)` }}
-      initial={{ scale: 0, opacity: 0 }}
-      whileInView={{ scale: 1, opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 1.5, ease: "easeOut" }}
+    <div
+      className={`absolute rounded-full pointer-events-none ${posMap[position]}`}
+      style={{ width: size, height: size, background: `radial-gradient(circle, ${color} 0%, transparent 70%)`, opacity: 0.8 }}
     />
   );
 }
@@ -105,6 +116,9 @@ export function AnimatedBars({
   width?: number; height?: number; barWidth?: number; gap?: number;
   label?: string; className?: string;
 }) {
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const strokeColor = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
@@ -134,7 +148,7 @@ export function AnimatedBars({
               initial={{ scaleY: 0 }}
               animate={inView ? { scaleY: 1 } : {}}
               transition={{ duration: 0.7, delay: 0.1 + i * 0.04, ease }}
-              style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}
+              style={{ transformBox: "fill-box", transformOrigin: "center bottom" }}
             />
           );
         })}
@@ -155,6 +169,7 @@ export function AnimatedLine({
 }: {
   points?: number[][]; dark?: boolean; label?: string; className?: string; height?: number;
 }) {
+  const isMobile = useIsMobile();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const linePath = pointsToPath(points);
@@ -171,7 +186,7 @@ export function AnimatedLine({
 
   return (
     <div ref={ref} className={`pointer-events-none ${className}`}>
-      <svg width="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height }}>
+      <svg width="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ height: isMobile ? Math.min(height, 35) : height }}>
         <defs>
           <linearGradient id={`lg-${idSuffix}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={areaColors.top} />
@@ -182,25 +197,19 @@ export function AnimatedLine({
             <stop offset="60%" stopColor={strokeColors.mid} />
             <stop offset="100%" stopColor={strokeColors.end} />
           </linearGradient>
-          <filter id={`gl-${idSuffix}`}>
-            <feGaussianBlur stdDeviation="1.5" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
         </defs>
         <motion.path d={areaPath} fill={`url(#lg-${idSuffix})`}
           initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ duration: 1.2, delay: 0.3 }} />
         <motion.path d={linePath} fill="none" stroke={`url(#sg-${idSuffix})`} strokeWidth="1.5"
-          filter={`url(#gl-${idSuffix})`}
           initial={{ pathLength: 0 }} animate={inView ? { pathLength: 1 } : {}}
           transition={{ duration: 1.4, ease, delay: 0.1 }} />
-        {points.filter((_, i) => i % 3 === 0).map(([x, y], i) => (
+        {!isMobile && points.filter((_, i) => i % 3 === 0).map(([x, y], i) => (
           <motion.circle key={i} cx={x} cy={y} r={1.5} fill={dotFill}
-            filter={`url(#gl-${idSuffix})`}
             initial={{ scale: 0, opacity: 0 }} animate={inView ? { scale: 1, opacity: dark ? 1 : 0.5 } : {}}
             transition={{ delay: 0.5 + i * 0.12, duration: 0.4 }} />
         ))}
       </svg>
-      {label && (
+      {label && !isMobile && (
         <motion.p initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}} transition={{ duration: 0.4, delay: 0.6 }}
           className={`text-[8px] tracking-widest uppercase ${dark ? "text-white/15" : "text-black/15"} text-center mt-1`}
         >{label}</motion.p>
@@ -216,6 +225,9 @@ export function AnimatedRing({
   percent?: number; radius?: number; strokeWidth?: number; dark?: boolean;
   label?: string; className?: string; size?: number;
 }) {
+  const isMobile = useIsMobile();
+  if (isMobile) return null;
+
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
   const circumference = 2 * Math.PI * radius;
@@ -268,7 +280,7 @@ export function FloatingMetrics({ dark = false, metrics, className = "" }: {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.3 + i * 0.15 }}
         >
-          <div className={`${bg} border rounded-lg px-2.5 py-1.5 backdrop-blur-sm`}>
+          <div className={`${bg} border rounded-lg px-2.5 py-1.5`}>
             <p className={`${text} text-[10px] font-mono font-bold`}>{value}</p>
           </div>
         </motion.div>
@@ -346,6 +358,17 @@ type Variant =
   | "full-dark";
 
 export function PageGraphics({ variant = "hero-light" }: { variant?: Variant }) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    const isDark = variant === "hero-dark" || variant === "full-dark" || variant === "auth";
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {isDark ? <GridPattern dark opacity={0.02} /> : <DotPattern opacity={0.018} />}
+      </div>
+    );
+  }
+
   switch (variant) {
     case "hero-dark":
       return (

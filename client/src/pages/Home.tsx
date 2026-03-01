@@ -99,8 +99,8 @@ export default function Home() {
         <PageGraphics variant="hero-light" />
         <div className="absolute inset-0 bg-white dark:bg-gray-950" />
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-        <div className="absolute top-40 left-1/4 w-96 h-96 rounded-full bg-black/[0.015] blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 w-72 h-72 rounded-full bg-black/[0.01] blur-3xl" />
+        <div className="absolute top-40 left-1/4 w-96 h-96 rounded-full bg-black/[0.015] hidden md:block blur-3xl" />
+        <div className="absolute bottom-20 right-1/4 w-72 h-72 rounded-full bg-black/[0.01] hidden md:block blur-3xl" />
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
