@@ -266,6 +266,9 @@ const DEFAULT_FORM = (sector = "") => ({
   siteLanguage: "ar", whatsappIntegration: false, socialIntegration: false,
   hasLogo: false, needsLogoDesign: false, hasHosting: false, hasDomain: false,
   accessCredentials: "", paymentMethod: "bank_transfer", paymentProofUrl: "",
+  /* Creative identity fields */
+  brandPrimaryColor: "", brandSecondaryColor: "",
+  brandMood: [] as string[], fontStyle: "", creativeNotes: "",
 });
 const DEFAULT_FILES = () => ({ logo: [], brandIdentity: [], content: [], images: [], video: [], paymentProof: [] });
 
@@ -870,17 +873,21 @@ export default function OrderFlow() {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!formData.projectType) {
+      if (!isPlanOrder && !formData.projectType) {
         toast({ title: "⚠️ حقل مطلوب", description: "الرجاء اختيار نوع المشروع", variant: "destructive" });
         return;
       }
-      if (!formData.sector) {
+      if (!isPlanOrder && !formData.sector) {
         toast({ title: "⚠️ حقل مطلوب", description: "الرجاء اختيار قطاع النشاط", variant: "destructive" });
         return;
       }
       if (!formData.businessName.trim()) {
-        toast({ title: "⚠️ حقل مطلوب", description: "الرجاء إدخال اسم النشاط التجاري", variant: "destructive" });
+        toast({ title: "⚠️ حقل مطلوب", description: "الرجاء إدخال اسم نشاطك التجاري", variant: "destructive" });
         return;
+      }
+      /* For plan orders auto-set projectType if not set */
+      if (isPlanOrder && !formData.projectType) {
+        setFormData(f => ({ ...f, projectType: "platform" }));
       }
     }
     if (step === 2) {
@@ -908,10 +915,19 @@ export default function OrderFlow() {
       if (files.length > 0) filesPayload[key] = files.map(f => f.url);
     });
 
+    const creativeMeta = {
+      brandPrimaryColor: formData.brandPrimaryColor,
+      brandSecondaryColor: formData.brandSecondaryColor,
+      brandMood: formData.brandMood,
+      fontStyle: formData.fontStyle,
+      creativeNotes: formData.creativeNotes,
+    };
+
     const orderPayload = isPlanOrder
       ? {
           ...formData,
           files: filesPayload,
+          creativeMeta,
           status: "pending",
           isDepositPaid: false,
           totalAmount: priceFromUrl || 0,
@@ -925,6 +941,7 @@ export default function OrderFlow() {
           serviceId: service?.id,
           ...formData,
           files: filesPayload,
+          creativeMeta,
           status: "pending",
           isDepositPaid: false,
           totalAmount: service?.priceMin,
@@ -1102,7 +1119,19 @@ export default function OrderFlow() {
                     </div>
                   </div>
 
-                  {/* Sector — Visual Cards */}
+                  {/* Sector — locked for plan orders, grid for direct orders */}
+                  {isPlanOrder ? (
+                    <div className="bg-black rounded-2xl p-5 flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                        {(() => { const S = SECTORS.find(s => s.value === formData.sector); return S ? <S.icon className="w-5 h-5 text-white" /> : <Globe className="w-5 h-5 text-white" />; })()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold mb-0.5">قطاع الباقة المختارة</p>
+                        <p className="text-sm font-bold text-white">{SECTORS.find(s => s.value === formData.sector)?.label || SEGMENT_LABELS[segmentFromUrl] || segmentFromUrl}</p>
+                      </div>
+                      <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/10 text-white/50 border border-white/10 font-semibold">مُحدَّد من الباقة</span>
+                    </div>
+                  ) : (
                   <div className="bg-white rounded-2xl border border-black/[0.06] p-6 shadow-sm">
                     <Label className="text-sm font-bold text-black mb-1 block">
                       قطاع نشاطك <span className="text-red-400">*</span>
@@ -1136,6 +1165,7 @@ export default function OrderFlow() {
                       })}
                     </div>
                   </div>
+                  )}
 
                   {/* Competitors */}
                   <div className="bg-white rounded-2xl border border-black/[0.06] p-6 shadow-sm">
@@ -1242,6 +1272,109 @@ export default function OrderFlow() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* ── Creative Identity / الهوية الإبداعية ── */}
+                  <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-200/60 p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-black">الهوية الإبداعية</p>
+                        <p className="text-xs text-black/40">ساعد فريق التصميم يفهم روح مشروعك</p>
+                      </div>
+                    </div>
+
+                    {/* Brand Colors */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <Label className="text-xs font-bold text-black/60 mb-1.5 block">اللون الأساسي للعلامة</Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={formData.brandPrimaryColor || "#000000"}
+                            onChange={e => setFormData({ ...formData, brandPrimaryColor: e.target.value })}
+                            className="w-10 h-10 rounded-xl border border-black/[0.1] cursor-pointer p-0.5 bg-white"
+                            data-testid="input-brand-primary-color"
+                          />
+                          <Input
+                            placeholder="مثال: #1a1a2e أو كحلي داكن..."
+                            className="flex-1 bg-white border-black/[0.08] text-black h-10 rounded-xl text-sm"
+                            value={formData.brandPrimaryColor}
+                            onChange={e => setFormData({ ...formData, brandPrimaryColor: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold text-black/60 mb-1.5 block">اللون الثانوي / المكمّل</Label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={formData.brandSecondaryColor || "#ffffff"}
+                            onChange={e => setFormData({ ...formData, brandSecondaryColor: e.target.value })}
+                            className="w-10 h-10 rounded-xl border border-black/[0.1] cursor-pointer p-0.5 bg-white"
+                            data-testid="input-brand-secondary-color"
+                          />
+                          <Input
+                            placeholder="مثال: ذهبي، أبيض، رمادي..."
+                            className="flex-1 bg-white border-black/[0.08] text-black h-10 rounded-xl text-sm"
+                            value={formData.brandSecondaryColor}
+                            onChange={e => setFormData({ ...formData, brandSecondaryColor: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Font Style */}
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold text-black/60 mb-2 block">أسلوب الخط المفضّل</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {[
+                          { v: "bold_heavy", label: "عريض وقوي", sample: "BOLD" },
+                          { v: "elegant_thin", label: "رفيع وأنيق", sample: "Elegant" },
+                          { v: "modern_clean", label: "حديث ونظيف", sample: "Modern" },
+                          { v: "arabic_calligraphy", label: "عربي خطاط", sample: "خط" },
+                        ].map(ft => (
+                          <button key={ft.v} type="button"
+                            onClick={() => setFormData({ ...formData, fontStyle: formData.fontStyle === ft.v ? "" : ft.v })}
+                            data-testid={`font-style-${ft.v}`}
+                            className={`p-3 rounded-xl border-2 text-center transition-all ${formData.fontStyle === ft.v ? 'border-violet-500 bg-violet-500 text-white' : 'border-black/[0.08] bg-white text-black hover:border-violet-300'}`}>
+                            <p className="font-black text-sm mb-0.5">{ft.sample}</p>
+                            <p className={`text-[10px] ${formData.fontStyle === ft.v ? 'text-white/70' : 'text-black/40'}`}>{ft.label}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Brand Mood Words */}
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold text-black/60 mb-2 block">الشعور الذي تريده — اختر ما يصف علامتك</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {["فاخر", "موثوق", "مرح وعصري", "هادئ ومطمئن", "قوي ومتسلط", "ودود ومتقرب", "تقني ومتطور", "تقليدي وأصيل", "نظيف ومرتب", "جريء وجذاب"].map(mood => {
+                          const isSelected = formData.brandMood.includes(mood);
+                          return (
+                            <button key={mood} type="button"
+                              onClick={() => setFormData({ ...formData, brandMood: isSelected ? formData.brandMood.filter(m => m !== mood) : [...formData.brandMood, mood] })}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${isSelected ? 'border-violet-500 bg-violet-500 text-white' : 'border-black/[0.08] bg-white text-black/60 hover:border-violet-300'}`}>
+                              {mood}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Creative Notes */}
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 mb-1.5 block">ملاحظات إبداعية حرة</Label>
+                      <Textarea
+                        className="h-20 resize-none bg-white border-black/[0.08] text-black rounded-xl placeholder:text-black/25 text-sm"
+                        placeholder="صف بكلماتك روح العلامة، الأسلوب البصري الذي تتخيله، أو أي مرجع تصميمي تريده..."
+                        value={formData.creativeNotes}
+                        onChange={e => setFormData({ ...formData, creativeNotes: e.target.value })}
+                        data-testid="input-creativeNotes"
+                      />
                     </div>
                   </div>
 
@@ -1399,8 +1532,8 @@ export default function OrderFlow() {
                         <p className="text-white font-bold text-base mb-1">قبل الإرسال — قم بالتحويل أولاً</p>
                         <p className="text-white/50 text-xs leading-relaxed">حوّل الدفعة الأولى إلى الحساب أدناه، ثم ارفع صورة الإيصال في الخطوة التالية. العمل يبدأ فور التأكيد.</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-white/30 text-[10px]">إجمالي يبدأ من</span>
-                          <span className="text-white font-black text-lg">{service.priceMin?.toLocaleString()} ر.س</span>
+                          <span className="text-white/30 text-[10px]">{isPlanOrder ? "إجمالي الباقة" : "إجمالي يبدأ من"}</span>
+                          <span className="text-white font-black text-lg">{(isPlanOrder ? priceFromUrl : service?.priceMin)?.toLocaleString()} ر.س</span>
                         </div>
                       </div>
                     </div>
@@ -1530,8 +1663,8 @@ export default function OrderFlow() {
                     <div className="bg-black rounded-2xl p-5 shadow-sm">
                       <p className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-3">السعر والدفع</p>
                       <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-3xl font-black text-white">{service.priceMin?.toLocaleString()}</span>
-                        <span className="text-sm text-white/40">ر.س يبدأ من</span>
+                        <span className="text-3xl font-black text-white">{(isPlanOrder ? priceFromUrl : service?.priceMin)?.toLocaleString()}</span>
+                        <span className="text-sm text-white/40">{isPlanOrder ? "ر.س — إجمالي الباقة" : "ر.س يبدأ من"}</span>
                       </div>
                       <div className="text-xs text-white/40 flex items-center gap-2">
                         <Check className="w-3 h-3 text-emerald-400" />
@@ -1548,6 +1681,66 @@ export default function OrderFlow() {
                     <div className="bg-white rounded-2xl border border-black/[0.06] p-5 shadow-sm">
                       <p className="text-xs text-black/30 font-semibold uppercase tracking-wider mb-2">ملاحظاتك الإضافية</p>
                       <p className="text-sm text-black/60 leading-relaxed">{formData.requiredFunctions}</p>
+                    </div>
+                  )}
+
+                  {/* Creative Identity Summary */}
+                  {(formData.brandPrimaryColor || formData.brandSecondaryColor || formData.brandMood.length > 0 || formData.fontStyle || formData.creativeNotes) && (
+                    <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-200/60 p-5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-4 h-4 text-violet-500" />
+                        <p className="text-xs text-violet-700 font-bold uppercase tracking-wider">الهوية الإبداعية</p>
+                      </div>
+                      <div className="space-y-2">
+                        {formData.brandPrimaryColor && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md border border-black/10 flex-shrink-0" style={{ backgroundColor: formData.brandPrimaryColor }} />
+                            <span className="text-xs text-black/50">اللون الأساسي: <span className="font-semibold text-black">{formData.brandPrimaryColor}</span></span>
+                          </div>
+                        )}
+                        {formData.brandSecondaryColor && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md border border-black/10 flex-shrink-0" style={{ backgroundColor: formData.brandSecondaryColor }} />
+                            <span className="text-xs text-black/50">اللون الثانوي: <span className="font-semibold text-black">{formData.brandSecondaryColor}</span></span>
+                          </div>
+                        )}
+                        {formData.fontStyle && (
+                          <div className="flex items-center gap-2 text-xs text-black/50">
+                            <span>أسلوب الخط: <span className="font-semibold text-black">{{"bold_heavy":"عريض وقوي","elegant_thin":"رفيع وأنيق","modern_clean":"حديث ونظيف","arabic_calligraphy":"خط عربي"}[formData.fontStyle] || formData.fontStyle}</span></span>
+                          </div>
+                        )}
+                        {formData.brandMood.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {formData.brandMood.map(m => (
+                              <span key={m} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500 text-white font-medium">{m}</span>
+                            ))}
+                          </div>
+                        )}
+                        {formData.creativeNotes && (
+                          <p className="text-xs text-black/50 italic leading-relaxed mt-1">"{formData.creativeNotes}"</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Plan summary if applicable */}
+                  {isPlanOrder && (
+                    <div className="bg-black rounded-2xl p-5">
+                      <p className="text-xs text-white/30 font-semibold uppercase tracking-wider mb-3">تفاصيل الباقة</p>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-white/40">الباقة</span>
+                          <span className="text-xs font-bold text-white">{PLAN_LABELS[planFromUrl] || planFromUrl}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-white/40">القطاع</span>
+                          <span className="text-xs font-bold text-white">{SEGMENT_LABELS[segmentFromUrl] || segmentFromUrl}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-white/40">الفترة</span>
+                          <span className="text-xs font-bold text-white">{PERIOD_LABELS[periodFromUrl] || periodFromUrl}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
