@@ -28,7 +28,6 @@ export default function Navigation() {
     { href: "/services", label: t("nav.services") },
     { href: "/portfolio", label: t("nav.portfolio") },
     { href: "/prices", label: t("nav.prices") },
-    { href: "/developers", label: "للمطورين", dev: true },
     { href: "/about", label: t("nav.about") },
     { href: "/contact", label: t("nav.contact") },
   ];
@@ -63,13 +62,6 @@ export default function Navigation() {
               <div className="hidden lg:flex items-center gap-1">
                 {navLinks.map((link) => (
                   <Link key={link.href} href={link.href}>
-                    {(link as any).dev ? (
-                      <div className="relative px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer bg-gradient-to-r from-violet-600/10 to-purple-600/10 border border-violet-500/20 text-violet-600 dark:text-violet-400 hover:from-violet-600/20 hover:to-purple-600/20 transition-all flex items-center gap-1.5"
-                        data-testid="nav-link-developers">
-                        <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-pulse" />
-                        {link.label}
-                      </div>
-                    ) : (
                     <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       location === link.href
                         ? "text-black dark:text-white"
@@ -84,7 +76,6 @@ export default function Navigation() {
                       )}
                       <span className="relative z-10">{link.label}</span>
                     </div>
-                    )}
                   </Link>
                 ))}
               </div>
