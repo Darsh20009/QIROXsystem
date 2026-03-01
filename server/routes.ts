@@ -18,6 +18,14 @@ import { sendPushToUser, VAPID_PUBLIC } from "./push";
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+function sanitizeUser(user: any): any {
+  if (!user) return user;
+  if (Array.isArray(user)) return user.map(sanitizeUser);
+  const obj = typeof user.toJSON === "function" ? user.toJSON() : { ...user };
+  delete obj.password;
+  return obj;
+}
+
 function translateError(err: any): string {
   const msg: string = err?.message || err?.toString() || "";
   if (msg.includes("E11000") || msg.includes("duplicate key")) {
@@ -121,7 +129,7 @@ export async function registerRoutes(
               sendEmailVerificationEmail(eu.email, eu.fullName || eu.username, code).catch(console.error);
               console.log(`[EMAIL-VERIFY] Resend for existing unverified ${eu.email}: ${code}`);
             }
-            return res.status(200).json({ ...eu, needsVerification: true, resent: true });
+            return res.status(200).json({ ...sanitizeUser(eu), needsVerification: true, resent: true });
           });
         }
         return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
@@ -142,7 +150,7 @@ export async function registerRoutes(
               await OtpModel.create({ email: incomingEmail, code, expiresAt, type: "email_verify" });
               sendEmailVerificationEmail(incomingEmail, ee.fullName || ee.username, code).catch(console.error);
               console.log(`[EMAIL-VERIFY] Resend for existing unverified email ${incomingEmail}: ${code}`);
-              return res.status(200).json({ ...ee.toJSON(), needsVerification: true, resent: true });
+              return res.status(200).json({ ...sanitizeUser(ee), needsVerification: true, resent: true });
             });
           }
           return res.status(400).json({ error: "البريد الإلكتروني مستخدم من قبل" });
@@ -171,7 +179,7 @@ export async function registerRoutes(
           const adminEmail = "info@qiroxstudio.online";
           sendAdminNewClientEmail(adminEmail, user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
         }
-        res.status(201).json({ ...user, emailVerified: false, needsVerification: true });
+        res.status(201).json({ ...sanitizeUser(user), emailVerified: false, needsVerification: true });
       });
     } catch (err) {
       next(err);
@@ -184,7 +192,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const users = await storage.getUsers();
-    res.json(users);
+    res.json(sanitizeUser(users));
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "client"];
@@ -218,7 +226,7 @@ export async function registerRoutes(
         role,
         phone: phone ? String(phone).trim() : undefined,
       });
-      res.status(201).json(user);
+      res.status(201).json(sanitizeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }
@@ -246,7 +254,7 @@ export async function registerRoutes(
       }
       const user = await storage.updateUser(req.params.id, sanitized);
       if (!user) return res.sendStatus(404);
-      res.json(user);
+      res.json(sanitizeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }
@@ -303,7 +311,7 @@ export async function registerRoutes(
           if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
           req.login(user, (err: any) => {
             if (err) return next(err);
-            res.status(200).json(user);
+            res.status(200).json(sanitizeUser(user));
           });
         })(req, res, next);
        });
@@ -320,7 +328,7 @@ export async function registerRoutes(
 
   app.get(api.auth.user.path, (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    res.json(sanitizeUser(req.user));
   });
 
   // Attendance API
@@ -971,7 +979,7 @@ export async function registerRoutes(
   app.get("/api/admin/customers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
     const users = await storage.getUsers();
-    res.json(users.filter((u: any) => u.role === "client"));
+    res.json(sanitizeUser(users.filter((u: any) => u.role === "client")));
   });
 
   // === MARKETING POSTS API ===
@@ -2326,7 +2334,7 @@ export async function registerRoutes(
         { new: true }
       );
       if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
-      res.json(user);
+      res.json(sanitizeUser(user));
     } catch (err) {
       res.status(500).json({ error: "فشل تعيين الاشتراك" });
     }
