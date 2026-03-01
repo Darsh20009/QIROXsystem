@@ -69,7 +69,8 @@ const SalesMarketing = lazy(() => import("@/pages/SalesMarketing"));
 const DevPortal = lazy(() => import("@/pages/DevPortal"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers"];
+const Partners = lazy(() => import("@/pages/Partners"));
+const publicRoutes = ["/", "/services", "/about", "/prices", "/portfolio", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners"];
 
 function PageLoader() {
   return (
@@ -105,6 +106,7 @@ function PublicRouter() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/developers" component={DevPortal} />
+        <Route path="/partners" component={Partners} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

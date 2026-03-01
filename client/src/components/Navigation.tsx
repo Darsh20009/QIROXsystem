@@ -29,6 +29,7 @@ export default function Navigation() {
     { href: "/portfolio", label: t("nav.portfolio") },
     { href: "/prices", label: t("nav.prices") },
     { href: "/about", label: t("nav.about") },
+    { href: "/partners", label: t("nav.partners") },
     { href: "/contact", label: t("nav.contact") },
   ];
 
