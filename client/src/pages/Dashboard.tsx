@@ -58,7 +58,7 @@ function getGreeting() {
 function StatCard({ icon: Icon, label, value, trend, color }: { icon: any; label: string; value: number; trend?: string; color: string }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-      <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all duration-300 bg-white">
+      <Card className="border border-black/[0.06] dark:border-white/[0.08] shadow-none hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900">
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div className={`p-2.5 rounded-xl ${color}`}>
@@ -72,8 +72,8 @@ function StatCard({ icon: Icon, label, value, trend, color }: { icon: any; label
             )}
           </div>
           <div className="mt-4">
-            <p className="text-3xl font-bold text-black tracking-tight">{value}</p>
-            <p className="text-xs text-black/40 mt-1 font-medium">{label}</p>
+            <p className="text-3xl font-bold text-black dark:text-white tracking-tight">{value}</p>
+            <p className="text-xs text-black/40 dark:text-white/40 mt-1 font-medium">{label}</p>
           </div>
         </CardContent>
       </Card>
@@ -122,10 +122,10 @@ function AdminCredentialsCard() {
   ];
 
   return (
-    <div className="border border-black/[0.06] rounded-2xl bg-white overflow-hidden">
+    <div className="border border-black/[0.06] dark:border-white/[0.08] rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
       <button
         onClick={() => setVisible(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-black/[0.02] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.04] transition-colors"
         data-testid="button-toggle-credentials"
       >
         <div className="flex items-center gap-2.5">
@@ -133,31 +133,31 @@ function AdminCredentialsCard() {
             <KeyRound className="w-4 h-4 text-white" />
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-black">بيانات الدخول</p>
-            <p className="text-[10px] text-black/35">اضغط للعرض أو الإخفاء</p>
+            <p className="text-sm font-bold text-black dark:text-white">بيانات الدخول</p>
+            <p className="text-[10px] text-black/35 dark:text-white/35">اضغط للعرض أو الإخفاء</p>
           </div>
         </div>
-        <span className="text-[10px] text-black/30 font-medium">{visible ? "إخفاء ▲" : "عرض ▼"}</span>
+        <span className="text-[10px] text-black/30 dark:text-white/30 font-medium">{visible ? "إخفاء ▲" : "عرض ▼"}</span>
       </button>
 
       {visible && (
-        <div className="px-4 pb-4 pt-2 border-t border-black/[0.04] space-y-2">
+        <div className="px-4 pb-4 pt-2 border-t border-black/[0.04] dark:border-white/[0.06] space-y-2">
           {credentials.map(c => (
-            <div key={c.key} className="flex items-center justify-between bg-[#f8f8f8] rounded-xl px-3 py-2.5 border border-black/[0.04]">
+            <div key={c.key} className="flex items-center justify-between bg-[#f8f8f8] dark:bg-gray-950 rounded-xl px-3 py-2.5 border border-black/[0.04] dark:border-white/[0.06]">
               <div>
-                <p className="text-[10px] text-black/30 mb-0.5">{c.label}</p>
-                <p className="text-xs font-mono font-semibold text-black tracking-wide" data-testid={`text-cred-${c.key}`}>
+                <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{c.label}</p>
+                <p className="text-xs font-mono font-semibold text-black dark:text-white tracking-wide" data-testid={`text-cred-${c.key}`}>
                   {c.value}
                 </p>
               </div>
               <button
                 onClick={() => copyToClipboard(c.value, c.key)}
-                className="w-7 h-7 rounded-lg bg-white hover:bg-black/[0.05] border border-black/[0.06] flex items-center justify-center transition-colors flex-shrink-0 mr-2"
+                className="w-7 h-7 rounded-lg bg-white dark:bg-gray-900 hover:bg-black/[0.05] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center transition-colors flex-shrink-0 mr-2"
                 data-testid={`button-copy-${c.key}`}
               >
                 {copied === c.key
                   ? <Check className="w-3 h-3 text-green-600" />
-                  : <Copy className="w-3 h-3 text-black/35" />
+                  : <Copy className="w-3 h-3 text-black/35 dark:text-white/35" />
                 }
               </button>
             </div>
@@ -218,21 +218,21 @@ function AdminEmailPanel() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden" data-testid="admin-email-panel">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden" data-testid="admin-email-panel">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-black/[0.05]">
         <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
           <Mail className="w-4 h-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-bold text-black">إرسال البريد الإلكتروني المباشر</p>
-          <p className="text-[10px] text-black/35">أرسل رسائل مباشرة لأي عنوان بريدي</p>
+          <p className="text-sm font-bold text-black dark:text-white">إرسال البريد الإلكتروني المباشر</p>
+          <p className="text-[10px] text-black/35 dark:text-white/35">أرسل رسائل مباشرة لأي عنوان بريدي</p>
         </div>
       </div>
 
       <div className="p-5 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] text-black/40 font-semibold block mb-1.5">البريد الإلكتروني *</label>
+            <label className="text-[10px] text-black/40 dark:text-white/40 font-semibold block mb-1.5">البريد الإلكتروني *</label>
             <Input
               value={form.to}
               onChange={e => setForm(f => ({ ...f, to: e.target.value }))}
@@ -243,7 +243,7 @@ function AdminEmailPanel() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-black/40 font-semibold block mb-1.5">الاسم</label>
+            <label className="text-[10px] text-black/40 dark:text-white/40 font-semibold block mb-1.5">الاسم</label>
             <Input
               value={form.toName}
               onChange={e => setForm(f => ({ ...f, toName: e.target.value }))}
@@ -254,7 +254,7 @@ function AdminEmailPanel() {
           </div>
         </div>
         <div>
-          <label className="text-[10px] text-black/40 font-semibold block mb-1.5">عنوان الرسالة *</label>
+          <label className="text-[10px] text-black/40 dark:text-white/40 font-semibold block mb-1.5">عنوان الرسالة *</label>
           <Input
             value={form.subject}
             onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
@@ -264,7 +264,7 @@ function AdminEmailPanel() {
           />
         </div>
         <div>
-          <label className="text-[10px] text-black/40 font-semibold block mb-1.5">محتوى الرسالة *</label>
+          <label className="text-[10px] text-black/40 dark:text-white/40 font-semibold block mb-1.5">محتوى الرسالة *</label>
           <Textarea
             value={form.body}
             onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
@@ -285,7 +285,7 @@ function AdminEmailPanel() {
         </Button>
 
         <div className="border-t border-black/[0.05] pt-3">
-          <p className="text-[10px] text-black/35 font-semibold mb-2.5">إرسال بريد تجريبي لاختبار النظام</p>
+          <p className="text-[10px] text-black/35 dark:text-white/35 font-semibold mb-2.5">إرسال بريد تجريبي لاختبار النظام</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Select value={testType} onValueChange={setTestType}>
@@ -303,7 +303,7 @@ function AdminEmailPanel() {
               variant="outline"
               onClick={() => testMutation.mutate({ type: testType })}
               disabled={testMutation.isPending}
-              className="h-8 text-xs border-black/[0.1] hover:bg-black/[0.04]"
+              className="h-8 text-xs border-black/[0.1] dark:border-white/[0.1] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               data-testid="button-send-test-email"
             >
               {testMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin ml-1" /> : null}
@@ -325,10 +325,10 @@ function AdminDashboard({ user }: { user: any }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] dark:bg-gray-950">
         <div className="text-center">
-          <Loader2 className="w-7 h-7 animate-spin mx-auto text-black/20" />
-          <p className="text-xs text-black/30 mt-3">جاري التحميل...</p>
+          <Loader2 className="w-7 h-7 animate-spin mx-auto text-black/20 dark:text-white/20" />
+          <p className="text-xs text-black/30 dark:text-white/30 mt-3">جاري التحميل...</p>
         </div>
       </div>
     );
@@ -349,13 +349,13 @@ function AdminDashboard({ user }: { user: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative" data-testid="admin-dashboard">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="admin-dashboard">
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
-      <div className="bg-white border-b border-black/[0.06] px-6 py-5">
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-[10px] text-black/30 mb-0.5">{dateStr}</p>
-            <h1 className="text-xl font-bold text-black font-heading" data-testid="text-admin-greeting">
+            <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{dateStr}</p>
+            <h1 className="text-xl font-bold text-black dark:text-white font-heading" data-testid="text-admin-greeting">
               مرحباً، {user.fullName}
             </h1>
           </div>
@@ -368,13 +368,13 @@ function AdminDashboard({ user }: { user: any }) {
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {statItems.map((s, i) => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <div className="bg-white rounded-2xl border border-black/[0.06] px-4 py-4 flex items-center gap-3">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] px-4 py-4 flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>
                   <s.icon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-black/35 font-medium truncate">{s.label}</p>
-                  <p className="text-lg font-bold text-black leading-tight">{s.value}</p>
+                  <p className="text-[10px] text-black/35 dark:text-white/35 font-medium truncate">{s.label}</p>
+                  <p className="text-lg font-bold text-black dark:text-white leading-tight">{s.value}</p>
                 </div>
               </div>
             </motion.div>
@@ -382,13 +382,13 @@ function AdminDashboard({ user }: { user: any }) {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">إدارة النظام</p>
+          <p className="text-[11px] text-black/30 dark:text-white/30 font-semibold uppercase tracking-wider mb-3">إدارة النظام</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {adminSections.map((section, i) => (
               <motion.div key={section.href} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 + i * 0.04 }}>
                 <Link href={section.href}>
                   <div
-                    className="bg-white rounded-2xl border border-black/[0.06] p-4 cursor-pointer hover:border-black/[0.15] hover:shadow-sm transition-all duration-200 group relative"
+                    className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-4 cursor-pointer hover:border-black/[0.15] dark:hover:border-white/[0.15] hover:shadow-sm transition-all duration-200 group relative"
                     data-testid={`link-admin-section-${section.href.replace(/\//g, '-')}`}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -401,9 +401,9 @@ function AdminDashboard({ user }: { user: any }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-bold text-black mb-0.5">{section.label}</p>
-                    <p className="text-[10px] text-black/35 leading-relaxed">{section.desc}</p>
-                    <ChevronLeft className="w-3.5 h-3.5 text-black/20 absolute bottom-4 left-4 group-hover:text-black/40 transition-colors" />
+                    <p className="text-sm font-bold text-black dark:text-white mb-0.5">{section.label}</p>
+                    <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed">{section.desc}</p>
+                    <ChevronLeft className="w-3.5 h-3.5 text-black/20 dark:text-white/20 absolute bottom-4 left-4 group-hover:text-black/40 dark:group-hover:text-white/40 transition-colors" />
                   </div>
                 </Link>
               </motion.div>
@@ -414,40 +414,40 @@ function AdminDashboard({ user }: { user: any }) {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider">أحدث الطلبات</p>
+              <p className="text-[11px] text-black/30 dark:text-white/30 font-semibold uppercase tracking-wider">أحدث الطلبات</p>
               <Link href="/admin/orders">
-                <span className="text-[10px] text-black/40 hover:text-black/70 transition-colors flex items-center gap-1 cursor-pointer" data-testid="link-admin-all-orders">
+                <span className="text-[10px] text-black/40 dark:text-white/40 hover:text-black/70 dark:text-white/70 transition-colors flex items-center gap-1 cursor-pointer" data-testid="link-admin-all-orders">
                   عرض الكل <ArrowUpRight className="w-3 h-3" />
                 </span>
               </Link>
             </div>
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden" data-testid="table-recent-orders">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden" data-testid="table-recent-orders">
               {!stats?.recentOrders?.length ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-10 h-10 bg-black/[0.03] rounded-xl flex items-center justify-center mb-2">
-                    <ShoppingBag className="w-4 h-4 text-black/15" />
+                  <div className="w-10 h-10 bg-black/[0.03] dark:bg-white/[0.05] rounded-xl flex items-center justify-center mb-2">
+                    <ShoppingBag className="w-4 h-4 text-black/15 dark:text-white/15" />
                   </div>
-                  <p className="text-xs text-black/25">لا توجد طلبات بعد</p>
+                  <p className="text-xs text-black/25 dark:text-white/25">لا توجد طلبات بعد</p>
                 </div>
               ) : (
-                <div className="divide-y divide-black/[0.04]">
+                <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
                   {stats.recentOrders.map((order: any, i: number) => {
                     const st = adminOrderStatusMap[order.status] || adminOrderStatusMap['pending'];
                     return (
-                      <div key={order.id || i} className="flex items-center justify-between px-4 py-3 hover:bg-black/[0.01] transition-colors" data-testid={`admin-order-row-${order.id}`}>
+                      <div key={order.id || i} className="flex items-center justify-between px-4 py-3 hover:bg-black/[0.01] dark:hover:bg-white/[0.02] transition-colors" data-testid={`admin-order-row-${order.id}`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-black/[0.03] rounded-lg flex items-center justify-center">
-                            <FileText className="w-3.5 h-3.5 text-black/30" />
+                          <div className="w-8 h-8 bg-black/[0.03] dark:bg-white/[0.05] rounded-lg flex items-center justify-center">
+                            <FileText className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-black">#{order.id?.toString().slice(-6)}</p>
-                            <p className="text-[10px] text-black/30">
+                            <p className="text-xs font-bold text-black dark:text-white">#{order.id?.toString().slice(-6)}</p>
+                            <p className="text-[10px] text-black/30 dark:text-white/30">
                               {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : '-'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <p className="text-xs font-semibold text-black/50">{Number(order.totalAmount || 0).toLocaleString()} ر.س</p>
+                          <p className="text-xs font-semibold text-black/50 dark:text-white/50">{Number(order.totalAmount || 0).toLocaleString()} ر.س</p>
                           <Badge className={`text-[9px] h-5 px-2 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                         </div>
                       </div>
@@ -460,11 +460,11 @@ function AdminDashboard({ user }: { user: any }) {
 
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">بيانات الدخول</p>
+              <p className="text-[11px] text-black/30 dark:text-white/30 font-semibold uppercase tracking-wider mb-3">بيانات الدخول</p>
               <AdminCredentialsCard />
             </div>
             <div>
-              <p className="text-[11px] text-black/30 font-semibold uppercase tracking-wider mb-3">البريد الإلكتروني</p>
+              <p className="text-[11px] text-black/30 dark:text-white/30 font-semibold uppercase tracking-wider mb-3">البريد الإلكتروني</p>
               <AdminEmailPanel />
             </div>
           </div>
@@ -670,19 +670,19 @@ function EmployeeDashboard({ user }: { user: any }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative" data-testid="employee-dashboard" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="employee-dashboard" dir="rtl">
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
-      <div className="bg-white border-b border-black/[0.06] px-6 py-5">
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
-            <p className="text-[10px] text-black/30 mb-0.5">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <h1 className="text-xl font-bold text-black font-heading">مرحباً، {user.fullName}</h1>
+            <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <h1 className="text-xl font-bold text-black dark:text-white font-heading">مرحباً، {user.fullName}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-black/[0.06] text-black/60 border-0 text-xs px-3 py-1.5">
+            <Badge className="bg-black/[0.06] text-black/60 dark:text-white/60 border-0 text-xs px-3 py-1.5">
               {employeeRoleLabels[user.role] || user.role}
             </Badge>
-            <div className="flex items-center gap-2 bg-black/[0.02] p-1.5 rounded-xl border border-black/[0.06]">
+            <div className="flex items-center gap-2 bg-black/[0.02] dark:bg-white/[0.04] p-1.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08]">
               {!attendanceStatus || attendanceStatus.checkOut ? (
                 <Button size="sm" className="bg-black text-white hover:bg-black/80 text-xs h-8 px-4" onClick={handleCheckIn} disabled={checkInMutation.isPending} data-testid="button-check-in">
                   <LogIn className="w-3.5 h-3.5 ml-1.5" />تسجيل حضور
@@ -693,7 +693,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                 </Button>
               )}
               {attendanceStatus && !attendanceStatus.checkOut && (
-                <div className="px-3 py-1 text-[10px] font-bold text-black/40 flex items-center gap-1.5">
+                <div className="px-3 py-1 text-[10px] font-bold text-black/40 dark:text-white/40 flex items-center gap-1.5">
                   <Timer className="w-3 h-3 text-green-500 animate-pulse" />
                   {new Date(attendanceStatus.checkIn).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                 </div>
@@ -707,13 +707,13 @@ function EmployeeDashboard({ user }: { user: any }) {
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((s, i) => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-              <div className="bg-white rounded-2xl border border-black/[0.06] px-4 py-4 flex items-center gap-3">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] px-4 py-4 flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>
                   <s.icon className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-black/35 font-medium">{s.label}</p>
-                  <p className="text-xl font-bold text-black leading-tight">{s.value}</p>
+                  <p className="text-[10px] text-black/35 dark:text-white/35 font-medium">{s.label}</p>
+                  <p className="text-xl font-bold text-black dark:text-white leading-tight">{s.value}</p>
                 </div>
               </div>
             </motion.div>
@@ -723,15 +723,15 @@ function EmployeeDashboard({ user }: { user: any }) {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
             <div>
-              <p className="text-sm font-bold text-black">
+              <p className="text-sm font-bold text-black dark:text-white">
                 {myOrders.length > 0 ? "الطلبات المعينة لي" : "جميع الطلبات"}
               </p>
-              <p className="text-[10px] text-black/35 mt-0.5">اضغط على أي طلب لعرض تفاصيله الكاملة</p>
+              <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5">اضغط على أي طلب لعرض تفاصيله الكاملة</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {["all", "pending", "in_progress", "completed"].map(s => (
                 <button key={s} onClick={() => setFilterStatus(s)}
-                  className={`text-[10px] font-medium px-3 py-1.5 rounded-lg transition-colors ${filterStatus === s ? 'bg-black text-white' : 'bg-white border border-black/[0.08] text-black/50 hover:bg-black/[0.04]'}`}
+                  className={`text-[10px] font-medium px-3 py-1.5 rounded-lg transition-colors ${filterStatus === s ? 'bg-black text-white' : 'bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.1] text-black/50 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'}`}
                   data-testid={`filter-${s}`}>
                   {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "in_progress" ? "جاري" : "مكتمل"}
                 </button>
@@ -739,16 +739,16 @@ function EmployeeDashboard({ user }: { user: any }) {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
             {isLoadingOrders ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
             ) : filteredOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FileText className="w-8 h-8 text-black/10 mb-3" />
-                <p className="text-sm text-black/30">لا توجد طلبات</p>
+                <FileText className="w-8 h-8 text-black/10 dark:text-white/10 mb-3" />
+                <p className="text-sm text-black/30 dark:text-white/30">لا توجد طلبات</p>
               </div>
             ) : (
-              <div className="divide-y divide-black/[0.04]">
+              <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
                 {filteredOrders.map((order: any, i) => {
                   const st = orderStatusColors[order.status] || orderStatusColors['pending'];
                   const isMyOrder = (order.assignedTo?._id || order.assignedTo) === user.id;
@@ -756,7 +756,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                   const hasSpecs = order.specs && Object.values(order.specs).some(v => v);
                   return (
                     <motion.div key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                      className="flex items-center justify-between px-5 py-4 hover:bg-black/[0.02] cursor-pointer transition-colors group"
+                      className="flex items-center justify-between px-5 py-4 hover:bg-black/[0.02] dark:hover:bg-white/[0.04] cursor-pointer transition-colors group"
                       onClick={() => openOrder(order)}
                       data-testid={`employee-order-row-${order.id}`}>
                       <div className="flex items-center gap-4 min-w-0">
@@ -765,20 +765,20 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                            <p className="text-xs font-bold text-black">طلب #{order.id?.toString().slice(-6)}</p>
+                            <p className="text-xs font-bold text-black dark:text-white">طلب #{order.id?.toString().slice(-6)}</p>
                             {isMyOrder && <span className="text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">معين لي</span>}
                             {hasSpecs && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">مكتمل المواصفات</span>}
                           </div>
                           <div className="flex items-center gap-2">
-                            <p className="text-[10px] text-black/50 font-medium">{clientName}</p>
-                            <span className="text-black/15">·</span>
-                            <p className="text-[10px] text-black/35 truncate max-w-[160px]">
+                            <p className="text-[10px] text-black/50 dark:text-white/50 font-medium">{clientName}</p>
+                            <span className="text-black/15 dark:text-white/15">·</span>
+                            <p className="text-[10px] text-black/35 dark:text-white/35 truncate max-w-[160px]">
                               {order.projectType || order.sector || "طلب خدمة"}
                             </p>
                             {order.createdAt && (
                               <>
-                                <span className="text-black/15">·</span>
-                                <p className="text-[10px] text-black/25">{new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}</p>
+                                <span className="text-black/15 dark:text-white/15">·</span>
+                                <p className="text-[10px] text-black/25 dark:text-white/25">{new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })}</p>
                               </>
                             )}
                           </div>
@@ -786,10 +786,10 @@ function EmployeeDashboard({ user }: { user: any }) {
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {order.totalAmount > 0 && (
-                          <p className="text-xs font-semibold text-black/40 hidden md:block">{Number(order.totalAmount).toLocaleString()} ر.س</p>
+                          <p className="text-xs font-semibold text-black/40 dark:text-white/40 hidden md:block">{Number(order.totalAmount).toLocaleString()} ر.س</p>
                         )}
                         <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>{st.label}</span>
-                        <ChevronRight className="w-4 h-4 text-black/20 group-hover:text-black/50 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-black/50 dark:group-hover:text-white/50 transition-colors" />
                       </div>
                     </motion.div>
                   );
@@ -806,10 +806,10 @@ function EmployeeDashboard({ user }: { user: any }) {
           {selectedOrder && (
             <div className="flex flex-col h-full">
               {/* Sheet Header */}
-              <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
+              <div className="px-6 py-5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900 flex-shrink-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <SheetTitle className="text-base font-bold text-black font-heading">
+                    <SheetTitle className="text-base font-bold text-black dark:text-white font-heading">
                       طلب #{selectedOrder.id?.toString().slice(-6)}
                     </SheetTitle>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -817,10 +817,10 @@ function EmployeeDashboard({ user }: { user: any }) {
                         {(orderStatusColors[selectedOrder.status] || orderStatusColors['pending']).label}
                       </span>
                       {selectedOrder.totalAmount > 0 && (
-                        <span className="text-[10px] text-black/40 font-medium">{Number(selectedOrder.totalAmount).toLocaleString()} ر.س</span>
+                        <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">{Number(selectedOrder.totalAmount).toLocaleString()} ر.س</span>
                       )}
                       {selectedOrder.createdAt && (
-                        <span className="text-[10px] text-black/30">
+                        <span className="text-[10px] text-black/30 dark:text-white/30">
                           {new Date(selectedOrder.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </span>
                       )}
@@ -831,7 +831,7 @@ function EmployeeDashboard({ user }: { user: any }) {
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
-                <TabsList className="w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0">
+                <TabsList className="w-full rounded-none border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900 h-10 justify-start px-6 gap-0 flex-shrink-0">
                   <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
                     تفاصيل الطلب
                   </TabsTrigger>
@@ -850,8 +850,8 @@ function EmployeeDashboard({ user }: { user: any }) {
 
                       {/* Client Info */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات العميل</p>
-                        <div className="bg-black/[0.02] rounded-xl p-4 space-y-3 border border-black/[0.04]">
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">بيانات العميل</p>
+                        <div className="bg-black/[0.02] dark:bg-white/[0.04] rounded-xl p-4 space-y-3 border border-black/[0.04] dark:border-white/[0.06]">
                           {selectedOrder.client ? (
                             <>
                               <div className="flex items-center gap-3">
@@ -859,42 +859,42 @@ function EmployeeDashboard({ user }: { user: any }) {
                                   {selectedOrder.client.fullName?.charAt(0) || "?"}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-bold text-black">{selectedOrder.client.fullName || selectedOrder.client.username}</p>
-                                  <p className="text-[10px] text-black/40">@{selectedOrder.client.username}</p>
+                                  <p className="text-sm font-bold text-black dark:text-white">{selectedOrder.client.fullName || selectedOrder.client.username}</p>
+                                  <p className="text-[10px] text-black/40 dark:text-white/40">@{selectedOrder.client.username}</p>
                                 </div>
                               </div>
                               <Separator className="opacity-30" />
                               {selectedOrder.client.email && (
                                 <div className="flex items-center gap-2.5">
-                                  <Mail className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
-                                  <p className="text-xs text-black/70">{selectedOrder.client.email}</p>
+                                  <Mail className="w-3.5 h-3.5 text-black/30 dark:text-white/30 flex-shrink-0" />
+                                  <p className="text-xs text-black/70 dark:text-white/70">{selectedOrder.client.email}</p>
                                 </div>
                               )}
                               {selectedOrder.client.phone && (
                                 <div className="flex items-center gap-2.5">
-                                  <Phone className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
-                                  <p className="text-xs text-black/70">{selectedOrder.client.phone}</p>
+                                  <Phone className="w-3.5 h-3.5 text-black/30 dark:text-white/30 flex-shrink-0" />
+                                  <p className="text-xs text-black/70 dark:text-white/70">{selectedOrder.client.phone}</p>
                                 </div>
                               )}
                             </>
                           ) : (
-                            <p className="text-xs text-black/35">بيانات العميل غير متاحة</p>
+                            <p className="text-xs text-black/35 dark:text-white/35">بيانات العميل غير متاحة</p>
                           )}
                         </div>
                       </div>
 
                       {/* Project Details from Questionnaire */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">تفاصيل المشروع</p>
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">تفاصيل المشروع</p>
                         <div className="space-y-2">
                           {textFields.map(f => selectedOrder[f.key] ? (
-                            <div key={f.key} className="flex gap-3 py-2 border-b border-black/[0.04] last:border-0">
-                              <p className="text-[10px] font-bold text-black/40 w-28 flex-shrink-0 pt-0.5">{f.label}</p>
-                              <p className="text-xs text-black/80 flex-1">{selectedOrder[f.key]}</p>
+                            <div key={f.key} className="flex gap-3 py-2 border-b border-black/[0.04] dark:border-white/[0.06] last:border-0">
+                              <p className="text-[10px] font-bold text-black/40 dark:text-white/40 w-28 flex-shrink-0 pt-0.5">{f.label}</p>
+                              <p className="text-xs text-black/80 dark:text-white/80 flex-1">{selectedOrder[f.key]}</p>
                             </div>
                           ) : null)}
                           {textFields.every(f => !selectedOrder[f.key]) && (
-                            <p className="text-xs text-black/25 py-3 text-center">لم يُملأ الاستبيان بعد</p>
+                            <p className="text-xs text-black/25 dark:text-white/25 py-3 text-center">لم يُملأ الاستبيان بعد</p>
                           )}
                         </div>
                       </div>
@@ -902,7 +902,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                       {/* Boolean Flags */}
                       {booleanFields.some(f => selectedOrder[f.key]) && (
                         <div>
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">الخصائص</p>
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">الخصائص</p>
                           <div className="flex flex-wrap gap-2">
                             {booleanFields.filter(f => selectedOrder[f.key]).map(f => (
                               <span key={f.key} className="text-[10px] bg-black text-white px-2.5 py-1 rounded-full font-medium">{f.label}</span>
@@ -913,23 +913,23 @@ function EmployeeDashboard({ user }: { user: any }) {
 
                       {/* Files & Attachments */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">الملفات والمرفقات</p>
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">الملفات والمرفقات</p>
                         <div className="space-y-2">
                           {fileFields.map(f => selectedOrder[f.key] ? (
                             <a key={f.key} href={selectedOrder[f.key]} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center justify-between p-3 bg-white rounded-xl border border-black/[0.06] hover:border-black/20 transition-colors group">
+                              className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20 transition-colors group">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 bg-black/[0.04] rounded-lg flex items-center justify-center">
-                                  <Link2 className="w-3.5 h-3.5 text-black/40" />
+                                <div className="w-7 h-7 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg flex items-center justify-center">
+                                  <Link2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
                                 </div>
-                                <p className="text-xs font-medium text-black">{f.label}</p>
+                                <p className="text-xs font-medium text-black dark:text-white">{f.label}</p>
                               </div>
-                              <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/60 transition-colors" />
+                              <ExternalLink className="w-3.5 h-3.5 text-black/20 dark:text-white/20 group-hover:text-black/60 dark:group-hover:text-white/60 transition-colors" />
                             </a>
                           ) : null)}
                           {fileFields.every(f => !selectedOrder[f.key]) && (
-                            <div className="py-6 text-center border border-dashed border-black/[0.08] rounded-xl">
-                              <p className="text-xs text-black/25">لا توجد ملفات مرفقة</p>
+                            <div className="py-6 text-center border border-dashed border-black/[0.08] dark:border-white/[0.1] rounded-xl">
+                              <p className="text-xs text-black/25 dark:text-white/25">لا توجد ملفات مرفقة</p>
                             </div>
                           )}
                         </div>
@@ -937,20 +937,20 @@ function EmployeeDashboard({ user }: { user: any }) {
 
                       {/* Payment */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
-                        <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
+                        <div className="bg-black/[0.02] dark:bg-white/[0.04] rounded-xl p-4 border border-black/[0.04] dark:border-white/[0.06] space-y-2">
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-black/50">طريقة الدفع</p>
-                            <p className="text-xs font-bold text-black">
+                            <p className="text-xs text-black/50 dark:text-white/50">طريقة الدفع</p>
+                            <p className="text-xs font-bold text-black dark:text-white">
                               {selectedOrder.paymentMethod === "bank_transfer" ? "تحويل بنكي" : selectedOrder.paymentMethod === "paypal" ? "PayPal" : "—"}
                             </p>
                           </div>
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-black/50">الإجمالي</p>
-                            <p className="text-xs font-bold text-black">{selectedOrder.totalAmount ? `${Number(selectedOrder.totalAmount).toLocaleString()} ر.س` : "—"}</p>
+                            <p className="text-xs text-black/50 dark:text-white/50">الإجمالي</p>
+                            <p className="text-xs font-bold text-black dark:text-white">{selectedOrder.totalAmount ? `${Number(selectedOrder.totalAmount).toLocaleString()} ر.س` : "—"}</p>
                           </div>
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-black/50">حالة الدفعة الأولى</p>
+                            <p className="text-xs text-black/50 dark:text-white/50">حالة الدفعة الأولى</p>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                               {selectedOrder.isDepositPaid ? "مدفوع" : "لم يُدفع"}
                             </span>
@@ -966,8 +966,8 @@ function EmployeeDashboard({ user }: { user: any }) {
                   <ScrollArea className="h-full">
                     {isLoadingSpecs ? (
                       <div className="flex items-center justify-center py-16">
-                        <Loader2 className="w-6 h-6 animate-spin text-black/20" />
-                        <p className="text-xs text-black/30 mr-2">جاري تحميل بيانات المشروع...</p>
+                        <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
+                        <p className="text-xs text-black/30 dark:text-white/30 mr-2">جاري تحميل بيانات المشروع...</p>
                       </div>
                     ) : (
                       <div className="px-6 py-5 space-y-5">
@@ -1040,26 +1040,26 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
 
                         {/* Section 2: Tech Stack */}
-                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <Layers className="w-3.5 h-3.5" />
                             البنية التقنية
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Stack التقني الكامل</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Stack التقني الكامل</label>
                               <Input placeholder="مثال: React 18, Node.js, Express, MongoDB Atlas" value={specsForm.techStack}
                                 onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-techstack" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Framework الأساسي</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Framework الأساسي</label>
                               <Input placeholder="مثال: Next.js 14, Laravel 11" value={specsForm.framework}
                                 onChange={e => setSpecsForm(f => ({ ...f, framework: e.target.value }))}
                                 className="text-sm" data-testid="input-framework" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">لغة البرمجة</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">لغة البرمجة</label>
                               <Select value={specsForm.language} onValueChange={v => setSpecsForm(f => ({ ...f, language: v }))}>
                                 <SelectTrigger className="text-sm" data-testid="select-language"><SelectValue placeholder="اختر اللغة" /></SelectTrigger>
                                 <SelectContent>
@@ -1074,7 +1074,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                               </Select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">قاعدة البيانات</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">قاعدة البيانات</label>
                               <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
                                 <SelectTrigger className="text-sm" data-testid="select-specs-database"><SelectValue placeholder="اختر قاعدة البيانات" /></SelectTrigger>
                                 <SelectContent>
@@ -1091,7 +1091,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                               </Select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الاستضافة</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">الاستضافة</label>
                               <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
                                 <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder="اختر الاستضافة" /></SelectTrigger>
                                 <SelectContent>
@@ -1112,33 +1112,33 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
 
                         {/* Section 3: Infrastructure & Repos */}
-                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <Server className="w-3.5 h-3.5" />
                             بيانات الاستضافة والمستودعات
                           </p>
                           <div className="grid grid-cols-1 gap-3">
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">GitHub Repository URL</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">GitHub Repository URL</label>
                               <Input placeholder="https://github.com/qirox/project-name" value={specsForm.githubRepoUrl}
                                 onChange={e => setSpecsForm(f => ({ ...f, githubRepoUrl: e.target.value }))}
                                 className="text-sm font-mono" dir="ltr" data-testid="input-github-repo" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">MongoDB Cluster URI / Database Connection String</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">MongoDB Cluster URI / Database Connection String</label>
                               <Input placeholder="mongodb+srv://user:pass@cluster.mongodb.net/dbname" value={specsForm.databaseUri}
                                 onChange={e => setSpecsForm(f => ({ ...f, databaseUri: e.target.value }))}
                                 className="text-sm font-mono text-xs" dir="ltr" data-testid="input-database-uri" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">IP السيرفر</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">IP السيرفر</label>
                                 <Input placeholder="192.168.1.1" value={specsForm.serverIp}
                                   onChange={e => setSpecsForm(f => ({ ...f, serverIp: e.target.value }))}
                                   className="text-sm font-mono" dir="ltr" data-testid="input-server-ip" />
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Custom Domain</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Custom Domain</label>
                                 <Input placeholder="example.com" value={specsForm.customDomain}
                                   onChange={e => setSpecsForm(f => ({ ...f, customDomain: e.target.value }))}
                                   className="text-sm font-mono" dir="ltr" data-testid="input-custom-domain" />
@@ -1146,13 +1146,13 @@ function EmployeeDashboard({ user }: { user: any }) {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Deployment Username</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Deployment Username</label>
                                 <Input placeholder="ubuntu / root / deploy" value={specsForm.deploymentUsername}
                                   onChange={e => setSpecsForm(f => ({ ...f, deploymentUsername: e.target.value }))}
                                   className="text-sm font-mono" dir="ltr" data-testid="input-deploy-username" />
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Deployment Password / SSH Key</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Deployment Password / SSH Key</label>
                                 <Input type="password" placeholder="••••••••••" value={specsForm.deploymentPassword}
                                   onChange={e => setSpecsForm(f => ({ ...f, deploymentPassword: e.target.value }))}
                                   className="text-sm font-mono" dir="ltr" data-testid="input-deploy-password" />
@@ -1160,13 +1160,13 @@ function EmployeeDashboard({ user }: { user: any }) {
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Staging URL (رابط الاختبار)</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Staging URL (رابط الاختبار)</label>
                                 <Input placeholder="https://staging.example.com" value={specsForm.stagingUrl}
                                   onChange={e => setSpecsForm(f => ({ ...f, stagingUrl: e.target.value }))}
                                   className="text-sm font-mono text-xs" dir="ltr" data-testid="input-staging-url" />
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">Production URL (رابط الإنتاج)</label>
+                                <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">Production URL (رابط الإنتاج)</label>
                                 <Input placeholder="https://example.com" value={specsForm.productionUrl}
                                   onChange={e => setSpecsForm(f => ({ ...f, productionUrl: e.target.value }))}
                                   className="text-sm font-mono text-xs" dir="ltr" data-testid="input-production-url" />
@@ -1177,65 +1177,65 @@ function EmployeeDashboard({ user }: { user: any }) {
                                 <input type="checkbox" checked={specsForm.sslEnabled}
                                   onChange={e => setSpecsForm(f => ({ ...f, sslEnabled: e.target.checked }))}
                                   className="w-4 h-4 rounded" data-testid="checkbox-ssl" />
-                                <span className="text-xs text-black/60 font-medium">SSL مُفعّل (HTTPS)</span>
+                                <span className="text-xs text-black/60 dark:text-white/60 font-medium">SSL مُفعّل (HTTPS)</span>
                               </label>
                               <label className="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" checked={specsForm.cdnEnabled}
                                   onChange={e => setSpecsForm(f => ({ ...f, cdnEnabled: e.target.checked }))}
                                   className="w-4 h-4 rounded" data-testid="checkbox-cdn" />
-                                <span className="text-xs text-black/60 font-medium">CDN مُفعّل</span>
+                                <span className="text-xs text-black/60 dark:text-white/60 font-medium">CDN مُفعّل</span>
                               </label>
                             </div>
                           </div>
                         </div>
 
                         {/* Section 4: Environment Variables */}
-                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-1 flex items-center gap-2">
+                        <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-1 flex items-center gap-2">
                             <KeyRound className="w-3.5 h-3.5" />
                             Environment Variables & Configs
                           </p>
-                          <p className="text-[9px] text-black/30 mb-3">كل متغير في سطر بصيغة KEY=VALUE</p>
+                          <p className="text-[9px] text-black/30 dark:text-white/30 mb-3">كل متغير في سطر بصيغة KEY=VALUE</p>
                           <Textarea placeholder={"PORT=3000\nNODE_ENV=production\nJWT_SECRET=your_secret\nSTRIPE_KEY=sk_live_...\nSENDGRID_KEY=SG..."}
                             value={specsForm.variables}
                             onChange={e => setSpecsForm(f => ({ ...f, variables: e.target.value }))}
-                            className="text-xs resize-none h-40 font-mono bg-black/[0.02]" dir="ltr"
+                            className="text-xs resize-none h-40 font-mono bg-black/[0.02] dark:bg-white/[0.04]" dir="ltr"
                             data-testid="textarea-specs-variables" />
                         </div>
 
                         {/* Section 5: Project Concept */}
-                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <LayoutGrid className="w-3.5 h-3.5" />
                             تفاصيل المشروع والرؤية
                           </p>
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">فكرة المشروع والهدف منه</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">فكرة المشروع والهدف منه</label>
                               <Textarea placeholder="اشرح فكرة المشروع، هدفه، ومشكلته التي يحلها..." value={specsForm.projectConcept}
                                 onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))}
                                 className="text-sm resize-none h-20" data-testid="textarea-specs-concept" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الجمهور المستهدف</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">الجمهور المستهدف</label>
                               <Input placeholder="مثال: أصحاب المطاعم في المنطقة الشرقية" value={specsForm.targetAudience}
                                 onChange={e => setSpecsForm(f => ({ ...f, targetAudience: e.target.value }))}
                                 className="text-sm" data-testid="input-target-audience" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الميزات الأساسية</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">الميزات الأساسية</label>
                               <Textarea placeholder="- لوحة تحكم المطعم&#10;- قائمة رقمية بـ QR&#10;- نظام الطلبات..." value={specsForm.mainFeatures}
                                 onChange={e => setSpecsForm(f => ({ ...f, mainFeatures: e.target.value }))}
                                 className="text-sm resize-none h-24" data-testid="textarea-main-features" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">روابط مرجعية (مواقع مشابهة)</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">روابط مرجعية (مواقع مشابهة)</label>
                               <Textarea placeholder="https://example1.com&#10;https://example2.com" value={specsForm.referenceLinks}
                                 onChange={e => setSpecsForm(f => ({ ...f, referenceLinks: e.target.value }))}
                                 className="text-sm resize-none h-16 font-mono text-xs" dir="ltr" data-testid="textarea-reference-links" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">لوحة الألوان</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">لوحة الألوان</label>
                               <Input placeholder="مثال: #FF5733, #2C3E50, #27AE60" value={specsForm.colorPalette}
                                 onChange={e => setSpecsForm(f => ({ ...f, colorPalette: e.target.value }))}
                                 className="text-sm font-mono" dir="ltr" data-testid="input-color-palette" />
@@ -1244,17 +1244,17 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
 
                         {/* Section 6: Notes */}
-                        <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4">الملاحظات</p>
+                        <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4">الملاحظات</p>
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">ملاحظات تقنية (تظهر للعميل)</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">ملاحظات تقنية (تظهر للعميل)</label>
                               <Textarea placeholder="ملاحظات تقنية مهمة يجب أن يعلمها العميل..." value={specsForm.notes}
                                 onChange={e => setSpecsForm(f => ({ ...f, notes: e.target.value }))}
                                 className="text-sm resize-none h-20" data-testid="textarea-specs-notes" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">ملاحظات الفريق الداخلية (لا تظهر للعميل)</label>
+                              <label className="text-[10px] font-bold text-black/50 dark:text-white/50 mb-1 block">ملاحظات الفريق الداخلية (لا تظهر للعميل)</label>
                               <Textarea placeholder="ملاحظات داخلية للفريق فقط..." value={specsForm.teamNotes}
                                 onChange={e => setSpecsForm(f => ({ ...f, teamNotes: e.target.value }))}
                                 className="text-sm resize-none h-20 border-dashed" data-testid="textarea-team-notes" />
@@ -1263,7 +1263,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </div>
 
                         {/* Save Button */}
-                        <div className="sticky bottom-0 bg-white pt-3 pb-5 -mx-6 px-6 border-t border-black/[0.06]">
+                        <div className="sticky bottom-0 bg-white dark:bg-gray-900 pt-3 pb-5 -mx-6 px-6 border-t border-black/[0.06] dark:border-white/[0.08]">
                           <Button className="w-full bg-black text-white hover:bg-black/80 font-bold h-11 text-sm rounded-xl"
                             onClick={() => saveSpecsMutation.mutate({ orderId: selectedOrder.id, specs: {
                               ...specsForm,
@@ -1287,7 +1287,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                   <ScrollArea className="h-full">
                     <div className="px-6 py-5 space-y-5">
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">تحديث حالة الطلب</p>
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">تحديث حالة الطلب</p>
                         <Select value={statusUpdate} onValueChange={setStatusUpdate}>
                           <SelectTrigger className="text-sm" data-testid="select-order-status"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -1301,7 +1301,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                         </Select>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">ملاحظات داخلية</p>
+                        <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">ملاحظات داخلية</p>
                         <Textarea placeholder="ملاحظات للفريق (لا تظهر للعميل)..." value={adminNotes}
                           onChange={e => setAdminNotes(e.target.value)} className="text-sm resize-none h-28" data-testid="textarea-admin-notes" />
                       </div>
@@ -1441,10 +1441,10 @@ export default function Dashboard() {
   }, []);
 
   if (!user) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
       <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto text-black/20" />
-        <p className="text-xs text-black/30 mt-3">جاري التحميل...</p>
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-black/20 dark:text-white/20" />
+        <p className="text-xs text-black/30 dark:text-white/30 mt-3">جاري التحميل...</p>
       </div>
     </div>
   );
@@ -1499,10 +1499,10 @@ export default function Dashboard() {
   const getPhase = (progress: number) => Math.min(Math.floor(progress / 25), 3);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" dir="rtl">
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
-      <div className="bg-white border-b border-black/[0.06]">
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08]">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -1510,22 +1510,22 @@ export default function Dashboard() {
                 {user.fullName?.charAt(0) || "U"}
               </div>
               <div>
-                <p className="text-[10px] text-black/30 mb-0.5">{dateStr}</p>
-                <h1 className="text-xl font-black text-black font-heading">
+                <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{dateStr}</p>
+                <h1 className="text-xl font-black text-black dark:text-white font-heading">
                   {getGreeting()}، {user.fullName.split(" ")[0]}
                 </h1>
-                <p className="text-xs text-black/40 mt-0.5">{user.email}</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{user.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <Link href="/services">
-                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] hover:border-black/20 gap-2" data-testid="button-browse-services">
+                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] dark:border-white/[0.1] hover:border-black/20 dark:hover:border-white/20 gap-2" data-testid="button-browse-services">
                   <ShoppingBag className="w-3.5 h-3.5" />
                   تصفح الخدمات
                 </Button>
               </Link>
               <Link href="/cart">
-                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] hover:border-black/20 gap-2">
+                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] dark:border-white/[0.1] hover:border-black/20 dark:hover:border-white/20 gap-2">
                   <ShoppingCart className="w-3.5 h-3.5" />
                   السلة
                 </Button>
@@ -1551,7 +1551,7 @@ export default function Dashboard() {
             { label: "مكتملة", value: completedOrders.length, icon: CheckCircle2, color: "from-green-500 to-emerald-600", bg: "bg-green-50", text: "text-green-600" },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-              <div className="bg-white rounded-2xl border border-black/[0.06] p-5 hover:shadow-md transition-all duration-300">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 hover:shadow-md transition-all duration-300">
                 <div className="flex items-start justify-between mb-4">
                   <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
                     <s.icon className="w-5 h-5 text-white" />
@@ -1560,8 +1560,8 @@ export default function Dashboard() {
                     {s.value > 0 ? `+${s.value}` : "—"}
                   </span>
                 </div>
-                <p className="text-3xl font-black text-black mb-1">{s.value}</p>
-                <p className="text-[11px] text-black/35 font-medium">{s.label}</p>
+                <p className="text-3xl font-black text-black dark:text-white mb-1">{s.value}</p>
+                <p className="text-[11px] text-black/35 dark:text-white/35 font-medium">{s.label}</p>
               </div>
             </motion.div>
           ))}
@@ -1606,16 +1606,16 @@ export default function Dashboard() {
           const isDanger = daysLeft <= 7;
           return (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-8">
-              <div className={`rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 border ${isDanger ? "bg-red-50 border-red-200" : isWarning ? "bg-amber-50 border-amber-200" : "bg-gradient-to-l from-black/[0.03] to-transparent border-black/[0.06] bg-white"}`}>
+              <div className={`rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center gap-4 border ${isDanger ? "bg-red-50 border-red-200" : isWarning ? "bg-amber-50 border-amber-200" : "bg-gradient-to-l from-black/[0.03] to-transparent border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900"}`}>
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-red-100" : isWarning ? "bg-amber-100" : "bg-black"}`}>
                   <Crown className={`w-5 h-5 ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-white"}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className={`font-black text-sm ${isDanger ? "text-red-700" : isWarning ? "text-amber-700" : "text-black"}`}>
+                    <p className={`font-black text-sm ${isDanger ? "text-red-700" : isWarning ? "text-amber-700" : "text-black dark:text-white"}`}>
                       اشتراكك في {(user as any).subscriptionSegmentNameAr || "قيروكس"}
                     </p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-black/10 text-black/60"}`}>نشط</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-black/10 dark:bg-white/10 text-black/60 dark:text-white/60"}`}>نشط</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-2 bg-black/[0.06] rounded-full overflow-hidden max-w-xs">
@@ -1626,15 +1626,15 @@ export default function Dashboard() {
                         transition={{ duration: 1.2, ease: "easeOut" }}
                       />
                     </div>
-                    <p className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black"}`}>{pct}%</p>
+                    <p className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{pct}%</p>
                   </div>
-                  <p className={`text-[11px] mt-1 ${isDanger ? "text-red-600 font-bold" : isWarning ? "text-amber-600 font-bold" : "text-black/40"}`}>
+                  <p className={`text-[11px] mt-1 ${isDanger ? "text-red-600 font-bold" : isWarning ? "text-amber-600 font-bold" : "text-black/40 dark:text-white/40"}`}>
                     {isDanger ? `⚠️ ينتهي خلال ${daysLeft} أيام فقط!` : isWarning ? `متبقي ${daysLeft} يوم على الانتهاء` : `متبقي ${daysLeft} يوم · ينتهي ${expiresAt.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })}`}
                   </p>
                 </div>
                 <div className="text-center flex-shrink-0">
-                  <p className={`text-3xl font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black"}`}>{daysLeft}</p>
-                  <p className={`text-[10px] ${isDanger ? "text-red-500" : isWarning ? "text-amber-500" : "text-black/30"}`}>يوم متبقي</p>
+                  <p className={`text-3xl font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{daysLeft}</p>
+                  <p className={`text-[10px] ${isDanger ? "text-red-500" : isWarning ? "text-amber-500" : "text-black/30 dark:text-white/30"}`}>يوم متبقي</p>
                 </div>
               </div>
             </motion.div>
@@ -1646,13 +1646,13 @@ export default function Dashboard() {
           {/* Projects */}
           <div className="xl:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-black flex items-center gap-2">
+              <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
                 <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><Layers className="w-3.5 h-3.5 text-white" /></div>
                 مشاريعي الجارية
               </h2>
               {(projects?.length || 0) > 0 && (
                 <Link href="/project/status">
-                  <button className="text-[10px] text-black/30 hover:text-black/60 flex items-center gap-1" data-testid="link-all-projects">
+                  <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-all-projects">
                     عرض الكل <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </Link>
@@ -1660,14 +1660,14 @@ export default function Dashboard() {
             </div>
 
             {isLoadingProjects ? (
-              <div className="bg-white rounded-2xl p-16 text-center border border-black/[0.06]"><Loader2 className="w-6 h-6 animate-spin mx-auto text-black/20" /></div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-16 text-center border border-black/[0.06] dark:border-white/[0.08]"><Loader2 className="w-6 h-6 animate-spin mx-auto text-black/20 dark:text-white/20" /></div>
             ) : !projects || projects.length === 0 ? (
-              <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-3xl bg-black/[0.03] flex items-center justify-center mb-5">
-                  <Layers className="w-10 h-10 text-black/10" />
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.08] p-16 flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-3xl bg-black/[0.03] dark:bg-white/[0.05] flex items-center justify-center mb-5">
+                  <Layers className="w-10 h-10 text-black/10 dark:text-white/10" />
                 </div>
-                <h3 className="font-bold text-black/50 mb-2">لا توجد مشاريع بعد</h3>
-                <p className="text-xs text-black/30 mb-6 max-w-xs">ابدأ باختيار الخدمة المناسبة لمشروعك وسيبدأ الفريق بالتنفيذ فوراً</p>
+                <h3 className="font-bold text-black/50 dark:text-white/50 mb-2">لا توجد مشاريع بعد</h3>
+                <p className="text-xs text-black/30 dark:text-white/30 mb-6 max-w-xs">ابدأ باختيار الخدمة المناسبة لمشروعك وسيبدأ الفريق بالتنفيذ فوراً</p>
                 <div className="flex gap-3">
                   <Link href="/services">
                     <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
@@ -1676,7 +1676,7 @@ export default function Dashboard() {
                     </Button>
                   </Link>
                   <Link href="/order">
-                    <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08]">
+                    <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] dark:border-white/[0.1]">
                       طلب مباشر
                     </Button>
                   </Link>
@@ -1689,25 +1689,25 @@ export default function Dashboard() {
                   const st = statusMap[project.status] || statusMap['pending'];
                   return (
                     <motion.div key={project.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
-                      <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden hover:shadow-lg transition-all duration-300 group" data-testid={`project-card-${project.id}`}>
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300 group" data-testid={`project-card-${project.id}`}>
                         <div className="p-6">
                           <div className="flex items-start justify-between mb-5">
                             <div className="flex items-center gap-3">
-                              <div className="w-11 h-11 bg-black/[0.03] rounded-xl flex items-center justify-center">
-                                <Activity className="w-5 h-5 text-black/30" />
+                              <div className="w-11 h-11 bg-black/[0.03] dark:bg-white/[0.05] rounded-xl flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-black/30 dark:text-white/30" />
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-sm text-black">مشروع #{String(project.id)?.slice(-6) || project.id}</h4>
+                                  <h4 className="font-bold text-sm text-black dark:text-white">مشروع #{String(project.id)?.slice(-6) || project.id}</h4>
                                   <Badge className={`text-[9px] h-4 px-1.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                                 </div>
-                                <p className="text-[10px] text-black/30 mt-0.5">
+                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">
                                   {project.createdAt ? new Date(project.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                                 </p>
                               </div>
                             </div>
                             <Link href="/project/status">
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/20 hover:text-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/20 dark:text-white/20 hover:text-black/60 dark:text-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Eye className="w-4 h-4" />
                               </Button>
                             </Link>
@@ -1716,10 +1716,10 @@ export default function Dashboard() {
                           {/* Progress */}
                           <div className="mb-4">
                             <div className="flex items-center justify-between mb-2">
-                              <p className="text-[11px] text-black/40">التقدم الكلي</p>
-                              <p className="text-sm font-black text-black">{project.progress || 0}%</p>
+                              <p className="text-[11px] text-black/40 dark:text-white/40">التقدم الكلي</p>
+                              <p className="text-sm font-black text-black dark:text-white">{project.progress || 0}%</p>
                             </div>
-                            <div className="h-2 bg-black/[0.04] rounded-full overflow-hidden">
+                            <div className="h-2 bg-black/[0.04] dark:bg-white/[0.06] rounded-full overflow-hidden">
                               <motion.div
                                 className="h-full bg-black rounded-full"
                                 initial={{ width: 0 }}
@@ -1732,15 +1732,15 @@ export default function Dashboard() {
                           {/* Phase Pills */}
                           <div className="flex gap-2">
                             {projectPhases.map((ph, pi) => (
-                              <div key={pi} className={`flex-1 text-center py-1.5 rounded-lg text-[10px] font-bold transition-all ${pi <= phase ? 'bg-black text-white' : 'bg-black/[0.03] text-black/25'}`}>
+                              <div key={pi} className={`flex-1 text-center py-1.5 rounded-lg text-[10px] font-bold transition-all ${pi <= phase ? 'bg-black text-white' : 'bg-black/[0.03] dark:bg-white/[0.05] text-black/25 dark:text-white/25'}`}>
                                 {ph}
                               </div>
                             ))}
                           </div>
 
                           {/* Sub-Service Button */}
-                          <div className="mt-4 pt-3 border-t border-black/[0.04] flex items-center justify-between">
-                            <p className="text-[10px] text-black/30">هل تحتاج خدمة إضافية لهذا المشروع؟</p>
+                          <div className="mt-4 pt-3 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
+                            <p className="text-[10px] text-black/30 dark:text-white/30">هل تحتاج خدمة إضافية لهذا المشروع؟</p>
                             <Button
                               size="sm"
                               onClick={() => openSubSvcDialog(project.id, `مشروع #${String(project.id)?.slice(-6)}`)}
@@ -1768,21 +1768,21 @@ export default function Dashboard() {
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.05 }}>
                   {action.href ? (
                     <Link href={action.href}>
-                      <div className="bg-white rounded-xl border border-black/[0.06] p-4 hover:shadow-md transition-all cursor-pointer group">
+                      <div className="bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-4 hover:shadow-md transition-all cursor-pointer group">
                         <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-md`}>
                           <action.icon className="w-4.5 h-4.5 text-white" />
                         </div>
-                        <p className="font-bold text-xs text-black">{action.label}</p>
-                        <p className="text-[10px] text-black/35 mt-0.5">{action.desc}</p>
+                        <p className="font-bold text-xs text-black dark:text-white">{action.label}</p>
+                        <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5">{action.desc}</p>
                       </div>
                     </Link>
                   ) : (
-                    <div onClick={action.action} className="bg-white rounded-xl border border-black/[0.06] p-4 hover:shadow-md transition-all cursor-pointer group" data-testid="button-new-modification-request">
+                    <div onClick={action.action} className="bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-4 hover:shadow-md transition-all cursor-pointer group" data-testid="button-new-modification-request">
                       <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-md`}>
                         <action.icon className="w-4.5 h-4.5 text-white" />
                       </div>
-                      <p className="font-bold text-xs text-black">{action.label}</p>
-                      <p className="text-[10px] text-black/35 mt-0.5">{action.desc}</p>
+                      <p className="font-bold text-xs text-black dark:text-white">{action.label}</p>
+                      <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5">{action.desc}</p>
                     </div>
                   )}
                 </motion.div>
@@ -1794,35 +1794,35 @@ export default function Dashboard() {
           <div className="space-y-5">
             {/* Orders Timeline */}
             <div>
-              <h2 className="font-bold text-black flex items-center gap-2 mb-4">
+              <h2 className="font-bold text-black dark:text-white flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><FileText className="w-3.5 h-3.5 text-white" /></div>
                 سجل الطلبات
               </h2>
-              <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
                 {isLoadingOrders ? (
-                  <div className="p-12 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-black/15" /></div>
+                  <div className="p-12 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-black/15 dark:text-white/15" /></div>
                 ) : !orders || orders.length === 0 ? (
                   <div className="p-10 text-center">
-                    <FileText className="w-8 h-8 mx-auto text-black/10 mb-3" />
-                    <p className="text-xs text-black/25">لا توجد طلبات بعد</p>
+                    <FileText className="w-8 h-8 mx-auto text-black/10 dark:text-white/10 mb-3" />
+                    <p className="text-xs text-black/25 dark:text-white/25">لا توجد طلبات بعد</p>
                     <Link href="/order">
                       <Button size="sm" className="mt-4 bg-black text-white rounded-xl text-xs h-8 px-4">أول طلب</Button>
                     </Link>
                   </div>
                 ) : (
-                  <div className="divide-y divide-black/[0.04]">
+                  <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
                     {orders.slice(0, 6).map((order, i) => {
                       const st = statusMap[order.status] || statusMap['pending'];
                       const StatusIcon = st.icon;
                       return (
-                        <div key={order.id} className="px-4 py-3.5 hover:bg-black/[0.01] transition-colors" data-testid={`order-item-${order.id}`}>
+                        <div key={order.id} className="px-4 py-3.5 hover:bg-black/[0.01] dark:hover:bg-white/[0.02] transition-colors" data-testid={`order-item-${order.id}`}>
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-lg ${st.bg} border ${st.bg.replace('bg-', 'border-').replace('/50', '/30')} flex items-center justify-center flex-shrink-0`}>
                               <StatusIcon className={`w-3.5 h-3.5 ${st.color}`} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-black">طلب #{String(order.id)?.slice(-6) || order.id}</p>
-                              <p className="text-[10px] text-black/30">
+                              <p className="text-xs font-bold text-black dark:text-white">طلب #{String(order.id)?.slice(-6) || order.id}</p>
+                              <p className="text-[10px] text-black/30 dark:text-white/30">
                                 {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : ''}
                                 {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ر.س` : ''}
                               </p>
@@ -1831,7 +1831,7 @@ export default function Dashboard() {
                               <Badge className={`text-[9px] px-2 py-0.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                               <button
                                 onClick={() => setClientSpecsOrderId(String(order.id))}
-                                className="text-[9px] px-2 py-1 rounded-lg border border-black/[0.08] text-black/40 hover:border-black/20 hover:text-black transition-all"
+                                className="text-[9px] px-2 py-1 rounded-lg border border-black/[0.08] dark:border-white/[0.1] text-black/40 dark:text-white/40 hover:border-black/20 dark:hover:border-white/20 hover:text-black dark:text-white transition-all"
                                 data-testid={`button-view-specs-${order.id}`}
                               >
                                 المواصفات
@@ -1849,7 +1849,7 @@ export default function Dashboard() {
             {/* Mod Requests */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-black flex items-center gap-2">
+                <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
                   <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><Wrench className="w-3.5 h-3.5 text-white" /></div>
                   طلبات التعديل
                 </h2>
@@ -1859,28 +1859,28 @@ export default function Dashboard() {
               </div>
               <div className="space-y-2">
                 {isLoadingModRequests ? (
-                  <div className="bg-white rounded-xl p-8 text-center border border-black/[0.06]"><Loader2 className="w-4 h-4 animate-spin mx-auto text-black/20" /></div>
+                  <div className="bg-white dark:bg-gray-900 rounded-xl p-8 text-center border border-black/[0.06] dark:border-white/[0.08]"><Loader2 className="w-4 h-4 animate-spin mx-auto text-black/20 dark:text-white/20" /></div>
                 ) : !modRequests || modRequests.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-dashed border-black/[0.08] p-8 text-center">
-                    <Wrench className="w-8 h-8 mx-auto text-black/10 mb-2" />
-                    <p className="text-xs text-black/25">لا توجد طلبات تعديل</p>
+                  <div className="bg-white dark:bg-gray-900 rounded-xl border border-dashed border-black/[0.08] dark:border-white/[0.1] p-8 text-center">
+                    <Wrench className="w-8 h-8 mx-auto text-black/10 dark:text-white/10 mb-2" />
+                    <p className="text-xs text-black/25 dark:text-white/25">لا توجد طلبات تعديل</p>
                   </div>
                 ) : modRequests.slice(0, 4).map((req) => {
                   const st = modStatusMap[req.status] || modStatusMap['pending'];
                   const pr = priorityMap[req.priority] || priorityMap['medium'];
                   return (
-                    <div key={req.id} className="bg-white rounded-xl border border-black/[0.06] p-4" data-testid={`modification-request-${req.id}`}>
+                    <div key={req.id} className="bg-white dark:bg-gray-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-4" data-testid={`modification-request-${req.id}`}>
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-bold text-black truncate flex-1" data-testid={`text-mod-title-${req.id}`}>{req.title}</p>
+                        <p className="text-xs font-bold text-black dark:text-white truncate flex-1" data-testid={`text-mod-title-${req.id}`}>{req.title}</p>
                         <div className="flex gap-1 flex-shrink-0">
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${st.bg} ${st.color}`} data-testid={`badge-mod-status-${req.id}`}>{st.label}</Badge>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${pr.bg} ${pr.color}`} data-testid={`badge-mod-priority-${req.id}`}>{pr.label}</Badge>
                         </div>
                       </div>
-                      <p className="text-[10px] text-black/35 mt-1 line-clamp-1">{req.description}</p>
+                      <p className="text-[10px] text-black/35 dark:text-white/35 mt-1 line-clamp-1">{req.description}</p>
                       {req.adminNotes && (
-                        <div className="mt-2 p-2 bg-black/[0.02] rounded-lg border border-black/[0.04]">
-                          <p className="text-[10px] text-black/40">ملاحظة الإدارة: {req.adminNotes}</p>
+                        <div className="mt-2 p-2 bg-black/[0.02] dark:bg-white/[0.04] rounded-lg border border-black/[0.04] dark:border-white/[0.06]">
+                          <p className="text-[10px] text-black/40 dark:text-white/40">ملاحظة الإدارة: {req.adminNotes}</p>
                         </div>
                       )}
                     </div>
@@ -1895,14 +1895,14 @@ export default function Dashboard() {
         {pricingPlans && pricingPlans.filter(p => !p.isCustom).length > 0 && (
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-black flex items-center gap-2">
+              <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
                 <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
                   <CreditCard className="w-3.5 h-3.5 text-white" />
                 </div>
                 الباقات والعروض المتاحة
               </h2>
               <Link href="/prices">
-                <button className="text-[10px] text-black/30 hover:text-black/60 flex items-center gap-1" data-testid="link-all-plans">
+                <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-all-plans">
                   عرض الكل <ArrowUpRight className="w-3 h-3" />
                 </button>
               </Link>
@@ -1916,7 +1916,7 @@ export default function Dashboard() {
                 const billingLabel = plan.billingCycle === "monthly" ? "/شهر" : plan.billingCycle === "yearly" ? "/سنة" : "";
                 return (
                   <motion.div key={plan.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.06 }}>
-                    <div className={`bg-white rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 shadow-md" : "border-black/[0.06]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
+                    <div className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : "border-black/[0.06] dark:border-white/[0.08]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
                       {plan.isPopular && (
                         <div className="bg-black px-4 py-1.5 flex items-center gap-2">
                           <Check className="w-3 h-3 text-white" />
@@ -1932,42 +1932,42 @@ export default function Dashboard() {
                       <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <h3 className="font-bold text-black text-sm mb-0.5">{plan.nameAr}</h3>
-                            <p className="text-[10px] text-black/35 leading-relaxed line-clamp-2">{plan.descriptionAr}</p>
+                            <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{plan.nameAr}</h3>
+                            <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2">{plan.descriptionAr}</p>
                           </div>
                         </div>
 
                         <div className="mb-4">
                           {plan.originalPrice && (
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-black/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>
+                              <span className="text-xs text-black/25 dark:text-white/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>
                               {discount > 0 && (
                                 <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>
                               )}
                             </div>
                           )}
                           <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-black">{plan.price.toLocaleString()}</span>
-                            <span className="text-xs text-black/35">ر.س {billingLabel}</span>
+                            <span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span>
+                            <span className="text-xs text-black/35 dark:text-white/35">ر.س {billingLabel}</span>
                           </div>
                         </div>
 
                         <div className="space-y-1.5 mb-4">
                           {plan.featuresAr?.slice(0, 4).map((f: string, fi: number) => (
-                            <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50">
-                              <div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] flex items-center justify-center flex-shrink-0">
-                                <Check className="w-2 h-2 text-black/50" />
+                            <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50 dark:text-white/50">
+                              <div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                                <Check className="w-2 h-2 text-black/50 dark:text-white/50" />
                               </div>
                               {f}
                             </div>
                           ))}
                           {(plan.featuresAr?.length || 0) > 4 && (
-                            <p className="text-[10px] text-black/20 mr-5">+{(plan.featuresAr?.length || 0) - 4} مزايا أخرى</p>
+                            <p className="text-[10px] text-black/20 dark:text-white/20 mr-5">+{(plan.featuresAr?.length || 0) - 4} مزايا أخرى</p>
                           )}
                         </div>
 
                         <Link href="/order">
-                          <Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] hover:bg-black/[0.08] text-black border border-black/[0.08]"}`} data-testid={`button-select-plan-${plan.slug}`}>
+                          <Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.1]"}`} data-testid={`button-select-plan-${plan.slug}`}>
                             اختر الباقة
                             <ChevronLeft className="w-3.5 h-3.5 mr-1" />
                           </Button>
@@ -1980,14 +1980,14 @@ export default function Dashboard() {
             </div>
 
             {(pricingPlans?.find(p => p.isCustom)) && (
-              <div className="mt-4 bg-white rounded-2xl border border-black/[0.06] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="mt-4 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-black text-sm">{pricingPlans.find(p => p.isCustom)?.nameAr}</h4>
-                    <p className="text-[10px] text-black/35">{pricingPlans.find(p => p.isCustom)?.descriptionAr}</p>
+                    <h4 className="font-bold text-black dark:text-white text-sm">{pricingPlans.find(p => p.isCustom)?.nameAr}</h4>
+                    <p className="text-[10px] text-black/35 dark:text-white/35">{pricingPlans.find(p => p.isCustom)?.descriptionAr}</p>
                   </div>
                 </div>
                 <Link href="/contact">
@@ -2028,19 +2028,19 @@ export default function Dashboard() {
       <Dialog open={modDialogOpen} onOpenChange={setModDialogOpen}>
         <DialogContent className="sm:max-w-[480px]" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-black">طلب تعديل جديد</DialogTitle>
+            <DialogTitle className="text-base font-bold text-black dark:text-white">طلب تعديل جديد</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-medium text-black/60 mb-1.5 block">العنوان</label>
+              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">العنوان</label>
               <Input value={modTitle} onChange={(e) => setModTitle(e.target.value)} placeholder="عنوان طلب التعديل" data-testid="input-mod-title" />
             </div>
             <div>
-              <label className="text-xs font-medium text-black/60 mb-1.5 block">الوصف</label>
+              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">الوصف</label>
               <Textarea value={modDescription} onChange={(e) => setModDescription(e.target.value)} placeholder="اشرح التعديل المطلوب بالتفصيل..." rows={4} data-testid="input-mod-description" />
             </div>
             <div>
-              <label className="text-xs font-medium text-black/60 mb-1.5 block">الأولوية</label>
+              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">الأولوية</label>
               <Select value={modPriority} onValueChange={setModPriority}>
                 <SelectTrigger data-testid="select-mod-priority"><SelectValue placeholder="اختر الأولوية" /></SelectTrigger>
                 <SelectContent>
@@ -2053,7 +2053,7 @@ export default function Dashboard() {
             </div>
             {projects && projects.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-black/60 mb-1.5 block">المشروع (اختياري)</label>
+                <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">المشروع (اختياري)</label>
                 <Select value={modProjectId} onValueChange={setModProjectId}>
                   <SelectTrigger data-testid="select-mod-project"><SelectValue placeholder="اختر المشروع" /></SelectTrigger>
                   <SelectContent>
@@ -2082,15 +2082,15 @@ export default function Dashboard() {
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {subSvcProjectLabel && (
-              <div className="bg-black/[0.03] rounded-xl px-4 py-3 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-black/40" />
-                <p className="text-sm text-black/60 font-bold">{subSvcProjectLabel}</p>
+              <div className="bg-black/[0.03] dark:bg-white/[0.05] rounded-xl px-4 py-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-black/40 dark:text-white/40" />
+                <p className="text-sm text-black/60 dark:text-white/60 font-bold">{subSvcProjectLabel}</p>
               </div>
             )}
             <div>
-              <label className="text-xs font-bold text-black/60 mb-1 block">نوع الخدمة الفرعية المطلوبة *</label>
+              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">نوع الخدمة الفرعية المطلوبة *</label>
               <Select value={subSvcType} onValueChange={setSubSvcType}>
-                <SelectTrigger className="rounded-xl h-10 text-sm border-black/[0.08]" data-testid="select-sub-service-type">
+                <SelectTrigger className="rounded-xl h-10 text-sm border-black/[0.08] dark:border-white/[0.1]" data-testid="select-sub-service-type">
                   <SelectValue placeholder="اختر الخدمة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2108,12 +2108,12 @@ export default function Dashboard() {
               </Select>
             </div>
             <div>
-              <label className="text-xs font-bold text-black/60 mb-1 block">ملاحظات إضافية (اختياري)</label>
+              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">ملاحظات إضافية (اختياري)</label>
               <Textarea
                 value={subSvcNotes}
                 onChange={e => setSubSvcNotes(e.target.value)}
                 placeholder="أضف أي تفاصيل تساعدنا على فهم طلبك بشكل أفضل..."
-                className="rounded-xl text-sm border-black/[0.08] resize-none"
+                className="rounded-xl text-sm border-black/[0.08] dark:border-white/[0.1] resize-none"
                 rows={3}
                 data-testid="textarea-sub-service-notes"
               />
@@ -2128,7 +2128,7 @@ export default function Dashboard() {
                 {createSubSvcMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 إرسال الطلب
               </Button>
-              <Button onClick={() => setSubSvcDialogOpen(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
+              <Button onClick={() => setSubSvcDialogOpen(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08] dark:border-white/[0.1]">إلغاء</Button>
             </div>
           </div>
         </DialogContent>
@@ -2139,29 +2139,29 @@ export default function Dashboard() {
         <SheetContent side="left" className="w-full sm:max-w-2xl p-0 overflow-hidden" dir="rtl">
           <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
-              <SheetTitle className="font-heading text-base font-bold text-black flex items-center gap-2">
+            <div className="px-6 py-5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900 flex-shrink-0">
+              <SheetTitle className="font-heading text-base font-bold text-black dark:text-white flex items-center gap-2">
                 <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
                   <Server className="w-3.5 h-3.5 text-white" />
                 </div>
                 ملف المشروع — طلب #{clientSpecsOrderId?.slice(-6)}
               </SheetTitle>
-              <p className="text-[10px] text-black/35 mt-1">بيانات وتفاصيل مشروعك المُعدّة من الفريق</p>
+              <p className="text-[10px] text-black/35 dark:text-white/35 mt-1">بيانات وتفاصيل مشروعك المُعدّة من الفريق</p>
             </div>
 
             <ScrollArea className="flex-1">
               {isLoadingClientSpecs ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-6 h-6 animate-spin text-black/20" />
-                  <p className="text-xs text-black/30 mr-2">جاري التحميل...</p>
+                  <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
+                  <p className="text-xs text-black/30 dark:text-white/30 mr-2">جاري التحميل...</p>
                 </div>
               ) : !clientOrderSpecs || Object.keys(clientOrderSpecs).filter(k => !['_id','orderId','__v','id','createdAt','updatedAt','deploymentPassword','teamNotes'].includes(k) && clientOrderSpecs[k]).length === 0 ? (
                 <div className="py-20 text-center px-6">
-                  <div className="w-16 h-16 bg-black/[0.03] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Server className="w-7 h-7 text-black/10" />
+                  <div className="w-16 h-16 bg-black/[0.03] dark:bg-white/[0.05] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Server className="w-7 h-7 text-black/10 dark:text-white/10" />
                   </div>
-                  <p className="text-sm font-bold text-black/30">ملف المشروع لم يُعَدّ بعد</p>
-                  <p className="text-xs text-black/20 mt-2">يعمل فريقنا على تجهيز كافة تفاصيل مشروعك</p>
+                  <p className="text-sm font-bold text-black/30 dark:text-white/30">ملف المشروع لم يُعَدّ بعد</p>
+                  <p className="text-xs text-black/20 dark:text-white/20 mt-2">يعمل فريقنا على تجهيز كافة تفاصيل مشروعك</p>
                 </div>
               ) : (
                 <div className="px-6 py-5 space-y-5">
@@ -2217,8 +2217,8 @@ export default function Dashboard() {
 
                   {/* Tech Stack */}
                   {(clientOrderSpecs.techStack || clientOrderSpecs.framework || clientOrderSpecs.language || clientOrderSpecs.database || clientOrderSpecs.hosting) && (
-                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                      <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Layers className="w-3.5 h-3.5" />البنية التقنية
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -2239,8 +2239,8 @@ export default function Dashboard() {
 
                   {/* URLs & Links */}
                   {(clientOrderSpecs.githubRepoUrl || clientOrderSpecs.stagingUrl || clientOrderSpecs.productionUrl || clientOrderSpecs.customDomain) && (
-                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                      <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Globe className="w-3.5 h-3.5" />الروابط والنطاقات
                       </p>
                       <div className="space-y-2">
@@ -2251,15 +2251,15 @@ export default function Dashboard() {
                           { label: "الدومين المخصص", url: clientOrderSpecs.customDomain ? `https://${clientOrderSpecs.customDomain}` : null, icon: "🌐" },
                         ].filter(l => l.url).map((link, i) => (
                           <a key={i} href={link.url!} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center justify-between p-3 bg-black/[0.02] rounded-xl hover:bg-black/[0.05] transition-colors group border border-black/[0.04]">
+                            className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.04] rounded-xl hover:bg-black/[0.05] transition-colors group border border-black/[0.04] dark:border-white/[0.06]">
                             <div className="flex items-center gap-2.5">
                               <span className="text-base">{link.icon}</span>
                               <div>
-                                <p className="text-[10px] font-bold text-black/50">{link.label}</p>
-                                <p className="text-xs font-mono text-black/70 truncate max-w-[280px]">{link.url}</p>
+                                <p className="text-[10px] font-bold text-black/50 dark:text-white/50">{link.label}</p>
+                                <p className="text-xs font-mono text-black/70 dark:text-white/70 truncate max-w-[280px]">{link.url}</p>
                               </div>
                             </div>
-                            <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/60 flex-shrink-0" />
+                            <ExternalLink className="w-3.5 h-3.5 text-black/20 dark:text-white/20 group-hover:text-black/60 dark:group-hover:text-white/60 flex-shrink-0" />
                           </a>
                         ))}
                       </div>
@@ -2268,26 +2268,26 @@ export default function Dashboard() {
 
                   {/* Project Concept */}
                   {(clientOrderSpecs.projectConcept || clientOrderSpecs.targetAudience || clientOrderSpecs.mainFeatures) && (
-                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                      <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <LayoutGrid className="w-3.5 h-3.5" />تفاصيل المشروع
                       </p>
                       {clientOrderSpecs.projectConcept && (
                         <div className="mb-3">
-                          <p className="text-[10px] font-bold text-black/40 mb-1.5">فكرة المشروع</p>
-                          <p className="text-xs text-black/75 leading-relaxed">{clientOrderSpecs.projectConcept}</p>
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1.5">فكرة المشروع</p>
+                          <p className="text-xs text-black/75 dark:text-white/75 leading-relaxed">{clientOrderSpecs.projectConcept}</p>
                         </div>
                       )}
                       {clientOrderSpecs.targetAudience && (
                         <div className="mb-3">
-                          <p className="text-[10px] font-bold text-black/40 mb-1.5">الجمهور المستهدف</p>
-                          <p className="text-xs text-black/75">{clientOrderSpecs.targetAudience}</p>
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1.5">الجمهور المستهدف</p>
+                          <p className="text-xs text-black/75 dark:text-white/75">{clientOrderSpecs.targetAudience}</p>
                         </div>
                       )}
                       {clientOrderSpecs.mainFeatures && (
                         <div>
-                          <p className="text-[10px] font-bold text-black/40 mb-1.5">الميزات الأساسية</p>
-                          <pre className="text-xs text-black/75 whitespace-pre-wrap leading-relaxed font-sans">{clientOrderSpecs.mainFeatures}</pre>
+                          <p className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1.5">الميزات الأساسية</p>
+                          <pre className="text-xs text-black/75 dark:text-white/75 whitespace-pre-wrap leading-relaxed font-sans">{clientOrderSpecs.mainFeatures}</pre>
                         </div>
                       )}
                     </div>
@@ -2295,19 +2295,19 @@ export default function Dashboard() {
 
                   {/* Notes */}
                   {clientOrderSpecs.notes && (
-                    <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
-                      <p className="text-[9px] font-bold text-black/40 uppercase tracking-widest mb-3">ملاحظات تقنية</p>
-                      <p className="text-xs text-black/70 leading-relaxed">{clientOrderSpecs.notes}</p>
+                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
+                      <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">ملاحظات تقنية</p>
+                      <p className="text-xs text-black/70 dark:text-white/70 leading-relaxed">{clientOrderSpecs.notes}</p>
                     </div>
                   )}
 
                   {/* Client Email */}
                   {clientOrderSpecs.clientEmail && (
-                    <div className="border border-black/[0.07] rounded-2xl p-4 bg-white flex items-center gap-3">
-                      <Mail className="w-4 h-4 text-black/30 flex-shrink-0" />
+                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-4 bg-white dark:bg-gray-900 flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-black/30 dark:text-white/30 flex-shrink-0" />
                       <div>
-                        <p className="text-[9px] font-bold text-black/40">بريد المشروع الرسمي</p>
-                        <p className="text-xs font-mono text-black/70 mt-0.5">{clientOrderSpecs.clientEmail}</p>
+                        <p className="text-[9px] font-bold text-black/40 dark:text-white/40">بريد المشروع الرسمي</p>
+                        <p className="text-xs font-mono text-black/70 dark:text-white/70 mt-0.5">{clientOrderSpecs.clientEmail}</p>
                       </div>
                     </div>
                   )}
