@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -52,6 +53,7 @@ export default function Partners() {
       <Navigation />
 
       <section className="pt-36 pb-16 relative overflow-hidden" data-testid="section-partners-hero">
+        <PageGraphics variant="rings-sides" />
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, black 1px, transparent 0)", backgroundSize: "40px 40px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">

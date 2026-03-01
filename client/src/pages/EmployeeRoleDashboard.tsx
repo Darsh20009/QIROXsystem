@@ -1,4 +1,5 @@
 import { useUser } from "@/hooks/use-auth";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -513,5 +514,10 @@ export default function EmployeeRoleDashboard() {
     );
   }
 
-  return roleDashboard;
+  return (
+    <div className="relative overflow-hidden">
+      <PageGraphics variant="dashboard" />
+      {roleDashboard}
+    </div>
+  );
 }

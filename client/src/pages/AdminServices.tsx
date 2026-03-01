@@ -1,3 +1,4 @@
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -162,7 +163,8 @@ export default function AdminServices() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative overflow-hidden space-y-6">
+      <PageGraphics variant="dashboard" />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Briefcase className="w-7 h-7 text-black/40" />

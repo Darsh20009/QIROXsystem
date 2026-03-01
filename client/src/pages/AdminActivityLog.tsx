@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface LogEntry {
   id: string;
@@ -59,7 +60,8 @@ export default function AdminActivityLog() {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">

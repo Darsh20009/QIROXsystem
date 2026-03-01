@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -276,7 +277,8 @@ export default function AdminReceipts() {
   );
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir="rtl">
+      <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

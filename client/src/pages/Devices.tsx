@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useState } from "react";
 import type { QiroxProduct } from "@shared/schema";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
   device: { label: "أجهزة", icon: Cpu, color: "text-blue-600", bg: "bg-blue-50" },
@@ -73,6 +74,7 @@ export default function Devices() {
 
       {/* Hero */}
       <section className="pt-36 pb-16 relative overflow-hidden">
+        <PageGraphics variant="minimal" />
         <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "28px 28px" }} />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">

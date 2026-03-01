@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, TrendingUp, Receipt, Download } from "lucide-react";
 import * as XLSX from "xlsx";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface PaymentData {
   orders: any[];
@@ -62,7 +63,8 @@ export default function PaymentHistory() {
   );
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">

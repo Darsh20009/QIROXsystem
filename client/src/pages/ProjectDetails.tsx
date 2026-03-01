@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 export default function ProjectDetails() {
   const [, params] = useRoute("/project/:section");
@@ -93,7 +94,8 @@ export default function ProjectDetails() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-8 relative overflow-hidden">
+      <PageGraphics variant="minimal" />
       <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100">
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>

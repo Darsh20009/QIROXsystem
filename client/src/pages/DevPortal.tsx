@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 /* ── Data ──────────────────────────────────────────────────────────────── */
 
@@ -270,6 +271,7 @@ export default function DevPortal() {
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-36 pb-24 px-6 border-b border-white/[0.06]">
+        <PageGraphics variant="full-dark" />
         <div className="absolute inset-0 pointer-events-none opacity-[0.025]"
           style={{ backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(to right, white 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 

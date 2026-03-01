@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Loader2, Newspaper, Calendar, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -130,7 +131,8 @@ export default function News() {
     <div className="min-h-screen bg-white" dir="rtl">
       <Navigation />
 
-      <main className="container mx-auto px-4 pt-28 pb-20">
+      <main className="relative overflow-hidden container mx-auto px-4 pt-28 pb-20">
+        <PageGraphics variant="line-top" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12 text-center">
           <div className="inline-flex items-center gap-2 bg-black/[0.05] rounded-full px-4 py-2 mb-6">
             <Newspaper className="w-4 h-4 text-black/50" />

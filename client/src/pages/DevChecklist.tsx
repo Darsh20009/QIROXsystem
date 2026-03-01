@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
@@ -132,7 +133,8 @@ export default function DevChecklist() {
   const doneCount = items.filter(i => i.done).length;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Header */}

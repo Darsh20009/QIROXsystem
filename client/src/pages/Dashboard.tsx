@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ModificationRequest, Order } from "@shared/schema";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
@@ -348,7 +349,8 @@ function AdminDashboard({ user }: { user: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" data-testid="admin-dashboard">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" data-testid="admin-dashboard">
+      <PageGraphics variant="dashboard" />
       <div className="bg-white border-b border-black/[0.06] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -668,7 +670,8 @@ function EmployeeDashboard({ user }: { user: any }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" data-testid="employee-dashboard" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" data-testid="employee-dashboard" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="bg-white border-b border-black/[0.06] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -1496,7 +1499,8 @@ export default function Dashboard() {
   const getPhase = (progress: number) => Math.min(Math.floor(progress / 25), 3);
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       {/* Top Hero Banner */}
       <div className="bg-white border-b border-black/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-6">

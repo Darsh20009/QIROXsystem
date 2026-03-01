@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { motion } from "framer-motion";
 import { FileText, Scale, CreditCard, Package, AlertTriangle, RefreshCw, Ban, Gavel, Mail } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -208,6 +209,7 @@ export default function Terms() {
       <Navigation />
 
       <section className="pt-40 pb-20 relative overflow-hidden">
+        <PageGraphics variant="minimal" />
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">

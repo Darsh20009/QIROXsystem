@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,8 @@ export default function InternalGate() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div className="relative overflow-hidden min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <PageGraphics variant="auth" />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -146,7 +147,8 @@ export default function ForgotPassword() {
   const pwStrengthLabels = ["", "ضعيفة", "متوسطة", "قوية"];
 
   return (
-    <div className="min-h-screen flex bg-white" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen flex bg-white" dir="rtl">
+      <PageGraphics variant="auth" />
       {/* Decorative left panel */}
       <div className="hidden lg:flex w-[40%] bg-black flex-col justify-center items-center p-12 relative overflow-hidden flex-shrink-0">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />

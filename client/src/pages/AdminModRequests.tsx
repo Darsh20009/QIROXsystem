@@ -8,6 +8,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type ModificationRequest } from "@shared/schema";
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: "قيد الانتظار", color: "bg-amber-100 text-amber-700" },
@@ -88,7 +89,8 @@ export default function AdminModRequests() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative overflow-hidden">
+      <PageGraphics variant="dashboard" />
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Wrench className="w-7 h-7 text-black/40" />

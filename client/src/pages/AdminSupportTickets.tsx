@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,8 @@ export default function AdminSupportTickets() {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">

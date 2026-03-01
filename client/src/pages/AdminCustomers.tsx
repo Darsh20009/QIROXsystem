@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Users, Mail, Phone, Calendar } from "lucide-react";
 import { type User } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 export default function Customers() {
   const { data: customers, isLoading } = useQuery<User[]>({
@@ -18,7 +19,8 @@ export default function Customers() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative overflow-hidden">
+      <PageGraphics variant="dashboard" />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Users className="w-7 h-7 text-black/40" />

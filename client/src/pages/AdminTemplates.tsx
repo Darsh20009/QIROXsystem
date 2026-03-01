@@ -1,3 +1,4 @@
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useState } from "react";
 import { useTemplates, usePricingPlans } from "@/hooks/use-templates";
 import { useMutation } from "@tanstack/react-query";
@@ -347,7 +348,8 @@ export default function AdminTemplates() {
       : 0;
 
   return (
-    <div className="space-y-8" data-testid="page-admin-templates">
+    <div className="relative overflow-hidden space-y-8" data-testid="page-admin-templates">
+      <PageGraphics variant="dashboard" />
       <div>
         <h1 className="text-2xl font-bold font-heading text-black dark:text-white">إدارة القوالب والباقات</h1>
         <p className="text-black/40 dark:text-white/40 mt-1 text-sm">أنظمة QIROX وباقات الأسعار والعروض</p>

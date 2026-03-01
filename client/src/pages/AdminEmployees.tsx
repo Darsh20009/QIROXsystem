@@ -1,3 +1,4 @@
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -178,7 +179,8 @@ export default function AdminEmployees() {
   if (isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1200px] mx-auto space-y-6">
+    <div className="relative overflow-hidden p-4 md:p-8 max-w-[1200px] mx-auto space-y-6">
+      <PageGraphics variant="dashboard" />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-black flex items-center gap-2" data-testid="text-employees-title">

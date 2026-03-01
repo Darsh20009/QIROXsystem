@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Printer, Mail, Check, Trash2, Eye, FileText, Search, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface Invoice {
   id: string;
@@ -298,7 +299,8 @@ export default function AdminInvoices() {
   );
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

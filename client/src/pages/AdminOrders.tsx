@@ -1,3 +1,4 @@
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -241,7 +242,8 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="relative overflow-hidden space-y-5" dir="rtl">
+      <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>

@@ -14,6 +14,7 @@ import {
   Users, CreditCard, Layers, ChevronRight, RefreshCcw, Star
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface SegmentPricing {
   id: string;
@@ -213,7 +214,8 @@ export default function AdminSubscriptionPlans() {
   const pendingReqs = subRequests?.filter(r => r.status === "pending").length || 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="bg-white border-b border-black/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
           <div className="flex items-center justify-between">

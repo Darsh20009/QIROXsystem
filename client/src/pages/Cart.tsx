@@ -16,6 +16,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import type { Cart, CartItem } from "@shared/schema";
 import { useUser } from "@/hooks/use-auth";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 /* ─── Type meta ─────────────────────────────────────────────────── */
 const typeIcons: Record<string, any> = {
@@ -211,7 +212,8 @@ export default function Cart() {
 
   /* ─── Main Cart ─── */
   return (
-    <div className="min-h-screen bg-[#f8f8f8]" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="minimal" />
       {/* Sticky Header */}
       <div className="bg-white/95 backdrop-blur border-b border-black/[0.06] sticky top-0 z-30">
         <div className="max-w-[1100px] mx-auto px-4 py-4 flex items-center justify-between gap-4">

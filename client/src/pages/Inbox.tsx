@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, MessageSquare, Send, Users, Search, Mail, X } from "lucide-react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 function timeAgo(date: string) {
   const d = new Date(date);
@@ -166,7 +167,8 @@ export default function Inbox() {
   );
 
   return (
-    <div className="h-screen bg-[#f8f8f8] flex flex-col" dir="rtl">
+    <div className="h-screen bg-[#f8f8f8] flex flex-col relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       {/* Compose Email Dialog */}
       {me?.role !== "client" && (
         <Dialog open={composeOpen} onOpenChange={setComposeOpen}>

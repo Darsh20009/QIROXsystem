@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -52,6 +53,7 @@ export default function Portfolio() {
       <Navigation />
 
       <section className="pt-36 pb-24 relative overflow-hidden">
+        <PageGraphics variant="bars-corners" />
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div initial="hidden" animate="visible">

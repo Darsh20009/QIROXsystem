@@ -13,6 +13,7 @@ import { useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 import type { QiroxProduct } from "@shared/schema";
 import { motion } from "framer-motion";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const categoryLabels: Record<string, { label: string; color: string }> = {
   device: { label: "جهاز / معدات", color: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -129,7 +130,8 @@ export default function AdminProducts() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative overflow-hidden">
+      <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Package className="w-7 h-7 text-black/40" />

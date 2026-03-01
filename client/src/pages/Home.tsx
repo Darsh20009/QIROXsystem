@@ -1,6 +1,7 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,8 @@ export default function Home() {
       <Navigation />
 
       {/* HERO */}
-      <section className="relative w-full min-h-[90vh] flex items-center justify-center pt-28 pb-16" data-testid="section-hero">
+      <section className="relative overflow-hidden w-full min-h-[90vh] flex items-center justify-center pt-28 pb-16" data-testid="section-hero">
+        <PageGraphics variant="hero-light" />
         <div className="absolute inset-0 bg-white dark:bg-gray-950" />
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "40px 40px" }} />
         <div className="absolute top-40 left-1/4 w-96 h-96 rounded-full bg-black/[0.015] blur-3xl" />

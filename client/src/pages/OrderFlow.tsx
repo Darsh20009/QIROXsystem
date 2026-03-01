@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useUser } from "@/hooks/use-auth";
@@ -956,7 +957,8 @@ export default function OrderFlow() {
   const progressPct = (step / 5) * 100;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f9f9f9]" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-[#f9f9f9] relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="minimal" />
       <Navigation />
 
       <div className="flex-1 pt-24 pb-16">

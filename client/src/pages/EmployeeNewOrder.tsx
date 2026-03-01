@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -167,7 +168,8 @@ export default function EmployeeNewOrder() {
   const clientValid = fullName.trim() && email.trim() && email.includes("@") && username.trim() && password.length >= 6;
 
   return (
-    <div className="min-h-screen bg-black/[0.02] p-4 md:p-8" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-black/[0.02] p-4 md:p-8" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="max-w-3xl mx-auto">
 
         {/* Header */}

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Building2, Save, RefreshCw, CreditCard, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface BankSettings {
   bankName: string;
@@ -60,7 +61,8 @@ export default function AdminBankSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f6] p-6 md:p-10" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f6] p-6 md:p-10 relative overflow-hidden" dir="rtl">
+      <PageGraphics variant="dashboard" />
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}

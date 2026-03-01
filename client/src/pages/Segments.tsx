@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ShoppingCart, GraduationCap, Building2, LayoutGrid } from "lucide-react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const engines = [
   {
@@ -34,7 +35,8 @@ const engines = [
 
 export default function Segments() {
   return (
-    <div className="container mx-auto px-4 py-8 pt-20">
+    <div className="relative overflow-hidden container mx-auto px-4 py-8 pt-20">
+      <PageGraphics variant="hero-light" />
       <div className="max-w-3xl mb-12">
         <h1 className="text-4xl font-bold mb-4 text-primary">نظام Qirox الكامل</h1>
         <p className="text-xl text-muted-foreground">

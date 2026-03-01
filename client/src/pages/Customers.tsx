@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { type Partner } from "@shared/schema";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 export default function Customers() {
   const { data: partners, isLoading } = useQuery<Partner[]>({
@@ -12,8 +13,9 @@ export default function Customers() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navigation />
-      <main className="flex-1 pt-24 pb-20">
-        <div className="container mx-auto px-4 md:px-8 max-w-5xl">
+      <main className="flex-1 pt-24 pb-20 relative overflow-hidden">
+        <PageGraphics variant="rings-sides" />
+        <div className="container mx-auto px-4 md:px-8 max-w-5xl relative z-10">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-black font-heading mb-4">عملاؤنا وشركاؤنا</h1>
             <p className="text-black/40 text-lg">نفخر بثقة عملائنا وشركائنا في منطومة قيروكس</p>

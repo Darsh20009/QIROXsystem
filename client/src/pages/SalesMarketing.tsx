@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -89,7 +90,8 @@ export default function SalesMarketing() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="relative overflow-hidden space-y-8">
+      <PageGraphics variant="dashboard" />
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-black rounded-3xl p-6 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
