@@ -1,0 +1,58 @@
+modules = ["nodejs-20", "web"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["imagemagick"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[env]
+PORT = "5000"
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["node", "./dist/index.cjs"]
+build = ["npm", "run", "build"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM"
+PAYPAL_ENV = "live"
+VITE_PAYPAL_ENV = "live"
+SMTP2GO_API_KEY = "api-5CC7EFCFDA564ABAA365F3C7660DD332"
+SMTP2GO_SENDER = "noreply@qiroxstudio.online"
+SMTP2GO_SENDER_NAME = "Qirox"
+EMAIL_LOGO_URL = "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png"
+EMAIL_SITE_URL = "https://qiroxstudio.online"
+
+[agent]
+expertMode = true

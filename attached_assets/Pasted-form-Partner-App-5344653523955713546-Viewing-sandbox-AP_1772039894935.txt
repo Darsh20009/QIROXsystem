@@ -1,0 +1,150 @@
+form Partner App - 5344653523955713546
+Viewing sandbox API credentials. View live credentials.
+API credentials
+Important: Store credentials safely, and never share client IDs or secrets publicly.
+Display App Name
+Platform Partner App - 5344653523955713546
+
+Client ID
+AaTcR0TbdE4vXHUwRjOGa1aFWgp1YmwaDoXDr9-gDHEI7STtcBNrUfSpiUKuUPn2hJJsTIuFuDoSCEbq
+
+Secret key 1
+EGK3mt9rfkiq-3uU-dCdRdZVlueATuUsgdIUEQK5MlPAjgQueqkAAwxNICfz3hhW0ec8Icg4Wv-c7_cw
+
+
++ Add Second Key
+Sandbox account info
+View details
+Sandbox URL
+https://sandbox.paypal.com
+
+Sandbox Region
+US
+Email
+sb-lu0ey48017776@business.example.com
+
+Password
+|2ouxY@8
+
+
+Features
+Application was saved successfully.
+close alert
+
+Payment methods
+
+Expanded checkout
+Accept 3D Secure payments and present credit and debit card fields using your site's branding.
+
+
+Advanced Credit and Debit Card Payments
+PayPal payment buttons plus customized card fields.
+
+
+Apple Pay
+Enable customers to pay with Apple Pay in iOS apps and Safari. 
+Manage
+
+
+Google Pay
+Let customers pay using their Google accounts. 
+Manage
+
+
+Fastlane
+Allows you easily to pre-populate card and shipping data of Fastlane members for quicker checkouts. 
+
+
+IC++ with Gross Settlement
+Set up IC++ pricing for automatic payment of processing fees.
+
+Manage
+
+Payment capabilities
+
+Save payment methods
+Use the Vault API to save your customer's payment methods to speed up checkout.
+
+
+Subscriptions
+Set up recurring payments for customers.
+
+
+Invoicing
+Send and manage customer invoices.
+
+
+Payment links and buttons
+Add payment link, payment button, shopping cart button capabilities.
+
+
+Payouts
+Send payments to multiple PayPal accounts at once.
+
+
+Add-on services
+
+Customer disputes
+View, provide evidence, and appeal disputes.
+
+
+Log in with PayPal
+Let customers log in with their PayPal logins.
+
+Manage
+
+Transaction search
+View your PayPal transaction history.
+
+
+PayPal SDKs
+
+JavaScript SDK v6
+Add support for PayPal, card payments & other APMs for your website
+JavaScript SDK v6
+
+
+Mobile SDKs
+Add support for PayPal, credit, or debit card payments to your mobile apps
+Mobile SDKs
+
+
+Multiparty features
+BN Code
+Your sandbox BN Code is FLAVORsb-lu0ey48017776_MP. The BN Code provides the tracking on all transactions that originate or are associated with a particular partner.
+Onboarding
+
+Onboard before payment
+Requires customer to connect their PayPal accounts before taking payments from buyers.
+
+
+Onboard after payment
+Allow sellers to connect their PayPal account after taking payments from buyers.
+
+Onboarding intent
+Select the types of sellers you intend on onboarding.
+
+
+Business
+
+Casual seller
+
+Mixed
+Payment buttons
+Configure your PayPal checkout button and flow.
+Manage
+
+Platform fee
+Specify any fees you want to charge per transaction. Fees will be settled automatically into the bank account linked to your PayPal account daily.
+
+
+Delay disbursement
+Delay the disbursement of funds to your sellers.
+
+Save Changes
+Sandbox Webhooks
+Maximum of 10 webhooks allowed
+Configure webhooks to notify your app when certain events occur. To configure a webhook, define your webhook listener URL and a list of events for which to listen. You can configure up to ten webhooks. Each webhook can subscribe to either specific events or all events. To learn more about webhooks, see webhooks notifications.
+Webhook	Webhook ID	Events Tracked	
+You do not have any events for the selected application
+Add Webhook
