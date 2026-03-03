@@ -2252,8 +2252,8 @@ export default function Dashboard() {
                       <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.nameEn || plan.nameAr)}</h3>
-                            <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2">{L ? plan.descriptionAr : (plan.descriptionEn || plan.descriptionAr)}</p>
+                            <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.name || plan.nameAr)}</h3>
+                            <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2">{L ? plan.descriptionAr : (plan.description || plan.descriptionAr)}</p>
                           </div>
                         </div>
 
@@ -2273,7 +2273,7 @@ export default function Dashboard() {
                         </div>
 
                         <div className="space-y-1.5 mb-4">
-                          {(L ? plan.featuresAr : (plan.featuresEn || plan.featuresAr))?.slice(0, 4).map((f: string, fi: number) => (
+                          {(L ? plan.featuresAr : (plan.features || plan.featuresAr))?.slice(0, 4).map((f: string, fi: number) => (
                             <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50 dark:text-white/50">
                               <div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
                                 <Check className="w-2 h-2 text-black/50 dark:text-white/50" />
@@ -2306,8 +2306,8 @@ export default function Dashboard() {
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-black dark:text-white text-sm">{L ? pricingPlans.find(p => p.isCustom)?.nameAr : (pricingPlans.find(p => p.isCustom)?.nameEn || pricingPlans.find(p => p.isCustom)?.nameAr)}</h4>
-                    <p className="text-[10px] text-black/35 dark:text-white/35">{L ? pricingPlans.find(p => p.isCustom)?.descriptionAr : (pricingPlans.find(p => p.isCustom)?.descriptionEn || pricingPlans.find(p => p.isCustom)?.descriptionAr)}</p>
+                    <h4 className="font-bold text-black dark:text-white text-sm">{L ? pricingPlans.find(p => p.isCustom)?.nameAr : (pricingPlans.find(p => p.isCustom)?.name || pricingPlans.find(p => p.isCustom)?.nameAr)}</h4>
+                    <p className="text-[10px] text-black/35 dark:text-white/35">{L ? pricingPlans.find(p => p.isCustom)?.descriptionAr : (pricingPlans.find(p => p.isCustom)?.description || pricingPlans.find(p => p.isCustom)?.descriptionAr)}</p>
                   </div>
                 </div>
                 <Link href="/contact">

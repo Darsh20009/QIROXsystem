@@ -268,14 +268,14 @@ export default function AdminInvestors() {
               <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">بحث واختيار المستخدم</label>
               <Input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="ابحث بالاسم أو البريد..." data-testid="input-user-search" />
               <div className="mt-2 max-h-48 overflow-y-auto space-y-1 rounded-xl border border-black/[0.07] dark:border-white/[0.07] p-1">
-                {filteredUsers.filter(u => !existingUserIds.has(u.id || u._id)).slice(0, 10).map(u => (
-                  <button key={u.id || u._id} onClick={() => setSelectedUserId(u.id || u._id || "")}
+                {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).slice(0, 10).map(u => (
+                  <button key={u.id || u._id} onClick={() => setSelectedUserId(String(u.id || u._id || ""))}
                     className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-all ${selectedUserId === (u.id || u._id) ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" : "hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
                     data-testid={`select-user-${u.id || u._id}`}>
                     <span className="font-medium">{u.fullName}</span> <span className="text-xs text-black/40 dark:text-white/40">({u.role}) — {u.email}</span>
                   </button>
                 ))}
-                {filteredUsers.filter(u => !existingUserIds.has(u.id || u._id)).length === 0 && <p className="text-center text-sm py-3 text-black/30 dark:text-white/30">لا توجد نتائج</p>}
+                {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).length === 0 && <p className="text-center text-sm py-3 text-black/30 dark:text-white/30">لا توجد نتائج</p>}
               </div>
             </div>
             <div>

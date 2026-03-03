@@ -970,7 +970,7 @@ const clientDataRequestSchema = new mongoose.Schema({
   adminNote: String,
 }, { timestamps: true });
 
-clientDataRequestSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+clientDataRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const ClientDataRequestModel = mongoose.models.ClientDataRequest || mongoose.model("ClientDataRequest", clientDataRequestSchema);
 
 // ── HTML Publisher ──────────────────────────────────────────────────────────
@@ -981,7 +981,7 @@ const htmlPublishSchema = new mongoose.Schema({
   views:    { type: Number, default: 0 },
   isPublic: { type: Boolean, default: true },
 }, { timestamps: true });
-htmlPublishSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+htmlPublishSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const HtmlPublishModel = mongoose.models.HtmlPublish || mongoose.model("HtmlPublish", htmlPublishSchema);
 
 // ── URL Shortener ───────────────────────────────────────────────────────────
@@ -992,7 +992,7 @@ const shortUrlSchema = new mongoose.Schema({
   title:       { type: String, default: "" },
   clicks:      { type: Number, default: 0 },
 }, { timestamps: true });
-shortUrlSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+shortUrlSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const ShortUrlModel = mongoose.models.ShortUrl || mongoose.model("ShortUrl", shortUrlSchema);
 
 // ── Qirox System Settings ────────────────────────────────────────────────────
@@ -1033,7 +1033,7 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   // Modification Tracking
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
-qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QiroxSystemSettingsModel = mongoose.models.QiroxSystemSettings || mongoose.model("QiroxSystemSettings", qiroxSystemSettingsSchema);
 
 // ── Investor Profile ─────────────────────────────────────────────────────────
@@ -1046,7 +1046,7 @@ const investorProfileSchema = new mongoose.Schema({
   notes:            { type: String, default: "" },  // Admin notes
   joinedAt:         { type: Date, default: Date.now },
 }, { timestamps: true });
-investorProfileSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+investorProfileSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const InvestorProfileModel = mongoose.models.InvestorProfile || mongoose.model("InvestorProfile", investorProfileSchema);
 
 // ── Investment Payment ────────────────────────────────────────────────────────
@@ -1065,7 +1065,7 @@ const investmentPaymentSchema = new mongoose.Schema({
   approvedBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   approvedAt:      { type: Date },
 }, { timestamps: true });
-investmentPaymentSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+investmentPaymentSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const InvestmentPaymentModel = mongoose.models.InvestmentPayment || mongoose.model("InvestmentPayment", investmentPaymentSchema);
 
 // ── Promotion Log ─────────────────────────────────────────────────────────────
@@ -1079,7 +1079,7 @@ const promotionLogSchema = new mongoose.Schema({
   reason:         { type: String, default: "" },
   type:           { type: String, enum: ["promote", "demote", "role_add", "role_remove"], default: "promote" },
 }, { timestamps: true });
-promotionLogSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+promotionLogSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const PromotionLogModel = mongoose.models.PromotionLog || mongoose.model("PromotionLog", promotionLogSchema);
 
 // ── QMeet: Meeting Management System (uses main MongoDB) ──────────────────────
@@ -1105,7 +1105,7 @@ const qMeetingSchema = new mongoose.Schema({
   agenda:         { type: [String], default: [] },
   recordingUrl:   { type: String, default: "" },
 }, { timestamps: true });
-qMeetingSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+qMeetingSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QMeetingModel = mongoose.models.QMeeting || mongoose.model("QMeeting", qMeetingSchema);
 
 const qFeedbackSchema = new mongoose.Schema({
@@ -1115,7 +1115,7 @@ const qFeedbackSchema = new mongoose.Schema({
   rating:       { type: Number, min: 1, max: 5, required: true },
   comment:      { type: String, default: "" },
 }, { timestamps: true });
-qFeedbackSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+qFeedbackSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QFeedbackModel = mongoose.models.QFeedback || mongoose.model("QFeedback", qFeedbackSchema);
 
 const qReportSchema = new mongoose.Schema({
@@ -1128,5 +1128,5 @@ const qReportSchema = new mongoose.Schema({
   duration:     { type: Number, default: 0 },
   content:      { type: String, default: "" },
 }, { timestamps: true });
-qReportSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+qReportSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QReportModel = mongoose.models.QReport || mongoose.model("QReport", qReportSchema);

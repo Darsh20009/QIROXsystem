@@ -164,7 +164,7 @@ export default function QiroxEdit() {
       angle: Math.round(obj.angle || 0),
       opacity: Math.round((obj.opacity ?? 1) * 100),
       fill: typeof obj.fill === "string" ? obj.fill : "#000000",
-      stroke: obj.stroke || "transparent",
+      stroke: typeof obj.stroke === "string" ? obj.stroke : "transparent",
       strokeWidth: obj.strokeWidth || 0,
       fontSize: (obj as any).fontSize || 32,
       fontFamily: (obj as any).fontFamily || "Cairo",
