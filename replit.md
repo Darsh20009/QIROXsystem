@@ -10,6 +10,31 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 3, 2026 - Session 29)
+
+### نظام Qirox Pay — محفظة العميل الإلكترونية الكاملة
+- **بطاقة Qirox Pay الافتراضية**: تصميم كبطاقة Visa حقيقية بألوان العلامة التجارية (Deep Blue + Electric Cyan)
+- **إنشاء البطاقة**: رقم 16 خانة فريد يبدأ بـ `4747XXXXXXXXXXXX`
+- **رقم سري (PIN)**: 4 أرقام مشفر بـ bcrypt — يُعيَّن/يُغيَّر من واجهة المستخدم
+- **شحن الرصيد**: العميل يُرسل طلب تحويل بنكي (اسم البنك + رقم المرجع) → الأدمن يراجعه ويعتمده → يُضاف الرصيد تلقائياً + إيميل للعميل
+- **الدفع الخارجي بالبطاقة**: شخص آخر يُدخل رقم البطاقة + المبلغ → يُرسل OTP لبريد صاحب البطاقة → صاحبها يُشاركه مع الدافع → يُنقص من الرصيد تلقائياً
+- **نماذج قاعدة البيانات الجديدة**: `walletCardNumber`, `walletPin`, `walletCardActive` في userSchema + `WalletTopupModel` + `WalletPayOtpModel`
+- **Routes الجديدة**:
+  - `GET /api/wallet/card` — معلومات البطاقة والرصيد
+  - `POST /api/wallet/card/init` — إنشاء البطاقة
+  - `POST /api/wallet/card/set-pin` — تعيين/تغيير PIN
+  - `POST /api/wallet/card/pay` — دفع بالبطاقة الخاصة (PIN مطلوب)
+  - `POST /api/wallet/card/request-otp` — طلب OTP للدفع الخارجي
+  - `POST /api/wallet/card/verify-otp` — تحقق OTP وتنفيذ الدفع الخارجي
+  - `POST /api/wallet/topup-request` — طلب شحن رصيد
+  - `GET /api/wallet/topup-requests` — سجل طلبات الشحن
+  - `GET /api/admin/wallet/topup-requests` — كل طلبات الشحن للأدمن
+  - `POST /api/admin/wallet/topup-approve/:id` — اعتماد طلب + إضافة رصيد + إيميل
+  - `POST /api/admin/wallet/topup-reject/:id` — رفض طلب + إيميل
+- **Emails الجديدة**: `sendWalletPayOtpEmail` + `sendWalletTopupStatusEmail`
+- **واجهة ClientWallet**: ثلاث تبويبات (بطاقتي / المعاملات / طلبات الشحن) + modal لكل إجراء
+- **واجهة AdminWallet**: تبويب جديد لطلبات الشحن مع أزرار اعتماد/رفض
+
 ## Latest Changes (Mar 3, 2026 - Session 28)
 
 ### نظام الجرافيكس الإبداعي — جميع الصفحات

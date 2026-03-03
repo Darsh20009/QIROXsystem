@@ -1138,6 +1138,224 @@ export async function registerRoutes(
     res.status(201).json({ success: true, amountUsed: Number(amount), remainingBalance: newAvailable, transactionId: tx._id });
   });
 
+  // === QIROX PAY CARD ROUTES ===
+  // Get card info
+  app.get("/api/wallet/card", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { UserModel, WalletTransactionModel } = await import("./models");
+    const dbUser = await UserModel.findById(String(user.id)).select("+walletCardNumber +walletPin +walletCardActive");
+    if (!dbUser) return res.sendStatus(404);
+    const txs = await WalletTransactionModel.find({ userId: String(user.id) });
+    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+    const balance = Math.max(0, totalCredit - totalDebit);
+    res.json({
+      cardNumber: dbUser.walletCardNumber || null,
+      cardActive: dbUser.walletCardActive || false,
+      hasPin: !!dbUser.walletPin,
+      holderName: dbUser.fullName,
+      balance,
+    });
+  });
+
+  // Initialize card (generate card number)
+  app.post("/api/wallet/card/init", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { UserModel } = await import("./models");
+    const dbUser = await UserModel.findById(String(user.id));
+    if (!dbUser) return res.sendStatus(404);
+    if (dbUser.walletCardNumber) return res.json({ cardNumber: dbUser.walletCardNumber, cardActive: dbUser.walletCardActive });
+    // Generate unique 16-digit card number prefixed with 4747
+    let cardNumber: string;
+    let exists = true;
+    do {
+      const rand = Math.floor(Math.random() * 1_000_000_000_000).toString().padStart(12, '0');
+      cardNumber = `4747${rand}`;
+      const existing = await UserModel.findOne({ walletCardNumber: cardNumber });
+      exists = !!existing;
+    } while (exists);
+    await UserModel.findByIdAndUpdate(String(user.id), { walletCardNumber: cardNumber, walletCardActive: true });
+    res.json({ cardNumber, cardActive: true });
+  });
+
+  // Set/Change PIN
+  app.post("/api/wallet/card/set-pin", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { UserModel } = await import("./models");
+    const bcrypt = await import("bcrypt");
+    const { pin, currentPin } = req.body;
+    if (!pin || !/^\d{4}$/.test(pin)) return res.status(400).json({ error: "الرقم السري يجب أن يكون 4 أرقام" });
+    const dbUser = await UserModel.findById(String(user.id));
+    if (!dbUser) return res.sendStatus(404);
+    if (dbUser.walletPin) {
+      if (!currentPin) return res.status(400).json({ error: "يجب إدخال الرقم السري الحالي" });
+      const valid = await bcrypt.compare(String(currentPin), dbUser.walletPin);
+      if (!valid) return res.status(400).json({ error: "الرقم السري الحالي غير صحيح" });
+    }
+    const hashed = await bcrypt.hash(pin, 10);
+    await UserModel.findByIdAndUpdate(String(user.id), { walletPin: hashed });
+    res.json({ success: true });
+  });
+
+  // Pay with card (own card — PIN required)
+  app.post("/api/wallet/card/pay", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { UserModel, WalletTransactionModel } = await import("./models");
+    const bcrypt = await import("bcrypt");
+    const { amount, description, pin, orderId } = req.body;
+    if (!pin || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
+    const dbUser = await UserModel.findById(String(user.id));
+    if (!dbUser) return res.sendStatus(404);
+    if (!dbUser.walletCardNumber || !dbUser.walletCardActive) return res.status(400).json({ error: "البطاقة غير مفعّلة" });
+    if (!dbUser.walletPin) return res.status(400).json({ error: "يجب تعيين رقم سري أولاً" });
+    const validPin = await bcrypt.compare(String(pin), dbUser.walletPin);
+    if (!validPin) return res.status(400).json({ error: "الرقم السري غير صحيح" });
+    const txs = await WalletTransactionModel.find({ userId: String(user.id) });
+    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+    const balance = Math.max(0, totalCredit - totalDebit);
+    if (Number(amount) > balance) return res.status(400).json({ error: "الرصيد غير كافٍ", balance });
+    const tx = await WalletTransactionModel.create({
+      userId: String(user.id), type: 'debit', amount: Number(amount),
+      description: description || 'دفع بـ Qirox Pay',
+      orderId: orderId || undefined,
+      addedBy: String(user.id), note: 'qirox_pay_card',
+    });
+    res.status(201).json({ success: true, transactionId: tx._id, remainingBalance: balance - Number(amount) });
+  });
+
+  // External pay: request OTP (someone else pays with your card number)
+  app.post("/api/wallet/card/request-otp", async (req, res) => {
+    const { cardNumber, amount, description } = req.body;
+    if (!cardNumber || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
+    const { UserModel, WalletPayOtpModel, WalletTransactionModel } = await import("./models");
+    const { sendWalletPayOtpEmail } = await import("./email");
+    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true });
+    if (!owner) return res.status(404).json({ error: "البطاقة غير موجودة أو غير مفعّلة" });
+    if (!owner.walletPin) return res.status(400).json({ error: "البطاقة لم يتم تفعيلها بعد" });
+    // Check balance
+    const txs = await WalletTransactionModel.find({ userId: String(owner._id) });
+    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+    const balance = Math.max(0, totalCredit - totalDebit);
+    if (Number(amount) > balance) return res.status(400).json({ error: "رصيد البطاقة غير كافٍ" });
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await WalletPayOtpModel.create({
+      cardOwnerId: owner._id, amount: Number(amount),
+      description: description || 'دفع خارجي بـ Qirox Pay',
+      otp, expiresAt,
+    });
+    await sendWalletPayOtpEmail(owner.email, owner.fullName, otp, Number(amount), description || 'دفع خارجي');
+    res.json({ success: true, ownerName: owner.fullName, maskedEmail: owner.email.replace(/(.{2}).+(@.+)/, '$1***$2') });
+  });
+
+  // External pay: verify OTP and deduct
+  app.post("/api/wallet/card/verify-otp", async (req, res) => {
+    const { cardNumber, otp, amount, description } = req.body;
+    if (!cardNumber || !otp || !amount) return res.status(400).json({ error: "بيانات ناقصة" });
+    const { UserModel, WalletPayOtpModel, WalletTransactionModel } = await import("./models");
+    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true });
+    if (!owner) return res.status(404).json({ error: "البطاقة غير موجودة" });
+    const pending = await WalletPayOtpModel.findOne({
+      cardOwnerId: owner._id, otp, used: false,
+      expiresAt: { $gt: new Date() },
+      amount: Number(amount),
+    });
+    if (!pending) return res.status(400).json({ error: "رمز OTP غير صحيح أو منتهي الصلاحية" });
+    // Verify balance again
+    const txs = await WalletTransactionModel.find({ userId: String(owner._id) });
+    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+    const balance = Math.max(0, totalCredit - totalDebit);
+    if (Number(amount) > balance) return res.status(400).json({ error: "الرصيد غير كافٍ" });
+    await WalletPayOtpModel.findByIdAndUpdate(pending._id, { used: true });
+    const tx = await WalletTransactionModel.create({
+      userId: String(owner._id), type: 'debit', amount: Number(amount),
+      description: description || pending.description,
+      addedBy: String(owner._id), note: 'qirox_pay_external',
+    });
+    res.json({ success: true, transactionId: tx._id });
+  });
+
+  // Topup request (client submits bank transfer)
+  app.post("/api/wallet/topup-request", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { WalletTopupModel } = await import("./models");
+    const { amount, bankName, bankRef, note } = req.body;
+    if (!amount || Number(amount) <= 0) return res.status(400).json({ error: "المبلغ غير صحيح" });
+    const topup = await WalletTopupModel.create({
+      userId: String(user.id), amount: Number(amount), bankName, bankRef, note,
+    });
+    res.status(201).json(topup);
+  });
+
+  // Get my topup requests
+  app.get("/api/wallet/topup-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { WalletTopupModel } = await import("./models");
+    const requests = await WalletTopupModel.find({ userId: String(user.id) }).sort({ createdAt: -1 });
+    res.json(requests);
+  });
+
+  // Admin: get all pending topup requests
+  app.get("/api/admin/wallet/topup-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel, UserModel } = await import("./models");
+    const requests = await WalletTopupModel.find().sort({ createdAt: -1 }).populate('userId', 'fullName email username');
+    res.json(requests);
+  });
+
+  // Admin: approve topup
+  app.post("/api/admin/wallet/topup-approve/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel, WalletTransactionModel, UserModel } = await import("./models");
+    const { sendWalletTopupStatusEmail } = await import("./email");
+    const topup = await WalletTopupModel.findById(req.params.id);
+    if (!topup) return res.sendStatus(404);
+    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
+    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
+      status: 'approved', approvedBy: String(me.id), approvedAt: new Date(),
+    });
+    await WalletTransactionModel.create({
+      userId: topup.userId, type: 'credit', amount: topup.amount,
+      description: `شحن محفظة Qirox Pay - ${topup.bankName || 'تحويل بنكي'}`,
+      addedBy: String(me.id), note: `المرجع: ${topup.bankRef || '-'}`,
+    });
+    const owner = await UserModel.findById(topup.userId);
+    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'approved');
+    res.json({ success: true });
+  });
+
+  // Admin: reject topup
+  app.post("/api/admin/wallet/topup-reject/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel, UserModel } = await import("./models");
+    const { sendWalletTopupStatusEmail } = await import("./email");
+    const topup = await WalletTopupModel.findById(req.params.id);
+    if (!topup) return res.sendStatus(404);
+    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
+    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
+      status: 'rejected', rejectionReason: req.body.reason || '',
+    });
+    const owner = await UserModel.findById(topup.userId);
+    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'rejected', req.body.reason);
+    res.json({ success: true });
+  });
+
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

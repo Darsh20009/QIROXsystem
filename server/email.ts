@@ -746,3 +746,111 @@ export async function sendTestEmail(to: string, name: string): Promise<boolean> 
   );
   return sendEmail(to, name, "اختبار نظام البريد | QIROX", html);
 }
+
+export async function sendWalletPayOtpEmail(to: string, name: string, otp: string, amount: number, description: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      <tr>
+        <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
+          <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
+          <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:2px;"> PAY</span>
+          <p style="margin:4px 0 0 0;color:#94a3b8;font-size:11px;">محفظة كيروكس الإلكترونية</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#06b6d4;font-weight:700;">🔐 رمز تأكيد الدفع</p>
+          <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0f172a;">طلب دفع من بطاقتك</h2>
+          <p style="margin:0 0 20px 0;font-size:14px;color:#555555;line-height:1.7;">
+            مرحباً ${displayName}، تم طلب استخدام بطاقة <strong>Qirox Pay</strong> الخاصة بك للدفع. الرجاء مشاركة الرمز أدناه مع الدافع إذا وافقت على العملية.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+              <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;color:#475569;">
+                <strong>المبلغ:</strong> ${amount.toLocaleString('ar-SA')} ر.س<br/>
+                <strong>الوصف:</strong> ${description}
+              </td>
+            </tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:14px;padding:30px;text-align:center;">
+                <p style="margin:0 0 10px 0;font-size:12px;color:#94a3b8;">رمز OTP لتأكيد الدفع</p>
+                <p style="margin:0;font-size:52px;font-weight:900;color:#06b6d4;letter-spacing:16px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:11px;color:#64748b;">صالح لمدة 10 دقائق فقط &bull; لا تشاركه إلا مع الدافع</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:20px 0 0 0;font-size:12px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;">
+            ⚠️ إذا لم تطلب هذه العملية، تجاهل هذا البريد ولا تشارك الرمز مع أحد.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  return sendEmail(to, displayName, `${otp} - رمز تأكيد الدفع | Qirox Pay`, html);
+}
+
+export async function sendWalletTopupStatusEmail(to: string, name: string, amount: number, status: 'approved' | 'rejected', reason?: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const isApproved = status === 'approved';
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      <tr>
+        <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
+          <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
+          <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:2px;"> PAY</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:${isApproved ? '#16a34a' : '#dc2626'};font-weight:700;">
+            ${isApproved ? '✅ تم شحن المحفظة' : '❌ رُفض طلب الشحن'}
+          </p>
+          <h2 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0f172a;">
+            ${isApproved ? 'تم إضافة الرصيد بنجاح' : 'لم يتم قبول طلب الشحن'}
+          </h2>
+          <p style="margin:0 0 20px 0;font-size:14px;color:#555555;line-height:1.7;">
+            مرحباً ${displayName},
+            ${isApproved
+              ? `تمت مراجعة طلب شحن محفظتك وقد تم <strong>اعتماده وإضافة ${amount.toLocaleString('ar-SA')} ر.س</strong> لرصيد بطاقتك Qirox Pay.`
+              : `تمت مراجعة طلب شحن محفظتك بمبلغ ${amount.toLocaleString('ar-SA')} ر.س ولكن لم يتم قبوله.`
+            }
+          </p>
+          ${!isApproved && reason ? `<p style="margin:0 0 20px 0;font-size:13px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;"><strong>السبب:</strong> ${reason}</p>` : ''}
+          <a href="${SITE_URL}/dashboard/wallet" style="display:inline-block;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#06b6d4;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;">
+            عرض المحفظة
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  return sendEmail(to, displayName, `${isApproved ? '✅ تم شحن محفظتك' : '❌ رُفض طلب الشحن'} | Qirox Pay`, html);
+}

@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
   subscriptionStartDate: Date,
   subscriptionExpiresAt: Date,
   subscriptionStatus: { type: String, enum: ["active", "expired", "none"], default: "none" },
+  walletCardNumber: { type: String, unique: true, sparse: true },
+  walletPin: { type: String },
+  walletCardActive: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({
@@ -896,3 +899,34 @@ walletTransactionSchema.set('toJSON', { transform });
 walletTransactionSchema.set('toObject', { transform });
 
 export const WalletTransactionModel = mongoose.models.WalletTransaction || mongoose.model("WalletTransaction", walletTransactionSchema);
+
+const walletTopupSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  bankName: { type: String },
+  bankRef: { type: String },
+  note: { type: String },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approvedAt: { type: Date },
+  rejectionReason: { type: String },
+}, { timestamps: true });
+
+walletTopupSchema.set('toJSON', { transform });
+walletTopupSchema.set('toObject', { transform });
+
+export const WalletTopupModel = mongoose.models.WalletTopup || mongoose.model("WalletTopup", walletTopupSchema);
+
+const walletPayOtpSchema = new mongoose.Schema({
+  cardOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  amount: { type: Number, required: true },
+  description: { type: String, required: true },
+  otp: { type: String, required: true },
+  expiresAt: { type: Date, required: true },
+  used: { type: Boolean, default: false },
+}, { timestamps: true });
+
+walletPayOtpSchema.set('toJSON', { transform });
+walletPayOtpSchema.set('toObject', { transform });
+
+export const WalletPayOtpModel = mongoose.models.WalletPayOtp || mongoose.model("WalletPayOtp", walletPayOtpSchema);
