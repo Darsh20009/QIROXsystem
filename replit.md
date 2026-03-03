@@ -412,6 +412,28 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Layout.tsx, Portfolio.tsx, Segments.tsx, News.tsx** — Removed `backdrop-blur` from footer, sticky headers, cards, and modal overlays
 - **qirox-brand.tsx** — `MobileSplash` component: lightweight 3-second splash for mobile. SVG filters removed
 
+## Latest Changes (Mar 03, 2026 - Session 15)
+
+### QiroxEdit — Creative UI Redesign + Back Button
+- Added "العودة" (Home) button in top bar navigating to `/my-tools` via wouter
+- Redesigned top bar: deep dark background with blur, cyan→purple gradient logo glow, animated shimmer accent line at very top
+- Export button: cyan→purple gradient with glow shadow
+- Left panel: active tab highlighted with gradient glow + cyan border
+- Right panel tab: cyan indicator instead of blue
+- Canvas area: radial gradient dark background + subtle grid pattern overlay
+- Canvas shadow: cyan glow ring (`rgba(6,182,212,0.15)`)
+- Added `@keyframes shimmer` to `index.css`
+
+### AdminJobs — Custom Questions Builder
+- Added `JobQuestion` interface (text, type, required, options)
+- Added `questions[]` field to `JobFormData` and `emptyForm`
+- Questions builder UI in job form dialog: add/remove questions, select type (text/textarea/select/radio/checkbox), toggle required/optional
+- Options editor for select/radio/checkbox type questions
+- `handleEdit` loads existing questions when editing a job
+- Mutations send `questions` array to backend
+- **server/models.ts**: Added `jobQuestionSchema` subschema + `questions` field to `jobSchema`; also added "paused" to status enum
+- **shared/schema.ts**: Added `questions: jsonb("questions").default([])` to `jobs` table
+
 ## Latest Changes (Feb 28, 2026 - Session 14)
 
 ### Dark Mode (النظام الليلي) — Comprehensive Fix

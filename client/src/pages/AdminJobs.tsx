@@ -8,13 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Loader2, Plus, Edit2, Trash2, Briefcase, Users, CheckCircle,
   Mail, Phone, FileText, UserPlus, Shield, Star, Eye, X, Copy,
-  Search, Filter, Download, Clock, MapPin, ChevronDown
+  Search, Filter, Download, Clock, MapPin, ChevronDown,
+  HelpCircle, GripVertical, ToggleLeft, ToggleRight, ChevronUp, ListChecks
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Job, type Application } from "@shared/schema";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface JobQuestion {
+  text: string;
+  type: "text" | "textarea" | "select" | "radio" | "checkbox";
+  required: boolean;
+  options: string[];
+}
 
 interface JobFormData {
   title: string;
@@ -24,12 +32,18 @@ interface JobFormData {
   type: string;
   salaryRange: string;
   status: string;
+  questions: JobQuestion[];
 }
+
+const emptyQuestion: JobQuestion = {
+  text: "", type: "text", required: false, options: [],
+};
 
 const emptyForm: JobFormData = {
   title: "", description: "", requirements: "",
   location: "الرياض، المملكة العربية السعودية",
   type: "full-time", salaryRange: "", status: "open",
+  questions: [],
 };
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -79,7 +93,7 @@ export default function AdminJobs() {
 
   const createMutation = useMutation({
     mutationFn: async (data: JobFormData) => {
-      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean) };
+      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean), questions: data.questions };
       const res = await apiRequest("POST", "/api/admin/jobs", payload);
       return res.json();
     },
@@ -89,7 +103,7 @@ export default function AdminJobs() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: JobFormData) => {
-      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean) };
+      const payload = { ...data, requirements: data.requirements.split("\n").map(r => r.trim()).filter(Boolean), questions: data.questions };
       const res = await apiRequest("PATCH", `/api/admin/jobs/${editingId}`, payload);
       return res.json();
     },
@@ -133,8 +147,46 @@ export default function AdminJobs() {
 
   const handleEdit = (job: Job) => {
     setEditingId(job.id.toString());
-    setFormData({ title: job.title, description: job.description, requirements: (job.requirements || []).join("\n"), location: job.location || "", type: job.type || "full-time", salaryRange: job.salaryRange || "", status: job.status });
+    setFormData({
+      title: job.title,
+      description: job.description,
+      requirements: (job.requirements || []).join("\n"),
+      location: job.location || "",
+      type: job.type || "full-time",
+      salaryRange: job.salaryRange || "",
+      status: job.status,
+      questions: ((job as any).questions || []) as JobQuestion[],
+    });
     setOpen(true);
+  };
+
+  const addQuestion = () => {
+    setFormData(f => ({ ...f, questions: [...f.questions, { ...emptyQuestion }] }));
+  };
+
+  const removeQuestion = (idx: number) => {
+    setFormData(f => ({ ...f, questions: f.questions.filter((_, i) => i !== idx) }));
+  };
+
+  const updateQuestion = (idx: number, patch: Partial<JobQuestion>) => {
+    setFormData(f => ({
+      ...f,
+      questions: f.questions.map((q, i) => i === idx ? { ...q, ...patch } : q),
+    }));
+  };
+
+  const addOption = (qIdx: number) => {
+    updateQuestion(qIdx, { options: [...formData.questions[qIdx].options, ""] });
+  };
+
+  const updateOption = (qIdx: number, oIdx: number, val: string) => {
+    const opts = [...formData.questions[qIdx].options];
+    opts[oIdx] = val;
+    updateQuestion(qIdx, { options: opts });
+  };
+
+  const removeOption = (qIdx: number, oIdx: number) => {
+    updateQuestion(qIdx, { options: formData.questions[qIdx].options.filter((_, i) => i !== oIdx) });
   };
 
   const openHireDialog = (app: Application) => {
@@ -486,6 +538,111 @@ export default function AdminJobs() {
                 </Select>
               </div>
             </div>
+
+
+            {/* ─── Questions Builder ─── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  <label className="text-sm font-semibold text-black/70 dark:text-white/70">أسئلة الطلب</label>
+                  {formData.questions.length > 0 && (
+                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">{formData.questions.length}</span>
+                  )}
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={addQuestion}
+                  className="h-8 text-xs gap-1.5 rounded-xl" data-testid="button-add-question">
+                  <Plus className="w-3.5 h-3.5" />إضافة سؤال
+                </Button>
+              </div>
+
+              {formData.questions.length === 0 ? (
+                <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl p-6 text-center">
+                  <HelpCircle className="w-6 h-6 mx-auto mb-2 text-black/20 dark:text-white/20" />
+                  <p className="text-xs text-black/30 dark:text-white/30">لا توجد أسئلة. أضف أسئلة مخصصة للمتقدمين.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {formData.questions.map((q, qIdx) => (
+                    <motion.div key={qIdx} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                      className="border border-black/[0.08] dark:border-white/[0.08] rounded-xl p-3 space-y-3 bg-black/[0.02] dark:bg-white/[0.02]"
+                      data-testid={`question-card-${qIdx}`}>
+
+                      {/* Question header */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-[10px] font-black text-black/40 dark:text-white/40 flex-shrink-0">{qIdx + 1}</div>
+                        <div className="flex-1">
+                          <Input
+                            value={q.text}
+                            onChange={e => updateQuestion(qIdx, { text: e.target.value })}
+                            placeholder="نص السؤال..."
+                            className="h-8 text-sm"
+                            data-testid={`question-text-${qIdx}`}
+                          />
+                        </div>
+                        <Button type="button" size="icon" variant="ghost" className="w-7 h-7 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 flex-shrink-0 rounded-lg"
+                          onClick={() => removeQuestion(qIdx)} data-testid={`button-remove-question-${qIdx}`}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+
+                      {/* Type & Required */}
+                      <div className="flex items-center gap-2">
+                        <Select value={q.type} onValueChange={(v) => updateQuestion(qIdx, { type: v as JobQuestion["type"], options: ["select", "radio", "checkbox"].includes(v) ? (q.options.length ? q.options : [""]) : [] })}>
+                          <SelectTrigger className="h-8 text-xs flex-1 rounded-lg" data-testid={`question-type-${qIdx}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">نص قصير</SelectItem>
+                            <SelectItem value="textarea">نص طويل</SelectItem>
+                            <SelectItem value="select">قائمة منسدلة</SelectItem>
+                            <SelectItem value="radio">اختيار واحد</SelectItem>
+                            <SelectItem value="checkbox">اختيارات متعددة</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <button type="button"
+                          onClick={() => updateQuestion(qIdx, { required: !q.required })}
+                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all flex-shrink-0 ${q.required ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40"}`}
+                          data-testid={`question-required-${qIdx}`}>
+                          {q.required ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                          {q.required ? "إجباري" : "اختياري"}
+                        </button>
+                      </div>
+
+                      {/* Options (for select/radio/checkbox) */}
+                      {["select", "radio", "checkbox"].includes(q.type) && (
+                        <div className="space-y-2 pr-6">
+                          <p className="text-[10px] text-black/40 dark:text-white/40 font-semibold">الخيارات:</p>
+                          {q.options.map((opt, oIdx) => (
+                            <div key={oIdx} className="flex items-center gap-2">
+                              <div className={`w-3 h-3 flex-shrink-0 border border-black/20 dark:border-white/20 ${q.type === "checkbox" ? "rounded" : "rounded-full"}`} />
+                              <Input
+                                value={opt}
+                                onChange={e => updateOption(qIdx, oIdx, e.target.value)}
+                                placeholder={`الخيار ${oIdx + 1}...`}
+                                className="h-7 text-xs flex-1"
+                                data-testid={`option-text-${qIdx}-${oIdx}`}
+                              />
+                              <button type="button" onClick={() => removeOption(qIdx, oIdx)}
+                                className="text-red-400 hover:text-red-600 flex-shrink-0" data-testid={`button-remove-option-${qIdx}-${oIdx}`}>
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => addOption(qIdx)}
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 pr-5"
+                            data-testid={`button-add-option-${qIdx}`}>
+                            <Plus className="w-3 h-3" />إضافة خيار
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="flex-1 premium-btn" disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-job">
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin ml-2" />}

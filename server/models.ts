@@ -163,6 +163,13 @@ const newsSchema = new mongoose.Schema({
   publishedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
+const jobQuestionSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  type: { type: String, enum: ["text", "textarea", "select", "radio", "checkbox"], default: "text" },
+  required: { type: Boolean, default: false },
+  options: [String],
+}, { _id: false });
+
 const jobSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -170,7 +177,8 @@ const jobSchema = new mongoose.Schema({
   location: String,
   type: { type: String, default: "full-time" },
   salaryRange: String,
-  status: { type: String, enum: ["open", "closed"], default: "open" },
+  status: { type: String, enum: ["open", "closed", "paused"], default: "open" },
+  questions: { type: [jobQuestionSchema], default: [] },
 }, { timestamps: true });
 
 const applicationSchema = new mongoose.Schema({

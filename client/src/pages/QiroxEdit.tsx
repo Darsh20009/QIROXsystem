@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useLocation } from "wouter";
 import * as fabric from "fabric";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
@@ -9,7 +10,8 @@ import {
   Lock, Unlock, Eye, EyeOff, ZoomIn, ZoomOut, Monitor,
   Palette, Grid3x3, RotateCcw, FlipHorizontal, FlipVertical,
   Star, Hexagon, ArrowRight, Pen, X, Plus, Save, Share2,
-  MoveHorizontal, MoveVertical, PanelLeft, PanelRight
+  MoveHorizontal, MoveVertical, PanelLeft, PanelRight, Home,
+  Sparkles, Wand2, MousePointer2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +85,7 @@ function getScale(canvasW: number, canvasH: number, containerW: number): number 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function QiroxEdit() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -620,44 +623,70 @@ export default function QiroxEdit() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col h-screen bg-[#1a1a2e] text-white overflow-hidden" dir="rtl">
+      <div className="flex flex-col h-screen text-white overflow-hidden" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #0f0f2a 100%)" }} dir="rtl">
+
+        {/* ── Accent line ─────────────────────────────────────────────── */}
+        <div className="h-[2px] flex-shrink-0" style={{ background: "linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4)", backgroundSize: "200% 100%", animation: "shimmer 3s linear infinite" }} />
 
         {/* ── Top Bar ─────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#16213e] border-b border-white/10 flex-shrink-0 z-20">
+        <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0 z-20" style={{ background: "rgba(15,15,35,0.95)", borderBottom: "1px solid rgba(255,255,255,0.07)", backdropFilter: "blur(12px)" }}>
+
+          {/* Back button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => navigate("/my-tools")}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-all text-white/50 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/10 flex-shrink-0"
+                data-testid="button-back-to-website">
+                <Home className="w-3.5 h-3.5" />
+                <span className="hidden md:block">العودة</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>العودة إلى أدواتي</TooltipContent>
+          </Tooltip>
+
+          <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
+
           {/* Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-xs font-black">Q</div>
-            <span className="text-sm font-black text-white hidden sm:block">Qirox Edit</span>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black relative overflow-hidden" style={{ background: "linear-gradient(135deg, #06b6d4, #8b5cf6)", boxShadow: "0 0 12px rgba(6,182,212,0.4)" }}>
+              <span className="relative z-10">Q</span>
+            </div>
+            <div className="hidden sm:block">
+              <div className="text-sm font-black leading-none" style={{ background: "linear-gradient(90deg, #06b6d4, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Qirox Edit</div>
+              <div className="text-[9px] text-white/30 leading-none">Design Studio</div>
+            </div>
           </div>
 
-          <div className="w-px h-5 bg-white/10 mx-1" />
+          <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
 
           {/* Project name */}
           <input value={projectName} onChange={e => setProjectName(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm text-white font-medium w-32 md:w-48 text-center"
-            data-testid="input-project-name" />
+            className="bg-transparent border-none outline-none text-sm font-medium w-32 md:w-48 text-center text-white/80 hover:text-white transition-colors placeholder-white/20"
+            data-testid="input-project-name" placeholder="اسم المشروع" />
 
-          <div className="w-px h-5 bg-white/10 mx-1" />
+          <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
 
           {/* Canvas size */}
           <div className="relative">
             <button onClick={() => { setShowSizeMenu(s => !s); setShowExportMenu(false); }}
-              className="flex items-center gap-1 text-xs bg-white/5 hover:bg-white/10 px-2 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg transition-all text-white/60 hover:text-white hover:bg-white/8"
+              style={{ background: "rgba(255,255,255,0.05)" }}
               data-testid="button-canvas-size">
               <Monitor className="w-3.5 h-3.5" />
               <span className="hidden sm:block">{canvasSize.label}</span>
               <ChevronDown className="w-3 h-3" />
             </button>
             {showSizeMenu && (
-              <div className="absolute top-full right-0 mt-1 w-52 bg-[#16213e] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+              <div className="absolute top-full right-0 mt-1 w-52 rounded-xl shadow-2xl overflow-hidden z-50" style={{ background: "#0f0f2a", border: "1px solid rgba(255,255,255,0.1)" }}>
                 {CANVAS_SIZES.map(s => (
                   <button key={s.label} onClick={() => { setCanvasSize(s); setShowSizeMenu(false); }}
-                    className={`w-full text-right text-xs px-3 py-2.5 hover:bg-white/10 transition-colors flex items-center gap-2 ${canvasSize.label === s.label ? "bg-white/10 text-blue-400" : ""}`}
+                    className={`w-full text-right text-xs px-3 py-2.5 transition-colors flex items-center gap-2 ${canvasSize.label === s.label ? "text-cyan-400" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+                    style={canvasSize.label === s.label ? { background: "rgba(6,182,212,0.1)" } : {}}
                     data-testid={`size-${s.label}`}>
                     <span className="text-sm">{s.icon}</span>
                     <div>
                       <div>{s.label}</div>
-                      <div className="text-white/40">{s.width} × {s.height}</div>
+                      <div className="text-white/30">{s.width} × {s.height}</div>
                     </div>
                   </button>
                 ))}
@@ -670,7 +699,7 @@ export default function QiroxEdit() {
           {/* Undo / Redo */}
           <Tooltip><TooltipTrigger asChild>
             <button onClick={undo} disabled={!canUndo}
-              className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg transition-all disabled:opacity-25 disabled:cursor-not-allowed hover:bg-white/10 text-white/60 hover:text-white"
               data-testid="button-undo">
               <Undo2 className="w-4 h-4" />
             </button>
@@ -678,23 +707,26 @@ export default function QiroxEdit() {
 
           <Tooltip><TooltipTrigger asChild>
             <button onClick={redo} disabled={!canRedo}
-              className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg transition-all disabled:opacity-25 disabled:cursor-not-allowed hover:bg-white/10 text-white/60 hover:text-white"
               data-testid="button-redo">
               <Redo2 className="w-4 h-4" />
             </button>
           </TooltipTrigger><TooltipContent>إعادة (Ctrl+Y)</TooltipContent></Tooltip>
 
+          <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
+
           {/* Export */}
           <div className="relative">
             <button onClick={() => { setShowExportMenu(s => !s); setShowSizeMenu(false); }}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+              style={{ background: "linear-gradient(135deg, #06b6d4, #8b5cf6)", boxShadow: "0 0 16px rgba(6,182,212,0.3)" }}
               data-testid="button-export">
               <Download className="w-4 h-4" />
               تصدير
               <ChevronDown className="w-3 h-3" />
             </button>
             {showExportMenu && (
-              <div className="absolute top-full left-0 mt-1 w-40 bg-[#16213e] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+              <div className="absolute top-full left-0 mt-1 w-40 rounded-xl shadow-2xl overflow-hidden z-50" style={{ background: "#0f0f2a", border: "1px solid rgba(255,255,255,0.1)" }}>
                 {[
                   { label: "PNG عالي الجودة", fn: exportPNG },
                   { label: "JPEG", fn: exportJPEG },
@@ -702,7 +734,7 @@ export default function QiroxEdit() {
                   { label: "SVG", fn: exportSVG },
                 ].map(e => (
                   <button key={e.label} onClick={e.fn}
-                    className="w-full text-right text-sm px-4 py-2.5 hover:bg-white/10 transition-colors"
+                    className="w-full text-right text-sm px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/5 transition-colors"
                     data-testid={`export-${e.label}`}>
                     {e.label}
                   </button>
@@ -716,14 +748,19 @@ export default function QiroxEdit() {
         <div className="flex flex-1 overflow-hidden">
 
           {/* ── Left Panel ──────────────────────────────────────────── */}
-          <div className="flex bg-[#16213e] border-l border-white/10 flex-shrink-0" style={{ direction: "ltr" }}>
+          <div className="flex flex-shrink-0" style={{ background: "rgba(12,12,28,0.98)", borderLeft: "1px solid rgba(255,255,255,0.06)", direction: "ltr" }}>
             {/* Icon tabs */}
-            <div className="flex flex-col gap-1 p-1 border-l border-white/10">
+            <div className="flex flex-col gap-1 p-1.5" style={{ borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
               {leftTools.map(({ key, label, icon: Icon }) => (
                 <Tooltip key={key}>
                   <TooltipTrigger asChild>
                     <button onClick={() => setLeftTab(key as any)}
-                      className={`w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-colors text-xs gap-0.5 ${leftTab === key ? "bg-blue-600 text-white" : "text-white/50 hover:bg-white/10 hover:text-white"}`}
+                      className={`w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all text-xs gap-0.5 relative`}
+                      style={leftTab === key
+                        ? { background: "linear-gradient(135deg, rgba(6,182,212,0.25), rgba(139,92,246,0.25))", color: "#06b6d4", boxShadow: "0 0 12px rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.3)" }
+                        : { color: "rgba(255,255,255,0.35)", border: "1px solid transparent" }}
+                      onMouseEnter={e => { if (leftTab !== key) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                      onMouseLeave={e => { if (leftTab !== key) (e.currentTarget as HTMLElement).style.background = ""; }}
                       data-testid={`tab-left-${key}`}>
                       <Icon className="w-4 h-4" />
                     </button>
@@ -896,10 +933,14 @@ export default function QiroxEdit() {
           </div>
 
           {/* ── Canvas Area ─────────────────────────────────────────── */}
-          <div ref={containerRef} className="flex-1 flex flex-col items-center justify-center bg-[#0d0d1a] overflow-hidden relative"
+          <div ref={containerRef} className="flex-1 flex flex-col items-center justify-center overflow-hidden relative"
+            style={{
+              background: "radial-gradient(ellipse at center, #0d0d22 0%, #070710 100%)",
+              backgroundImage: "radial-gradient(ellipse at center, #0d0d22 0%, #070710 100%), repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.025) 39px, rgba(255,255,255,0.025) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.025) 39px, rgba(255,255,255,0.025) 40px)",
+            }}
             onClick={() => { setShowSizeMenu(false); setShowExportMenu(false); }}>
             {/* Zoom controls */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#16213e] border border-white/10 rounded-xl px-3 py-1.5 z-10">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-xl px-3 py-1.5 z-10" style={{ background: "rgba(12,12,28,0.9)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}>
               <button onClick={() => { const c = fabricRef.current; if (!c) return; const z = Math.max(0.2, zoom - 0.1); setZoom(z); c.setZoom(scale * z); c.renderAll(); }}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors" data-testid="button-zoom-out">
                 <ZoomOut className="w-3.5 h-3.5" />
@@ -917,21 +958,22 @@ export default function QiroxEdit() {
 
             <canvas ref={canvasEl}
               style={{
-                boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                boxShadow: "0 0 0 1px rgba(6,182,212,0.15), 0 8px 32px rgba(0,0,0,0.7), 0 0 60px rgba(6,182,212,0.06)",
                 borderRadius: 4,
               }} />
           </div>
 
           {/* ── Right Panel ─────────────────────────────────────────── */}
-          <div className="w-60 bg-[#16213e] border-r border-white/10 flex-shrink-0 flex flex-col overflow-hidden">
+          <div className="w-60 flex-shrink-0 flex flex-col overflow-hidden" style={{ background: "rgba(12,12,28,0.98)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
             {/* Right tabs */}
-            <div className="flex border-b border-white/10 flex-shrink-0">
+            <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               {[
                 { key: "properties", label: "خصائص" },
                 { key: "layers", label: "طبقات" },
               ].map(t => (
                 <button key={t.key} onClick={() => setRightTab(t.key as any)}
-                  className={`flex-1 text-xs py-2.5 font-bold transition-colors ${rightTab === t.key ? "text-blue-400 border-b-2 border-blue-400" : "text-white/40 hover:text-white"}`}
+                  className={`flex-1 text-xs py-2.5 font-bold transition-all`}
+                  style={rightTab === t.key ? { color: "#06b6d4", borderBottom: "2px solid #06b6d4" } : { color: "rgba(255,255,255,0.35)", borderBottom: "2px solid transparent" }}
                   data-testid={`tab-right-${t.key}`}>
                   {t.label}
                 </button>

@@ -190,6 +190,7 @@ export const jobs = pgTable("jobs", {
   type: text("type").default("full-time"),
   salaryRange: text("salary_range"),
   status: text("status").default("open").notNull(),
+  questions: jsonb("questions").default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
