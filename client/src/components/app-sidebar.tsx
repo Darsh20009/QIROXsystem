@@ -17,7 +17,7 @@ import {
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
-  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList
+  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -72,6 +72,7 @@ export function AppSidebar() {
     { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client" },
     { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client" },
+    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client" },
 
     // Employee pages
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
@@ -85,6 +86,7 @@ export function AppSidebar() {
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", allowedRoles: ["support", "admin", "manager"] },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee" },
     { title: ar ? "أدواتي ومهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee" },
+    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee" },
 
     // Finance role pages
     { title: ar ? "المالية" : "Finance", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },

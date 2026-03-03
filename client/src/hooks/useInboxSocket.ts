@@ -7,7 +7,8 @@ export type InboxSocketEvent =
   | { type: "user_online"; userId: string }
   | { type: "user_offline"; userId: string }
   | { type: "online_users"; users: string[] }
-  | { type: "notification"; [key: string]: any };
+  | { type: "notification"; [key: string]: any }
+  | { type: "task_completed"; taskId: string; taskTitle: string; completedBy: string };
 
 interface UseInboxSocketOptions {
   userId?: string;

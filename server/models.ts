@@ -962,3 +962,25 @@ const clientDataRequestSchema = new mongoose.Schema({
 
 clientDataRequestSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
 export const ClientDataRequestModel = mongoose.models.ClientDataRequest || mongoose.model("ClientDataRequest", clientDataRequestSchema);
+
+// ── HTML Publisher ──────────────────────────────────────────────────────────
+const htmlPublishSchema = new mongoose.Schema({
+  ownerId:  { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  title:    { type: String, default: "صفحتي" },
+  content:  { type: String, required: true },
+  views:    { type: Number, default: 0 },
+  isPublic: { type: Boolean, default: true },
+}, { timestamps: true });
+htmlPublishSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const HtmlPublishModel = mongoose.models.HtmlPublish || mongoose.model("HtmlPublish", htmlPublishSchema);
+
+// ── URL Shortener ───────────────────────────────────────────────────────────
+const shortUrlSchema = new mongoose.Schema({
+  ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  originalUrl: { type: String, required: true },
+  shortCode:   { type: String, required: true, unique: true, index: true },
+  title:       { type: String, default: "" },
+  clicks:      { type: Number, default: 0 },
+}, { timestamps: true });
+shortUrlSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const ShortUrlModel = mongoose.models.ShortUrl || mongoose.model("ShortUrl", shortUrlSchema);

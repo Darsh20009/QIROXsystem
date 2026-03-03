@@ -3547,9 +3547,14 @@ export async function registerRoutes(
   app.patch("/api/checklist/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { ChecklistItemModel } = await import("./models");
+      const { ChecklistItemModel, UserModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
       const user = req.user as any;
       const uid = user._id || user.id;
+
+      // Fetch current state before update
+      const before = await (ChecklistItemModel as any).findOne({ _id: req.params.id });
+
       const item = await (ChecklistItemModel as any).findOneAndUpdate(
         { _id: req.params.id, $or: [{ userId: uid }, { assignedTo: uid }] },
         { $set: req.body },
@@ -3559,6 +3564,43 @@ export async function registerRoutes(
         .populate("assignedBy", "fullName username");
       if (!item) return res.status(404).json({ error: "العنصر غير موجود" });
       res.json(item);
+
+      // If task just became done AND it was assigned (has assignedBy = creator) AND done by the assignee
+      const justDone = req.body.done === true && before && !before.done;
+      const doneByAssignee = before && String(before.assignedTo) === String(uid) && before.assignedBy;
+      if (justDone && doneByAssignee) {
+        const creatorId = String(before.assignedBy);
+        try {
+          // In-app notification
+          await NotificationModel.create({
+            userId: creatorId,
+            type: "task",
+            title: `✅ تم إنجاز مهمة: ${before.title}`,
+            body: `أنجز ${user.fullName || user.username} المهمة التي طلبتها منه`,
+            link: "/employee/checklist",
+            icon: "✅",
+          });
+          // WebSocket push
+          pushToUser(creatorId, {
+            type: "task_completed",
+            taskId: String(before._id),
+            taskTitle: before.title,
+            completedBy: user.fullName || user.username,
+          });
+          // Email
+          const creator = await (UserModel as any).findById(creatorId).select("email fullName username");
+          if (creator?.email) {
+            const { sendTaskCompletedEmail } = await import("./email");
+            await sendTaskCompletedEmail(
+              creator.email,
+              creator.fullName || creator.username,
+              before.title,
+              before.category || "عام",
+              user.fullName || user.username
+            );
+          }
+        } catch (e) { console.error("[Checklist] complete notify error:", e); }
+      }
     } catch (err) {
       res.status(500).json({ error: "فشل التحديث" });
     }
@@ -4434,6 +4476,177 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const config = await AppPublishConfigModel.findOne({ clientId: String((req.user as any)._id) });
     res.json(config || null);
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ══════════════ TOOLS: HTML Publisher ═══════════════════
+  // ═══════════════════════════════════════════════════════
+
+  // Create / update a published HTML page
+  app.post("/api/tools/html-publish", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { HtmlPublishModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const { title, content, id } = req.body;
+      if (!content || content.length < 5) return res.status(400).json({ error: "المحتوى مطلوب" });
+
+      let doc: any;
+      if (id) {
+        doc = await HtmlPublishModel.findOneAndUpdate(
+          { _id: id, ownerId: uid },
+          { title: title || "صفحتي", content },
+          { new: true }
+        );
+        if (!doc) return res.status(404).json({ error: "الصفحة غير موجودة" });
+      } else {
+        doc = await HtmlPublishModel.create({ ownerId: uid, title: title || "صفحتي", content });
+      }
+      const pageUrl = `${req.protocol}://${req.get("host")}/p/${doc._id}`;
+      res.json({ id: doc._id, url: pageUrl, title: doc.title });
+    } catch (e) {
+      res.status(500).json({ error: "فشل النشر" });
+    }
+  });
+
+  // List my published pages
+  app.get("/api/tools/html-publish", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { HtmlPublishModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const pages = await HtmlPublishModel.find({ ownerId: uid }).sort({ createdAt: -1 }).select("-content");
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      res.json(pages.map((p: any) => ({ ...p.toJSON(), url: `${baseUrl}/p/${p._id}` })));
+    } catch (e) {
+      res.status(500).json({ error: "فشل الجلب" });
+    }
+  });
+
+  // Delete a published page
+  app.delete("/api/tools/html-publish/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { HtmlPublishModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      await HtmlPublishModel.findOneAndDelete({ _id: req.params.id, ownerId: uid });
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: "فشل الحذف" });
+    }
+  });
+
+  // Public: Serve published HTML page
+  app.get("/p/:id", async (req, res) => {
+    try {
+      const { HtmlPublishModel } = await import("./models");
+      const page = await HtmlPublishModel.findById(req.params.id);
+      if (!page || !page.isPublic) return res.status(404).send("<h1>الصفحة غير موجودة</h1>");
+      await HtmlPublishModel.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } });
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(page.content);
+    } catch (e) {
+      res.status(404).send("<h1>الصفحة غير موجودة</h1>");
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ══════════════ TOOLS: URL Shortener ════════════════════
+  // ═══════════════════════════════════════════════════════
+
+  // Shorten a URL
+  app.post("/api/tools/url-shorten", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ShortUrlModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const { originalUrl, title } = req.body;
+      if (!originalUrl) return res.status(400).json({ error: "الرابط مطلوب" });
+      // Validate URL
+      try { new URL(originalUrl); } catch { return res.status(400).json({ error: "الرابط غير صحيح" }); }
+
+      // Generate unique short code (6 chars)
+      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let shortCode: string;
+      let exists: any;
+      do {
+        shortCode = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        exists = await ShortUrlModel.findOne({ shortCode });
+      } while (exists);
+
+      const doc = await ShortUrlModel.create({ ownerId: uid, originalUrl, shortCode, title: title || "" });
+      const shortUrl = `${req.protocol}://${req.get("host")}/go/${shortCode}`;
+      res.json({ id: doc._id, shortCode, url: shortUrl, originalUrl, title: doc.title });
+    } catch (e) {
+      res.status(500).json({ error: "فشل الاختصار" });
+    }
+  });
+
+  // List my shortened URLs
+  app.get("/api/tools/url-shorten", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ShortUrlModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const urls = await ShortUrlModel.find({ ownerId: uid }).sort({ createdAt: -1 });
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      res.json(urls.map((u: any) => ({ ...u.toJSON(), url: `${baseUrl}/go/${u.shortCode}` })));
+    } catch (e) {
+      res.status(500).json({ error: "فشل الجلب" });
+    }
+  });
+
+  // Delete a shortened URL
+  app.delete("/api/tools/url-shorten/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ShortUrlModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      await ShortUrlModel.findOneAndDelete({ _id: req.params.id, ownerId: uid });
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: "فشل الحذف" });
+    }
+  });
+
+  // Public: Redirect short URL
+  app.get("/go/:code", async (req, res) => {
+    try {
+      const { ShortUrlModel } = await import("./models");
+      const link = await ShortUrlModel.findOneAndUpdate(
+        { shortCode: req.params.code },
+        { $inc: { clicks: 1 } },
+        { new: true }
+      );
+      if (!link) return res.status(404).send("<h1>الرابط غير موجود</h1>");
+      res.redirect(301, link.originalUrl);
+    } catch (e) {
+      res.status(404).send("<h1>الرابط غير موجود</h1>");
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ══════════════ TOOLS: DOCX → HTML (for PDF) ════════════
+  // ═══════════════════════════════════════════════════════
+
+  const docxUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+  app.post("/api/tools/docx-to-html", docxUpload.single("file"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      if (!req.file) return res.status(400).json({ error: "الملف مطلوب" });
+      const mammoth = await import("mammoth");
+      const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
+      res.json({ html: result.value, messages: result.messages });
+    } catch (e) {
+      res.status(500).json({ error: "فشل التحويل" });
+    }
   });
 
   // Initialize seed data
