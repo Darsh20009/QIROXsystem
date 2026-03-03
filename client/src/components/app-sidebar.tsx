@@ -17,7 +17,8 @@ import {
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
-  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2
+  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
+  TrendingUp, Shield
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -127,6 +128,12 @@ export function AppSidebar() {
     { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إعدادات البنك" : "Bank Settings", icon: Building2, url: "/admin/bank-settings", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الاشتراكات والأسعار" : "Subscriptions & Pricing", icon: Crown, url: "/admin/subscription-plans", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إعدادات النظام" : "System Settings", icon: Settings2, url: "/admin/qirox-settings", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "المستثمرون" : "Investors", icon: TrendingUp, url: "/admin/investors", group: "admin", allowedRoles: ["admin"] },
+    // Investor Portal (only for investor role or admin)
+    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", allowedRoles: ["investor", "admin", "manager"] },
+    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", allowedRoles: ["investor", "admin", "manager"] },
   ];
 
   const { data: attendanceStatus } = useQuery({

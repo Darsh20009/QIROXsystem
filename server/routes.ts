@@ -4649,6 +4649,330 @@ export async function registerRoutes(
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ QIROX SYSTEM SETTINGS ═══════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/admin/qirox-settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
+      if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
+      res.json(settings);
+    } catch (e) { res.status(500).json({ error: "فشل جلب الإعدادات" }); }
+  });
+
+  app.put("/api/admin/qirox-settings", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      const uid = user._id || user.id;
+      const settings = await QiroxSystemSettingsModel.findOneAndUpdate(
+        { key: "main" },
+        { $set: { ...req.body, lastModifiedBy: uid } },
+        { new: true, upsert: true }
+      );
+      res.json(settings);
+    } catch (e) { res.status(500).json({ error: "فشل حفظ الإعدادات" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ USER PROFILE ENHANCEMENT ════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Update own extended profile
+  app.patch("/api/users/extended-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const { jobTitle, bio, profilePhotoUrl } = req.body;
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { jobTitle, bio, profilePhotoUrl } }, { new: true }).select("-password");
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // Admin: update any user's extended profile
+  app.patch("/api/admin/users/:id/extended-profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { jobTitle, bio, profilePhotoUrl, additionalRoles } = req.body;
+      const updated = await UserModel.findByIdAndUpdate(req.params.id, {
+        $set: { ...(jobTitle !== undefined && { jobTitle }), ...(bio !== undefined && { bio }), ...(profilePhotoUrl !== undefined && { profilePhotoUrl }), ...(additionalRoles !== undefined && { additionalRoles }) }
+      }, { new: true }).select("-password");
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ PROMOTION SYSTEM ════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  const ROLE_LEVEL: Record<string, number> = {
+    "client": 1, "customer": 1,
+    "support": 2, "merchant": 2, "designer": 2, "developer": 2, "sales": 2, "accountant": 2, "investor": 2,
+    "sales_manager": 3,
+    "manager": 4,
+    "admin": 5,
+  };
+
+  // List all users for promotion management
+  app.get("/api/admin/all-users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { role, search, page = "1" } = req.query as any;
+      const filter: any = {};
+      if (role && role !== "all") filter.role = role;
+      if (search) filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+      const limit = 30;
+      const skip = (parseInt(page) - 1) * limit;
+      const [users, total] = await Promise.all([
+        UserModel.find(filter).select("-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
+        UserModel.countDocuments(filter),
+      ]);
+      res.json({ users, total, pages: Math.ceil(total / limit) });
+    } catch (e) { res.status(500).json({ error: "فشل جلب المستخدمين" }); }
+  });
+
+  // Promote / change role
+  app.patch("/api/admin/users/:id/role", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const promoter = req.user as any;
+    const promoterRole = promoter.role;
+    const promoterLevel = ROLE_LEVEL[promoterRole] || 0;
+    if (promoterLevel < 4) return res.sendStatus(403); // Must be manager or admin
+    try {
+      const { UserModel, PromotionLogModel } = await import("./models");
+      const { newRole, reason } = req.body;
+      if (!newRole) return res.status(400).json({ error: "الدور مطلوب" });
+      const targetLevel = ROLE_LEVEL[newRole] || 0;
+      // Cannot promote to admin unless you ARE admin
+      if (newRole === "admin" && promoterRole !== "admin") return res.status(403).json({ error: "فقط الأدمن يمكنه تعيين أدمن آخر" });
+      // Cannot change someone at same or higher level (unless admin)
+      const target = await UserModel.findById(req.params.id).select("-password");
+      if (!target) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const targetCurrentLevel = ROLE_LEVEL[target.role] || 0;
+      if (promoterRole !== "admin" && targetCurrentLevel >= promoterLevel) {
+        return res.status(403).json({ error: "لا يمكنك تغيير دور شخص بنفس مستواك أو أعلى" });
+      }
+      const oldRole = target.role;
+      await UserModel.findByIdAndUpdate(req.params.id, { $set: { role: newRole } });
+      await PromotionLogModel.create({
+        targetUserId: req.params.id, promotedById: promoter._id || promoter.id,
+        fromRole: oldRole, toRole: newRole, reason: reason || "",
+        type: ROLE_LEVEL[newRole] > ROLE_LEVEL[oldRole] ? "promote" : "demote",
+      });
+      res.json({ ok: true, oldRole, newRole });
+    } catch (e) { res.status(500).json({ error: "فشل تغيير الدور" }); }
+  });
+
+  // Add / remove additional roles
+  app.patch("/api/admin/users/:id/additional-roles", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { additionalRoles } = req.body;
+      if (!Array.isArray(additionalRoles)) return res.status(400).json({ error: "أرسل مصفوفة من الأدوار" });
+      const updated = await UserModel.findByIdAndUpdate(req.params.id, { $set: { additionalRoles } }, { new: true }).select("-password");
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // Promotion history log
+  app.get("/api/admin/promotion-log", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { PromotionLogModel } = await import("./models");
+      const { userId } = req.query as any;
+      const filter: any = {};
+      if (userId) filter.targetUserId = userId;
+      const logs = await PromotionLogModel.find(filter)
+        .populate("targetUserId", "fullName username role")
+        .populate("promotedById", "fullName username")
+        .sort({ createdAt: -1 })
+        .limit(100);
+      res.json(logs);
+    } catch (e) { res.status(500).json({ error: "فشل جلب السجل" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ INVESTOR SYSTEM (Admin) ═════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  // List all investors
+  app.get("/api/admin/investors", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { InvestorProfileModel } = await import("./models");
+      const investors = await InvestorProfileModel.find()
+        .populate("userId", "fullName username email role jobTitle bio profilePhotoUrl additionalRoles avatarUrl")
+        .sort({ stakePercentage: -1 });
+      res.json(investors);
+    } catch (e) { res.status(500).json({ error: "فشل جلب المستثمرين" }); }
+  });
+
+  // Create investor profile for a user
+  app.post("/api/admin/investors", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "admin") return res.sendStatus(403);
+    try {
+      const { InvestorProfileModel, UserModel, PromotionLogModel } = await import("./models");
+      const { userId, stakePercentage, notes } = req.body;
+      if (!userId) return res.status(400).json({ error: "معرف المستخدم مطلوب" });
+      const existing = await InvestorProfileModel.findOne({ userId });
+      if (existing) return res.status(400).json({ error: "هذا المستخدم لديه ملف مستثمر بالفعل" });
+      // Set role to investor if not already
+      const targetUser = await UserModel.findById(userId);
+      if (!targetUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const oldRole = targetUser.role;
+      if (!["admin", "manager"].includes(oldRole)) {
+        await UserModel.findByIdAndUpdate(userId, { $set: { role: "investor", additionalRoles: oldRole !== "investor" ? [oldRole, ...((targetUser as any).additionalRoles || [])] : (targetUser as any).additionalRoles } });
+      } else {
+        // Add investor to additionalRoles
+        await UserModel.findByIdAndUpdate(userId, { $addToSet: { additionalRoles: "investor" } });
+      }
+      const profile = await InvestorProfileModel.create({ userId, stakePercentage: stakePercentage || 0, notes: notes || "" });
+      await PromotionLogModel.create({ targetUserId: userId, promotedById: user._id || user.id, fromRole: oldRole, toRole: "investor", reason: "تعيين كمستثمر في QIROX", type: "role_add" });
+      res.json(profile);
+    } catch (e) { res.status(500).json({ error: "فشل إنشاء الملف" }); }
+  });
+
+  // Update investor stake & settings (admin only)
+  app.patch("/api/admin/investors/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "admin") return res.sendStatus(403);
+    try {
+      const { InvestorProfileModel } = await import("./models");
+      const updated = await InvestorProfileModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
+        .populate("userId", "fullName username email jobTitle profilePhotoUrl");
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // Get all payments for admin
+  app.get("/api/admin/investment-payments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { InvestmentPaymentModel } = await import("./models");
+      const { status, investorId } = req.query as any;
+      const filter: any = {};
+      if (status) filter.status = status;
+      if (investorId) filter.investorId = investorId;
+      const payments = await InvestmentPaymentModel.find(filter)
+        .populate("userId", "fullName username email")
+        .populate("approvedBy", "fullName username")
+        .sort({ createdAt: -1 });
+      res.json(payments);
+    } catch (e) { res.status(500).json({ error: "فشل جلب المدفوعات" }); }
+  });
+
+  // Approve / reject investment payment
+  app.patch("/api/admin/investment-payments/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "admin") return res.sendStatus(403);
+    try {
+      const { InvestmentPaymentModel, InvestorProfileModel } = await import("./models");
+      const { status, adminNote } = req.body;
+      if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "الحالة غير صحيحة" });
+      const payment = await InvestmentPaymentModel.findByIdAndUpdate(req.params.id, {
+        $set: { status, adminNote: adminNote || "", approvedBy: user._id || user.id, approvedAt: new Date() }
+      }, { new: true });
+      if (!payment) return res.status(404).json({ error: "الدفعة غير موجودة" });
+      if (status === "approved") {
+        await InvestorProfileModel.findByIdAndUpdate(payment.investorId, { $inc: { totalInvested: payment.amount } });
+      }
+      res.json(payment);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ INVESTOR PORTAL (Self-service) ════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  // My investor profile
+  app.get("/api/investor/profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { InvestorProfileModel, QiroxSystemSettingsModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const [profile, settings, allInvestors] = await Promise.all([
+        InvestorProfileModel.findOne({ userId: uid }).populate("userId", "fullName username email jobTitle bio profilePhotoUrl"),
+        QiroxSystemSettingsModel.findOne({ key: "main" }),
+        InvestorProfileModel.find({ isActive: true }).populate("userId", "fullName username profilePhotoUrl jobTitle"),
+      ]);
+      if (!profile) return res.status(404).json({ error: "ليس لديك ملف مستثمر" });
+      const totalStake = allInvestors.reduce((s: number, i: any) => s + (i.stakePercentage || 0), 0);
+      const valuation = settings?.systemValuation || 0;
+      const myValue = valuation * (profile.stakePercentage / 100);
+      res.json({ profile, settings, allInvestors, totalStake, myValue });
+    } catch (e) { res.status(500).json({ error: "فشل جلب الملف" }); }
+  });
+
+  // My investment payments
+  app.get("/api/investor/payments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { InvestorProfileModel, InvestmentPaymentModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const profile = await InvestorProfileModel.findOne({ userId: uid });
+      if (!profile) return res.status(404).json({ error: "ليس لديك ملف مستثمر" });
+      const payments = await InvestmentPaymentModel.find({ investorId: profile._id }).sort({ createdAt: -1 });
+      res.json(payments);
+    } catch (e) { res.status(500).json({ error: "فشل جلب المدفوعات" }); }
+  });
+
+  // Submit new investment payment
+  app.post("/api/investor/payments", upload.single("proof"), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { InvestorProfileModel, InvestmentPaymentModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const profile = await InvestorProfileModel.findOne({ userId: uid });
+      if (!profile) return res.status(404).json({ error: "ليس لديك ملف مستثمر" });
+      const { amount, paymentMethod, signatureData, signatureText, description } = req.body;
+      if (!amount || parseFloat(amount) <= 0) return res.status(400).json({ error: "المبلغ غير صحيح" });
+      let proofUrl = "";
+      if (req.file) proofUrl = `/uploads/${req.file.filename}`;
+      const payment = await InvestmentPaymentModel.create({
+        investorId: profile._id, userId: uid,
+        amount: parseFloat(amount), paymentMethod: paymentMethod || "bank_transfer",
+        proofUrl, signatureData: signatureData || "", signatureText: signatureText || "",
+        description: description || "",
+      });
+      res.json(payment);
+    } catch (e) { res.status(500).json({ error: "فشل إرسال الدفعة" }); }
+  });
+
   // Initialize seed data
   await seedDatabase();
 

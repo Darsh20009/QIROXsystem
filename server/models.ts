@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  role: { type: String, enum: roles, default: "client", required: true },
+  role: { type: String, enum: [...roles], default: "client", required: true },
   fullName: { type: String, required: true },
   phone: String,
   country: String,
@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
   walletCardNumber: { type: String, unique: true, sparse: true },
   walletPin: { type: String },
   walletCardActive: { type: Boolean, default: false },
+  // ── Enhanced Profile Fields ──
+  jobTitle: { type: String, default: "" },
+  bio: { type: String, default: "" },
+  profilePhotoUrl: { type: String, default: "" },
+  additionalRoles: { type: [String], default: [] },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({
@@ -984,3 +989,90 @@ const shortUrlSchema = new mongoose.Schema({
 }, { timestamps: true });
 shortUrlSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
 export const ShortUrlModel = mongoose.models.ShortUrl || mongoose.model("ShortUrl", shortUrlSchema);
+
+// ── Qirox System Settings ────────────────────────────────────────────────────
+const qiroxSystemSettingsSchema = new mongoose.Schema({
+  key: { type: String, default: "main", unique: true },
+  // Company Info
+  companyName:        { type: String, default: "QIROX Studio" },
+  companyNameAr:      { type: String, default: "كيروكس ستوديو" },
+  domain:             { type: String, default: "qiroxstudio.online" },
+  tagline:            { type: String, default: "مصنع الأنظمة" },
+  taglineAr:          { type: String, default: "مصنع الأنظمة الرقمية" },
+  description:        { type: String, default: "" },
+  logoUrl:            { type: String, default: "" },
+  faviconUrl:         { type: String, default: "" },
+  // Contacts
+  contactEmail:       { type: String, default: "info@qiroxstudio.online" },
+  contactPhone:       { type: String, default: "" },
+  whatsapp:           { type: String, default: "" },
+  address:            { type: String, default: "" },
+  city:               { type: String, default: "" },
+  country:            { type: String, default: "المملكة العربية السعودية" },
+  // Social Links
+  instagram:          { type: String, default: "" },
+  twitter:            { type: String, default: "" },
+  linkedin:           { type: String, default: "" },
+  snapchat:           { type: String, default: "" },
+  youtube:            { type: String, default: "" },
+  tiktok:             { type: String, default: "" },
+  // Business
+  taxNumber:          { type: String, default: "" },
+  commercialReg:      { type: String, default: "" },
+  foundedYear:        { type: Number, default: 2024 },
+  teamSize:           { type: Number, default: 1 },
+  // Financial Settings
+  systemValuation:    { type: Number, default: 0 },   // Total company value in SAR
+  currency:           { type: String, default: "SAR" },
+  profitDistribution: { type: [{ roleType: String, percentage: Number, label: String }], default: [] },
+  // Modification Tracking
+  lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const QiroxSystemSettingsModel = mongoose.models.QiroxSystemSettings || mongoose.model("QiroxSystemSettings", qiroxSystemSettingsSchema);
+
+// ── Investor Profile ─────────────────────────────────────────────────────────
+const investorProfileSchema = new mongoose.Schema({
+  userId:           { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+  stakePercentage:  { type: Number, default: 0, min: 0, max: 100 },  // Admin sets this
+  totalInvested:    { type: Number, default: 0 },
+  isVerified:       { type: Boolean, default: false },
+  isActive:         { type: Boolean, default: true },
+  notes:            { type: String, default: "" },  // Admin notes
+  joinedAt:         { type: Date, default: Date.now },
+}, { timestamps: true });
+investorProfileSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const InvestorProfileModel = mongoose.models.InvestorProfile || mongoose.model("InvestorProfile", investorProfileSchema);
+
+// ── Investment Payment ────────────────────────────────────────────────────────
+const investmentPaymentSchema = new mongoose.Schema({
+  investorId:      { type: mongoose.Schema.Types.ObjectId, ref: "InvestorProfile", required: true, index: true },
+  userId:          { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  amount:          { type: Number, required: true },
+  currency:        { type: String, default: "SAR" },
+  paymentMethod:   { type: String, default: "bank_transfer" },
+  proofUrl:        { type: String, default: "" },   // Uploaded payment proof
+  signatureData:   { type: String, default: "" },   // Base64 canvas signature
+  signatureText:   { type: String, default: "" },   // Typed name as backup
+  description:     { type: String, default: "" },
+  status:          { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  adminNote:       { type: String, default: "" },
+  approvedBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  approvedAt:      { type: Date },
+}, { timestamps: true });
+investmentPaymentSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const InvestmentPaymentModel = mongoose.models.InvestmentPayment || mongoose.model("InvestmentPayment", investmentPaymentSchema);
+
+// ── Promotion Log ─────────────────────────────────────────────────────────────
+const promotionLogSchema = new mongoose.Schema({
+  targetUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  promotedById:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  fromRole:       { type: String, required: true },
+  toRole:         { type: String, required: true },
+  fromAdditional: { type: [String], default: [] },
+  toAdditional:   { type: [String], default: [] },
+  reason:         { type: String, default: "" },
+  type:           { type: String, enum: ["promote", "demote", "role_add", "role_remove"], default: "promote" },
+}, { timestamps: true });
+promotionLogSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const PromotionLogModel = mongoose.models.PromotionLog || mongoose.model("PromotionLog", promotionLogSchema);

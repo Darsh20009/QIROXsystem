@@ -93,6 +93,10 @@ const QiroxEdit = lazy(() => import("@/pages/QiroxEdit"));
 const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
 const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
 const MyTools = lazy(() => import("@/pages/MyTools"));
+const AdminQiroxSettings = lazy(() => import("@/pages/AdminQiroxSettings"));
+const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
+const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
+const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio"];
 
 function PageLoader() {
@@ -186,6 +190,10 @@ function AdminRouter() {
         <Route path="/my-requests" component={ClientDataRequests} />
         <Route path="/admin/data-requests" component={AdminDataRequests} />
         <Route path="/my-tools" component={MyTools} />
+        <Route path="/admin/qirox-settings" component={AdminQiroxSettings} />
+        <Route path="/admin/promotions" component={AdminPromotions} />
+        <Route path="/admin/investors" component={AdminInvestors} />
+        <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />
         <Route path="/employee/new-order" component={EmployeeNewOrder} />

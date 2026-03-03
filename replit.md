@@ -10,6 +10,49 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 3, 2026 - Session 31)
+
+### نظام الترقية + المستثمرين + إعدادات النظام (4 أنظمة جديدة)
+
+**Models جديدة في `server/models.ts`:**
+- `QiroxSystemSettingsModel` — إعدادات الشركة (معلومات، تواصل، سوشيال، تقييم مالي، توزيع أرباح)
+- `InvestorProfileModel` — ملفات المستثمرين (حصة %, إجمالي مستثمر, verified/active)
+- `InvestmentPaymentModel` — دفعات الاستثمار (مبلغ, إيصال, توقيع إلكتروني canvas + نصي, حالة pending/approved/rejected)
+- `PromotionLogModel` — سجل تغييرات الأدوار مع نوع promote/demote/role_add/role_remove
+
+**تحسين `UserModel`:** إضافة `jobTitle`, `bio`, `profilePhotoUrl`, `additionalRoles[]`
+
+**Routes السيرفر الجديدة:**
+- `GET/PUT /api/admin/qirox-settings` — إعدادات كيروكس
+- `PATCH /api/users/extended-profile` — تحديث ملف المستخدم الموسّع
+- `GET /api/admin/all-users` — كل المستخدمين مع بحث وفلترة
+- `PATCH /api/admin/users/:id/role` — تغيير دور (هرمي: manager 4, admin 5)
+- `PATCH /api/admin/users/:id/additional-roles` — أدوار إضافية
+- `GET /api/admin/promotion-log` — سجل الترقيات مع populate
+- `GET /api/admin/investors` — قائمة المستثمرين
+- `POST /api/admin/investors` — إنشاء ملف مستثمر (يضبط الدور تلقائياً)
+- `PATCH /api/admin/investors/:id` — تعديل حصة/توثيق/نشاط
+- `GET/PATCH /api/admin/investment-payments` — مراجعة وموافقة/رفض الدفعات
+- `GET /api/investor/profile` — ملفي كمستثمر + إحصائيات (myValue, allInvestors, totalStake)
+- `GET /api/investor/payments` — دفعاتي
+- `POST /api/investor/payments` — إرسال دفعة جديدة (multipart: proof + signatureData + signatureText)
+
+**صفحات Frontend الجديدة:**
+- `AdminQiroxSettings.tsx` (/admin/qirox-settings) — 5 أقسام: معلومات, تواصل, سوشيال, تقييم, توزيع أرباح مرئي
+- `AdminPromotions.tsx` (/admin/promotions) — قائمة مستخدمين + تغيير أدوار + أدوار إضافية + سجل الترقيات
+- `AdminInvestors.tsx` (/admin/investors) — إدارة المستثمرين + مراجعة الدفعات + إضافة مستثمر
+- `InvestorPortal.tsx` (/investor/portal) — لوحة المستثمر: حصة, قيمة, توزيع بصري, بوابة دفع مع توقيع canvas
+
+**Sidebar إضافات:**
+- "إعدادات النظام" (admin) — /admin/qirox-settings
+- "الترقيات والأدوار" (admin) — /admin/promotions
+- "المستثمرون" (admin only) — /admin/investors
+- "بوابة المستثمر" (investor/admin/manager) — /investor/portal
+
+**دور جديد:** `investor` مضاف للـ roles array في shared/schema.ts
+
+---
+
 ## Latest Changes (Mar 3, 2026 - Session 30)
 
 ### نظام طلبات البيانات + تحسين تجربة الشراء
