@@ -100,6 +100,7 @@ export interface IStorage {
 
   // Partners
   getPartners(): Promise<Partner[]>;
+  getAllPartners(): Promise<Partner[]>;
   createPartner(partner: InsertPartner): Promise<Partner>;
   updatePartner(id: string, updates: Partial<InsertPartner>): Promise<Partner>;
   deletePartner(id: string): Promise<void>;
@@ -427,6 +428,11 @@ export class MongoStorage implements IStorage {
   // Partners
   async getPartners(): Promise<Partner[]> {
     const items = await PartnerModel.find({ isActive: true }).sort({ sortOrder: 1 });
+    return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as Partner[];
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    const items = await PartnerModel.find({}).sort({ sortOrder: 1, createdAt: -1 });
     return items.map(i => ({ ...i.toObject(), id: i._id.toString() })) as Partner[];
   }
 

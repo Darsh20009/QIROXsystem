@@ -1,14 +1,39 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Edit2, Trash2, Handshake, ExternalLink } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Loader2, Plus, Edit2, Trash2, Handshake, ExternalLink,
+  CheckCircle2, XCircle, Star, Globe, Layers, ChevronDown,
+  CheckCheck, X, ToggleLeft, ToggleRight, Eye, EyeOff
+} from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Partner } from "@shared/schema";
 import { useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
+
+const SERVICES = [
+  "نظام إدارة المطاعم",
+  "نظام إدارة الكافيهات",
+  "نظام نقاط البيع (POS)",
+  "نظام المخزون والمستودعات",
+  "نظام الحجوزات والمواعيد",
+  "نظام أكاديميات القرآن",
+  "نظام إدارة العقارات",
+  "نظام صالونات التجميل",
+  "نظام اللياقة البدنية",
+  "نظام إدارة المدارس",
+  "نظام التجارة الإلكترونية",
+  "نظام إدارة المستشفيات",
+  "لوحة تحكم الإدارة",
+  "تطبيق الموبايل",
+  "تكامل الدفع الإلكتروني",
+  "أخرى",
+];
 
 interface FormData {
   name: string;
@@ -17,6 +42,14 @@ interface FormData {
   websiteUrl: string;
   category: string;
   sortOrder: string;
+  isActive: boolean;
+  description: string;
+  descriptionAr: string;
+  features: string[];
+  featuresAr: string[];
+  relatedService: string;
+  featureInput: string;
+  featureArInput: string;
 }
 
 const emptyForm: FormData = {
@@ -26,6 +59,14 @@ const emptyForm: FormData = {
   websiteUrl: "",
   category: "",
   sortOrder: "0",
+  isActive: true,
+  description: "",
+  descriptionAr: "",
+  features: [],
+  featuresAr: [],
+  relatedService: "",
+  featureInput: "",
+  featureArInput: "",
 };
 
 export default function AdminPartners() {
@@ -33,10 +74,13 @@ export default function AdminPartners() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
 
   const { data: partners, isLoading } = useQuery<Partner[]>({
-    queryKey: ["/api/partners"],
+    queryKey: ["/api/admin/partners"],
   });
+
+  const set = (k: keyof FormData, v: any) => setFormData(f => ({ ...f, [k]: v }));
 
   const toPayload = (data: FormData) => ({
     name: data.name,
@@ -45,7 +89,12 @@ export default function AdminPartners() {
     websiteUrl: data.websiteUrl || undefined,
     category: data.category || undefined,
     sortOrder: data.sortOrder ? Number(data.sortOrder) : 0,
-    isActive: true,
+    isActive: data.isActive,
+    description: data.description || undefined,
+    descriptionAr: data.descriptionAr || undefined,
+    features: data.features,
+    featuresAr: data.featuresAr,
+    relatedService: data.relatedService || undefined,
   });
 
   const createMutation = useMutation({
@@ -54,14 +103,13 @@ export default function AdminPartners() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
-      toast({ title: "تم إضافة الشريك بنجاح" });
+      toast({ title: "✅ تم إضافة الشريك بنجاح" });
       setOpen(false);
       setFormData(emptyForm);
     },
-    onError: () => {
-      toast({ title: "خطأ في إضافة الشريك", variant: "destructive" });
-    },
+    onError: () => toast({ title: "خطأ في إضافة الشريك", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -70,41 +118,44 @@ export default function AdminPartners() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
-      toast({ title: "تم تحديث الشريك بنجاح" });
+      toast({ title: "✅ تم تحديث الشريك بنجاح" });
       setOpen(false);
       setEditingId(null);
       setFormData(emptyForm);
     },
-    onError: () => {
-      toast({ title: "خطأ في تحديث الشريك", variant: "destructive" });
-    },
+    onError: () => toast({ title: "خطأ في تحديث الشريك", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/partners/${id}`);
-    },
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/partners/${id}`),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
       toast({ title: "تم حذف الشريك بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ في حذف الشريك", variant: "destructive" });
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/admin/partners/${id}`, { isActive });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.logoUrl) {
-      toast({ title: "يرجى ملء الحقول المطلوبة", variant: "destructive" });
+      toast({ title: "يرجى ملء الاسم واللوجو", variant: "destructive" });
       return;
     }
-    if (editingId) {
-      updateMutation.mutate(formData);
-    } else {
-      createMutation.mutate(formData);
-    }
+    if (editingId) updateMutation.mutate(formData);
+    else createMutation.mutate(formData);
   };
 
   const handleEdit = (partner: Partner) => {
@@ -116,201 +167,321 @@ export default function AdminPartners() {
       websiteUrl: partner.websiteUrl || "",
       category: partner.category || "",
       sortOrder: partner.sortOrder?.toString() || "0",
+      isActive: partner.isActive ?? true,
+      description: partner.description || "",
+      descriptionAr: partner.descriptionAr || "",
+      features: partner.features || [],
+      featuresAr: partner.featuresAr || [],
+      relatedService: partner.relatedService || "",
+      featureInput: "",
+      featureArInput: "",
     });
     setOpen(true);
   };
 
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData(emptyForm);
-    setOpen(true);
+  const addFeature = () => {
+    const en = formData.featureInput.trim();
+    const ar = formData.featureArInput.trim();
+    if (!en && !ar) return;
+    setFormData(f => ({
+      ...f,
+      features: [...f.features, en || ar],
+      featuresAr: [...f.featuresAr, ar || en],
+      featureInput: "",
+      featureArInput: "",
+    }));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin w-8 h-8 text-black/40" />
-      </div>
-    );
-  }
+  const removeFeature = (i: number) => {
+    setFormData(f => ({
+      ...f,
+      features: f.features.filter((_, j) => j !== i),
+      featuresAr: f.featuresAr.filter((_, j) => j !== i),
+    }));
+  };
+
+  const filteredPartners = (partners || []).filter(p => {
+    if (filterActive === "active") return p.isActive;
+    if (filterActive === "inactive") return !p.isActive;
+    return true;
+  });
+
+  const activeCount = (partners || []).filter(p => p.isActive).length;
+  const inactiveCount = (partners || []).filter(p => !p.isActive).length;
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="animate-spin w-8 h-8 text-black/40 dark:text-white/40" />
+    </div>
+  );
 
   return (
-    <div className="relative overflow-hidden space-y-6">
+    <div className="relative overflow-hidden space-y-6 p-4 md:p-6" dir="rtl">
       <PageGraphics variant="dashboard" />
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-black flex items-center gap-3">
-          <Handshake className="w-7 h-7 text-black/40" />
-          إدارة الشركاء
-        </h1>
-        <Button
-          onClick={handleAddNew}
-          className="gap-2 premium-btn"
-          data-testid="button-add-partner"
-        >
-          <Plus className="w-4 h-4" />
-          إضافة شريك
+
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-start gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-black dark:text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Handshake className="w-5 h-5 text-white" />
+            </div>
+            إدارة الشركاء
+          </h1>
+          <p className="text-sm text-black/40 dark:text-white/40 mt-1 mr-13">
+            {(partners || []).length} شريك إجمالاً · {activeCount} نشط · {inactiveCount} مخفي
+          </p>
+        </div>
+        <Button onClick={() => { setEditingId(null); setFormData(emptyForm); setOpen(true); }} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-add-partner">
+          <Plus className="w-4 h-4" /> إضافة شريك
         </Button>
       </div>
 
-      <div className="border border-black/[0.06] bg-white rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-black/[0.06]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الشريك</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">اللوجو</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الموقع</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الترتيب</th>
-                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partners?.map((partner) => (
-                <tr key={partner.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-partner-${partner.id}`}>
-                  <td className="p-4">
-                    <div>
-                      <p className="font-semibold text-black text-sm">{partner.name}</p>
-                      {partner.nameAr && <p className="text-xs text-black/40 mt-0.5">{partner.nameAr}</p>}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="w-12 h-12 rounded-lg bg-black/[0.03] flex items-center justify-center overflow-hidden">
-                      <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {partner.websiteUrl ? (
-                      <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-black/60 text-sm flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" />
-                        رابط
-                      </a>
-                    ) : (
-                      <span className="text-black/20 text-sm">—</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-sm text-black/60">{partner.sortOrder}</td>
-                  <td className="p-4">
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-black/60"
-                        onClick={() => handleEdit(partner)}
-                        data-testid={`button-edit-partner-${partner.id}`}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-red-500"
-                        onClick={() => deleteMutation.mutate(partner.id)}
-                        disabled={deleteMutation.isPending}
-                        data-testid={`button-delete-partner-${partner.id}`}
-                      >
-                        {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {(!partners || partners.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-black/30">
-                    لا يوجد شركاء بعد. الشركاء الثابتون يظهرون في صفحة الشركاء تلقائياً.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Filter tabs */}
+      <div className="flex gap-2">
+        {[
+          { key: "all", label: `الكل (${(partners || []).length})` },
+          { key: "active", label: `نشط (${activeCount})` },
+          { key: "inactive", label: `مخفي (${inactiveCount})` },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setFilterActive(tab.key as any)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-medium border transition-all ${filterActive === tab.key ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+            data-testid={`tab-filter-${tab.key}`}>
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* Partners Grid */}
+      {filteredPartners.length === 0 ? (
+        <div className="text-center py-16 text-black/30 dark:text-white/30">
+          <Handshake className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>لا يوجد شركاء</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredPartners.map(partner => (
+            <div key={partner.id}
+              className={`relative rounded-2xl border transition-all overflow-hidden bg-white dark:bg-gray-900 ${partner.isActive ? "border-black/[0.07] dark:border-white/[0.07]" : "border-black/[0.04] dark:border-white/[0.04] opacity-60"}`}
+              data-testid={`card-partner-${partner.id}`}>
+
+              {/* Active badge */}
+              <div className="absolute top-3 left-3 z-10">
+                {partner.isActive
+                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />نشط</span>
+                  : <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full"><EyeOff className="w-3 h-3" />مخفي</span>
+                }
+              </div>
+
+              <div className="p-5">
+                <div className="flex items-start gap-4">
+                  {/* Logo */}
+                  <div className="w-16 h-16 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
+                  </div>
+
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h3 className="font-bold text-black dark:text-white text-sm leading-tight">{partner.name}</h3>
+                    {partner.nameAr && <p className="text-xs text-black/40 dark:text-white/40">{partner.nameAr}</p>}
+
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {partner.category && (
+                        <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">{partner.category}</span>
+                      )}
+                      {partner.relatedService && (
+                        <span className="text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                          <Layers className="w-2.5 h-2.5" />{partner.relatedService}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {(partner.descriptionAr || partner.description) && (
+                  <p className="text-xs text-black/50 dark:text-white/50 mt-3 leading-relaxed line-clamp-2">
+                    {partner.descriptionAr || partner.description}
+                  </p>
+                )}
+
+                {/* Features */}
+                {(partner.featuresAr?.length || partner.features?.length) ? (
+                  <div className="mt-3 space-y-1">
+                    {(partner.featuresAr?.length ? partner.featuresAr : partner.features || []).slice(0, 3).map((f, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-xs text-black/60 dark:text-white/60">
+                        <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                        {f}
+                      </div>
+                    ))}
+                    {(partner.features?.length || 0) > 3 && (
+                      <p className="text-[10px] text-black/30 dark:text-white/30">+{(partner.features?.length || 0) - 3} ميزة أخرى</p>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Website + sortOrder */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                  <div className="flex items-center gap-2">
+                    {partner.websiteUrl ? (
+                      <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-blue-500 hover:underline" data-testid={`link-partner-site-${partner.id}`}>
+                        <Globe className="w-3 h-3" />
+                        {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return "رابط"; } })()}
+                      </a>
+                    ) : <span className="text-xs text-black/20 dark:text-white/20">لا يوجد موقع</span>}
+                    <span className="text-black/20 dark:text-white/20 text-xs">· ترتيب: {partner.sortOrder}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => toggleActiveMutation.mutate({ id: partner.id, isActive: !partner.isActive })}
+                      className={`p-1.5 rounded-lg transition-colors ${partner.isActive ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" : "text-black/30 dark:text-white/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
+                      title={partner.isActive ? "إخفاء" : "إظهار"} data-testid={`button-toggle-${partner.id}`}>
+                      {partner.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+                    <button onClick={() => handleEdit(partner)}
+                      className="p-1.5 rounded-lg text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+                      data-testid={`button-edit-partner-${partner.id}`}>
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => { if (confirm("هل تريد حذف هذا الشريك؟")) deleteMutation.mutate(partner.id); }}
+                      className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      data-testid={`button-delete-partner-${partner.id}`}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dialog */}
+      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditingId(null); setFormData(emptyForm); } }}>
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-black">
-              {editingId ? "تعديل شريك" : "إضافة شريك جديد"}
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+                <Handshake className="w-4 h-4 text-white" />
+              </div>
+              {editingId ? "تعديل الشريك" : "إضافة شريك جديد"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الشريك (إنجليزي) *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Partner Name"
-                data-testid="input-partner-name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الشريك (عربي)</label>
-              <Input
-                value={formData.nameAr}
-                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                placeholder="اسم الشريك"
-                data-testid="input-partner-nameAr"
-              />
-            </div>
-            <div>
-              <ImageUpload
-                label="لوجو الشريك *"
-                value={formData.logoUrl}
-                onChange={(url) => setFormData({ ...formData, logoUrl: url })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط الموقع</label>
-              <Input
-                value={formData.websiteUrl}
-                onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                placeholder="https://example.com"
-                data-testid="input-partner-website"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+
+          <form onSubmit={handleSubmit} className="space-y-5 mt-2">
+            {/* Names */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">الفئة</label>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="مطاعم، تعليم..."
-                  data-testid="input-partner-category"
-                />
+                <label className="lbl">اسم الشريك (إنجليزي) *</label>
+                <Input value={formData.name} onChange={e => set("name", e.target.value)} placeholder="Partner Name" data-testid="input-partner-name" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">الترتيب</label>
-                <Input
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
-                  placeholder="0"
-                  data-testid="input-partner-sort"
-                />
+                <label className="lbl">اسم الشريك (عربي)</label>
+                <Input value={formData.nameAr} onChange={e => set("nameAr", e.target.value)} placeholder="اسم الشريك" data-testid="input-partner-nameAr" />
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="submit"
-                className="flex-1 premium-btn"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                data-testid="button-submit-partner"
-              >
-                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {editingId ? "تحديث" : "إضافة"}
+
+            {/* Logo */}
+            <ImageUpload label="لوجو الشريك *" value={formData.logoUrl} onChange={url => set("logoUrl", url)} />
+
+            {/* Website + Category + Sort */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="lbl">رابط الموقع الرسمي</label>
+                <Input value={formData.websiteUrl} onChange={e => set("websiteUrl", e.target.value)} placeholder="https://example.com" data-testid="input-partner-website" />
+              </div>
+              <div>
+                <label className="lbl">الفئة / القطاع</label>
+                <Input value={formData.category} onChange={e => set("category", e.target.value)} placeholder="مطاعم، تعليم، صحة..." data-testid="input-partner-category" />
+              </div>
+              <div>
+                <label className="lbl">الترتيب في الصفحة</label>
+                <Input type="number" value={formData.sortOrder} onChange={e => set("sortOrder", e.target.value)} placeholder="0" min={0} data-testid="input-partner-sort" />
+              </div>
+            </div>
+
+            {/* Related Service */}
+            <div>
+              <label className="lbl">الخدمة المرتبطة</label>
+              <select value={formData.relatedService} onChange={e => set("relatedService", e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-transparent text-sm text-black dark:text-white"
+                data-testid="select-related-service">
+                <option value="">اختر الخدمة...</option>
+                {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            {/* Description */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="lbl">وصف مختصر (عربي)</label>
+                <Textarea value={formData.descriptionAr} onChange={e => set("descriptionAr", e.target.value)} placeholder="وصف تجربة الشريك مع Qirox..." className="h-20 text-sm" />
+              </div>
+              <div>
+                <label className="lbl">وصف مختصر (إنجليزي)</label>
+                <Textarea value={formData.description} onChange={e => set("description", e.target.value)} placeholder="Short description..." className="h-20 text-sm" />
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
+              <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-500" /> مميزات النظام المقدّم
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={formData.featureArInput} onChange={e => set("featureArInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder="الميزة بالعربي" data-testid="input-feature-ar" />
+                <div className="flex gap-1.5">
+                  <Input value={formData.featureInput} onChange={e => set("featureInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder="Feature in English" data-testid="input-feature-en" />
+                  <Button type="button" size="sm" onClick={addFeature} className="shrink-0" data-testid="button-add-feature">+</Button>
+                </div>
+              </div>
+              {formData.features.length > 0 && (
+                <div className="space-y-1.5">
+                  {formData.features.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-xl px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                        <span className="text-black dark:text-white font-medium">{formData.featuresAr[i] || f}</span>
+                        {formData.featuresAr[i] && f && formData.featuresAr[i] !== f && (
+                          <span className="text-black/30 dark:text-white/30 text-xs">/ {f}</span>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => removeFeature(i)} className="text-red-400 hover:text-red-600 text-sm font-bold">✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {formData.features.length === 0 && (
+                <p className="text-xs text-black/30 dark:text-white/30 text-center py-2">أضف مميزات النظام الذي حصل عليه هذا الشريك</p>
+              )}
+            </div>
+
+            {/* Active toggle */}
+            <div className="flex items-center justify-between p-4 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl">
+              <div>
+                <p className="font-semibold text-sm text-black dark:text-white">ظهور في صفحة الشركاء</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">عند الإيقاف، لن يظهر الشريك للزوار</p>
+              </div>
+              <button type="button" onClick={() => set("isActive", !formData.isActive)}
+                className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? "bg-green-500" : "bg-black/20 dark:bg-white/20"}`}
+                data-testid="toggle-partner-active">
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${formData.isActive ? "right-1" : "left-1"}`} />
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button type="submit" className="flex-1 gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white"
+                disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-partner">
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                {editingId ? "تحديث الشريك" : "إضافة الشريك"}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                data-testid="button-cancel-partner"
-              >
-                إلغاء
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      <style>{`.lbl { display: block; font-size: 11px; color: rgba(0,0,0,0.4); margin-bottom: 6px; font-weight: 500; }.dark .lbl { color: rgba(255,255,255,0.4); }`}</style>
     </div>
   );
 }

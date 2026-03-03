@@ -305,6 +305,11 @@ export interface Partner {
   category?: string;
   sortOrder: number;
   isActive: boolean;
+  features?: string[];
+  featuresAr?: string[];
+  relatedService?: string;
+  description?: string;
+  descriptionAr?: string;
   createdAt?: Date;
 }
 
@@ -316,6 +321,11 @@ export interface InsertPartner {
   category?: string;
   sortOrder?: number;
   isActive?: boolean;
+  features?: string[];
+  featuresAr?: string[];
+  relatedService?: string;
+  description?: string;
+  descriptionAr?: string;
 }
 
 // --- Qirox Products / Devices (MongoDB) ---

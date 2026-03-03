@@ -4,7 +4,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { Handshake, ArrowLeft, ExternalLink } from "lucide-react";
+import { Handshake, ArrowLeft, ExternalLink, CheckCircle2, Layers } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Partner } from "@shared/schema";
 import { useI18n } from "@/lib/i18n";
@@ -57,10 +57,13 @@ export default function Partners() {
     ctaBtn: lang === "ar" ? "تواصل معنا" : "Contact Us",
   };
 
+  const hasDbPartners = dbPartners && dbPartners.length > 0;
+
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950" dir={dir}>
       <Navigation />
 
+      {/* Hero */}
       <section className="pt-36 pb-16 relative overflow-hidden" data-testid="section-partners-hero">
         <PageGraphics variant="rings-sides" />
         <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, black 1px, transparent 0)", backgroundSize: "40px 40px" }} />
@@ -80,71 +83,149 @@ export default function Partners() {
         </div>
       </section>
 
-      <section className="py-20 container mx-auto px-4" data-testid="section-partners-grid">
+      {/* DB Partners (Rich Cards — with features/service) */}
+      {hasDbPartners && (
+        <section className="pb-10 container mx-auto px-4" data-testid="section-partners-featured">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 mb-3">
+              <span className="w-2 h-2 rounded-full bg-cyan-500" />
+              <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-400">
+                {lang === "ar" ? "شركاء موثّقون" : "Verified Partners"}
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+          >
+            {dbPartners.map((partner, idx) => {
+              const features = lang === "ar" && partner.featuresAr?.length ? partner.featuresAr : partner.features || [];
+              const desc = lang === "ar" ? (partner.descriptionAr || partner.description) : (partner.description || partner.descriptionAr);
+              const name = lang === "ar" && partner.nameAr ? partner.nameAr : partner.name;
+
+              return (
+                <motion.div key={partner.id} variants={fadeUp} custom={idx} className="group"
+                  data-testid={`partner-featured-card-${partner.id}`}>
+                  <div className="h-full rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.06] hover:-translate-y-1">
+
+                    {/* Top colored accent */}
+                    <div className="h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="p-6">
+                      <div className="flex items-start gap-4 mb-4">
+                        {/* Logo */}
+                        <div className="w-16 h-16 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center overflow-hidden shrink-0">
+                          {partner.websiteUrl ? (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                            </a>
+                          ) : (
+                            <img src={partner.logoUrl} alt={name} className="max-w-full max-h-full object-contain" loading="lazy" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          {partner.websiteUrl ? (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                              className="font-bold text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors leading-tight block"
+                              data-testid={`link-partner-name-${partner.id}`}>
+                              {name}
+                            </a>
+                          ) : (
+                            <h3 className="font-bold text-black dark:text-white leading-tight">{name}</h3>
+                          )}
+
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {partner.category && (
+                              <span className="text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full font-medium">
+                                {partner.category}
+                              </span>
+                            )}
+                            {partner.relatedService && (
+                              <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                <Layers className="w-2.5 h-2.5" />
+                                {partner.relatedService}
+                              </span>
+                            )}
+                          </div>
+
+                          {partner.websiteUrl && (
+                            <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white mt-1 transition-colors"
+                              data-testid={`link-partner-website-${partner.id}`}>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return partner.websiteUrl; } })()}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      {desc && (
+                        <p className="text-sm text-black/50 dark:text-white/50 leading-relaxed mb-4 line-clamp-2">{desc}</p>
+                      )}
+
+                      {/* Features */}
+                      {features.length > 0 && (
+                        <div className="space-y-1.5 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                          <p className="text-[10px] font-semibold text-black/30 dark:text-white/30 uppercase tracking-wider mb-2">
+                            {lang === "ar" ? "مميزات النظام" : "System Features"}
+                          </p>
+                          {features.map((f, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-black/60 dark:text-white/60">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                              {f}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </section>
+      )}
+
+      {/* Static Partners Grid */}
+      <section className={`${hasDbPartners ? "pt-4 pb-20" : "py-20"} container mx-auto px-4`} data-testid="section-partners-grid">
+        {hasDbPartners && (
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="mb-8">
+            <p className="text-xs font-semibold text-black/30 dark:text-white/30 uppercase tracking-widest text-center">
+              {lang === "ar" ? "شركاء آخرون" : "More Partners"}
+            </p>
+          </motion.div>
+        )}
         <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={stagger}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
         >
           {staticPartners.map((partner, idx) => (
             <motion.div key={partner.name} variants={fadeUp} custom={idx} className="group" data-testid={`partner-card-${idx}`}>
-              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]">
-                <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
+              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-5 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5">
+                <div className="w-20 h-20 flex items-center justify-center mb-3 rounded-xl overflow-hidden">
                   <img src={partner.logo} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
                 </div>
-                <h3 className="text-sm font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
-              </div>
-            </motion.div>
-          ))}
-
-          {dbPartners?.map((partner, idx) => (
-            <motion.div key={partner.id} variants={fadeUp} custom={staticPartners.length + idx} className="group" data-testid={`partner-db-card-${partner.id}`}>
-              <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 p-6 flex flex-col items-center justify-center aspect-square transition-all duration-300 hover:shadow-lg hover:shadow-black/[0.04]">
-                {partner.websiteUrl ? (
-                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
-                    className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden cursor-pointer"
-                    data-testid={`link-partner-logo-${partner.id}`}>
-                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
-                  </a>
-                ) : (
-                  <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center mb-4 rounded-xl overflow-hidden">
-                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" loading="lazy" />
-                  </div>
-                )}
-                {partner.websiteUrl ? (
-                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-sm font-bold text-black dark:text-white text-center hover:underline"
-                    data-testid={`link-partner-name-${partner.id}`}>
-                    {lang === "ar" && partner.nameAr ? partner.nameAr : partner.name}
-                  </a>
-                ) : (
-                  <h3 className="text-sm font-bold text-black dark:text-white text-center">
-                    {lang === "ar" && partner.nameAr ? partner.nameAr : partner.name}
-                  </h3>
-                )}
-                {partner.websiteUrl && (
-                  <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors"
-                    data-testid={`link-partner-website-${partner.id}`}>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">{(() => { try { return new URL(partner.websiteUrl!).hostname.replace('www.', ''); } catch { return partner.websiteUrl; } })()}</span>
-                  </a>
-                )}
+                <h3 className="text-xs font-bold text-black dark:text-white text-center">{lang === "ar" ? partner.nameAr : partner.name}</h3>
               </div>
             </motion.div>
           ))}
         </motion.div>
       </section>
 
+      {/* CTA */}
       <section className="py-20" data-testid="section-partners-cta">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true }}
             variants={fadeUp} custom={0}
-            className="rounded-[24px] bg-black p-10 md:p-14 text-center"
+            className="rounded-[24px] bg-black dark:bg-gray-900 p-10 md:p-14 text-center"
           >
+            <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-6">
+              <Handshake className="w-7 h-7 text-white" />
+            </div>
             <h2 className="text-2xl md:text-3xl font-bold font-heading text-white mb-4">{T.ctaTitle}</h2>
             <p className="text-white/60 text-base mb-8 max-w-lg mx-auto">{T.ctaDesc}</p>
             <Link href="/contact">

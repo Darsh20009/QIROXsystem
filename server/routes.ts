@@ -1724,8 +1724,16 @@ export async function registerRoutes(
     res.json(partners);
   });
 
+  app.get("/api/admin/partners", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    const partners = await storage.getAllPartners();
+    res.json(partners);
+  });
+
   app.post("/api/admin/partners", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const partner = await storage.createPartner(req.body);
@@ -1733,7 +1741,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/partners/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const partner = await storage.updatePartner(req.params.id, req.body);
@@ -1741,7 +1749,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/partners/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     await storage.deletePartner(req.params.id);

@@ -241,6 +241,11 @@ const partnerSchema = new mongoose.Schema({
   category: String,
   sortOrder: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
+  features: { type: [String], default: [] },
+  featuresAr: { type: [String], default: [] },
+  relatedService: { type: String, default: "" },
+  description: { type: String, default: "" },
+  descriptionAr: { type: String, default: "" },
 }, { timestamps: true });
 
 const modificationRequestSchema = new mongoose.Schema({
