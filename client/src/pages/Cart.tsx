@@ -665,11 +665,15 @@ export default function Cart() {
 
           {/* ── Right: Order Summary ── */}
           <div className="space-y-4">
-            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden sticky top-[72px]">
-              <div className="bg-black px-5 py-4">
-                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">ملخص الطلب</p>
-                <p className="text-2xl font-black text-white">{fmt(total)} <span className="text-sm font-normal text-white/50">ر.س</span></p>
-                <p className="text-[10px] text-white/30 mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
+            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden sticky top-[72px] shadow-sm">
+              <div className="bg-gradient-to-br from-gray-950 via-gray-900 to-black px-5 py-5 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
+                <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl" />
+                <div className="relative z-10">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">ملخص الطلب</p>
+                  <p className="text-3xl font-black text-white">{fmt(total)} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+                  <p className="text-[10px] text-white/25 mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
+                </div>
               </div>
 
               <div className="px-5 py-4 space-y-3">
@@ -731,17 +735,24 @@ export default function Cart() {
 
                 {/* Checkout button */}
                 <Button
-                  className="w-full bg-black hover:bg-black/85 text-white font-black h-12 rounded-xl text-sm mt-2 gap-2"
+                  className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all"
                   disabled={items.length === 0}
                   onClick={() => { setPreCheckoutStep(1); setPreCheckoutOpen(true); }}
                   data-testid="button-checkout">
-                  <ShoppingBag className="w-4 h-4" />
-                  إتمام الطلب
+                  <Sparkles className="w-4 h-4" />
+                  إتمام الطلب الآن
                 </Button>
 
-                <p className="text-[10px] text-black/25 text-center pt-1 leading-relaxed">
-                  سيتم عرض بيانات التحويل البنكي بعد تأكيد الطلب
-                </p>
+                <div className="flex items-center justify-center gap-3 pt-1">
+                  {[{ icon: Shield, label: "دفع آمن" }, { icon: Clock3, label: "24 ساعة" }, { icon: CheckCircle2, label: "ضمان" }].map(t => {
+                    const Icon = t.icon;
+                    return (
+                      <div key={t.label} className="flex items-center gap-1 text-[10px] text-black/30">
+                        <Icon className="w-2.5 h-2.5" /> {t.label}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -750,33 +761,70 @@ export default function Cart() {
 
       {/* ═══════ Pre-Checkout Dialog ═══════ */}
       <Dialog open={preCheckoutOpen} onOpenChange={open => { if (!checkoutMutation.isPending) setPreCheckoutOpen(open); }}>
-        <DialogContent className="max-w-lg max-h-[90vh]" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="font-black text-black">تفاصيل الطلب</p>
-                <p className="text-xs text-black/40 font-normal">
-                  {preCheckoutStep === 1 ? "الفكرة والوثائق" : "عنوان الشحن"}
-                  {" · "}{preCheckoutStep} من {totalSteps}
-                </p>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-lg max-h-[92vh] p-0 overflow-hidden" dir="rtl">
 
-          {/* Step progress */}
-          {totalSteps > 1 && (
-            <div className="flex gap-2 mb-1">
-              {Array.from({ length: totalSteps }).map((_, i) => (
-                <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i + 1 <= preCheckoutStep ? "bg-black" : "bg-black/10"}`} />
-              ))}
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
+            <div className="absolute -top-8 -left-8 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center border border-white/20">
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-black text-white text-base">إتمام الطلب</p>
+                  <p className="text-white/50 text-xs">
+                    {preCheckoutStep === 1 ? "تفاصيل المشروع والملفات" : "بيانات الشحن"}
+                  </p>
+                </div>
+                <button onClick={() => setPreCheckoutOpen(false)} className="mr-auto w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Step Indicators */}
+              {totalSteps > 1 ? (
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalSteps }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2 flex-1">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black border-2 transition-all ${i + 1 <= preCheckoutStep
+                        ? "bg-cyan-400 border-cyan-400 text-gray-900"
+                        : "bg-white/10 border-white/20 text-white/40"}`}>
+                        {i + 1 < preCheckoutStep ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
+                      </div>
+                      {i < totalSteps - 1 && (
+                        <div className={`flex-1 h-0.5 rounded-full transition-all ${i + 1 < preCheckoutStep ? "bg-cyan-400" : "bg-white/10"}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  {[{ icon: FileText, label: "التفاصيل" }, { icon: BanknoteIcon, label: "الدفع" }].map((s, i) => {
+                    const Icon = s.icon;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-5 h-5 rounded-full bg-cyan-400 flex items-center justify-center">
+                            <Icon className="w-2.5 h-2.5 text-gray-900" />
+                          </div>
+                          <span className="text-[11px] text-white/70 font-medium">{s.label}</span>
+                        </div>
+                        {i === 0 && <ChevronLeft className="w-3 h-3 text-white/30" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Content area */}
+          <DialogHeader className="sr-only"><DialogTitle>إتمام الطلب</DialogTitle></DialogHeader>
 
           <ScrollArea className="max-h-[55vh]">
-            <div className="space-y-4 px-1 pb-2">
+            <div className="space-y-4 p-5 pb-2">
 
               {/* Step 1: Project idea + documents */}
               {preCheckoutStep === 1 && (
@@ -817,11 +865,16 @@ export default function Cart() {
 
                     <button
                       onClick={() => docsInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-black/10 rounded-xl p-5 text-center hover:border-black/25 transition-all group"
+                      className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-cyan-400 hover:bg-cyan-50/50 transition-all group relative overflow-hidden"
                       data-testid="button-upload-docs">
-                      <Upload className="w-7 h-7 mx-auto mb-2 text-black/20 group-hover:text-black/40 transition-colors" />
-                      <p className="text-xs text-black/40">اضغط لرفع ملف</p>
-                      <p className="text-[10px] text-black/25 mt-0.5">PNG، JPG، PDF، AI، SVG</p>
+                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/0 to-blue-50/0 group-hover:from-cyan-50/60 group-hover:to-blue-50/30 transition-all" />
+                      <div className="relative z-10">
+                        <div className="w-12 h-12 bg-gray-100 group-hover:bg-cyan-100 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-all">
+                          <Upload className="w-6 h-6 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-500 group-hover:text-cyan-600 transition-colors">اسحب الملفات هنا أو اضغط للرفع</p>
+                        <p className="text-[11px] text-gray-400 mt-1">PNG، JPG، PDF، AI، SVG — حتى 10 ملفات</p>
+                      </div>
                       <input ref={docsInputRef} type="file" className="hidden" multiple accept="image/*,.pdf,.ai,.svg,.eps"
                         onChange={async e => {
                           if (e.target.files) {
@@ -953,34 +1006,42 @@ export default function Cart() {
           </ScrollArea>
 
           {/* Dialog footer */}
-          <div className="flex gap-3 pt-2">
-            {preCheckoutStep > 1 && (
-              <Button variant="outline" className="gap-2 rounded-xl h-11" onClick={() => setPreCheckoutStep(s => s - 1)}
-                data-testid="button-prev-step">
-                <ChevronRight className="w-4 h-4" />
-                السابق
-              </Button>
-            )}
-            {preCheckoutStep < totalSteps ? (
-              <Button className="flex-1 bg-black text-white font-bold h-11 rounded-xl gap-2"
-                onClick={() => setPreCheckoutStep(s => s + 1)}
-                data-testid="button-next-step">
-                التالي
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                className="flex-1 bg-gradient-to-r from-black to-gray-800 text-white font-black h-11 rounded-xl gap-2 shadow-lg"
-                onClick={() => checkoutMutation.mutate()}
-                disabled={checkoutMutation.isPending}
-                data-testid="button-confirm-checkout">
-                {checkoutMutation.isPending ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> جاري إرسال الطلب...</>
-                ) : (
-                  <><BanknoteIcon className="w-4 h-4" /> تأكيد الطلب وعرض بيانات التحويل</>
-                )}
-              </Button>
-            )}
+          <div className="px-5 pb-5 pt-3 border-t border-black/[0.06] space-y-3">
+            {/* Trust line */}
+            <div className="flex items-center justify-center gap-4 text-[10px] text-black/30">
+              <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> دفع آمن</span>
+              <span className="flex items-center gap-1"><Clock3 className="w-3 h-3" /> رد خلال 24 ساعة</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> ضمان الجودة</span>
+            </div>
+            <div className="flex gap-3">
+              {preCheckoutStep > 1 && (
+                <Button variant="outline" className="gap-2 rounded-xl h-12 px-4" onClick={() => setPreCheckoutStep(s => s - 1)}
+                  data-testid="button-prev-step">
+                  <ChevronRight className="w-4 h-4" />
+                  السابق
+                </Button>
+              )}
+              {preCheckoutStep < totalSteps ? (
+                <Button className="flex-1 bg-gradient-to-l from-gray-900 to-black text-white font-black h-12 rounded-xl gap-2 shadow-lg"
+                  onClick={() => setPreCheckoutStep(s => s + 1)}
+                  data-testid="button-next-step">
+                  التالي — بيانات الشحن
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1 bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
+                  onClick={() => checkoutMutation.mutate()}
+                  disabled={checkoutMutation.isPending}
+                  data-testid="button-confirm-checkout">
+                  {checkoutMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> جاري إرسال الطلب...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> تأكيد الطلب والحصول على بيانات الدفع</>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

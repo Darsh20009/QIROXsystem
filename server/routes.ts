@@ -512,6 +512,13 @@ export async function registerRoutes(
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role })));
   });
 
+  app.get("/api/users/clients", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const allUsers = await storage.getUsers();
+    const clients = allUsers.filter((u: any) => u.role === "client");
+    res.json(clients.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, email: u.email })));
+  });
+
   app.get("/api/admin/employees", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const allUsers = await storage.getUsers();
@@ -1353,6 +1360,93 @@ export async function registerRoutes(
     });
     const owner = await UserModel.findById(topup.userId);
     if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'rejected', req.body.reason);
+    res.json({ success: true });
+  });
+
+  // === CLIENT DATA REQUESTS ===
+
+  app.post("/api/data-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { ClientDataRequestModel, UserModel } = await import("./models");
+    const { sendDataRequestEmail } = await import("./email");
+    const { clientId, orderId, projectId, title, description, priority, dueDate, requestItems } = req.body;
+    if (!clientId || !title) return res.status(400).json({ error: "clientId والعنوان مطلوبان" });
+    const dr = await ClientDataRequestModel.create({
+      clientId, orderId: orderId || undefined, projectId: projectId || undefined,
+      requestedBy: String(me.id), title, description, priority: priority || 'normal',
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      requestItems: requestItems || [],
+      status: 'pending',
+    });
+    const client = await UserModel.findById(clientId);
+    if (client) {
+      await sendDataRequestEmail(client.email, client.fullName, title, description || '', priority || 'normal');
+    }
+    res.status(201).json(dr);
+  });
+
+  app.get("/api/data-requests/mine", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    const { ClientDataRequestModel } = await import("./models");
+    const requests = await ClientDataRequestModel.find({ clientId: String(me.id) })
+      .populate('requestedBy', 'fullName username avatarUrl')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  });
+
+  app.get("/api/admin/data-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { ClientDataRequestModel } = await import("./models");
+    const filter: any = {};
+    if (req.query.orderId) filter.orderId = req.query.orderId;
+    if (req.query.clientId) filter.clientId = req.query.clientId;
+    if (req.query.status) filter.status = req.query.status;
+    const requests = await ClientDataRequestModel.find(filter)
+      .populate('clientId', 'fullName username email avatarUrl')
+      .populate('requestedBy', 'fullName username avatarUrl')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  });
+
+  app.post("/api/data-requests/:id/submit", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    const { ClientDataRequestModel } = await import("./models");
+    const dr = await ClientDataRequestModel.findById(req.params.id);
+    if (!dr) return res.sendStatus(404);
+    if (String(dr.clientId) !== String(me.id)) return res.sendStatus(403);
+    const { items, notes } = req.body;
+    await ClientDataRequestModel.findByIdAndUpdate(req.params.id, {
+      status: 'submitted',
+      response: { items: items || [], notes: notes || '', submittedAt: new Date() },
+    });
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/data-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { ClientDataRequestModel } = await import("./models");
+    const { status, adminNote } = req.body;
+    const allowed = ['pending', 'submitted', 'approved', 'revision_needed'];
+    if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
+    const dr = await ClientDataRequestModel.findByIdAndUpdate(req.params.id, { status, adminNote }, { new: true });
+    if (!dr) return res.sendStatus(404);
+    res.json(dr);
+  });
+
+  app.delete("/api/admin/data-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { ClientDataRequestModel } = await import("./models");
+    await ClientDataRequestModel.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   });
 

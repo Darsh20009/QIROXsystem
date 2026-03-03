@@ -854,3 +854,45 @@ export async function sendWalletTopupStatusEmail(to: string, name: string, amoun
 </html>`;
   return sendEmail(to, displayName, `${isApproved ? '✅ تم شحن محفظتك' : '❌ رُفض طلب الشحن'} | Qirox Pay`, html);
 }
+
+export async function sendDataRequestEmail(to: string, name: string, title: string, description: string, priority: string): Promise<boolean> {
+  const displayName = name || to.split("@")[0];
+  const priorityLabel: Record<string, string> = { low: 'منخفضة', normal: 'عادية', high: 'عالية', urgent: 'عاجل جداً' };
+  const priorityColor: Record<string, string> = { low: '#64748b', normal: '#0f172a', high: '#f59e0b', urgent: '#ef4444' };
+  const html = `
+  <div style="direction:rtl;font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;min-height:100vh;padding:32px 16px;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:32px 28px;text-align:center;">
+        <div style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;margin-bottom:12px;">📋</div>
+        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">طلب بيانات جديد</h1>
+        <p style="color:rgba(255,255,255,0.65);margin:6px 0 0;font-size:13px;">QIROX — فريق العمل يحتاج معلومات منك</p>
+      </div>
+      <div style="padding:28px;">
+        <p style="color:#374151;font-size:15px;margin-bottom:20px;">مرحباً <strong>${displayName}</strong>،</p>
+        <p style="color:#6b7280;font-size:14px;line-height:1.7;margin-bottom:20px;">أرسل إليك فريق العمل طلباً جديداً لتزويدهم ببعض البيانات أو الملفات الضرورية لاستكمال مشروعك.</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:20px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+            <div style="background:#0f172a;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;white-space:nowrap;">الطلب</div>
+            <p style="color:#0f172a;font-size:16px;font-weight:700;margin:0;">${title}</p>
+          </div>
+          ${description ? `<p style="color:#6b7280;font-size:13px;line-height:1.7;margin:0;border-top:1px solid #e2e8f0;padding-top:12px;">${description}</p>` : ''}
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+          <span style="font-size:16px;">⚡</span>
+          <div>
+            <p style="color:#92400e;font-size:12px;font-weight:700;margin:0 0 2px;">الأولوية</p>
+            <p style="color:${priorityColor[priority] || '#0f172a'};font-size:13px;font-weight:700;margin:0;">${priorityLabel[priority] || priority}</p>
+          </div>
+        </div>
+        <a href="https://qiroxstudio.online/my-requests" style="display:block;background:linear-gradient(135deg,#06b6d4,#0284c7);color:#fff;text-align:center;padding:14px;border-radius:12px;font-size:15px;font-weight:800;text-decoration:none;margin-bottom:20px;">
+          📎 رفع البيانات المطلوبة الآن
+        </a>
+        <p style="color:#9ca3af;font-size:12px;text-align:center;">يمكنك رفع الملفات والرد على هذا الطلب من لوحة تحكم العميل.</p>
+      </div>
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:16px;text-align:center;">
+        <p style="color:#9ca3af;font-size:11px;margin:0;">© ${new Date().getFullYear()} QIROX Studio — qiroxstudio.online</p>
+      </div>
+    </div>
+  </div>`;
+  return sendEmail(to, displayName, `📋 طلب بيانات جديد: ${title} | QIROX`, html);
+}

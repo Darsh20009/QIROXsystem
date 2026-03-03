@@ -1,15 +1,19 @@
-const CACHE_NAME = "qirox-v7";
+const CACHE_NAME = "qirox-v8";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
+  "/browserconfig.xml",
   "/favicon.ico",
   "/favicon-16.png",
   "/favicon-32.png",
   "/favicon-48.png",
   "/icon-144.png",
+  "/icon-150.png",
   "/icon-192.png",
   "/icon-192-maskable.png",
   "/icon-256.png",
+  "/icon-310.png",
+  "/icon-310x150.png",
   "/icon-512.png",
   "/icon-512-maskable.png",
   "/logo.png",

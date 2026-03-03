@@ -10,6 +10,29 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 3, 2026 - Session 30)
+
+### نظام طلبات البيانات + تحسين تجربة الشراء
+- **نموذج `ClientDataRequestModel`**: موظف/أدمن يرسل طلب بيانات للعميل (عنوان، وصف، أولوية، تاريخ نهائي، عناصر محددة بأنواع file/image/text/link)
+- **Routes الجديدة**:
+  - `POST /api/data-requests` — إنشاء طلب (موظف/أدمن)
+  - `GET /api/data-requests/mine` — العميل يرى طلباته
+  - `GET /api/admin/data-requests` — الموظف يرى كل الطلبات (مع فلترة)
+  - `POST /api/data-requests/:id/submit` — العميل يرفع الرد مع الملفات
+  - `PATCH /api/admin/data-requests/:id` — تحديث الحالة (approved/revision_needed)
+  - `DELETE /api/admin/data-requests/:id` — حذف الطلب
+  - `GET /api/users/clients` — قائمة العملاء للـ dropdown
+- **Email الجديد**: `sendDataRequestEmail` — إيميل ببريدي للعميل عند وصول طلب جديد
+- **صفحة `ClientDataRequests.tsx`**: العميل يرى طلباته مع tabs (بانتظارك / تم الإرسال / الكل)، يفتح أي طلب ويرفع الملفات أو يكتب النصوص مباشرة
+- **صفحة `AdminDataRequests.tsx`**: الموظف ينشئ طلبات، يبحث، يفلتر، يرى ردود العملاء، يعتمد أو يطلب مراجعة
+- **Sidebar**: إضافة "طلبات البيانات" للعميل (/my-requests) وللموظف (/admin/data-requests)
+- **تحسين Cart.tsx**:
+  - Header Pre-Checkout: gradient داكن مع dot pattern + step indicators بدوائر ملونة (Cyan عند الاكتمال)
+  - Upload Zone: تصميم جديد مع hover animation ولون Cyan
+  - زر التأكيد النهائي: gradient من cyan→blue مع shadow + أيقونة Sparkles
+  - Order Summary Panel: header gradient داكن مع dot pattern + cyan glow
+  - Trust Indicators: دفع آمن / 24 ساعة / ضمان الجودة في أسفل الـ dialog
+
 ## Latest Changes (Mar 3, 2026 - Session 29)
 
 ### نظام Qirox Pay — محفظة العميل الإلكترونية الكاملة

@@ -930,3 +930,32 @@ walletPayOtpSchema.set('toJSON', { transform });
 walletPayOtpSchema.set('toObject', { transform });
 
 export const WalletPayOtpModel = mongoose.models.WalletPayOtp || mongoose.model("WalletPayOtp", walletPayOtpSchema);
+
+/* ─── Client Data Request ─────────────────────────────────────────────── */
+const clientDataRequestSchema = new mongoose.Schema({
+  orderId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  projectId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+  clientId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  title:       { type: String, required: true },
+  description: { type: String },
+  priority:    { type: String, enum: ['low', 'normal', 'high', 'urgent'], default: 'normal' },
+  dueDate:     { type: Date },
+  status:      { type: String, enum: ['pending', 'submitted', 'approved', 'revision_needed'], default: 'pending' },
+  requestItems: [{
+    label:    String,
+    type:     { type: String, enum: ['file', 'image', 'text', 'link'], default: 'file' },
+    required: { type: Boolean, default: false },
+    hint:     String,
+    accept:   String,
+  }],
+  response: {
+    items:       { type: mongoose.Schema.Types.Mixed },
+    notes:       String,
+    submittedAt: Date,
+  },
+  adminNote: String,
+}, { timestamps: true });
+
+clientDataRequestSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const ClientDataRequestModel = mongoose.models.ClientDataRequest || mongoose.model("ClientDataRequest", clientDataRequestSchema);

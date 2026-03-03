@@ -17,7 +17,7 @@ import {
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
-  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush
+  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -70,6 +70,7 @@ export function AppSidebar() {
     { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client" },
     { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client" },
     { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client" },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client" },
     { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client" },
 
     // Employee pages
@@ -79,6 +80,7 @@ export function AppSidebar() {
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee" },
     { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee" },
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", allowedRoles: ["support", "admin", "manager"] },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee" },
