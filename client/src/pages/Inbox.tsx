@@ -52,7 +52,7 @@ function Avatar({ name, role, online }: { name: string; role?: string; online?: 
 // ──────────────────────────────────────────────
 // Voice Message Player
 // ──────────────────────────────────────────────
-function VoicePlayer({ url }: { url: string }) {
+function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -64,6 +64,13 @@ function VoicePlayer({ url }: { url: string }) {
     else { audioRef.current.play(); setPlaying(true); }
   };
 
+  const btnCls = isMe
+    ? "bg-white/20 hover:bg-white/30 text-white"
+    : "bg-black/10 hover:bg-black/20 text-black";
+  const trackCls = isMe ? "bg-white/25" : "bg-black/10";
+  const fillCls = isMe ? "bg-white/80" : "bg-black/50";
+  const textCls = isMe ? "text-white/55" : "text-black/40";
+
   return (
     <div className="flex items-center gap-2 min-w-[160px]">
       <audio ref={audioRef} src={url}
@@ -73,14 +80,14 @@ function VoicePlayer({ url }: { url: string }) {
         onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
         onEnded={() => { setPlaying(false); setProgress(0); }}
       />
-      <button onClick={toggle} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 hover:bg-white/30 transition-all">
+      <button onClick={toggle} className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls}`}>
         {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
       </button>
       <div className="flex-1">
-        <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-          <div className="h-full bg-white/70 rounded-full transition-all" style={{ width: `${progress}%` }} />
+        <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}>
+          <div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${progress}%` }} />
         </div>
-        <span className="text-[9px] opacity-60 mt-0.5 block">{duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}</span>
+        <span className={`text-[9px] ${textCls} mt-0.5 block`}>{duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}</span>
       </div>
     </div>
   );
@@ -105,7 +112,7 @@ function MessageBubble({ msg, isMe, contact }: { msg: any; isMe: boolean; contac
         )}
         {hasAttachment && attachType === "voice" && (
           <div className="px-3 py-2.5">
-            <VoicePlayer url={msg.attachmentUrl} />
+            <VoicePlayer url={msg.attachmentUrl} isMe={isMe} />
           </div>
         )}
         {hasAttachment && attachType === "file" && (
@@ -359,12 +366,21 @@ export default function Inbox() {
   };
 
   // ── Voice Recording ──
+  const getSupportedMimeType = () => {
+    const types = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4", "audio/mpeg"];
+    for (const t of types) {
+      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {}
+    }
+    return "";
+  };
+
   const startRecording = async () => {
     if (!activeContact?.id) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const chunks: BlobPart[] = [];
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mimeType = getSupportedMimeType();
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
@@ -372,10 +388,12 @@ export default function Inbox() {
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         setRecordingTime(0);
         if (activeContact?.id) sendVoiceRecording(activeContact.id, false);
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        if (blob.size < 1000) return; // Too short
+        const finalType = mimeType || "audio/webm";
+        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const blob = new Blob(chunks, { type: finalType });
+        if (blob.size < 500) return; // Too short
         const formData = new FormData();
-        formData.append("file", blob, `voice_${Date.now()}.webm`);
+        formData.append("file", blob, `voice_${Date.now()}.${ext}`);
         setUploadingFile(true);
         try {
           const res = await fetch("/api/upload", { method: "POST", body: formData });

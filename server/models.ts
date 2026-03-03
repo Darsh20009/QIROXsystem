@@ -528,6 +528,9 @@ const checklistItemSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
   dueDate: Date,
   order: { type: Number, default: 0 },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignNote: { type: String, default: "" },
 }, { timestamps: true });
 
 const bankSettingsSchema = new mongoose.Schema({

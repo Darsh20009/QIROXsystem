@@ -18,7 +18,7 @@ import {
   Paperclip, Mic, MicOff, Play, Pause, Download, FileText, Check, CheckCheck,
   ChevronRight, Crown, Activity
 } from "lucide-react";
-import { PageGraphics } from "@/components/AnimatedPageGraphics";
+
 
 function timeAgo(date: string) {
   const d = new Date(date);
@@ -58,20 +58,24 @@ function playBeep() {
   } catch {}
 }
 
-function VoicePlayer({ url }: { url: string }) {
+function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [prog, setProg] = useState(0);
   const [dur, setDur] = useState(0);
+  const btnCls = isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 hover:bg-black/20 text-black";
+  const trackCls = isMe ? "bg-white/20" : "bg-black/10";
+  const fillCls = isMe ? "bg-white/70" : "bg-black/50";
+  const textCls = isMe ? "opacity-60" : "text-black/40";
   return (
     <div className="flex items-center gap-2 min-w-[150px]">
-      <PageGraphics variant="dashboard" />
       <audio ref={ref} src={url} onTimeUpdate={() => { if (ref.current) setProg((ref.current.currentTime / ref.current.duration) * 100 || 0); }} onLoadedMetadata={() => { if (ref.current) setDur(ref.current.duration); }} onEnded={() => { setPlaying(false); setProg(0); }} />
-      <button onClick={() => { if (!ref.current) return; if (playing) { ref.current.pause(); setPlaying(false); } else { ref.current.play(); setPlaying(true); } }} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 flex-shrink-0">
+      <button onClick={() => { if (!ref.current) return; if (playing) { ref.current.pause(); setPlaying(false); } else { ref.current.play(); setPlaying(true); } }} className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls}`}>
         {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
       </button>
-      <div className="flex-1"><div className="h-1 bg-white/20 rounded-full"><div className="h-full bg-white/70 rounded-full" style={{ width: `${prog}%` }} /></div>
-        <span className="text-[9px] opacity-60">{dur > 0 ? `${Math.floor(dur)}ث` : "🎙️"}</span>
+      <div className="flex-1">
+        <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}><div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${prog}%` }} /></div>
+        <span className={`text-[9px] mt-0.5 block ${textCls}`}>{dur > 0 ? `${Math.floor(dur)}ث` : "🎙️"}</span>
       </div>
     </div>
   );
@@ -106,7 +110,7 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
       <div className={`max-w-[70%] rounded-2xl overflow-hidden ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-black/[0.07] text-black rounded-tl-sm dark:bg-gray-800 dark:text-white dark:border-white/[0.08]"}`}>
         {!isMe && <p className="px-3 pt-2 text-[10px] font-bold opacity-50">{nm}</p>}
         {msg.attachmentType === "image" && <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer"><img src={msg.attachmentUrl} alt="" className="max-w-[220px] max-h-[180px] object-cover" /></a>}
-        {msg.attachmentType === "voice" && <div className="px-3 py-2"><VoicePlayer url={msg.attachmentUrl} /></div>}
+        {msg.attachmentType === "voice" && <div className="px-3 py-2"><VoicePlayer url={msg.attachmentUrl} isMe={isMe} /></div>}
         {msg.attachmentType === "file" && (
           <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2.5 hover:opacity-80 ${isMe ? "text-white" : "text-black dark:text-white"}`}>
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.06] dark:bg-white/[0.1]"}`}><FileText className="w-3.5 h-3.5" /></div>
@@ -150,20 +154,31 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك..." 
     } catch { } finally { setUploading(false); }
   };
 
+  const getSupportedMimeType = () => {
+    const types = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4", "audio/mpeg"];
+    for (const t of types) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {} }
+    return "";
+  };
+
   const startRec = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       const chunks: Blob[] = [];
-      mr.ondataavailable = e => chunks.push(e.data);
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        const file = new File([blob], "voice.webm", { type: "audio/webm" });
+        const finalType = mimeType || "audio/webm";
+        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const blob = new Blob(chunks, { type: finalType });
+        const file = new File([blob], `voice.${ext}`, { type: finalType });
         const fd = new FormData(); fd.append("file", file);
-        const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
-        const { url } = await r.json();
-        onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: "رسالة صوتية" });
+        try {
+          const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+          const { url } = await r.json();
+          onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: "رسالة صوتية" });
+        } catch {}
         setRecording(false); setRecTime(0);
       };
       mr.start(); setRecorder(mr); setRecording(true);

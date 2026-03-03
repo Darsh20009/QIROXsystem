@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckSquare, Square, Plus, Trash2, Edit3, Bell, BellOff,
-  ListChecks, Flag, FolderOpen, Loader2, X, Calendar,
+  ListChecks, Flag, FolderOpen, Loader2, Calendar,
   Code2, Globe, Smartphone, Database, Zap, Shield, Link2,
-  GitBranch, Terminal, FileCode, Layers, ChevronDown, ChevronUp, Barcode
+  GitBranch, Terminal, FileCode, Layers, ChevronDown, ChevronUp, Barcode,
+  UserCheck, Send, User, MessageSquare
 } from "lucide-react";
 
 const PRIORITY_CONFIG = {
@@ -44,8 +45,11 @@ const DEV_TOOLS = [
   { label: "Barcode Studio", icon: Barcode, url: "/barcode-studio", color: "text-violet-600" },
 ];
 
+type Employee = { id: string; fullName: string; username: string; role: string };
+
 type ChecklistItem = {
   id: string;
+  _id?: string;
   title: string;
   description?: string;
   done: boolean;
@@ -53,55 +57,94 @@ type ChecklistItem = {
   category: string;
   dueDate?: string;
   createdAt: string;
+  userId: string | { _id: string };
+  assignedTo?: { _id: string; fullName: string; username: string } | null;
+  assignedBy?: { _id: string; fullName: string; username: string } | null;
+  assignNote?: string;
 };
+
+const EMPTY_FORM = { title: "", description: "", priority: "medium", category: "عام", dueDate: "", assignedTo: "", assignNote: "" };
+
+type Tab = "mine" | "assigned-to-me" | "assigned-by-me";
 
 export default function DevChecklist() {
   const { data: user } = useUser();
   const { toast } = useToast();
   const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications();
+  const [tab, setTab] = useState<Tab>("mine");
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState<ChecklistItem | null>(null);
   const [filterCat, setFilterCat] = useState("الكل");
   const [filterPriority, setFilterPriority] = useState("الكل");
   const [showDone, setShowDone] = useState(true);
   const [showTools, setShowTools] = useState(true);
-  const [form, setForm] = useState({ title: "", description: "", priority: "medium", category: "عام", dueDate: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  const { data: items = [], isLoading } = useQuery<ChecklistItem[]>({
+  const uid = (user as any)?._id || (user as any)?.id || "";
+
+  const { data: allItems = [], isLoading } = useQuery<ChecklistItem[]>({
     queryKey: ["/api/checklist"],
   });
+
+  const { data: assignedByMe = [], isLoading: loadingByMe } = useQuery<ChecklistItem[]>({
+    queryKey: ["/api/checklist/assigned-by-me"],
+    enabled: tab === "assigned-by-me",
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+  });
+
+  const getItemId = (item: ChecklistItem) => item.id || (item._id as string);
+  const getAssignedToId = (item: ChecklistItem) =>
+    typeof item.assignedTo === "object" && item.assignedTo ? item.assignedTo._id : null;
+  const getUserId = (item: ChecklistItem) =>
+    typeof item.userId === "object" ? (item.userId as any)?._id : item.userId;
+
+  const myItems = allItems.filter(i => {
+    const isOwner = getUserId(i) === uid;
+    const isAssignedTo = getAssignedToId(i) === uid;
+    return isOwner && !isAssignedTo;
+  });
+
+  const assignedToMeItems = allItems.filter(i => getAssignedToId(i) === uid);
 
   const createMutation = useMutation({
     mutationFn: (data: typeof form) => apiRequest("POST", "/api/checklist", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/checklist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/checklist/assigned-by-me"] });
       setShowAdd(false);
-      setForm({ title: "", description: "", priority: "medium", category: "عام", dueDate: "" });
-      toast({ title: "تمت الإضافة" });
+      setForm(EMPTY_FORM);
+      toast({ title: form.assignedTo ? "تم إرسال المهمة للموظف" : "تمت الإضافة" });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ChecklistItem> }) =>
       apiRequest("PATCH", `/api/checklist/${id}`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/checklist"] }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/checklist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/checklist/assigned-by-me"] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/checklist/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/checklist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/checklist/assigned-by-me"] });
       toast({ title: "تم الحذف" });
     },
   });
 
   const handleToggle = (item: ChecklistItem) => {
-    updateMutation.mutate({ id: item.id, data: { done: !item.done } });
+    updateMutation.mutate({ id: getItemId(item), data: { done: !item.done } });
   };
 
   const handleSaveEdit = () => {
     if (!editItem) return;
-    updateMutation.mutate({ id: editItem.id, data: {
+    updateMutation.mutate({ id: getItemId(editItem), data: {
       title: editItem.title,
       description: editItem.description,
       priority: editItem.priority,
@@ -123,15 +166,30 @@ export default function DevChecklist() {
     }
   };
 
-  const filteredItems = items.filter(item => {
+  const getTabItems = (): ChecklistItem[] => {
+    if (tab === "mine") return myItems;
+    if (tab === "assigned-to-me") return assignedToMeItems;
+    return assignedByMe;
+  };
+
+  const applyFilters = (list: ChecklistItem[]) => list.filter(item => {
     if (!showDone && item.done) return false;
     if (filterCat !== "الكل" && item.category !== filterCat) return false;
     if (filterPriority !== "الكل" && item.priority !== filterPriority) return false;
     return true;
   });
 
-  const pendingCount = items.filter(i => !i.done).length;
-  const doneCount = items.filter(i => i.done).length;
+  const tabItems = applyFilters(getTabItems());
+  const pendingCount = myItems.filter(i => !i.done).length;
+  const assignedToMePending = assignedToMeItems.filter(i => !i.done).length;
+
+  const otherEmployees = employees.filter(e => e.id !== uid && (e.role === "employee" || e.role === "manager" || e.role === "admin"));
+
+  const TABS = [
+    { id: "mine" as Tab, label: "مهامي الشخصية", icon: User, count: pendingCount },
+    { id: "assigned-to-me" as Tab, label: "مُسند إليّ", icon: UserCheck, count: assignedToMePending },
+    { id: "assigned-by-me" as Tab, label: "أسندتها أنا", icon: Send, count: 0 },
+  ];
 
   return (
     <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
@@ -143,7 +201,7 @@ export default function DevChecklist() {
           <div>
             <h1 className="text-2xl font-black text-black dark:text-white tracking-tight">أدوات المطور</h1>
             <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-              {pendingCount} مهمة معلّقة · {doneCount} مكتملة
+              {pendingCount} مهمة معلّقة · {assignedToMePending > 0 && <span className="text-cyan-600 font-medium">{assignedToMePending} مُسندة إليك</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -176,54 +234,90 @@ export default function DevChecklist() {
             الإشعارات محظورة في إعدادات المتصفح. افتح الإعدادات وأعد تفعيلها.
           </div>
         )}
-        {pushStatus === "subscribed" && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
-            <Bell className="w-4 h-4 shrink-0" />
-            الإشعارات مفعّلة — ستصلك إشعارات QIROX حتى عند إغلاق التطبيق
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-black/[0.06] dark:border-white/[0.06]">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${
+                tab === t.id
+                  ? "border-cyan-500 text-cyan-600 dark:text-cyan-400"
+                  : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
+              }`}
+              data-testid={`tab-${t.id}`}
+            >
+              <t.icon className="w-3.5 h-3.5" />
+              {t.label}
+              {t.count > 0 && (
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] bg-cyan-500 text-white font-bold">
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Developer Tools (only on mine tab) */}
+        {tab === "mine" && (
+          <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl overflow-hidden">
+            <button
+              className="w-full flex items-center justify-between px-5 py-4 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+              onClick={() => setShowTools(!showTools)}
+              data-testid="button-toggle-tools"
+            >
+              <div className="flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-black/40 dark:text-white/40" />
+                <span className="text-sm font-semibold text-black dark:text-white">أدوات المطور السريعة</span>
+              </div>
+              {showTools ? <ChevronUp className="w-4 h-4 text-black/30 dark:text-white/30" /> : <ChevronDown className="w-4 h-4 text-black/30 dark:text-white/30" />}
+            </button>
+            <AnimatePresence>
+              {showTools && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {DEV_TOOLS.map((tool) => (
+                      <a
+                        key={tool.label}
+                        href={tool.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center gap-2 p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06] hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all group"
+                        data-testid={`link-tool-${tool.label}`}
+                      >
+                        <tool.icon className={`w-5 h-5 ${tool.color} group-hover:scale-110 transition-transform`} />
+                        <span className="text-[10px] font-medium text-black/50 dark:text-white/50 text-center">{tool.label}</span>
+                      </a>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        {/* Developer Tools */}
-        <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl overflow-hidden">
-          <button
-            className="w-full flex items-center justify-between px-5 py-4 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
-            onClick={() => setShowTools(!showTools)}
-            data-testid="button-toggle-tools"
-          >
-            <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-black/40 dark:text-white/40" />
-              <span className="text-sm font-semibold text-black dark:text-white">أدوات المطور السريعة</span>
-            </div>
-            {showTools ? <ChevronUp className="w-4 h-4 text-black/30 dark:text-white/30" /> : <ChevronDown className="w-4 h-4 text-black/30 dark:text-white/30" />}
-          </button>
-          <AnimatePresence>
-            {showTools && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {DEV_TOOLS.map((tool) => (
-                    <a
-                      key={tool.label}
-                      href={tool.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06] hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-all group"
-                      data-testid={`link-tool-${tool.label}`}
-                    >
-                      <tool.icon className={`w-5 h-5 ${tool.color} group-hover:scale-110 transition-transform`} />
-                      <span className="text-[10px] font-medium text-black/50 dark:text-white/50 text-center">{tool.label}</span>
-                    </a>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Assigned to me hint */}
+        {tab === "assigned-to-me" && assignedToMeItems.length > 0 && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 text-sm text-cyan-700 dark:text-cyan-400">
+            <UserCheck className="w-4 h-4 shrink-0" />
+            هذه المهام مُسندة إليك من زملائك — يمكنك إنجازها وتحديد حالتها
+          </div>
+        )}
+
+        {/* Assigned by me hint */}
+        {tab === "assigned-by-me" && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-400">
+            <Send className="w-4 h-4 shrink-0" />
+            هذه المهام التي أسندتها لموظفين آخرين — يمكنك متابعة حالتها
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -271,37 +365,47 @@ export default function DevChecklist() {
         </div>
 
         {/* Checklist */}
-        {isLoading ? (
+        {(isLoading && tab !== "assigned-by-me") || (loadingByMe && tab === "assigned-by-me") ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : tabItems.length === 0 ? (
           <div className="text-center py-16">
             <ListChecks className="w-12 h-12 text-black/10 dark:text-white/10 mx-auto mb-4" />
-            <p className="text-black/30 dark:text-white/30 text-sm">لا توجد مهام — أضف مهمتك الأولى!</p>
+            <p className="text-black/30 dark:text-white/30 text-sm">
+              {tab === "mine" && "لا توجد مهام — أضف مهمتك الأولى!"}
+              {tab === "assigned-to-me" && "لا توجد مهام مُسندة إليك حالياً"}
+              {tab === "assigned-by-me" && "لم تُسند أي مهام لموظفين بعد"}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
             <AnimatePresence>
-              {filteredItems.map((item) => {
+              {tabItems.map((item) => {
                 const pri = PRIORITY_CONFIG[item.priority] || PRIORITY_CONFIG.medium;
+                const isAssignedToMe = getAssignedToId(item) === uid;
+                const isAssignedByMe = tab === "assigned-by-me";
                 return (
                   <motion.div
-                    key={item.id}
+                    key={getItemId(item)}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     className={`group flex items-start gap-3 p-4 rounded-xl border transition-all ${
                       item.done
                         ? "border-black/[0.04] dark:border-white/[0.04] bg-black/[0.01] dark:bg-white/[0.01] opacity-60"
-                        : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"
+                        : isAssignedToMe
+                          ? "border-cyan-200 dark:border-cyan-800 bg-cyan-50/30 dark:bg-cyan-900/10 hover:border-cyan-300 dark:hover:border-cyan-700"
+                          : isAssignedByMe && !item.done
+                            ? "border-blue-100 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10"
+                            : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"
                     }`}
-                    data-testid={`item-checklist-${item.id}`}
+                    data-testid={`item-checklist-${getItemId(item)}`}
                   >
                     <button
                       onClick={() => handleToggle(item)}
                       className="mt-0.5 shrink-0 transition-transform hover:scale-110"
-                      data-testid={`toggle-item-${item.id}`}
+                      data-testid={`toggle-item-${getItemId(item)}`}
                     >
                       {item.done
                         ? <CheckSquare className="w-5 h-5 text-black dark:text-white" />
@@ -322,9 +426,27 @@ export default function DevChecklist() {
                             <FolderOpen className="w-2.5 h-2.5 ml-1" />{item.category}
                           </Badge>
                         )}
+                        {isAssignedToMe && item.assignedBy && (
+                          <Badge className="text-[10px] px-2 py-0 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-0">
+                            <UserCheck className="w-2.5 h-2.5 ml-1" />
+                            من: {item.assignedBy.fullName || item.assignedBy.username}
+                          </Badge>
+                        )}
+                        {isAssignedByMe && item.assignedTo && (
+                          <Badge className={`text-[10px] px-2 py-0 border-0 ${item.done ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>
+                            <Send className="w-2.5 h-2.5 ml-1" />
+                            {item.assignedTo.fullName || item.assignedTo.username} · {item.done ? "✓ أنجزها" : "بانتظار"}
+                          </Badge>
+                        )}
                       </div>
                       {item.description && (
                         <p className="text-xs text-black/40 dark:text-white/40 mt-1">{item.description}</p>
+                      )}
+                      {item.assignNote && isAssignedToMe && (
+                        <p className="text-xs text-cyan-600/70 dark:text-cyan-400/70 mt-1 flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3 shrink-0" />
+                          {item.assignNote}
+                        </p>
                       )}
                       {item.dueDate && (
                         <p className="text-[10px] text-black/30 dark:text-white/30 mt-1 flex items-center gap-1">
@@ -335,17 +457,19 @@ export default function DevChecklist() {
                     </div>
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      {!isAssignedByMe && (
+                        <button
+                          onClick={() => setEditItem(item)}
+                          className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors"
+                          data-testid={`edit-item-${getItemId(item)}`}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => setEditItem(item)}
-                        className="p-1.5 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors"
-                        data-testid={`edit-item-${item.id}`}
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => deleteMutation.mutate(item.id)}
+                        onClick={() => deleteMutation.mutate(getItemId(item))}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 dark:text-white/30 hover:text-red-500 transition-colors"
-                        data-testid={`delete-item-${item.id}`}
+                        data-testid={`delete-item-${getItemId(item)}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -404,13 +528,51 @@ export default function DevChecklist() {
                 data-testid="input-due-date"
               />
             </div>
+
+            {/* Assign to employee */}
+            {otherEmployees.length > 0 && (
+              <div className="border border-dashed border-black/10 dark:border-white/10 rounded-xl p-4 space-y-3 bg-black/[0.01] dark:bg-white/[0.01]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wide">
+                  <Send className="w-3.5 h-3.5" />
+                  إسناد لموظف (اختياري)
+                </div>
+                <Select value={form.assignedTo || "none"} onValueChange={v => setForm(f => ({ ...f, assignedTo: v === "none" ? "" : v }))}>
+                  <SelectTrigger data-testid="select-assignee">
+                    <SelectValue placeholder="اختر موظفاً..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— بدون إسناد (مهمة شخصية) —</SelectItem>
+                    {otherEmployees.map(e => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.fullName || e.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.assignedTo && form.assignedTo !== "none" && (
+                  <Input
+                    placeholder="ملاحظة للموظف (اختياري)"
+                    value={form.assignNote}
+                    onChange={e => setForm(f => ({ ...f, assignNote: e.target.value }))}
+                    data-testid="input-assign-note"
+                  />
+                )}
+              </div>
+            )}
+
             <Button
-              className="w-full bg-black dark:bg-white text-white dark:text-black"
+              className={`w-full gap-2 ${form.assignedTo && form.assignedTo !== "none"
+                ? "bg-gradient-to-l from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700"
+                : "bg-black dark:bg-white text-white dark:text-black"}`}
               onClick={() => createMutation.mutate(form)}
               disabled={!form.title || createMutation.isPending}
               data-testid="button-save-checklist"
             >
-              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إضافة المهمة"}
+              {createMutation.isPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : form.assignedTo && form.assignedTo !== "none"
+                  ? <><Send className="w-4 h-4" /> إرسال المهمة للموظف</>
+                  : "إضافة المهمة"}
             </Button>
           </div>
         </DialogContent>

@@ -3474,28 +3474,71 @@ export async function registerRoutes(
     try {
       const { ChecklistItemModel } = await import("./models");
       const user = req.user as any;
-      const items = await (ChecklistItemModel as any).find({ userId: user._id || user.id }).sort({ order: 1, createdAt: -1 });
+      const uid = user._id || user.id;
+      const items = await (ChecklistItemModel as any)
+        .find({ $or: [{ userId: uid }, { assignedTo: uid }] })
+        .populate("assignedTo", "fullName username")
+        .populate("assignedBy", "fullName username")
+        .sort({ order: 1, createdAt: -1 });
       res.json(items);
     } catch (err) {
       res.status(500).json({ error: "خطأ في تحميل القائمة" });
     }
   });
 
-  app.post("/api/checklist", async (req, res) => {
+  app.get("/api/checklist/assigned-by-me", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const { ChecklistItemModel } = await import("./models");
       const user = req.user as any;
-      const { title, description, priority, category, projectId, dueDate } = req.body;
+      const uid = user._id || user.id;
+      const items = await (ChecklistItemModel as any)
+        .find({ assignedBy: uid, assignedTo: { $ne: null } })
+        .populate("assignedTo", "fullName username")
+        .populate("assignedBy", "fullName username")
+        .sort({ createdAt: -1 });
+      res.json(items);
+    } catch (err) {
+      res.status(500).json({ error: "خطأ في تحميل المهام المُسندة" });
+    }
+  });
+
+  app.post("/api/checklist", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ChecklistItemModel, UserModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const { title, description, priority, category, projectId, dueDate, assignedTo, assignNote } = req.body;
       if (!title) return res.status(400).json({ error: "العنوان مطلوب" });
       const item = await (ChecklistItemModel as any).create({
-        userId: user._id || user.id,
+        userId: uid,
         title, description, priority: priority || "medium",
         category: category || "عام",
         ...(projectId && { projectId }),
         ...(dueDate && { dueDate: new Date(dueDate) }),
+        ...(assignedTo && { assignedTo, assignedBy: uid, assignNote: assignNote || "" }),
       });
-      res.status(201).json(item);
+      if (assignedTo) {
+        try {
+          const assignee = await (UserModel as any).findById(assignedTo).select("email fullName username");
+          if (assignee?.email) {
+            const { sendTaskAssignedEmail } = await import("./email");
+            await sendTaskAssignedEmail(
+              assignee.email,
+              assignee.fullName || assignee.username,
+              title,
+              category || "عام",
+              priority || "medium",
+              dueDate
+            );
+          }
+        } catch (e) { console.error("[Email] checklist assign error:", e); }
+      }
+      const populated = await (ChecklistItemModel as any).findById(item._id)
+        .populate("assignedTo", "fullName username")
+        .populate("assignedBy", "fullName username");
+      res.status(201).json(populated);
     } catch (err) {
       res.status(500).json({ error: "فشل إنشاء المهمة" });
     }
@@ -3506,11 +3549,14 @@ export async function registerRoutes(
     try {
       const { ChecklistItemModel } = await import("./models");
       const user = req.user as any;
+      const uid = user._id || user.id;
       const item = await (ChecklistItemModel as any).findOneAndUpdate(
-        { _id: req.params.id, userId: user._id || user.id },
+        { _id: req.params.id, $or: [{ userId: uid }, { assignedTo: uid }] },
         { $set: req.body },
         { new: true }
-      );
+      )
+        .populate("assignedTo", "fullName username")
+        .populate("assignedBy", "fullName username");
       if (!item) return res.status(404).json({ error: "العنصر غير موجود" });
       res.json(item);
     } catch (err) {
@@ -3523,7 +3569,8 @@ export async function registerRoutes(
     try {
       const { ChecklistItemModel } = await import("./models");
       const user = req.user as any;
-      await (ChecklistItemModel as any).findOneAndDelete({ _id: req.params.id, userId: user._id || user.id });
+      const uid = user._id || user.id;
+      await (ChecklistItemModel as any).findOneAndDelete({ _id: req.params.id, $or: [{ userId: uid }, { assignedTo: uid }] });
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: "فشل الحذف" });

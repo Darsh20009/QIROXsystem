@@ -182,17 +182,26 @@ export function FloatingClientChat() {
   };
 
   // ── Voice recording ────────────────────────────────────────────────────
+  const getSupportedMimeType = () => {
+    const types = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4", "audio/mpeg"];
+    for (const t of types) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {} }
+    return "";
+  };
+
   const startRec = async () => {
     if (!session?.id) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       const chunks: BlobPart[] = [];
-      mr.ondataavailable = e => chunks.push(e.data);
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        const file = new File([blob], "voice.webm", { type: "audio/webm" });
+        const finalType = mimeType || "audio/webm";
+        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const blob = new Blob(chunks, { type: finalType });
+        const file = new File([blob], `voice.${ext}`, { type: finalType });
         const fd = new FormData(); fd.append("file", file);
         try {
           const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
