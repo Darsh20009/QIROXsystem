@@ -17,7 +17,7 @@ import {
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
-  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video
+  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -62,6 +62,7 @@ export function AppSidebar() {
 
     // Client-only pages
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "client" },
+    { title: ar ? "كيروكس إيدت 🎨" : "Qirox Edit 🎨", icon: Paintbrush, url: "/qirox-edit", group: "client" },
     { title: ar ? "الأجهزة والإضافات" : "Devices & Add-ons", icon: Cpu, url: "/devices", group: "client" },
     { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client" },
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client" },
@@ -73,6 +74,7 @@ export function AppSidebar() {
 
     // Employee pages
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
+    { title: ar ? "كيروكس إيدت 🎨" : "Qirox Edit 🎨", icon: Paintbrush, url: "/qirox-edit", group: "employee" },
     { title: ar ? "لوحتي المتخصصة" : "My Role Board", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee" },

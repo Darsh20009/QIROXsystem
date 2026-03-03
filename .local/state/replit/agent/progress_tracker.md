@@ -30,9 +30,16 @@
 [x] 30. Improve SEO - add structured data (Organization + WebSite schema), better meta tags
 [x] 31. Fix admin panel header for mobile (compact layout, user avatar shortcut)
 [x] 32. Build QMeet — نظام الاجتماعات الكامل (server/qmeet.ts + AdminQMeet.tsx + AdminQMeetDetail.tsx)
-      - قاعدة بيانات منفصلة (mongodb+srv://Qmeet@cluster0.ul0t5m5.mongodb.net)
-      - Jitsi Meet للفيديو والصوت ومشاركة الشاشة والسبورة
-      - تقارير + فيدباك + إرسال دعوات بريدية تلقائية
-      - تذكير بريدي قبل الاجتماع بدقيقتين تلقائياً
-      - ربط مع نظام الاستشارات
-      - متاح للأدمن والمدير فقط
+[x] 33. Build Qirox Edit — محرر تصميم احترافي كامل (client/src/pages/QiroxEdit.tsx)
+      - Fabric.js كمحرك الكانفاس
+      - أشكال: مستطيل، دائرة، مثلث، خط، نجمة، سداسي
+      - نصوص مع Google Fonts (20 خطاً عربياً وأجنبياً)
+      - تحميل صور من الجهاز
+      - خلفيات: ألوان صلبة + 6 تدرجات لونية
+      - 5 قوالب جاهزة
+      - لوحة خصائص: موضع، حجم، دوران، شفافية، لون، خط
+      - لوحة الطبقات (رؤية، إخفاء)
+      - تراجع وإعادة (Ctrl+Z, Ctrl+Y)
+      - تصدير: PNG، JPEG، PDF، SVG
+      - 9 أحجام كانفاس جاهزة (إنستقرام، فيسبوك، يوتيوب، A4، إلخ)
+      - تكبير/تصغير، اختصارات لوحة المفاتيح

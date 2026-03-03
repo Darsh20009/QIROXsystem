@@ -89,6 +89,7 @@ const ClientsGroup = lazy(() => import("@/pages/ClientsGroup"));
 const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
 const AdminQMeet = lazy(() => import("@/pages/AdminQMeet"));
 const AdminQMeetDetail = lazy(() => import("@/pages/AdminQMeetDetail"));
+const QiroxEdit = lazy(() => import("@/pages/QiroxEdit"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio"];
 
 function PageLoader() {
@@ -354,6 +355,15 @@ function AppInner() {
 
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
+  if (location === "/qirox-edit") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <QiroxEdit />
+        <Toaster />
+      </Suspense>
+    );
   }
 
   const isPublicRoute = publicRoutes.some(r => location === r);
