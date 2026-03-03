@@ -1076,3 +1076,52 @@ const promotionLogSchema = new mongoose.Schema({
 }, { timestamps: true });
 promotionLogSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
 export const PromotionLogModel = mongoose.models.PromotionLog || mongoose.model("PromotionLog", promotionLogSchema);
+
+// ── QMeet: Meeting Management System (uses main MongoDB) ──────────────────────
+const qMeetingSchema = new mongoose.Schema({
+  title:          { type: String, required: true },
+  description:    { type: String, default: "" },
+  hostId:         { type: String, required: true },
+  hostName:       { type: String, required: true },
+  scheduledAt:    { type: Date, required: true },
+  endsAt:         { type: Date },  // Computed on create
+  durationMinutes:{ type: Number, default: 60 },
+  roomName:       { type: String, required: true, unique: true },
+  meetingLink:    { type: String, required: true },
+  type:           { type: String, enum: ["internal", "client_individual", "client_all", "consultation"], default: "client_individual" },
+  participantIds:    { type: [String], default: [] },
+  participantEmails: { type: [String], default: [] },
+  participantNames:  { type: [String], default: [] },
+  consultationBookingId: { type: String, default: null },
+  status:         { type: String, enum: ["scheduled", "live", "completed", "cancelled"], default: "scheduled" },
+  reminderSent:   { type: Boolean, default: false },
+  reminder24hSent:{ type: Boolean, default: false },
+  notes:          { type: String, default: "" },
+  agenda:         { type: [String], default: [] },
+  recordingUrl:   { type: String, default: "" },
+}, { timestamps: true });
+qMeetingSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const QMeetingModel = mongoose.models.QMeeting || mongoose.model("QMeeting", qMeetingSchema);
+
+const qFeedbackSchema = new mongoose.Schema({
+  meetingId:    { type: mongoose.Schema.Types.ObjectId, ref: "QMeeting", required: true, index: true },
+  fromUserId:   { type: String, required: true },
+  fromUserName: { type: String, required: true },
+  rating:       { type: Number, min: 1, max: 5, required: true },
+  comment:      { type: String, default: "" },
+}, { timestamps: true });
+qFeedbackSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const QFeedbackModel = mongoose.models.QFeedback || mongoose.model("QFeedback", qFeedbackSchema);
+
+const qReportSchema = new mongoose.Schema({
+  meetingId:    { type: mongoose.Schema.Types.ObjectId, ref: "QMeeting", required: true, index: true },
+  authorId:     { type: String, required: true },
+  authorName:   { type: String, required: true },
+  summary:      { type: String, required: true },
+  actionItems:  { type: [String], default: [] },
+  attendeesCount: { type: Number, default: 0 },
+  duration:     { type: Number, default: 0 },
+  content:      { type: String, default: "" },
+}, { timestamps: true });
+qReportSchema.set('toJSON', { transform: (_, ret) => { ret.id = ret._id.toString(); return ret; } });
+export const QReportModel = mongoose.models.QReport || mongoose.model("QReport", qReportSchema);

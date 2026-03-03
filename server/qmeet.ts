@@ -1,83 +1,9 @@
-import mongoose from "mongoose";
 import { type Express } from "express";
-import { type Server } from "http";
+import { QMeetingModel, QFeedbackModel, QReportModel } from "./models";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
+import { pushToUser, broadcastToUsers } from "./ws";
 
-const QMEET_URI = process.env.QMEET_MONGODB_URI || "mongodb+srv://Qmeet:ASDqwe123@cluster0.ul0t5m5.mongodb.net/?appName=Cluster0";
-
-let qmeetConn: mongoose.Connection | null = null;
-
-export async function connectQMeetDB() {
-  try {
-    qmeetConn = mongoose.createConnection(QMEET_URI);
-    await qmeetConn.asPromise();
-    console.log("[QMeet] Connected to QMeet MongoDB");
-    startReminderScheduler();
-  } catch (err) {
-    console.error("[QMeet] Failed to connect to QMeet MongoDB:", err);
-  }
-}
-
-function getConn(): mongoose.Connection {
-  if (!qmeetConn) throw new Error("QMeet DB not connected");
-  return qmeetConn;
-}
-
-// ── Schemas ────────────────────────────────────────────────────────────
-const meetingSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, default: "" },
-  hostId: { type: String, required: true },
-  hostName: { type: String, required: true },
-  scheduledAt: { type: Date, required: true },
-  durationMinutes: { type: Number, default: 60 },
-  roomName: { type: String, required: true, unique: true },
-  meetingLink: { type: String, required: true },
-  type: { type: String, enum: ["internal", "client_individual", "client_all", "consultation"], default: "client_individual" },
-  participantIds: [String],
-  participantEmails: [String],
-  participantNames: [String],
-  consultationBookingId: { type: String, default: null },
-  status: { type: String, enum: ["scheduled", "live", "completed", "cancelled"], default: "scheduled" },
-  reminderSent: { type: Boolean, default: false },
-  notes: { type: String, default: "" },
-}, { timestamps: true });
-
-const feedbackSchema = new mongoose.Schema({
-  meetingId: { type: String, required: true, index: true },
-  fromUserId: { type: String, required: true },
-  fromUserName: { type: String, required: true },
-  rating: { type: Number, min: 1, max: 5, required: true },
-  comment: { type: String, default: "" },
-}, { timestamps: true });
-
-const reportSchema = new mongoose.Schema({
-  meetingId: { type: String, required: true, index: true },
-  authorId: { type: String, required: true },
-  authorName: { type: String, required: true },
-  summary: { type: String, required: true },
-  actionItems: [String],
-  attendeesCount: { type: Number, default: 0 },
-  duration: { type: Number, default: 0 },
-  content: { type: String, default: "" },
-}, { timestamps: true });
-
-function MeetingModel() {
-  const conn = getConn();
-  return conn.models.QMeeting || conn.model("QMeeting", meetingSchema);
-}
-
-function FeedbackModel() {
-  const conn = getConn();
-  return conn.models.QFeedback || conn.model("QFeedback", feedbackSchema);
-}
-
-function ReportModel() {
-  const conn = getConn();
-  return conn.models.QReport || conn.model("QReport", reportSchema);
-}
-
-// ── Room name generator ────────────────────────────────────────────────
+// ── Room name generator ───────────────────────────────────────────────────────
 function generateRoomName(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "qmeet-";
@@ -85,43 +11,117 @@ function generateRoomName(): string {
   return result;
 }
 
-// ── 2-minute reminder scheduler ────────────────────────────────────────
-function startReminderScheduler() {
+// ── Smart scheduler: auto-status + reminders ──────────────────────────────────
+export function startQMeetScheduler() {
   setInterval(async () => {
     try {
-      const Meetings = MeetingModel();
       const now = new Date();
-      const twoMinutesLater = new Date(now.getTime() + 2 * 60 * 1000);
-      const threeMinutesLater = new Date(now.getTime() + 3 * 60 * 1000);
 
-      const upcoming = await Meetings.find({
+      // 1. Auto-start: scheduled → live when scheduled time reached
+      const toStart = await QMeetingModel.find({
         status: "scheduled",
-        reminderSent: false,
-        scheduledAt: { $gte: twoMinutesLater, $lte: threeMinutesLater },
+        scheduledAt: { $lte: now },
       });
-
-      for (const meeting of upcoming) {
-        const emails: string[] = meeting.participantEmails || [];
-        const names: string[] = meeting.participantNames || [];
-        for (let i = 0; i < emails.length; i++) {
-          const name = names[i] || "مشارك";
-          await sendQMeetReminderEmail(emails[i], name, {
-            title: meeting.title,
-            scheduledAt: meeting.scheduledAt,
-            meetingLink: meeting.meetingLink,
-            hostName: meeting.hostName,
+      for (const m of toStart) {
+        await QMeetingModel.findByIdAndUpdate(m._id, { status: "live" });
+        // Notify all participants via WebSocket
+        const ids: string[] = (m.participantIds || []);
+        if (ids.length) {
+          broadcastToUsers(ids, {
+            type: "qmeet_started",
+            meetingId: String(m._id),
+            title: m.title,
+            meetingLink: m.meetingLink,
+            message: `بدأ الاجتماع: ${m.title}`,
           });
         }
-        await Meetings.findByIdAndUpdate(meeting._id, { reminderSent: true });
-        console.log(`[QMeet] Sent reminders for meeting: ${meeting.title}`);
+        console.log(`[QMeet] Auto-started meeting: ${m.title}`);
+      }
+
+      // 2. Auto-end: live → completed when duration exceeded
+      const toEnd = await QMeetingModel.find({
+        status: "live",
+        endsAt: { $lte: now },
+      });
+      for (const m of toEnd) {
+        await QMeetingModel.findByIdAndUpdate(m._id, { status: "completed" });
+        const ids: string[] = (m.participantIds || []);
+        if (ids.length) {
+          broadcastToUsers(ids, {
+            type: "qmeet_ended",
+            meetingId: String(m._id),
+            title: m.title,
+            message: `انتهى الاجتماع: ${m.title}`,
+          });
+        }
+        console.log(`[QMeet] Auto-ended meeting: ${m.title}`);
+      }
+
+      // 3. 2-min reminder emails
+      const twoMin = new Date(now.getTime() + 2 * 60 * 1000);
+      const threeMin = new Date(now.getTime() + 3 * 60 * 1000);
+      const soonMeetings = await QMeetingModel.find({
+        status: "scheduled",
+        reminderSent: false,
+        scheduledAt: { $gte: twoMin, $lte: threeMin },
+      });
+      for (const m of soonMeetings) {
+        const emails: string[] = m.participantEmails || [];
+        const names: string[] = m.participantNames || [];
+        for (let i = 0; i < emails.length; i++) {
+          await sendQMeetReminderEmail(emails[i], names[i] || "مشارك", {
+            title: m.title,
+            scheduledAt: m.scheduledAt,
+            meetingLink: m.meetingLink,
+            hostName: m.hostName,
+          });
+        }
+        // Push WebSocket reminder
+        const ids: string[] = (m.participantIds || []);
+        if (ids.length) {
+          broadcastToUsers(ids, {
+            type: "qmeet_reminder",
+            meetingId: String(m._id),
+            title: m.title,
+            meetingLink: m.meetingLink,
+            message: `اجتماع "${m.title}" يبدأ بعد دقيقتين!`,
+          });
+        }
+        await QMeetingModel.findByIdAndUpdate(m._id, { reminderSent: true });
+        console.log(`[QMeet] Sent 2-min reminders for: ${m.title}`);
+      }
+
+      // 4. 24h reminder emails
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const tomorrowPlus1h = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+      const tomorrowMeetings = await QMeetingModel.find({
+        status: "scheduled",
+        reminder24hSent: false,
+        scheduledAt: { $gte: tomorrow, $lte: tomorrowPlus1h },
+      });
+      for (const m of tomorrowMeetings) {
+        const emails: string[] = m.participantEmails || [];
+        const names: string[] = m.participantNames || [];
+        for (let i = 0; i < emails.length; i++) {
+          await sendQMeetReminderEmail(emails[i], names[i] || "مشارك", {
+            title: m.title,
+            scheduledAt: m.scheduledAt,
+            meetingLink: m.meetingLink,
+            hostName: m.hostName,
+          });
+        }
+        await QMeetingModel.findByIdAndUpdate(m._id, { reminder24hSent: true });
+        console.log(`[QMeet] Sent 24h reminders for: ${m.title}`);
       }
     } catch (err) {
-      console.error("[QMeet] Reminder scheduler error:", err);
+      console.error("[QMeet] Scheduler error:", err);
     }
-  }, 60 * 1000);
+  }, 60 * 1000); // Run every minute
+
+  console.log("[QMeet] Smart scheduler started");
 }
 
-// ── Auth middleware ────────────────────────────────────────────────────
+// ── Middleware ────────────────────────────────────────────────────────────────
 function requireManagement(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) return res.status(401).json({ message: "غير مصرح" });
   if (!["admin", "manager"].includes(req.user?.role)) return res.status(403).json({ message: "للإدارة فقط" });
@@ -133,28 +133,29 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
-// ── Routes ─────────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 export function registerQMeetRoutes(app: Express) {
 
-  // Get all meetings (management sees all, others see meetings they're in)
+  // GET /api/qmeet/meetings — list meetings
   app.get("/api/qmeet/meetings", requireAuth, async (req: any, res) => {
     try {
-      const Meetings = MeetingModel();
       const isManagement = ["admin", "manager"].includes(req.user.role);
-      const userId = String(req.user._id);
-      const filter = isManagement ? {} : { participantIds: userId };
-      const meetings = await Meetings.find(filter).sort({ scheduledAt: -1 }).limit(100);
+      const userId = String(req.user._id || req.user.id);
+      const { status, type } = req.query as any;
+      const filter: any = isManagement ? {} : { participantIds: userId };
+      if (status && status !== "all") filter.status = status;
+      if (type && type !== "all") filter.type = type;
+      const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: -1 }).limit(200);
       res.json(meetings);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // Get single meeting
+  // GET /api/qmeet/meetings/:id
   app.get("/api/qmeet/meetings/:id", requireAuth, async (req: any, res) => {
     try {
-      const Meetings = MeetingModel();
-      const meeting = await Meetings.findById(req.params.id);
+      const meeting = await QMeetingModel.findById(req.params.id);
       if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
       res.json(meeting);
     } catch (err: any) {
@@ -162,49 +163,61 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
-  // Create meeting
+  // POST /api/qmeet/meetings — create meeting
   app.post("/api/qmeet/meetings", requireManagement, async (req: any, res) => {
     try {
-      const Meetings = MeetingModel();
-      const roomName = generateRoomName();
-      const meetingLink = `https://meet.jit.si/${roomName}`;
-
       const {
         title, description, scheduledAt, durationMinutes,
         type, participantIds, participantEmails, participantNames,
-        consultationBookingId, notes
+        consultationBookingId, notes, agenda
       } = req.body;
 
       if (!title || !scheduledAt) return res.status(400).json({ message: "العنوان والتوقيت مطلوبان" });
 
-      const meeting = await Meetings.create({
-        title,
-        description: description || "",
-        hostId: String(req.user._id),
+      const roomName = generateRoomName();
+      const meetingLink = `https://meet.jit.si/${roomName}`;
+      const duration = parseInt(durationMinutes) || 60;
+      const startTime = new Date(scheduledAt);
+      const endsAt = new Date(startTime.getTime() + duration * 60 * 1000);
+
+      const meeting = await QMeetingModel.create({
+        title, description: description || "",
+        hostId: String(req.user._id || req.user.id),
         hostName: req.user.fullName || req.user.username,
-        scheduledAt: new Date(scheduledAt),
-        durationMinutes: durationMinutes || 60,
-        roomName,
-        meetingLink,
+        scheduledAt: startTime,
+        endsAt,
+        durationMinutes: duration,
+        roomName, meetingLink,
         type: type || "client_individual",
         participantIds: participantIds || [],
         participantEmails: participantEmails || [],
         participantNames: participantNames || [],
         consultationBookingId: consultationBookingId || null,
         notes: notes || "",
+        agenda: agenda || [],
       });
 
-      // Send invites immediately
+      // Send invite emails (non-blocking)
       const emails: string[] = participantEmails || [];
       const names: string[] = participantNames || [];
-      for (let i = 0; i < emails.length; i++) {
-        const name = names[i] || "مشارك";
-        await sendQMeetInviteEmail(emails[i], name, {
-          title,
-          scheduledAt: new Date(scheduledAt),
-          meetingLink,
+      Promise.all(emails.map((email, i) =>
+        sendQMeetInviteEmail(email, names[i] || "مشارك", {
+          title, scheduledAt: startTime, meetingLink,
           hostName: req.user.fullName || req.user.username,
-          durationMinutes: durationMinutes || 60,
+          durationMinutes: duration,
+        })
+      )).catch(e => console.error("[QMeet] Email error:", e));
+
+      // Notify participants via WebSocket
+      const ids: string[] = participantIds || [];
+      if (ids.length) {
+        broadcastToUsers(ids, {
+          type: "qmeet_invited",
+          meetingId: String(meeting._id),
+          title,
+          scheduledAt: startTime.toISOString(),
+          meetingLink,
+          message: `دعوة اجتماع: ${title}`,
         });
       }
 
@@ -214,43 +227,63 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
-  // Update meeting
+  // PATCH /api/qmeet/meetings/:id — update meeting
   app.patch("/api/qmeet/meetings/:id", requireManagement, async (req: any, res) => {
     try {
-      const Meetings = MeetingModel();
-      const allowed = ["title", "description", "scheduledAt", "durationMinutes", "type", "participantIds", "participantEmails", "participantNames", "status", "notes", "reminderSent"];
+      const allowed = ["title", "description", "scheduledAt", "durationMinutes", "type",
+        "participantIds", "participantEmails", "participantNames",
+        "status", "notes", "reminderSent", "agenda", "recordingUrl"];
       const update: Record<string, any> = {};
       for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
-      const meeting = await Meetings.findByIdAndUpdate(req.params.id, update, { new: true });
+
+      // Recompute endsAt if scheduledAt or duration changes
+      if (update.scheduledAt || update.durationMinutes) {
+        const existing = await QMeetingModel.findById(req.params.id);
+        if (existing) {
+          const start = update.scheduledAt ? new Date(update.scheduledAt) : existing.scheduledAt;
+          const dur = update.durationMinutes || existing.durationMinutes;
+          update.endsAt = new Date(start.getTime() + dur * 60 * 1000);
+        }
+      }
+
+      const meeting = await QMeetingModel.findByIdAndUpdate(req.params.id, update, { new: true });
       if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+
+      // Notify if status changed to live or completed
+      if (update.status === "live") {
+        const ids: string[] = (meeting.participantIds || []);
+        if (ids.length) broadcastToUsers(ids, { type: "qmeet_started", meetingId: req.params.id, title: meeting.title, meetingLink: meeting.meetingLink, message: `بدأ الاجتماع: ${meeting.title}` });
+      } else if (update.status === "completed") {
+        const ids: string[] = (meeting.participantIds || []);
+        if (ids.length) broadcastToUsers(ids, { type: "qmeet_ended", meetingId: req.params.id, title: meeting.title, message: `انتهى الاجتماع: ${meeting.title}` });
+      } else if (update.status === "cancelled") {
+        const ids: string[] = (meeting.participantIds || []);
+        if (ids.length) broadcastToUsers(ids, { type: "qmeet_cancelled", meetingId: req.params.id, title: meeting.title, message: `تم إلغاء الاجتماع: ${meeting.title}` });
+      }
+
       res.json(meeting);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // Delete meeting
-  app.delete("/api/qmeet/meetings/:id", requireManagement, async (req: any, res) => {
+  // DELETE /api/qmeet/meetings/:id
+  app.delete("/api/qmeet/meetings/:id", requireManagement, async (req, res) => {
     try {
-      const Meetings = MeetingModel();
-      await Meetings.findByIdAndDelete(req.params.id);
-      const Feedback = FeedbackModel();
-      const Reports = ReportModel();
-      await Feedback.deleteMany({ meetingId: req.params.id });
-      await Reports.deleteMany({ meetingId: req.params.id });
+      await QMeetingModel.findByIdAndDelete(req.params.id);
+      await QFeedbackModel.deleteMany({ meetingId: req.params.id });
+      await QReportModel.deleteMany({ meetingId: req.params.id });
       res.json({ message: "تم الحذف" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // Send invites for a meeting
+  // POST /api/qmeet/meetings/:id/send-invites
   app.post("/api/qmeet/meetings/:id/send-invites", requireManagement, async (req: any, res) => {
     try {
-      const Meetings = MeetingModel();
-      const meeting = await Meetings.findById(req.params.id);
+      const meeting = await QMeetingModel.findById(req.params.id);
       if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
-
       const emails: string[] = meeting.participantEmails || [];
       const names: string[] = meeting.participantNames || [];
       let sent = 0;
@@ -264,17 +297,21 @@ export function registerQMeetRoutes(app: Express) {
         });
         if (ok) sent++;
       }
+      // WebSocket nudge
+      const ids: string[] = (meeting.participantIds || []);
+      if (ids.length) broadcastToUsers(ids, { type: "qmeet_invited", meetingId: req.params.id, title: meeting.title, scheduledAt: meeting.scheduledAt, meetingLink: meeting.meetingLink, message: `دعوة اجتماع: ${meeting.title}` });
+
       res.json({ sent, total: emails.length });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // ── Feedback ────────────────────────────────────────────────────────
+  // ── Feedback ──────────────────────────────────────────────────────────────
+
   app.get("/api/qmeet/meetings/:id/feedback", requireAuth, async (req, res) => {
     try {
-      const Feedback = FeedbackModel();
-      const items = await Feedback.find({ meetingId: req.params.id }).sort({ createdAt: -1 });
+      const items = await QFeedbackModel.find({ meetingId: req.params.id }).sort({ createdAt: -1 });
       res.json(items);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -283,17 +320,16 @@ export function registerQMeetRoutes(app: Express) {
 
   app.post("/api/qmeet/meetings/:id/feedback", requireAuth, async (req: any, res) => {
     try {
-      const Feedback = FeedbackModel();
       const { rating, comment } = req.body;
       if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: "التقييم مطلوب (1-5)" });
-      const existing = await Feedback.findOne({ meetingId: req.params.id, fromUserId: String(req.user._id) });
+      const uid = String(req.user._id || req.user.id);
+      const existing = await QFeedbackModel.findOne({ meetingId: req.params.id, fromUserId: uid });
       if (existing) return res.status(400).json({ message: "سبق تقديم تقييمك" });
-      const fb = await Feedback.create({
+      const fb = await QFeedbackModel.create({
         meetingId: req.params.id,
-        fromUserId: String(req.user._id),
+        fromUserId: uid,
         fromUserName: req.user.fullName || req.user.username,
-        rating,
-        comment: comment || "",
+        rating, comment: comment || "",
       });
       res.status(201).json(fb);
     } catch (err: any) {
@@ -301,11 +337,11 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
-  // ── Reports ─────────────────────────────────────────────────────────
+  // ── Reports ───────────────────────────────────────────────────────────────
+
   app.get("/api/qmeet/meetings/:id/reports", requireAuth, async (req, res) => {
     try {
-      const Reports = ReportModel();
-      const items = await Reports.find({ meetingId: req.params.id }).sort({ createdAt: -1 });
+      const items = await QReportModel.find({ meetingId: req.params.id }).sort({ createdAt: -1 });
       res.json(items);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -314,15 +350,14 @@ export function registerQMeetRoutes(app: Express) {
 
   app.post("/api/qmeet/meetings/:id/reports", requireAuth, async (req: any, res) => {
     try {
-      const Reports = ReportModel();
       const { summary, actionItems, attendeesCount, duration, content } = req.body;
       if (!summary) return res.status(400).json({ message: "ملخص التقرير مطلوب" });
-      const report = await Reports.create({
+      const uid = String(req.user._id || req.user.id);
+      const report = await QReportModel.create({
         meetingId: req.params.id,
-        authorId: String(req.user._id),
+        authorId: uid,
         authorName: req.user.fullName || req.user.username,
-        summary,
-        actionItems: actionItems || [],
+        summary, actionItems: actionItems || [],
         attendeesCount: attendeesCount || 0,
         duration: duration || 0,
         content: content || "",
@@ -335,51 +370,66 @@ export function registerQMeetRoutes(app: Express) {
 
   app.delete("/api/qmeet/reports/:id", requireManagement, async (req, res) => {
     try {
-      const Reports = ReportModel();
-      await Reports.findByIdAndDelete(req.params.id);
+      await QReportModel.findByIdAndDelete(req.params.id);
       res.json({ message: "تم حذف التقرير" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // ── Stats ────────────────────────────────────────────────────────────
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
   app.get("/api/qmeet/stats", requireManagement, async (_req, res) => {
     try {
-      const Meetings = MeetingModel();
-      const Feedback = FeedbackModel();
-      const Reports = ReportModel();
-
-      const [total, scheduled, completed, cancelled, feedbackCount, reportCount] = await Promise.all([
-        Meetings.countDocuments(),
-        Meetings.countDocuments({ status: "scheduled" }),
-        Meetings.countDocuments({ status: "completed" }),
-        Meetings.countDocuments({ status: "cancelled" }),
-        Feedback.countDocuments(),
-        Reports.countDocuments(),
+      const [total, scheduled, live, completed, cancelled, feedbackCount, reportCount, feedbacks] = await Promise.all([
+        QMeetingModel.countDocuments(),
+        QMeetingModel.countDocuments({ status: "scheduled" }),
+        QMeetingModel.countDocuments({ status: "live" }),
+        QMeetingModel.countDocuments({ status: "completed" }),
+        QMeetingModel.countDocuments({ status: "cancelled" }),
+        QFeedbackModel.countDocuments(),
+        QReportModel.countDocuments(),
+        QFeedbackModel.find({}, { rating: 1 }),
       ]);
-
-      const feedbacks = await Feedback.find({}, { rating: 1 });
       const avgRating = feedbacks.length
-        ? (feedbacks.reduce((s, f) => s + f.rating, 0) / feedbacks.length).toFixed(1)
+        ? (feedbacks.reduce((s: number, f: any) => s + f.rating, 0) / feedbacks.length).toFixed(1)
         : "0";
-
-      res.json({ total, scheduled, completed, cancelled, feedbackCount, reportCount, avgRating });
+      res.json({ total, scheduled, live, completed, cancelled, feedbackCount, reportCount, avgRating });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  // ── Get all clients for participant selection ───────────────────────
+  // ── Clients list for participant picker ───────────────────────────────────
+
   app.get("/api/qmeet/clients", requireManagement, async (_req, res) => {
     try {
-      const UserModel = mongoose.models.User || mongoose.model("User");
-      const clients = await UserModel.find({ role: "client" }, { _id: 1, fullName: 1, email: 1, username: 1 }).limit(200);
+      const { UserModel } = await import("./models");
+      const clients = await UserModel.find(
+        {},
+        { _id: 1, fullName: 1, email: 1, username: 1, role: 1, avatarUrl: 1 }
+      ).limit(500);
       res.json(clients);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  console.log("[QMeet] Routes registered");
+  // ── Upcoming meetings for a user ──────────────────────────────────────────
+
+  app.get("/api/qmeet/upcoming", requireAuth, async (req: any, res) => {
+    try {
+      const uid = String(req.user._id || req.user.id);
+      const isManagement = ["admin", "manager"].includes(req.user.role);
+      const filter: any = isManagement
+        ? { status: { $in: ["scheduled", "live"] } }
+        : { participantIds: uid, status: { $in: ["scheduled", "live"] } };
+      const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: 1 }).limit(5);
+      res.json(meetings);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  console.log("[QMeet] Routes registered (main MongoDB)");
 }

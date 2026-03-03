@@ -10,6 +10,37 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 3, 2026 - Session 32)
+
+### QMeet — ترحيل كامل إلى MongoDB الرئيسي + تحسينات شاملة
+
+**المشكلة المُصلحة:** كانت QMeet تستخدم اتصال MongoDB منفصل (`cluster0.ul0t5m5`) فاشل. تم الترحيل الكامل.
+
+**التغييرات في `server/models.ts`:**
+- أضيفت 3 موديلات QMeet مباشرةً: `QMeetingModel`, `QFeedbackModel`, `QReportModel`
+- تستخدم الآن اتصال Mongoose الرئيسي (`qiroxsystem.ekvjdkj`)
+- حقل `agenda[]` + `endsAt` + `reminder24hSent` مدمجة في المخطط
+
+**إعادة كتابة كاملة لـ `server/qmeet.ts`:**
+- حذف `connectQMeetDB()` نهائياً، استبدله `startQMeetScheduler()`
+- Smart Scheduler (كل 60 ثانية) يعمل تلقائياً:
+  - `scheduled → live` عند الموعد تلقائياً
+  - `live → completed` عند انتهاء المدة تلقائياً
+  - إشعارات WebSocket للمشاركين عند كل تغيير حالة
+  - تذكير بالبريد بعد دقيقتين + تذكير 24 ساعة مسبقاً
+- نقطة نهاية `/api/qmeet/upcoming` للاجتماعات القادمة
+
+**تحديث `server/index.ts`:**
+- السطر 9: `connectQMeetDB` → `startQMeetScheduler`
+- السطر 130: حذف `await connectQMeetDB()` + إضافة `startQMeetScheduler()`
+
+**إعادة تصميم `client/src/pages/AdminQMeet.tsx`:**
+- واجهة احترافية كاملة مع Header بـ gradient + إحصاءات
+- بطاقات الاجتماعات مع شريط أخضر متحرك للمباشر
+- حوار إنشاء متكامل: جدول أعمال + بحث عملاء + إضافة يدوية
+- فلترة بالحالة + بحث نصي
+- أزرار: بدء البث / إنهاء / إلغاء / حذف / إرسال دعوة
+
 ## Latest Changes (Mar 3, 2026 - Session 31)
 
 ### نظام الترقية + المستثمرين + إعدادات النظام (4 أنظمة جديدة)

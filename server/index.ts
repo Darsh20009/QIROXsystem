@@ -6,7 +6,7 @@ import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
 import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers } from "./ws";
 import { initCronJobs } from "./cron";
-import { connectQMeetDB, registerQMeetRoutes } from "./qmeet";
+import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 
 const app = express();
 const httpServer = createServer(app);
@@ -127,9 +127,9 @@ app.use((req, res, next) => {
 
 (async () => {
   await connectToDatabase();
-  await connectQMeetDB();
   await registerRoutes(httpServer, app);
   registerQMeetRoutes(app);
+  startQMeetScheduler();
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

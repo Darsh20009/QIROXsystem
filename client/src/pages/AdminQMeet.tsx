@@ -4,35 +4,41 @@ import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Calendar, Users, Clock, ExternalLink, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
-  AlertCircle, Copy, RefreshCw
+  Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
+  Loader2, CircleDot, RefreshCw
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
 
-const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
-  scheduled: { label: "مجدول", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", icon: Calendar },
-  live: { label: "يبث الآن", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300", icon: Play },
-  completed: { label: "منتهي", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", icon: CheckCircle },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
+const STATUS = {
+  scheduled: { label: "مجدول", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300", dot: "bg-blue-500", icon: Calendar },
+  live:      { label: "مباشر الآن", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300", dot: "bg-green-500", icon: Radio },
+  completed: { label: "منتهي", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", dot: "bg-gray-400", icon: CheckCircle },
+  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300", dot: "bg-red-500", icon: XCircle },
 };
 
-const TYPE_MAP: Record<string, string> = {
-  internal: "اجتماع داخلي",
-  client_individual: "مع عميل بعينه",
-  client_all: "مع جميع العملاء",
-  consultation: "استشارة",
+const TYPES = {
+  internal: { label: "داخلي", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  client_individual: { label: "عميل محدد", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300" },
+  client_all: { label: "جميع العملاء", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
+  consultation: { label: "استشارة", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" },
+};
+
+const EMPTY_FORM = {
+  title: "", description: "", scheduledAt: "", durationMinutes: "60",
+  type: "client_individual", notes: "", agenda: [] as string[],
+  participantIds: [] as string[], participantEmails: [] as string[], participantNames: [] as string[],
+  emailInput: "", nameInput: "", agendaInput: "",
 };
 
 export default function AdminQMeet() {
@@ -42,44 +48,23 @@ export default function AdminQMeet() {
   const qc = useQueryClient();
   const [openCreate, setOpenCreate] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [clientSearch, setClientSearch] = useState("");
 
-  // Form state
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    scheduledAt: "",
-    durationMinutes: "60",
-    type: "client_individual",
-    notes: "",
-    participantIds: [] as string[],
-    participantEmails: [] as string[],
-    participantNames: [] as string[],
-    emailInput: "",
-    nameInput: "",
-  });
-
-  const { data: stats, isLoading: statsLoading } = useQuery<any>({
-    queryKey: ["/api/qmeet/stats"],
-  });
-
-  const { data: meetings, isLoading: meetingsLoading } = useQuery<any[]>({
-    queryKey: ["/api/qmeet/meetings"],
-  });
-
-  const { data: clients } = useQuery<any[]>({
-    queryKey: ["/api/qmeet/clients"],
-  });
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({ queryKey: ["/api/qmeet/stats"] });
+  const { data: meetings = [], isLoading: meetingsLoading, refetch } = useQuery<any[]>({ queryKey: ["/api/qmeet/meetings"] });
+  const { data: clients = [] } = useQuery<any[]>({ queryKey: ["/api/qmeet/clients"], enabled: openCreate });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/qmeet/meetings", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
       qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
-      toast({ title: "تم إنشاء الاجتماع وإرسال الدعوات بالبريد" });
-      setOpenCreate(false);
-      resetForm();
+      toast({ title: "✅ تم إنشاء الاجتماع وإرسال الدعوات" });
+      setOpenCreate(false); setForm(EMPTY_FORM);
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "خطأ في الإنشاء", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -89,12 +74,10 @@ export default function AdminQMeet() {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
       toast({ title: "تم حذف الاجتماع" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/qmeet/meetings/${id}`, { status }),
+    mutationFn: ({ id, status }: { id: string; status: string }) => apiRequest("PATCH", `/api/qmeet/meetings/${id}`, { status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
       qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
@@ -103,398 +86,401 @@ export default function AdminQMeet() {
 
   const sendInvitesMutation = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/qmeet/meetings/${id}/send-invites`, {}),
-    onSuccess: (data: any) => {
-      toast({ title: `تم إرسال ${data.sent} دعوة من ${data.total}` });
-    },
+    onSuccess: (data: any) => toast({ title: `✅ تم إرسال ${data.sent} دعوة من ${data.total}` }),
   });
 
-  function resetForm() {
-    setForm({ title: "", description: "", scheduledAt: "", durationMinutes: "60", type: "client_individual", notes: "", participantIds: [], participantEmails: [], participantNames: [], emailInput: "", nameInput: "" });
-  }
+  const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }));
 
-  function addParticipant() {
+  const addParticipant = () => {
     const email = form.emailInput.trim();
-    const name = form.nameInput.trim();
     if (!email) return;
-    if (form.participantEmails.includes(email)) {
-      toast({ title: "البريد مضاف مسبقاً", variant: "destructive" });
-      return;
-    }
-    setForm(f => ({
-      ...f,
-      participantEmails: [...f.participantEmails, email],
-      participantNames: [...f.participantNames, name || email.split("@")[0]],
-      emailInput: "",
-      nameInput: "",
-    }));
-  }
+    if (form.participantEmails.includes(email)) { toast({ title: "البريد مضاف", variant: "destructive" }); return; }
+    setForm(f => ({ ...f, participantEmails: [...f.participantEmails, email], participantNames: [...f.participantNames, f.nameInput.trim() || email.split("@")[0]], emailInput: "", nameInput: "" }));
+  };
 
-  function addClientAsParticipant(client: any) {
-    if (form.participantEmails.includes(client.email)) return;
-    setForm(f => ({
-      ...f,
-      participantIds: [...f.participantIds, String(client._id)],
-      participantEmails: [...f.participantEmails, client.email],
-      participantNames: [...f.participantNames, client.fullName || client.username],
-    }));
-  }
+  const addClient = (c: any) => {
+    if (form.participantEmails.includes(c.email)) return;
+    setForm(f => ({ ...f, participantIds: [...f.participantIds, String(c._id || c.id)], participantEmails: [...f.participantEmails, c.email], participantNames: [...f.participantNames, c.fullName || c.username] }));
+  };
 
-  function addAllClients() {
-    if (!clients) return;
-    const ids: string[] = [];
-    const emails: string[] = [];
-    const names: string[] = [];
-    for (const c of clients) {
-      if (!form.participantEmails.includes(c.email)) {
-        ids.push(String(c._id));
-        emails.push(c.email);
-        names.push(c.fullName || c.username);
-      }
-    }
-    setForm(f => ({
-      ...f,
-      participantIds: [...f.participantIds, ...ids],
-      participantEmails: [...f.participantEmails, ...emails],
-      participantNames: [...f.participantNames, ...names],
-    }));
-    toast({ title: `تمت إضافة ${emails.length} عميل` });
-  }
+  const addAllClients = () => {
+    const toAdd = clients.filter(c => !form.participantEmails.includes(c.email));
+    if (!toAdd.length) return;
+    setForm(f => ({ ...f, participantIds: [...f.participantIds, ...toAdd.map(c => String(c._id || c.id))], participantEmails: [...f.participantEmails, ...toAdd.map(c => c.email)], participantNames: [...f.participantNames, ...toAdd.map(c => c.fullName || c.username)] }));
+    toast({ title: `تمت إضافة ${toAdd.length} شخص` });
+  };
 
-  function removeParticipant(idx: number) {
-    setForm(f => ({
-      ...f,
-      participantIds: f.participantIds.filter((_, i) => i !== idx),
-      participantEmails: f.participantEmails.filter((_, i) => i !== idx),
-      participantNames: f.participantNames.filter((_, i) => i !== idx),
-    }));
-  }
+  const removeParticipant = (i: number) => {
+    setForm(f => ({ ...f, participantIds: f.participantIds.filter((_, j) => j !== i), participantEmails: f.participantEmails.filter((_, j) => j !== i), participantNames: f.participantNames.filter((_, j) => j !== i) }));
+  };
 
-  function handleSubmit() {
-    if (!form.title.trim() || !form.scheduledAt) {
-      toast({ title: "العنوان والموعد مطلوبان", variant: "destructive" });
-      return;
-    }
+  const addAgenda = () => {
+    const v = form.agendaInput.trim(); if (!v) return;
+    setForm(f => ({ ...f, agenda: [...f.agenda, v], agendaInput: "" }));
+  };
+
+  const handleCreate = () => {
+    if (!form.title.trim() || !form.scheduledAt) { toast({ title: "العنوان والموعد مطلوبان", variant: "destructive" }); return; }
     createMutation.mutate({
-      title: form.title,
-      description: form.description,
-      scheduledAt: form.scheduledAt,
-      durationMinutes: parseInt(form.durationMinutes) || 60,
-      type: form.type,
-      notes: form.notes,
-      participantIds: form.participantIds,
-      participantEmails: form.participantEmails,
-      participantNames: form.participantNames,
+      title: form.title, description: form.description,
+      scheduledAt: form.scheduledAt, durationMinutes: parseInt(form.durationMinutes) || 60,
+      type: form.type, notes: form.notes, agenda: form.agenda,
+      participantIds: form.participantIds, participantEmails: form.participantEmails, participantNames: form.participantNames,
     });
-  }
+  };
 
-  function copyLink(link: string) {
-    navigator.clipboard.writeText(link);
-    toast({ title: "تم نسخ الرابط" });
-  }
+  const copyLink = (link: string) => { navigator.clipboard.writeText(link); toast({ title: "تم نسخ الرابط" }); };
 
-  const filteredMeetings = meetings?.filter(m => filter === "all" || m.status === filter) || [];
+  const filteredMeetings = meetings.filter(m => {
+    if (filter !== "all" && m.status !== filter) return false;
+    if (search && !m.title.toLowerCase().includes(search.toLowerCase()) && !m.hostName?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
   const isManagement = user && ["admin", "manager"].includes(user.role);
-  if (!isManagement) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-lg font-bold">للإدارة فقط</p>
-        </div>
-      </div>
-    );
-  }
+
+  const filteredClients = clients.filter(c => !clientSearch || (c.fullName || "").toLowerCase().includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-black dark:bg-white flex items-center justify-center">
-            <Video className="w-5 h-5 text-white dark:text-black" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-black dark:text-white tracking-tight">QMeet</h1>
-            <p className="text-xs text-gray-500">نظام الاجتماعات الذكي</p>
-          </div>
-        </div>
-        <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-          <DialogTrigger asChild>
-            <Button className="bg-black hover:bg-black/80 text-white dark:bg-white dark:text-black dark:hover:bg-white/80 gap-2" data-testid="button-create-meeting">
-              <Plus className="w-4 h-4" />
-              اجتماع جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="text-right">إنشاء اجتماع جديد</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label>عنوان الاجتماع *</Label>
-                  <Input data-testid="input-meeting-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="مثال: اجتماع مراجعة المشروع" className="mt-1" />
-                </div>
-                <div>
-                  <Label>نوع الاجتماع</Label>
-                  <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="mt-1" data-testid="select-meeting-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client_individual">مع عميل بعينه</SelectItem>
-                      <SelectItem value="client_all">مع جميع العملاء</SelectItem>
-                      <SelectItem value="internal">اجتماع داخلي</SelectItem>
-                      <SelectItem value="consultation">استشارة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>المدة (بالدقيقة)</Label>
-                  <Input data-testid="input-meeting-duration" type="number" value={form.durationMinutes} onChange={e => setForm(f => ({ ...f, durationMinutes: e.target.value }))} className="mt-1" min={15} max={480} />
-                </div>
-                <div className="col-span-2">
-                  <Label>موعد الاجتماع *</Label>
-                  <Input data-testid="input-meeting-date" type="datetime-local" value={form.scheduledAt} onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))} className="mt-1" />
-                </div>
-                <div className="col-span-2">
-                  <Label>وصف الاجتماع</Label>
-                  <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="ملاحظات أو وصف مختصر" className="mt-1 h-20" />
-                </div>
-                <div className="col-span-2">
-                  <Label>ملاحظات داخلية</Label>
-                  <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="ملاحظات للفريق الداخلي فقط" className="mt-1 h-16" />
-                </div>
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-4 md:p-6" dir="rtl">
+      <PageGraphics variant="dashboard" />
+      <div className="max-w-5xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="relative bg-gradient-to-bl from-blue-600/10 via-cyan-500/5 to-transparent border border-black/[0.07] dark:border-white/[0.07] rounded-3xl p-6 overflow-hidden">
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-8 right-8 w-32 h-32 bg-gradient-to-br from-purple-500/10 rounded-full blur-2xl" />
+          <div className="relative flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Video className="w-7 h-7 text-white" />
               </div>
-
-              {/* Participants Section */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <Label className="font-bold">المشاركون ({form.participantEmails.length})</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addAllClients} className="text-xs gap-1" data-testid="button-add-all-clients">
-                    <Users className="w-3 h-3" />
-                    إضافة كل العملاء
-                  </Button>
-                </div>
-
-                {/* Manual email add */}
-                <div className="flex gap-2 mb-3">
-                  <Input data-testid="input-participant-email" value={form.emailInput} onChange={e => setForm(f => ({ ...f, emailInput: e.target.value }))} placeholder="البريد الإلكتروني" className="flex-1 text-sm" />
-                  <Input data-testid="input-participant-name" value={form.nameInput} onChange={e => setForm(f => ({ ...f, nameInput: e.target.value }))} placeholder="الاسم (اختياري)" className="flex-1 text-sm" />
-                  <Button type="button" size="sm" onClick={addParticipant} data-testid="button-add-participant">إضافة</Button>
-                </div>
-
-                {/* Client quick-select */}
-                {clients && clients.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-500 mb-2">إضافة سريعة من العملاء:</p>
-                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                      {clients.slice(0, 20).map(c => (
-                        <button key={c._id} type="button" onClick={() => addClientAsParticipant(c)}
-                          className={`text-xs px-2 py-1 rounded-full border transition-colors ${form.participantEmails.includes(c.email) ? "bg-black text-white border-black" : "border-gray-300 hover:border-black dark:border-gray-600"}`}
-                          data-testid={`button-client-${c._id}`}>
-                          {c.fullName || c.username}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Participant list */}
-                {form.participantEmails.length > 0 && (
-                  <div className="space-y-1 max-h-28 overflow-y-auto">
-                    {form.participantEmails.map((email, i) => (
-                      <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-sm">
-                        <span className="text-gray-700 dark:text-gray-300">{form.participantNames[i]} — <span className="text-gray-400">{email}</span></span>
-                        <button type="button" onClick={() => removeParticipant(i)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => { setOpenCreate(false); resetForm(); }}>إلغاء</Button>
-                <Button type="button" onClick={handleSubmit} disabled={createMutation.isPending} data-testid="button-submit-meeting">
-                  {createMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء وإرسال الدعوات"}
-                </Button>
+              <div>
+                <h1 className="text-2xl font-black text-black dark:text-white">QMeet</h1>
+                <p className="text-sm text-black/40 dark:text-white/40">نظام الاجتماعات الذكي المدمج</p>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2" data-testid="btn-refresh">
+                <RefreshCw className="w-3.5 h-3.5" />
+              </Button>
+              {isManagement && (
+                <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
+                  <Plus className="w-4 h-4" /> اجتماع جديد
+                </Button>
+              )}
+            </div>
+          </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {statsLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          {/* Stats Row */}
+          {isManagement && (
+            <div className="relative mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "إجمالي", value: stats?.total || 0, icon: Video, color: "text-blue-500" },
+                { label: "مجدولة", value: stats?.scheduled || 0, icon: Calendar, color: "text-blue-500" },
+                { label: "مباشرة", value: stats?.live || 0, icon: Radio, color: "text-green-500" },
+                { label: "متوسط التقييم", value: stats?.avgRating || "—", icon: Star, color: "text-amber-500" },
+              ].map(stat => (
+                <div key={stat.label} className="bg-white/60 dark:bg-gray-900/60 backdrop-blur border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4" data-testid={`stat-${stat.label}`}>
+                  <stat.icon className={`w-4 h-4 ${stat.color} mb-2`} />
+                  <p className="text-xl font-black text-black dark:text-white">{stat.value}</p>
+                  <p className="text-xs text-black/40 dark:text-white/40">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Filter + Search */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
+            <Input className="pr-9" value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث في الاجتماعات..." data-testid="input-search" />
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {[
+              { key: "all", label: "الكل" },
+              { key: "scheduled", label: "مجدولة" },
+              { key: "live", label: "مباشرة" },
+              { key: "completed", label: "منتهية" },
+              { key: "cancelled", label: "ملغاة" },
+            ].map(tab => (
+              <button key={tab.key} onClick={() => setFilter(tab.key)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${filter === tab.key ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+                data-testid={`tab-${tab.key}`}>
+                {tab.key === "live" && stats?.live > 0 && <span className="inline-block w-2 h-2 rounded-full bg-green-500 ml-1.5 animate-pulse" />}
+                {tab.label}
+                {tab.key === "all" && meetings.length > 0 && <span className="ml-1.5 text-xs text-black/30 dark:text-white/30">({meetings.length})</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Meetings List */}
+        {meetingsLoading ? (
+          <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
+        ) : filteredMeetings.length === 0 ? (
+          <div className="text-center py-20">
+            <Video className="w-12 h-12 mx-auto mb-3 text-black/10 dark:text-white/10" />
+            <p className="font-medium text-black/40 dark:text-white/40">{search || filter !== "all" ? "لا توجد نتائج" : "لا توجد اجتماعات — أنشئ أول اجتماع"}</p>
+          </div>
         ) : (
-          <>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Video className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-500">الكل</span>
-                </div>
-                <p className="text-2xl font-black" data-testid="stat-total">{stats?.total || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs text-gray-500">مجدولة</span>
-                </div>
-                <p className="text-2xl font-black text-blue-600" data-testid="stat-scheduled">{stats?.scheduled || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs text-gray-500">متوسط التقييم</span>
-                </div>
-                <p className="text-2xl font-black text-amber-600" data-testid="stat-rating">{stats?.avgRating || "—"}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-green-400" />
-                  <span className="text-xs text-gray-500">التقارير</span>
-                </div>
-                <p className="text-2xl font-black text-green-600" data-testid="stat-reports">{stats?.reportCount || 0}</p>
-              </CardContent>
-            </Card>
-          </>
+          <div className="space-y-3">
+            <AnimatePresence>
+              {filteredMeetings.map(meeting => {
+                const statusInfo = STATUS[meeting.status as keyof typeof STATUS] || STATUS.scheduled;
+                const typeInfo = TYPES[meeting.type as keyof typeof TYPES] || TYPES.client_individual;
+                const StatusIcon = statusInfo.icon;
+                const scheduledDate = meeting.scheduledAt ? new Date(meeting.scheduledAt) : null;
+                const timeAgo = scheduledDate ? formatDistanceToNow(scheduledDate, { addSuffix: true, locale: ar }) : "";
+                const isPastMeeting = scheduledDate && isPast(scheduledDate);
+
+                return (
+                  <motion.div key={meeting._id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                    className={`group relative rounded-2xl border transition-all overflow-hidden ${meeting.status === "live" ? "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"}`}
+                    data-testid={`card-meeting-${meeting._id}`}>
+
+                    {/* Live pulse bar */}
+                    {meeting.status === "live" && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 animate-pulse" />}
+
+                    <div className="p-5">
+                      <div className="flex items-start gap-4">
+                        {/* Status dot + icon */}
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${meeting.status === "live" ? "bg-green-100 dark:bg-green-900/30" : meeting.status === "scheduled" ? "bg-blue-100 dark:bg-blue-900/30" : "bg-black/5 dark:bg-white/5"}`}>
+                          <StatusIcon className={`w-5 h-5 ${meeting.status === "live" ? "text-green-600" : meeting.status === "scheduled" ? "text-blue-600" : "text-black/40 dark:text-white/40"}`} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <h3 className="font-bold text-black dark:text-white text-base">{meeting.title}</h3>
+                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                              {meeting.status === "live" && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                              {statusInfo.label}
+                            </span>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>{typeInfo.label}</span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-3 text-xs text-black/40 dark:text-white/40">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {scheduledDate ? format(scheduledDate, "EEEE d MMMM — HH:mm", { locale: ar }) : "—"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {meeting.durationMinutes} دقيقة
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" />
+                              {(meeting.participantEmails || []).length} مشارك
+                            </span>
+                            <span className="text-black/25 dark:text-white/25">{timeAgo}</span>
+                          </div>
+
+                          {meeting.description && <p className="text-xs text-black/40 dark:text-white/40 mt-1.5 truncate">{meeting.description}</p>}
+
+                          {/* Agenda preview */}
+                          {(meeting.agenda || []).length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {meeting.agenda.slice(0, 3).map((item: string, i: number) => (
+                                <span key={i} className="text-[10px] bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full">{item}</span>
+                              ))}
+                              {meeting.agenda.length > 3 && <span className="text-[10px] text-black/30 dark:text-white/30">+{meeting.agenda.length - 3} بند</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                          <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${meeting.status === "live" ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
+                            data-testid={`button-join-${meeting._id}`}>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            {meeting.status === "live" ? "انضم مباشرة" : "انضم"}
+                          </a>
+                          <button onClick={() => copyLink(meeting.meetingLink)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-black/30 hover:text-black/70 dark:text-white/30 dark:hover:text-white/70 transition-colors" title="نسخ الرابط" data-testid={`button-copy-${meeting._id}`}>
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          {isManagement && (
+                            <>
+                              <button onClick={() => sendInvitesMutation.mutate(meeting._id)} className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-black/30 hover:text-blue-600 transition-colors" title="إعادة إرسال الدعوات" data-testid={`button-resend-${meeting._id}`}>
+                                <Send className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-black/30 hover:text-black/70 dark:text-white/30 dark:hover:text-white/70 transition-colors" title="التفاصيل" data-testid={`button-detail-${meeting._id}`}>
+                                <BarChart3 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status actions */}
+                      {isManagement && (
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-black/[0.05] dark:border-white/[0.05] flex-wrap">
+                          {meeting.status === "scheduled" && (
+                            <>
+                              <Button size="sm" className="gap-1.5 bg-green-500 hover:bg-green-600 text-white border-0 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "live" })} disabled={statusMutation.isPending}>
+                                <Play className="w-3 h-3" /> بدء البث
+                              </Button>
+                              <Button size="sm" variant="outline" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "cancelled" })}>
+                                <XCircle className="w-3 h-3" /> إلغاء
+                              </Button>
+                            </>
+                          )}
+                          {meeting.status === "live" && (
+                            <Button size="sm" className="gap-1.5 bg-black hover:bg-black/80 text-white border-0 h-7 text-xs" onClick={() => statusMutation.mutate({ id: meeting._id, status: "completed" })}>
+                              <CheckCircle className="w-3 h-3" /> إنهاء الاجتماع
+                            </Button>
+                          )}
+                          {["scheduled", "cancelled"].includes(meeting.status) && (
+                            <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50 h-7 text-xs mr-auto" onClick={() => { if (confirm("هل تريد حذف هذا الاجتماع؟")) deleteMutation.mutate(meeting._id); }} data-testid={`button-delete-${meeting._id}`}>
+                              <Trash2 className="w-3 h-3" /> حذف
+                            </Button>
+                          )}
+                          {meeting.status === "completed" && (
+                            <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                              <FileText className="w-3 h-3" /> عرض التقرير
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         )}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-        {[
-          { key: "all", label: "الكل" },
-          { key: "scheduled", label: "مجدولة" },
-          { key: "live", label: "يبث الآن" },
-          { key: "completed", label: "منتهية" },
-          { key: "cancelled", label: "ملغاة" },
-        ].map(tab => (
-          <button key={tab.key} onClick={() => setFilter(tab.key)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${filter === tab.key ? "bg-black text-white dark:bg-white dark:text-black" : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700"}`}
-            data-testid={`tab-${tab.key}`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Meetings list */}
-      {meetingsLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-        </div>
-      ) : filteredMeetings.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <Video className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">لا توجد اجتماعات</p>
-          <p className="text-sm mt-1">أنشئ أول اجتماع الآن</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredMeetings.map(meeting => {
-            const statusInfo = STATUS_MAP[meeting.status] || STATUS_MAP.scheduled;
-            const StatusIcon = statusInfo.icon;
-            return (
-              <div key={meeting._id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow p-4" data-testid={`card-meeting-${meeting._id}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-bold text-black dark:text-white truncate">{meeting.title}</h3>
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {statusInfo.label}
-                      </span>
-                      <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                        {TYPE_MAP[meeting.type] || meeting.type}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {meeting.scheduledAt ? format(new Date(meeting.scheduledAt), "EEEE d MMMM yyyy — HH:mm", { locale: ar }) : "—"}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {meeting.durationMinutes} دقيقة
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        {(meeting.participantEmails || []).length} مشارك
-                      </span>
-                    </div>
-                    {meeting.description && (
-                      <p className="text-xs text-gray-400 mt-1 truncate">{meeting.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {/* Join */}
-                    <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 bg-black text-white dark:bg-white dark:text-black text-xs font-bold px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
-                      data-testid={`button-join-${meeting._id}`}>
-                      <ExternalLink className="w-3 h-3" />
-                      انضم
-                    </a>
-                    {/* Copy link */}
-                    <button onClick={() => copyLink(meeting.meetingLink)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-700" title="نسخ الرابط" data-testid={`button-copy-${meeting._id}`}>
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                    {/* Send invites */}
-                    <button onClick={() => sendInvitesMutation.mutate(meeting._id)} disabled={sendInvitesMutation.isPending}
-                      className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-400 hover:text-blue-600" title="إعادة إرسال الدعوات" data-testid={`button-resend-${meeting._id}`}>
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
-                    {/* Details */}
-                    <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-700" title="التفاصيل" data-testid={`button-detail-${meeting._id}`}>
-                      <BarChart3 className="w-3.5 h-3.5" />
-                    </button>
-                    {/* Status change */}
-                    {meeting.status === "scheduled" && (
-                      <>
-                        <button onClick={() => statusMutation.mutate({ id: meeting._id, status: "live" })}
-                          className="p-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-400 hover:text-green-600" title="بدء البث">
-                          <Play className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => statusMutation.mutate({ id: meeting._id, status: "cancelled" })}
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600" title="إلغاء">
-                          <XCircle className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    )}
-                    {meeting.status === "live" && (
-                      <button onClick={() => statusMutation.mutate({ id: meeting._id, status: "completed" })}
-                        className="p-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-400 hover:text-green-600" title="إنهاء الاجتماع">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {/* Delete */}
-                    <button onClick={() => { if (confirm("حذف هذا الاجتماع؟")) deleteMutation.mutate(meeting._id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600" title="حذف" data-testid={`button-delete-${meeting._id}`}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Meeting link */}
-                <div className="mt-3 flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
-                  <Video className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-xs text-gray-400 truncate flex-1">{meeting.meetingLink}</span>
-                </div>
+      {/* Create Meeting Dialog */}
+      <Dialog open={openCreate} onOpenChange={v => { setOpenCreate(v); if (!v) setForm(EMPTY_FORM); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
+                <Video className="w-4 h-4 text-white" />
               </div>
-            );
-          })}
-        </div>
-      )}
+              إنشاء اجتماع جديد
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            {/* Title + Type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="label-xs">عنوان الاجتماع *</label>
+                <Input value={form.title} onChange={e => set("title", e.target.value)} placeholder="مثال: اجتماع مراجعة المشروع Q2" className="mt-1" data-testid="input-meeting-title" />
+              </div>
+              <div>
+                <label className="label-xs">نوع الاجتماع</label>
+                <select value={form.type} onChange={e => set("type", e.target.value)} className="w-full h-10 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-transparent text-sm text-black dark:text-white mt-1" data-testid="select-meeting-type">
+                  <option value="client_individual">مع عميل محدد</option>
+                  <option value="client_all">مع جميع العملاء</option>
+                  <option value="internal">اجتماع داخلي</option>
+                  <option value="consultation">استشارة</option>
+                </select>
+              </div>
+              <div>
+                <label className="label-xs">المدة (بالدقيقة)</label>
+                <Input type="number" value={form.durationMinutes} onChange={e => set("durationMinutes", e.target.value)} className="mt-1" min={15} max={480} data-testid="input-meeting-duration" />
+              </div>
+              <div className="col-span-2">
+                <label className="label-xs">موعد الاجتماع *</label>
+                <Input type="datetime-local" value={form.scheduledAt} onChange={e => set("scheduledAt", e.target.value)} className="mt-1" data-testid="input-meeting-date" />
+              </div>
+              <div className="col-span-2">
+                <label className="label-xs">وصف الاجتماع</label>
+                <Textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="ملاحظات أو وصف مختصر" className="mt-1 h-16" />
+              </div>
+              <div className="col-span-2">
+                <label className="label-xs">ملاحظات داخلية</label>
+                <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="للفريق الداخلي فقط" className="mt-1 h-14" />
+              </div>
+            </div>
+
+            {/* Agenda */}
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
+              <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><FileText className="w-4 h-4 text-cyan-500" /> جدول الأعمال</label>
+              <div className="flex gap-2">
+                <Input value={form.agendaInput} onChange={e => set("agendaInput", e.target.value)} onKeyDown={e => e.key === "Enter" && addAgenda()} placeholder="أضف بنداً..." />
+                <Button type="button" variant="outline" size="sm" onClick={addAgenda}>إضافة</Button>
+              </div>
+              {form.agenda.length > 0 && (
+                <div className="space-y-1">
+                  {form.agenda.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-lg px-3 py-1.5 text-sm">
+                      <span className="text-black/70 dark:text-white/70">• {item}</span>
+                      <button onClick={() => setForm(f => ({ ...f, agenda: f.agenda.filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Participants */}
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> المشاركون ({form.participantEmails.length})</label>
+                <Button type="button" variant="outline" size="sm" onClick={addAllClients} className="text-xs gap-1 h-7" data-testid="button-add-all-clients">
+                  <Users className="w-3 h-3" /> الكل
+                </Button>
+              </div>
+
+              {/* Manual add */}
+              <div className="flex gap-2">
+                <Input value={form.emailInput} onChange={e => set("emailInput", e.target.value)} onKeyDown={e => e.key === "Enter" && addParticipant()} placeholder="البريد الإلكتروني" className="flex-1 text-sm" data-testid="input-participant-email" />
+                <Input value={form.nameInput} onChange={e => set("nameInput", e.target.value)} placeholder="الاسم" className="flex-1 text-sm" data-testid="input-participant-name" />
+                <Button type="button" size="sm" onClick={addParticipant} data-testid="button-add-participant">إضافة</Button>
+              </div>
+
+              {/* Client search */}
+              {clients.length > 0 && (
+                <div>
+                  <div className="relative mb-2">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                    <Input className="pr-8 text-xs h-8" value={clientSearch} onChange={e => setClientSearch(e.target.value)} placeholder="بحث سريع بالمستخدمين..." />
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                    {filteredClients.slice(0, 30).map(c => (
+                      <button key={c._id || c.id} type="button" onClick={() => addClient(c)}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-all ${form.participantEmails.includes(c.email) ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 hover:border-black/25 dark:hover:border-white/25 text-black/60 dark:text-white/60"}`}
+                        data-testid={`button-client-${c._id || c.id}`}>
+                        {c.fullName || c.username}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Added list */}
+              {form.participantEmails.length > 0 && (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {form.participantEmails.map((email, i) => (
+                    <div key={i} className="flex items-center justify-between bg-black/[0.02] dark:bg-white/[0.02] rounded-xl px-3 py-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center text-[10px] font-bold text-blue-600">{(form.participantNames[i] || email)[0]?.toUpperCase()}</div>
+                        <span className="font-medium text-black dark:text-white">{form.participantNames[i]}</span>
+                        <span className="text-black/30 dark:text-white/30">{email}</span>
+                      </div>
+                      <button type="button" onClick={() => removeParticipant(i)} className="text-red-400 hover:text-red-600">✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => { setOpenCreate(false); setForm(EMPTY_FORM); }}>إلغاء</Button>
+              <Button type="button" onClick={handleCreate} disabled={createMutation.isPending} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white" data-testid="button-submit-meeting">
+                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {createMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء وإرسال الدعوات"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <style>{`.label-xs { display: block; font-size: 11px; color: rgba(0,0,0,0.4); margin-bottom: 4px; font-weight: 500; }.dark .label-xs { color: rgba(255,255,255,0.4); }`}</style>
     </div>
   );
 }
