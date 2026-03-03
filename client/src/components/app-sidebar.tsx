@@ -17,7 +17,7 @@ import {
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
-  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun
+  CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -100,6 +100,7 @@ export function AppSidebar() {
     { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", allowedRoles: MANAGEMENT_ROLES },
+    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", allowedRoles: MANAGEMENT_ROLES },
     { title: "MongoDB Atlas", icon: Database, url: "/admin/atlas", group: "admin", allowedRoles: MANAGEMENT_ROLES },

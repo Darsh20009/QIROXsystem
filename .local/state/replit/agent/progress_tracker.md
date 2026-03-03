@@ -29,3 +29,10 @@
 [x] 29. Add mobile CSS improvements (touch targets, font-size, safe-area, overflow)
 [x] 30. Improve SEO - add structured data (Organization + WebSite schema), better meta tags
 [x] 31. Fix admin panel header for mobile (compact layout, user avatar shortcut)
+[x] 32. Build QMeet — نظام الاجتماعات الكامل (server/qmeet.ts + AdminQMeet.tsx + AdminQMeetDetail.tsx)
+      - قاعدة بيانات منفصلة (mongodb+srv://Qmeet@cluster0.ul0t5m5.mongodb.net)
+      - Jitsi Meet للفيديو والصوت ومشاركة الشاشة والسبورة
+      - تقارير + فيدباك + إرسال دعوات بريدية تلقائية
+      - تذكير بريدي قبل الاجتماع بدقيقتين تلقائياً
+      - ربط مع نظام الاستشارات
+      - متاح للأدمن والمدير فقط

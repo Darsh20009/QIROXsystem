@@ -87,6 +87,8 @@ const AdminWallet = lazy(() => import("@/pages/AdminWallet"));
 const Systems = lazy(() => import("@/pages/Systems"));
 const ClientsGroup = lazy(() => import("@/pages/ClientsGroup"));
 const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
+const AdminQMeet = lazy(() => import("@/pages/AdminQMeet"));
+const AdminQMeetDetail = lazy(() => import("@/pages/AdminQMeetDetail"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio"];
 
 function PageLoader() {
@@ -162,6 +164,8 @@ function AdminRouter() {
         <Route path="/admin/receipts" component={AdminReceipts} />
         <Route path="/admin/receipt-print/:id" component={ReceiptPrint} />
         <Route path="/admin/consultations" component={AdminConsultation} />
+        <Route path="/admin/qmeet" component={AdminQMeet} />
+        <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
         <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
         <Route path="/admin/shipments" component={AdminShipments} />
         <Route path="/admin/cron-jobs" component={AdminCronJobs} />

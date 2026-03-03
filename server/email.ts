@@ -678,6 +678,58 @@ export async function sendShipmentUpdateEmail(to: string, clientName: string, da
   return sendEmail(to, clientName, `تحديث شحنة: ${data.productName} | QIROX`, html);
 }
 
+// ── QMeet Email Functions ────────────────────────────────────────────
+
+interface QMeetEmailData {
+  title: string;
+  scheduledAt: Date;
+  meetingLink: string;
+  hostName: string;
+  durationMinutes?: number;
+}
+
+export async function sendQMeetInviteEmail(to: string, name: string, data: QMeetEmailData): Promise<boolean> {
+  const dateStr = data.scheduledAt.toLocaleString("ar-SA", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh"
+  });
+  const html = baseTemplate(
+    tag("QMeet — دعوة اجتماع") +
+    title(`📅 دعوة: ${data.title}`) +
+    text(`مرحباً ${cleanName(name)}، تمت دعوتك للمشاركة في اجتماع عبر منصة QMeet.`) +
+    infoTable([
+      ["عنوان الاجتماع", data.title],
+      ["موعد الاجتماع", dateStr],
+      ["المدة المتوقعة", `${data.durationMinutes || 60} دقيقة`],
+      ["المضيف", data.hostName],
+    ]) +
+    text("انضم للاجتماع عبر الرابط التالي. ستصلك رسالة تذكيرية قبل الاجتماع بدقيقتين.") +
+    btn(data.meetingLink, "🎥 انضم للاجتماع الآن") +
+    highlight("يدعم الاجتماع: الفيديو والصوت، مشاركة الشاشة، السبورة التفاعلية.") +
+    text("إذا لم تتوقع هذا الإيميل يمكنك تجاهله.", "color:#9ca3af;font-size:12px;")
+  );
+  return sendEmail(to, name, `دعوة QMeet: ${data.title}`, html);
+}
+
+export async function sendQMeetReminderEmail(to: string, name: string, data: QMeetEmailData): Promise<boolean> {
+  const dateStr = data.scheduledAt.toLocaleString("ar-SA", {
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh"
+  });
+  const html = baseTemplate(
+    tag("QMeet — تذكير فوري") +
+    title(`⏰ اجتماعك يبدأ خلال دقيقتين!`) +
+    text(`مرحباً ${cleanName(name)}، اجتماع <strong>${data.title}</strong> سيبدأ الساعة ${dateStr} — أي بعد دقيقتين فقط!`) +
+    infoTable([
+      ["الاجتماع", data.title],
+      ["الوقت", dateStr],
+      ["المضيف", data.hostName],
+    ]) +
+    btn(data.meetingLink, "🚀 انضم الآن") +
+    text("لا تتأخر، الاجتماع على وشك البدء.", "font-weight:bold;")
+  );
+  return sendEmail(to, name, `⏰ تذكير: ${data.title} — يبدأ خلال دقيقتين`, html);
+}
+
 export async function sendTestEmail(to: string, name: string): Promise<boolean> {
   const html = baseTemplate(
     tag("بريد تجريبي") +
