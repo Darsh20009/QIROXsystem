@@ -176,7 +176,6 @@ function AdminRouter() {
         <Route path="/admin/consultations" component={AdminConsultation} />
         <Route path="/admin/qmeet" component={AdminQMeet} />
         <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
-        <Route path="/meet/:roomId" component={MeetingRoom} />
         <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
         <Route path="/admin/shipments" component={AdminShipments} />
         <Route path="/admin/cron-jobs" component={AdminCronJobs} />
@@ -516,6 +515,17 @@ function AppInner() {
     return (
       <Suspense fallback={<PageLoader />}>
         <QiroxEdit />
+        <Toaster />
+      </Suspense>
+    );
+  }
+
+  if (location.startsWith("/meet/")) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/meet/:roomId" component={MeetingRoom} />
+        </Switch>
         <Toaster />
       </Suspense>
     );
