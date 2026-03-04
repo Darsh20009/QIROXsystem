@@ -86,7 +86,7 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    if (userId) unregisterSocket(userId);
+    if (userId) unregisterSocket(userId, ws);
   });
 });
 

@@ -1,23 +1,39 @@
 import { WebSocket } from "ws";
 
-interface UserInfo {
-  ws: WebSocket;
-  userId: string;
-  lastSeen: Date;
+const userSockets = new Map<string, Set<WebSocket>>();
+
+function sendTo(ws: WebSocket, payload: object) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(payload));
+  }
 }
 
-const userSockets = new Map<string, UserInfo>();
+function sendToUser(userId: string, payload: object) {
+  const sockets = userSockets.get(String(userId));
+  if (!sockets) return;
+  for (const ws of sockets) {
+    sendTo(ws, payload);
+  }
+}
 
 export function registerSocket(userId: string, ws: WebSocket) {
-  userSockets.set(userId, { ws, userId, lastSeen: new Date() });
-  // Broadcast online status to all
-  broadcastToAll({ type: "user_online", userId }, userId);
+  const uid = String(userId);
+  if (!userSockets.has(uid)) {
+    userSockets.set(uid, new Set());
+    broadcastToAll({ type: "user_online", userId: uid }, uid);
+  }
+  userSockets.get(uid)!.add(ws);
 }
 
-export function unregisterSocket(userId: string) {
-  userSockets.delete(userId);
-  // Broadcast offline status
-  broadcastToAll({ type: "user_offline", userId }, userId);
+export function unregisterSocket(userId: string, ws: WebSocket) {
+  const uid = String(userId);
+  const sockets = userSockets.get(uid);
+  if (!sockets) return;
+  sockets.delete(ws);
+  if (sockets.size === 0) {
+    userSockets.delete(uid);
+    broadcastToAll({ type: "user_offline", userId: uid }, uid);
+  }
 }
 
 export function getOnlineUsers(): string[] {
@@ -25,42 +41,37 @@ export function getOnlineUsers(): string[] {
 }
 
 export function isUserOnline(userId: string): boolean {
-  return userSockets.has(String(userId));
+  const sockets = userSockets.get(String(userId));
+  return !!(sockets && sockets.size > 0);
 }
 
 export function pushNotification(userId: string, payload: object) {
-  const info = userSockets.get(String(userId));
-  if (info && info.ws.readyState === WebSocket.OPEN) {
-    info.ws.send(JSON.stringify({ type: "notification", ...payload }));
-  }
+  sendToUser(userId, { type: "notification", ...payload });
 }
 
 export function pushToUser(userId: string, payload: object) {
-  const info = userSockets.get(String(userId));
-  if (info && info.ws.readyState === WebSocket.OPEN) {
-    info.ws.send(JSON.stringify(payload));
-  }
+  sendToUser(userId, payload);
 }
 
 export function broadcastNotification(payload: object) {
-  for (const info of userSockets.values()) {
-    if (info.ws.readyState === WebSocket.OPEN) {
-      info.ws.send(JSON.stringify({ type: "notification", ...payload }));
+  for (const sockets of userSockets.values()) {
+    for (const ws of sockets) {
+      sendTo(ws, { type: "notification", ...payload });
     }
   }
 }
 
 export function broadcastToAll(payload: object, excludeUserId?: string) {
-  for (const [uid, info] of userSockets.entries()) {
+  for (const [uid, sockets] of userSockets.entries()) {
     if (excludeUserId && uid === excludeUserId) continue;
-    if (info.ws.readyState === WebSocket.OPEN) {
-      info.ws.send(JSON.stringify(payload));
+    for (const ws of sockets) {
+      sendTo(ws, payload);
     }
   }
 }
 
 export function broadcastToUsers(userIds: string[], payload: object) {
   for (const uid of userIds) {
-    pushToUser(uid, payload);
+    sendToUser(uid, payload);
   }
 }
