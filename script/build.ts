@@ -60,6 +60,21 @@ const allowlist = [
   "zod-validation-error",
   "mongoose",
   "connect-mongo",
+  "passport-google-oauth20",
+  "web-push",
+  "node-cron",
+  "input-otp",
+  "jsbarcode",
+  "jspdf",
+  "pdf-lib",
+  "exceljs",
+  "mammoth",
+  "file-saver",
+  "fabric",
+  "qrcode.react",
+  "recharts",
+  "digest-fetch",
+  "@paypal/paypal-server-sdk",
 ];
 
 async function buildAll() {
