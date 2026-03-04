@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ function serviceFeeByPeriod(period: string) {
 }
 
 export default function AdminInstallments() {
-  const { user } = useAuth();
+  const { data: user } = useUser();
   const { toast } = useToast();
   const isAdmin = user && ["admin", "manager"].includes(user.role);
 

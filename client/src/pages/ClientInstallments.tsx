@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ const PAYMENT_COLOR = { pending: "border-gray-200 dark:border-gray-700", paid: "
 const PAYMENT_ICON = { pending: <Clock className="w-4 h-4 text-gray-400" />, paid: <CheckCircle className="w-4 h-4 text-green-500" />, late: <AlertTriangle className="w-4 h-4 text-red-500" />, penalized: <AlertTriangle className="w-4 h-4 text-orange-500" />, waived: <CheckCircle className="w-4 h-4 text-purple-500" /> };
 
 export default function ClientInstallments() {
-  const { user } = useAuth();
+  const { data: user } = useUser();
   const { toast } = useToast();
 
   const [expandedApp, setExpandedApp] = useState(null);
