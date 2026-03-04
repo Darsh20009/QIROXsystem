@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
@@ -224,6 +224,7 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
   registerQMeetRoutes(app);
   startQMeetScheduler();
+  await registerInstallmentRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -239,6 +240,15 @@ app.use((req, res, next) => {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }
+
+  // Daily installment late-payment check at 8 AM
+  const nodeCron = await import("node-cron");
+  nodeCron.default.schedule("0 8 * * *", async () => {
+    try {
+      const result = await runInstallmentLateCheck();
+      console.log(`[Installment] Late check: locked=${result.locked}, penalized=${result.penalized}`);
+    } catch (e: any) { console.error("[Installment] Late check error:", e.message); }
+  });
 
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen({ port, host: "0.0.0.0" }, () => {

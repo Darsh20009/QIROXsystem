@@ -10,6 +10,46 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 4, 2026 - Session 36)
+
+### نظام التقسيط "قسط عبر كيروكس" — Installment System
+
+نظام تقسيط كامل للباقات فقط، حتى 8 أقساط شهرية بضمان ربط موقع العميل.
+
+**الموديلات الجديدة (`server/models.ts`):**
+- `InstallmentOfferModel` — عروض التقسيط التي ينشئها الأدمن (غير مفعلة بالإفتراض)
+- `InstallmentApplicationModel` — طلبات التقسيط من العملاء
+- `InstallmentPaymentModel` — جدول الأقساط الفردية لكل طلب
+
+**المسارات الجديدة (`server/routes.ts` + `registerInstallmentRoutes`):**
+- `GET /api/admin/installment/offers` — قائمة العروض (أدمن/مدير)
+- `POST /api/admin/installment/offers` — إنشاء عرض جديد
+- `PATCH /api/admin/installment/offers/:id/toggle` — تفعيل/تعطيل عرض
+- `GET /api/admin/installment/applications` — كل الطلبات (جميع الموظفين)
+- `PATCH /api/admin/installment/applications/:id/approve` — موافقة + إنشاء جدول أقساط
+- `PATCH /api/admin/installment/applications/:id/reject` — رفض مع سبب
+- `PATCH /api/admin/installment/applications/:id/lock` — قفل موقع العميل (suspend)
+- `PATCH /api/admin/installment/applications/:id/unlock` — رفع القفل
+- `GET /api/installment/offers` — العروض النشطة (للعملاء)
+- `POST /api/installment/apply` — تقديم طلب تقسيط
+- `GET /api/installment/my` — طلباتي (للعملاء)
+- `POST /api/installment/pay/:paymentId` — دفع قسط من المحفظة (مع PIN)
+
+**Cron Job يومي الساعة 8ص:**
+- فحص التأخيرات → قفل المواقع فوراً عند أي تأخر
+- بعد مهلة السماح (افتراضي 7 أيام) → إضافة غرامة تأخير
+
+**رسوم الخدمة حسب الفترة:**
+- شهرية: 25 ريال | نصف سنوية: 50 ريال | سنوية/مدى الحياة: 100 ريال
+
+**الصفحات الجديدة:**
+- `client/src/pages/AdminInstallments.tsx` — لوحة إدارة التقسيط (admin)
+- `client/src/pages/ClientInstallments.tsx` — متابعة الأقساط (client)
+
+**التنقل:**
+- `/admin/installments` — لجميع الموظفين
+- `/installments` — للعملاء في sidebar القسم المالي
+
 ## Latest Changes (Mar 4, 2026 - Session 35)
 
 ### تحسينات شاملة للجوال (Mobile Responsiveness)

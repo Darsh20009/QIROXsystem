@@ -5995,3 +5995,412 @@ export async function seedDatabase() {
     console.log(`${allPlans.length} segment-tier plans seeded (v5)`);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   قسط عبر كيروكس — Installment System Routes
+   ═══════════════════════════════════════════════════════════════════════════ */
+export async function registerInstallmentRoutes(app: Express) {
+  const { InstallmentOfferModel, InstallmentApplicationModel, InstallmentPaymentModel, WalletTransactionModel, UserModel, NotificationModel } = await import("./models");
+
+  const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
+
+  function serviceFeeByPeriod(period: string): number {
+    if (period === "monthly") return 25;
+    if (period === "sixmonth") return 50;
+    return 100; // annual, lifetime
+  }
+
+  /* ── Admin: Offers ───────────────────────────────────────────────────── */
+  app.get("/api/admin/installment/offers", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const offers = await InstallmentOfferModel.find().sort({ createdAt: -1 });
+    res.json(offers);
+  });
+
+  app.post("/api/admin/installment/offers", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { title, titleAr, description, descriptionAr, planTier, planPeriod, planSegment, installmentCount, serviceFee, penaltyAmount, gracePeriodDays } = req.body;
+    if (!title || !titleAr || !installmentCount) return res.status(400).json({ error: "البيانات ناقصة" });
+    const fee = serviceFee ?? serviceFeeByPeriod(planPeriod || "annual");
+    const offer = await InstallmentOfferModel.create({
+      title, titleAr,
+      description: description || "",
+      descriptionAr: descriptionAr || "",
+      planTier: planTier || "any",
+      planPeriod: planPeriod || "any",
+      planSegment: planSegment || "",
+      installmentCount,
+      serviceFee: fee,
+      penaltyAmount: penaltyAmount ?? 50,
+      gracePeriodDays: gracePeriodDays ?? 7,
+      isActive: false,
+      createdBy: (req.user as any)._id,
+    });
+    res.json(offer);
+  });
+
+  app.put("/api/admin/installment/offers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { title, titleAr, description, descriptionAr, planTier, planPeriod, planSegment, installmentCount, serviceFee, penaltyAmount, gracePeriodDays, isActive } = req.body;
+    const offer = await InstallmentOfferModel.findByIdAndUpdate(req.params.id, {
+      $set: { title, titleAr, description, descriptionAr, planTier, planPeriod, planSegment, installmentCount, serviceFee, penaltyAmount, gracePeriodDays, isActive }
+    }, { new: true });
+    if (!offer) return res.status(404).json({ error: "العرض غير موجود" });
+    res.json(offer);
+  });
+
+  app.delete("/api/admin/installment/offers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    await InstallmentOfferModel.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/installment/offers/:id/toggle", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const offer = await InstallmentOfferModel.findById(req.params.id);
+    if (!offer) return res.status(404).json({ error: "العرض غير موجود" });
+    (offer as any).isActive = !(offer as any).isActive;
+    await offer.save();
+    res.json(offer);
+  });
+
+  /* ── Admin: Applications ─────────────────────────────────────────────── */
+  app.get("/api/admin/installment/applications", async (req, res) => {
+    if (!req.isAuthenticated() || !STAFF_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    const apps = await InstallmentApplicationModel.find()
+      .populate("clientId", "fullName email")
+      .populate("offerId", "title titleAr")
+      .sort({ createdAt: -1 });
+    res.json(apps);
+  });
+
+  app.get("/api/admin/installment/applications/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !STAFF_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    const app_ = await InstallmentApplicationModel.findById(req.params.id)
+      .populate("clientId", "fullName email")
+      .populate("offerId");
+    if (!app_) return res.status(404).json({ error: "الطلب غير موجود" });
+    const payments = await InstallmentPaymentModel.find({ applicationId: req.params.id }).sort({ installmentNumber: 1 });
+    res.json({ application: app_, payments });
+  });
+
+  app.patch("/api/admin/installment/applications/:id/approve", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { adminNotes } = req.body;
+    const appl = await InstallmentApplicationModel.findById(req.params.id);
+    if (!appl) return res.status(404).json({ error: "الطلب غير موجود" });
+    if ((appl as any).status !== "pending") return res.status(400).json({ error: "الطلب ليس في انتظار الموافقة" });
+
+    (appl as any).status = "approved";
+    (appl as any).adminNotes = adminNotes || "";
+    (appl as any).approvedBy = (req.user as any)._id;
+    (appl as any).approvedAt = new Date();
+    await appl.save();
+
+    // Create payment schedule
+    const count = (appl as any).installmentCount;
+    const baseAmount = (appl as any).installmentAmount;
+    const now = new Date();
+    for (let i = 1; i <= count; i++) {
+      const dueDate = new Date(now);
+      // First installment due now, rest monthly
+      dueDate.setMonth(dueDate.getMonth() + (i - 1));
+      await InstallmentPaymentModel.create({
+        applicationId: appl._id,
+        clientId: (appl as any).clientId,
+        installmentNumber: i,
+        amount: baseAmount,
+        penalty: 0,
+        totalDue: baseAmount,
+        dueDate,
+        status: "pending",
+      });
+    }
+
+    // Notify client
+    await NotificationModel.create({
+      userId: (appl as any).clientId,
+      title: "تمت الموافقة على طلب التقسيط",
+      message: `تمت الموافقة على طلب التقسيط الخاص بك. يمكنك الآن دفع القسط الأول لتفعيل الباقة.`,
+      type: "success",
+      link: "/installments",
+    });
+
+    res.json({ success: true, application: appl });
+  });
+
+  app.patch("/api/admin/installment/applications/:id/reject", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { rejectionReason } = req.body;
+    const appl = await InstallmentApplicationModel.findById(req.params.id);
+    if (!appl) return res.status(404).json({ error: "الطلب غير موجود" });
+    (appl as any).status = "rejected";
+    (appl as any).rejectionReason = rejectionReason || "";
+    (appl as any).rejectedAt = new Date();
+    await appl.save();
+
+    await NotificationModel.create({
+      userId: (appl as any).clientId,
+      title: "رفض طلب التقسيط",
+      message: `نأسف، تم رفض طلب التقسيط الخاص بك. السبب: ${rejectionReason || "لم يُحدد"}`,
+      type: "error",
+      link: "/installments",
+    });
+
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/installment/applications/:id/lock", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const appl = await InstallmentApplicationModel.findById(req.params.id);
+    if (!appl) return res.status(404).json({ error: "الطلب غير موجود" });
+    (appl as any).status = "suspended";
+    (appl as any).lockedAt = new Date();
+    await appl.save();
+    await UserModel.findByIdAndUpdate((appl as any).clientId, { $set: { subscriptionStatus: "suspended" } });
+    await NotificationModel.create({
+      userId: (appl as any).clientId,
+      title: "تم تعليق خدمتك",
+      message: "تم تعليق خدمتك بسبب التأخر في سداد أقساط التقسيط. يرجى السداد لاستعادة الخدمة.",
+      type: "error",
+      link: "/installments",
+    });
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/installment/applications/:id/unlock", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const appl = await InstallmentApplicationModel.findById(req.params.id);
+    if (!appl) return res.status(404).json({ error: "الطلب غير موجود" });
+    (appl as any).status = "active";
+    (appl as any).lockedAt = undefined;
+    await appl.save();
+    await UserModel.findByIdAndUpdate((appl as any).clientId, { $set: { subscriptionStatus: "active" } });
+    await NotificationModel.create({
+      userId: (appl as any).clientId,
+      title: "تم رفع تعليق خدمتك",
+      message: "تم استعادة خدمتك بنجاح. شكراً لسدادك.",
+      type: "success",
+      link: "/installments",
+    });
+    res.json({ success: true });
+  });
+
+  /* ── Client: Apply & Pay ─────────────────────────────────────────────── */
+  app.get("/api/installment/offers", async (req, res) => {
+    const offers = await InstallmentOfferModel.find({ isActive: true }).sort({ createdAt: -1 });
+    res.json(offers);
+  });
+
+  app.post("/api/installment/apply", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["client", "customer"].includes(user.role)) return res.status(403).json({ error: "متاح للعملاء فقط" });
+
+    const { offerId, planTier, planPeriod, planSegment, planSegmentNameAr, totalAmount, clientNotes } = req.body;
+    if (!offerId || !planTier || !planPeriod || !totalAmount) return res.status(400).json({ error: "بيانات ناقصة" });
+
+    const offer = await InstallmentOfferModel.findById(offerId);
+    if (!offer || !(offer as any).isActive) return res.status(404).json({ error: "العرض غير متاح" });
+
+    const existing = await InstallmentApplicationModel.findOne({ clientId: user._id, status: { $in: ["pending", "approved", "active"] } });
+    if (existing) return res.status(400).json({ error: "لديك طلب تقسيط نشط بالفعل" });
+
+    const serviceFee = (offer as any).serviceFee;
+    const grandTotal = totalAmount + serviceFee;
+    const installmentCount = (offer as any).installmentCount;
+    const installmentAmount = Math.ceil(grandTotal / installmentCount);
+
+    const appl = await InstallmentApplicationModel.create({
+      clientId: user._id,
+      offerId,
+      planTier,
+      planPeriod,
+      planSegment: planSegment || "",
+      planSegmentNameAr: planSegmentNameAr || "",
+      totalAmount,
+      serviceFee,
+      grandTotal,
+      installmentCount,
+      installmentAmount,
+      clientNotes: clientNotes || "",
+      status: "pending",
+    });
+
+    // Notify admins
+    await NotificationModel.create({
+      userId: null,
+      forAdmins: true,
+      title: "طلب تقسيط جديد",
+      message: `قدّم العميل ${user.fullName} طلب تقسيط جديد بقيمة ${grandTotal} ريال على ${installmentCount} أقساط`,
+      type: "info",
+      link: "/admin/installments",
+    });
+
+    res.json({ success: true, application: appl });
+  });
+
+  app.get("/api/installment/my", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const apps = await InstallmentApplicationModel.find({ clientId: user._id })
+      .populate("offerId", "title titleAr")
+      .sort({ createdAt: -1 });
+    const result = await Promise.all(apps.map(async (a: any) => {
+      const payments = await InstallmentPaymentModel.find({ applicationId: a._id }).sort({ installmentNumber: 1 });
+      return { ...a.toJSON(), payments };
+    }));
+    res.json(result);
+  });
+
+  app.post("/api/installment/pay/:paymentId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const { walletPin } = req.body;
+
+    const payment = await InstallmentPaymentModel.findById(req.params.paymentId);
+    if (!payment) return res.status(404).json({ error: "القسط غير موجود" });
+    if ((payment as any).clientId.toString() !== user._id.toString()) return res.status(403).json({ error: "غير مصرح" });
+    if ((payment as any).status === "paid") return res.status(400).json({ error: "هذا القسط مدفوع بالفعل" });
+
+    const appl = await InstallmentApplicationModel.findById((payment as any).applicationId);
+    if (!appl) return res.status(404).json({ error: "الطلب غير موجود" });
+    if (!["approved", "active", "suspended"].includes((appl as any).status)) return res.status(400).json({ error: "لا يمكن الدفع الآن" });
+
+    const amountDue = (payment as any).totalDue;
+
+    // Wallet balance check
+    const txns = await WalletTransactionModel.find({ userId: user._id });
+    const balance = txns.reduce((s: number, t: any) => s + (t.type === "credit" ? t.amount : -t.amount), 0);
+    if (balance < amountDue) return res.status(400).json({ error: `رصيد المحفظة غير كافٍ. الرصيد: ${balance.toFixed(2)} ريال` });
+
+    // Validate PIN if set
+    if (user.walletPin) {
+      if (!walletPin) return res.status(400).json({ error: "يجب إدخال رقم PIN المحفظة" });
+      const bcrypt = await import("bcrypt");
+      const valid = await bcrypt.compare(String(walletPin), user.walletPin);
+      if (!valid) return res.status(400).json({ error: "رقم PIN غير صحيح" });
+    }
+
+    // Deduct from wallet
+    const txn = await WalletTransactionModel.create({
+      userId: user._id,
+      type: "debit",
+      amount: amountDue,
+      description: `قسط رقم ${(payment as any).installmentNumber} - قسط عبر كيروكس`,
+      note: `تقسيط طلب #${(appl as any)._id}`,
+    });
+
+    // Update payment
+    (payment as any).status = "paid";
+    (payment as any).paidAt = new Date();
+    (payment as any).walletTransactionId = txn._id;
+    await payment.save();
+
+    // Update application
+    (appl as any).paidInstallments = ((appl as any).paidInstallments || 0) + 1;
+
+    const totalInstallments = (appl as any).installmentCount;
+    const isFirstPayment = (payment as any).installmentNumber === 1;
+
+    if ((appl as any).paidInstallments >= totalInstallments) {
+      (appl as any).status = "completed";
+      (appl as any).completedAt = new Date();
+      await UserModel.findByIdAndUpdate(user._id, { $set: { subscriptionStatus: "active" } });
+      await NotificationModel.create({
+        userId: user._id,
+        title: "اكتمل التقسيط",
+        message: "مبروك! لقد أتممت سداد جميع الأقساط. شكراً لثقتك بنا.",
+        type: "success",
+        link: "/installments",
+      });
+    } else {
+      if (isFirstPayment || (appl as any).status === "approved") {
+        (appl as any).status = "active";
+        // Activate subscription on first payment
+        await UserModel.findByIdAndUpdate(user._id, { $set: { subscriptionStatus: "active" } });
+      }
+      if ((appl as any).status === "suspended") {
+        (appl as any).status = "active";
+        (appl as any).lockedAt = undefined;
+        await UserModel.findByIdAndUpdate(user._id, { $set: { subscriptionStatus: "active" } });
+      }
+      // Find next pending payment
+      const nextPayment = await InstallmentPaymentModel.findOne({ applicationId: appl._id, status: { $in: ["pending", "late", "penalized"] } }).sort({ installmentNumber: 1 });
+      if (nextPayment) (appl as any).nextDueDate = (nextPayment as any).dueDate;
+    }
+
+    await appl.save();
+    res.json({ success: true, paidAmount: amountDue });
+  });
+
+  /* ── Cron: Late payment checker ──────────────────────────────────────── */
+  app.post("/api/admin/installment/check-late", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const result = await runInstallmentLateCheck();
+    res.json(result);
+  });
+}
+
+export async function runInstallmentLateCheck() {
+  const { InstallmentApplicationModel, InstallmentPaymentModel, UserModel, NotificationModel } = await import("./models");
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Find all pending/late payments that are overdue
+  const overduePayments = await InstallmentPaymentModel.find({
+    status: { $in: ["pending", "late"] },
+    dueDate: { $lt: now },
+  });
+
+  let locked = 0, penalized = 0;
+
+  for (const payment of overduePayments) {
+    const appl = await InstallmentApplicationModel.findById((payment as any).applicationId);
+    if (!appl || !["active", "approved"].includes((appl as any).status)) continue;
+
+    const offer = await (await import("./models")).InstallmentOfferModel.findById((appl as any).offerId);
+    const penaltyAmount = offer ? (offer as any).penaltyAmount : 50;
+    const graceDays = offer ? (offer as any).gracePeriodDays : 7;
+
+    const dueDate = new Date((payment as any).dueDate);
+    const graceCutoff = new Date(dueDate.getTime() + graceDays * 24 * 60 * 60 * 1000);
+
+    // Any late → lock immediately
+    if ((appl as any).status !== "suspended") {
+      (appl as any).status = "suspended";
+      (appl as any).lockedAt = now;
+      await appl.save();
+      await UserModel.findByIdAndUpdate((appl as any).clientId, { $set: { subscriptionStatus: "suspended" } });
+      await NotificationModel.create({
+        userId: (appl as any).clientId,
+        title: "تم تعليق خدمتك",
+        message: "تم تعليق خدمتك بسبب التأخر في سداد القسط. يرجى السداد فوراً لاستعادة الخدمة.",
+        type: "error",
+        link: "/installments",
+      });
+      locked++;
+    }
+
+    // After grace period → add penalty
+    if (now > graceCutoff && (payment as any).status !== "penalized" && (payment as any).penalty === 0) {
+      (payment as any).penalty = penaltyAmount;
+      (payment as any).totalDue = (payment as any).amount + penaltyAmount;
+      (payment as any).status = "penalized";
+      await payment.save();
+      await NotificationModel.create({
+        userId: (appl as any).clientId,
+        title: "تم إضافة غرامة تأخير",
+        message: `تم إضافة غرامة تأخير بمبلغ ${penaltyAmount} ريال للقسط رقم ${(payment as any).installmentNumber}`,
+        type: "warning",
+        link: "/installments",
+      });
+      penalized++;
+    } else if ((payment as any).status === "pending") {
+      (payment as any).status = "late";
+      await payment.save();
+    }
+  }
+
+  return { checked: overduePayments.length, locked, penalized };
+}

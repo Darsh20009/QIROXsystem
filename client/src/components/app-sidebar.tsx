@@ -75,6 +75,7 @@ export function AppSidebar() {
     // Client — account
     { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client", section: "account" },
     { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client", section: "account" },
+    { title: ar ? "أقساطي" : "My Installments", icon: Banknote, url: "/installments", group: "client", section: "account" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client", section: "account" },
     { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client", section: "account" },
     // Client — tools
@@ -99,6 +100,7 @@ export function AppSidebar() {
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: STAFF_ROLES },
     // Employee — sales
     { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", section: "sales", allowedRoles: SALES_ROLES },

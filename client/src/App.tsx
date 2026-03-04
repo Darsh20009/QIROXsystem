@@ -85,6 +85,8 @@ const AdminProjectFeatures = lazy(() => import("@/pages/AdminProjectFeatures"));
 const ProjectWorkspace = lazy(() => import("@/pages/ProjectWorkspace"));
 const ClientWallet = lazy(() => import("@/pages/ClientWallet"));
 const AdminWallet = lazy(() => import("@/pages/AdminWallet"));
+const AdminInstallments = lazy(() => import("@/pages/AdminInstallments"));
+const ClientInstallments = lazy(() => import("@/pages/ClientInstallments"));
 const Systems = lazy(() => import("@/pages/Systems"));
 const ClientsGroup = lazy(() => import("@/pages/ClientsGroup"));
 const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
@@ -189,6 +191,8 @@ function AdminRouter() {
         <Route path="/project/:id/workspace" component={ProjectWorkspace} />
         <Route path="/wallet" component={ClientWallet} />
         <Route path="/admin/wallet" component={AdminWallet} />
+        <Route path="/installments" component={ClientInstallments} />
+        <Route path="/admin/installments" component={AdminInstallments} />
         <Route path="/my-requests" component={ClientDataRequests} />
         <Route path="/admin/data-requests" component={AdminDataRequests} />
         <Route path="/my-tools" component={MyTools} />
