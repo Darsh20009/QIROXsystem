@@ -9,7 +9,7 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText } from "lucide-react";
+import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -209,17 +209,45 @@ function AdminRouter() {
   );
 }
 
+const ALL_PAGES = [
+  { title: "لوحة التحكم", titleEn: "Dashboard", url: "/dashboard", group: "client" },
+  { title: "سلة التسوق", titleEn: "Cart", url: "/cart", group: "client" },
+  { title: "الرسائل", titleEn: "Messages", url: "/inbox", group: "client" },
+  { title: "خدمة العملاء", titleEn: "Customer Service", url: "/cs-chat", group: "client" },
+  { title: "الدعم الفني", titleEn: "Support", url: "/support", group: "client" },
+  { title: "سجل المدفوعات", titleEn: "Payment History", url: "/payment-history", group: "client" },
+  { title: "محفظتي الإلكترونية", titleEn: "My Wallet", url: "/wallet", group: "client" },
+  { title: "طلبات البيانات", titleEn: "Data Requests", url: "/my-requests", group: "client" },
+  { title: "الأجهزة والإضافات", titleEn: "Devices & Add-ons", url: "/devices", group: "client" },
+  { title: "أدواتي ومميزاتي", titleEn: "My Tools", url: "/my-tools", group: "client" },
+  { title: "الباقات", titleEn: "Pricing", url: "/prices", group: "public" },
+  { title: "الطلبات", titleEn: "Orders", url: "/admin/orders", group: "employee" },
+  { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
+  { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
+  { title: "المالية", titleEn: "Finance", url: "/admin/finance", group: "employee" },
+  { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
+  { title: "الفواتير", titleEn: "Invoices", url: "/admin/invoices", group: "employee" },
+  { title: "كيروكس إيدت", titleEn: "Qirox Edit", url: "/qirox-edit", group: "employee" },
+  { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor", group: "employee" },
+  { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
+  { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
+  { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
+];
+
 function GlobalSearch() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { data: user } = useUser();
+  const { lang } = useI18n();
+  const ar = lang === "ar";
 
-  const { data: results } = useQuery({
+  const { data: results, isLoading } = useQuery({
     queryKey: ["/api/search", q],
     queryFn: async () => {
-      if (q.length < 2) return { orders: [], projects: [] };
+      if (q.length < 2) return { orders: [], projects: [], clients: [] };
       const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      if (!r.ok) return { orders: [], projects: [] };
+      if (!r.ok) return { orders: [], projects: [], clients: [] };
       return r.json();
     },
     enabled: q.length >= 2,
@@ -231,18 +259,48 @@ function GlobalSearch() {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  const hasResults = (results?.orders?.length || 0) + (results?.projects?.length || 0) > 0;
+  const isAdmin = user?.role !== "client";
+  const ql = q.toLowerCase();
+
+  const pageResults = q.length >= 2
+    ? ALL_PAGES.filter(p => {
+        const matchesGroup = isAdmin ? (p.group === "employee" || p.group === "client") : p.group !== "employee";
+        const matchesQuery = p.title.includes(q) || p.titleEn.toLowerCase().includes(ql) || p.url.includes(ql);
+        return matchesGroup && matchesQuery;
+      }).slice(0, 4)
+    : [];
+
+  const totalResults =
+    (results?.orders?.length || 0) +
+    (results?.projects?.length || 0) +
+    (results?.clients?.length || 0) +
+    pageResults.length;
+
+  const hasResults = totalResults > 0;
+
+  const statusColor = (s: string) => {
+    if (s === "completed" || s === "done") return "text-emerald-500";
+    if (s === "in_progress" || s === "active") return "text-cyan-500";
+    if (s === "pending") return "text-amber-500";
+    if (s === "cancelled") return "text-red-500";
+    return "text-black/40 dark:text-white/40";
+  };
+
+  const go = (url: string) => { setOpen(false); setQ(""); window.location.href = url; };
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center gap-2 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-1.5">
-        <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+        {isLoading && q.length >= 2
+          ? <Loader2 className="w-3.5 h-3.5 text-black/30 dark:text-white/30 animate-spin" />
+          : <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+        }
         <input
           value={q}
           onChange={e => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          placeholder="بحث..."
-          className="bg-transparent border-none outline-none text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 w-32 md:w-48"
+          placeholder={ar ? "ابحث عن صفحة، عميل، مشروع..." : "Search pages, clients, projects..."}
+          className="bg-transparent border-none outline-none text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 w-36 md:w-52"
           data-testid="input-global-search"
         />
         {q && (
@@ -252,18 +310,94 @@ function GlobalSearch() {
         )}
       </div>
 
-      {open && hasResults && (
-        <div className="absolute top-full mt-2 left-0 right-0 bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-xl z-50 max-h-64 overflow-auto" data-testid="search-results-dropdown">
-          {results?.orders?.map((o: any) => (
-            <a key={o.id} href={`/admin/orders`} className="block px-4 py-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-sm text-black dark:text-white border-b border-black/[0.04] dark:border-white/[0.04] last:border-0" onClick={() => setOpen(false)}>
-              <span className="font-semibold">#{o.id}</span> — {o.projectName || o.notes || "طلب"}
-            </a>
-          ))}
-          {results?.projects?.map((p: any) => (
-            <a key={p.id} href={`/projects/${p.id}`} className="block px-4 py-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.03] text-sm text-black dark:text-white border-b border-black/[0.04] dark:border-white/[0.04] last:border-0" onClick={() => setOpen(false)}>
-              📁 {p.name}
-            </a>
-          ))}
+      {open && q.length >= 2 && (
+        <div className="absolute top-full mt-2 left-0 w-72 bg-white dark:bg-[#111] border border-black/[0.08] dark:border-white/[0.06] rounded-2xl shadow-2xl z-[200] overflow-hidden" data-testid="search-results-dropdown">
+          {!hasResults && !isLoading && (
+            <div className="px-4 py-6 text-center text-sm text-black/30 dark:text-white/30">
+              {ar ? "لا توجد نتائج" : "No results found"}
+            </div>
+          )}
+
+          {pageResults.length > 0 && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <Navigation className="w-3 h-3" />
+                {ar ? "الصفحات" : "Pages"}
+              </div>
+              {pageResults.map(p => (
+                <button key={p.url} onClick={() => go(p.url)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center shrink-0">
+                    <LayoutDashboard className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <span className="text-sm font-semibold text-black dark:text-white">{ar ? p.title : p.titleEn}</span>
+                  <span className="text-[10px] text-black/25 dark:text-white/25 mr-auto font-mono">{p.url}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.clients?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <Users className="w-3 h-3" />
+                {ar ? "العملاء" : "Clients"}
+              </div>
+              {results.clients.map((c: any) => (
+                <button key={c.id} onClick={() => go(`/admin/users`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-violet-600 dark:text-violet-400">{(c.fullName || c.username || "?")[0]?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm font-semibold text-black dark:text-white truncate">{c.fullName}</span>
+                    <span className="text-[10px] text-black/30 dark:text-white/30">@{c.username}</span>
+                  </div>
+                  <span className="text-[10px] text-black/25 dark:text-white/25 mr-auto">{c.role}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.orders?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <FileText className="w-3 h-3" />
+                {ar ? "الطلبات" : "Orders"}
+              </div>
+              {results.orders.map((o: any) => (
+                <button key={o.id} onClick={() => go(isAdmin ? `/admin/orders` : `/dashboard`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-sm font-semibold text-black dark:text-white truncate">{o.projectType || o.sector || ar ? "طلب" : "Order"}</span>
+                    {o.clientName && <span className="text-[10px] text-black/30 dark:text-white/30">{o.clientName}</span>}
+                  </div>
+                  <span className={`text-[10px] font-semibold mr-auto ${statusColor(o.status)}`}>{o.status}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(results?.projects?.length > 0) && (
+            <div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                <FolderOpen className="w-3 h-3" />
+                {ar ? "المشاريع" : "Projects"}
+              </div>
+              {results.projects.map((p: any) => (
+                <button key={p.id} onClick={() => go(`/projects/${p.id}`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                    <FolderOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-0">
+                    {p.clientName && <span className="text-sm font-semibold text-black dark:text-white truncate">{p.clientName}</span>}
+                    <span className="text-[10px] text-black/30 dark:text-white/30">{p.progress ?? 0}% — {p.status}</span>
+                  </div>
+                  <span className={`text-[10px] font-semibold mr-auto ${statusColor(p.status)}`}>{p.status}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

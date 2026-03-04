@@ -3526,19 +3526,93 @@ export async function registerRoutes(
   app.get("/api/search", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const q = ((req.query.q as string) || '').trim();
-    if (!q || q.length < 2) return res.json({ orders: [], projects: [] });
-    const { OrderModel, ProjectModel } = await import("./models");
+    if (!q || q.length < 2) return res.json({ orders: [], projects: [], clients: [] });
+    const { OrderModel, ProjectModel, UserModel } = await import("./models");
     const regex = new RegExp(q, 'i');
     const uid = (req.user as any)._id || (req.user as any).id;
     const isAdmin = (req.user as any).role !== 'client';
-    const orderQ = isAdmin
-      ? { $or: [{ projectType: regex }, { sector: regex }, { adminNotes: regex }, { status: regex }] }
-      : { userId: uid, $or: [{ projectType: regex }, { sector: regex }, { status: regex }] };
-    const [orders, projects] = await Promise.all([
-      (OrderModel as any).find(orderQ).limit(6).select('projectType sector status totalAmount createdAt'),
-      (ProjectModel as any).find(isAdmin ? { $or: [{ status: regex }] } : { clientId: uid }).limit(6).select('status progress startDate deadline'),
-    ]);
-    res.json({ orders, projects });
+
+    if (isAdmin) {
+      // Find matching users first to enable name-based order/project search
+      const matchingUsers = await (UserModel as any).find({
+        $or: [{ fullName: regex }, { username: regex }, { email: regex }],
+      }).limit(10).select('_id fullName username email role');
+      const matchingUserIds = matchingUsers.map((u: any) => u._id);
+
+      const [orders, projects] = await Promise.all([
+        (OrderModel as any).find({
+          $or: [
+            { userId: { $in: matchingUserIds } },
+            { projectType: regex },
+            { sector: regex },
+            { adminNotes: regex },
+          ],
+        }).limit(8).populate('userId', 'fullName username email').select('projectType sector status totalAmount createdAt userId'),
+
+        (ProjectModel as any).find({
+          $or: [
+            { clientId: { $in: matchingUserIds } },
+            { status: regex },
+          ],
+        }).limit(6).populate('clientId', 'fullName username').select('status progress startDate deadline clientId orderId'),
+      ]);
+
+      const clients = matchingUsers.map((u: any) => ({
+        id: u._id.toString(),
+        fullName: u.fullName,
+        username: u.username,
+        email: u.email,
+        role: u.role,
+      }));
+
+      res.json({
+        orders: orders.map((o: any) => ({
+          id: o._id.toString(),
+          projectType: o.projectType,
+          sector: o.sector,
+          status: o.status,
+          totalAmount: o.totalAmount,
+          createdAt: o.createdAt,
+          clientName: o.userId?.fullName || o.userId?.username || '',
+        })),
+        projects: projects.map((p: any) => ({
+          id: p._id.toString(),
+          status: p.status,
+          progress: p.progress,
+          deadline: p.deadline,
+          clientName: p.clientId?.fullName || p.clientId?.username || '',
+        })),
+        clients,
+      });
+    } else {
+      // Client: only their own orders and projects
+      const [orders, projects] = await Promise.all([
+        (OrderModel as any).find({
+          userId: uid,
+          $or: [{ projectType: regex }, { sector: regex }, { status: regex }],
+        }).limit(6).select('projectType sector status totalAmount createdAt'),
+        (ProjectModel as any).find({ clientId: uid }).limit(6).select('status progress startDate deadline'),
+      ]);
+      res.json({
+        orders: orders.map((o: any) => ({
+          id: o._id.toString(),
+          projectType: o.projectType,
+          sector: o.sector,
+          status: o.status,
+          totalAmount: o.totalAmount,
+          createdAt: o.createdAt,
+          clientName: '',
+        })),
+        projects: projects.map((p: any) => ({
+          id: p._id.toString(),
+          status: p.status,
+          progress: p.progress,
+          deadline: p.deadline,
+          clientName: '',
+        })),
+        clients: [],
+      });
+    }
   });
 
   // ═══════════════════════════════════════════════════════════
