@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones, Upload } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones, Upload, Video } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -1441,6 +1441,12 @@ export default function Dashboard() {
     enabled: !!(user?.role === 'client'),
   });
 
+  const { data: upcomingMeetings = [] } = useQuery<any[]>({
+    queryKey: ['/api/qmeet/upcoming'],
+    enabled: !!(user?.role === 'client'),
+    refetchInterval: 60000,
+  });
+
   const cancelModMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/modification-requests/${id}/cancel`, {});
@@ -1802,6 +1808,58 @@ export default function Dashboard() {
             )}
           </div>
         </motion.div>
+
+        {/* Upcoming QMeet Meetings */}
+        {upcomingMeetings.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+                  <Video className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
+              </div>
+              <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{upcomingMeetings.length} {L ? "اجتماع" : "meeting(s)"}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {upcomingMeetings.map((m: any) => {
+                const scheduledDate = new Date(m.scheduledAt);
+                const isLive = m.status === "live";
+                const dateStr = scheduledDate.toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" });
+                const timeStr = scheduledDate.toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <div key={m._id} data-testid={`card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-700" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
+                    {isLive && (
+                      <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-100 dark:bg-violet-900/60 dark:text-violet-300 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+                        {L ? "مباشر الآن" : "Live"}
+                      </span>
+                    )}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-violet-600" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
+                        <Video className={`w-4 h-4 ${isLive ? "text-white" : "text-black/50 dark:text-white/50"}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-black dark:text-white truncate">{m.title}</p>
+                        <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{m.hostName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Calendar className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
+                      <span className="text-[11px] text-black/50 dark:text-white/50">{dateStr} — {timeStr}</span>
+                    </div>
+                    <Link href={m.meetingLink}>
+                      <Button size="sm" className={`w-full rounded-xl h-8 text-xs font-bold gap-1.5 ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black text-white hover:bg-black/80"}`} data-testid={`button-join-meeting-${m._id}`}>
+                        <Video className="w-3 h-3" />
+                        {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Investment Banner */}
         {totalSpent > 0 && (

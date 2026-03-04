@@ -3,6 +3,9 @@ import { QMeetingModel, QFeedbackModel, QReportModel } from "./models";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
 
+const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
+const fullMeetLink = (link: string) => link.startsWith("http") ? link : `${SITE_URL}${link}`;
+
 // ── Room name generator ───────────────────────────────────────────────────────
 function generateRoomName(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -72,7 +75,7 @@ export function startQMeetScheduler() {
           await sendQMeetReminderEmail(emails[i], names[i] || "مشارك", {
             title: m.title,
             scheduledAt: m.scheduledAt,
-            meetingLink: m.meetingLink,
+            meetingLink: fullMeetLink(m.meetingLink),
             hostName: m.hostName,
           });
         }
@@ -106,7 +109,7 @@ export function startQMeetScheduler() {
           await sendQMeetReminderEmail(emails[i], names[i] || "مشارك", {
             title: m.title,
             scheduledAt: m.scheduledAt,
-            meetingLink: m.meetingLink,
+            meetingLink: fullMeetLink(m.meetingLink),
             hostName: m.hostName,
           });
         }
@@ -213,7 +216,7 @@ export function registerQMeetRoutes(app: Express) {
       const names: string[] = participantNames || [];
       Promise.all(emails.map((email, i) =>
         sendQMeetInviteEmail(email, names[i] || "مشارك", {
-          title, scheduledAt: startTime, meetingLink,
+          title, scheduledAt: startTime, meetingLink: fullMeetLink(meetingLink),
           hostName: req.user.fullName || req.user.username,
           durationMinutes: duration,
         })
@@ -302,7 +305,7 @@ export function registerQMeetRoutes(app: Express) {
         const ok = await sendQMeetInviteEmail(emails[i], names[i] || "مشارك", {
           title: meeting.title,
           scheduledAt: meeting.scheduledAt,
-          meetingLink: meeting.meetingLink,
+          meetingLink: fullMeetLink(meeting.meetingLink),
           hostName: meeting.hostName,
           durationMinutes: meeting.durationMinutes,
         });
