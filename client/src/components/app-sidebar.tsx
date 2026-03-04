@@ -39,6 +39,7 @@ interface NavItem {
   url: string;
   group: "public" | "client" | "employee" | "admin";
   allowedRoles?: string[];
+  section?: string;
 }
 
 export function AppSidebar() {
@@ -56,83 +57,97 @@ export function AppSidebar() {
   const ar = lang === "ar";
   const items: NavItem[] = [
     // Public pages
-    { title: ar ? "الرئيسية" : "Home", icon: Globe, url: "/", group: "public" },
-    { title: ar ? "الباقات" : "Pricing", icon: DollarSign, url: "/prices", group: "public" },
-    { title: ar ? "عن المنصة" : "About", icon: FileText, url: "/about", group: "public" },
-    { title: ar ? "تواصل" : "Contact", icon: Briefcase, url: "/contact", group: "public" },
+    { title: ar ? "الرئيسية" : "Home", icon: Globe, url: "/", group: "public", section: "main" },
+    { title: ar ? "الباقات" : "Pricing", icon: DollarSign, url: "/prices", group: "public", section: "main" },
+    { title: ar ? "عن المنصة" : "About", icon: FileText, url: "/about", group: "public", section: "main" },
+    { title: ar ? "تواصل" : "Contact", icon: Briefcase, url: "/contact", group: "public", section: "main" },
 
-    // Client-only pages
-    { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "client" },
-    { title: ar ? "الأجهزة والإضافات" : "Devices & Add-ons", icon: Cpu, url: "/devices", group: "client" },
-    { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client" },
-    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client" },
-    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client" },
-    { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client" },
-    { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client" },
-    { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client" },
-    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client" },
-    { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client" },
-    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client" },
+    // Client — main
+    { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "client", section: "main" },
+    // Client — shopping
+    { title: ar ? "الأجهزة والإضافات" : "Devices & Add-ons", icon: Cpu, url: "/devices", group: "client", section: "shopping" },
+    { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client", section: "shopping" },
+    // Client — services
+    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client", section: "services" },
+    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client", section: "services" },
+    { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client", section: "services" },
+    // Client — account
+    { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client", section: "account" },
+    { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client", section: "account" },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client", section: "account" },
+    { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client", section: "account" },
+    // Client — tools
+    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client", section: "tools" },
+    // Client — investor
+    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
 
-    // Employee pages
-    { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee" },
-    { title: ar ? "كيروكس إيدت 🎨" : "Qirox Edit 🎨", icon: Paintbrush, url: "/qirox-edit", group: "employee" },
-    { title: ar ? "لوحتي المتخصصة" : "My Role Board", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
-    { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee" },
-    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee" },
-    { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee" },
-    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee" },
-    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee" },
-    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", allowedRoles: ["support", "admin", "manager"] },
-    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee" },
-    { title: ar ? "أدواتي ومهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee" },
-    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee" },
+    // Employee — main
+    { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee", section: "main" },
+    { title: ar ? "لوحتي المتخصصة" : "My Role Board", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", section: "main", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
+    // Employee — Qirox services
+    { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "services" },
+    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "services" },
+    { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "services" },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "services" },
+    // Employee — communication
+    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
+    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication", allowedRoles: ["support", "admin", "manager"] },
+    // Employee — finance
+    { title: ar ? "المالية" : "Finance", icon: Wallet, url: "/admin/finance", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    // Employee — sales
+    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
+    { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
+    // Employee — tools
+    { title: ar ? "كيروكس إيدت 🎨" : "Qirox Edit 🎨", icon: Paintbrush, url: "/qirox-edit", group: "employee", section: "tools" },
+    { title: ar ? "أدواتي ومهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "tools" },
+    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
+    // Employee — personal
+    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "personal" },
+    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", section: "personal", allowedRoles: ["investor", "admin", "manager"] },
 
-    // Finance role pages
-    { title: ar ? "المالية" : "Finance", icon: Wallet, url: "/admin/finance", group: "employee", allowedRoles: FINANCE_ROLES },
-    { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", allowedRoles: FINANCE_ROLES },
-    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", allowedRoles: FINANCE_ROLES },
-    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", allowedRoles: FINANCE_ROLES },
-    { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", allowedRoles: FINANCE_ROLES },
-
-    // Sales role pages
-    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", allowedRoles: SALES_ROLES },
-    { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", allowedRoles: SALES_ROLES },
-
-    // Management-only pages
-    { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: "MongoDB Atlas", icon: Database, url: "/admin/atlas", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: "Cron Jobs", icon: Clock, url: "/admin/cron-jobs", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "نشر التطبيقات" : "App Publishing", icon: Smartphone, url: "/admin/app-publish", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "مميزات الباقات" : "Plan Features", icon: Settings2, url: "/admin/system-features", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "المميزات الإضافية" : "Extra Add-ons", icon: Tag, url: "/admin/extra-addons", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "حصص التعديل" : "Modification Quotas", icon: Wrench, url: "/admin/mod-config", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "مميزات المشاريع" : "Project Features", icon: LayoutGrid, url: "/admin/project-features", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الموظفون" : "Employees", icon: Users, url: "/admin/employees", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "سجل النشاط" : "Activity Log", icon: Activity, url: "/admin/activity-log", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الشركاء" : "Partners", icon: Handshake, url: "/admin/partners", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الأخبار" : "News", icon: Newspaper, url: "/admin/news", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "إعدادات البنك" : "Bank Settings", icon: Building2, url: "/admin/bank-settings", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الاشتراكات والأسعار" : "Subscriptions & Pricing", icon: Crown, url: "/admin/subscription-plans", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "إعدادات النظام" : "System Settings", icon: Settings2, url: "/admin/qirox-settings", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "المستثمرون" : "Investors", icon: TrendingUp, url: "/admin/investors", group: "admin", allowedRoles: ["admin"] },
-    // Investor Portal (only for investor role or admin)
-    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", allowedRoles: ["investor", "admin", "manager"] },
-    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", allowedRoles: ["investor", "admin", "manager"] },
+    // Admin — main
+    { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — operations (Qirox services management)
+    { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — team
+    { title: ar ? "الموظفون" : "Employees", icon: Users, url: "/admin/employees", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — finance
+    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الاشتراكات والأسعار" : "Subscriptions & Pricing", icon: Crown, url: "/admin/subscription-plans", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إعدادات البنك" : "Bank Settings", icon: Building2, url: "/admin/bank-settings", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — settings
+    { title: ar ? "مميزات الباقات" : "Plan Features", icon: Settings2, url: "/admin/system-features", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "المميزات الإضافية" : "Extra Add-ons", icon: Tag, url: "/admin/extra-addons", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "حصص التعديل" : "Modification Quotas", icon: Wrench, url: "/admin/mod-config", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "مميزات المشاريع" : "Project Features", icon: LayoutGrid, url: "/admin/project-features", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إعدادات النظام" : "System Settings", icon: Settings2, url: "/admin/qirox-settings", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — public content
+    { title: ar ? "الشركاء" : "Partners", icon: Handshake, url: "/admin/partners", group: "admin", section: "content", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الأخبار" : "News", icon: Newspaper, url: "/admin/news", group: "admin", section: "content", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", section: "content", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — devtools
+    { title: "MongoDB Atlas", icon: Database, url: "/admin/atlas", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
+    { title: "Cron Jobs", icon: Clock, url: "/admin/cron-jobs", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "نشر التطبيقات" : "App Publishing", icon: Smartphone, url: "/admin/app-publish", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — monitoring
+    { title: ar ? "سجل النشاط" : "Activity Log", icon: Activity, url: "/admin/activity-log", group: "admin", section: "monitoring", allowedRoles: MANAGEMENT_ROLES },
+    // Admin — investors
+    { title: ar ? "المستثمرون" : "Investors", icon: TrendingUp, url: "/admin/investors", group: "admin", section: "investors", allowedRoles: ["admin"] },
   ];
 
   const { data: attendanceStatus } = useQuery({
@@ -214,9 +229,84 @@ export function AppSidebar() {
     return false;
   });
 
-  // Determine group labels
   const employeeItems = menuItems.filter(i => i.group === "employee");
   const adminItems = menuItems.filter(i => i.group === "admin");
+  const clientItems = menuItems.filter(i => i.group === "client" || i.group === "public");
+
+  const SECTION_LABELS: Record<string, { ar: string; en: string; accent: string }> = {
+    main:          { ar: "",               en: "",                    accent: "" },
+    shopping:      { ar: "التسوق",         en: "Shopping",            accent: "text-cyan-600 dark:text-cyan-400" },
+    services:      { ar: "خدمات كيروكس",  en: "Qirox Services",      accent: "text-[#06b6d4] dark:text-cyan-400" },
+    communication: { ar: "التواصل",        en: "Communication",       accent: "text-green-600 dark:text-green-400" },
+    account:       { ar: "حسابي",          en: "My Account",          accent: "text-violet-600 dark:text-violet-400" },
+    finance:       { ar: "المالية",        en: "Finance",             accent: "text-amber-600 dark:text-amber-400" },
+    sales:         { ar: "المبيعات",       en: "Sales",               accent: "text-pink-600 dark:text-pink-400" },
+    tools:         { ar: "الأدوات",        en: "Tools",               accent: "text-blue-600 dark:text-blue-400" },
+    personal:      { ar: "حسابي",          en: "My Account",          accent: "text-violet-600 dark:text-violet-400" },
+    investor:      { ar: "الاستثمار",      en: "Investment",          accent: "text-emerald-600 dark:text-emerald-400" },
+    operations:    { ar: "خدمات كيروكس",  en: "Qirox Services",      accent: "text-[#06b6d4] dark:text-cyan-400" },
+    team:          { ar: "الفريق",         en: "Team",                accent: "text-indigo-600 dark:text-indigo-400" },
+    settings:      { ar: "الإعدادات",      en: "Settings",            accent: "text-gray-600 dark:text-gray-400" },
+    content:       { ar: "المحتوى العام",  en: "Public Content",      accent: "text-orange-600 dark:text-orange-400" },
+    devtools:      { ar: "أدوات النظام",   en: "Dev Tools",           accent: "text-rose-600 dark:text-rose-400" },
+    monitoring:    { ar: "المراقبة",       en: "Monitoring",          accent: "text-teal-600 dark:text-teal-400" },
+    investors:     { ar: "الاستثمار",      en: "Investment",          accent: "text-emerald-600 dark:text-emerald-400" },
+  };
+
+  function renderNavItem(item: NavItem) {
+    const badge = getBadge(item.url);
+    const isActive = location === item.url;
+    return (
+      <SidebarMenuItem key={item.url + item.group}>
+        <SidebarMenuButton
+          asChild
+          isActive={isActive}
+          tooltip={item.title}
+          className={`px-3 py-2 transition-colors rounded-xl ${isActive ? "bg-black/[0.06] dark:bg-white/[0.07]" : "hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
+        >
+          <Link href={item.url} className="flex items-center gap-3 w-full">
+            <div className="relative shrink-0">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isActive ? "bg-[#0f172a] dark:bg-white" : "bg-black/[0.04] dark:bg-white/[0.06]"}`}>
+                <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"}`} />
+              </div>
+              {badge > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                  {badge > 9 ? "9+" : badge}
+                </span>
+              )}
+            </div>
+            <span className={`text-sm flex-1 truncate ${isActive ? "font-bold text-black dark:text-white" : "font-medium text-black/55 dark:text-white/50"}`}>{item.title}</span>
+            {badge > 0 && (
+              <span className="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{badge}</span>
+            )}
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  function renderSectionedItems(items: NavItem[]) {
+    const sections = Array.from(new Set(items.map(i => i.section || "main")));
+    return sections.map((sectionKey) => {
+      const sectionItems = items.filter(i => (i.section || "main") === sectionKey);
+      if (sectionItems.length === 0) return null;
+      const label = SECTION_LABELS[sectionKey];
+      const labelText = label ? (ar ? label.ar : label.en) : "";
+      return (
+        <div key={sectionKey}>
+          {labelText && (
+            <div className="px-4 pt-4 pb-1 flex items-center gap-2">
+              <span className={`text-[9px] font-black uppercase tracking-[2px] ${label?.accent || "text-black/25 dark:text-white/25"}`}>
+                {labelText}
+              </span>
+              <div className="flex-1 h-px bg-black/[0.05] dark:bg-white/[0.05]" />
+            </div>
+          )}
+          {sectionItems.map(renderNavItem)}
+        </div>
+      );
+    });
+  }
 
   return (
     <Sidebar side={lang === "ar" ? "right" : "left"} className={`bg-white dark:bg-gray-950 ${lang === "ar" ? "border-l" : "border-r"} border-black/[0.06] dark:border-white/[0.06]`}>
@@ -229,84 +319,38 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {/* Employee / Client menu items */}
-        {menuItems.length > 0 && (
+        {/* Client / Public menu */}
+        {(clientItems.length > 0 && !isEmployee) && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/25 uppercase tracking-[3px] mb-2">
-              {!user ? (ar ? "القائمة" : "Menu") : isEmployee ? (ar ? "عملي" : "My Work") : (ar ? "لوحتي" : "My Panel")}
-            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {(employeeItems.length > 0 ? employeeItems : menuItems).map((item) => {
-                    const badge = getBadge(item.url);
-                    return (
-                      <SidebarMenuItem key={item.url}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={location === item.url}
-                          tooltip={item.title}
-                          className="px-4 py-2 hover:bg-black/[0.04] transition-colors rounded-xl"
-                        >
-                          <Link href={item.url} className="flex items-center gap-3 w-full">
-                            <div className="relative">
-                              <item.icon className="w-4 h-4 text-black/30" />
-                              {badge > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
-                                  {badge > 9 ? "9+" : badge}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-sm font-medium text-black/60 flex-1">{item.title}</span>
-                            {badge > 0 && (
-                              <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{badge}</span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })
-                }
+                {renderSectionedItems(clientItems)}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
-        {/* Management-only section */}
+        {/* Employee menu */}
+        {employeeItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {renderSectionedItems(employeeItems)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Admin / Management section */}
         {adminItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="px-4 text-[10px] font-semibold text-black/25 uppercase tracking-[3px] mb-2">
-              {ar ? "إدارة النظام" : "System Admin"}
+            <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px] flex items-center gap-2">
+              <span>{ar ? "إدارة النظام" : "System Admin"}</span>
+              <div className="flex-1 h-px bg-black/[0.05] dark:bg-white/[0.05]" />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminItems.map((item) => {
-                  const badge = getBadge(item.url);
-                  return (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={location === item.url}
-                        tooltip={item.title}
-                        className="px-4 py-2 hover:bg-black/[0.04] transition-colors rounded-xl"
-                      >
-                        <Link href={item.url} className="flex items-center gap-3 w-full">
-                          <div className="relative">
-                            <item.icon className="w-4 h-4 text-black/30" />
-                            {badge > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
-                                {badge > 9 ? "9+" : badge}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm font-medium text-black/60 flex-1">{item.title}</span>
-                          {badge > 0 && (
-                            <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">{badge}</span>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {renderSectionedItems(adminItems)}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
