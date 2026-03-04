@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Bell, BellRing, Check, CheckCheck, Package, MessageSquare, FileText, Loader2 } from "lucide-react";
+import { Bell, BellRing, Check, CheckCheck, Package, MessageSquare, FileText, Loader2, X, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function NotifIcon({ type }: { type: string }) {
@@ -31,27 +31,41 @@ export function NotificationBell() {
     enabled: open,
   });
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+  };
+
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("PATCH", `/api/notifications/${id}/read`, {});
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
-    },
+    onSuccess: invalidate,
   });
 
   const markAllMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", "/api/notifications/read-all", {});
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
+    onSuccess: invalidate,
+  });
+
+  const deleteOneMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/notifications/${id}`);
     },
+    onSuccess: invalidate,
+  });
+
+  const clearReadMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", "/api/notifications");
+    },
+    onSuccess: invalidate,
   });
 
   const unread = countData?.count || 0;
+  const hasRead = notifications.some((n: any) => n.read);
 
   return (
     <div className="relative" dir="rtl">
@@ -78,25 +92,40 @@ export function NotificationBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-0 top-10 w-72 bg-white border border-black/[0.08] rounded-2xl shadow-xl overflow-hidden z-50"
+              className="absolute left-0 top-10 w-80 bg-white border border-black/[0.08] rounded-2xl shadow-xl overflow-hidden z-50"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.05]">
-                <span className="text-xs font-black text-black">الإشعارات {unread > 0 && <span className="text-black/30">({unread})</span>}</span>
-                {unread > 0 && (
-                  <button
-                    onClick={() => markAllMutation.mutate()}
-                    disabled={markAllMutation.isPending}
-                    className="text-[10px] text-black/40 hover:text-black/70 transition-colors flex items-center gap-1"
-                    data-testid="button-mark-all-read"
-                  >
-                    <CheckCheck className="w-3 h-3" /> قراءة الكل
-                  </button>
-                )}
+                <span className="text-xs font-black text-black">
+                  الإشعارات {unread > 0 && <span className="text-black/30">({unread})</span>}
+                </span>
+                <div className="flex items-center gap-2">
+                  {unread > 0 && (
+                    <button
+                      onClick={() => markAllMutation.mutate()}
+                      disabled={markAllMutation.isPending}
+                      className="text-[10px] text-black/40 hover:text-black/70 transition-colors flex items-center gap-1"
+                      data-testid="button-mark-all-read"
+                    >
+                      <CheckCheck className="w-3 h-3" /> قراءة الكل
+                    </button>
+                  )}
+                  {hasRead && (
+                    <button
+                      onClick={() => clearReadMutation.mutate()}
+                      disabled={clearReadMutation.isPending}
+                      className="text-[10px] text-red-400 hover:text-red-600 transition-colors flex items-center gap-1"
+                      title="حذف المقروءة"
+                      data-testid="button-clear-read-notifications"
+                    >
+                      <Trash2 className="w-3 h-3" /> مسح المقروءة
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* List */}
-              <div className="max-h-72 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-4 h-4 animate-spin text-black/20" />
@@ -109,22 +138,38 @@ export function NotificationBell() {
                 ) : (
                   <div>
                     {notifications.map((n: any) => (
-                      <button
+                      <div
                         key={n.id}
-                        onClick={() => { markReadMutation.mutate(n.id); setOpen(false); if (n.link) window.location.href = n.link; }}
-                        className={`w-full flex items-start gap-3 px-4 py-3 text-right hover:bg-black/[0.02] border-b border-black/[0.03] transition-colors ${!n.read ? 'bg-black/[0.02]' : ''}`}
+                        className={`group flex items-start gap-3 px-4 py-3 border-b border-black/[0.03] transition-colors hover:bg-black/[0.02] ${!n.read ? 'bg-black/[0.02]' : ''}`}
                         data-testid={`notification-${n.id}`}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${!n.read ? 'bg-black/[0.06]' : 'bg-black/[0.03]'}`}>
+                        <div
+                          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 cursor-pointer ${!n.read ? 'bg-black/[0.06]' : 'bg-black/[0.03]'}`}
+                          onClick={() => { if (!n.read) markReadMutation.mutate(n.id); setOpen(false); if (n.link) window.location.href = n.link; }}
+                        >
                           <NotifIcon type={n.type} />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => { if (!n.read) markReadMutation.mutate(n.id); setOpen(false); if (n.link) window.location.href = n.link; }}
+                        >
                           <p className={`text-xs leading-relaxed ${!n.read ? 'font-bold text-black' : 'text-black/70'}`}>{n.title}</p>
                           {n.body && <p className="text-[10px] text-black/40 mt-0.5 truncate">{n.body}</p>}
                           <p className="text-[9px] text-black/25 mt-1">{timeAgo(n.createdAt)}</p>
                         </div>
-                        {!n.read && <div className="w-1.5 h-1.5 bg-black rounded-full flex-shrink-0 mt-2" />}
-                      </button>
+                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                          {!n.read && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteOneMutation.mutate(n.id); }}
+                            disabled={deleteOneMutation.isPending}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-50 text-black/20 hover:text-red-500 transition-all"
+                            title="حذف الإشعار"
+                            data-testid={`button-delete-notification-${n.id}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

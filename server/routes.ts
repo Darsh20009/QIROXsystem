@@ -2628,6 +2628,20 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  app.delete("/api/notifications/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    await NotificationModel.deleteOne({ _id: req.params.id, userId: (req.user as any).id });
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/notifications", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { NotificationModel } = await import("./models");
+    await NotificationModel.deleteMany({ userId: (req.user as any).id, read: true });
+    res.json({ ok: true });
+  });
+
   // ═══════════════════════════════════════════════════════════
   // === INBOX MESSAGES ===
   // ═══════════════════════════════════════════════════════════
