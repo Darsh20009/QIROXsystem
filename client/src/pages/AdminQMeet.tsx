@@ -141,7 +141,8 @@ export default function AdminQMeet() {
     return true;
   });
 
-  const isManagement = user && ["admin", "manager"].includes(user.role);
+  const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
+  const isManagement = user && STAFF_ROLES.includes(user.role);
 
   const filteredClients = clients.filter(c => !clientSearch || (c.fullName || "").toLowerCase().includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase()));
 

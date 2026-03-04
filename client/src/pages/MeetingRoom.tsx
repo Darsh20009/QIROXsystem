@@ -133,6 +133,8 @@ export default function MeetingRoom() {
   const [audioOn, setAudioOn] = useState(true);
   const [videoOn, setVideoOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
+  const [screenSharerPeerId, setScreenSharerPeerId] = useState<string | null>(null);
+  const [screenSharerName, setScreenSharerName] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<PanelTab | null>(null);
   const [chatMsg, setChatMsg] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -287,10 +289,6 @@ export default function MeetingRoom() {
         await addIceCandidate(data.from, data.candidate);
         break;
       }
-      case "webrtc_peer_left": {
-        removePeer(data.peerId);
-        break;
-      }
       case "webrtc_chat": {
         setChatMessages(prev => [...prev, { from: data.from, name: data.name, text: data.text, ts: data.ts }]);
         if (activePanelRef.current !== 'chat') {
@@ -326,6 +324,21 @@ export default function MeetingRoom() {
           const ctx = canvas.getContext("2d");
           ctx?.clearRect(0, 0, canvas.width, canvas.height);
         }
+        break;
+      }
+      case "webrtc_screen_share": {
+        if (data.active) {
+          setScreenSharerPeerId(data.from);
+          setScreenSharerName(data.name || data.from);
+        } else {
+          setScreenSharerPeerId(prev => prev === data.from ? null : prev);
+          setScreenSharerName(prev => prev === (data.name || data.from) ? null : prev);
+        }
+        break;
+      }
+      case "webrtc_peer_left": {
+        removePeer(data.peerId);
+        setScreenSharerPeerId(prev => prev === data.peerId ? null : prev);
         break;
       }
     }
@@ -414,7 +427,6 @@ export default function MeetingRoom() {
   }, [audioOn, videoOn, roomId, sendWs]);
 
   const stopScreenShare = useCallback(async () => {
-    // Replace screen track with camera track for all peers
     try {
       const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       const camTrack = cam.getVideoTracks()[0];
@@ -429,7 +441,6 @@ export default function MeetingRoom() {
       setLocalStream(newStream);
       setVideoOn(true);
     } catch {
-      // Camera not available — remove video track
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
       const newStream = new MediaStream(audio ? [audio] : []);
@@ -438,7 +449,10 @@ export default function MeetingRoom() {
       setVideoOn(false);
     }
     setScreenSharing(false);
-  }, []);
+    setScreenSharerPeerId(null);
+    setScreenSharerName(null);
+    sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
+  }, [sendWs, roomId, userName]);
 
   const toggleScreenShare = useCallback(async () => {
     if (screenSharingRef.current) {
@@ -457,16 +471,17 @@ export default function MeetingRoom() {
         localStreamRef.current = newStream;
         setLocalStream(newStream);
         setScreenSharing(true);
-        // Use ref in onended to avoid stale closure
+        setScreenSharerPeerId(userId || "local");
+        setScreenSharerName(userName);
+        sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
         screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
       } catch (err: any) {
-        // User cancelled or permission denied — ignore
         if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
           toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
         }
       }
     }
-  }, [stopScreenShare, toast]);
+  }, [stopScreenShare, sendWs, roomId, userId, userName, toast]);
 
   const sendChat = useCallback(() => {
     const text = chatMsg.trim();
@@ -526,6 +541,48 @@ export default function MeetingRoom() {
   };
 
   const handleCanvasMouseUp = () => { setIsDrawing(false); lastPos.current = null; };
+
+  const getTouchCanvasPos = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const pos = getTouchCanvasPos(e);
+    if (!pos) return;
+    setIsDrawing(true);
+    lastPos.current = pos;
+  };
+
+  const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing || !lastPos.current) return;
+    const pos = getTouchCanvasPos(e);
+    if (!pos) return;
+    const stroke: DrawStroke = {
+      x1: lastPos.current.x, y1: lastPos.current.y,
+      x2: pos.x, y2: pos.y,
+      color: drawColor, size: drawSize, eraser: drawMode === "eraser",
+    };
+    drawStrokeOnCanvas(stroke);
+    sendWs({ type: "webrtc_draw", roomId, stroke });
+    lastPos.current = pos;
+  };
+
+  const handleCanvasTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsDrawing(false);
+    lastPos.current = null;
+  };
 
   const clearWhiteboard = () => {
     const canvas = canvasRef.current;
@@ -675,8 +732,55 @@ export default function MeetingRoom() {
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Video grid */}
-        <div className="flex-1 p-3 overflow-hidden">
+        {/* Video area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* ── Spotlight mode: screen share active ── */}
+          {screenSharerPeerId ? (() => {
+            const sharerIsLocal = screenSharerPeerId === (userId || "local");
+            const sharerPeer = sharerIsLocal ? localPeer : peers.get(screenSharerPeerId);
+            const otherPeers = allPeers.filter(p => p.id !== screenSharerPeerId);
+            return (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Screen share banner */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 border-b border-blue-500/20 shrink-0">
+                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-blue-300 text-xs font-medium">
+                    {sharerIsLocal ? "أنت تشارك شاشتك" : `${screenSharerName || "مشارك"} يشارك شاشته`}
+                  </span>
+                  {sharerIsLocal && (
+                    <button onClick={toggleScreenShare} className="mr-auto text-blue-400 hover:text-red-400 text-xs underline transition-colors">إيقاف المشاركة</button>
+                  )}
+                </div>
+                {/* Main spotlight */}
+                <div className="flex-1 p-2 overflow-hidden">
+                  {sharerPeer && (
+                    <VideoTile
+                      peer={sharerPeer}
+                      local={sharerIsLocal}
+                      canKick={false}
+                    />
+                  )}
+                </div>
+                {/* Thumbnail strip for other participants */}
+                {otherPeers.length > 0 && (
+                  <div className="h-28 sm:h-32 shrink-0 flex gap-2 px-2 pb-2 overflow-x-auto scrollbar-none">
+                    {otherPeers.map(peer => (
+                      <div key={peer.id} className="shrink-0 w-44 sm:w-48">
+                        <VideoTile
+                          peer={peer}
+                          local={peer.id === (userId || "local")}
+                          canKick={isAdmin}
+                          onKick={() => kickPeer(peer.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })() : (
+          /* ── Normal grid mode ── */
+          <div className="flex-1 p-2 sm:p-3 overflow-hidden">
           <div className={`grid ${gridCols} gap-2.5 h-full max-h-[calc(100vh-140px)]`}>
             {allPeers.map(peer => (
               <VideoTile
@@ -688,6 +792,8 @@ export default function MeetingRoom() {
               />
             ))}
           </div>
+        </div>
+          )}
         </div>
 
         {/* Side panel */}
@@ -799,7 +905,10 @@ export default function MeetingRoom() {
                     onMouseMove={handleCanvasMouseMove}
                     onMouseUp={handleCanvasMouseUp}
                     onMouseLeave={handleCanvasMouseUp}
-                    className="w-full h-full cursor-crosshair"
+                    onTouchStart={handleCanvasTouchStart}
+                    onTouchMove={handleCanvasTouchMove}
+                    onTouchEnd={handleCanvasTouchEnd}
+                    className="w-full h-full"
                     style={{ cursor: drawMode === "eraser" ? "cell" : "crosshair", touchAction: "none" }}
                     data-testid="canvas-whiteboard"
                   />
@@ -910,19 +1019,20 @@ export default function MeetingRoom() {
         )}
       </div>
 
-      {/* Control bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-t border-white/[0.06] shrink-0">
-        <div className="flex items-center gap-2">
+      {/* Control bar — mobile-first */}
+      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-1 safe-area-bottom" style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
+        {/* Panel toggles */}
+        <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
           {PANEL_TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => togglePanel(tab.id)}
-              className={`relative flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-medium transition-all ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
+              className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-[11px] font-medium transition-all shrink-0 ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
               title={tab.label}
               data-testid={`button-panel-toggle-${tab.id}`}
             >
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden md:inline">{tab.label}</span>
+              <tab.icon className="w-4 h-4 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
               {tab.id === 'chat' && unreadChat > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                   {unreadChat > 9 ? "9+" : unreadChat}
@@ -932,17 +1042,18 @@ export default function MeetingRoom() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={toggleAudio} className={`p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
-            {audioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        {/* Media controls — center */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button onClick={toggleAudio} className={`p-2.5 sm:p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
+            {audioOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
-          <button onClick={toggleVideo} className={`p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
-            {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+          <button onClick={toggleVideo} className={`p-2.5 sm:p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
+            {videoOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
-          <button onClick={toggleScreenShare} className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`} title={screenSharing ? "إيقاف مشاركة الشاشة" : "مشاركة الشاشة"} data-testid="button-screen-share">
-            {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+          <button onClick={toggleScreenShare} className={`hidden sm:flex p-2.5 sm:p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`} title={screenSharing ? "إيقاف مشاركة الشاشة" : "مشاركة الشاشة"} data-testid="button-screen-share">
+            {screenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
-          <button onClick={leaveMeeting} className="p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
+          <button onClick={leaveMeeting} className="p-2.5 sm:p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
             <PhoneOff className="w-5 h-5" />
           </button>
         </div>

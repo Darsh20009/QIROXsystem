@@ -1,7 +1,11 @@
 import { type Express } from "express";
-import { QMeetingModel, QFeedbackModel, QReportModel } from "./models";
+import { QMeetingModel as _QM, QFeedbackModel as _QF, QReportModel as _QR } from "./qmeet-db";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
+
+const QMeetingModel = new Proxy({} as ReturnType<typeof _QM>, { get: (_, p) => (_QM() as any)[p] });
+const QFeedbackModel = new Proxy({} as ReturnType<typeof _QF>, { get: (_, p) => (_QF() as any)[p] });
+const QReportModel   = new Proxy({} as ReturnType<typeof _QR>, { get: (_, p) => (_QR() as any)[p] });
 
 const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 const fullMeetLink = (link: string) => link.startsWith("http") ? link : `${SITE_URL}${link}`;
@@ -125,11 +129,16 @@ export function startQMeetScheduler() {
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-function requireManagement(req: any, res: any, next: any) {
+const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
+
+function requireStaff(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) return res.status(401).json({ message: "غير مصرح" });
-  if (!["admin", "manager"].includes(req.user?.role)) return res.status(403).json({ message: "للإدارة فقط" });
+  if (!STAFF_ROLES.includes(req.user?.role)) return res.status(403).json({ message: "للموظفين فقط" });
   next();
 }
+
+// Keep alias for backwards compat
+const requireManagement = requireStaff;
 
 function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) return res.status(401).json({ message: "غير مصرح" });

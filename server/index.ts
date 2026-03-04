@@ -157,6 +157,16 @@ wss.on("connection", (ws) => {
         }
         return;
       }
+
+      if (msg.type === "webrtc_screen_share" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_screen_share", from: userId, active: !!msg.active, name: msg.name || userId });
+          }
+        }
+        return;
+      }
     } catch {}
   });
 

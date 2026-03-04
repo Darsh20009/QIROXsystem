@@ -30,6 +30,7 @@ import { useI18n } from "@/lib/i18n";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];
+const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
 const FINANCE_ROLES = ["admin", "manager", "accountant"];
 const SALES_ROLES = ["admin", "manager", "sales_manager", "sales"];
 
@@ -117,7 +118,7 @@ export function AppSidebar() {
     { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
-    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     // Admin — team
