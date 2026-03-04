@@ -274,10 +274,11 @@ export default function Cart() {
     }
   };
 
-  const totalSteps = hasPhysical ? 2 : 1;
+  const totalSteps = hasPhysical ? 3 : 2;
+  const paymentStep = totalSteps;
   const canNextStep = () => {
     if (preCheckoutStep === 1) return true;
-    if (preCheckoutStep === 2) return shipping.name.trim() && shipping.phone.trim() && shipping.city.trim();
+    if (hasPhysical && preCheckoutStep === 2) return !!(shipping.name.trim() && shipping.phone.trim() && shipping.city.trim());
     return true;
   };
 
@@ -805,7 +806,7 @@ export default function Cart() {
                 <div>
                   <p className="font-black text-white text-base">إتمام الطلب</p>
                   <p className="text-white/50 text-xs">
-                    {preCheckoutStep === 1 ? "تفاصيل المشروع والملفات" : "بيانات الشحن"}
+                    {preCheckoutStep === 1 ? "تفاصيل المشروع والملفات" : preCheckoutStep === paymentStep ? "اختر طريقة الدفع" : "بيانات الشحن"}
                   </p>
                 </div>
                 <button onClick={() => setPreCheckoutOpen(false)} className="mr-auto w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white">
@@ -914,92 +915,11 @@ export default function Cart() {
                     </button>
                   </div>
 
-                  {/* ── Wallet payment section ── */}
-                  {walletBalance > 0 && (
-                    <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet ? "border-emerald-400 bg-emerald-50/50" : "border-black/[0.07] bg-white"}`}>
-                      <button
-                        className="w-full flex items-center gap-3 p-4"
-                        onClick={() => {
-                          const next = !useWallet;
-                          setUseWallet(next);
-                          if (next) setWalletAmount(Math.min(walletBalance, total));
-                        }}
-                        data-testid="toggle-use-wallet">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${useWallet ? "bg-emerald-500" : "bg-black/[0.06]"}`}>
-                          <Wallet className={`w-5 h-5 ${useWallet ? "text-white" : "text-black/40"}`} />
-                        </div>
-                        <div className="flex-1 text-right">
-                          <p className={`font-bold text-sm ${useWallet ? "text-emerald-800" : "text-black"}`}>الدفع من المحفظة الإلكترونية</p>
-                          <p className={`text-xs mt-0.5 ${useWallet ? "text-emerald-600" : "text-black/40"}`}>
-                            رصيدك المتاح: <span className="font-black">{walletBalance.toLocaleString()} ر.س</span>
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-emerald-500 bg-emerald-500" : "border-black/20"}`}>
-                          {useWallet && <CheckCircle2 className="w-4 h-4 text-white" />}
-                        </div>
-                      </button>
-
-                      <AnimatePresence>
-                        {useWallet && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden">
-                            <div className="px-4 pb-4 space-y-3">
-                              <div>
-                                <Label className="text-xs font-bold text-emerald-700/70 uppercase tracking-wider mb-1.5 block">
-                                  المبلغ المراد استخدامه من المحفظة
-                                </Label>
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="number"
-                                    value={walletAmount}
-                                    min={0}
-                                    max={maxWalletUsable}
-                                    step={0.01}
-                                    onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                                    className="flex-1 h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-mono text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                                    data-testid="input-wallet-amount"
-                                  />
-                                  <span className="text-sm text-emerald-700 font-bold shrink-0">ر.س</span>
-                                  <button
-                                    onClick={() => setWalletAmount(maxWalletUsable)}
-                                    className="text-xs font-bold text-emerald-600 bg-emerald-100 hover:bg-emerald-200 px-3 py-2 rounded-xl transition-all shrink-0"
-                                    data-testid="button-use-all-wallet">
-                                    كل الرصيد
-                                  </button>
-                                </div>
-                              </div>
-
-                              {effectiveWalletAmount > 0 && (
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="bg-emerald-100 rounded-xl p-3 text-center">
-                                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-0.5">من المحفظة</p>
-                                    <p className="text-emerald-800 font-black text-base">{effectiveWalletAmount.toLocaleString()} <span className="text-xs font-normal">ر.س</span></p>
-                                  </div>
-                                  <div className={`rounded-xl p-3 text-center ${fullyPaidByWallet ? "bg-green-100" : "bg-amber-50"}`}>
-                                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${fullyPaidByWallet ? "text-green-600" : "text-amber-600"}`}>
-                                      {fullyPaidByWallet ? "مسدّد بالكامل" : "يتبقى بنكي"}
-                                    </p>
-                                    <p className={`font-black text-base ${fullyPaidByWallet ? "text-green-700" : "text-amber-700"}`}>
-                                      {fullyPaidByWallet ? "✓ صفر" : `${remainingAfterWallet.toLocaleString()} ر.س`}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
                 </>
               )}
 
               {/* Step 2: Shipping (only if physical products) */}
-              {preCheckoutStep === 2 && (
+              {hasPhysical && preCheckoutStep === 2 && (
                 <>
                   <div className="flex items-center gap-2 bg-blue-50 border border-blue-200/50 rounded-xl px-4 py-3 mb-2">
                     <Package className="w-4 h-4 text-blue-600 shrink-0" />
@@ -1032,6 +952,120 @@ export default function Cart() {
                   </div>
                 </>
               )}
+
+              {/* Payment Step (always last) */}
+              {preCheckoutStep === paymentStep && (
+                <>
+                  {/* Total summary */}
+                  <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-4 text-white">
+                    <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">إجمالي الطلب</p>
+                    <p className="text-2xl font-black">{fmt(total)} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+                    <p className="text-white/30 text-[11px] mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
+                    {effectiveWalletAmount > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                        <span className="text-emerald-400">من المحفظة</span>
+                        <span className="font-black text-emerald-300">- {fmt(effectiveWalletAmount)} ر.س</span>
+                      </div>
+                    )}
+                    {effectiveWalletAmount > 0 && !fullyPaidByWallet && (
+                      <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="text-amber-300">يتبقى بنكي</span>
+                        <span className="font-black text-amber-200">{fmt(remainingAfterWallet)} ر.س</span>
+                      </div>
+                    )}
+                    {fullyPaidByWallet && (
+                      <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="text-green-400">الحالة</span>
+                        <span className="font-black text-green-300">مسدّد بالكامل ✓</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Wallet toggle */}
+                  {walletBalance > 0 && (
+                    <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet ? "border-emerald-400 bg-emerald-50/50" : "border-black/[0.07] bg-white"}`}>
+                      <button
+                        className="w-full flex items-center gap-3 p-4"
+                        onClick={() => {
+                          const next = !useWallet;
+                          setUseWallet(next);
+                          if (next) setWalletAmount(Math.min(walletBalance, total));
+                        }}
+                        data-testid="toggle-use-wallet">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${useWallet ? "bg-emerald-500" : "bg-black/[0.06]"}`}>
+                          <Wallet className={`w-5 h-5 ${useWallet ? "text-white" : "text-black/40"}`} />
+                        </div>
+                        <div className="flex-1 text-right">
+                          <p className={`font-bold text-sm ${useWallet ? "text-emerald-800" : "text-black"}`}>الدفع من المحفظة الإلكترونية</p>
+                          <p className={`text-xs mt-0.5 ${useWallet ? "text-emerald-600" : "text-black/40"}`}>
+                            رصيدك المتاح: <span className="font-black">{walletBalance.toLocaleString()} ر.س</span>
+                          </p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-emerald-500 bg-emerald-500" : "border-black/20"}`}>
+                          {useWallet && <CheckCircle2 className="w-4 h-4 text-white" />}
+                        </div>
+                      </button>
+                      <AnimatePresence>
+                        {useWallet && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                            <div className="px-4 pb-4 space-y-3">
+                              <div>
+                                <Label className="text-xs font-bold text-emerald-700/70 uppercase tracking-wider mb-1.5 block">المبلغ المراد استخدامه من المحفظة</Label>
+                                <div className="flex items-center gap-3">
+                                  <input type="number" value={walletAmount} min={0} max={maxWalletUsable} step={0.01}
+                                    onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
+                                    className="flex-1 h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-mono text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                    data-testid="input-wallet-amount" />
+                                  <span className="text-sm text-emerald-700 font-bold shrink-0">ر.س</span>
+                                  <button onClick={() => setWalletAmount(maxWalletUsable)}
+                                    className="text-xs font-bold text-emerald-600 bg-emerald-100 hover:bg-emerald-200 px-3 py-2 rounded-xl transition-all shrink-0"
+                                    data-testid="button-use-all-wallet">كل الرصيد</button>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Bank transfer section — only if not fully paid by wallet */}
+                  {!fullyPaidByWallet && (
+                    <div className="rounded-2xl border border-black/[0.07] bg-white overflow-hidden">
+                      <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                          <BanknoteIcon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm text-black">التحويل البنكي</p>
+                          <p className="text-xs text-black/40 mt-0.5">حوّل المبلغ وارفع الإيصال بعد تأكيد الطلب</p>
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-black/40 text-xs">البنك</span>
+                          <span className="font-bold text-xs text-black">{BANK.bankName}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-black/40 text-xs">IBAN</span>
+                          <span className="font-mono font-bold text-xs text-black tracking-wider">{BANK.iban}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-black/40 text-xs">اسم المستفيد</span>
+                          <span className="font-bold text-xs text-black">{BANK.accountName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-black/40 text-xs">المبلغ المطلوب</span>
+                          <span className="font-black text-sm text-blue-700">{fmt(remainingAfterWallet)} ر.س</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </ScrollArea>
 
@@ -1054,8 +1088,9 @@ export default function Cart() {
               {preCheckoutStep < totalSteps ? (
                 <Button className="flex-1 bg-gradient-to-l from-gray-900 to-black text-white font-black h-12 rounded-xl gap-2 shadow-lg"
                   onClick={() => setPreCheckoutStep(s => s + 1)}
+                  disabled={!canNextStep()}
                   data-testid="button-next-step">
-                  التالي — بيانات الشحن
+                  {preCheckoutStep === 1 && hasPhysical ? "التالي — بيانات الشحن" : "التالي — طريقة الدفع"}
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               ) : (
