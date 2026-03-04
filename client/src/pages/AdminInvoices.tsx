@@ -41,6 +41,7 @@ interface Order {
   projectType: string;
   sector: string;
   totalAmount?: number;
+  userId?: string;
 }
 
 function InvoiceForm({ onClose }: { onClose: () => void }) {
@@ -72,6 +73,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     userId: "",
     orderId: "",
     amount: "",
+    status: "paid" as "paid" | "unpaid",
     dueDate: "",
     notes: "",
     items: [] as { name: string; qty: number; unitPrice: number; total: number }[],
@@ -79,6 +81,20 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
     newItemQty: "1",
     newItemPrice: "",
   });
+
+  const handleOrderSelect = (orderId: string) => {
+    if (orderId === "none") { setForm(p => ({ ...p, orderId: "" })); return; }
+    const order = (orders || []).find(o => o.id === orderId) as any;
+    const clientId = typeof order?.userId === "object"
+      ? order?.userId?._id?.toString() || (order as any)?.client?._id?.toString()
+      : order?.userId;
+    setForm(p => ({
+      ...p,
+      orderId,
+      amount: order?.totalAmount ? String(order.totalAmount) : p.amount,
+      userId: clientId || p.userId,
+    }));
+  };
 
   const addItem = () => {
     if (!form.newItemName || !form.newItemPrice) return;
@@ -105,6 +121,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         userId: form.userId,
         orderId: form.orderId || undefined,
         amount: finalAmount,
+        status: form.status,
         dueDate: form.dueDate || undefined,
         notes: form.notes || undefined,
         items: form.items.length > 0 ? form.items : undefined,
@@ -130,6 +147,41 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir="rtl">
+
+      {/* Status Toggle */}
+      <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
+        {([["paid", "✅ مدفوعة"], ["unpaid", "⏳ غير مدفوعة"]] as const).map(([val, label]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => setForm(p => ({ ...p, status: val }))}
+            className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all ${form.status === val ? "bg-white shadow text-black" : "text-black/40 hover:text-black/70"}`}
+            data-testid={`button-invoice-status-${val}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Order Quick Selector */}
+      <div className="bg-cyan-50 border border-cyan-200/60 rounded-xl p-3">
+        <Label className="text-xs text-cyan-700 font-bold mb-2 block">🔗 اربط بطلب موجود (يُعبّئ المبلغ والعميل تلقائياً)</Label>
+        <Select value={form.orderId || "none"} onValueChange={handleOrderSelect}>
+          <SelectTrigger className="h-9 text-sm border-cyan-200 bg-white">
+            <SelectValue placeholder="اختر طلباً..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">بدون ربط بطلب</SelectItem>
+            {(orders || []).map((o: Order) => (
+              <SelectItem key={o.id} value={o.id}>
+                {o.projectType || o.sector || o.id.slice(-6)}
+                {o.totalAmount ? ` — ${Number(o.totalAmount).toLocaleString()} ر.س` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-black/50 mb-1 block">العميل *</Label>
@@ -145,31 +197,16 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">الطلب (اختياري)</Label>
-          <Select value={form.orderId} onValueChange={v => setForm(p => ({ ...p, orderId: v }))}>
-            <SelectTrigger className="h-9 text-sm border-black/[0.10]">
-              <SelectValue placeholder="اربط بطلب" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">بدون طلب</SelectItem>
-              {(orders || []).map((o: Order) => (
-                <SelectItem key={o.id} value={o.id}>{o.projectType || o.sector || o.id}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs text-black/50 mb-1 block">المبلغ (ر.س) {form.orderId ? "— مُعبّأ من الطلب" : ""}</Label>
+          <Input
+            type="number"
+            placeholder="1000"
+            value={form.amount}
+            onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+            className={`h-9 text-sm border-black/[0.10] ${form.orderId ? "bg-cyan-50 border-cyan-300" : ""}`}
+            dir="ltr"
+          />
         </div>
-      </div>
-
-      <div>
-        <Label className="text-xs text-black/50 mb-1 block">المبلغ يدوياً (ر.س) — أو أضف بنوداً أدناه</Label>
-        <Input
-          type="number"
-          placeholder="1000"
-          value={form.amount}
-          onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
-          className="h-9 text-sm border-black/[0.10]"
-          dir="ltr"
-        />
       </div>
 
       <div>

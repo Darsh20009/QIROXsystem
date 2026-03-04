@@ -15,9 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones, Upload } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -1389,6 +1389,24 @@ export default function Dashboard() {
   const [subSvcProjectLabel, setSubSvcProjectLabel] = useState("");
   const [subSvcType, setSubSvcType] = useState("");
   const [subSvcNotes, setSubSvcNotes] = useState("");
+  const [uploadingProofOrderId, setUploadingProofOrderId] = useState<string | null>(null);
+  const proofFileRef = useRef<HTMLInputElement>(null);
+
+  const uploadProofMutation = useMutation({
+    mutationFn: async ({ orderId, file }: { orderId: string; file: File }) => {
+      const fd = new FormData(); fd.append("file", file);
+      const up = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+      if (!up.ok) throw new Error("فشل رفع الملف");
+      const { url } = await up.json();
+      await apiRequest("PATCH", `/api/orders/${orderId}/proof`, { paymentProofUrl: url });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      setUploadingProofOrderId(null);
+      toast({ title: "✅ تم رفع سند التحويل بنجاح" });
+    },
+    onError: () => toast({ title: "فشل رفع السند", variant: "destructive" }),
+  });
 
   const { data: clientOrderSpecs, isLoading: isLoadingClientSpecs } = useQuery<any>({
     queryKey: ['/api/orders', clientSpecsOrderId, 'specs'],
@@ -2100,6 +2118,66 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {/* Bank Transfer Proof Upload Banner */}
+          {(() => {
+            const pendingProofOrders = (orders || []).filter((o: any) =>
+              o.paymentMethod === "bank_transfer" && !o.paymentProofUrl
+            );
+            if (pendingProofOrders.length === 0) return null;
+            return (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                className="col-span-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl p-4 mb-2" dir="rtl">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center shrink-0">
+                    <Upload className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-amber-800 dark:text-amber-300">{L ? "طلبات تنتظر سند التحويل" : "Orders Awaiting Transfer Proof"}</p>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-500">{L ? "يرجى رفع إيصال التحويل البنكي لإتمام طلبك" : "Please upload your bank transfer receipt"}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {pendingProofOrders.map((o: any) => (
+                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-amber-100 dark:border-amber-800/30">
+                      <div>
+                        <p className="text-xs font-bold text-black dark:text-white">طلب #{String(o.id)?.slice(-6)}</p>
+                        <p className="text-[10px] text-black/40 dark:text-white/40">{o.totalAmount ? `${Number(o.totalAmount).toLocaleString()} ر.س` : ''} · تحويل بنكي</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {uploadProofMutation.isPending && uploadingProofOrderId === String(o.id)
+                          ? <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          : (
+                            <button
+                              onClick={() => { setUploadingProofOrderId(String(o.id)); proofFileRef.current?.click(); }}
+                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                              data-testid={`button-upload-proof-${o.id}`}
+                            >
+                              <Upload className="w-3 h-3" />
+                              {L ? "رفع السند" : "Upload Proof"}
+                            </button>
+                          )
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <input
+                  ref={proofFileRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file && uploadingProofOrderId) {
+                      uploadProofMutation.mutate({ orderId: uploadingProofOrderId, file });
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </motion.div>
+            );
+          })()}
 
           {/* Orders + Mod Requests Column */}
           <div className="space-y-5">
