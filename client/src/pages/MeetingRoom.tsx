@@ -21,7 +21,27 @@ const RTC_CONFIG: RTCConfiguration = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    {
+      urls: [
+        "turn:openrelay.metered.ca:80",
+        "turn:openrelay.metered.ca:443",
+        "turn:openrelay.metered.ca:443?transport=tcp",
+      ],
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: [
+        "turn:relay.metered.ca:80",
+        "turn:relay.metered.ca:443",
+        "turn:relay.metered.ca:443?transport=tcp",
+      ],
+      username: "e7b7c7d7c5e1c0c2a2dff7d5",
+      credential: "6JqHH7XvZWLMUvFF",
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 interface Peer {
@@ -49,17 +69,28 @@ function VideoTile({ peer, local = false, onKick, canKick }: {
   peer: Peer; local?: boolean; onKick?: () => void; canKick?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && peer.stream) {
-      videoRef.current.srcObject = peer.stream;
+    if (peer.stream) {
+      if (videoRef.current) {
+        videoRef.current.srcObject = peer.stream;
+        videoRef.current.play().catch(() => {});
+      }
+      if (audioRef.current && !local) {
+        audioRef.current.srcObject = peer.stream;
+        audioRef.current.play().catch(() => {});
+      }
     }
-  }, [peer.stream]);
+  }, [peer.stream, local]);
 
   return (
     <div className="relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center aspect-video group">
+      {!local && peer.stream && (
+        <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
+      )}
       {peer.stream && peer.videoOn ? (
-        <video ref={videoRef} autoPlay playsInline muted={local} className="w-full h-full object-cover" data-testid={`video-tile-${peer.id}`} />
+        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" data-testid={`video-tile-${peer.id}`} />
       ) : (
         <div className="flex flex-col items-center gap-2">
           <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-white">
@@ -310,6 +341,7 @@ export default function MeetingRoom() {
         break;
       }
       case "webrtc_kicked": {
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         pcsRef.current.forEach(pc => pc.close());
         pcsRef.current.clear();
         localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -359,15 +391,19 @@ export default function MeetingRoom() {
   }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast]);
 
   const getMedia = useCallback(async () => {
+    const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        audio: audioConstraints,
+      });
       localStreamRef.current = stream;
       setLocalStream(stream);
       setMediaError(null);
       return stream;
     } catch {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
         localStreamRef.current = stream;
         setLocalStream(stream);
         setVideoOn(false);
@@ -385,17 +421,16 @@ export default function MeetingRoom() {
     return () => { localStreamRef.current?.getTracks().forEach(t => t.stop()); };
   }, [getMedia]);
 
-  const joinMeeting = useCallback(async () => {
-    if (!userId || !roomId) return;
-    const stream = localStream || await getMedia();
-    if (!stream && !mediaError) return;
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const connectWs = useCallback((uid: string, rId: string, uName: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "auth", userId }));
+      ws.send(JSON.stringify({ type: "auth", userId: uid }));
       setWsReady(true);
     };
 
@@ -403,7 +438,7 @@ export default function MeetingRoom() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "online_users") {
-          ws.send(JSON.stringify({ type: "webrtc_join", roomId, name: userName }));
+          ws.send(JSON.stringify({ type: "webrtc_join", roomId: rId, name: uName }));
           setJoined(true);
         } else {
           await handleWsMessage(data);
@@ -411,11 +446,28 @@ export default function MeetingRoom() {
       } catch {}
     };
 
-    ws.onclose = () => setWsReady(false);
-    ws.onerror = () => setWsReady(false);
-  }, [userId, roomId, userName, localStream, mediaError, getMedia, handleWsMessage]);
+    ws.onclose = () => {
+      setWsReady(false);
+      // Auto-reconnect if still in meeting (not kicked)
+      reconnectTimerRef.current = setTimeout(() => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) {
+          connectWs(uid, rId, uName);
+        }
+      }, 3000);
+    };
+    ws.onerror = () => { ws.close(); };
+  }, [handleWsMessage]);
+
+  const joinMeeting = useCallback(async () => {
+    if (!userId || !roomId) return;
+    const stream = localStream || await getMedia();
+    if (!stream && !mediaError) return;
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    connectWs(userId, roomId, userName);
+  }, [userId, roomId, userName, localStream, mediaError, getMedia, connectWs]);
 
   const leaveMeeting = useCallback(() => {
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     sendWs({ type: "webrtc_leave", roomId });
     pcsRef.current.forEach(pc => pc.close());
     pcsRef.current.clear();

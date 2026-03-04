@@ -2148,10 +2148,10 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const {
-        OrderModel, UserModel, InvoiceModel, ReceiptModel, WalletTransactionModel,
+        OrderModel, UserModel, InvoiceModel, ReceiptVoucherModel, WalletTransactionModel,
         SupportTicketModel, InboxMessageModel, InstallmentApplicationModel,
-        InstallmentOfferModel, InvestorModel, PayrollModel, ModificationRequestModel,
-        AttendanceModel, NewsModel, JobModel, DiscountCodeModel, ShipmentModel,
+        InstallmentOfferModel, InvestorProfileModel, PayrollRecordModel, ModificationRequestModel,
+        AttendanceModel, NewsModel, JobModel, DiscountCodeModel, DeviceShipmentModel,
         ConsultationBookingModel, NotificationModel,
       } = await import("./models");
       const now = new Date();
@@ -2186,7 +2186,7 @@ export async function registerRoutes(
         (OrderModel as any).countDocuments({ status: "completed" }),
         (InvoiceModel as any).countDocuments(),
         (InvoiceModel as any).countDocuments({ status: { $in: ["draft", "sent"] } }),
-        (ReceiptModel as any).countDocuments(),
+        (ReceiptVoucherModel as any).countDocuments(),
         (WalletTransactionModel as any).countDocuments(),
         (SupportTicketModel as any).countDocuments(),
         (SupportTicketModel as any).countDocuments({ status: { $in: ["open", "pending"] } }),
@@ -2195,9 +2195,9 @@ export async function registerRoutes(
         (InstallmentApplicationModel as any).countDocuments(),
         (InstallmentApplicationModel as any).countDocuments({ status: "pending" }),
         (InstallmentOfferModel as any).countDocuments(),
-        (InvestorModel as any).countDocuments(),
-        (PayrollModel as any).countDocuments(),
-        (PayrollModel as any).countDocuments({ month: now.getMonth() + 1, year: now.getFullYear() }),
+        (InvestorProfileModel as any).countDocuments(),
+        (PayrollRecordModel as any).countDocuments(),
+        (PayrollRecordModel as any).countDocuments({ month: now.getMonth() + 1, year: now.getFullYear() }),
         (ModificationRequestModel as any).countDocuments(),
         (ModificationRequestModel as any).countDocuments({ status: "pending" }),
         (AttendanceModel as any).countDocuments({ createdAt: { $gte: new Date(now.toDateString()) } }),
@@ -2206,8 +2206,8 @@ export async function registerRoutes(
         (JobModel as any).countDocuments(),
         (JobModel as any).countDocuments({ isActive: true }),
         (DiscountCodeModel as any).countDocuments(),
-        (ShipmentModel as any).countDocuments(),
-        (ShipmentModel as any).countDocuments({ status: { $in: ["pending", "processing"] } }),
+        (DeviceShipmentModel as any).countDocuments(),
+        (DeviceShipmentModel as any).countDocuments({ status: { $in: ["pending", "processing"] } }),
         (ConsultationBookingModel as any).countDocuments(),
         (NotificationModel as any).countDocuments({ read: false }),
       ]);
