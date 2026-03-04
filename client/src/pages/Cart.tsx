@@ -981,53 +981,66 @@ export default function Cart() {
                     )}
                   </div>
 
-                  {/* Wallet toggle */}
-                  {walletBalance > 0 && (
-                    <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet ? "border-emerald-400 bg-emerald-50/50" : "border-black/[0.07] bg-white"}`}>
-                      <button
-                        className="w-full flex items-center gap-3 p-4"
-                        onClick={() => {
-                          const next = !useWallet;
-                          setUseWallet(next);
-                          if (next) setWalletAmount(Math.min(walletBalance, total));
-                        }}
-                        data-testid="toggle-use-wallet">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${useWallet ? "bg-emerald-500" : "bg-black/[0.06]"}`}>
-                          <Wallet className={`w-5 h-5 ${useWallet ? "text-white" : "text-black/40"}`} />
-                        </div>
-                        <div className="flex-1 text-right">
-                          <p className={`font-bold text-sm ${useWallet ? "text-emerald-800" : "text-black"}`}>الدفع من المحفظة الإلكترونية</p>
-                          <p className={`text-xs mt-0.5 ${useWallet ? "text-emerald-600" : "text-black/40"}`}>
-                            رصيدك المتاح: <span className="font-black">{walletBalance.toLocaleString()} ر.س</span>
+                  {/* Qirox Pay Card — always visible */}
+                  <div className={`rounded-2xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-cyan-400 shadow-lg shadow-cyan-100" : walletBalance === 0 ? "border-black/[0.06] opacity-80" : "border-black/[0.07]"}`}
+                    style={useWallet && walletBalance > 0 ? { background: "linear-gradient(135deg,#f0fdff,#ecfeff)" } : { background: "white" }}>
+                    <button
+                      className="w-full flex items-center gap-3 p-4"
+                      disabled={walletBalance === 0}
+                      onClick={() => {
+                        if (walletBalance === 0) return;
+                        const next = !useWallet;
+                        setUseWallet(next);
+                        if (next) setWalletAmount(Math.min(walletBalance, total));
+                      }}
+                      data-testid="toggle-use-wallet">
+                      {/* Qirox Pay mini card visual */}
+                      <div className="w-12 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all overflow-hidden"
+                        style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
+                        <span className="text-[8px] font-black tracking-wider">
+                          <span className="text-cyan-400">Q</span><span className="text-white">PAY</span>
+                        </span>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <p className="font-bold text-sm text-black">الدفع بـ Qirox Pay</p>
+                        {walletBalance > 0 ? (
+                          <p className={`text-xs mt-0.5 ${useWallet ? "text-cyan-600" : "text-black/40"}`}>
+                            رصيدك المتاح: <span className="font-black text-cyan-700">{walletBalance.toLocaleString()} ر.س</span>
                           </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-emerald-500 bg-emerald-500" : "border-black/20"}`}>
+                        ) : (
+                          <p className="text-xs mt-0.5 text-black/30">رصيدك صفر —{" "}
+                            <Link href="/client-wallet" className="text-cyan-600 underline font-semibold hover:text-cyan-700">اشحن محفظتك</Link>
+                          </p>
+                        )}
+                      </div>
+                      {walletBalance > 0 && (
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${useWallet ? "border-cyan-500 bg-cyan-500" : "border-black/20"}`}>
                           {useWallet && <CheckCircle2 className="w-4 h-4 text-white" />}
                         </div>
-                      </button>
-                      <AnimatePresence>
-                        {useWallet && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                            <div className="px-4 pb-4 space-y-3">
-                              <div>
-                                <Label className="text-xs font-bold text-emerald-700/70 uppercase tracking-wider mb-1.5 block">المبلغ المراد استخدامه من المحفظة</Label>
-                                <div className="flex items-center gap-3">
-                                  <input type="number" value={walletAmount} min={0} max={maxWalletUsable} step={0.01}
-                                    onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                                    className="flex-1 h-10 rounded-xl border border-emerald-200 bg-white px-3 text-sm font-mono text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                                    data-testid="input-wallet-amount" />
-                                  <span className="text-sm text-emerald-700 font-bold shrink-0">ر.س</span>
-                                  <button onClick={() => setWalletAmount(maxWalletUsable)}
-                                    className="text-xs font-bold text-emerald-600 bg-emerald-100 hover:bg-emerald-200 px-3 py-2 rounded-xl transition-all shrink-0"
-                                    data-testid="button-use-all-wallet">كل الرصيد</button>
-                                </div>
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {useWallet && walletBalance > 0 && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                          <div className="px-4 pb-4 space-y-3">
+                            <div>
+                              <Label className="text-xs font-bold text-cyan-700/70 uppercase tracking-wider mb-1.5 block">المبلغ المراد استخدامه من Qirox Pay</Label>
+                              <div className="flex items-center gap-3">
+                                <input type="number" value={walletAmount} min={0} max={maxWalletUsable} step={0.01}
+                                  onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
+                                  className="flex-1 h-10 rounded-xl border border-cyan-200 bg-white px-3 text-sm font-mono text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                                  data-testid="input-wallet-amount" />
+                                <span className="text-sm text-cyan-700 font-bold shrink-0">ر.س</span>
+                                <button onClick={() => setWalletAmount(maxWalletUsable)}
+                                  className="text-xs font-bold text-cyan-600 bg-cyan-100 hover:bg-cyan-200 px-3 py-2 rounded-xl transition-all shrink-0"
+                                  data-testid="button-use-all-wallet">كل الرصيد</button>
                               </div>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                   {/* Bank transfer section — only if not fully paid by wallet */}
                   {!fullyPaidByWallet && (

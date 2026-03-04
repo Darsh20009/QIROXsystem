@@ -972,59 +972,79 @@ export default function OrderFlow() {
                   </div>
                 </div>
 
-                {/* Wallet Payment Card */}
-                {walletBalance > 0 && (
-                  <div className={`rounded-3xl border-2 transition-all overflow-hidden ${useWallet ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}>
-                    <div className="p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/25">
-                            <Wallet className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-black text-black dark:text-white text-sm">{lang === "ar" ? "المحفظة الإلكترونية" : "E-Wallet"}</p>
-                            <p className="text-violet-600 dark:text-violet-400 text-xs font-bold">{walletBalance.toLocaleString()} {lang === "ar" ? "ر.س متاح" : "SAR available"}</p>
+                {/* Qirox Pay Card — always visible */}
+                <div className={`rounded-3xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-cyan-400 shadow-lg shadow-cyan-100/50" : walletBalance === 0 ? "border-black/[0.06] dark:border-white/[0.06] opacity-80" : "border-black/[0.07] dark:border-white/[0.07]"}`}
+                  style={useWallet && walletBalance > 0 ? { background: "linear-gradient(135deg,#f0fdff,#ecfeff)" } : {}}>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {/* Mini Qirox Pay card */}
+                        <div className="w-14 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+                          style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
+                          <div className="text-center leading-none">
+                            <span className="text-[7px] font-black tracking-wider block">
+                              <span className="text-cyan-400">QIROX</span>
+                            </span>
+                            <span className="text-[6px] font-black tracking-widest text-white/70 block">PAY</span>
                           </div>
                         </div>
+                        <div>
+                          <p className="font-black text-black dark:text-white text-sm">Qirox Pay</p>
+                          {walletBalance > 0 ? (
+                            <p className="text-cyan-600 dark:text-cyan-400 text-xs font-bold">
+                              {walletBalance.toLocaleString()} {lang === "ar" ? "ر.س متاح" : "SAR available"}
+                            </p>
+                          ) : (
+                            <p className="text-black/30 dark:text-white/30 text-xs">
+                              {lang === "ar" ? "رصيدك صفر" : "No balance"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {walletBalance > 0 ? (
                         <button
                           onClick={() => { setUseWallet(v => !v); if (!useWallet) setWalletAmount(maxWalletUsable); else setWalletAmount(0); }}
-                          className={`w-12 h-6 rounded-full transition-all duration-200 relative ${useWallet ? "bg-violet-500" : "bg-black/15 dark:bg-white/15"}`}
+                          className={`w-12 h-6 rounded-full transition-all duration-200 relative ${useWallet ? "bg-cyan-500" : "bg-black/15 dark:bg-white/15"}`}
                           data-testid="toggle-wallet-orderflow">
                           <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${useWallet ? (dir === "rtl" ? "right-0.5" : "left-6") : (dir === "rtl" ? "right-6" : "left-0.5")}`} />
                         </button>
-                      </div>
-                      {useWallet && (
-                        <div className="mt-3 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <input type="number" min={1} max={maxWalletUsable} value={walletAmount}
-                              onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                              className="flex-1 bg-white dark:bg-gray-800 border border-violet-200 dark:border-violet-700 rounded-xl px-4 py-2 text-black dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-violet-400"
-                              data-testid="input-wallet-amount-orderflow" />
-                            <button onClick={() => setWalletAmount(maxWalletUsable)}
-                              className="px-3 py-2 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-bold rounded-xl hover:bg-violet-200 dark:hover:bg-violet-800/50 transition-colors"
-                              data-testid="button-wallet-all-orderflow">
-                              {lang === "ar" ? "كل الرصيد" : "Max"}
-                            </button>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-black/40 dark:text-white/40">{lang === "ar" ? "خصم من المحفظة" : "Wallet deduction"}</span>
-                            <span className="text-violet-600 dark:text-violet-400 font-bold">- {effectiveWalletAmt.toLocaleString()} ر.س</span>
-                          </div>
-                          {fullyPaidByWallet ? (
-                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-2xl p-3 text-center">
-                              <p className="text-green-700 dark:text-green-400 text-xs font-bold">{lang === "ar" ? "سيتم سداد الطلب بالكامل من المحفظة" : "Order fully paid via wallet"}</p>
-                            </div>
-                          ) : (
-                            <div className="flex justify-between text-sm pt-1 border-t border-violet-100 dark:border-violet-800/50">
-                              <span className="font-semibold text-black/60 dark:text-white/60">{lang === "ar" ? "المتبقي بالتحويل" : "Remaining via transfer"}</span>
-                              <span className="font-black text-black dark:text-white">{remainingAfterWallet.toLocaleString()} ر.س</span>
-                            </div>
-                          )}
-                        </div>
+                      ) : (
+                        <a href="/client-wallet" className="text-xs font-bold text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1.5 rounded-xl hover:bg-cyan-100 transition-colors">
+                          {lang === "ar" ? "اشحن المحفظة" : "Top up"}
+                        </a>
                       )}
                     </div>
+                    {useWallet && walletBalance > 0 && (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <input type="number" min={1} max={maxWalletUsable} value={walletAmount}
+                            onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
+                            className="flex-1 bg-white dark:bg-gray-800 border border-cyan-200 dark:border-cyan-700 rounded-xl px-4 py-2 text-black dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                            data-testid="input-wallet-amount-orderflow" />
+                          <button onClick={() => setWalletAmount(maxWalletUsable)}
+                            className="px-3 py-2 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-xs font-bold rounded-xl hover:bg-cyan-200 dark:hover:bg-cyan-800/50 transition-colors"
+                            data-testid="button-wallet-all-orderflow">
+                            {lang === "ar" ? "كل الرصيد" : "Max"}
+                          </button>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-black/40 dark:text-white/40">{lang === "ar" ? "خصم من Qirox Pay" : "Qirox Pay deduction"}</span>
+                          <span className="text-cyan-600 dark:text-cyan-400 font-bold">- {effectiveWalletAmt.toLocaleString()} ر.س</span>
+                        </div>
+                        {fullyPaidByWallet ? (
+                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-2xl p-3 text-center">
+                            <p className="text-green-700 dark:text-green-400 text-xs font-bold">{lang === "ar" ? "سيتم سداد الطلب بالكامل من Qirox Pay" : "Order fully paid via Qirox Pay"}</p>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between text-sm pt-1 border-t border-cyan-100 dark:border-cyan-800/50">
+                            <span className="font-semibold text-black/60 dark:text-white/60">{lang === "ar" ? "المتبقي بالتحويل" : "Remaining via transfer"}</span>
+                            <span className="font-black text-black dark:text-white">{remainingAfterWallet.toLocaleString()} ر.س</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Bank Transfer Card - Credit card style */}
                 {!fullyPaidByWallet && (
