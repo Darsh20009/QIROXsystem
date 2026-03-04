@@ -353,11 +353,20 @@ export async function registerRoutes(
           const deviceToken = req.headers['x-device-token'] as string | undefined;
 
           const checkDeviceTrust = async () => {
-            if (!deviceToken) return false;
+            if (!deviceToken) {
+              console.log(`[DeviceTrust] No token header for user=${user.email}`);
+              return false;
+            }
             const { DeviceTokenModel } = await import("./models");
             const crypto = await import("crypto");
             const tokenHash = crypto.createHash("sha256").update(deviceToken).digest("hex");
-            const found = await DeviceTokenModel.findOne({ userId: user._id, tokenHash, expiresAt: { $gt: new Date() } });
+            // Use string comparison to avoid ObjectId type mismatch
+            const found = await DeviceTokenModel.findOne({
+              userId: user._id,
+              tokenHash,
+              expiresAt: { $gt: new Date() },
+            });
+            console.log(`[DeviceTrust] user=${user.email} tokenHash=${tokenHash.slice(0,8)}... found=${!!found}`);
             return !!found;
           };
 
@@ -2222,7 +2231,9 @@ export async function registerRoutes(
       // Recent activity: last 8 orders
       const recentOrders = await (OrderModel as any).find()
         .sort({ createdAt: -1 }).limit(8)
-        .populate("clientId", "fullName email").lean();
+        .populate("userId", "fullName email username").lean();
+      // Map userId → clientId for frontend compatibility
+      const mappedOrders = recentOrders.map((o: any) => ({ ...o, clientId: o.userId }));
 
       // Recent 5 support tickets
       const recentTickets = await (SupportTicketModel as any).find()
@@ -2249,7 +2260,7 @@ export async function registerRoutes(
           totalConsultations,
           pendingNotifications,
         },
-        recentOrders,
+        recentOrders: mappedOrders,
         recentTickets,
       });
     } catch (e: any) { res.status(500).json({ error: e.message }); }

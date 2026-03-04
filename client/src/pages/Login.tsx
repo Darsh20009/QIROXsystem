@@ -243,7 +243,7 @@ export default function Login() {
             setVerifyMode("email");
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
-            queryClient.setQueryData(["/api/auth/user"], user);
+            queryClient.setQueryData(["/api/user"], user);
             if (user.role === "client") {
               const returnUrl = sessionStorage.getItem("returnAfterLogin");
               if (returnUrl) {
