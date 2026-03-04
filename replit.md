@@ -87,6 +87,25 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 **4. shared/schema.ts + server/models.ts:**
 - إضافة `linkedPlanSlug?: string` لـ QiroxProduct و InsertQiroxProduct
 
+## Latest Changes (Mar 4, 2026 - Session 34)
+
+### QMeet — مميزات متقدمة للاجتماعات
+
+**التغييرات:**
+- `server/index.ts`: إضافة 3 event handlers جديدة:
+  - `webrtc_kick` → طرد مشارك (يرسل `webrtc_kicked` للمستهدف)
+  - `webrtc_draw` → مزامنة رسمة السبورة بين المشاركين
+  - `webrtc_whiteboard_clear` → مسح السبورة لجميع المشاركين
+- `client/src/pages/MeetingRoom.tsx` — إعادة كتابة شاملة:
+  - Panel جانبي متعدد التبويبات (Chat / المشاركون / السبورة / عارض الصفحة / إجراءات)
+  - **السبورة**: canvas تفاعلية مع أدوات (قلم، ممحاة، ألوان، سُمك)، مزامنة عبر WebSocket
+  - **عارض الصفحة**: iframe لعرض أي صفحة من النظام داخل الاجتماع
+  - **الإجراءات السريعة**: روابط سريعة + نموذج رفع شكوى مباشرة من الاجتماع
+  - **طرد المشاركين**: زر kick في بطاقة الفيديو وفي قائمة المشاركين (للإدارة فقط)
+  - شاشة "تم إزالتك من الاجتماع" عند الطرد
+- الاجتماع يفتح في تاب جديد من: AdminQMeet, AdminQMeetDetail, Consultation, Dashboard
+- `client/src/pages/AdminQMeetDetail.tsx`: إضافة زر "حذف الاجتماع"
+
 ## Latest Changes (Mar 4, 2026 - Session 33)
 
 ### QMeet — نظام اجتماعات WebRTC مدمج (بدون Jitsi)

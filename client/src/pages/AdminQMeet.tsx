@@ -296,7 +296,7 @@ export default function AdminQMeet() {
                         {/* Actions */}
                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                           <button
-                            onClick={() => navigate(meeting.meetingLink)}
+                            onClick={() => window.open(meeting.meetingLink, '_blank')}
                             className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${meeting.status === "live" ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
                             data-testid={`button-join-${meeting._id}`}>
                             <Video className="w-3.5 h-3.5" />

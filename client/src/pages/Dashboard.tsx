@@ -1848,12 +1848,10 @@ export default function Dashboard() {
                       <Calendar className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
                       <span className="text-[11px] text-black/50 dark:text-white/50">{dateStr} — {timeStr}</span>
                     </div>
-                    <Link href={m.meetingLink}>
-                      <Button size="sm" className={`w-full rounded-xl h-8 text-xs font-bold gap-1.5 ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black text-white hover:bg-black/80"}`} data-testid={`button-join-meeting-${m._id}`}>
-                        <Video className="w-3 h-3" />
-                        {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
-                      </Button>
-                    </Link>
+                    <Button size="sm" onClick={() => window.open(m.meetingLink, '_blank')} className={`w-full rounded-xl h-8 text-xs font-bold gap-1.5 ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black text-white hover:bg-black/80"}`} data-testid={`button-join-meeting-${m._id}`}>
+                      <Video className="w-3 h-3" />
+                      {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
+                    </Button>
                   </div>
                 );
               })}

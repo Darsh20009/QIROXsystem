@@ -113,6 +113,16 @@ export default function AdminQMeetDetail() {
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
+  const deleteMeetingMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", `/api/qmeet/meetings/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
+      toast({ title: "تم حذف الاجتماع" });
+      navigate("/admin/qmeet");
+    },
+    onError: () => toast({ title: "خطأ", description: "تعذّر حذف الاجتماع", variant: "destructive" }),
+  });
+
   const deleteReportMutation = useMutation({
     mutationFn: (rid: string) => apiRequest("DELETE", `/api/qmeet/reports/${rid}`),
     onSuccess: () => {
@@ -223,7 +233,7 @@ export default function AdminQMeetDetail() {
           </div>
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => navigate(meeting.meetingLink)}
+              onClick={() => window.open(meeting.meetingLink, '_blank')}
               className="inline-flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black font-bold px-4 py-2 rounded-xl hover:opacity-80 transition-opacity text-sm"
               data-testid="button-join-main">
               <Video className="w-4 h-4" />
@@ -235,6 +245,16 @@ export default function AdminQMeetDetail() {
               <Copy className="w-4 h-4" />
               نسخ الرابط
             </button>
+            {isManagement && (
+              <button
+                onClick={() => { if (confirm("هل تريد حذف هذا الاجتماع نهائياً؟")) deleteMeetingMutation.mutate(); }}
+                disabled={deleteMeetingMutation.isPending}
+                className="inline-flex items-center gap-2 border border-red-200 text-red-600 font-medium px-4 py-2 rounded-xl hover:bg-red-50 text-sm transition-colors"
+                data-testid="button-delete-meeting-main">
+                <Trash2 className="w-4 h-4" />
+                حذف الاجتماع
+              </button>
+            )}
           </div>
         </div>
 

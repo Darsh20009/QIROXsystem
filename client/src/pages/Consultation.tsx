@@ -371,11 +371,11 @@ export default function Consultation() {
                               )}
                             </div>
                             {b.meetingLink && (
-                              <Link href={b.meetingLink}
+                              <button onClick={() => window.open(b.meetingLink, '_blank')}
                                 className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:underline">
                                 <Video className="w-3.5 h-3.5" />
                                 {lang === "ar" ? "انضم للاجتماع" : "Join Meeting"}
-                              </Link>
+                              </button>
                             )}
                             {b.adminNotes && (
                               <div className="mt-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03]">

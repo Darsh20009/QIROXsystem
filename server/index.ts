@@ -132,6 +132,31 @@ wss.on("connection", (ws) => {
         }
         return;
       }
+
+      if (msg.type === "webrtc_kick" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_kicked", roomId: msg.roomId, by: userId });
+        return;
+      }
+
+      if (msg.type === "webrtc_draw" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_draw", from: userId, stroke: msg.stroke });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_whiteboard_clear" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_whiteboard_clear", from: userId });
+          }
+        }
+        return;
+      }
     } catch {}
   });
 
