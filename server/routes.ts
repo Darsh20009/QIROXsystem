@@ -2091,10 +2091,57 @@ export async function registerRoutes(
     const { ModPlanConfigModel, ModificationRequestModel, ModQuotaAddonModel } = await import("./models");
     const planTier = order.planTier?.toLowerCase();
     const planPeriod = order.planPeriod?.toLowerCase();
-    if (!planTier || !planPeriod) return null;
     if (planPeriod === 'lifetime') return { isLifetime: true };
+    if (!planTier || !planPeriod) {
+      const now = new Date();
+      const periodStart = new Date(now);
+      periodStart.setDate(periodStart.getDate() - 30);
+      const used = await ModificationRequestModel.countDocuments({
+        orderId: String(order.id || order._id),
+        status: { $nin: ['cancelled', 'rejected'] },
+        createdAt: { $gte: periodStart },
+      });
+      const periodEnd = new Date(now);
+      periodEnd.setDate(periodEnd.getDate() + 30);
+      return {
+        isLifetime: false,
+        hasUnlimitedAddon: false,
+        canPurchaseAddon: false,
+        planTier: null,
+        planPeriod: null,
+        isDefaultQuota: true,
+        modificationsPerPeriod: 5,
+        quotaMonths: 1,
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+        usedThisPeriod: used,
+        remainingThisPeriod: Math.max(0, 5 - used),
+      };
+    }
     const config = await ModPlanConfigModel.findOne({ planTier, planPeriod, isActive: true });
-    if (!config) return null;
+    if (!config) {
+      const now = new Date();
+      const periodStart = new Date(now);
+      periodStart.setDate(periodStart.getDate() - 30);
+      const used = await ModificationRequestModel.countDocuments({
+        orderId: String(order.id || order._id),
+        status: { $nin: ['cancelled', 'rejected'] },
+        createdAt: { $gte: periodStart },
+      });
+      return {
+        isLifetime: false,
+        hasUnlimitedAddon: false,
+        canPurchaseAddon: false,
+        planTier, planPeriod,
+        isDefaultQuota: true,
+        modificationsPerPeriod: 5,
+        quotaMonths: 1,
+        periodStart: periodStart.toISOString(),
+        periodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
+        usedThisPeriod: used,
+        remainingThisPeriod: Math.max(0, 5 - used),
+      };
+    }
     const now = new Date();
     const quotaStart = new Date(now);
     quotaStart.setMonth(quotaStart.getMonth() - config.quotaMonths);

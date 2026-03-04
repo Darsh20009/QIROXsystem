@@ -1492,6 +1492,7 @@ export default function Dashboard() {
 
   const bestQuota = modQuota?.quotas?.[0];
   const isLifetimePlan = bestQuota?.isLifetime;
+  const isDefaultQuota = bestQuota?.isDefaultQuota;
   const quotaExceeded = !isLifetimePlan && bestQuota && !bestQuota.hasUnlimitedAddon && bestQuota.remainingThisPeriod === 0;
   const activeModTypePrices = modTypePrices.filter((t: any) => t.isActive);
 
@@ -2445,7 +2446,9 @@ export default function Dashboard() {
                     ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/30"
                     : isLifetimePlan
                       ? "bg-violet-50 border-violet-200 dark:bg-violet-900/10 dark:border-violet-800/30"
-                      : "bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800/30"
+                      : isDefaultQuota
+                        ? "bg-gray-50 border-gray-200 dark:bg-gray-800/20 dark:border-gray-700/30"
+                        : "bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800/30"
               }`}>
                 {isLifetimePlan ? (
                   <div className="flex items-center gap-2">
@@ -2461,13 +2464,14 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="text-xs font-bold text-black/70 dark:text-white/70">
-                        {L ? "الحصة المتبقية:" : "Remaining quota:"} <span className={quotaExceeded ? "text-red-600" : "text-blue-700 dark:text-blue-300"}>{bestQuota.remainingThisPeriod}</span> / {bestQuota.modificationsPerPeriod}
+                        {L ? "الحصة المتبقية:" : "Remaining quota:"} <span className={quotaExceeded ? "text-red-600" : isDefaultQuota ? "text-gray-600 dark:text-gray-300" : "text-blue-700 dark:text-blue-300"}>{bestQuota.remainingThisPeriod}</span> / {bestQuota.modificationsPerPeriod}
+                        {isDefaultQuota && <span className="text-[10px] text-black/35 dark:text-white/30 mr-1.5">{L ? "(افتراضي)" : "(default)"}</span>}
                       </p>
                       <span className="text-[10px] text-black/40 dark:text-white/30">{L ? "التعديلات الملغية لا تُحسب" : "Cancelled requests don't count"}</span>
                     </div>
                     <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full transition-all ${quotaExceeded ? "bg-red-500" : "bg-blue-500"}`}
+                        className={`h-1.5 rounded-full transition-all ${quotaExceeded ? "bg-red-500" : isDefaultQuota ? "bg-gray-400" : "bg-blue-500"}`}
                         style={{ width: `${Math.min(100, ((bestQuota.modificationsPerPeriod - bestQuota.remainingThisPeriod) / bestQuota.modificationsPerPeriod) * 100)}%` }}
                       />
                     </div>
