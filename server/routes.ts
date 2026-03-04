@@ -607,6 +607,33 @@ export async function registerRoutes(
     res.status(201).json(order);
   });
 
+  // Client: attach payment proof to own order
+  app.patch("/api/orders/:id/proof", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const { paymentProofUrl } = req.body;
+    if (!paymentProofUrl) return res.status(400).json({ error: "رابط الإيصال مطلوب" });
+    try {
+      const { OrderModel, NotificationModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
+      order.paymentProofUrl = paymentProofUrl;
+      await order.save();
+      await NotificationModel.create({
+        userId: "admin",
+        type: "payment",
+        title: "إيصال دفع جديد",
+        body: `أرفق العميل ${user.fullName || user.username} إيصال التحويل للطلب #${req.params.id}`,
+        link: `/admin/orders/${req.params.id}`,
+        icon: "🧾",
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "فشل رفع الإيصال" });
+    }
+  });
+
   // === PROJECTS API ===
   app.get(api.projects.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

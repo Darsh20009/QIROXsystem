@@ -376,7 +376,7 @@ export default function OrderFlow() {
 
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, proofUrl }: { orderId: string; proofUrl: string }) =>
-      apiRequest("PATCH", `/api/orders/${orderId}`, { paymentProofUrl: proofUrl }),
+      apiRequest("PATCH", `/api/orders/${orderId}/proof`, { paymentProofUrl: proofUrl }),
     onSuccess: () => toast({ title: "تم رفع إيصال التحويل بنجاح" }),
   });
 

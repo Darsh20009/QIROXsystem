@@ -23,11 +23,13 @@ import type { Cart, CartItem } from "@shared/schema";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
-/* ─── Bank info ──────────────────────────────────────────────────── */
-const BANK = {
-  bankName: "بنك الراجحي",
-  beneficiaryName: "شركة قيروكس للتقنية",
-  iban: "SA0380205098017222121010",
+/* ─── Bank info fallback ─────────────────────────────────────────── */
+const BANK_FALLBACK = {
+  bankName: "—",
+  beneficiaryName: "—",
+  iban: "—",
+  accountNumber: "",
+  notes: "",
 };
 
 /* ─── Type meta ─────────────────────────────────────────────────── */
@@ -125,6 +127,9 @@ export default function Cart() {
   const [copiedIban, setCopiedIban] = useState(false);
   const [proofFile, setProofFile] = useState<UpFile | null>(null);
   const proofInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: bankSettings } = useQuery<typeof BANK_FALLBACK>({ queryKey: ["/api/bank-settings"] });
+  const BANK = { ...BANK_FALLBACK, ...(bankSettings || {}) };
 
   const { data: cart, isLoading } = useQuery<Cart>({ queryKey: ["/api/cart"] });
   const { data: walletData } = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
@@ -240,7 +245,7 @@ export default function Cart() {
 
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, proofUrl }: { orderId: string; proofUrl: string }) =>
-      apiRequest("PATCH", `/api/orders/${orderId}`, { paymentProofUrl: proofUrl }),
+      apiRequest("PATCH", `/api/orders/${orderId}/proof`, { paymentProofUrl: proofUrl }),
     onSuccess: () => toast({ title: "✓ تم رفع إيصال التحويل بنجاح" }),
     onError: () => toast({ title: "فشل رفع الإيصال", variant: "destructive" }),
   });
@@ -393,6 +398,7 @@ export default function Cart() {
                 {[
                   { label: "البنك",     value: BANK.bankName },
                   { label: "المستفيد", value: BANK.beneficiaryName },
+                  ...(BANK.accountNumber ? [{ label: "رقم الحساب", value: BANK.accountNumber }] : []),
                 ].map(r => (
                   <div key={r.label} className="bg-white/10 rounded-2xl px-4 py-3 flex justify-between items-center">
                     <span className="text-white/55 text-xs">{r.label}</span>
@@ -409,6 +415,12 @@ export default function Cart() {
                     {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
+                {BANK.notes && (
+                  <div className="bg-white/10 rounded-2xl px-4 py-3">
+                    <span className="text-white/55 text-xs block mb-1">ملاحظات</span>
+                    <span className="text-white text-sm">{BANK.notes}</span>
+                  </div>
+                )}
               </div>
               {savedOrderId && (
                 <div className="mt-4 bg-amber-400/20 border border-amber-300/30 rounded-2xl p-3 relative z-10">
