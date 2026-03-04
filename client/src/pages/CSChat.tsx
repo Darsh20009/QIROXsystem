@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
@@ -128,7 +128,32 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
   );
 }
 
-function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك..." }: { onSend: (data: any) => void; disabled?: boolean; placeholder?: string }) {
+function TypingIndicator({ name }: { name: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1 py-0.5">
+      <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl rounded-bl-sm px-3 py-2">
+        <span className="text-[10px] text-black/40 dark:text-white/30 ml-1">{name}</span>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="inline-block w-1.5 h-1.5 rounded-full bg-black/30 dark:bg-white/30"
+            style={{
+              animation: "typingBounce 1.2s ease-in-out infinite",
+              animationDelay: `${i * 0.2}s`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك...", onTyping }: {
+  onSend: (data: any) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  onTyping?: (isTyping: boolean) => void;
+}) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -136,11 +161,27 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك..." 
   const [recTime, setRecTime] = useState(0);
   const timerRef = useRef<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const typingTimerRef = useRef<any>(null);
+
+  const handleTextChange = (val: string) => {
+    setText(val);
+    if (onTyping) {
+      if (val.trim()) {
+        onTyping(true);
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(() => onTyping(false), 2500);
+      } else {
+        clearTimeout(typingTimerRef.current);
+        onTyping(false);
+      }
+    }
+  };
 
   const submit = () => {
     if (!text.trim()) return;
     onSend({ body: text.trim() });
     setText("");
+    if (onTyping) { clearTimeout(typingTimerRef.current); onTyping(false); }
   };
 
   const uploadFile = async (file: File) => {
@@ -198,7 +239,7 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك..." 
           <span className="text-xs text-red-500">جارٍ التسجيل...</span>
         </div>
       ) : (
-        <Input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
+        <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
       )}
       <Button size="icon" variant="ghost" className="h-10 w-10 text-black/40 dark:text-white/40 hover:text-black hover:bg-black/[0.05] rounded-xl" onClick={() => fileRef.current?.click()} disabled={uploading || recording} data-testid="button-attach-file">
         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
@@ -223,9 +264,11 @@ function ClientView({ user }: { user: any }) {
   const [ratingVal, setRatingVal] = useState(0);
   const [ratingNote, setRatingNote] = useState("");
   const [waitingElapsed, setWaitingElapsed] = useState(0);
+  const [agentTyping, setAgentTyping] = useState(false);
   const urgentCalledRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const activeSessionRef = useRef<string | null>(null);
+  const agentTypingTimerRef = useRef<any>(null);
 
   const { data: session, isLoading: loadingSession, refetch: refetchSession } = useQuery<any>({
     queryKey: ["/api/cs/my-session"],
@@ -243,18 +286,28 @@ function ClientView({ user }: { user: any }) {
     refetchInterval: 5000,
   });
 
-  useInboxSocket({
+  const agentId = session?.agent?._id || session?.agent?.id;
+
+  const { sendTyping } = useInboxSocket({
     userId: user?.id,
-    onEvent: (evt: any) => {
+    onEvent: useCallback((evt: any) => {
       if (evt.type === "cs_session_update") {
         queryClient.invalidateQueries({ queryKey: ["/api/cs/my-session"] });
         if (session?.id) queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions", session.id, "messages"] });
       }
       if (evt.type === "new_message" && evt.csSessionId) {
         queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions", evt.csSessionId, "messages"] });
+        setAgentTyping(false);
         playBeep();
       }
-    },
+      if (evt.type === "typing") {
+        setAgentTyping(evt.isTyping);
+        if (evt.isTyping) {
+          clearTimeout(agentTypingTimerRef.current);
+          agentTypingTimerRef.current = setTimeout(() => setAgentTyping(false), 4000);
+        }
+      }
+    }, [session?.id]),
   });
 
   useEffect(() => {
@@ -421,6 +474,9 @@ function ClientView({ user }: { user: any }) {
             {messages.map((msg: any) => (
               <MsgBubble key={msg.id} msg={msg} isMe={String(msg.fromUserId?.id || msg.fromUserId) === String(user.id)} />
             ))}
+            {agentTyping && session.status === 'active' && (
+              <TypingIndicator name={session?.agent?.fullName || session?.agent?.username || "الموظف"} />
+            )}
             <div ref={bottomRef} />
           </div>
         )}
@@ -428,7 +484,12 @@ function ClientView({ user }: { user: any }) {
 
       {/* Input */}
       {(session.status === 'active' || session.status === 'waiting') && (
-        <ChatInput onSend={(data) => sendMutation.mutate(data)} disabled={sendMutation.isPending} placeholder={session.status === 'waiting' ? "اكتب رسالتك وسيردّ عليك الموظف فور انضمامه..." : "اكتب رسالتك..."} />
+        <ChatInput
+          onSend={(data) => sendMutation.mutate(data)}
+          disabled={sendMutation.isPending}
+          placeholder={session.status === 'waiting' ? "اكتب رسالتك وسيردّ عليك الموظف فور انضمامه..." : "اكتب رسالتك..."}
+          onTyping={agentId ? (isTyping) => sendTyping(agentId, isTyping) : undefined}
+        />
       )}
       {session.status === 'closed' && !showRating && (
         <div className="p-4 border-t border-black/[0.07] dark:border-white/[0.07] flex flex-col gap-2">
@@ -476,6 +537,8 @@ function AgentView({ user }: { user: any }) {
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
   const [transferNote, setTransferNote] = useState("");
+  const [clientTyping, setClientTyping] = useState(false);
+  const clientTypingTimerRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data: sessions = [], isLoading: loadingSessions } = useQuery<any[]>({
@@ -518,9 +581,12 @@ function AgentView({ user }: { user: any }) {
     },
   });
 
-  useInboxSocket({
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
+
+  const { sendTyping } = useInboxSocket({
     userId: user?.id,
-    onEvent: (evt: any) => {
+    onEvent: useCallback((evt: any) => {
       if (evt.type === "cs_session_update" || evt.type === "cs_assigned") {
         queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
         playBeep();
@@ -528,9 +594,17 @@ function AgentView({ user }: { user: any }) {
       if (evt.type === "new_message" && evt.csSessionId) {
         queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions", evt.csSessionId, "messages"] });
         queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
-        if (evt.csSessionId !== selectedId) playBeep();
+        if (evt.csSessionId !== selectedIdRef.current) playBeep();
+        setClientTyping(false);
       }
-    },
+      if (evt.type === "typing") {
+        setClientTyping(evt.isTyping);
+        if (evt.isTyping) {
+          clearTimeout(clientTypingTimerRef.current);
+          clientTypingTimerRef.current = setTimeout(() => setClientTyping(false), 4000);
+        }
+      }
+    }, []),
   });
 
   useEffect(() => {
@@ -696,12 +770,23 @@ function AgentView({ user }: { user: any }) {
                     {messages.map((msg: any) => (
                       <MsgBubble key={msg.id} msg={msg} isMe={String(msg.fromUserId?.id || msg.fromUserId) === String(user.id)} />
                     ))}
+                    {clientTyping && selected.status === 'active' && (
+                      <TypingIndicator name={selected.client?.fullName || selected.client?.username || "العميل"} />
+                    )}
                     <div ref={bottomRef} />
                   </div>
                 )}
               </ScrollArea>
               {selected.status !== 'closed' && (
-                <ChatInput onSend={(data) => sendMutation.mutate(data)} disabled={sendMutation.isPending || selected.status === 'waiting'} placeholder={selected.status === 'waiting' ? "في انتظار استلام الجلسة..." : "اكتب ردك..."} />
+                <ChatInput
+                  onSend={(data) => sendMutation.mutate(data)}
+                  disabled={sendMutation.isPending || selected.status === 'waiting'}
+                  placeholder={selected.status === 'waiting' ? "في انتظار استلام الجلسة..." : "اكتب ردك..."}
+                  onTyping={selected.client ? (isTyping) => {
+                    const clientUserId = selected.client?._id || selected.client?.id;
+                    if (clientUserId) sendTyping(clientUserId, isTyping);
+                  } : undefined}
+                />
               )}
               {selected.status === 'closed' && (
                 <div className="p-3 border-t border-black/[0.07] dark:border-white/[0.07] text-center text-xs text-black/30 dark:text-white/20">

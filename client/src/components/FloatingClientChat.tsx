@@ -45,7 +45,7 @@ export function FloatingClientChat() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [typing, setTyping] = useState(false);
+  const [agentTyping, setAgentTyping] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const [bounceBtn, setBounceBtn] = useState(false);
   const [waitingElapsed, setWaitingElapsed] = useState(0);
@@ -57,6 +57,8 @@ export function FloatingClientChat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const typingTimerRef = useRef<any>(null);
+  const agentTypingTimerRef = useRef<any>(null);
 
   if (!user || user.role !== "client") return null;
 
@@ -84,7 +86,7 @@ export function FloatingClientChat() {
   });
 
   // ── WebSocket for real-time ────────────────────────────────────────────
-  const { connected } = useInboxSocket({
+  const { connected, sendTyping } = useInboxSocket({
     userId: user.id,
     onEvent: useCallback((evt: any) => {
       if (evt.type === "new_message" && evt.message) {
@@ -99,7 +101,15 @@ export function FloatingClientChat() {
             setTimeout(() => setBounceBtn(false), 1000);
             playNotif();
           }
+          setAgentTyping(false);
           refetchMsgs();
+        }
+      }
+      if (evt.type === "typing") {
+        setAgentTyping(evt.isTyping);
+        if (evt.isTyping) {
+          clearTimeout(agentTypingTimerRef.current);
+          agentTypingTimerRef.current = setTimeout(() => setAgentTyping(false), 4000);
         }
       }
     }, [open, user.id, refetchMsgs]),
@@ -509,6 +519,18 @@ export function FloatingClientChat() {
                         </div>
                       );
                     })}
+                    {agentTyping && session.status === "active" && (
+                      <div className="flex items-center gap-2 py-1 px-2">
+                        <div className="flex gap-1 items-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-[typingBounce_1s_ease-in-out_0ms_infinite]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-[typingBounce_1s_ease-in-out_200ms_infinite]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-[typingBounce_1s_ease-in-out_400ms_infinite]" />
+                        </div>
+                        <span className="text-[10px] text-white/30">
+                          {session?.agent?.fullName || session?.agent?.username || "الموظف"} يكتب...
+                        </span>
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
 
@@ -565,7 +587,15 @@ export function FloatingClientChat() {
                           <Input
                             ref={inputRef}
                             value={text}
-                            onChange={e => setText(e.target.value)}
+                            onChange={e => {
+                              setText(e.target.value);
+                              const agentId = session?.agent?._id || session?.agent?.id;
+                              if (agentId) {
+                                sendTyping(agentId, true);
+                                clearTimeout(typingTimerRef.current);
+                                typingTimerRef.current = setTimeout(() => sendTyping(agentId, false), 2000);
+                              }
+                            }}
                             onKeyDown={handleKey}
                             placeholder={recording ? "جارٍ التسجيل..." : "اكتب رسالتك..."}
                             disabled={recording}
