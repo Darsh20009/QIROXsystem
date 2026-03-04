@@ -6,9 +6,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-[#f8f8f8] flex items-center justify-center px-6" dir="rtl">
       <div className="text-center max-w-md mx-auto">
-        <p className="text-[120px] font-black text-black/[0.06] leading-none select-none mb-2">404</p>
-
-        <div className="mb-8 -mt-4">
+        <div className="mb-8">
           <h1 className="text-2xl font-black text-black mb-3">الصفحة غير موجودة</h1>
           <p className="text-black/40 text-sm leading-relaxed">
             الرابط الذي طلبته غير موجود أو ربما تم نقله.
