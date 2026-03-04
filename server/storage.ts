@@ -153,8 +153,17 @@ export class MongoStorage implements IStorage {
     return user ? { ...user.toObject(), id: user._id.toString() } : undefined as any;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const user = await UserModel.findOne({ username });
+  async getUserByUsername(identifier: string): Promise<User | undefined> {
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    const isPhone = /^[\+\d][\d\s\-]{6,}$/.test(identifier.replace(/\s/g, ""));
+    let query: any = { username: identifier };
+    if (isEmail) {
+      query = { email: identifier };
+    } else if (isPhone) {
+      const normalized = identifier.replace(/[\s\-]/g, "");
+      query = { $or: [{ phone: normalized }, { whatsappNumber: normalized }] };
+    }
+    const user = await UserModel.findOne(query);
     return user ? { ...user.toObject(), id: user._id.toString() } : undefined as any;
   }
 

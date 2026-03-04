@@ -6,13 +6,13 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
@@ -23,13 +23,31 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 export default function Login() {
   const [location] = useLocation();
   const [, setLocation] = useLocation();
-  const { t, dir } = useI18n();
+  const { t, dir, lang } = useI18n();
+  const ar = lang === "ar";
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
+
+  const identifierHints = ["user123", "name@email.com", "+966XXXXXXXXX"];
+  const [hintIndex, setHintIndex] = useState(0);
+  const [hintVisible, setHintVisible] = useState(true);
+
+  useEffect(() => {
+    if (isRegister) return;
+    const interval = setInterval(() => {
+      setHintVisible(false);
+      setTimeout(() => {
+        setHintIndex(i => (i + 1) % identifierHints.length);
+        setHintVisible(true);
+      }, 300);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [isRegister]);
 
   // Email verification step state
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
@@ -516,22 +534,56 @@ export default function Login() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-              {/* Username */}
+              {/* Smart Identifier */}
               <FormField
                 control={form.control}
                 name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-black/50 text-xs font-semibold">{t("login.username")}</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                        <Input placeholder="user123" {...field} className={`${inputBase} pr-10`} data-testid="input-username" />
+                render={({ field }) => {
+                  const v = field.value || "";
+                  const detectedEmail = v.includes("@");
+                  const detectedPhone = /^[\+\d]/.test(v) && v.replace(/\D/g, "").length >= 6;
+                  const IdentifierIcon = detectedEmail ? Mail : detectedPhone ? Phone : isRegister ? User : AtSign;
+                  const iconColor = detectedEmail
+                    ? "text-cyan-500"
+                    : detectedPhone
+                    ? "text-emerald-500"
+                    : "text-black/20 dark:text-white/20";
+                  const labelText = ar
+                    ? "اسم المستخدم أو البريد أو الجوال"
+                    : "Username, Email, or Phone";
+                  return (
+                    <FormItem>
+                      <div className="flex items-center gap-1.5">
+                        <FormLabel className="text-black/50 dark:text-white/50 text-xs font-semibold">{labelText}</FormLabel>
+                        {!isRegister && (
+                          <span className="flex gap-0.5 items-center text-[10px] text-black/30 dark:text-white/30 font-mono">
+                            <span className={`w-1.5 h-1.5 rounded-full ${detectedEmail ? "bg-cyan-400" : "bg-black/15 dark:bg-white/15"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${detectedPhone ? "bg-emerald-400" : "bg-black/15 dark:bg-white/15"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${!detectedEmail && !detectedPhone && v ? "bg-violet-400" : "bg-black/15 dark:bg-white/15"}`} />
+                          </span>
+                        )}
                       </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
+                      <FormControl>
+                        <div className="relative">
+                          <IdentifierIcon className={`absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors duration-300 ${iconColor}`} />
+                          <Input
+                            {...field}
+                            autoComplete="username"
+                            placeholder={isRegister ? "user123" : hintVisible ? identifierHints[hintIndex] : ""}
+                            className={`${inputBase} pr-10 transition-all duration-200`}
+                            data-testid="input-username"
+                          />
+                        </div>
+                      </FormControl>
+                      {!isRegister && !v && (
+                        <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">
+                          {ar ? "يقبل: اسم المستخدم • البريد الإلكتروني • رقم الجوال" : "Accepts: username • email • mobile number"}
+                        </p>
+                      )}
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  );
+                }}
               />
 
               {isRegister && (
