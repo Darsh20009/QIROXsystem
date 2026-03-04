@@ -100,7 +100,7 @@ export default function Login() {
     setVerifyError("");
 
     const endpoint = verifyMode === "device" ? "/api/auth/verify-login-otp" : "/api/auth/verify-email";
-    const body = verifyMode === "device" ? { code } : { email: verifyStep!.email, code };
+    const body = { code, email: verifyStep!.email };
 
     let res: Response;
     try {
@@ -173,7 +173,13 @@ export default function Login() {
     setVerifyError("");
     try {
       const endpoint = verifyMode === "device" ? "/api/auth/resend-login-otp" : "/api/auth/resend-verification";
-      const res = await fetch(endpoint, { method: "POST", credentials: "include" });
+      const resendBody = verifyMode === "device" ? { email: verifyStep!.email } : undefined;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: resendBody ? { "Content-Type": "application/json" } : undefined,
+        body: resendBody ? JSON.stringify(resendBody) : undefined,
+      });
       if (res.ok) {
         toast({ title: "تم إعادة الإرسال!", description: "تحقق من صندوق الوارد أو مجلد الإسبام" });
         setOtpCode(["", "", "", "", "", ""]);

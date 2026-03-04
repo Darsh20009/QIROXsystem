@@ -2963,23 +2963,23 @@ export async function registerRoutes(
 
   // ── Verify Login OTP (Device Trust) ──
   app.post("/api/auth/verify-login-otp", async (req, res, next) => {
-    const { code } = req.body;
+    const { code, email: rawEmail } = req.body;
     if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
-    const pendingUserId = req.session.pendingLoginUserId;
-    if (!pendingUserId || pendingUserId === "undefined") return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+    if (!rawEmail) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
 
     const { UserModel, OtpModel, DeviceTokenModel } = await import("./models");
-    let user: any;
-    try { user = await UserModel.findById(pendingUserId); } catch { return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" }); }
+
+    // Find user by email (no session dependency)
+    const email = String(rawEmail).toLowerCase().trim();
+    const user = await UserModel.findOne({ email });
     if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
 
-    const email = user.email.toLowerCase().trim();
     const enteredCode = String(code).trim();
 
-    // Debug: find the latest OTP regardless of filters to diagnose failures
+    // Find the latest login OTP for this email
     const latestOtp = await OtpModel.findOne({ email, type: "login_otp" }).sort({ createdAt: -1 });
     if (!latestOtp) {
-      console.log(`[OTP-verify-login] No OTP found at all for email=${email}`);
+      console.log(`[OTP-verify-login] No OTP found for email=${email}`);
       return res.status(400).json({ error: "لم يتم إرسال رمز تحقق، أعد تسجيل الدخول" });
     }
     const isExpired = latestOtp.expiresAt < new Date();
@@ -3015,13 +3015,12 @@ export async function registerRoutes(
 
   // ── Resend Login OTP ──
   app.post("/api/auth/resend-login-otp", async (req, res) => {
-    const pendingUserId = req.session.pendingLoginUserId;
-    if (!pendingUserId || pendingUserId === "undefined") return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+    const { email: rawEmail } = req.body;
+    if (!rawEmail) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
     const { UserModel, OtpModel } = await import("./models");
-    let user: any = null;
-    try { user = await UserModel.findById(pendingUserId); } catch { return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" }); }
+    const email = String(rawEmail).toLowerCase().trim();
+    const user = await UserModel.findOne({ email });
     if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
-    const email = user.email.toLowerCase().trim();
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await OtpModel.updateMany({ email, used: false, type: "login_otp" }, { used: true });
