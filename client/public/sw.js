@@ -1,4 +1,4 @@
-const CACHE_NAME = "qirox-v8";
+const CACHE_NAME = "qirox-v9";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
@@ -7,6 +7,8 @@ const STATIC_ASSETS = [
   "/favicon-16.png",
   "/favicon-32.png",
   "/favicon-48.png",
+  "/favicon.png",
+  "/icon-70.png",
   "/icon-144.png",
   "/icon-150.png",
   "/icon-192.png",
