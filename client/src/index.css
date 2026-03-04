@@ -452,16 +452,16 @@
 .dark .bg-neutral-50  { background-color: hsl(222 47% 8%)  !important; }
 .dark .bg-neutral-100 { background-color: hsl(222 47% 10%) !important; }
 
-/* ── opacity-based black backgrounds ── */
+/* ── opacity-based black backgrounds → convert to white overlay in dark mode ── */
 .dark [class*="bg-black/"] {
-  background-color: hsl(222 47% 14%) !important;
+  background-color: transparent !important;
 }
 .dark [class*="bg-black\/"] {
-  background-color: hsl(222 47% 14%) !important;
+  background-color: transparent !important;
 }
 .dark [class*="hover:bg-black/"]:hover,
 .dark [class*="hover\:bg-black\/"]:hover {
-  background-color: hsl(222 47% 18%) !important;
+  background-color: hsla(0, 0%, 100%, 0.05) !important;
 }
 
 /* ── Text Colors ── */
@@ -687,6 +687,168 @@
 .dark [class*="hover:bg-slate-"]:hover {
   background-color: hsl(222 47% 15%) !important;
 }
+
+/* ── bg-white with opacity variants ── */
+.dark [class*="bg-white\/"] {
+  background-color: hsl(222 47% 11%) !important;
+}
+.dark [class*="hover:bg-white\/"]:hover {
+  background-color: hsl(222 47% 14%) !important;
+}
+
+/* ── Light pastel backgrounds → deep dark equivalents ── */
+.dark .bg-amber-50   { background-color: hsl(35 60% 8%)   !important; }
+.dark .bg-amber-100  { background-color: hsl(35 60% 11%)  !important; }
+.dark .bg-yellow-50  { background-color: hsl(50 70% 7%)   !important; }
+.dark .bg-yellow-100 { background-color: hsl(50 70% 10%)  !important; }
+.dark .bg-orange-50  { background-color: hsl(25 80% 8%)   !important; }
+.dark .bg-orange-100 { background-color: hsl(25 80% 11%)  !important; }
+.dark .bg-red-50     { background-color: hsl(0 60% 8%)    !important; }
+.dark .bg-red-100    { background-color: hsl(0 60% 11%)   !important; }
+.dark .bg-rose-50    { background-color: hsl(350 60% 8%)  !important; }
+.dark .bg-rose-100   { background-color: hsl(350 60% 11%) !important; }
+.dark .bg-pink-50    { background-color: hsl(330 60% 8%)  !important; }
+.dark .bg-pink-100   { background-color: hsl(330 60% 11%) !important; }
+.dark .bg-fuchsia-50 { background-color: hsl(290 55% 8%)  !important; }
+.dark .bg-purple-50  { background-color: hsl(270 55% 8%)  !important; }
+.dark .bg-purple-100 { background-color: hsl(270 55% 11%) !important; }
+.dark .bg-violet-50  { background-color: hsl(260 55% 8%)  !important; }
+.dark .bg-violet-100 { background-color: hsl(260 55% 11%) !important; }
+.dark .bg-indigo-50  { background-color: hsl(240 55% 9%)  !important; }
+.dark .bg-indigo-100 { background-color: hsl(240 55% 12%) !important; }
+.dark .bg-blue-50    { background-color: hsl(215 60% 9%)  !important; }
+.dark .bg-blue-100   { background-color: hsl(215 60% 12%) !important; }
+.dark .bg-sky-50     { background-color: hsl(204 70% 8%)  !important; }
+.dark .bg-sky-100    { background-color: hsl(204 70% 11%) !important; }
+.dark .bg-cyan-50    { background-color: hsl(185 70% 7%)  !important; }
+.dark .bg-cyan-100   { background-color: hsl(185 70% 10%) !important; }
+.dark .bg-teal-50    { background-color: hsl(168 65% 7%)  !important; }
+.dark .bg-teal-100   { background-color: hsl(168 65% 10%) !important; }
+.dark .bg-emerald-50 { background-color: hsl(152 65% 7%)  !important; }
+.dark .bg-emerald-100{ background-color: hsl(152 65% 10%) !important; }
+.dark .bg-green-50   { background-color: hsl(142 65% 7%)  !important; }
+.dark .bg-green-100  { background-color: hsl(142 65% 10%) !important; }
+.dark .bg-lime-50    { background-color: hsl(80 65% 7%)   !important; }
+
+/* ── Colored text → lighter in dark mode ── */
+.dark .text-amber-600   { color: hsl(35 90% 68%)  !important; }
+.dark .text-amber-700   { color: hsl(35 80% 62%)  !important; }
+.dark .text-amber-800   { color: hsl(35 80% 55%)  !important; }
+.dark .text-yellow-600  { color: hsl(48 96% 65%)  !important; }
+.dark .text-yellow-700  { color: hsl(48 96% 58%)  !important; }
+.dark .text-orange-600  { color: hsl(25 95% 65%)  !important; }
+.dark .text-orange-700  { color: hsl(25 95% 58%)  !important; }
+.dark .text-red-600     { color: hsl(0 85% 65%)   !important; }
+.dark .text-red-700     { color: hsl(0 85% 58%)   !important; }
+.dark .text-rose-600    { color: hsl(350 85% 65%)  !important; }
+.dark .text-rose-700    { color: hsl(350 85% 58%)  !important; }
+.dark .text-pink-600    { color: hsl(330 80% 65%)  !important; }
+.dark .text-pink-700    { color: hsl(330 80% 58%)  !important; }
+.dark .text-fuchsia-600 { color: hsl(290 75% 68%)  !important; }
+.dark .text-purple-600  { color: hsl(270 75% 70%)  !important; }
+.dark .text-purple-700  { color: hsl(270 75% 63%)  !important; }
+.dark .text-violet-600  { color: hsl(260 75% 70%)  !important; }
+.dark .text-violet-700  { color: hsl(260 75% 63%)  !important; }
+.dark .text-indigo-600  { color: hsl(240 75% 70%)  !important; }
+.dark .text-indigo-700  { color: hsl(240 75% 63%)  !important; }
+.dark .text-blue-600    { color: hsl(215 90% 68%)  !important; }
+.dark .text-blue-700    { color: hsl(215 90% 61%)  !important; }
+.dark .text-sky-600     { color: hsl(200 90% 65%)  !important; }
+.dark .text-sky-700     { color: hsl(200 90% 58%)  !important; }
+.dark .text-cyan-600    { color: hsl(185 85% 62%)  !important; }
+.dark .text-cyan-700    { color: hsl(185 85% 55%)  !important; }
+.dark .text-teal-600    { color: hsl(168 80% 58%)  !important; }
+.dark .text-teal-700    { color: hsl(168 80% 52%)  !important; }
+.dark .text-emerald-600 { color: hsl(152 75% 56%)  !important; }
+.dark .text-emerald-700 { color: hsl(152 75% 49%)  !important; }
+.dark .text-green-600   { color: hsl(142 72% 56%)  !important; }
+.dark .text-green-700   { color: hsl(142 72% 49%)  !important; }
+.dark .text-lime-600    { color: hsl(80 72% 52%)   !important; }
+.dark .text-slate-600   { color: hsl(215 20% 60%)  !important; }
+
+/* ── Colored borders → subtler in dark mode ── */
+.dark .border-amber-200  { border-color: hsl(35 60% 22%)  !important; }
+.dark .border-amber-300  { border-color: hsl(35 60% 28%)  !important; }
+.dark .border-blue-200   { border-color: hsl(215 60% 22%) !important; }
+.dark .border-blue-300   { border-color: hsl(215 60% 28%) !important; }
+.dark .border-green-200  { border-color: hsl(142 60% 18%) !important; }
+.dark .border-emerald-200{ border-color: hsl(152 60% 18%) !important; }
+.dark .border-red-200    { border-color: hsl(0 60% 22%)   !important; }
+.dark .border-rose-200   { border-color: hsl(350 60% 22%) !important; }
+.dark .border-violet-200 { border-color: hsl(260 60% 22%) !important; }
+.dark .border-purple-200 { border-color: hsl(270 60% 22%) !important; }
+.dark .border-indigo-200 { border-color: hsl(240 60% 22%) !important; }
+.dark .border-orange-200 { border-color: hsl(25 60% 22%)  !important; }
+.dark .border-pink-200   { border-color: hsl(330 60% 22%) !important; }
+.dark .border-cyan-200   { border-color: hsl(185 60% 18%) !important; }
+.dark .border-teal-200   { border-color: hsl(168 60% 18%) !important; }
+.dark .border-sky-200    { border-color: hsl(204 60% 20%) !important; }
+.dark .border-white      { border-color: hsl(222 47% 24%) !important; }
+
+/* ── Ring / outline colors ── */
+.dark [class*="ring-black"] { --tw-ring-color: hsl(222 47% 30%) !important; }
+
+/* ── Shadcn Switch (toggle) ── */
+.dark [role="switch"][data-state="unchecked"] {
+  background-color: hsl(222 47% 20%) !important;
+}
+
+/* ── Shadcn Checkbox ── */
+.dark [role="checkbox"][data-state="unchecked"] {
+  background-color: hsl(222 47% 12%) !important;
+  border-color: hsl(222 47% 25%) !important;
+}
+
+/* ── Progress bars ── */
+.dark [role="progressbar"] > div {
+  background-color: hsl(215 80% 60%) !important;
+}
+
+/* ── Avatar fallback ── */
+.dark [class*="bg-gray-"][class*="rounded-full"] {
+  background-color: hsl(222 47% 18%) !important;
+}
+
+/* ── Code / pre blocks ── */
+.dark pre, .dark code {
+  background-color: hsl(222 47% 7%) !important;
+  color: hsl(0 0% 85%) !important;
+  border-color: hsl(222 47% 16%) !important;
+}
+
+/* ── Specific landing page sections ── */
+.dark .bg-\[#0a0a0a\],
+.dark .bg-\[#000000\],
+.dark .bg-\[#000\] {
+  background-color: hsl(222 47% 4%) !important;
+}
+
+/* ── Fix opacity-white backgrounds (arbitrary) ── */
+.dark .bg-white\/5  { background-color: hsla(222, 47%, 20%, 0.25) !important; }
+.dark .bg-white\/10 { background-color: hsla(222, 47%, 20%, 0.35) !important; }
+.dark .bg-white\/20 { background-color: hsla(222, 47%, 20%, 0.45) !important; }
+.dark .bg-white\/30 { background-color: hsl(222 47% 14%)           !important; }
+.dark .bg-white\/40 { background-color: hsl(222 47% 13%)           !important; }
+.dark .bg-white\/50 { background-color: hsl(222 47% 12%)           !important; }
+.dark .bg-white\/60 { background-color: hsl(222 47% 11%)           !important; }
+.dark .bg-white\/70 { background-color: hsl(222 47% 11%)           !important; }
+.dark .bg-white\/80 { background-color: hsl(222 47% 10%)           !important; }
+.dark .bg-white\/90 { background-color: hsl(222 47% 10%)           !important; }
+.dark .bg-white\/95 { background-color: hsla(222, 47%, 9%, 0.97)   !important; }
+
+/* ── Colored icon bg circles/squares ── */
+.dark .bg-amber-100 svg, .dark .bg-amber-50 svg  { color: hsl(35 90% 68%)  !important; }
+.dark .bg-blue-100 svg,  .dark .bg-blue-50 svg   { color: hsl(215 90% 68%) !important; }
+.dark .bg-emerald-100 svg, .dark .bg-emerald-50 svg { color: hsl(152 75% 56%) !important; }
+.dark .bg-violet-100 svg, .dark .bg-violet-50 svg { color: hsl(260 75% 70%) !important; }
+.dark .bg-red-100 svg,   .dark .bg-red-50 svg    { color: hsl(0 85% 65%)   !important; }
+.dark .bg-rose-100 svg,  .dark .bg-rose-50 svg   { color: hsl(350 85% 65%) !important; }
+.dark .bg-orange-100 svg, .dark .bg-orange-50 svg { color: hsl(25 95% 65%) !important; }
+.dark .bg-green-100 svg, .dark .bg-green-50 svg  { color: hsl(142 72% 56%) !important; }
+.dark .bg-slate-100 svg, .dark .bg-slate-50 svg  { color: hsl(215 20% 60%) !important; }
+.dark .bg-cyan-100 svg,  .dark .bg-cyan-50 svg   { color: hsl(185 85% 62%) !important; }
+.dark .bg-purple-100 svg, .dark .bg-purple-50 svg { color: hsl(270 75% 70%) !important; }
+.dark .bg-indigo-100 svg, .dark .bg-indigo-50 svg { color: hsl(240 75% 70%) !important; }
 
 /* ===== MARQUEE ANIMATION ===== */
 @keyframes marquee {
