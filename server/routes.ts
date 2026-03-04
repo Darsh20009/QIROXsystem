@@ -2675,14 +2675,22 @@ export async function registerRoutes(
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    const notifs = await NotificationModel.find({ userId: (req.user as any).id }).sort({ createdAt: -1 }).limit(50);
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const query = isStaff ? { $or: [{ userId: uid }, { forAdmins: true }] } : { userId: uid };
+    const notifs = await NotificationModel.find(query).sort({ createdAt: -1 }).limit(50);
     res.json(notifs);
   });
 
   app.get("/api/notifications/unread-count", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    const count = await NotificationModel.countDocuments({ userId: (req.user as any).id, read: false });
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const query = isStaff ? { $or: [{ userId: uid }, { forAdmins: true }], read: false } : { userId: uid, read: false };
+    const count = await NotificationModel.countDocuments(query);
     res.json({ count });
   });
 
@@ -2696,21 +2704,35 @@ export async function registerRoutes(
   app.patch("/api/notifications/read-all", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    await NotificationModel.updateMany({ userId: (req.user as any).id, read: false }, { read: true });
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const query = isStaff ? { $or: [{ userId: uid }, { forAdmins: true }], read: false } : { userId: uid, read: false };
+    await NotificationModel.updateMany(query, { read: true });
     res.json({ ok: true });
   });
 
   app.delete("/api/notifications/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    await NotificationModel.deleteOne({ _id: req.params.id, userId: (req.user as any).id });
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const filter = isStaff
+      ? { _id: req.params.id, $or: [{ userId: uid }, { forAdmins: true }] }
+      : { _id: req.params.id, userId: uid };
+    await NotificationModel.deleteOne(filter);
     res.json({ ok: true });
   });
 
   app.delete("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    await NotificationModel.deleteMany({ userId: (req.user as any).id, read: true });
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const query = isStaff ? { $or: [{ userId: uid }, { forAdmins: true }], read: true } : { userId: uid, read: true };
+    await NotificationModel.deleteMany(query);
     res.json({ ok: true });
   });
 
@@ -6121,7 +6143,7 @@ export async function registerInstallmentRoutes(app: Express) {
     await NotificationModel.create({
       userId: (appl as any).clientId,
       title: "تمت الموافقة على طلب التقسيط",
-      message: `تمت الموافقة على طلب التقسيط الخاص بك. يمكنك الآن دفع القسط الأول لتفعيل الباقة.`,
+      body: `تمت الموافقة على طلب التقسيط الخاص بك. يمكنك الآن دفع القسط الأول لتفعيل الباقة.`,
       type: "success",
       link: "/installments",
     });
@@ -6142,7 +6164,7 @@ export async function registerInstallmentRoutes(app: Express) {
     await NotificationModel.create({
       userId: (appl as any).clientId,
       title: "رفض طلب التقسيط",
-      message: `نأسف، تم رفض طلب التقسيط الخاص بك. السبب: ${rejectionReason || "لم يُحدد"}`,
+      body: `نأسف، تم رفض طلب التقسيط الخاص بك. السبب: ${rejectionReason || "لم يُحدد"}`,
       type: "error",
       link: "/installments",
     });
@@ -6161,7 +6183,7 @@ export async function registerInstallmentRoutes(app: Express) {
     await NotificationModel.create({
       userId: (appl as any).clientId,
       title: "تم تعليق خدمتك",
-      message: "تم تعليق خدمتك بسبب التأخر في سداد أقساط التقسيط. يرجى السداد لاستعادة الخدمة.",
+      body: "تم تعليق خدمتك بسبب التأخر في سداد أقساط التقسيط. يرجى السداد لاستعادة الخدمة.",
       type: "error",
       link: "/installments",
     });
@@ -6179,7 +6201,7 @@ export async function registerInstallmentRoutes(app: Express) {
     await NotificationModel.create({
       userId: (appl as any).clientId,
       title: "تم رفع تعليق خدمتك",
-      message: "تم استعادة خدمتك بنجاح. شكراً لسدادك.",
+      body: "تم استعادة خدمتك بنجاح. شكراً لسدادك.",
       type: "success",
       link: "/installments",
     });
@@ -6232,7 +6254,7 @@ export async function registerInstallmentRoutes(app: Express) {
       userId: null,
       forAdmins: true,
       title: "طلب تقسيط جديد",
-      message: `قدّم العميل ${user.fullName} طلب تقسيط جديد بقيمة ${grandTotal} ريال على ${installmentCount} أقساط`,
+      body: `قدّم العميل ${user.fullName} طلب تقسيط جديد بقيمة ${grandTotal} ريال على ${installmentCount} أقساط`,
       type: "info",
       link: "/admin/installments",
     });
@@ -6274,11 +6296,12 @@ export async function registerInstallmentRoutes(app: Express) {
     const balance = txns.reduce((s: number, t: any) => s + (t.type === "credit" ? t.amount : -t.amount), 0);
     if (balance < amountDue) return res.status(400).json({ error: `رصيد المحفظة غير كافٍ. الرصيد: ${balance.toFixed(2)} ريال` });
 
-    // Validate PIN if set
-    if (user.walletPin) {
+    // Validate PIN if set (fetch fresh user from DB)
+    const dbUser = await UserModel.findById(String(user._id)).select("+walletPin");
+    if (dbUser?.walletPin) {
       if (!walletPin) return res.status(400).json({ error: "يجب إدخال رقم PIN المحفظة" });
       const bcrypt = await import("bcrypt");
-      const valid = await bcrypt.compare(String(walletPin), user.walletPin);
+      const valid = await bcrypt.compare(String(walletPin), dbUser.walletPin);
       if (!valid) return res.status(400).json({ error: "رقم PIN غير صحيح" });
     }
 
@@ -6310,7 +6333,7 @@ export async function registerInstallmentRoutes(app: Express) {
       await NotificationModel.create({
         userId: user._id,
         title: "اكتمل التقسيط",
-        message: "مبروك! لقد أتممت سداد جميع الأقساط. شكراً لثقتك بنا.",
+        body: "مبروك! لقد أتممت سداد جميع الأقساط. شكراً لثقتك بنا.",
         type: "success",
         link: "/installments",
       });
@@ -6375,7 +6398,7 @@ export async function runInstallmentLateCheck() {
       await NotificationModel.create({
         userId: (appl as any).clientId,
         title: "تم تعليق خدمتك",
-        message: "تم تعليق خدمتك بسبب التأخر في سداد القسط. يرجى السداد فوراً لاستعادة الخدمة.",
+        body: "تم تعليق خدمتك بسبب التأخر في سداد القسط. يرجى السداد فوراً لاستعادة الخدمة.",
         type: "error",
         link: "/installments",
       });
@@ -6391,7 +6414,7 @@ export async function runInstallmentLateCheck() {
       await NotificationModel.create({
         userId: (appl as any).clientId,
         title: "تم إضافة غرامة تأخير",
-        message: `تم إضافة غرامة تأخير بمبلغ ${penaltyAmount} ريال للقسط رقم ${(payment as any).installmentNumber}`,
+        body: `تم إضافة غرامة تأخير بمبلغ ${penaltyAmount} ريال للقسط رقم ${(payment as any).installmentNumber}`,
         type: "warning",
         link: "/installments",
       });

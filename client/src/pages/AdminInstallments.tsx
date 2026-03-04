@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, CheckCircle, XCircle, Lock, Unlock, Eye, AlertTriangle, Banknote, RefreshCw } from "lucide-react";
-import PageGraphics from "@/components/PageGraphics";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const PERIOD_LABELS = { monthly: "شهرية", sixmonth: "نصف سنوية", annual: "سنوية", lifetime: "مدى الحياة", any: "أي فترة" };
 const TIER_LABELS = { lite: "Lite", pro: "Pro", infinite: "Infinite", lifetime: "Lifetime", any: "أي باقة" };

@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   subscriptionPeriod: { type: String, enum: ["monthly", "6months", "annual", "renewal"], default: null },
   subscriptionStartDate: Date,
   subscriptionExpiresAt: Date,
-  subscriptionStatus: { type: String, enum: ["active", "expired", "none"], default: "none" },
+  subscriptionStatus: { type: String, enum: ["active", "expired", "none", "suspended"], default: "none" },
   walletCardNumber: { type: String, unique: true, sparse: true },
   walletPin: { type: String },
   walletCardActive: { type: Boolean, default: false },
@@ -410,10 +410,11 @@ const otpSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system'], default: 'system' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  forAdmins: { type: Boolean, default: false },
+  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system', 'info', 'success', 'error', 'warning', 'task', 'project'], default: 'system' },
   title: { type: String, required: true },
-  body: { type: String, required: true },
+  body: { type: String, default: '' },
   link: String,
   read: { type: Boolean, default: false },
   icon: String,

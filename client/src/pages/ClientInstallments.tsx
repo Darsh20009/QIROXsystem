@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Banknote, CheckCircle, AlertTriangle, Lock, Clock, ChevronDown, ChevronUp, CreditCard, Info } from "lucide-react";
-import PageGraphics from "@/components/PageGraphics";
+import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const PERIOD_LABELS = { monthly: "شهرية", sixmonth: "نصف سنوية", annual: "سنوية", lifetime: "مدى الحياة", any: "أي فترة" };
 const TIER_LABELS = { lite: "Lite", pro: "Pro", infinite: "Infinite", lifetime: "Lifetime", any: "أي باقة" };
@@ -35,14 +35,14 @@ export default function ClientInstallments() {
   const { data: offers = [], isLoading: loadingOffers } = useQuery({ queryKey: ["/api/installment/offers"] });
 
   // Wallet balance
-  const { data: walletTxns = [] } = useQuery({ queryKey: ["/api/wallet/transactions"] });
-  const balance = walletTxns.reduce((s: number, t: any) => s + (t.type === "credit" ? t.amount : -t.amount), 0);
+  const { data: walletData } = useQuery({ queryKey: ["/api/wallet"] });
+  const balance = walletData ? ((walletData as any).totalCredit || 0) - ((walletData as any).totalDebit || 0) : 0;
 
   const payInstallment = useMutation({
     mutationFn: ({ paymentId, walletPin }) => apiRequest("POST", `/api/installment/pay/${paymentId}`, { walletPin }).then(r => r.json()),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/installment/my"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       setPayingPayment(null);
       setPinInput("");
       toast({ title: `تم دفع القسط بنجاح — ${data.paidAmount?.toFixed(2)} ريال` });
