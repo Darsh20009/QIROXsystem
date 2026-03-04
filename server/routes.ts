@@ -2966,15 +2966,32 @@ export async function registerRoutes(
     const { code } = req.body;
     if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
     const pendingUserId = req.session.pendingLoginUserId;
-    if (!pendingUserId) return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+    if (!pendingUserId || pendingUserId === "undefined") return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
 
     const { UserModel, OtpModel, DeviceTokenModel } = await import("./models");
-    const user = await UserModel.findById(pendingUserId);
+    let user: any;
+    try { user = await UserModel.findById(pendingUserId); } catch { return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" }); }
     if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
 
     const email = user.email.toLowerCase().trim();
-    const otp = await OtpModel.findOne({ email, code: String(code), used: false, type: "login_otp", expiresAt: { $gt: new Date() } });
-    if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+    const enteredCode = String(code).trim();
+
+    // Debug: find the latest OTP regardless of filters to diagnose failures
+    const latestOtp = await OtpModel.findOne({ email, type: "login_otp" }).sort({ createdAt: -1 });
+    if (!latestOtp) {
+      console.log(`[OTP-verify-login] No OTP found at all for email=${email}`);
+      return res.status(400).json({ error: "لم يتم إرسال رمز تحقق، أعد تسجيل الدخول" });
+    }
+    const isExpired = latestOtp.expiresAt < new Date();
+    const isUsed = latestOtp.used;
+    const codeMatch = latestOtp.code === enteredCode;
+    console.log(`[OTP-verify-login] email=${email} entered="${enteredCode}" stored="${latestOtp.code}" match=${codeMatch} used=${isUsed} expired=${isExpired}`);
+
+    if (isUsed) return res.status(400).json({ error: "تم استخدام هذا الرمز من قبل، اطلب رمزاً جديداً" });
+    if (isExpired) return res.status(400).json({ error: "انتهت صلاحية الرمز، اطلب رمزاً جديداً" });
+    if (!codeMatch) return res.status(400).json({ error: "الرمز غير صحيح، تأكد من آخر رسالة في بريدك" });
+
+    const otp = latestOtp;
 
     await OtpModel.updateOne({ _id: otp._id }, { used: true });
 
