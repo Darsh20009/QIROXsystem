@@ -372,6 +372,10 @@ function AppInner() {
   }
 
   if (location === "/qirox-edit") {
+    if (!user || user.role === "client") {
+      window.location.replace("/dashboard");
+      return null;
+    }
     return (
       <Suspense fallback={<PageLoader />}>
         <QiroxEdit />

@@ -113,8 +113,6 @@ export default function InvestorPortal() {
   const { toast } = useToast();
   const { data: currentUser } = useUser();
   const [tab, setTab] = useState<Tab>("overview");
-
-  // Submit payment form
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("bank_transfer");
   const [description, setDescription] = useState("");
@@ -123,8 +121,18 @@ export default function InvestorPortal() {
   const [signatureText, setSignatureText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data, isLoading, error } = useQuery<InvestorData>({ queryKey: ["/api/investor/profile"] });
-  const { data: payments = [], isLoading: payLoading } = useQuery<Payment[]>({ queryKey: ["/api/investor/payments"] });
+  const userRole = (currentUser as any)?.role || "";
+  const additionalRoles: string[] = (currentUser as any)?.additionalRoles || [];
+  const isInvestorOrAdmin = ["investor", "admin", "manager"].includes(userRole) || additionalRoles.some(r => ["investor", "admin", "manager"].includes(r));
+
+  const { data, isLoading, error } = useQuery<InvestorData>({
+    queryKey: ["/api/investor/profile"],
+    enabled: isInvestorOrAdmin,
+  });
+  const { data: payments = [], isLoading: payLoading } = useQuery<Payment[]>({
+    queryKey: ["/api/investor/payments"],
+    enabled: isInvestorOrAdmin,
+  });
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -147,6 +155,18 @@ export default function InvestorPortal() {
     },
     onError: (e: any) => toast({ title: e.message || "فشل الإرسال", variant: "destructive" }),
   });
+
+  if (currentUser && !isInvestorOrAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-8" dir="rtl">
+        <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <Lock className="w-10 h-10 text-amber-500" />
+        </div>
+        <h2 className="text-xl font-black text-black dark:text-white">صفحة مقيّدة</h2>
+        <p className="text-sm text-black/40 dark:text-white/40 max-w-xs">هذه البوابة خاصة بالمستثمرين فقط. تواصل مع الإدارة لمزيد من المعلومات.</p>
+      </div>
+    );
+  }
 
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
 

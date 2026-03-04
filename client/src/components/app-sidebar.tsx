@@ -63,7 +63,6 @@ export function AppSidebar() {
 
     // Client-only pages
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "client" },
-    { title: ar ? "كيروكس إيدت 🎨" : "Qirox Edit 🎨", icon: Paintbrush, url: "/qirox-edit", group: "client" },
     { title: ar ? "الأجهزة والإضافات" : "Devices & Add-ons", icon: Cpu, url: "/devices", group: "client" },
     { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client" },
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client" },
@@ -183,20 +182,27 @@ export function AppSidebar() {
     },
   });
 
+  const hasRole = (roles: string[]) => {
+    return roles.includes(user?.role || "") || ((user as any)?.additionalRoles || []).some((r: string) => roles.includes(r));
+  };
+
   const menuItems = items.filter((item) => {
     if (!user) return item.group === "public";
 
     if (user.role === "client") {
-      return item.group === "public" || item.group === "client";
+      if (item.group !== "public" && item.group !== "client") return false;
+      // Respect allowedRoles even for client-group items
+      if (item.allowedRoles) return hasRole(item.allowedRoles);
+      return true;
     }
 
     // For non-client (employee/admin) users:
     // Skip public and client groups
     if (item.group === "public" || item.group === "client") return false;
 
-    // Check allowedRoles if specified
+    // Check allowedRoles if specified (also check additionalRoles)
     if (item.allowedRoles) {
-      return item.allowedRoles.includes(user.role);
+      return hasRole(item.allowedRoles);
     }
 
     // "employee" group: visible to ALL non-client roles
