@@ -2425,70 +2425,92 @@ export default function Dashboard() {
 
       {/* Modification Dialog */}
       <Dialog open={modDialogOpen} onOpenChange={setModDialogOpen}>
-        <DialogContent className="sm:max-w-[480px]" dir={dir}>
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-black dark:text-white">{L ? "طلب تعديل جديد" : "New Modification Request"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            {/* No active orders warning */}
-            {modQuota && !modQuota.hasOrders && (
-              <div className="rounded-xl p-3 border bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/30 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-                <p className="text-xs font-bold text-red-700 dark:text-red-400">{L ? "لا يوجد لديك طلب نشط — يجب أن يكون لديك طلب مقبول أو قيد التنفيذ لإرسال طلبات التعديل" : "You don't have an active order — you must have an approved or in-progress order to submit modification requests"}</p>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-2xl border-0 shadow-2xl" dir={dir}>
+          {/* Creative gradient header */}
+          <div className="relative bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0e7490] px-6 pt-6 pb-8 overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-[-30px] right-[-30px] w-32 h-32 rounded-full bg-cyan-400 blur-2xl" />
+              <div className="absolute bottom-[-20px] left-[-20px] w-24 h-24 rounded-full bg-blue-500 blur-2xl" />
+            </div>
+            <div className="relative flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center">
+                    <Wrench className="w-4 h-4 text-cyan-300" />
+                  </div>
+                  <span className="text-[10px] font-bold text-cyan-400 tracking-widest uppercase">{L ? "طلب جديد" : "New Request"}</span>
+                </div>
+                <h2 className="text-lg font-black text-white leading-tight">{L ? "طلب تعديل" : "Modification Request"}</h2>
+                <p className="text-xs text-white/50 mt-0.5">{L ? "أخبرنا بالتعديل المطلوب وسنتواصل معك" : "Tell us what needs to be changed"}</p>
               </div>
-            )}
-            {/* Quota Status Bar */}
-            {modQuota?.hasOrders && bestQuota && (
-              <div className={`rounded-xl p-3 border ${
-                quotaExceeded
-                  ? "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/30"
-                  : bestQuota.hasUnlimitedAddon
-                    ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/30"
-                    : isLifetimePlan
-                      ? "bg-violet-50 border-violet-200 dark:bg-violet-900/10 dark:border-violet-800/30"
-                      : isDefaultQuota
-                        ? "bg-gray-50 border-gray-200 dark:bg-gray-800/20 dark:border-gray-700/30"
-                        : "bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800/30"
-              }`}>
-                {isLifetimePlan ? (
-                  <div className="flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-violet-600 dark:text-violet-400 shrink-0" />
-                    <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{L ? "باقة مدى الحياة — التعديل مدفوع حسب النوع" : "Lifetime plan — modifications are paid per type"}</p>
+              {/* Circular quota badge in header */}
+              {modQuota?.hasOrders && bestQuota && !isLifetimePlan && !bestQuota.hasUnlimitedAddon && (
+                <div className="shrink-0 flex flex-col items-center">
+                  <div className={`relative w-14 h-14 rounded-full border-[3px] flex items-center justify-center ${quotaExceeded ? "border-red-400/60 bg-red-500/10" : "border-cyan-400/50 bg-cyan-400/10"}`}>
+                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
+                      <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="3"
+                        className={quotaExceeded ? "text-red-500/20" : "text-cyan-400/20"} />
+                      <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="3"
+                        strokeLinecap="round"
+                        className={quotaExceeded ? "text-red-400" : "text-cyan-400"}
+                        strokeDasharray={`${2 * Math.PI * 24}`}
+                        strokeDashoffset={`${2 * Math.PI * 24 * (1 - (bestQuota.remainingThisPeriod / bestQuota.modificationsPerPeriod))}`}
+                        style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+                    </svg>
+                    <span className={`text-base font-black ${quotaExceeded ? "text-red-300" : "text-cyan-300"}`}>{bestQuota.remainingThisPeriod}</span>
                   </div>
-                ) : bestQuota.hasUnlimitedAddon ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{L ? `تعديلات غير محدودة — الإضافة نشطة حتى ${new Date(bestQuota.periodEnd || "").toLocaleDateString("ar-SA")}` : `Unlimited modifications — add-on active until ${new Date(bestQuota.periodEnd || "").toLocaleDateString("en-US")}`}</p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-xs font-bold text-black/70 dark:text-white/70">
-                        {L ? "الحصة المتبقية:" : "Remaining quota:"} <span className={quotaExceeded ? "text-red-600" : isDefaultQuota ? "text-gray-600 dark:text-gray-300" : "text-blue-700 dark:text-blue-300"}>{bestQuota.remainingThisPeriod}</span> / {bestQuota.modificationsPerPeriod}
-                        {isDefaultQuota && <span className="text-[10px] text-black/35 dark:text-white/30 mr-1.5">{L ? "(افتراضي)" : "(default)"}</span>}
-                      </p>
-                      <span className="text-[10px] text-black/40 dark:text-white/30">{L ? "التعديلات الملغية لا تُحسب" : "Cancelled requests don't count"}</span>
-                    </div>
-                    <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-1.5">
-                      <div
-                        className={`h-1.5 rounded-full transition-all ${quotaExceeded ? "bg-red-500" : isDefaultQuota ? "bg-gray-400" : "bg-blue-500"}`}
-                        style={{ width: `${Math.min(100, ((bestQuota.modificationsPerPeriod - bestQuota.remainingThisPeriod) / bestQuota.modificationsPerPeriod) * 100)}%` }}
-                      />
-                    </div>
-                    {quotaExceeded && (
-                      <p className="text-[11px] text-red-600 dark:text-red-400 mt-1.5 font-medium">{L ? "لقد استنفدت حصتك هذه الفترة" : "You have exhausted your quota for this period"}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                  <span className="text-[9px] text-white/40 mt-1 font-medium">{L ? "متبقي" : "left"}</span>
+                </div>
+              )}
+              {isLifetimePlan && (
+                <div className="shrink-0 w-14 h-14 rounded-full bg-violet-400/10 border-[3px] border-violet-400/50 flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-violet-300" />
+                </div>
+              )}
+              {bestQuota?.hasUnlimitedAddon && (
+                <div className="shrink-0 w-14 h-14 rounded-full bg-emerald-400/10 border-[3px] border-emerald-400/50 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-emerald-300" />
+                </div>
+              )}
+            </div>
 
-            {/* Lifetime: modification type selector */}
+            {/* Status strip inside header */}
+            {modQuota && !modQuota.hasOrders && (
+              <div className="relative mt-4 rounded-xl bg-red-500/20 border border-red-400/30 px-3 py-2 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-red-300 shrink-0" />
+                <p className="text-[11px] font-bold text-red-200">{L ? "لا يوجد لديك طلب نشط لإرسال طلبات التعديل" : "You need an active order to submit modification requests"}</p>
+              </div>
+            )}
+            {modQuota?.hasOrders && bestQuota?.hasUnlimitedAddon && (
+              <div className="relative mt-4 rounded-xl bg-emerald-500/20 border border-emerald-400/30 px-3 py-2 flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <p className="text-[11px] font-bold text-emerald-200">{L ? `تعديلات غير محدودة — الإضافة نشطة حتى ${new Date(bestQuota.periodEnd || "").toLocaleDateString("ar-SA")}` : `Unlimited modifications active until ${new Date(bestQuota.periodEnd || "").toLocaleDateString("en-US")}`}</p>
+              </div>
+            )}
+            {isLifetimePlan && (
+              <div className="relative mt-4 rounded-xl bg-violet-500/20 border border-violet-400/30 px-3 py-2 flex items-center gap-2">
+                <Crown className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+                <p className="text-[11px] font-bold text-violet-200">{L ? "باقة مدى الحياة — التعديل مدفوع حسب النوع المختار" : "Lifetime plan — modifications charged per type"}</p>
+              </div>
+            )}
+            {modQuota?.hasOrders && bestQuota && !isLifetimePlan && !bestQuota.hasUnlimitedAddon && quotaExceeded && (
+              <div className="relative mt-4 rounded-xl bg-red-500/20 border border-red-400/30 px-3 py-2 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-red-300 shrink-0" />
+                <p className="text-[11px] font-bold text-red-200">{L ? "لقد استنفدت حصتك لهذه الفترة" : "You have exhausted your quota for this period"}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Form body */}
+          <div className="px-6 py-5 space-y-4 bg-white dark:bg-gray-950">
+            {/* Lifetime modification type */}
             {isLifetimePlan && activeModTypePrices.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">{L ? "نوع التعديل والسعر" : "Modification Type & Price"}</label>
+                <label className="text-[11px] font-bold text-black/50 dark:text-white/40 mb-2 block uppercase tracking-wider">{L ? "نوع التعديل والسعر" : "Modification Type & Price"}</label>
                 <Select value={modTypeId} onValueChange={setModTypeId}>
-                  <SelectTrigger data-testid="select-mod-type"><SelectValue placeholder={L ? "اختر نوع التعديل" : "Choose modification type"} /></SelectTrigger>
+                  <SelectTrigger className="h-10 rounded-xl border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04]" data-testid="select-mod-type">
+                    <SelectValue placeholder={L ? "اختر نوع التعديل" : "Choose modification type"} />
+                  </SelectTrigger>
                   <SelectContent>
                     {activeModTypePrices.map((t: any) => (
                       <SelectItem key={t.id} value={t.id}>{L ? t.nameAr : (t.nameEn || t.nameAr)} — {t.price} {L ? "ريال" : "SAR"}</SelectItem>
@@ -2498,57 +2520,98 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Title */}
             <div>
-              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">{L ? "العنوان" : "Title"}</label>
-              <Input value={modTitle} onChange={(e) => setModTitle(e.target.value)} placeholder={L ? "عنوان طلب التعديل" : "Modification request title"} data-testid="input-mod-title" />
+              <label className="text-[11px] font-bold text-black/50 dark:text-white/40 mb-2 block uppercase tracking-wider">{L ? "عنوان التعديل" : "Title"}</label>
+              <Input
+                value={modTitle}
+                onChange={(e) => setModTitle(e.target.value)}
+                placeholder={L ? "مثال: تعديل صفحة الرئيسية..." : "e.g. Update homepage hero section..."}
+                className="h-10 rounded-xl border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-sm placeholder:text-black/25 dark:placeholder:text-white/20"
+                data-testid="input-mod-title"
+              />
             </div>
+
+            {/* Description */}
             <div>
-              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">{L ? "الوصف" : "Description"}</label>
-              <Textarea value={modDescription} onChange={(e) => setModDescription(e.target.value)} placeholder={L ? "اشرح التعديل المطلوب بالتفصيل..." : "Explain the required modification in detail..."} rows={4} data-testid="input-mod-description" />
+              <label className="text-[11px] font-bold text-black/50 dark:text-white/40 mb-2 block uppercase tracking-wider">{L ? "تفاصيل التعديل" : "Details"}</label>
+              <Textarea
+                value={modDescription}
+                onChange={(e) => setModDescription(e.target.value)}
+                placeholder={L ? "اشرح التعديل المطلوب بكل التفاصيل..." : "Describe the modification in detail..."}
+                rows={3}
+                className="rounded-xl border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] text-sm placeholder:text-black/25 dark:placeholder:text-white/20 resize-none"
+                data-testid="input-mod-description"
+              />
             </div>
+
+            {/* Priority - visual chip buttons */}
             <div>
-              <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">{L ? "الأولوية" : "Priority"}</label>
-              <Select value={modPriority} onValueChange={setModPriority}>
-                <SelectTrigger data-testid="select-mod-priority"><SelectValue placeholder={L ? "اختر الأولوية" : "Choose priority"} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">{L ? "منخفض" : "Low"}</SelectItem>
-                  <SelectItem value="medium">{L ? "متوسط" : "Medium"}</SelectItem>
-                  <SelectItem value="high">{L ? "عالي" : "High"}</SelectItem>
-                  <SelectItem value="urgent">{L ? "عاجل" : "Urgent"}</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="text-[11px] font-bold text-black/50 dark:text-white/40 mb-2 block uppercase tracking-wider">{L ? "مستوى الأولوية" : "Priority"}</label>
+              <div className="grid grid-cols-4 gap-2" data-testid="select-mod-priority">
+                {[
+                  { value: "low", labelAr: "منخفض", labelEn: "Low", color: "border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-400", active: "bg-gray-100 border-gray-400 text-gray-800 dark:bg-gray-700 dark:border-gray-400 dark:text-white font-bold" },
+                  { value: "medium", labelAr: "متوسط", labelEn: "Med", color: "border-blue-200 text-blue-600 dark:border-blue-700 dark:text-blue-400", active: "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/50 dark:border-blue-400 dark:text-blue-200 font-bold" },
+                  { value: "high", labelAr: "عالي", labelEn: "High", color: "border-amber-200 text-amber-600 dark:border-amber-700 dark:text-amber-400", active: "bg-amber-100 border-amber-500 text-amber-800 dark:bg-amber-900/50 dark:border-amber-400 dark:text-amber-200 font-bold" },
+                  { value: "urgent", labelAr: "عاجل", labelEn: "Urgent", color: "border-red-200 text-red-500 dark:border-red-700 dark:text-red-400", active: "bg-red-100 border-red-500 text-red-800 dark:bg-red-900/50 dark:border-red-400 dark:text-red-200 font-bold" },
+                ].map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setModPriority(p.value)}
+                    className={`py-2 px-1 rounded-xl border text-[11px] transition-all ${modPriority === p.value ? p.active : `${p.color} hover:opacity-80`}`}
+                  >
+                    {L ? p.labelAr : p.labelEn}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Project selector */}
             {projects && projects.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-black/60 dark:text-white/60 mb-1.5 block">{L ? "المشروع (اختياري)" : "Project (Optional)"}</label>
+                <label className="text-[11px] font-bold text-black/50 dark:text-white/40 mb-2 block uppercase tracking-wider">{L ? "المشروع المرتبط" : "Linked Project"}</label>
                 <Select value={modProjectId} onValueChange={setModProjectId}>
-                  <SelectTrigger data-testid="select-mod-project"><SelectValue placeholder={L ? "اختر المشروع" : "Choose project"} /></SelectTrigger>
+                  <SelectTrigger className="h-10 rounded-xl border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04]" data-testid="select-mod-project">
+                    <SelectValue placeholder={L ? "اختر مشروعاً (اختياري)" : "Choose a project (optional)"} />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{L ? "بدون مشروع" : "No project"}</SelectItem>
+                    <SelectItem value="none">{L ? "بدون ربط بمشروع" : "No linked project"}</SelectItem>
                     {projects.map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{L ? `مشروع #${p.id}` : `Project #${p.id}`}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {/* Purchase unlimited addon button */}
+            {/* Unlimited addon upsell */}
             {bestQuota?.canPurchaseAddon && !bestQuota?.hasUnlimitedAddon && !isLifetimePlan && (
-              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl p-3 flex items-center justify-between gap-2">
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-gradient-to-l from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-amber-800 dark:text-amber-300">{L ? "تعديلات غير محدودة لهذا الشهر" : "Unlimited modifications this month"}</p>
-                  <p className="text-[11px] text-amber-700/70 dark:text-amber-400/70">{L ? "1,000 ريال — للباقات النصف سنوية والسنوية فقط" : "1,000 SAR — for semi-annual & annual plans only"}</p>
+                  <p className="text-[10px] text-amber-700/60 dark:text-amber-400/60 mt-0.5">{L ? "1,000 ريال — للباقات النصف سنوية والسنوية" : "1,000 SAR — semi-annual & annual plans"}</p>
                 </div>
-                <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-100 shrink-0 gap-1" onClick={() => { setModDialogOpen(false); }} data-testid="button-buy-unlimited-addon">
-                  <Plus className="w-3.5 h-3.5" /> {L ? "اشتراك" : "Subscribe"}
+                <Button size="sm" variant="outline" className="h-7 text-[11px] border-amber-400 text-amber-700 hover:bg-amber-100 shrink-0 gap-1 rounded-lg" onClick={() => setModDialogOpen(false)} data-testid="button-buy-unlimited-addon">
+                  <Sparkles className="w-3 h-3" /> {L ? "اشتراك" : "Subscribe"}
                 </Button>
               </div>
             )}
 
-            <Button className="w-full bg-black text-white hover:bg-black/80 font-bold text-xs" onClick={handleSubmitModRequest}
-              disabled={createModRequestMutation.isPending || !modTitle.trim() || !modDescription.trim() || (quotaExceeded ?? false) || !!(modQuota && !modQuota.hasOrders)} data-testid="button-submit-modification-request">
-              {createModRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-1.5" />}
-              {(modQuota && !modQuota.hasOrders) ? (L ? "لا يوجد طلب نشط" : "No active order") : quotaExceeded ? (L ? "الحصة مستنفدة" : "Quota exhausted") : (L ? "إرسال الطلب" : "Submit Request")}
-            </Button>
+            {/* Submit button */}
+            <button
+              onClick={handleSubmitModRequest}
+              disabled={createModRequestMutation.isPending || !modTitle.trim() || !modDescription.trim() || (quotaExceeded ?? false) || !!(modQuota && !modQuota.hasOrders)}
+              className="w-full h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-l from-[#0f172a] to-[#0e7490] hover:from-[#1e293b] hover:to-[#0891b2] text-white shadow-lg shadow-cyan-900/20"
+              data-testid="button-submit-modification-request"
+            >
+              {createModRequestMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (modQuota && !modQuota.hasOrders) ? (
+                <><AlertCircle className="w-4 h-4" />{L ? "لا يوجد طلب نشط" : "No active order"}</>
+              ) : quotaExceeded ? (
+                <><XCircle className="w-4 h-4" />{L ? "الحصة مستنفدة" : "Quota exhausted"}</>
+              ) : (
+                <><Sparkles className="w-4 h-4" />{L ? "إرسال طلب التعديل" : "Submit Modification Request"}</>
+              )}
+            </button>
           </div>
         </DialogContent>
       </Dialog>
