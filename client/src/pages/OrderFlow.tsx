@@ -355,14 +355,13 @@ export default function OrderFlow() {
           ...orderDevices.map(d => ({ name: d.name, nameAr: d.nameAr, price: d.price, qty: d.quantity })),
         ],
       };
-      const orderData = await (await apiRequest("POST", "/api/orders", body)).json();
-      const orderId = orderData.id || orderData._id;
+      const orderRes = await apiRequest("POST", "/api/orders", body);
+      if (!orderRes.ok) {
+        const err = await orderRes.json();
+        throw new Error(err.error || err.message || "فشل إرسال الطلب");
+      }
+      const orderData = await orderRes.json();
       if (effectiveWalletAmt > 0) {
-        const walletRes = await apiRequest("POST", "/api/wallet/pay", {
-          amount: effectiveWalletAmt, orderId,
-          description: `دفع طلب ${orderId} من المحفظة الإلكترونية`,
-        });
-        if (!walletRes.ok) { const err = await walletRes.json(); throw new Error(err.error || "فشل الدفع بالمحفظة"); }
         qc.invalidateQueries({ queryKey: ["/api/wallet"] });
       }
       return { ...orderData, walletUsed: effectiveWalletAmt };
@@ -1006,7 +1005,7 @@ export default function OrderFlow() {
                           onClick={() => { setUseWallet(v => !v); if (!useWallet) setWalletAmount(maxWalletUsable); else setWalletAmount(0); }}
                           className={`w-12 h-6 rounded-full transition-all duration-200 relative ${useWallet ? "bg-cyan-500" : "bg-black/15 dark:bg-white/15"}`}
                           data-testid="toggle-wallet-orderflow">
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${useWallet ? (dir === "rtl" ? "right-0.5" : "left-6") : (dir === "rtl" ? "right-6" : "left-0.5")}`} />
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${useWallet ? (dir === "rtl" ? "right-6" : "left-6") : (dir === "rtl" ? "right-0.5" : "left-0.5")}`} />
                         </button>
                       ) : (
                         <a href="/client-wallet" className="text-xs font-bold text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1.5 rounded-xl hover:bg-cyan-100 transition-colors">
