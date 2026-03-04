@@ -15,7 +15,7 @@ import {
   Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
   Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
-  Loader2, CircleDot, RefreshCw
+  Loader2, CircleDot, RefreshCw, Key, Hash
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -169,6 +169,9 @@ export default function AdminQMeet() {
               <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2" data-testid="btn-refresh">
                 <RefreshCw className="w-3.5 h-3.5" />
               </Button>
+              <Button onClick={() => navigate("/meet/join")} variant="outline" className="gap-2 border-black/10 dark:border-white/10" data-testid="button-join-by-code">
+                <Key className="w-4 h-4" /> انضمام بكود
+              </Button>
               {isManagement && (
                 <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
                   <Plus className="w-4 h-4" /> اجتماع جديد
@@ -278,7 +281,15 @@ export default function AdminQMeet() {
                               <Users className="w-3.5 h-3.5" />
                               {(meeting.participantEmails || []).length} مشارك
                             </span>
-                            <span className="text-black/25 dark:text-white/25">{timeAgo}</span>
+                              <span className="text-black/25 dark:text-white/25">{timeAgo}</span>
+                            {meeting.joinCode && (
+                              <span className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full font-mono text-[10px] font-bold cursor-pointer hover:bg-black/[0.08] transition-colors"
+                                onClick={() => { navigator.clipboard.writeText(meeting.joinCode); }}
+                                title="انقر لنسخ الكود">
+                                <Hash className="w-3 h-3" />
+                                {meeting.joinCode}
+                              </span>
+                            )}
                           </div>
 
                           {meeting.description && <p className="text-xs text-black/40 dark:text-white/40 mt-1.5 truncate">{meeting.description}</p>}

@@ -40,6 +40,14 @@ const qMeetingSchema = new mongoose.Schema({
   reminderSent:   { type: Boolean, default: false },
   reminder24hSent:{ type: Boolean, default: false },
   guestToken:     { type: String, default: null },
+  joinCode:       { type: String, default: null },
+  joinRequests:   [{
+    userId:      { type: String, required: true },
+    userName:    { type: String, default: "" },
+    userEmail:   { type: String, default: "" },
+    status:      { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    requestedAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 qMeetingSchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 

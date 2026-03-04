@@ -94,6 +94,7 @@ const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
 const AdminQMeet = lazy(() => import("@/pages/AdminQMeet"));
 const AdminQMeetDetail = lazy(() => import("@/pages/AdminQMeetDetail"));
 const MeetingRoom = lazy(() => import("@/pages/MeetingRoom"));
+const QMeetJoinByCode = lazy(() => import("@/pages/QMeetJoinByCode"));
 const QiroxEdit = lazy(() => import("@/pages/QiroxEdit"));
 const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
 const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
@@ -605,11 +606,12 @@ function AppInner() {
     );
   }
 
-  if (location.startsWith("/meet/")) {
+  if (location.startsWith("/meet/") || location === "/meet/join") {
     return (
       <PageErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Switch>
+            <Route path="/meet/join" component={QMeetJoinByCode} />
             <Route path="/meet/:roomId" component={MeetingRoom} />
           </Switch>
           <Toaster />

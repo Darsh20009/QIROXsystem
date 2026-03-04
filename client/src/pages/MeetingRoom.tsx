@@ -13,7 +13,7 @@ import {
   PhoneOff, MessageSquare, X, Send, Users, Copy, Check,
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
-  Layout, ExternalLink
+  Layout, ExternalLink, CheckCircle2, XCircle, Bell
 } from "lucide-react";
 
 const RTC_CONFIG: RTCConfiguration = {
@@ -88,7 +88,7 @@ function VideoTile({ peer, local = false, onKick, canKick }: {
   );
 }
 
-type PanelTab = 'chat' | 'participants' | 'whiteboard' | 'page' | 'actions';
+type PanelTab = 'chat' | 'participants' | 'whiteboard' | 'page' | 'actions' | 'requests';
 
 const SYSTEM_PAGES = [
   { label: "لوحة التحكم", path: "/dashboard" },
@@ -157,9 +157,13 @@ export default function MeetingRoom() {
   const [qaTicketTitle, setQaTicketTitle] = useState("");
   const [qaTicketDesc, setQaTicketDesc] = useState("");
 
+  // Join requests (host only)
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
+
   const userId = user?._id || user?.id;
   const userName = user?.fullName || user?.username || "مشارك";
   const isAdmin = ["admin", "manager"].includes((user as any)?.role);
+  const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
 
   // Keep refs in sync with state (to avoid stale closures in callbacks)
   useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
@@ -341,8 +345,18 @@ export default function MeetingRoom() {
         setScreenSharerPeerId(prev => prev === data.peerId ? null : prev);
         break;
       }
+      case "qmeet_join_request": {
+        setPendingJoinRequests(prev => {
+          const exists = prev.find(r => r.userId === data.userId);
+          if (exists) return prev;
+          return [...prev, { ...data, _tempId: data.userId + Date.now() }];
+        });
+        toast({ title: "طلب انضمام جديد", description: `${data.userName} يطلب الدخول للاجتماع` });
+        setActivePanel("requests");
+        break;
+      }
     }
-  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas]);
+  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast]);
 
   const getMedia = useCallback(async () => {
     try {
@@ -702,12 +716,13 @@ export default function MeetingRoom() {
     );
   }
 
-  const PANEL_TABS: { id: PanelTab; label: string; icon: any }[] = [
+  const PANEL_TABS: { id: PanelTab; label: string; icon: any; badge?: number }[] = [
     { id: 'chat', label: 'الدردشة', icon: MessageSquare },
     { id: 'participants', label: 'المشاركون', icon: Users },
     { id: 'whiteboard', label: 'السبورة', icon: Pencil },
     { id: 'page', label: 'عرض صفحة', icon: Layout },
     { id: 'actions', label: 'إجراءات', icon: Zap },
+    ...(isHost ? [{ id: 'requests' as PanelTab, label: 'طلبات الانضمام', icon: Bell, badge: pendingJoinRequests.length }] : []),
   ];
 
   return (
@@ -805,11 +820,16 @@ export default function MeetingRoom() {
                 <button
                   key={tab.id}
                   onClick={() => setActivePanel(tab.id)}
-                  className={`flex items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors ${activePanel === tab.id ? "text-white border-b-2 border-white" : "text-white/40 hover:text-white/70"}`}
+                  className={`relative flex items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors ${activePanel === tab.id ? "text-white border-b-2 border-white" : "text-white/40 hover:text-white/70"}`}
                   data-testid={`button-panel-${tab.id}`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
+                  {tab.badge !== undefined && tab.badge > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                      {tab.badge}
+                    </span>
+                  )}
                 </button>
               ))}
               <button onClick={() => setActivePanel(null)} className="ml-auto p-2 text-white/30 hover:text-white shrink-0">
@@ -1013,6 +1033,65 @@ export default function MeetingRoom() {
                     </Button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── Join Requests panel (host only) ── */}
+            {activePanel === 'requests' && isHost && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">طلبات الانضمام بالكود</p>
+                {pendingJoinRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-white/20">
+                    <Bell className="w-8 h-8" />
+                    <p className="text-xs">لا توجد طلبات انضمام حالياً</p>
+                  </div>
+                ) : pendingJoinRequests.map((req) => (
+                  <div key={req._tempId || req.userId} className="bg-white/[0.06] rounded-xl p-3 space-y-2.5 border border-white/[0.08]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-400 font-bold text-sm">
+                        {(req.userName || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-xs font-bold truncate">{req.userName}</p>
+                        {req.userEmail && <p className="text-white/30 text-[10px] truncate">{req.userEmail}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.meetingId ? req.userId : req.userId}`, { action: "approve" });
+                            setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                            toast({ title: "تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
+                          } catch (e: any) {
+                            toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                        data-testid={`button-approve-${req.userId}`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        قبول
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "reject" });
+                            setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                            toast({ title: "تم الرفض", description: `رفضت انضمام ${req.userName}` });
+                          } catch (e: any) {
+                            toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                        data-testid={`button-reject-${req.userId}`}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        رفض
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -18,6 +18,14 @@ function generateRoomName(): string {
   return result;
 }
 
+// ── Join code generator (6 alphanumeric uppercase) ───────────────────────────
+function generateJoinCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 // ── Smart scheduler: auto-status + reminders ──────────────────────────────────
 export function startQMeetScheduler() {
   setInterval(async () => {
@@ -218,6 +226,8 @@ export function registerQMeetRoutes(app: Express) {
         consultationBookingId: consultationBookingId || null,
         notes: notes || "",
         agenda: agenda || [],
+        joinCode: generateJoinCode(),
+        joinRequests: [],
       });
 
       // Send invite emails (non-blocking)
@@ -395,6 +405,181 @@ export function registerQMeetRoutes(app: Express) {
     try {
       await QReportModel.findByIdAndDelete(req.params.id);
       res.json({ message: "تم حذف التقرير" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Join by code: find meeting ──────────────────────────────────────────────
+
+  app.get("/api/qmeet/by-code/:code", requireAuth, async (req: any, res) => {
+    try {
+      const code = String(req.params.code).toUpperCase().trim();
+      const meeting = await QMeetingModel.findOne({ joinCode: code });
+      if (!meeting) return res.status(404).json({ message: "كود الاجتماع غير صحيح أو منتهي الصلاحية" });
+      if (meeting.status === "completed" || meeting.status === "cancelled") {
+        return res.status(410).json({ message: "الاجتماع منتهٍ أو ملغى" });
+      }
+      res.json({
+        id: meeting._id,
+        title: meeting.title,
+        hostName: meeting.hostName,
+        scheduledAt: meeting.scheduledAt,
+        status: meeting.status,
+        durationMinutes: meeting.durationMinutes,
+        type: meeting.type,
+        joinCode: meeting.joinCode,
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Request to join by code ────────────────────────────────────────────────
+
+  app.post("/api/qmeet/by-code/:code/request", requireAuth, async (req: any, res) => {
+    try {
+      const code = String(req.params.code).toUpperCase().trim();
+      const meeting = await QMeetingModel.findOne({ joinCode: code });
+      if (!meeting) return res.status(404).json({ message: "كود غير صحيح" });
+      if (meeting.status === "completed" || meeting.status === "cancelled") {
+        return res.status(410).json({ message: "الاجتماع منتهٍ" });
+      }
+
+      const userId = String(req.user._id || req.user.id);
+      const userName = req.user.fullName || req.user.username || "مشارك";
+      const userEmail = req.user.email || "";
+
+      const joinRequests: any[] = meeting.joinRequests || [];
+
+      // Check if already approved (participant)
+      if ((meeting.participantIds || []).includes(userId)) {
+        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+      }
+
+      // Check existing request
+      const existing = joinRequests.find((r: any) => String(r.userId) === userId);
+      if (existing) {
+        if (existing.status === "approved") return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+        if (existing.status === "pending") return res.json({ status: "pending" });
+        if (existing.status === "rejected") return res.status(403).json({ message: "تم رفض طلبك من قِبل المضيف" });
+      }
+
+      // Add new request
+      await QMeetingModel.findByIdAndUpdate(meeting._id, {
+        $push: { joinRequests: { userId, userName, userEmail, status: "pending", requestedAt: new Date() } }
+      });
+
+      // Notify host via WebSocket
+      pushToUser(meeting.hostId, {
+        type: "qmeet_join_request",
+        meetingId: String(meeting._id),
+        meetingTitle: meeting.title,
+        userId,
+        userName,
+        userEmail,
+        message: `${userName} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
+      });
+
+      res.json({ status: "pending" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Approve or reject a join request ──────────────────────────────────────
+
+  app.patch("/api/qmeet/meetings/:id/join-requests/:reqId", requireAuth, async (req: any, res) => {
+    try {
+      const { action } = req.body; // "approve" | "reject"
+      if (!["approve", "reject"].includes(action)) return res.status(400).json({ message: "إجراء غير صالح" });
+
+      const meeting = await QMeetingModel.findById(req.params.id);
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+
+      const hostId = meeting.hostId;
+      const callerId = String(req.user._id || req.user.id);
+      const isAdmin = ["admin", "manager"].includes(req.user?.role);
+      if (callerId !== hostId && !isAdmin) return res.status(403).json({ message: "للمضيف فقط" });
+
+      const joinRequests: any[] = meeting.joinRequests || [];
+      const reqId = req.params.reqId;
+      const reqIdx = joinRequests.findIndex((r: any) =>
+        String(r._id) === reqId || String(r.userId) === reqId
+      );
+      if (reqIdx === -1) return res.status(404).json({ message: "الطلب غير موجود" });
+
+      const joinReq = joinRequests[reqIdx];
+      const newStatus = action === "approve" ? "approved" : "rejected";
+
+      const update: any = { [`joinRequests.${reqIdx}.status`]: newStatus };
+
+      if (action === "approve") {
+        // Add user to participants
+        update["$addToSet"] = { participantIds: joinReq.userId };
+        if (joinReq.userEmail) update["$addToSet"].participantEmails = joinReq.userEmail;
+        if (joinReq.userName) update["$addToSet"].participantNames = joinReq.userName;
+      }
+
+      await QMeetingModel.findByIdAndUpdate(meeting._id, {
+        $set: { [`joinRequests.${reqIdx}.status`]: newStatus },
+        ...(action === "approve" ? {
+          $addToSet: {
+            participantIds: joinReq.userId,
+            participantEmails: joinReq.userEmail,
+            participantNames: joinReq.userName,
+          }
+        } : {}),
+      });
+
+      // Notify the requester via WebSocket
+      pushToUser(joinReq.userId, {
+        type: "qmeet_join_response",
+        approved: action === "approve",
+        meetingId: String(meeting._id),
+        meetingTitle: meeting.title,
+        meetingLink: meeting.meetingLink,
+        message: action === "approve"
+          ? `تمت الموافقة على انضمامك لـ "${meeting.title}"`
+          : `تم رفض طلب انضمامك لـ "${meeting.title}"`,
+      });
+
+      res.json({ success: true, status: newStatus });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Get join requests for a meeting (host only) ────────────────────────────
+
+  app.get("/api/qmeet/meetings/:id/join-requests", requireAuth, async (req: any, res) => {
+    try {
+      const meeting = await QMeetingModel.findById(req.params.id);
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+      const callerId = String(req.user._id || req.user.id);
+      const isAdmin = ["admin", "manager"].includes(req.user?.role);
+      if (callerId !== meeting.hostId && !isAdmin) return res.status(403).json({ message: "للمضيف فقط" });
+      res.json(meeting.joinRequests || []);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Check my join request status ──────────────────────────────────────────
+
+  app.get("/api/qmeet/by-code/:code/my-status", requireAuth, async (req: any, res) => {
+    try {
+      const code = String(req.params.code).toUpperCase().trim();
+      const meeting = await QMeetingModel.findOne({ joinCode: code });
+      if (!meeting) return res.status(404).json({ message: "كود غير صحيح" });
+      const userId = String(req.user._id || req.user.id);
+      if ((meeting.participantIds || []).includes(userId)) {
+        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+      }
+      const joinRequests: any[] = meeting.joinRequests || [];
+      const req_ = joinRequests.find((r: any) => String(r.userId) === userId);
+      if (!req_) return res.json({ status: "none" });
+      res.json({ status: req_.status, meetingLink: req_.status === "approved" ? meeting.meetingLink : null });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

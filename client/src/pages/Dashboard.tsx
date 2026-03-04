@@ -1810,17 +1810,23 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Upcoming QMeet Meetings */}
-        {upcomingMeetings.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
-                  <Video className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+                <Video className="w-4 h-4 text-white" />
               </div>
-              <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{upcomingMeetings.length} {L ? "اجتماع" : "meeting(s)"}</span>
+              <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
             </div>
+            <div className="flex items-center gap-2">
+              {upcomingMeetings.length > 0 && <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{upcomingMeetings.length} {L ? "اجتماع" : "meeting(s)"}</span>}
+              <button onClick={() => setLocation("/meet/join")} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="button-join-by-code-dashboard">
+                <KeyRound className="w-3.5 h-3.5" />
+                {L ? "انضم بكود" : "Join by Code"}
+              </button>
+            </div>
+          </div>
+          {upcomingMeetings.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {upcomingMeetings.map((m: any) => {
                 const scheduledDate = new Date(m.scheduledAt);
@@ -1856,8 +1862,8 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
 
         {/* Investment Banner */}
         {totalSpent > 0 && (
