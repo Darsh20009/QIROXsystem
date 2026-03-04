@@ -596,7 +596,16 @@ const subServiceRequestSchema = new mongoose.Schema({
   adminNotes: { type: String, default: "" },
 }, { timestamps: true });
 
-[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema].forEach(s => {
+const orderExpenseSchema = new mongoose.Schema({
+  orderId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
+  category:    { type: String, enum: ['hosting', 'domain', 'freelancer', 'license', 'ads', 'design', 'salary', 'commission', 'other'], default: 'other' },
+  description: { type: String, required: true },
+  amount:      { type: Number, required: true },
+  currency:    { type: String, default: 'SAR' },
+  addedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+
+[userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema, orderExpenseSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -638,6 +647,7 @@ export const ChecklistItemModel = mongoose.models.ChecklistItem || mongoose.mode
 export const BankSettingsModel = mongoose.models.BankSettings || mongoose.model("BankSettings", bankSettingsSchema);
 export const SegmentPricingModel = mongoose.models.SegmentPricing || mongoose.model("SegmentPricing", segmentPricingSchema);
 export const SubServiceRequestModel = mongoose.models.SubServiceRequest || mongoose.model("SubServiceRequest", subServiceRequestSchema);
+export const OrderExpenseModel = mongoose.models.OrderExpense || mongoose.model("OrderExpense", orderExpenseSchema);
 
 const marketingPostSchema = new mongoose.Schema({
   title: { type: String, required: true },

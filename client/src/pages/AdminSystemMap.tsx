@@ -363,8 +363,12 @@ export default function AdminSystemMap() {
               <ModCard icon={BarChart3} label="التحليلات المتقدمة" href="/admin/analytics"
                 color="text-indigo-600" bg="bg-indigo-50" />
               <FlowArrow />
-              <ModCard icon={DollarSign} label="لوحة المالية" href="/admin/finance"
-                color="text-green-600" bg="bg-green-50" />
+              <div className="grid grid-cols-2 gap-2">
+                <ModCard icon={DollarSign} label="لوحة المالية" href="/admin/finance"
+                  color="text-green-600" bg="bg-green-50" />
+                <ModCard icon={TrendingUp} label="التكاليف والأرباح" href="/admin/profit-report"
+                  color="text-emerald-600" bg="bg-emerald-50" />
+              </div>
               <FlowArrow />
               <div className="grid grid-cols-2 gap-2">
                 <ModCard icon={FileText} label="الفواتير" count={ov.totalInvoices}

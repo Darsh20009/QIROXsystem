@@ -633,6 +633,78 @@ export async function registerRoutes(
     res.json(order);
   });
 
+  // ═══════════════════════════════════════════════
+  // === ORDER EXPENSES & PROFIT TRACKING ===
+  // ═══════════════════════════════════════════════
+  app.get("/api/admin/orders/:id/expenses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OrderExpenseModel } = await import("./models");
+    const expenses = await (OrderExpenseModel as any).find({ orderId: req.params.id }).populate("addedBy", "fullName username").sort({ createdAt: -1 });
+    res.json(expenses);
+  });
+
+  app.post("/api/admin/orders/:id/expenses", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OrderExpenseModel } = await import("./models");
+    const { category, description, amount, currency } = req.body;
+    if (!description || !amount) return res.status(400).json({ error: "الوصف والمبلغ مطلوبان" });
+    const expense = await (OrderExpenseModel as any).create({
+      orderId: req.params.id,
+      category: category || "other",
+      description,
+      amount: Number(amount),
+      currency: currency || "SAR",
+      addedBy: (req.user as any)._id,
+    });
+    res.status(201).json(expense);
+  });
+
+  app.delete("/api/admin/expenses/:expenseId", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "accountant"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { OrderExpenseModel } = await import("./models");
+    await (OrderExpenseModel as any).findByIdAndDelete(req.params.expenseId);
+    res.json({ ok: true });
+  });
+
+  app.get("/api/admin/profit-report", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { OrderExpenseModel, OrderModel } = await import("./models");
+    const completedOrders = await (OrderModel as any).find({
+      status: { $in: ["completed", "in_progress", "approved"] },
+      totalAmount: { $gt: 0 },
+    }).populate("userId", "fullName username businessName").sort({ createdAt: -1 });
+
+    const result = await Promise.all(completedOrders.map(async (order: any) => {
+      const expenses = await (OrderExpenseModel as any).find({ orderId: order._id });
+      const totalExpenses = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const revenue = order.totalAmount || 0;
+      const netProfit = revenue - totalExpenses;
+      const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+      return {
+        orderId: order.id,
+        orderCreatedAt: order.createdAt,
+        status: order.status,
+        client: order.userId,
+        businessName: order.businessName || order.userId?.fullName,
+        serviceType: order.serviceType,
+        revenue,
+        totalExpenses,
+        netProfit,
+        margin: Math.round(margin * 10) / 10,
+        expenseCount: expenses.length,
+        expenses,
+      };
+    }));
+
+    const totals = result.reduce((acc, r) => ({
+      revenue: acc.revenue + r.revenue,
+      expenses: acc.expenses + r.totalExpenses,
+      netProfit: acc.netProfit + r.netProfit,
+    }), { revenue: 0, expenses: 0, netProfit: 0 });
+
+    res.json({ orders: result, totals });
+  });
+
   // === EMPLOYEE LIST (for assignment dropdowns) ===
   app.get("/api/employees", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);

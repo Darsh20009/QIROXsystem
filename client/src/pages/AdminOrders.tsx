@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +97,7 @@ export default function AdminOrders() {
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
+  const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -177,6 +178,39 @@ export default function AdminOrders() {
       toast({ title: "تم حفظ المواصفات التقنية ✓" });
     },
     onError: () => toast({ title: "خطأ في حفظ المواصفات", variant: "destructive" }),
+  });
+
+  const { data: orderExpenses, isLoading: isLoadingExpenses } = useQuery<any[]>({
+    queryKey: ['/api/admin/orders', selectedOrder?.id, 'expenses'],
+    enabled: !!selectedOrder?.id,
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/orders/${selectedOrder!.id}/expenses`, { credentials: "include" });
+      return res.json();
+    },
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: async (data: { category: string; description: string; amount: number }) => {
+      const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder!.id}/expenses`, data);
+      if (!res.ok) throw new Error("فشل إضافة المصروف");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'expenses'] });
+      setNewExpense({ category: "other", description: "", amount: "" });
+      toast({ title: "تم إضافة المصروف" });
+    },
+    onError: () => toast({ title: "خطأ في إضافة المصروف", variant: "destructive" }),
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: string) => {
+      await apiRequest("DELETE", `/api/admin/expenses/${expenseId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'expenses'] });
+      toast({ title: "تم حذف المصروف" });
+    },
   });
 
   const convertToProjectMutation = useMutation({
@@ -410,6 +444,9 @@ export default function AdminOrders() {
                   </TabsTrigger>
                   <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
                     إدارة الطلب
+                  </TabsTrigger>
+                  <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-green-600 data-[state=active]:text-green-700 data-[state=active]:bg-transparent h-10 px-4 gap-1">
+                    <DollarSign className="w-3 h-3" />التكاليف والأرباح
                   </TabsTrigger>
                 </TabsList>
 
@@ -941,6 +978,172 @@ export default function AdminOrders() {
                           </Button>
                         </div>
                       )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+                {/* Tab 4: Expenses & Profit */}
+                <TabsContent value="profit" className="flex-1 overflow-hidden mt-0">
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5 space-y-5">
+                      {/* Profit Summary */}
+                      {(() => {
+                        const expenses = orderExpenses || [];
+                        const revenue = selectedOrder?.totalAmount || 0;
+                        const totalCosts = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+                        const netProfit = revenue - totalCosts;
+                        const margin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : "0";
+                        const isProfit = netProfit >= 0;
+                        return (
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                              <p className="text-[10px] text-blue-500 font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />إجمالي الإيراد</p>
+                              <p className="text-xl font-black text-blue-700">{revenue.toLocaleString()}</p>
+                              <p className="text-[10px] text-blue-400">ر.س</p>
+                            </div>
+                            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                              <p className="text-[10px] text-red-500 font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />إجمالي التكاليف</p>
+                              <p className="text-xl font-black text-red-700">{totalCosts.toLocaleString()}</p>
+                              <p className="text-[10px] text-red-400">ر.س</p>
+                            </div>
+                            <div className={`border rounded-2xl p-4 ${isProfit ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
+                              <p className={`text-[10px] font-bold mb-1 flex items-center gap-1 ${isProfit ? "text-green-600" : "text-orange-600"}`}>
+                                {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}صافي الربح
+                              </p>
+                              <p className={`text-xl font-black ${isProfit ? "text-green-700" : "text-orange-700"}`}>{netProfit.toLocaleString()}</p>
+                              <p className={`text-[10px] ${isProfit ? "text-green-500" : "text-orange-500"}`}>هامش {margin}%</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Profit Bar */}
+                      {(() => {
+                        const expenses = orderExpenses || [];
+                        const revenue = selectedOrder?.totalAmount || 0;
+                        const totalCosts = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+                        const costPct = revenue > 0 ? Math.min((totalCosts / revenue) * 100, 100) : 0;
+                        return revenue > 0 ? (
+                          <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
+                            <div className="flex justify-between text-[10px] text-black/40 mb-2">
+                              <span>التكاليف {costPct.toFixed(0)}%</span>
+                              <span>الربح {(100 - costPct).toFixed(0)}%</span>
+                            </div>
+                            <div className="h-3 bg-black/[0.04] rounded-full overflow-hidden flex">
+                              <div className="h-full bg-red-400 rounded-full transition-all duration-500" style={{ width: `${costPct}%` }} />
+                              <div className="h-full bg-green-400 flex-1 transition-all duration-500" />
+                            </div>
+                            <div className="flex gap-4 mt-2 text-[10px]">
+                              <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />تكاليف</span>
+                              <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />ربح صافي</span>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {/* Add Expense */}
+                      <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
+                        <p className="text-[10px] font-bold text-black/50 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                          <PlusCircle className="w-3.5 h-3.5" />إضافة مصروف جديد
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <Label className="text-[10px] text-black/40 mb-1 block">الفئة</Label>
+                            <Select value={newExpense.category} onValueChange={v => setNewExpense(p => ({ ...p, category: v }))}>
+                              <SelectTrigger className="h-8 text-xs border-black/[0.08]" data-testid="select-expense-category">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="hosting">استضافة</SelectItem>
+                                <SelectItem value="domain">دومين</SelectItem>
+                                <SelectItem value="freelancer">مستقل / مقاول</SelectItem>
+                                <SelectItem value="license">ترخيص / اشتراك</SelectItem>
+                                <SelectItem value="ads">إعلانات</SelectItem>
+                                <SelectItem value="design">تصميم</SelectItem>
+                                <SelectItem value="salary">راتب / أجر</SelectItem>
+                                <SelectItem value="commission">عمولة</SelectItem>
+                                <SelectItem value="other">أخرى</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px] text-black/40 mb-1 block">المبلغ (ر.س)</Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={newExpense.amount}
+                              onChange={e => setNewExpense(p => ({ ...p, amount: e.target.value }))}
+                              className="h-8 text-xs border-black/[0.08]"
+                              data-testid="input-expense-amount"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="وصف المصروف (مثال: استضافة Cloudflare لمدة سنة)"
+                            value={newExpense.description}
+                            onChange={e => setNewExpense(p => ({ ...p, description: e.target.value }))}
+                            className="h-8 text-xs border-black/[0.08] flex-1"
+                            data-testid="input-expense-description"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-black text-white hover:bg-black/80 px-4 flex-shrink-0"
+                            onClick={() => {
+                              if (!newExpense.description || !newExpense.amount) return;
+                              addExpenseMutation.mutate({ category: newExpense.category, description: newExpense.description, amount: Number(newExpense.amount) });
+                            }}
+                            disabled={addExpenseMutation.isPending || !newExpense.description || !newExpense.amount}
+                            data-testid="button-add-expense"
+                          >
+                            {addExpenseMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Expenses List */}
+                      <div>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-2">قائمة المصروفات ({(orderExpenses || []).length})</p>
+                        {isLoadingExpenses ? (
+                          <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-black/20" /></div>
+                        ) : (orderExpenses || []).length === 0 ? (
+                          <div className="py-8 text-center bg-black/[0.01] border border-black/[0.04] rounded-2xl">
+                            <BarChart3 className="w-8 h-8 text-black/10 mx-auto mb-2" />
+                            <p className="text-xs text-black/25">لا توجد مصروفات مسجّلة لهذا الطلب</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {(orderExpenses || []).map((exp: any) => {
+                              const catLabels: Record<string, { label: string; color: string }> = {
+                                hosting: { label: "استضافة", color: "bg-blue-50 text-blue-700" },
+                                domain: { label: "دومين", color: "bg-purple-50 text-purple-700" },
+                                freelancer: { label: "مستقل", color: "bg-orange-50 text-orange-700" },
+                                license: { label: "ترخيص", color: "bg-amber-50 text-amber-700" },
+                                ads: { label: "إعلانات", color: "bg-pink-50 text-pink-700" },
+                                design: { label: "تصميم", color: "bg-violet-50 text-violet-700" },
+                                salary: { label: "راتب", color: "bg-teal-50 text-teal-700" },
+                                commission: { label: "عمولة", color: "bg-cyan-50 text-cyan-700" },
+                                other: { label: "أخرى", color: "bg-black/[0.04] text-black/50" },
+                              };
+                              const cat = catLabels[exp.category] || catLabels.other;
+                              return (
+                                <div key={exp.id} className="flex items-center gap-3 bg-white border border-black/[0.06] rounded-xl px-4 py-3 group">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat.color}`}>{cat.label}</span>
+                                  <p className="text-xs text-black/70 flex-1 truncate">{exp.description}</p>
+                                  <p className="text-xs font-bold text-red-600 flex-shrink-0">{Number(exp.amount).toLocaleString()} ر.س</p>
+                                  <button
+                                    onClick={() => deleteExpenseMutation.mutate(exp.id)}
+                                    disabled={deleteExpenseMutation.isPending}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600"
+                                    data-testid={`button-delete-expense-${exp.id}`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </ScrollArea>
                 </TabsContent>
