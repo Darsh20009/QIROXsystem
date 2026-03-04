@@ -1,6 +1,5 @@
-const CACHE_NAME = "qirox-v9";
+const CACHE_NAME = "qirox-v10";
 const STATIC_ASSETS = [
-  "/",
   "/manifest.json",
   "/browserconfig.xml",
   "/favicon.ico",
@@ -39,49 +38,69 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
-  if (url.pathname.startsWith("/src/")) return;
 
-  if (url.pathname === "/" || url.pathname.endsWith(".html")) {
+  const url = new URL(event.request.url);
+
+  if (url.origin !== self.location.origin) return;
+
+  if (url.pathname.startsWith("/api/")) return;
+
+  if (
+    url.pathname.startsWith("/@") ||
+    url.pathname.startsWith("/node_modules/") ||
+    url.pathname.startsWith("/__vite") ||
+    url.search.includes("v=") ||
+    url.search.includes("t=")
+  ) return;
+
+  if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(new Request("/"), clone);
+            });
           }
           return response;
         })
-        .catch(() => caches.match("/"))
+        .catch(() => {
+          return caches.match("/").then((cached) => {
+            return (
+              cached ||
+              new Response("Offline — please check your connection", {
+                status: 503,
+                headers: { "Content-Type": "text/plain" },
+              })
+            );
+          });
+        })
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        fetch(event.request)
+  const isStaticAsset = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".json", ".xml"].some(
+    (ext) => url.pathname.endsWith(ext)
+  );
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request)
           .then((response) => {
             if (response && response.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
             }
+            return response;
           })
-          .catch(() => {});
-        return cached;
-      }
-      return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match("/"));
-    })
-  );
+          .catch(() => new Response("", { status: 404 }));
+      })
+    );
+    return;
+  }
 });
 
 self.addEventListener("push", (event) => {
@@ -101,26 +120,30 @@ self.addEventListener("push", (event) => {
   } catch (e) {}
 
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon || "/icon-192.png",
-      badge: data.badge || "/favicon-32.png",
-      tag: data.tag || "qirox-notif",
-      renotify: true,
-      requireInteraction: false,
-      vibrate: [100, 50, 100],
-      data: data.data || { url: "/dashboard" },
-      actions: [
-        { action: "open", title: "فتح التطبيق" },
-        { action: "dismiss", title: "تجاهل" },
-      ],
-    }).then(() => {
-      return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: "PUSH_RECEIVED", payload: data });
-        });
-      });
-    })
+    self.registration
+      .showNotification(data.title, {
+        body: data.body,
+        icon: data.icon || "/icon-192.png",
+        badge: data.badge || "/favicon-32.png",
+        tag: data.tag || "qirox-notif",
+        renotify: true,
+        requireInteraction: false,
+        vibrate: [100, 50, 100],
+        data: data.data || { url: "/dashboard" },
+        actions: [
+          { action: "open", title: "فتح التطبيق" },
+          { action: "dismiss", title: "تجاهل" },
+        ],
+      })
+      .then(() => {
+        return self.clients
+          .matchAll({ type: "window", includeUncontrolled: true })
+          .then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({ type: "PUSH_RECEIVED", payload: data });
+            });
+          });
+      })
   );
 });
 
@@ -129,15 +152,17 @@ self.addEventListener("notificationclick", (event) => {
   const targetUrl = event.notification.data?.url || "/dashboard";
   if (event.action === "dismiss") return;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.postMessage({ type: "NAVIGATE", url: targetUrl });
-          return client.focus();
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            client.postMessage({ type: "NAVIGATE", url: targetUrl });
+            return client.focus();
+          }
         }
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-    })
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+      })
   );
 });
 

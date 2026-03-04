@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useState, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
 import { SplashScreen } from "@/components/qirox-brand";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
@@ -494,6 +494,69 @@ function ClientQuickNav() {
   );
 }
 
+class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, retried: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    const isChunkError =
+      error?.name === "ChunkLoadError" ||
+      error?.message?.includes("Loading chunk") ||
+      error?.message?.includes("Failed to fetch dynamically imported module") ||
+      error?.message?.includes("Importing a module script failed");
+
+    if (isChunkError && !this.state.retried) {
+      this.setState({ retried: true }, () => {
+        window.location.reload();
+      });
+    }
+  }
+
+  render() {
+    if (this.state.hasError && this.state.retried) {
+      return (
+        <div
+          dir="rtl"
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "1rem",
+            padding: "2rem",
+            fontFamily: "sans-serif",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ fontSize: "1.1rem", color: "#555" }}>حدث خطأ في تحميل الصفحة</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "#2563eb",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "1rem",
+            }}
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AppInner() {
   const [showSplash, setShowSplash] = useState(true);
   const [location] = useLocation();
@@ -513,21 +576,25 @@ function AppInner() {
       return null;
     }
     return (
-      <Suspense fallback={<PageLoader />}>
-        <QiroxEdit />
-        <Toaster />
-      </Suspense>
+      <PageErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <QiroxEdit />
+          <Toaster />
+        </Suspense>
+      </PageErrorBoundary>
     );
   }
 
   if (location.startsWith("/meet/")) {
     return (
-      <Suspense fallback={<PageLoader />}>
-        <Switch>
-          <Route path="/meet/:roomId" component={MeetingRoom} />
-        </Switch>
-        <Toaster />
-      </Suspense>
+      <PageErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Switch>
+            <Route path="/meet/:roomId" component={MeetingRoom} />
+          </Switch>
+          <Toaster />
+        </Suspense>
+      </PageErrorBoundary>
     );
   }
 
@@ -535,13 +602,15 @@ function AppInner() {
 
   if (isPublicRoute) {
     return (
-      <TooltipProvider>
-        <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
-          <PublicRouter />
-          <FloatingClientChat />
-          <Toaster />
-        </div>
-      </TooltipProvider>
+      <PageErrorBoundary>
+        <TooltipProvider>
+          <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
+            <PublicRouter />
+            <FloatingClientChat />
+            <Toaster />
+          </div>
+        </TooltipProvider>
+      </PageErrorBoundary>
     );
   }
 
@@ -551,6 +620,7 @@ function AppInner() {
   };
 
   return (
+    <PageErrorBoundary>
     <TooltipProvider>
       <SidebarProvider style={style as React.CSSProperties}>
         <div className={`min-h-screen flex w-full bg-white dark:bg-gray-950 overflow-x-hidden ${dir}`}>
@@ -600,18 +670,21 @@ function AppInner() {
         </div>
       </SidebarProvider>
     </TooltipProvider>
+    </PageErrorBoundary>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <I18nProvider>
-          <AppInner />
-        </I18nProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <PageErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <I18nProvider>
+            <AppInner />
+          </I18nProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </PageErrorBoundary>
   );
 }
 
