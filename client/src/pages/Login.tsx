@@ -140,14 +140,10 @@ export default function Login() {
       } catch {}
     }
 
-    // Refresh user data
-    try {
-      const userRes = await fetch("/api/auth/user", { credentials: "include" });
-      if (userRes.ok) {
-        const freshUser = await userRes.json();
-        queryClient.setQueryData(["/api/auth/user"], freshUser);
-      }
-    } catch {}
+    // Set user data in cache directly from response (correct query key)
+    const userData = { ...data };
+    delete userData.deviceToken;
+    queryClient.setQueryData(["/api/user"], userData);
 
     setIsVerifying(false);
     const name = verifyStep!.name;
