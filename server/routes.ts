@@ -158,6 +158,16 @@ export async function registerRoutes(
         }
       }
 
+      // Check if phone already exists
+      const incomingPhone = req.body.phone ? String(req.body.phone).trim() : "";
+      if (incomingPhone) {
+        const { UserModel: UModel } = await import("./models");
+        const existingByPhone = await UModel.findOne({ phone: incomingPhone });
+        if (existingByPhone) {
+          return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
+        }
+      }
+
       // New account — create it
       const role = req.body.role || "client";
       const hashedPassword = await hashPassword(req.body.password);
@@ -218,6 +228,12 @@ export async function registerRoutes(
       if (existingUser) {
         return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
       }
+      const { UserModel: UM2 } = await import("./models");
+      const normPhone = phone ? String(phone).trim() : "";
+      if (normPhone) {
+        const dupPhone = await UM2.findOne({ phone: normPhone });
+        if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
+      }
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username: String(username).trim(),
@@ -225,7 +241,7 @@ export async function registerRoutes(
         email: String(email).trim(),
         fullName: String(fullName).trim(),
         role,
-        phone: phone ? String(phone).trim() : undefined,
+        phone: normPhone || undefined,
       });
       res.status(201).json(sanitizeUser(user));
     } catch (err: any) {
@@ -252,6 +268,12 @@ export async function registerRoutes(
           return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
         }
         sanitized.password = await hashPassword(sanitized.password);
+      }
+      if (sanitized.phone) {
+        const { UserModel: UM3 } = await import("./models");
+        const mongoose = await import("mongoose");
+        const dupPhone = await UM3.findOne({ phone: sanitized.phone, _id: { $ne: new mongoose.Types.ObjectId(req.params.id) } });
+        if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
       }
       const user = await storage.updateUser(req.params.id, sanitized);
       if (!user) return res.sendStatus(404);
@@ -1764,6 +1786,13 @@ export async function registerRoutes(
       const existingByUsername = await storage.getUserByUsername(username);
       if (existingByUsername) return res.status(400).json({ error: "اسم المستخدم مستخدم من قبل" });
 
+      const { UserModel: UM4 } = await import("./models");
+      const hirePhone = phone ? String(phone).trim() : "";
+      if (hirePhone) {
+        const dupPhone = await UM4.findOne({ phone: hirePhone });
+        if (dupPhone) return res.status(400).json({ error: "رقم الجوال مستخدم من قبل" });
+      }
+
       const rawPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase() + "!";
       const hashedPassword = await hashPassword(rawPassword);
 
@@ -1773,7 +1802,7 @@ export async function registerRoutes(
         email,
         fullName,
         role,
-        phone: phone || "",
+        phone: hirePhone || "",
         emailVerified: true as any,
       });
 
@@ -3267,6 +3296,13 @@ export async function registerRoutes(
       const existingByEmail = await UserModel.findOne({ email: normalizedEmail });
       if (existingByEmail) return res.status(409).json({ error: "البريد الإلكتروني مسجّل من قبل" });
 
+      // Check if phone already taken
+      const normClientPhone = phone ? String(phone).trim() : "";
+      if (normClientPhone) {
+        const dupPhone = await UserModel.findOne({ phone: normClientPhone });
+        if (dupPhone) return res.status(409).json({ error: "رقم الجوال مستخدم من قبل" });
+      }
+
       const { hashPassword } = await import("./auth");
       const hashedPassword = await hashPassword(password);
 
@@ -3275,7 +3311,7 @@ export async function registerRoutes(
         password: hashedPassword,
         fullName,
         email: normalizedEmail,
-        phone: phone || "",
+        phone: normClientPhone,
         role: "client",
         businessType: businessType || "",
         country: country || "",
