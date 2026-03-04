@@ -14,11 +14,14 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Play, Trash2, Wifi, WifiOff, RefreshCw, Clock,
-  CheckCircle2, XCircle, Timer, Pencil, ScrollText, Zap, Calendar,
-  ChevronDown, ChevronUp, TrendingUp, AlertTriangle, Loader2,
+  Plus, Play, Trash2, RefreshCw, Clock,
+  CheckCircle2, XCircle, Timer, Pencil, ScrollText, Zap,
+  ChevronDown, ChevronUp, AlertTriangle, Loader2, MoreHorizontal,
 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const SCHEDULE_PRESETS = [
   { label: "كل دقيقة", value: "* * * * *" },
@@ -147,48 +150,52 @@ export default function AdminCronJobs() {
     if (v !== "custom") setForm(f => ({ ...f, schedule: v }));
   };
 
-  // Stats
   const totalSuccess = jobs.reduce((s: number, j: any) => s + (j.successCount || 0), 0);
   const totalError = jobs.reduce((s: number, j: any) => s + (j.errorCount || 0), 0);
   const activeCount = jobs.filter((j: any) => j.isActive).length;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto" dir="rtl">
+    <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto w-full" dir="rtl">
       <PageGraphics variant="dashboard" />
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-start sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-black text-black dark:text-white">Cron Jobs</h1>
-          <p className="text-sm text-black/40 dark:text-white/40 mt-0.5">جدولة مهام تلقائية لمواقع العملاء</p>
+          <h1 className="text-xl sm:text-2xl font-black text-black dark:text-white">Cron Jobs</h1>
+          <p className="text-xs sm:text-sm text-black/40 dark:text-white/40 mt-0.5">جدولة مهام تلقائية لمواقع العملاء</p>
         </div>
-        <Button onClick={openNew} data-testid="button-new-cron" className="gap-2 bg-black dark:bg-white text-white dark:text-black rounded-xl h-9 px-4">
-          <Plus className="w-4 h-4" /> إضافة مهمة
+        <Button
+          onClick={openNew}
+          data-testid="button-new-cron"
+          className="gap-1.5 bg-black dark:bg-white text-white dark:text-black rounded-xl h-9 px-3 sm:px-4 text-sm shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>إضافة مهمة</span>
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
         {[
-          { label: "مهام نشطة", value: activeCount, icon: Zap, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-          { label: "تشغيل ناجح", value: totalSuccess, icon: CheckCircle2, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: "أخطاء", value: totalError, icon: AlertTriangle, color: "from-red-500 to-orange-500", bg: "bg-red-50 dark:bg-red-900/20" },
+          { label: "مهام نشطة", value: activeCount, icon: Zap, color: "from-emerald-500 to-teal-600" },
+          { label: "تشغيل ناجح", value: totalSuccess, icon: CheckCircle2, color: "from-blue-500 to-indigo-600" },
+          { label: "أخطاء", value: totalError, icon: AlertTriangle, color: "from-red-500 to-orange-500" },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md flex-shrink-0`}>
-                <s.icon className="w-5 h-5 text-white" />
+            <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl border border-black/[0.06] dark:border-white/[0.07] p-2.5 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 text-center sm:text-right">
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-sm sm:shadow-md flex-shrink-0`}>
+                <s.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div>
-                <p className="text-2xl font-black text-black dark:text-white">{s.value}</p>
-                <p className="text-[11px] text-black/35 dark:text-white/35 font-medium">{s.label}</p>
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-black text-black dark:text-white leading-none">{s.value}</p>
+                <p className="text-[9px] sm:text-[11px] text-black/35 dark:text-white/35 font-medium mt-0.5 leading-tight">{s.label}</p>
               </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Jobs list */}
+      {/* ── Jobs List ── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20 gap-2 text-black/30 dark:text-white/30">
           <Loader2 className="w-5 h-5 animate-spin" /> جاري التحميل...
@@ -199,65 +206,130 @@ export default function AdminCronJobs() {
           <p className="text-black/30 dark:text-white/30">لا توجد مهام مجدولة</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {jobs.map((j: any, idx: number) => (
             <motion.div key={j.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-              <Card className={`border ${j.isActive ? "border-black/[0.06] dark:border-white/[0.07]" : "border-black/[0.03] dark:border-white/[0.04] opacity-55"} bg-white dark:bg-gray-900 shadow-none hover:shadow-sm transition-shadow`} data-testid={`card-cron-${j.id}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <Switch checked={j.isActive} onCheckedChange={v => toggle.mutate({ id: j.id, isActive: v })} data-testid={`switch-cron-${j.id}`} />
+              <Card
+                className={`border ${j.isActive ? "border-black/[0.06] dark:border-white/[0.07]" : "border-black/[0.03] dark:border-white/[0.04] opacity-55"} bg-white dark:bg-gray-900 shadow-none hover:shadow-sm transition-shadow`}
+                data-testid={`card-cron-${j.id}`}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  {/* Row 1: Switch + name + action menu */}
+                  <div className="flex items-start gap-2.5 sm:gap-4">
+                    <Switch
+                      checked={j.isActive}
+                      onCheckedChange={v => toggle.mutate({ id: j.id, isActive: v })}
+                      data-testid={`switch-cron-${j.id}`}
+                      className="mt-0.5 shrink-0"
+                    />
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-bold text-sm text-black dark:text-white">{j.nameAr || j.name}</span>
-                        {j.nameAr && j.name && <span className="text-xs text-black/30 dark:text-white/30">{j.name}</span>}
-                        <Badge variant="outline" className="text-[9px] font-mono px-1.5">{j.method}</Badge>
-                        <Badge variant="outline" className="text-[9px] font-mono px-1.5">{j.schedule}</Badge>
+                      {/* Name + badges */}
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <span className="font-bold text-sm text-black dark:text-white truncate max-w-[140px] sm:max-w-none">
+                          {j.nameAr || j.name}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 h-4 shrink-0">{j.method}</Badge>
+                        <Badge variant="outline" className="text-[9px] font-mono px-1 py-0 h-4 hidden sm:inline-flex shrink-0">{j.schedule}</Badge>
                       </div>
-                      <p className="text-xs text-blue-500 dark:text-blue-400 truncate mb-2">{j.url}</p>
-                      <div className="flex items-center gap-3 flex-wrap text-[11px]">
-                        <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[j.lastRunStatus]}`}>{statusLabel[j.lastRunStatus]}</span>
+
+                      {/* URL */}
+                      <p className="text-[11px] text-blue-500 dark:text-blue-400 truncate mb-1.5 max-w-full">{j.url}</p>
+
+                      {/* Status + stats */}
+                      <div className="flex items-center flex-wrap gap-1.5 sm:gap-3">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${statusColor[j.lastRunStatus]}`}>
+                          {statusLabel[j.lastRunStatus]}
+                        </span>
                         {j.lastRunAt && (
-                          <>
-                            <span className="flex items-center gap-1 text-black/40 dark:text-white/40">
-                              <Timer className="w-3 h-3" />{j.lastRunDuration}ms
-                            </span>
-                            <span className="flex items-center gap-1 text-black/30 dark:text-white/30">
-                              <Clock className="w-3 h-3" />{new Date(j.lastRunAt).toLocaleString("ar-SA")}
-                            </span>
-                          </>
+                          <span className="flex items-center gap-1 text-[10px] text-black/40 dark:text-white/40 shrink-0">
+                            <Timer className="w-2.5 h-2.5" />{j.lastRunDuration}ms
+                          </span>
                         )}
-                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="w-3 h-3" />{j.successCount}
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <CheckCircle2 className="w-2.5 h-2.5" />{j.successCount}
                         </span>
-                        <span className="flex items-center gap-1 text-red-500 dark:text-red-400">
-                          <XCircle className="w-3 h-3" />{j.errorCount}
+                        <span className="flex items-center gap-1 text-[10px] text-red-500 dark:text-red-400 shrink-0">
+                          <XCircle className="w-2.5 h-2.5" />{j.errorCount}
                         </span>
+                        {j.lastRunAt && (
+                          <span className="text-[10px] text-black/25 dark:text-white/25 hidden sm:inline shrink-0">
+                            {new Date(j.lastRunAt).toLocaleString("ar-SA")}
+                          </span>
+                        )}
                       </div>
+
                       {j.lastRunResponse && (
-                        <div className="mt-2 text-[10px] font-mono bg-black/[0.03] dark:bg-white/[0.04] rounded-lg p-2 text-black/50 dark:text-white/50 truncate">{j.lastRunResponse}</div>
+                        <div className="mt-1.5 text-[10px] font-mono bg-black/[0.03] dark:bg-white/[0.04] rounded-lg p-1.5 text-black/50 dark:text-white/50 truncate">
+                          {j.lastRunResponse}
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {/* Log button */}
+
+                    {/* Actions — desktop: inline buttons, mobile: dropdown */}
+                    <div className="shrink-0 flex items-center gap-1">
+                      {/* Log button — always visible */}
                       <Button
                         size="sm" variant="ghost"
                         onClick={() => setLogJobId(logJobId === j.id ? null : j.id)}
-                        className={`h-8 px-2 gap-1 text-[11px] rounded-lg ${logJobId === j.id ? "bg-black dark:bg-white text-white dark:text-black" : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"}`}
+                        className={`h-8 w-8 p-0 rounded-lg ${logJobId === j.id ? "bg-black dark:bg-white text-white dark:text-black" : "text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"}`}
                         data-testid={`button-log-${j.id}`}
+                        title="سجل التشغيل"
                       >
                         <ScrollText className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">سجل</span>
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => runNow(j.id)} disabled={runningId === j.id} data-testid={`button-run-${j.id}`} className="h-8 px-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white rounded-lg">
+
+                      {/* Run button — always visible */}
+                      <Button
+                        size="sm" variant="ghost"
+                        onClick={() => runNow(j.id)}
+                        disabled={runningId === j.id}
+                        data-testid={`button-run-${j.id}`}
+                        className="h-8 w-8 p-0 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white rounded-lg"
+                        title="تشغيل الآن"
+                      >
                         {runningId === j.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(j)} data-testid={`button-edit-${j.id}`} className="h-8 px-2 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white rounded-lg">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-8 px-2 text-red-400 hover:text-red-600 rounded-lg" onClick={() => del.mutate(j.id)} data-testid={`button-delete-${j.id}`}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+
+                      {/* Edit + Delete — dropdown on mobile, inline on desktop */}
+                      <div className="hidden sm:flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(j)} data-testid={`button-edit-${j.id}`} className="h-8 w-8 p-0 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white rounded-lg" title="تعديل">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-400 hover:text-red-600 rounded-lg" onClick={() => del.mutate(j.id)} data-testid={`button-delete-${j.id}`} title="حذف">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+
+                      {/* Mobile: dropdown for edit/delete */}
+                      <div className="sm:hidden">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-black/40 dark:text-white/40 rounded-lg" data-testid={`button-more-${j.id}`}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-36">
+                            <DropdownMenuItem onClick={() => openEdit(j)} data-testid={`menu-edit-${j.id}`}>
+                              <Pencil className="w-3.5 h-3.5 ml-2" /> تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => del.mutate(j.id)} className="text-red-500 focus:text-red-600" data-testid={`menu-delete-${j.id}`}>
+                              <Trash2 className="w-3.5 h-3.5 ml-2" /> حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Mobile schedule badge — below on small screens */}
+                  <div className="sm:hidden mt-2 flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0.5">{j.schedule}</Badge>
+                    {j.lastRunAt && (
+                      <span className="text-[10px] text-black/25 dark:text-white/25">
+                        آخر تشغيل: {timeAgo(j.lastRunAt)} مضت
+                      </span>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -266,15 +338,19 @@ export default function AdminCronJobs() {
         </div>
       )}
 
-      {/* ── Log Panel ── */}
+      {/* ── Log Sheet ── */}
       <Sheet open={!!logJobId} onOpenChange={v => !v && setLogJobId(null)}>
-        <SheetContent side="left" className="w-full sm:max-w-xl bg-white dark:bg-gray-950 border-r border-black/[0.06] dark:border-white/[0.06] p-0 flex flex-col" dir="rtl">
-          <SheetHeader className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.06] flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                <ScrollText className="w-4 h-4 text-white dark:text-black" />
+        <SheetContent
+          side="left"
+          className="w-full sm:max-w-xl bg-white dark:bg-gray-950 border-r border-black/[0.06] dark:border-white/[0.06] p-0 flex flex-col"
+          dir="rtl"
+        >
+          <SheetHeader className="px-4 sm:px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.06] flex-shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                <ScrollText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-black" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <SheetTitle className="text-sm font-black text-black dark:text-white">سجل التشغيل</SheetTitle>
                 <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{logJob?.nameAr || logJob?.name || ""}</p>
               </div>
@@ -282,35 +358,35 @@ export default function AdminCronJobs() {
                 <button
                   onClick={() => runNow(logJob.id)}
                   disabled={runningId === logJob?.id}
-                  className="mr-auto flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-xl hover:opacity-80 transition-all disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-xl hover:opacity-80 transition-all disabled:opacity-50 shrink-0"
                 >
                   {runningId === logJob?.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-                  تشغيل الآن
+                  <span className="hidden sm:inline">تشغيل الآن</span>
                 </button>
               )}
             </div>
 
-            {/* Summary stats */}
             {logJob && (
-              <div className="flex items-center gap-3 mt-3">
-                <div className="flex-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3 text-center">
-                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{logJob.successCount}</p>
-                  <p className="text-[10px] text-black/35 dark:text-white/35">ناجح</p>
-                </div>
-                <div className="flex-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3 text-center">
-                  <p className="text-xl font-black text-red-500 dark:text-red-400">{logJob.errorCount}</p>
-                  <p className="text-[10px] text-black/35 dark:text-white/35">فشل</p>
-                </div>
-                <div className="flex-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3 text-center">
-                  <p className="text-xl font-black text-black dark:text-white">{logJob.successCount + logJob.errorCount > 0 ? Math.round((logJob.successCount / (logJob.successCount + logJob.errorCount)) * 100) : 0}%</p>
-                  <p className="text-[10px] text-black/35 dark:text-white/35">نسبة النجاح</p>
-                </div>
+              <div className="flex items-center gap-2 sm:gap-3 mt-3">
+                {[
+                  { value: logJob.successCount, label: "ناجح", color: "text-emerald-600 dark:text-emerald-400" },
+                  { value: logJob.errorCount, label: "فشل", color: "text-red-500 dark:text-red-400" },
+                  {
+                    value: `${logJob.successCount + logJob.errorCount > 0 ? Math.round((logJob.successCount / (logJob.successCount + logJob.errorCount)) * 100) : 0}%`,
+                    label: "نسبة النجاح",
+                    color: "text-black dark:text-white"
+                  },
+                ].map((s, i) => (
+                  <div key={i} className="flex-1 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-2 sm:p-3 text-center">
+                    <p className={`text-lg sm:text-xl font-black ${s.color}`}>{s.value}</p>
+                    <p className="text-[9px] sm:text-[10px] text-black/35 dark:text-white/35">{s.label}</p>
+                  </div>
+                ))}
               </div>
             )}
           </SheetHeader>
 
-          {/* Log entries */}
-          <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
             {logsLoading ? (
               <div className="flex items-center justify-center py-16 gap-2 text-black/30 dark:text-white/30">
                 <Loader2 className="w-5 h-5 animate-spin" /> جاري التحميل...
@@ -339,21 +415,20 @@ export default function AdminCronJobs() {
                       }`}
                     >
                       <button
-                        className="w-full flex items-center gap-3 px-4 py-3 text-right"
+                        className="w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 text-right"
                         onClick={() => setExpandedLog(expandedLog === i ? null : i)}
                       >
-                        {/* Status dot */}
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           log.status === "success" ? "bg-emerald-500" : "bg-red-500"
                         }`}>
                           {log.status === "success"
-                            ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                            : <XCircle className="w-3.5 h-3.5 text-white" />
+                            ? <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
+                            : <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
                           }
                         </div>
 
                         <div className="flex-1 min-w-0 text-right">
-                          <div className="flex items-center gap-2 mb-0.5">
+                          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                             <span className={`text-[11px] font-bold ${log.status === "success" ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}>
                               {log.status === "success" ? "تشغيل ناجح" : "فشل التشغيل"}
                             </span>
@@ -361,8 +436,7 @@ export default function AdminCronJobs() {
                               <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-bold">يدوي</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] text-black/35 dark:text-white/35">
-                            <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{new Date(log.runAt).toLocaleString("ar-SA")}</span>
+                          <div className="flex items-center gap-2 flex-wrap text-[10px] text-black/35 dark:text-white/35">
                             <span className="flex items-center gap-1"><Timer className="w-2.5 h-2.5" />{log.duration}ms</span>
                             <span className="text-black/20 dark:text-white/20">{timeAgo(log.runAt)} مضت</span>
                           </div>
@@ -384,8 +458,8 @@ export default function AdminCronJobs() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="px-4 pb-3">
-                              <div className="bg-black/[0.04] dark:bg-white/[0.04] rounded-lg p-3 text-[10px] font-mono text-black/60 dark:text-white/60 max-h-32 overflow-y-auto whitespace-pre-wrap break-all" dir="ltr">
+                            <div className="px-3 sm:px-4 pb-3">
+                              <div className="bg-black/[0.04] dark:bg-white/[0.04] rounded-lg p-2.5 sm:p-3 text-[10px] font-mono text-black/60 dark:text-white/60 max-h-32 overflow-y-auto whitespace-pre-wrap break-all" dir="ltr">
                                 {log.response}
                               </div>
                             </div>
@@ -401,85 +475,112 @@ export default function AdminCronJobs() {
         </SheetContent>
       </Sheet>
 
-      {/* Form Dialog */}
+      {/* ── Form Dialog ── */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl" dir="rtl">
+        <DialogContent
+          className="w-[calc(100vw-2rem)] max-w-xl sm:max-w-xl rounded-2xl"
+          dir="rtl"
+        >
           <DialogHeader>
-            <DialogTitle>{editId ? "تعديل المهمة" : "إضافة مهمة جديدة"}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">{editId ? "تعديل المهمة" : "إضافة مهمة جديدة"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
-            <div className="grid grid-cols-2 gap-3">
+
+          <div className="space-y-3 max-h-[60vh] sm:max-h-[65vh] overflow-y-auto px-0.5">
+            {/* Names */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <Label>الاسم بالعربي *</Label>
+                <Label className="text-xs mb-1 block">الاسم بالعربي *</Label>
                 <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder="مزامنة البيانات" data-testid="input-cron-name-ar" />
               </div>
               <div>
-                <Label>الاسم بالإنجليزي *</Label>
+                <Label className="text-xs mb-1 block">الاسم بالإنجليزي *</Label>
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Sync Data" data-testid="input-cron-name" />
               </div>
             </div>
+
+            {/* URL */}
             <div>
-              <Label>رابط الطلب *</Label>
-              <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://example.com/api/sync" dir="ltr" data-testid="input-cron-url" />
+              <Label className="text-xs mb-1 block">رابط الطلب *</Label>
+              <Input value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://example.com/api/sync" dir="ltr" data-testid="input-cron-url" className="text-sm" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Method + Schedule */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <Label>طريقة الطلب</Label>
+                <Label className="text-xs mb-1 block">Method</Label>
                 <Select value={form.method} onValueChange={v => setForm(f => ({ ...f, method: v }))}>
                   <SelectTrigger data-testid="select-cron-method"><SelectValue /></SelectTrigger>
-                  <SelectContent>{METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>الجدول الزمني</Label>
+                <Label className="text-xs mb-1 block">الجدول الزمني</Label>
                 <Select value={schedulePreset} onValueChange={setPreset}>
                   <SelectTrigger data-testid="select-cron-preset"><SelectValue /></SelectTrigger>
-                  <SelectContent>{SCHEDULE_PRESETS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {SCHEDULE_PRESETS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
+
+            {/* Custom schedule */}
             {schedulePreset === "custom" && (
               <div>
-                <Label>تعبير Cron المخصص</Label>
-                <Input value={form.schedule} onChange={e => setForm(f => ({ ...f, schedule: e.target.value }))} placeholder="*/5 * * * *" dir="ltr" data-testid="input-cron-schedule" />
-                <p className="text-[10px] text-black/30 mt-1">مثال: {"*/5 * * * *"} = كل 5 دقائق</p>
+                <Label className="text-xs mb-1 block">Cron Expression</Label>
+                <Input value={form.schedule} onChange={e => setForm(f => ({ ...f, schedule: e.target.value }))} placeholder="*/30 * * * *" dir="ltr" data-testid="input-cron-schedule" className="font-mono text-sm" />
               </div>
             )}
+
+            {/* Description */}
             <div>
-              <Label>Headers (JSON اختياري)</Label>
-              <Textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder='{"Authorization": "Bearer token"}' className="font-mono text-xs h-16" dir="ltr" data-testid="input-cron-headers" />
+              <Label className="text-xs mb-1 block">وصف (اختياري)</Label>
+              <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المهمة..." data-testid="input-cron-desc" />
             </div>
-            {form.method !== "GET" && form.method !== "DELETE" && (
+
+            {/* Headers */}
+            <div>
+              <Label className="text-xs mb-1 block">Headers (JSON اختياري)</Label>
+              <Textarea value={form.headers} onChange={e => setForm(f => ({ ...f, headers: e.target.value }))} placeholder='{"Authorization": "Bearer token"}' dir="ltr" className="font-mono text-xs min-h-[60px]" data-testid="input-cron-headers" />
+            </div>
+
+            {/* Body */}
+            {["POST", "PUT", "PATCH"].includes(form.method) && (
               <div>
-                <Label>Body (اختياري)</Label>
-                <Textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder='{"key": "value"}' className="font-mono text-xs h-16" dir="ltr" data-testid="input-cron-body" />
+                <Label className="text-xs mb-1 block">Request Body (JSON اختياري)</Label>
+                <Textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder='{"key": "value"}' dir="ltr" className="font-mono text-xs min-h-[60px]" data-testid="input-cron-body" />
               </div>
             )}
-            <div>
-              <Label>وصف (اختياري)</Label>
-              <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} data-testid="input-cron-desc" />
-            </div>
-            <div className="border-t pt-3">
-              <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={testConn} disabled={!form.url || testLoading} data-testid="button-test-connection" className="gap-1">
-                  {testLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Wifi className="w-3 h-3" />} اختبار الاتصال
+
+            {/* Test connection */}
+            {form.url && (
+              <div>
+                <Button
+                  variant="outline" size="sm" onClick={testConn} disabled={testLoading}
+                  className="gap-1.5 text-xs rounded-xl w-full sm:w-auto"
+                  data-testid="button-test-conn"
+                >
+                  {testLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  اختبار الاتصال
                 </Button>
                 {testResult && (
-                  <div className={`flex items-center gap-1 text-xs font-medium ${testResult.success ? "text-emerald-600" : "text-red-600"}`}>
-                    {testResult.success ? <CheckCircle2 className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                    {testResult.success ? `نجح (${testResult.status}) - ${testResult.duration}ms` : `فشل: ${testResult.statusText}`}
+                  <div className={`mt-2 text-xs p-2.5 rounded-xl font-mono ${testResult.success ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"}`} dir="ltr">
+                    {testResult.success ? "✅ " : "❌ "}{testResult.statusCode} {testResult.statusText}
                   </div>
                 )}
               </div>
-              {testResult?.response && (
-                <div className="mt-2 text-[10px] font-mono bg-black/[0.03] rounded-lg p-2 text-black/50 max-h-16 overflow-auto">{testResult.response}</div>
-              )}
-            </div>
+            )}
           </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button onClick={submit} disabled={save.isPending || !form.name || !form.url} data-testid="button-save-cron">
-              {save.isPending ? "جاري الحفظ..." : editId ? "تحديث" : "إنشاء"}
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-2">
+            <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto rounded-xl" data-testid="button-cancel-cron">
+              إلغاء
+            </Button>
+            <Button onClick={submit} disabled={save.isPending} className="gap-1.5 bg-black dark:bg-white text-white dark:text-black rounded-xl w-full sm:w-auto" data-testid="button-save-cron">
+              {save.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {editId ? "حفظ التعديلات" : "إنشاء المهمة"}
             </Button>
           </DialogFooter>
         </DialogContent>
