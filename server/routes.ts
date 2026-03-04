@@ -2606,9 +2606,74 @@ export async function registerRoutes(
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // === NOTIFICATIONS ===
-  // ═══════════════════════════════════════════════════════════
+  app.patch("/api/orders/:id/proof", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { paymentProofUrl } = req.body;
+      const { OrderModel } = await import("./models");
+      const order = await OrderModel.findOneAndUpdate(
+        { _id: req.params.id, userId: (req.user as any).id },
+        { $set: { paymentProofUrl, status: "pending" } },
+        { new: true }
+      );
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      res.json(order);
+    } catch (err) {
+      console.error("[Order] proof upload error:", err);
+      res.status(500).json({ error: "حدث خطأ أثناء حفظ الإيصال" });
+    }
+  });
+
+  app.post("/api/upload", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const multer = (await import("multer")).default;
+    const path = await import("path");
+    const fs = await import("fs");
+    
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = path.join(process.cwd(), "uploads");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+      }
+    });
+    
+    const upload = multer({ 
+      storage,
+      limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+    }).single("file");
+
+    upload(req, res, (err) => {
+      if (err) return res.status(400).json({ error: "فشل رفع الملف" });
+      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار ملف" });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url });
+    });
+  });
+
+  app.post("/api/auth/verify-device", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const { UserModel } = await import("./models");
+    const trustUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await UserModel.updateOne(
+      { _id: (req.user as any).id },
+      { $set: { trustedIp: ip, trustedUntil: trustUntil } }
+    );
+    res.json({ ok: true, trustedUntil });
+  });
+
+  app.get("/api/auth/check-trust", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const user = req.user as any;
+    const isTrusted = user.trustedIp === ip && user.trustedUntil && new Date(user.trustedUntil) > new Date();
+    res.json({ isTrusted });
+  });
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");

@@ -28,6 +28,8 @@ const userSchema = new mongoose.Schema({
   bio: { type: String, default: "" },
   profilePhotoUrl: { type: String, default: "" },
   additionalRoles: { type: [String], default: [] },
+  trustedIp: String,
+  trustedUntil: Date,
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({

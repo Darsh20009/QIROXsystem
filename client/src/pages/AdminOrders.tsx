@@ -471,6 +471,68 @@ export default function AdminOrders() {
                 <TabsContent value="details" className="flex-1 overflow-hidden mt-0">
                   <ScrollArea className="h-full">
                     <div className="px-6 py-5 space-y-6">
+                      <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <CreditCard className="w-3.5 h-3.5" />
+                          إيصال الدفع البنكي
+                        </p>
+                        <div 
+                          className="border-2 border-dashed border-black/[0.08] rounded-2xl p-8 text-center cursor-pointer hover:border-black/25 hover:bg-black/[0.01] transition-all group relative"
+                          onClick={() => document.getElementById("payment-proof-upload")?.click()}
+                        >
+                          {selectedOrder.paymentProofUrl ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
+                                <CheckCircle className="w-6 h-6" />
+                              </div>
+                              <p className="text-xs font-bold text-green-700">تم رفع الإيصال بنجاح</p>
+                              <p className="text-[10px] text-black/30">اضغط لتغيير الملف</p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 py-1">
+                              <div className="w-10 h-10 rounded-xl bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.07] transition-colors">
+                                <Upload className="w-4 h-4 text-black/25" />
+                              </div>
+                              <span className="text-xs text-black/35">اضغط لرفع إيصال التحويل</span>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          id="payment-proof-upload"
+                          className="hidden"
+                          accept="image/*,application/pdf"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !selectedOrder) return;
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            try {
+                              const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+                              const data = await res.json();
+                              if (data.url) {
+                                await apiRequest("PATCH", `/api/admin/orders/${selectedOrder.id}`, { paymentProofUrl: data.url, isDepositPaid: true });
+                                queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+                                setSelectedOrder({ ...selectedOrder, paymentProofUrl: data.url, isDepositPaid: true });
+                                toast({ title: "تم رفع الإيصال وتحديث حالة الدفع" });
+                              }
+                            } catch (err) {
+                              toast({ title: "فشل رفع الملف", variant: "destructive" });
+                            }
+                          }}
+                        />
+                        {selectedOrder.paymentProofUrl && (
+                          <Button 
+                            variant="outline" 
+                            className="w-full mt-2 text-xs gap-2"
+                            onClick={() => window.open(selectedOrder.paymentProofUrl, "_blank")}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            عرض الإيصال الحالي
+                          </Button>
+                        )}
+                      </div>
+
                       {/* Client Info */}
                       {selectedOrder.client && (
                         <div>

@@ -119,6 +119,13 @@ export default function Login() {
       return;
     }
 
+    // After successful verification, trust the device
+    try {
+      await fetch("/api/auth/verify-device", { method: "POST", credentials: "include" });
+    } catch (e) {
+      console.error("Failed to trust device:", e);
+    }
+
     // Refresh user data (non-critical — don't block success screen on this)
     try {
       const userRes = await fetch("/api/auth/user", { credentials: "include" });
