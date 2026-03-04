@@ -211,20 +211,22 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك...",
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         const finalType = mimeType || "audio/webm";
-        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : finalType.includes("mp3") ? "mp3" : "webm";
         const blob = new Blob(chunks, { type: finalType });
-        const file = new File([blob], `voice.${ext}`, { type: finalType });
+        if (blob.size < 100) { setRecording(false); setRecTime(0); return; }
+        const file = new File([blob], `voice_${Date.now()}.${ext}`, { type: finalType });
         const fd = new FormData(); fd.append("file", file);
         try {
           const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
+          if (!r.ok) { const e = await r.json(); console.error("[voice upload]", e); setRecording(false); setRecTime(0); return; }
           const { url } = await r.json();
           onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: "رسالة صوتية" });
-        } catch {}
+        } catch (e) { console.error("[voice send]", e); }
         setRecording(false); setRecTime(0);
       };
-      mr.start(); setRecorder(mr); setRecording(true);
+      mr.start(100); setRecorder(mr); setRecording(true);
       timerRef.current = setInterval(() => setRecTime(t => t + 1), 1000);
-    } catch { }
+    } catch (e) { console.error("[startRec]", e); }
   };
 
   const stopRec = () => { recorder?.stop(); clearInterval(timerRef.current); };

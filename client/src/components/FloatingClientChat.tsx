@@ -10,8 +10,42 @@ import { Input } from "@/components/ui/input";
 import {
   Headphones, X, Send, Loader2, MessageCircle, Sparkles,
   CheckCheck, Check, Clock, ChevronDown, Wifi, WifiOff,
-  Paperclip, Mic, MicOff, RefreshCw, FileText, Download,
+  Paperclip, Mic, MicOff, RefreshCw, FileText, Download, Play, Pause,
 } from "lucide-react";
+
+function FloatVoicePlayer({ url }: { url: string }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [prog, setProg] = useState(0);
+  const [dur, setDur] = useState(0);
+  return (
+    <div className="flex items-center gap-2 min-w-[150px] px-3 py-2">
+      <audio
+        ref={ref}
+        src={url}
+        onTimeUpdate={() => { if (ref.current) setProg((ref.current.currentTime / ref.current.duration) * 100 || 0); }}
+        onLoadedMetadata={() => { if (ref.current) setDur(ref.current.duration); }}
+        onEnded={() => { setPlaying(false); setProg(0); }}
+      />
+      <button
+        onClick={() => {
+          if (!ref.current) return;
+          if (playing) { ref.current.pause(); setPlaying(false); }
+          else { ref.current.play(); setPlaying(true); }
+        }}
+        className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center shrink-0 transition-all"
+      >
+        {playing ? <Pause className="w-3 h-3 text-white" /> : <Play className="w-3 h-3 text-white" />}
+      </button>
+      <div className="flex-1">
+        <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white/60 rounded-full transition-all" style={{ width: `${prog}%` }} />
+        </div>
+        <span className="text-[9px] text-white/40 mt-0.5 block">{dur > 0 ? `${Math.floor(dur)}ث` : "🎙️"}</span>
+      </div>
+    </div>
+  );
+}
 
 function timeAgo(date: string) {
   const d = new Date(date);
@@ -209,27 +243,37 @@ export function FloatingClientChat() {
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         const finalType = mimeType || "audio/webm";
-        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : finalType.includes("mp3") ? "mp3" : "webm";
         const blob = new Blob(chunks, { type: finalType });
-        const file = new File([blob], `voice.${ext}`, { type: finalType });
+        if (blob.size < 100) { setRecording(false); return; }
+        const file = new File([blob], `voice_${Date.now()}.${ext}`, { type: finalType });
         const fd = new FormData(); fd.append("file", file);
         try {
           const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
-          if (!r.ok) throw new Error();
+          if (!r.ok) {
+            const errData = await r.json().catch(() => ({}));
+            console.error("[voice upload float]", errData);
+            toast({ title: "فشل رفع الصوت: " + (errData.error || r.status), variant: "destructive" });
+            setRecording(false); return;
+          }
           const { url } = await r.json();
-          await apiRequest("POST", `/api/cs/sessions/${session.id}/messages`, {
+          const sid = sessionIdRef.current;
+          if (!sid) { setRecording(false); return; }
+          await apiRequest("POST", `/api/cs/sessions/${sid}/messages`, {
             body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: "رسالة صوتية",
           });
           refetchMsgs();
-        } catch {
-          toast({ title: "فشل إرسال الصوت", variant: "destructive" });
+        } catch (e) {
+          console.error("[voice send float]", e);
+          toast({ title: "فشل إرسال الرسالة الصوتية", variant: "destructive" });
         }
         setRecording(false);
       };
-      mr.start();
+      mr.start(100);
       setRecorder(mr);
       setRecording(true);
-    } catch {
+    } catch (e) {
+      console.error("[startRec float]", e);
       toast({ title: "تعذّر الوصول للميكروفون", variant: "destructive" });
     }
   };
@@ -491,9 +535,7 @@ export function FloatingClientChat() {
                                 </a>
                               )}
                               {msg.attachmentType === "voice" && msg.attachmentUrl && (
-                                <div className="px-3 py-2">
-                                  <audio controls src={msg.attachmentUrl} className="h-8 w-full max-w-[200px]" style={{ filter: "invert(1) brightness(0.7)" }} />
-                                </div>
+                                <FloatVoicePlayer url={msg.attachmentUrl} />
                               )}
                               {msg.attachmentType === "file" && msg.attachmentUrl && (
                                 <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer"

@@ -55,7 +55,7 @@ const upload = multer({
   }),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav)$/i;
+    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav|webm|ogg|m4a|aac|opus)$/i;
     if (allowed.test(path.extname(file.originalname))) {
       cb(null, true);
     } else {
@@ -2639,36 +2639,6 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/upload", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const multer = (await import("multer")).default;
-    const path = await import("path");
-    const fs = await import("fs");
-    
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => {
-        const uploadDir = path.join(process.cwd(), "uploads");
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-        cb(null, uploadDir);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-      }
-    });
-    
-    const upload = multer({ 
-      storage,
-      limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-    }).single("file");
-
-    upload(req, res, (err) => {
-      if (err) return res.status(400).json({ error: "فشل رفع الملف" });
-      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار ملف" });
-      const url = `/uploads/${req.file.filename}`;
-      res.json({ url });
-    });
-  });
 
   app.post("/api/auth/verify-device", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
