@@ -243,8 +243,8 @@ export default function Login() {
     } else {
       login(data, {
         onSuccess: (user: any) => {
-          // If client email is not verified, show OTP step
-          if (user.role === "client" && user.email && !user.emailVerified) {
+          // If client email is not verified or device not trusted, show OTP step
+          if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           }
         },

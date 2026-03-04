@@ -350,8 +350,23 @@ export async function registerRoutes(
          passport.default.authenticate("local", (err: any, user: any, info: any) => {
           if (err) return next(err);
           if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
-          req.login(user, (err: any) => {
+          
+          req.login(user, async (err: any) => {
             if (err) return next(err);
+            
+            const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const isTrusted = user.trustedIp === ip && user.trustedUntil && new Date(user.trustedUntil) > new Date();
+            
+            if (user.role === "client" && (!user.emailVerified || !isTrusted)) {
+              const { OtpModel } = await import("./models");
+              const code = Math.floor(100000 + Math.random() * 900000).toString();
+              const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+              await OtpModel.updateMany({ email: user.email.toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
+              await OtpModel.create({ email: user.email.toLowerCase().trim(), code, expiresAt, type: "email_verify" });
+              sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
+              return res.status(200).json({ ...sanitizeUser(user), needsVerification: true });
+            }
+            
             res.status(200).json(sanitizeUser(user));
           });
         })(req, res, next);
