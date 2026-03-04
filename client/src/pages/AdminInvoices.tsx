@@ -49,9 +49,9 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
 
   const { data: clients } = useQuery<Client[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users?role=client");
+      const r = await fetch("/api/users/clients");
       if (!r.ok) return [];
       const data = await r.json();
       return Array.isArray(data) ? data : data.users || [];

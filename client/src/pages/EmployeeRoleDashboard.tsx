@@ -127,8 +127,8 @@ function DeliveryDashboard() {
 
 // ── DEVELOPER DASHBOARD ────────────────────────────────────────────────────────
 function DeveloperDashboard() {
-  const { data: modRequests } = useQuery<any[]>({ queryKey: ["/api/admin/mod-requests"] });
-  const { data: checklist } = useQuery<any>({ queryKey: ["/api/employee/checklist"] });
+  const { data: modRequests } = useQuery<any[]>({ queryKey: ["/api/modification-requests"] });
+  const { data: checklist } = useQuery<any>({ queryKey: ["/api/checklist"] });
 
   const pending = modRequests?.filter(m => m.status === "pending" || m.status === "in_review") || [];
   const inProgress = modRequests?.filter(m => m.status === "in_progress") || [];
@@ -234,9 +234,9 @@ function DeveloperDashboard() {
 
 // ── ACCOUNTANT / ERP DASHBOARD ────────────────────────────────────────────────
 function AccountantDashboard() {
-  const { data: finance } = useQuery<any>({ queryKey: ["/api/admin/finance"] });
-  const { data: invoices } = useQuery<any[]>({ queryKey: ["/api/admin/invoices"] });
-  const { data: receipts } = useQuery<any[]>({ queryKey: ["/api/admin/receipts"] });
+  const { data: finance } = useQuery<any>({ queryKey: ["/api/admin/finance/summary"] });
+  const { data: invoices } = useQuery<any[]>({ queryKey: ["/api/invoices"] });
+  const { data: receipts } = useQuery<any[]>({ queryKey: ["/api/receipts"] });
 
   const totalRevenue = receipts?.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0) || 0;
   const totalPending = invoices?.filter((i: any) => i.status === "pending").reduce((s: number, i: any) => s + (Number(i.totalAmount) || 0), 0) || 0;

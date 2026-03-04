@@ -263,9 +263,9 @@ export default function Inbox() {
   });
 
   const { data: employees = [] } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["/api/employees"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/users");
+      const r = await fetch("/api/employees");
       if (!r.ok) return [];
       return r.json();
     },

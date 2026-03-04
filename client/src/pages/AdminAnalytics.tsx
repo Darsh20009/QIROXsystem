@@ -162,7 +162,7 @@ export default function AdminAnalytics() {
               <div className="space-y-3">
                 {(data?.attendanceSummary || []).slice(0, 8).map((emp: any, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-black/50 dark:text-white/50">موظف #{i + 1}</span>
+                    <span className="text-black/70 dark:text-white/70 font-medium">{emp.fullName || emp.username || `موظف #${i + 1}`}</span>
                     <div className="flex gap-4">
                       <span className="text-black/30 dark:text-white/30 text-xs">{emp.days} يوم</span>
                       <span className="font-bold text-black dark:text-white">{(emp.totalHours || 0).toFixed(1)} ساعة</span>

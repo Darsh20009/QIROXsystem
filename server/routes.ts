@@ -3953,6 +3953,9 @@ export async function registerRoutes(
       const attendanceSummary = await (AttendanceModel as any).aggregate([
         { $match: { createdAt: { $gte: startOfMonth }, checkOut: { $ne: null } } },
         { $group: { _id: '$userId', totalHours: { $sum: '$workHours' }, days: { $sum: 1 } } },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userInfo' } },
+        { $addFields: { fullName: { $arrayElemAt: ['$userInfo.fullName', 0] }, username: { $arrayElemAt: ['$userInfo.username', 0] }, role: { $arrayElemAt: ['$userInfo.role', 0] } } },
+        { $project: { userInfo: 0 } },
       ]);
       const statusDist = await (OrderModel as any).aggregate([
         { $group: { _id: '$status', count: { $sum: 1 } } }

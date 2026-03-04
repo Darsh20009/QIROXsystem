@@ -61,9 +61,9 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
   const [sendEmail, setSendEmail] = useState(true);
 
   const { data: clients } = useQuery<Client[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users?role=client");
+      const r = await fetch("/api/users/clients");
       if (!r.ok) return [];
       const d = await r.json();
       return Array.isArray(d) ? d : d.users || [];
