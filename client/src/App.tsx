@@ -557,8 +557,16 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
   }
 }
 
+const SPLASH_KEY = "qirox_splash_v1";
+
 function AppInner() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return !sessionStorage.getItem(SPLASH_KEY);
+    } catch {
+      return true;
+    }
+  });
   const [location] = useLocation();
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
@@ -567,7 +575,14 @@ function AppInner() {
   useWebSocket(user?.id);
 
   if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+    return (
+      <SplashScreen
+        onComplete={() => {
+          try { sessionStorage.setItem(SPLASH_KEY, "1"); } catch {}
+          setShowSplash(false);
+        }}
+      />
+    );
   }
 
   if (location === "/qirox-edit") {
