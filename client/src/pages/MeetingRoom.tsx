@@ -122,6 +122,9 @@ export default function MeetingRoom() {
   const pendingCandidates = useRef<Map<string, RTCIceCandidate[]>>(new Map());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const screenSharingRef = useRef(false);
+  const activePanelRef = useRef<PanelTab | null>(null);
 
   const [joined, setJoined] = useState(false);
   const [wasKicked, setWasKicked] = useState(false);
@@ -133,6 +136,7 @@ export default function MeetingRoom() {
   const [activePanel, setActivePanel] = useState<PanelTab | null>(null);
   const [chatMsg, setChatMsg] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [unreadChat, setUnreadChat] = useState(0);
   const [copied, setCopied] = useState(false);
   const [wsReady, setWsReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -154,6 +158,15 @@ export default function MeetingRoom() {
   const userId = user?._id || user?.id;
   const userName = user?.fullName || user?.username || "مشارك";
   const isAdmin = ["admin", "manager"].includes((user as any)?.role);
+
+  // Keep refs in sync with state (to avoid stale closures in callbacks)
+  useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
+  useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
+
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   const sendWs = useCallback((payload: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -280,6 +293,9 @@ export default function MeetingRoom() {
       }
       case "webrtc_chat": {
         setChatMessages(prev => [...prev, { from: data.from, name: data.name, text: data.text, ts: data.ts }]);
+        if (activePanelRef.current !== 'chat') {
+          setUnreadChat(prev => prev + 1);
+        }
         break;
       }
       case "webrtc_media_state": {
@@ -397,37 +413,60 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
   }, [audioOn, videoOn, roomId, sendWs]);
 
-  const toggleScreenShare = useCallback(async () => {
-    if (screenSharing) {
+  const stopScreenShare = useCallback(async () => {
+    // Replace screen track with camera track for all peers
+    try {
       const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      const track = cam.getVideoTracks()[0];
+      const camTrack = cam.getVideoTracks()[0];
       pcsRef.current.forEach(pc => {
         const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) sender.replaceTrack(track);
+        if (sender) sender.replaceTrack(camTrack);
       });
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
-      const newStream = new MediaStream([...(audio ? [audio] : []), track]);
+      const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
       localStreamRef.current = newStream;
       setLocalStream(newStream);
-      setScreenSharing(false);
+      setVideoOn(true);
+    } catch {
+      // Camera not available — remove video track
+      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      const audio = localStreamRef.current?.getAudioTracks()[0];
+      const newStream = new MediaStream(audio ? [audio] : []);
+      localStreamRef.current = newStream;
+      setLocalStream(newStream);
+      setVideoOn(false);
+    }
+    setScreenSharing(false);
+  }, []);
+
+  const toggleScreenShare = useCallback(async () => {
+    if (screenSharingRef.current) {
+      await stopScreenShare();
     } else {
       try {
-        const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
-        const track = screen.getVideoTracks()[0];
+        const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
+        const screenTrack = screen.getVideoTracks()[0];
         pcsRef.current.forEach(pc => {
           const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(track);
+          if (sender) sender.replaceTrack(screenTrack);
         });
+        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
         const audio = localStreamRef.current?.getAudioTracks()[0];
-        const newStream = new MediaStream([...(audio ? [audio] : []), track]);
+        const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
         localStreamRef.current = newStream;
         setLocalStream(newStream);
         setScreenSharing(true);
-        track.onended = () => toggleScreenShare();
-      } catch {}
+        // Use ref in onended to avoid stale closure
+        screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
+      } catch (err: any) {
+        // User cancelled or permission denied — ignore
+        if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
+          toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
+        }
+      }
     }
-  }, [screenSharing]);
+  }, [stopScreenShare, toast]);
 
   const sendChat = useCallback(() => {
     const text = chatMsg.trim();
@@ -449,6 +488,7 @@ export default function MeetingRoom() {
 
   const togglePanel = (panel: PanelTab) => {
     setActivePanel(prev => prev === panel ? null : panel);
+    if (panel === 'chat') setUnreadChat(0);
   };
 
   // Whiteboard draw handlers
@@ -684,6 +724,7 @@ export default function MeetingRoom() {
                       </div>
                     </div>
                   ))}
+                  <div ref={chatEndRef} />
                 </div>
                 <div className="p-3 border-t border-white/[0.06] flex gap-2 shrink-0">
                   <Input value={chatMsg} onChange={e => setChatMsg(e.target.value)} onKeyDown={e => e.key === "Enter" && sendChat()} placeholder="اكتب رسالة..." className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-8" data-testid="input-chat-message" />
@@ -876,12 +917,17 @@ export default function MeetingRoom() {
             <button
               key={tab.id}
               onClick={() => togglePanel(tab.id)}
-              className={`flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-medium transition-all ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
+              className={`relative flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-medium transition-all ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
               title={tab.label}
               data-testid={`button-panel-toggle-${tab.id}`}
             >
               <tab.icon className="w-4 h-4" />
               <span className="hidden md:inline">{tab.label}</span>
+              {tab.id === 'chat' && unreadChat > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                  {unreadChat > 9 ? "9+" : unreadChat}
+                </span>
+              )}
             </button>
           ))}
         </div>
