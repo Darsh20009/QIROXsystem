@@ -10,6 +10,34 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 4, 2026 - Session 35)
+
+### تحسينات شاملة للجوال (Mobile Responsiveness)
+
+**1. `client/src/App.tsx` — إصلاح padding الجوال:**
+- الـ `<main>` يستخدم الآن `padding-bottom: calc(96px + env(safe-area-inset-bottom))` لمنع المحتوى من الاختفاء خلف شريط التنقل السفلي على iOS
+- `id="main-content"` لتطبيق CSS مستهدف
+
+**2. `client/src/index.css` — CSS شامل للجوال:**
+- `#main-content` يحصل على `calc(88px + env(safe-area-inset-bottom))` من الأسفل
+- جميع `<dialog>` عروضها `calc(100vw - 2rem)` بدلاً من التجاوز
+- حفظ أداء الـ backdrop-blur على الجوال
+- حماية من horizontal overflow
+
+**3. `client/src/pages/Cart.tsx` — تحسينات الجوال:**
+- شريط دفع ثابت (sticky bar) يظهر فقط على الجوال (`lg:hidden`) فوق شريط التنقل السفلي مباشرة — يعرض الإجمالي وزر "أكمل الطلب"
+- نافذة الـ checkout: `w-[95vw] max-w-lg max-h-[92dvh]` لتتكيف مع أي حجم شاشة
+- `ScrollArea` تستخدم `max-h-[50dvh]` (dynamic viewport height) بدلاً من `vh` العادية
+- نوافذ Add-on: `w-[95vw] max-w-md max-h-[88dvh]`
+
+**4. `client/src/pages/Prices.tsx` — جدول المقارنة:**
+- الـ wrapper تغير إلى `overflow-x-auto` مع `min-w-[480px]` داخله
+- الجدول يمكن التمرير أفقياً بدلاً من الاقتصاص
+
+**5. `client/src/pages/Dashboard.tsx` — padding:**
+- تغيير `px-6 py-6` → `px-4 md:px-6 py-4 md:py-6`
+- تغيير `px-6 py-8` → `px-4 md:px-6 py-5 md:py-8`
+
 ## Latest Changes (Mar 4, 2026 - Session 34)
 
 ### إصلاح كيروكس باي + بحث الخدمات

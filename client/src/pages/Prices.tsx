@@ -458,7 +458,8 @@ export default function Prices() {
             <h2 className="text-2xl font-black text-black dark:text-white">{lang === "ar" ? "قارن بين المستويات" : "Compare Plans"}</h2>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="rounded-3xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden shadow-sm">
+            className="rounded-3xl border border-black/[0.07] dark:border-white/[0.07] overflow-x-auto shadow-sm">
+            <div className="min-w-[480px]">
             <div className="grid grid-cols-4 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="p-4 text-xs font-bold text-black/35 dark:text-white/35">{lang === "ar" ? "الميزة" : "Feature"}</div>
               {tierPlans.map((p: any) => {
@@ -491,6 +492,7 @@ export default function Prices() {
                 ))}
               </div>
             ))}
+            </div>
           </motion.div>
         </section>
       )}

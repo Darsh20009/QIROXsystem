@@ -1584,7 +1584,7 @@ export default function Dashboard() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08]">
-        <div className="max-w-[1400px] mx-auto px-6 py-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">
@@ -1622,7 +1622,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-5 md:py-8">
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[

@@ -706,6 +706,11 @@
     overscroll-behavior-y: contain;
   }
 
+  /* Fix bottom padding for mobile content above bottom nav */
+  #main-content {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
   table {
     display: block;
     overflow-x: auto;
@@ -726,13 +731,38 @@
     font-size: 16px !important;
   }
 
+  /* Dialogs: full-width on mobile */
+  [role="dialog"] > [data-state] {
+    width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+
+  /* Improve backdrop blur on mobile performance */
   .backdrop-blur-xl,
   .backdrop-blur-lg,
-  .backdrop-blur-md,
-  .backdrop-blur-sm,
-  .backdrop-blur {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Bottom nav safe area */
+  nav[class*="fixed bottom-0"] {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Prevent horizontal overflow from fixed-width elements */
+  .overflow-x-hidden-mobile {
+    overflow-x: hidden;
+  }
+
+  /* Make dialog actions stack vertically on very small screens */
+  @media (max-width: 400px) {
+    [data-testid="button-confirm-checkout"],
+    [data-testid="button-next-step"] {
+      font-size: 13px;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
   }
 }
 

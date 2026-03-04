@@ -770,9 +770,28 @@ export default function Cart() {
         </div>
       )}
 
+      {/* ═══════ Mobile Sticky Checkout Bar ═══════ */}
+      {!checkoutDone && items.length > 0 && (
+        <div className="lg:hidden fixed left-0 right-0 z-30 px-4 pb-2 pointer-events-none" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="bg-gradient-to-l from-gray-900 to-black text-white rounded-2xl p-3 flex items-center gap-3 shadow-2xl shadow-black/40 pointer-events-auto border border-white/10">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-white/40 uppercase tracking-wider">الإجمالي</p>
+              <p className="text-lg font-black leading-tight">{fmt(total)} <span className="text-xs font-normal text-white/40">ر.س</span></p>
+            </div>
+            <Button
+              className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
+              onClick={() => { setPreCheckoutStep(1); setPreCheckoutOpen(true); }}
+              data-testid="button-mobile-checkout">
+              <Sparkles className="w-4 h-4" />
+              أكمل الطلب
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ═══════ Pre-Checkout Dialog ═══════ */}
       <Dialog open={preCheckoutOpen} onOpenChange={open => { if (!checkoutMutation.isPending) setPreCheckoutOpen(open); }}>
-        <DialogContent className="max-w-lg max-h-[92vh] p-0 overflow-hidden" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[92dvh] p-0 overflow-hidden rounded-2xl" dir="rtl">
 
           {/* Gradient Header */}
           <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden">
@@ -834,8 +853,8 @@ export default function Cart() {
           {/* Content area */}
           <DialogHeader className="sr-only"><DialogTitle>إتمام الطلب</DialogTitle></DialogHeader>
 
-          <ScrollArea className="max-h-[55vh]">
-            <div className="space-y-4 p-5 pb-2">
+          <ScrollArea className="max-h-[50dvh]">
+            <div className="space-y-4 p-4 sm:p-5 pb-2">
 
               {/* Step 1: Project idea + documents */}
               {preCheckoutStep === 1 && (
@@ -1061,7 +1080,7 @@ export default function Cart() {
 
       {/* MongoDB */}
       <Dialog open={addOnDialog === 'db'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-md max-h-[88vh]" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
@@ -1097,7 +1116,7 @@ export default function Cart() {
 
       {/* AWS */}
       <Dialog open={addOnDialog === 'aws'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-md max-h-[88vh]" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
