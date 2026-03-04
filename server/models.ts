@@ -406,7 +406,7 @@ const otpSchema = new mongoose.Schema({
   code: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
-  type: { type: String, enum: ["email_verify", "forgot_password"], default: "forgot_password" },
+  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp"], default: "forgot_password" },
 }, { timestamps: true });
 
 const notificationSchema = new mongoose.Schema({
@@ -1227,3 +1227,14 @@ const storePublishConfigSchema = new mongoose.Schema({
 }, { timestamps: true });
 storePublishConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const StorePublishConfigModel = mongoose.models.StorePublishConfig || mongoose.model("StorePublishConfig", storePublishConfigSchema);
+
+// ── Device Trust Tokens ──
+const deviceTokenSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  tokenHash: { type: String, required: true, index: true },
+  userAgent: { type: String, default: "" },
+  expiresAt: { type: Date, required: true },
+}, { timestamps: true });
+deviceTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+deviceTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const DeviceTokenModel = mongoose.models.DeviceToken || mongoose.model("DeviceToken", deviceTokenSchema);

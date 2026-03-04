@@ -270,6 +270,74 @@ QIROX Studio - qiroxstudio.online`;
   return sendEmail(to, displayName, `${otp} - رمز تفعيل حسابك | QIROX`, html, text);
 }
 
+export async function sendLoginOtpEmail(to: string, name: string, otp: string, userAgent?: string): Promise<boolean> {
+  const displayName = cleanName(name);
+  const device = userAgent ? userAgent.replace(/[^a-zA-Z0-9\s\/\.\(\)]/g, "").slice(0, 80) : "جهاز غير معروف";
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;direction:rtl;text-align:right;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      <tr>
+        <td style="background:#000000;padding:24px 32px;text-align:center;">
+          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:36px 32px;">
+          <p style="margin:0 0 8px 0;font-size:13px;color:#dc2626;font-weight:600;">&#9888; تنبيه أمني — محاولة تسجيل دخول</p>
+          <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">مرحباً ${displayName}</h2>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#555555;line-height:1.7;">
+            تم طلب تسجيل دخول إلى حسابك من جهاز جديد. استخدم الرمز التالي لتوثيق الجهاز:
+          </p>
+          <p style="margin:0 0 24px 0;font-size:12px;color:#9ca3af;background:#fff8f0;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;">
+            الجهاز: ${device}
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#111111;border-radius:12px;padding:28px;text-align:center;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#9ca3af;">رمز توثيق الجهاز — Device OTP</p>
+                <p style="margin:0;font-size:48px;font-weight:900;color:#ffffff;letter-spacing:14px;font-family:Courier,monospace;">${otp}</p>
+                <p style="margin:12px 0 0 0;font-size:12px;color:#6b7280;">صالح لمدة 15 دقيقة فقط &bull; لا تشاركه مع احد</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:24px 0 0 0;font-size:13px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;">
+            &#128275; إذا لم تقم بمحاولة تسجيل الدخول هذه، قم بتغيير كلمة مرورك فوراً وتواصل معنا.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;">2026 QIROX Studio &bull; qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+  const text = `QIROX Studio — رمز توثيق الجهاز
+
+مرحبا ${displayName}،
+
+تم طلب تسجيل دخول من جهاز جديد. رمز التوثيق:
+
+${otp}
+
+صالح لمدة 15 دقيقة فقط. لا تشاركه مع احد.
+
+إذا لم تقم بهذا، قم بتغيير كلمة المرور فوراً.
+
+QIROX Studio - qiroxstudio.online`;
+  return sendEmail(to, displayName, `${otp} - رمز توثيق جهازك | QIROX`, html, text);
+}
+
 export async function sendOrderConfirmationEmail(to: string, name: string, orderId: string, items: string[]): Promise<boolean> {
   const displayName = cleanName(name);
   const itemsList = items.map(i => highlight(`&#8226; ${i}`)).join("");

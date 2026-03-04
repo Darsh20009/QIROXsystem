@@ -10,6 +10,38 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 4, 2026 - Session 37)
+
+### نظام توثيق الجهاز (Device 2FA) عند تسجيل الدخول
+
+تسجيل دخول آمن بـ OTP لكل المستخدمين مع تذكّر الجهاز 14 يوماً.
+
+**الموديل الجديد (`DeviceTokenModel` في `server/models.ts`):**
+- `userId`, `tokenHash` (SHA-256), `userAgent`, `expiresAt` (14 يوماً)
+- TTL index تلقائي — يُحذف بعد الانتهاء
+
+**دالة البريد الجديدة (`sendLoginOtpEmail` في `server/email.ts`):**
+- بريد تنبيه أمني بتصميم داكن + اسم الجهاز + تحذير
+
+**المسارات الجديدة (`server/routes.ts`):**
+- `POST /api/auth/verify-login-otp` — التحقق من OTP وإعادة device token
+- `POST /api/auth/resend-login-otp` — إعادة إرسال OTP
+- `POST /api/auth/generate-device-token` — توليد token للمستخدمين المصادق عليهم
+
+**تعديل login route:**
+- يقبل `x-device-token` header
+- يبحث عن tokenHash في DeviceTokenModel
+- إن كان صحيحاً → دخول مباشر | إن لم يكن → `pendingLoginUserId` في session + إرسال OTP
+
+**الواجهة (`client/src/hooks/use-auth.ts`):**
+- `getStoredDeviceToken()`, `saveDeviceToken()`, `clearDeviceToken()` — localStorage
+- `useLogin` يضيف `x-device-token` header تلقائياً
+
+**الواجهة (`client/src/pages/Login.tsx`):**
+- `verifyMode: "email" | "device"` — يميز بين توثيق الحساب وتوثيق الجهاز
+- OTP UI يُعدّل عنوانه وألوانه حسب النوع
+- يحفظ device token في localStorage بعد النجاح
+
 ## Latest Changes (Mar 4, 2026 - Session 36)
 
 ### نظام التقسيط "قسط عبر كيروكس" — Installment System

@@ -3,6 +3,20 @@ import { api, type InsertUser } from "@shared/routes";
 import { z } from "zod";
 import { useLocation } from "wouter";
 
+const DEVICE_TOKEN_KEY = "qirox_device_token";
+
+export function getStoredDeviceToken(): string | null {
+  try { return localStorage.getItem(DEVICE_TOKEN_KEY); } catch { return null; }
+}
+
+export function saveDeviceToken(token: string) {
+  try { localStorage.setItem(DEVICE_TOKEN_KEY, token); } catch {}
+}
+
+export function clearDeviceToken() {
+  try { localStorage.removeItem(DEVICE_TOKEN_KEY); } catch {}
+}
+
 export function useUser() {
   return useQuery({
     queryKey: [api.auth.user.path],
@@ -21,9 +35,13 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: async (credentials: z.infer<typeof api.auth.login.input>) => {
+      const deviceToken = getStoredDeviceToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (deviceToken) headers["x-device-token"] = deviceToken;
+
       const res = await fetch(api.auth.login.path, {
         method: api.auth.login.method,
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(credentials),
       });
 
@@ -34,9 +52,12 @@ export function useLogin() {
       return await res.json();
     },
     onSuccess: (user) => {
+      // If device verification needed — Login.tsx handles OTP step
+      if (user.needsDeviceVerification) return;
+      // If legacy email verification needed — Login.tsx handles OTP step
+      if (user.needsVerification) return;
+
       queryClient.setQueryData([api.auth.user.path], user);
-      // If client email not verified, pause redirect — Login.tsx will show OTP step
-      if (user.role === 'client' && user.email && !user.emailVerified) return;
       if (user.role === 'client') {
         const returnUrl = sessionStorage.getItem("returnAfterLogin");
         if (returnUrl) {

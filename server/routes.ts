@@ -13,7 +13,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
-import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
+import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
 import { pushNotification, broadcastNotification } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 
@@ -350,25 +350,44 @@ export async function registerRoutes(
          passport.default.authenticate("local", (err: any, user: any, info: any) => {
           if (err) return next(err);
           if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
-          
-          req.login(user, async (err: any) => {
-            if (err) return next(err);
-            
-            const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            const isTrusted = user.trustedIp === ip && user.trustedUntil && new Date(user.trustedUntil) > new Date();
-            
-            if (user.role === "client" && (!user.emailVerified || !isTrusted)) {
+
+          const deviceToken = req.headers['x-device-token'] as string | undefined;
+
+          const checkDeviceTrust = async () => {
+            if (!deviceToken) return false;
+            const { DeviceTokenModel } = await import("./models");
+            const crypto = await import("crypto");
+            const tokenHash = crypto.createHash("sha256").update(deviceToken).digest("hex");
+            const found = await DeviceTokenModel.findOne({ userId: user._id, tokenHash, expiresAt: { $gt: new Date() } });
+            return !!found;
+          };
+
+          checkDeviceTrust().then(async (trusted) => {
+            if (trusted) {
+              // Device trusted — log in directly
+              req.login(user, (err: any) => {
+                if (err) return next(err);
+                res.status(200).json(sanitizeUser(user));
+              });
+              return;
+            }
+
+            // Device NOT trusted — need OTP verification
+            // Store pending user in session without full login
+            req.session.pendingLoginUserId = String(user._id);
+            req.session.save(async (saveErr: any) => {
+              if (saveErr) return next(saveErr);
               const { OtpModel } = await import("./models");
               const code = Math.floor(100000 + Math.random() * 900000).toString();
-              const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-              await OtpModel.updateMany({ email: user.email.toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
-              await OtpModel.create({ email: user.email.toLowerCase().trim(), code, expiresAt, type: "email_verify" });
-              sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
-              return res.status(200).json({ ...sanitizeUser(user), needsVerification: true });
-            }
-            
-            res.status(200).json(sanitizeUser(user));
-          });
+              const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+              const email = user.email.toLowerCase().trim();
+              await OtpModel.updateMany({ email, used: false, type: "login_otp" }, { used: true });
+              await OtpModel.create({ email, code, expiresAt, type: "login_otp" });
+              const ua = req.headers['user-agent'] as string | undefined;
+              sendLoginOtpEmail(email, user.fullName || user.username, code, ua).catch(console.error);
+              res.status(200).json({ needsDeviceVerification: true, email: user.email, name: user.fullName || user.username });
+            });
+          }).catch(next);
         })(req, res, next);
        });
     }
@@ -2671,6 +2690,71 @@ export async function registerRoutes(
     const user = req.user as any;
     const isTrusted = user.trustedIp === ip && user.trustedUntil && new Date(user.trustedUntil) > new Date();
     res.json({ isTrusted });
+  });
+
+  // ── Generate Device Token for authenticated users (after email verification or when trusted) ──
+  app.post("/api/auth/generate-device-token", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { DeviceTokenModel } = await import("./models");
+    const { randomBytes, createHash } = await import("crypto");
+    const plainToken = randomBytes(48).toString("hex");
+    const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const ua = req.headers['user-agent'] as string | undefined;
+    await DeviceTokenModel.create({ userId: (req.user as any)._id || (req.user as any).id, tokenHash, userAgent: ua || "", expiresAt });
+    res.json({ deviceToken: plainToken });
+  });
+
+  // ── Verify Login OTP (Device Trust) ──
+  app.post("/api/auth/verify-login-otp", async (req, res, next) => {
+    const { code } = req.body;
+    if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
+    const pendingUserId = req.session.pendingLoginUserId;
+    if (!pendingUserId) return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+
+    const { UserModel, OtpModel, DeviceTokenModel } = await import("./models");
+    const user = await UserModel.findById(pendingUserId);
+    if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
+
+    const email = user.email.toLowerCase().trim();
+    const otp = await OtpModel.findOne({ email, code: String(code), used: false, type: "login_otp", expiresAt: { $gt: new Date() } });
+    if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+
+    await OtpModel.updateOne({ _id: otp._id }, { used: true });
+
+    // Generate device token (plain = store in localStorage, hash = store in DB)
+    const { randomBytes, createHash } = await import("crypto");
+    const plainToken = randomBytes(48).toString("hex");
+    const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const ua = req.headers['user-agent'] as string | undefined;
+    await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: ua || "", expiresAt });
+
+    // Clear pending session
+    delete req.session.pendingLoginUserId;
+
+    // Log the user in
+    req.login(user, (err: any) => {
+      if (err) return next(err);
+      res.status(200).json({ ...sanitizeUser(user), deviceToken: plainToken });
+    });
+  });
+
+  // ── Resend Login OTP ──
+  app.post("/api/auth/resend-login-otp", async (req, res) => {
+    const pendingUserId = req.session.pendingLoginUserId;
+    if (!pendingUserId) return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+    const { UserModel, OtpModel } = await import("./models");
+    const user = await UserModel.findById(pendingUserId);
+    if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
+    const email = user.email.toLowerCase().trim();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await OtpModel.updateMany({ email, used: false, type: "login_otp" }, { used: true });
+    await OtpModel.create({ email, code, expiresAt, type: "login_otp" });
+    const ua = req.headers['user-agent'] as string | undefined;
+    sendLoginOtpEmail(email, user.fullName || user.username, code, ua).catch(console.error);
+    res.json({ ok: true });
   });
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

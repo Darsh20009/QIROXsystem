@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLogin, useRegister } from "@/hooks/use-auth";
+import { useLogin, useRegister, saveDeviceToken } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,8 +49,9 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [isRegister]);
 
-  // Email verification step state
+  // Verification step state (email = تفعيل الحساب, device = توثيق الجهاز)
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
+  const [verifyMode, setVerifyMode] = useState<"email" | "device">("email");
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -92,19 +93,22 @@ export default function Login() {
     document.getElementById(`otp-${lastIndex}`)?.focus();
   };
 
-  const handleVerifyEmail = async () => {
+  const handleVerifyOtp = async () => {
     const code = otpCode.join("").trim();
     if (code.length !== 6) { setVerifyError("أدخل الرمز المكوّن من 6 أرقام"); return; }
     setIsVerifying(true);
     setVerifyError("");
 
+    const endpoint = verifyMode === "device" ? "/api/auth/verify-login-otp" : "/api/auth/verify-email";
+    const body = verifyMode === "device" ? { code } : { email: verifyStep!.email, code };
+
     let res: Response;
     try {
-      res = await fetch("/api/auth/verify-email", {
+      res = await fetch(endpoint, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verifyStep!.email, code }),
+        body: JSON.stringify(body),
       });
     } catch {
       setVerifyError("تعذّر الوصول إلى الخادم، تحقق من اتصالك بالإنترنت وأعد المحاولة");
@@ -119,24 +123,35 @@ export default function Login() {
       return;
     }
 
-    // After successful verification, trust the device
-    try {
-      await fetch("/api/auth/verify-device", { method: "POST", credentials: "include" });
-    } catch (e) {
-      console.error("Failed to trust device:", e);
+    // Save device token if returned (device verification flow)
+    if (data.deviceToken) {
+      saveDeviceToken(data.deviceToken);
     }
 
-    // Refresh user data (non-critical — don't block success screen on this)
+    // For email verification (legacy), generate device token and save it
+    if (verifyMode === "email") {
+      try {
+        await fetch("/api/auth/verify-device", { method: "POST", credentials: "include" });
+        const dtRes = await fetch("/api/auth/generate-device-token", { method: "POST", credentials: "include" });
+        if (dtRes.ok) {
+          const dtData = await dtRes.json();
+          if (dtData.deviceToken) saveDeviceToken(dtData.deviceToken);
+        }
+      } catch {}
+    }
+
+    // Refresh user data
     try {
       const userRes = await fetch("/api/auth/user", { credentials: "include" });
       if (userRes.ok) {
         const freshUser = await userRes.json();
         queryClient.setQueryData(["/api/auth/user"], freshUser);
       }
-    } catch { /* ignore — verification already succeeded */ }
+    } catch {}
 
     setIsVerifying(false);
     const name = verifyStep!.name;
+    const role = data.role;
     setVerifyStep(null);
     setVerifySuccess({ name });
     setTimeout(() => {
@@ -145,6 +160,8 @@ export default function Login() {
       if (returnUrl) {
         sessionStorage.removeItem("returnAfterLogin");
         setLocation(returnUrl);
+      } else if (role && role !== "client") {
+        setLocation("/admin");
       } else {
         setLocation("/dashboard");
       }
@@ -155,17 +172,15 @@ export default function Login() {
     setIsResending(true);
     setVerifyError("");
     try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        credentials: "include",
-      });
+      const endpoint = verifyMode === "device" ? "/api/auth/resend-login-otp" : "/api/auth/resend-verification";
+      const res = await fetch(endpoint, { method: "POST", credentials: "include" });
       if (res.ok) {
         toast({ title: "تم إعادة الإرسال!", description: "تحقق من صندوق الوارد أو مجلد الإسبام" });
         setOtpCode(["", "", "", "", "", ""]);
         document.getElementById("otp-0")?.focus();
       } else {
         const d = await res.json().catch(() => ({}));
-        setVerifyError(d.error || "تعذّر إرسال الرمز، تأكد من تسجيل الدخول وحاول مجدداً");
+        setVerifyError(d.error || "تعذّر إرسال الرمز، حاول مجدداً");
       }
     } catch {
       setVerifyError("حدث خطأ أثناء الإرسال، تحقق من اتصالك وحاول مجدداً");
@@ -223,6 +238,7 @@ export default function Login() {
                 description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
               });
             }
+            setVerifyMode("email");
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
             queryClient.setQueryData(["/api/auth/user"], user);
@@ -243,8 +259,17 @@ export default function Login() {
     } else {
       login(data, {
         onSuccess: (user: any) => {
-          // If client email is not verified or device not trusted, show OTP step
+          // Device verification required (new — all users)
+          if (user.needsDeviceVerification && user.email) {
+            setVerifyMode("device");
+            setOtpCode(["", "", "", "", "", ""]);
+            setVerifyError("");
+            setVerifyStep({ email: user.email, name: user.name || user.fullName || user.username || "" });
+            return;
+          }
+          // Legacy email verification (clients only)
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
+            setVerifyMode("email");
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           }
         },
@@ -423,24 +448,47 @@ export default function Login() {
             className="w-full max-w-md"
           >
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${verifyMode === "device" ? "bg-black" : "bg-black"}`}>
                 <ShieldCheck className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
-              <p className="text-black/40 text-sm leading-relaxed">
-                أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
-                <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
-              </p>
+              {verifyMode === "device" ? (
+                <>
+                  <h1 className="text-2xl font-black font-heading text-black mb-2">توثيق الجهاز</h1>
+                  <p className="text-black/40 text-sm leading-relaxed">
+                    أرسلنا رمز توثيق الجهاز المكوّن من 6 أرقام إلى<br />
+                    <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
+                  <p className="text-black/40 text-sm leading-relaxed">
+                    أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
+                    <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* Spam warning */}
-            <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
-              <span className="text-amber-500 text-base mt-0.5 flex-shrink-0">⚠️</span>
+            {/* Info notice */}
+            <div className={`border rounded-xl px-4 py-3 mb-5 flex items-start gap-3 ${verifyMode === "device" ? "bg-blue-50 border-blue-200/60" : "bg-amber-50 border-amber-200/60"}`}>
+              <span className={`text-base mt-0.5 flex-shrink-0 ${verifyMode === "device" ? "text-blue-500" : "text-amber-500"}`}>{verifyMode === "device" ? "🔐" : "⚠️"}</span>
               <div>
-                <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
-                <p className="text-amber-700 text-[11px] leading-relaxed">
-                  تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
-                </p>
+                {verifyMode === "device" ? (
+                  <>
+                    <p className="text-blue-800 text-xs font-semibold mb-0.5">جهاز جديد</p>
+                    <p className="text-blue-700 text-[11px] leading-relaxed">
+                      هذا الجهاز غير مألوف. أدخل الرمز لتوثيقه وسيُتذكّر لمدة <strong>14 يوماً</strong>. إذا لم يصل الرمز، تحقق من <strong>الإسبام</strong>.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
+                    <p className="text-amber-700 text-[11px] leading-relaxed">
+                      تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -475,13 +523,15 @@ export default function Login() {
             )}
 
             <Button
-              onClick={handleVerifyEmail}
+              onClick={handleVerifyOtp}
               disabled={isVerifying || otpCode.join("").length !== 6}
               className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mb-4"
-              data-testid="button-verify-email"
+              data-testid="button-verify-otp"
             >
               {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد الحساب</>
+                verifyMode === "device"
+                  ? <><ShieldCheck className="w-4 h-4 ml-2" />توثيق الجهاز</>
+                  : <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد الحساب</>
               )}
             </Button>
 
@@ -498,7 +548,9 @@ export default function Login() {
               </button>
             </div>
 
-            <p className="text-center text-[11px] text-black/25 mt-4">الرمز صالح لمدة 30 دقيقة</p>
+            <p className="text-center text-[11px] text-black/25 mt-4">
+              {verifyMode === "device" ? "الرمز صالح لمدة 15 دقيقة" : "الرمز صالح لمدة 30 دقيقة"}
+            </p>
           </motion.div>
         ) : (
         <motion.div
