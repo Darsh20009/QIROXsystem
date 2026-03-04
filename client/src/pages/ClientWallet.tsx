@@ -167,11 +167,11 @@ export default function ClientWallet() {
     onError: () => toast({ title: "فشل إنشاء البطاقة", variant: "destructive" }),
   });
 
-  // Set PIN
+  // Set payment password
   const setPinMutation = useMutation({
     mutationFn: async () => {
       if (pinForm.newPin !== pinForm.confirmPin) throw new Error("كلمتا المرور غير متطابقتين");
-      if (!/^\d{4}$/.test(pinForm.newPin)) throw new Error("الرقم السري يجب أن يكون 4 أرقام");
+      if (pinForm.newPin.length < 4) throw new Error("كلمة المرور يجب أن تكون 4 أحرف على الأقل");
       const r = await apiRequest("POST", "/api/wallet/card/set-pin", {
         pin: pinForm.newPin,
         currentPin: pinForm.currentPin || undefined,
@@ -185,7 +185,7 @@ export default function ClientWallet() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/card"] });
       setPinModal(false);
       setPinForm({ currentPin: "", newPin: "", confirmPin: "" });
-      toast({ title: "تم تعيين الرقم السري بنجاح" });
+      toast({ title: "تم تعيين كلمة مرور الدفع بنجاح" });
     },
     onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
@@ -342,7 +342,7 @@ export default function ClientWallet() {
                   {[
                     { icon: Copy, label: "نسخ الرقم", action: copyCardNumber, testId: "button-copy-card" },
                     { icon: Plus, label: "شحن الرصيد", action: () => setTopupModal(true), testId: "button-topup" },
-                    { icon: Lock, label: cardData.hasPin ? "تغيير PIN" : "تعيين PIN", action: () => setPinModal(true), testId: "button-set-pin" },
+                    { icon: Lock, label: cardData.hasPin ? "تغيير كلمة المرور" : "تعيين كلمة المرور", action: () => setPinModal(true), testId: "button-set-pin" },
                     { icon: Send, label: "دفع ببطاقة", action: () => { setPayOtpModal(true); setShareStep("form"); }, testId: "button-pay-with-card" },
                   ].map(({ icon: Icon, label, action, testId }) => (
                     <button key={label} onClick={action} data-testid={testId}
@@ -366,7 +366,7 @@ export default function ClientWallet() {
                       { label: "رقم البطاقة", value: fmtCard(cardData.cardNumber), mono: true },
                       { label: "اسم حامل البطاقة", value: cardData.holderName },
                       { label: "تاريخ الانتهاء", value: "12/99" },
-                      { label: "الرقم السري (PIN)", value: cardData.hasPin ? "••••  (مُفعَّل)" : "غير مُعيَّن — اضغط 'تعيين PIN'" },
+                      { label: "كلمة مرور الدفع", value: cardData.hasPin ? "••••••••  (مُفعَّلة)" : "غير مُعيَّنة — اضغط 'تعيين كلمة المرور'" },
                       { label: "حالة البطاقة", value: cardData.cardActive ? "نشطة ✓" : "غير نشطة" },
                     ].map(({ label, value, mono }) => (
                       <div key={label} className="px-5 py-3 flex items-center justify-between">
@@ -522,41 +522,51 @@ export default function ClientWallet() {
         )}
       </div>
 
-      {/* === PIN Modal === */}
+      {/* === Payment Password Modal === */}
       <Dialog open={pinModal} onOpenChange={setPinModal}>
         <DialogContent className="max-w-sm" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Lock className="w-4 h-4 text-cyan-500" />
-              {cardData?.hasPin ? "تغيير الرقم السري" : "تعيين الرقم السري"}
+              {cardData?.hasPin ? "تغيير كلمة مرور الدفع" : "تعيين كلمة مرور الدفع"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30 p-3">
+              <p className="text-xs text-cyan-700 dark:text-cyan-400 leading-relaxed">
+                كلمة مرور الدفع تُستخدم لتأكيد عمليات الدفع ببطاقتك. اختر كلمة مرور قوية (4–32 حرفاً).
+              </p>
+            </div>
             {cardData?.hasPin && (
               <div>
-                <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">الرقم السري الحالي</Label>
-                <Input type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pinForm.currentPin}
+                <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">كلمة المرور الحالية</Label>
+                <Input type="password" placeholder="أدخل كلمة المرور الحالية" value={pinForm.currentPin}
                   onChange={e => setPinForm(f => ({ ...f, currentPin: e.target.value }))} data-testid="input-current-pin" />
               </div>
             )}
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">الرقم السري الجديد (4 أرقام)</Label>
-              <Input type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pinForm.newPin}
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">كلمة المرور الجديدة</Label>
+              <Input type="password" placeholder="أدخل كلمة مرور جديدة (4 أحرف على الأقل)" value={pinForm.newPin}
                 onChange={e => setPinForm(f => ({ ...f, newPin: e.target.value }))} data-testid="input-new-pin" />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">تأكيد الرقم السري</Label>
-              <Input type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pinForm.confirmPin}
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">تأكيد كلمة المرور</Label>
+              <Input type="password" placeholder="أعد كتابة كلمة المرور" value={pinForm.confirmPin}
                 onChange={e => setPinForm(f => ({ ...f, confirmPin: e.target.value }))} data-testid="input-confirm-pin" />
+              {pinForm.confirmPin && pinForm.newPin !== pinForm.confirmPin && (
+                <p className="text-xs text-red-500 mt-1">كلمتا المرور غير متطابقتين</p>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setPinModal(false)} className="text-xs">إلغاء</Button>
-            <Button onClick={() => setPinMutation.mutate()} disabled={setPinMutation.isPending || !pinForm.newPin || !pinForm.confirmPin}
+            <Button variant="outline" onClick={() => { setPinModal(false); setPinForm({ currentPin: "", newPin: "", confirmPin: "" }); }} className="text-xs">إلغاء</Button>
+            <Button
+              onClick={() => setPinMutation.mutate()}
+              disabled={setPinMutation.isPending || !pinForm.newPin || !pinForm.confirmPin || pinForm.newPin !== pinForm.confirmPin}
               className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-confirm-pin">
               {setPinMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-cyan-400" />}
-              حفظ
+              حفظ كلمة المرور
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1362,27 +1362,29 @@ export async function registerRoutes(
     res.json({ cardNumber, cardActive: true });
   });
 
-  // Set/Change PIN
+  // Set/Change payment password
   app.post("/api/wallet/card/set-pin", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     const { UserModel } = await import("./models");
     const bcrypt = await import("bcrypt");
     const { pin, currentPin } = req.body;
-    if (!pin || !/^\d{4}$/.test(pin)) return res.status(400).json({ error: "الرقم السري يجب أن يكون 4 أرقام" });
-    const dbUser = await UserModel.findById(String(user.id));
+    if (!pin || String(pin).length < 4 || String(pin).length > 32) {
+      return res.status(400).json({ error: "كلمة المرور يجب أن تكون بين 4 و 32 حرفاً" });
+    }
+    const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
     if (!dbUser) return res.sendStatus(404);
     if (dbUser.walletPin) {
-      if (!currentPin) return res.status(400).json({ error: "يجب إدخال الرقم السري الحالي" });
+      if (!currentPin) return res.status(400).json({ error: "يجب إدخال كلمة المرور الحالية" });
       const valid = await bcrypt.compare(String(currentPin), dbUser.walletPin);
-      if (!valid) return res.status(400).json({ error: "الرقم السري الحالي غير صحيح" });
+      if (!valid) return res.status(400).json({ error: "كلمة المرور الحالية غير صحيحة" });
     }
-    const hashed = await bcrypt.hash(pin, 10);
+    const hashed = await bcrypt.hash(String(pin), 10);
     await UserModel.findByIdAndUpdate(String(user.id), { walletPin: hashed });
     res.json({ success: true });
   });
 
-  // Pay with card (own card — PIN required)
+  // Pay with card (own card — payment password required)
   app.post("/api/wallet/card/pay", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
@@ -1390,12 +1392,12 @@ export async function registerRoutes(
     const bcrypt = await import("bcrypt");
     const { amount, description, pin, orderId } = req.body;
     if (!pin || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
-    const dbUser = await UserModel.findById(String(user.id));
+    const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
     if (!dbUser) return res.sendStatus(404);
     if (!dbUser.walletCardNumber || !dbUser.walletCardActive) return res.status(400).json({ error: "البطاقة غير مفعّلة" });
-    if (!dbUser.walletPin) return res.status(400).json({ error: "يجب تعيين رقم سري أولاً" });
+    if (!dbUser.walletPin) return res.status(400).json({ error: "يجب تعيين كلمة مرور الدفع أولاً" });
     const validPin = await bcrypt.compare(String(pin), dbUser.walletPin);
-    if (!validPin) return res.status(400).json({ error: "الرقم السري غير صحيح" });
+    if (!validPin) return res.status(400).json({ error: "كلمة مرور الدفع غير صحيحة" });
     const txs = await WalletTransactionModel.find({ userId: String(user.id) });
     const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
     const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
