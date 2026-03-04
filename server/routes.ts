@@ -1366,13 +1366,17 @@ export async function registerRoutes(
     res.json({ success: true, ownerName: owner.fullName, maskedEmail: owner.email.replace(/(.{2}).+(@.+)/, '$1***$2') });
   });
 
-  // External pay: verify OTP and deduct
+  // External pay: verify OTP and deduct — credits the requester's wallet
   app.post("/api/wallet/card/verify-otp", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const requester = req.user as User;
     const { cardNumber, otp, amount, description } = req.body;
     if (!cardNumber || !otp || !amount) return res.status(400).json({ error: "بيانات ناقصة" });
     const { UserModel, WalletPayOtpModel, WalletTransactionModel } = await import("./models");
     const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true });
     if (!owner) return res.status(404).json({ error: "البطاقة غير موجودة" });
+    // Cannot charge from your own card via external flow
+    if (String(owner._id) === String(requester.id)) return res.status(400).json({ error: "لا يمكنك شحن محفظتك من بطاقتك الخاصة" });
     const pending = await WalletPayOtpModel.findOne({
       cardOwnerId: owner._id, otp, used: false,
       expiresAt: { $gt: new Date() },
@@ -1385,13 +1389,23 @@ export async function registerRoutes(
     const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
     const balance = Math.max(0, totalCredit - totalDebit);
     if (Number(amount) > balance) return res.status(400).json({ error: "الرصيد غير كافٍ" });
+    const finalAmount = parseFloat(Number(amount).toFixed(2));
+    const label = description || pending.description || 'شحن من بطاقة Qirox Pay';
+    // Mark OTP as used
     await WalletPayOtpModel.findByIdAndUpdate(pending._id, { used: true });
-    const tx = await WalletTransactionModel.create({
-      userId: String(owner._id), type: 'debit', amount: Number(amount),
-      description: description || pending.description,
-      addedBy: String(owner._id), note: 'qirox_pay_external',
+    // Debit card owner
+    await WalletTransactionModel.create({
+      userId: String(owner._id), type: 'debit', amount: finalAmount,
+      description: `${label} — تحويل إلى ${(requester as any).fullName || requester.username}`,
+      addedBy: String(requester.id), note: 'qirox_pay_external_out',
     });
-    res.json({ success: true, transactionId: tx._id });
+    // Credit requester's wallet
+    const creditTx = await WalletTransactionModel.create({
+      userId: String(requester.id), type: 'credit', amount: finalAmount,
+      description: `${label} — من بطاقة ${owner.fullName || owner.username}`,
+      addedBy: String(requester.id), note: 'qirox_pay_external_in',
+    });
+    res.json({ success: true, transactionId: creditTx._id });
   });
 
   // Topup request (client submits bank transfer)
