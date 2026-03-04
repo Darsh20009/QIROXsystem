@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Video, ArrowRight, Calendar, Clock, Users, ExternalLink, Copy,
+  Video, ArrowRight, Calendar, Clock, Users, Copy,
   Star, FileText, Plus, Trash2, Send, CheckCircle, Play, XCircle,
   User, MessageSquare, Clipboard
 } from "lucide-react";
@@ -138,7 +138,8 @@ export default function AdminQMeetDetail() {
 
   function copyLink() {
     if (!meeting) return;
-    navigator.clipboard.writeText(meeting.meetingLink);
+    const link = meeting.meetingLink.startsWith("http") ? meeting.meetingLink : `${window.location.origin}${meeting.meetingLink}`;
+    navigator.clipboard.writeText(link);
     toast({ title: "تم نسخ الرابط" });
   }
 
@@ -221,12 +222,13 @@ export default function AdminQMeetDetail() {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer"
+            <button
+              onClick={() => navigate(meeting.meetingLink)}
               className="inline-flex items-center gap-2 bg-black text-white dark:bg-white dark:text-black font-bold px-4 py-2 rounded-xl hover:opacity-80 transition-opacity text-sm"
               data-testid="button-join-main">
-              <ExternalLink className="w-4 h-4" />
+              <Video className="w-4 h-4" />
               انضم للاجتماع
-            </a>
+            </button>
             <button onClick={copyLink}
               className="inline-flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium px-4 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-sm"
               data-testid="button-copy-main">

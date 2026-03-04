@@ -87,6 +87,27 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 **4. shared/schema.ts + server/models.ts:**
 - إضافة `linkedPlanSlug?: string` لـ QiroxProduct و InsertQiroxProduct
 
+## Latest Changes (Mar 4, 2026 - Session 33)
+
+### QMeet — نظام اجتماعات WebRTC مدمج (بدون Jitsi)
+
+**تم إزالة:** الاعتماد على خدمة `meet.jit.si` الخارجية نهائياً.
+
+**ما تم بناؤه:**
+- `server/ws.ts`: إضافة إدارة غرف WebRTC (`joinMeetRoom`, `leaveMeetRoom`, `getMeetRoomPeers`, `leaveAllMeetRooms`)
+- `server/index.ts`: إضافة WebRTC signaling عبر WebSocket (`webrtc_join`, `webrtc_offer`, `webrtc_answer`, `webrtc_ice`, `webrtc_leave`, `webrtc_chat`, `webrtc_media_state`)
+- `server/qmeet.ts`: تغيير رابط الاجتماع من `https://meet.jit.si/${roomName}` إلى `/meet/${roomName}` + endpoint جديد `GET /api/qmeet/room/:roomName`
+- `client/src/pages/MeetingRoom.tsx`: صفحة اجتماع كاملة بـ WebRTC (كاميرا، ميكروفون، مشاركة شاشة، دردشة)
+- `client/src/App.tsx`: مسار `/meet/:roomId` جديد
+- `client/src/pages/AdminQMeet.tsx`: تحديث زر "انضم" للتنقل الداخلي
+- `client/src/pages/AdminQMeetDetail.tsx`: تحديث زر "انضم للاجتماع"
+- `client/src/pages/Consultation.tsx`: تحديث رابط الاجتماع
+
+**بنية WebRTC:**
+- Mesh topology (peer-to-peer مباشر بين المشاركين)
+- STUN servers: Google free STUN (لا خادم TURN خارجي)
+- Signaling عبر WebSocket الموجود في النظام
+
 ## Latest Changes (Mar 3, 2026 - Session 32)
 
 ### QMeet — ترحيل كامل إلى MongoDB الرئيسي + تحسينات شاملة

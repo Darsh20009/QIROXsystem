@@ -90,6 +90,7 @@ const ClientsGroup = lazy(() => import("@/pages/ClientsGroup"));
 const BarcodeStudio = lazy(() => import("@/pages/BarcodeStudio"));
 const AdminQMeet = lazy(() => import("@/pages/AdminQMeet"));
 const AdminQMeetDetail = lazy(() => import("@/pages/AdminQMeetDetail"));
+const MeetingRoom = lazy(() => import("@/pages/MeetingRoom"));
 const QiroxEdit = lazy(() => import("@/pages/QiroxEdit"));
 const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
 const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
@@ -175,6 +176,7 @@ function AdminRouter() {
         <Route path="/admin/consultations" component={AdminConsultation} />
         <Route path="/admin/qmeet" component={AdminQMeet} />
         <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
+        <Route path="/meet/:roomId" component={MeetingRoom} />
         <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
         <Route path="/admin/shipments" component={AdminShipments} />
         <Route path="/admin/cron-jobs" component={AdminCronJobs} />

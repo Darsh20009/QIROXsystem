@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Video, Plus, Calendar, Users, Clock, ExternalLink, Trash2,
+  Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
   Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
   Loader2, CircleDot, RefreshCw
@@ -129,7 +129,11 @@ export default function AdminQMeet() {
     });
   };
 
-  const copyLink = (link: string) => { navigator.clipboard.writeText(link); toast({ title: "تم نسخ الرابط" }); };
+  const copyLink = (link: string) => {
+    const full = link.startsWith("http") ? link : `${window.location.origin}${link}`;
+    navigator.clipboard.writeText(full);
+    toast({ title: "تم نسخ الرابط" });
+  };
 
   const filteredMeetings = meetings.filter(m => {
     if (filter !== "all" && m.status !== filter) return false;
@@ -291,12 +295,13 @@ export default function AdminQMeet() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                          <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer"
+                          <button
+                            onClick={() => navigate(meeting.meetingLink)}
                             className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${meeting.status === "live" ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/20" : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"}`}
                             data-testid={`button-join-${meeting._id}`}>
-                            <ExternalLink className="w-3.5 h-3.5" />
+                            <Video className="w-3.5 h-3.5" />
                             {meeting.status === "live" ? "انضم مباشرة" : "انضم"}
-                          </a>
+                          </button>
                           <button onClick={() => copyLink(meeting.meetingLink)} className="p-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-black/30 hover:text-black/70 dark:text-white/30 dark:hover:text-white/70 transition-colors" title="نسخ الرابط" data-testid={`button-copy-${meeting._id}`}>
                             <Copy className="w-3.5 h-3.5" />
                           </button>

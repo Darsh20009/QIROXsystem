@@ -152,6 +152,17 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
+  // GET /api/qmeet/room/:roomName — get meeting info by room name (for meeting room page)
+  app.get("/api/qmeet/room/:roomName", requireAuth, async (req: any, res) => {
+    try {
+      const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName });
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+      res.json(meeting);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // GET /api/qmeet/meetings/:id
   app.get("/api/qmeet/meetings/:id", requireAuth, async (req: any, res) => {
     try {
@@ -175,7 +186,7 @@ export function registerQMeetRoutes(app: Express) {
       if (!title || !scheduledAt) return res.status(400).json({ message: "العنوان والتوقيت مطلوبان" });
 
       const roomName = generateRoomName();
-      const meetingLink = `https://meet.jit.si/${roomName}`;
+      const meetingLink = `/meet/${roomName}`;
       const duration = parseInt(durationMinutes) || 60;
       const startTime = new Date(scheduledAt);
       const endsAt = new Date(startTime.getTime() + duration * 60 * 1000);

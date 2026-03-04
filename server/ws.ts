@@ -75,3 +75,44 @@ export function broadcastToUsers(userIds: string[], payload: object) {
     sendToUser(uid, payload);
   }
 }
+
+// ── WebRTC Meet Room Management ───────────────────────────────────────────────
+const meetRooms = new Map<string, Map<string, { name: string; userId: string }>>();
+
+export function joinMeetRoom(roomId: string, userId: string, name: string): string[] {
+  if (!meetRooms.has(roomId)) meetRooms.set(roomId, new Map());
+  const room = meetRooms.get(roomId)!;
+  const existingPeers = [...room.keys()].filter(id => id !== userId);
+  room.set(userId, { name, userId });
+  return existingPeers;
+}
+
+export function leaveMeetRoom(roomId: string, userId: string): string[] {
+  const room = meetRooms.get(roomId);
+  if (!room) return [];
+  room.delete(userId);
+  if (room.size === 0) meetRooms.delete(roomId);
+  return room ? [...room.keys()] : [];
+}
+
+export function getMeetRoomPeers(roomId: string): string[] {
+  return [...(meetRooms.get(roomId)?.keys() || [])];
+}
+
+export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: string }[] {
+  const room = meetRooms.get(roomId);
+  if (!room) return [];
+  return [...room.values()];
+}
+
+export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: string[] }[] {
+  const left: { roomId: string; remaining: string[] }[] = [];
+  for (const [roomId, room] of meetRooms.entries()) {
+    if (room.has(userId)) {
+      room.delete(userId);
+      if (room.size === 0) meetRooms.delete(roomId);
+      else left.push({ roomId, remaining: [...room.keys()] });
+    }
+  }
+  return left;
+}

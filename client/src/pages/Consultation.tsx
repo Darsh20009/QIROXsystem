@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { Link } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -370,11 +371,11 @@ export default function Consultation() {
                               )}
                             </div>
                             {b.meetingLink && (
-                              <a href={b.meetingLink} target="_blank" rel="noopener noreferrer"
+                              <Link href={b.meetingLink}
                                 className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:underline">
                                 <Video className="w-3.5 h-3.5" />
-                                {lang === "ar" ? "رابط الاجتماع" : "Meeting Link"}
-                              </a>
+                                {lang === "ar" ? "انضم للاجتماع" : "Join Meeting"}
+                              </Link>
                             )}
                             {b.adminNotes && (
                               <div className="mt-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03]">
