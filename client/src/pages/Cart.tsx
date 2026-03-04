@@ -5,14 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2, ShoppingCart, Trash2, Plus, Minus, Globe, Mail, Server,
   Cpu, Gift, Code2, Package, Database, Cloud, CheckCircle2, ArrowLeft,
   ShoppingBag, Tag, Phone, ChevronLeft, Sparkles, Shield, Clock3,
   Upload, FileText, MapPin, Home, BanknoteIcon, Copy, ClipboardCheck,
-  CheckCircle, X, ChevronRight, FileImage, Building2, Wallet,
+  CheckCircle, X, ChevronRight, FileImage, Building2, Wallet, Lock, Eye, EyeOff, CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -117,6 +117,9 @@ export default function Cart() {
   /* wallet payment states */
   const [useWallet, setUseWallet] = useState(false);
   const [walletAmount, setWalletAmount] = useState(0);
+  const [walletPinModal, setWalletPinModal] = useState(false);
+  const [walletPinInput, setWalletPinInput] = useState("");
+  const [showWalletPin, setShowWalletPin] = useState(false);
 
   /* success screen states */
   const [checkoutDone, setCheckoutDone] = useState(false);
@@ -135,6 +138,11 @@ export default function Cart() {
   const { data: walletData } = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
     queryKey: ["/api/wallet"],
     enabled: !!user,
+  });
+
+  const { data: walletCardData } = useQuery<{ hasPin: boolean; cardActive: boolean; cardNumber: string | null }>({
+    queryKey: ["/api/wallet/card"],
+    enabled: !!user && (user as any).role === "client",
   });
 
   const items: CartItem[] = cart?.items || [];
@@ -198,7 +206,7 @@ export default function Cart() {
   }, [total, walletBalance, useWallet]);
 
   const checkoutMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (walletPin?: string) => {
       const itemNames = items.map(i => i.nameAr || i.name);
       const walletUsed = parseFloat(effectiveWalletAmount.toFixed(2));
       const notes = [
@@ -219,6 +227,7 @@ export default function Cart() {
         files: docsFiles.length ? { documents: docsFiles.map(f => f.url) } : undefined,
         shippingAddress: hasPhysical && shipping.name ? shipping : undefined,
         walletAmountUsed: walletUsed > 0 ? walletUsed : undefined,
+        walletPayPin: walletPin || undefined,
       });
 
       if (!r.ok) {
@@ -1109,7 +1118,15 @@ export default function Cart() {
               ) : (
                 <Button
                   className="flex-1 bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
-                  onClick={() => checkoutMutation.mutate()}
+                  onClick={() => {
+                    if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
+                      setWalletPinInput("");
+                      setShowWalletPin(false);
+                      setWalletPinModal(true);
+                    } else {
+                      checkoutMutation.mutate(undefined);
+                    }
+                  }}
                   disabled={checkoutMutation.isPending}
                   data-testid="button-confirm-checkout">
                   {checkoutMutation.isPending ? (
@@ -1278,6 +1295,105 @@ export default function Cart() {
               {selectedEmail ? `إضافة ${selectedEmail.name} — ${selectedEmail.price} ر.س/شهر` : "اختر خطة أولاً"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════ Wallet PIN Confirmation Modal ═══════ */}
+      <Dialog open={walletPinModal} onOpenChange={v => { setWalletPinModal(v); if (!v) setWalletPinInput(""); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <Lock className="w-4 h-4 text-cyan-500" />
+              تأكيد الدفع بـ Qirox Pay
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Mini card visual */}
+            <div className="relative w-full rounded-2xl overflow-hidden mx-auto"
+              style={{
+                background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)",
+                boxShadow: "0 8px 32px rgba(6,182,212,0.2)",
+                aspectRatio: "1.586",
+              }}>
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+                style={{ background: "radial-gradient(circle, #06b6d4, transparent)", transform: "translate(30%, -30%)" }} />
+              <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <span className="text-cyan-400 font-black text-lg tracking-widest">QIROX</span>
+                      <span className="text-white font-black text-lg tracking-widest">PAY</span>
+                    </div>
+                    <p className="text-white/40 text-[8px] tracking-wider uppercase">Virtual Payment Card</p>
+                  </div>
+                  <div className="w-8 h-5 rounded bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center opacity-90">
+                    <div className="w-6 h-4 rounded border border-yellow-600/30 grid grid-cols-2 gap-px p-0.5">
+                      {[...Array(4)].map((_, i) => <div key={i} className="bg-yellow-600/30 rounded-sm" />)}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-white font-mono text-base tracking-widest font-bold">
+                    {walletCardData?.cardNumber ? walletCardData.cardNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, "$1 **** **** $4") : "•••• •••• •••• ••••"}
+                  </p>
+                </div>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-white/40 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
+                    <p className="text-white font-semibold text-xs">{(user as any)?.fullName || (user as any)?.username}</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-white/40 text-[8px] uppercase tracking-wider mb-0.5">Amount</p>
+                    <p className="text-cyan-400 font-black text-sm">{effectiveWalletAmount.toLocaleString()} <span className="text-[9px] font-normal text-white/40">ر.س</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30 p-3">
+              <p className="text-xs text-cyan-700 dark:text-cyan-300 text-center">
+                سيتم خصم <span className="font-black">{effectiveWalletAmount.toLocaleString()} ر.س</span> من رصيد Qirox Pay
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">
+                <Lock className="w-3 h-3 inline ml-1" />
+                كلمة مرور المحفظة
+              </Label>
+              <div className="relative">
+                <Input
+                  type={showWalletPin ? "text" : "password"}
+                  placeholder="أدخل كلمة مرور Qirox Pay"
+                  value={walletPinInput}
+                  onChange={e => setWalletPinInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && walletPinInput.length >= 4) { setWalletPinModal(false); checkoutMutation.mutate(walletPinInput); } }}
+                  className="text-center font-mono tracking-widest pr-10"
+                  data-testid="input-wallet-pay-pin"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowWalletPin(v => !v)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors"
+                >
+                  {showWalletPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setWalletPinModal(false)} className="text-xs">إلغاء</Button>
+            <Button
+              onClick={() => { setWalletPinModal(false); checkoutMutation.mutate(walletPinInput); }}
+              disabled={checkoutMutation.isPending || walletPinInput.length < 4}
+              className="text-xs text-white gap-1.5 flex-1"
+              style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
+              data-testid="button-confirm-wallet-pin">
+              {checkoutMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5 text-cyan-400" />}
+              تأكيد الدفع
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

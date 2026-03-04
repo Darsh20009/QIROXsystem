@@ -562,7 +562,14 @@ export default function ClientWallet() {
             <Button variant="outline" onClick={() => { setPinModal(false); setPinForm({ currentPin: "", newPin: "", confirmPin: "" }); }} className="text-xs">إلغاء</Button>
             <Button
               onClick={() => setPinMutation.mutate()}
-              disabled={setPinMutation.isPending || !pinForm.newPin || !pinForm.confirmPin || pinForm.newPin !== pinForm.confirmPin}
+              disabled={
+                setPinMutation.isPending ||
+                !pinForm.newPin ||
+                pinForm.newPin.length < 4 ||
+                !pinForm.confirmPin ||
+                pinForm.newPin !== pinForm.confirmPin ||
+                (cardData.hasPin && !pinForm.currentPin)
+              }
               className="text-xs text-white gap-1.5" style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-confirm-pin">
               {setPinMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-cyan-400" />}

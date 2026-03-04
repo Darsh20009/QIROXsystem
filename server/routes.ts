@@ -590,9 +590,22 @@ export async function registerRoutes(
 
     // Atomic wallet validation BEFORE creating order
     const walletAmountUsed = Number(req.body.walletAmountUsed || 0);
+    const walletPayPin = req.body.walletPayPin as string | undefined;
     let walletDeducted = 0;
     if (walletAmountUsed > 0) {
-      const { WalletTransactionModel } = await import("./models");
+      const { UserModel, WalletTransactionModel } = await import("./models");
+      const bcrypt = await import("bcrypt");
+      // PIN validation: if card has a PIN set, it must be provided and correct
+      const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
+      if (dbUser?.walletPin) {
+        if (!walletPayPin) {
+          return res.status(400).json({ error: "wallet_pin_required", message: "يجب إدخال كلمة مرور المحفظة للدفع بها" });
+        }
+        const pinOk = await bcrypt.compare(String(walletPayPin), dbUser.walletPin);
+        if (!pinOk) {
+          return res.status(400).json({ error: "wallet_pin_invalid", message: "كلمة مرور المحفظة غير صحيحة" });
+        }
+      }
       const txs = await WalletTransactionModel.find({ userId: String(user.id) });
       const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
       const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
