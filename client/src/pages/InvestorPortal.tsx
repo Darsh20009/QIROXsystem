@@ -171,6 +171,7 @@ export default function InvestorPortal() {
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
 
   if (error || !data) {
+    console.error("Investor Portal Error:", error);
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4 text-center" dir="rtl">
         <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -183,7 +184,9 @@ export default function InvestorPortal() {
   }
 
   const { profile, settings, allInvestors, totalStake, myValue } = data;
-  const profitShare = settings.profitDistribution.find(d => d.roleType === "investor");
+  
+  // Safe access to settings
+  const profitShare = settings?.profitDistribution?.find(d => d.roleType === "investor");
   const pendingPayments = payments.filter(p => p.status === "pending").length;
 
   return (
@@ -210,7 +213,7 @@ export default function InvestorPortal() {
                 <Badge className="text-xs px-3 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 gap-1"><Star className="w-3 h-3" /> مستثمر</Badge>
                 {profile.isVerified && <Badge className="text-xs px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">✓ موثق</Badge>}
               </div>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">انضم منذ {new Date(profile.joinedAt).toLocaleDateString("ar-SA")}</p>
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">انضم منذ {profile.joinedAt ? new Date(profile.joinedAt).toLocaleDateString("ar-SA") : "—"}</p>
             </div>
             <div className="text-center bg-white/60 dark:bg-black/20 rounded-2xl px-6 py-3">
               <p className="text-4xl font-black text-amber-600 dark:text-amber-400">{profile.stakePercentage}%</p>
@@ -221,10 +224,10 @@ export default function InvestorPortal() {
           {/* Key Metrics */}
           <div className="relative mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "قيمة حصتك", value: `${myValue.toLocaleString("ar-SA")} ${settings.currency}`, icon: TrendingUp, color: "text-amber-500" },
-              { label: "إجمالي مستثمراتك", value: `${profile.totalInvested.toLocaleString("ar-SA")} ${settings.currency}`, icon: Wallet, color: "text-green-500" },
-              { label: "تقييم النظام", value: `${(settings.systemValuation || 0).toLocaleString("ar-SA")} ${settings.currency}`, icon: BarChart3, color: "text-blue-500" },
-              { label: "عدد المستثمرين", value: allInvestors.length, icon: Users, color: "text-purple-500" },
+              { label: "قيمة حصتك", value: `${(myValue || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: TrendingUp, color: "text-amber-500" },
+              { label: "إجمالي مستثمراتك", value: `${(profile.totalInvested || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: Wallet, color: "text-green-500" },
+              { label: "تقييم النظام", value: `${(settings?.systemValuation || 0).toLocaleString("ar-SA")} ${settings?.currency || ""}`, icon: BarChart3, color: "text-blue-500" },
+              { label: "عدد المستثمرين", value: allInvestors?.length || 0, icon: Users, color: "text-purple-500" },
             ].map(m => (
               <div key={m.label} className="bg-white/70 dark:bg-gray-900/70 backdrop-blur border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <m.icon className={`w-4 h-4 ${m.color} mb-2`} />
@@ -235,7 +238,7 @@ export default function InvestorPortal() {
           </div>
 
           {/* Stake Bar */}
-          {allInvestors.length > 0 && (
+          {(allInvestors?.length || 0) > 0 && (
             <div className="relative mt-5">
               <p className="text-xs text-black/40 dark:text-white/40 mb-2 flex justify-between">
                 <span>توزيع الحصص بين المستثمرين</span>
@@ -245,9 +248,10 @@ export default function InvestorPortal() {
                 {allInvestors.map((inv, i) => {
                   const colors = ["bg-amber-400", "bg-yellow-400", "bg-orange-400", "bg-red-400", "bg-pink-400"];
                   const isMe = inv.userId?.fullName === profile.userId?.fullName;
+                  const shareWidth = inv.stakePercentage || 0;
                   return (
                     <div key={inv.id} className={`${colors[i % colors.length]} h-full transition-all ${isMe ? "ring-2 ring-white" : ""}`}
-                      style={{ width: `${inv.stakePercentage}%` }} title={`${inv.userId?.fullName}: ${inv.stakePercentage}%`} />
+                      style={{ width: `${shareWidth}%` }} title={`${inv.userId?.fullName || 'مستثمر'}: ${shareWidth}%`} />
                   );
                 })}
               </div>
@@ -258,7 +262,7 @@ export default function InvestorPortal() {
                   return (
                     <span key={inv.id} className={`flex items-center gap-1 text-xs ${isMe ? "font-bold text-black dark:text-white" : "text-black/40 dark:text-white/40"}`}>
                       <span className={`w-2.5 h-2.5 rounded-sm ${colors[i % colors.length]}`} />
-                      {inv.userId?.fullName}: {inv.stakePercentage}% {isMe && "(أنت)"}
+                      {inv.userId?.fullName || 'مستثمر'}: {inv.stakePercentage || 0}% {isMe && "(أنت)"}
                     </span>
                   );
                 })}
@@ -267,11 +271,11 @@ export default function InvestorPortal() {
           )}
 
           {/* Profit Share */}
-          {profitShare && settings.systemValuation > 0 && (
+          {profitShare && (settings?.systemValuation || 0) > 0 && (
             <div className="relative mt-5 p-4 rounded-2xl bg-green-50/80 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
               <p className="text-xs text-green-700 dark:text-green-400 font-semibold mb-1">نسبة الأرباح المخصصة للمستثمرين: {profitShare.percentage}%</p>
               <p className="text-xl font-black text-green-700 dark:text-green-400">
-                حصتك من الأرباح: {((settings.systemValuation * profitShare.percentage / 100) * profile.stakePercentage / 100).toLocaleString("ar-SA")} {settings.currency}
+                حصتك من الأرباح: {((settings!.systemValuation * profitShare.percentage / 100) * profile.stakePercentage / 100).toLocaleString("ar-SA")} {settings!.currency}
               </p>
               <p className="text-xs text-black/30 dark:text-white/30 mt-1">بناءً على حصة {profile.stakePercentage}% × أرباح المستثمرين {profitShare.percentage}% من التقييم الكلي</p>
             </div>
@@ -306,14 +310,14 @@ export default function InvestorPortal() {
                   return (
                     <div key={inv.id} className={`flex items-center gap-3 p-3 rounded-xl ${isMe ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800" : "bg-black/[0.02] dark:bg-white/[0.02]"}`} data-testid={`investor-item-${i}`}>
                       <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 shrink-0 flex items-center justify-center">
-                        {inv.userId?.profilePhotoUrl ? <img src={inv.userId.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-base font-bold">{inv.userId?.fullName?.[0]}</span>}
+                        {inv.userId?.profilePhotoUrl ? <img src={inv.userId.profilePhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-base font-bold">{inv.userId?.fullName?.[0] || 'م'}</span>}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-black dark:text-white">{inv.userId?.fullName} {isMe && "(أنت)"}</p>
+                        <p className="text-sm font-semibold text-black dark:text-white">{inv.userId?.fullName || 'مستثمر'} {isMe && "(أنت)"}</p>
                         {inv.userId?.jobTitle && <p className="text-xs text-black/40 dark:text-white/40">{inv.userId.jobTitle}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-amber-600 dark:text-amber-400">{inv.stakePercentage}%</p>
+                        <p className="font-black text-amber-600 dark:text-amber-400">{inv.stakePercentage || 0}%</p>
                       </div>
                     </div>
                   );
@@ -322,7 +326,7 @@ export default function InvestorPortal() {
             </div>
 
             {/* Company Info */}
-            {settings.companyNameAr && (
+            {settings?.companyNameAr && (
               <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 bg-white dark:bg-gray-900">
                 <h3 className="font-bold text-black dark:text-white mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-blue-500" /> بيانات الشركة</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -332,7 +336,7 @@ export default function InvestorPortal() {
                   </div>
                   <div className="p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02]">
                     <p className="text-xs text-black/40 dark:text-white/40">التقييم الكلي</p>
-                    <p className="font-semibold text-black dark:text-white">{settings.systemValuation.toLocaleString("ar-SA")} {settings.currency}</p>
+                    <p className="font-semibold text-black dark:text-white">{(settings.systemValuation || 0).toLocaleString("ar-SA")} {settings.currency}</p>
                   </div>
                 </div>
               </div>
