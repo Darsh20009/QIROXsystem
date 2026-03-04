@@ -14,7 +14,7 @@ export function useAttendanceStatus() {
 export function useCheckIn() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { ipAddress?: string; location?: { lat: number; lng: number } }) => {
+    mutationFn: async (data: { ipAddress?: string; location?: { lat: number; lng: number }; checkInNotes?: string }) => {
       const res = await fetch("/api/attendance/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,9 +33,11 @@ export function useCheckIn() {
 export function useCheckOut() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data?: { checkOutNotes?: string; achievements?: string }) => {
       const res = await fetch("/api/attendance/check-out", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data || {}),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to check out");

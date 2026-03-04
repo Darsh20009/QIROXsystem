@@ -508,6 +508,10 @@ function EmployeeDashboard({ user }: { user: any }) {
   const checkOutMutation = useCheckOut();
   const { toast } = useToast();
   const [ip, setIp] = useState<string>("");
+  const [showCheckInDialog, setShowCheckInDialog] = useState(false);
+  const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
+  const [checkInNotes, setCheckInNotes] = useState("");
+  const [checkOutAchievements, setCheckOutAchievements] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -616,21 +620,29 @@ function EmployeeDashboard({ user }: { user: any }) {
   };
 
   const handleCheckIn = () => {
+    setShowCheckInDialog(true);
+  };
+
+  const submitCheckIn = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
-        checkInMutation.mutate({ ipAddress: ip, location: { lat: position.coords.latitude, lng: position.coords.longitude } }, {
-          onSuccess: () => toast({ title: "تم تسجيل الحضور بنجاح" })
+        checkInMutation.mutate({ ipAddress: ip, location: { lat: position.coords.latitude, lng: position.coords.longitude }, checkInNotes }, {
+          onSuccess: () => { toast({ title: "تم تسجيل الحضور بنجاح" }); setShowCheckInDialog(false); setCheckInNotes(""); }
         });
       }, () => {
-        checkInMutation.mutate({ ipAddress: ip }, { onSuccess: () => toast({ title: "تم تسجيل الحضور" }) });
+        checkInMutation.mutate({ ipAddress: ip, checkInNotes }, { onSuccess: () => { toast({ title: "تم تسجيل الحضور" }); setShowCheckInDialog(false); setCheckInNotes(""); } });
       });
     } else {
-      checkInMutation.mutate({ ipAddress: ip });
+      checkInMutation.mutate({ ipAddress: ip, checkInNotes }, { onSuccess: () => { setShowCheckInDialog(false); setCheckInNotes(""); } });
     }
   };
 
   const handleCheckOut = () => {
-    checkOutMutation.mutate(undefined, { onSuccess: () => toast({ title: "تم تسجيل الانصراف" }) });
+    setShowCheckOutDialog(true);
+  };
+
+  const submitCheckOut = () => {
+    checkOutMutation.mutate({ achievements: checkOutAchievements }, { onSuccess: () => { toast({ title: "تم تسجيل الانصراف" }); setShowCheckOutDialog(false); setCheckOutAchievements(""); } });
   };
 
   const myOrders = orders?.filter((o: any) => (o as any).assignedTo === user.id) || [];
@@ -1328,6 +1340,72 @@ function EmployeeDashboard({ user }: { user: any }) {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Check-in notes dialog */}
+      <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold flex items-center gap-2">
+              <LogIn className="w-4 h-4 text-green-600" />تسجيل الحضور
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-xs text-green-700">
+              ما الذي تخطط للعمل عليه اليوم؟
+            </div>
+            <Textarea
+              placeholder="مثال: العمل على تصميم الصفحة الرئيسية وإصلاح bugs الـ API..."
+              value={checkInNotes}
+              onChange={e => setCheckInNotes(e.target.value)}
+              className="text-sm resize-none border-black/[0.08] rounded-xl"
+              rows={3}
+              data-testid="textarea-check-in-notes"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setShowCheckInDialog(false)}>
+                إلغاء
+              </Button>
+              <Button size="sm" className="flex-1 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={submitCheckIn} disabled={checkInMutation.isPending} data-testid="button-submit-check-in">
+                {checkInMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogIn className="w-3.5 h-3.5 ml-1" />}
+                تسجيل الحضور
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Check-out notes dialog */}
+      <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
+        <DialogContent className="sm:max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold flex items-center gap-2">
+              <LogOut className="w-4 h-4 text-red-500" />تسجيل الانصراف
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700">
+              ماذا أنجزت اليوم؟ سيظهر هذا في تقرير الإدارة
+            </div>
+            <Textarea
+              placeholder="مثال: أكملت تصميم الصفحة الرئيسية وأصلحت 3 bugs وعملت على صفحة المنتجات..."
+              value={checkOutAchievements}
+              onChange={e => setCheckOutAchievements(e.target.value)}
+              className="text-sm resize-none border-black/[0.08] rounded-xl"
+              rows={3}
+              data-testid="textarea-check-out-achievements"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setShowCheckOutDialog(false)}>
+                إلغاء
+              </Button>
+              <Button size="sm" className="flex-1 text-xs border-red-200 text-red-600 hover:bg-red-50" variant="outline" onClick={submitCheckOut} disabled={checkOutMutation.isPending} data-testid="button-submit-check-out">
+                {checkOutMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5 ml-1" />}
+                تسجيل الانصراف
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -142,11 +142,14 @@ const attendanceSchema = new mongoose.Schema({
   checkIn: { type: Date, required: true },
   checkOut: Date,
   ipAddress: String,
-  location: {
-    lat: Number,
-    lng: Number
-  },
+  location: { lat: Number, lng: Number },
+  locationHistory: [{ lat: Number, lng: Number, timestamp: Date }],
   workHours: Number,
+  checkInNotes: { type: String, default: "" },
+  checkOutNotes: { type: String, default: "" },
+  achievements: { type: String, default: "" },
+  activeMinutes: { type: Number, default: 0 },
+  lastActivityAt: Date,
 }, { timestamps: true });
 
 const transform = (doc: any, ret: any) => {
@@ -491,6 +494,10 @@ const employeeProfileSchema = new mongoose.Schema({
   bio: String,
   skills: [String],
   hourlyRate: { type: Number, default: 0 },
+  salaryType: { type: String, enum: ['fixed', 'hourly', 'commission'], default: 'hourly' },
+  fixedSalary: { type: Number, default: 0 },
+  commissionRate: { type: Number, default: 0 },
+  managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   vacationDays: { type: Number, default: 21 },
   vacationUsed: { type: Number, default: 0 },
   bankName: String,

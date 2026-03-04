@@ -56,6 +56,7 @@ const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const AdminActivityLog = lazy(() => import("@/pages/AdminActivityLog"));
 const AdminSupportTickets = lazy(() => import("@/pages/AdminSupportTickets"));
 const AdminPayroll = lazy(() => import("@/pages/AdminPayroll"));
+const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
 const EmployeeProfile = lazy(() => import("@/pages/EmployeeProfile"));
 const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
@@ -173,6 +174,7 @@ function AdminRouter() {
         <Route path="/admin/activity-log" component={AdminActivityLog} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
         <Route path="/admin/payroll" component={AdminPayroll} />
+        <Route path="/admin/attendance" component={AdminAttendance} />
         <Route path="/admin/invoices" component={AdminInvoices} />
         <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
         <Route path="/admin/receipts" component={AdminReceipts} />

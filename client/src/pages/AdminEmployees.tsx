@@ -50,9 +50,13 @@ interface EmployeeForm {
   fullName: string;
   role: string;
   phone: string;
+  salaryType: string;
+  fixedSalary: string;
+  hourlyRate: string;
+  commissionRate: string;
 }
 
-const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "" };
+const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "", salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "" };
 
 interface CredentialResult {
   username: string;
@@ -106,16 +110,28 @@ export default function AdminEmployees() {
     }
   };
 
+  const saveSalaryData = async (userId: string, form: EmployeeForm) => {
+    try {
+      const salaryData: any = { salaryType: form.salaryType };
+      if (form.salaryType === "hourly" && form.hourlyRate) salaryData.hourlyRate = Number(form.hourlyRate);
+      if (form.salaryType === "fixed" && form.fixedSalary) salaryData.fixedSalary = Number(form.fixedSalary);
+      if (form.salaryType === "commission" && form.commissionRate) salaryData.commissionRate = Number(form.commissionRate);
+      await apiRequest("PATCH", `/api/admin/users/${userId}/salary`, salaryData);
+    } catch {}
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: EmployeeForm) => {
-      const res = await apiRequest("POST", "/api/admin/users", data);
+      const { salaryType, fixedSalary, hourlyRate, commissionRate, ...userFields } = data;
+      const res = await apiRequest("POST", "/api/admin/users", userFields);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "خطأ");
-      return json;
+      return { user: json, form: data };
     },
-    onSuccess: (data, vars) => {
+    onSuccess: async ({ user, form }) => {
+      await saveSalaryData(user.id, form);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      setCredResult({ username: vars.username, rawPassword: vars.password, email: vars.email, fullName: vars.fullName });
+      setCredResult({ username: form.username, rawPassword: form.password, email: form.email, fullName: form.fullName });
       resetForm();
     },
     onError: (err: any) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
@@ -123,7 +139,9 @@ export default function AdminEmployees() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<EmployeeForm> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/users/${id}`, data);
+      const { salaryType, fixedSalary, hourlyRate, commissionRate, ...userFields } = data as any;
+      const res = await apiRequest("PATCH", `/api/admin/users/${id}`, userFields);
+      if (salaryType) await saveSalaryData(id, data as EmployeeForm);
       return res.json();
     },
     onSuccess: () => {
@@ -280,6 +298,37 @@ export default function AdminEmployees() {
                     <Label className="text-[11px] text-black/40 mb-1.5 block">رقم الهاتف</Label>
                     <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+966 5xx xxx xxxx" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-phone" />
                   </div>
+                  <div>
+                    <Label className="text-[11px] text-black/40 mb-1.5 block">نوع الراتب</Label>
+                    <Select value={form.salaryType} onValueChange={val => setForm({ ...form, salaryType: val })}>
+                      <SelectTrigger className="h-9 text-xs border-black/[0.08]" data-testid="select-emp-salary-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hourly">بالساعة</SelectItem>
+                        <SelectItem value="fixed">راتب ثابت</SelectItem>
+                        <SelectItem value="commission">عمولة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.salaryType === "hourly" && (
+                    <div>
+                      <Label className="text-[11px] text-black/40 mb-1.5 block">سعر الساعة (ر.س)</Label>
+                      <Input type="number" value={form.hourlyRate} onChange={e => setForm({ ...form, hourlyRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-hourly-rate" />
+                    </div>
+                  )}
+                  {form.salaryType === "fixed" && (
+                    <div>
+                      <Label className="text-[11px] text-black/40 mb-1.5 block">الراتب الشهري الثابت (ر.س)</Label>
+                      <Input type="number" value={form.fixedSalary} onChange={e => setForm({ ...form, fixedSalary: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-fixed-salary" />
+                    </div>
+                  )}
+                  {form.salaryType === "commission" && (
+                    <div>
+                      <Label className="text-[11px] text-black/40 mb-1.5 block">نسبة العمولة (%)</Label>
+                      <Input type="number" value={form.commissionRate} onChange={e => setForm({ ...form, commissionRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-commission-rate" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-end gap-2 mt-5">
                   <Button variant="outline" size="sm" className="text-xs h-8 border-black/[0.08]" onClick={resetForm} data-testid="button-cancel-emp">إلغاء</Button>

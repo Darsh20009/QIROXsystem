@@ -283,7 +283,7 @@ export default function AdminSystemMap() {
                 href="/admin/employees" color="text-slate-600" bg="bg-slate-50" />
               <FlowArrow label="تسجيل حضور" />
               <ModCard icon={Activity} label="الحضور اليومي" count={ov.totalAttendanceToday}
-                sub="حضروا اليوم" href="/admin/employees" color="text-indigo-600" bg="bg-indigo-50" />
+                sub="حضروا اليوم" href="/admin/attendance" color="text-indigo-600" bg="bg-indigo-50" />
               <FlowArrow label="يتسلمون" />
               <ModCard icon={DollarSign} label="كشف الرواتب" count={ov.totalPayroll}
                 sub={`${ov.thisMonthPayroll || 0} هذا الشهر`}

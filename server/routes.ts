@@ -7,7 +7,6 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
-import { getUncachableGoogleSheetClient } from "./googleSheets";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -410,53 +409,126 @@ export async function registerRoutes(
   app.post("/api/attendance/check-in", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const { ipAddress, location } = req.body;
-    
-    const attendance = await storage.createAttendance({
-      userId: user.id as any,
+    const { ipAddress, location, checkInNotes } = req.body;
+    const { AttendanceModel, UserModel, NotificationModel, EmployeeProfileModel } = await import("./models");
+    const { pushToUser } = await import("./ws");
+    const existing = await AttendanceModel.findOne({ userId: user.id, checkOut: null });
+    if (existing) return res.status(400).json({ error: "لديك جلسة حضور نشطة بالفعل" });
+    const attendance = await AttendanceModel.create({
+      userId: user.id,
       checkIn: new Date(),
       ipAddress,
-      location
+      location,
+      checkInNotes: checkInNotes || "",
+      locationHistory: location ? [{ ...location, timestamp: new Date() }] : [],
+      lastActivityAt: new Date(),
     });
+    // Notify admin and manager
+    try {
+      const empProfile = await EmployeeProfileModel.findOne({ userId: user.id });
+      const managers = await UserModel.find({ role: { $in: ['admin', 'manager'] } });
+      const fullUser = await UserModel.findById(user.id);
+      const locationStr = location ? ` (${location.lat?.toFixed(4)}, ${location.lng?.toFixed(4)})` : '';
+      for (const mgr of managers) {
+        if (empProfile?.managerId && String(mgr._id) !== String(empProfile.managerId) && mgr.role !== 'admin') continue;
+        await NotificationModel.create({
+          userId: mgr._id,
+          type: 'attendance',
+          title: `تسجيل حضور: ${fullUser?.fullName || user.username}`,
+          body: `سجّل حضوره في ${new Date().toLocaleTimeString('ar-SA')}${locationStr}`,
+          link: '/admin/attendance',
+          icon: '✅',
+        });
+        pushToUser(String(mgr._id), { type: 'notification', title: 'حضور موظف', body: `${fullUser?.fullName || user.username} سجّل حضوره` });
+      }
+    } catch {}
     res.json(attendance);
   });
 
   app.post("/api/attendance/check-out", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const latest = await storage.getLatestAttendance(String(user.id));
-    
-    if (!latest || latest.checkOut) {
-      return res.status(400).send("لا توجد جلسة نشطة");
-    }
-
+    const { checkOutNotes, achievements } = req.body;
+    const { AttendanceModel, UserModel, NotificationModel, EmployeeProfileModel } = await import("./models");
+    const { pushToUser } = await import("./ws");
+    const latest = await AttendanceModel.findOne({ userId: user.id, checkOut: null });
+    if (!latest) return res.status(400).json({ error: "لا توجد جلسة نشطة" });
     const checkOut = new Date();
     const workHours = (checkOut.getTime() - latest.checkIn.getTime()) / (1000 * 60 * 60);
-    
-    const attendance = await storage.updateAttendance(String(latest.id), {
+    await AttendanceModel.updateOne({ _id: latest._id }, { $set: {
       checkOut,
-      workHours: Number(workHours.toFixed(2)) as any
-    });
-    res.json(attendance);
+      workHours: Number(workHours.toFixed(2)),
+      checkOutNotes: checkOutNotes || "",
+      achievements: achievements || "",
+    }});
+    const updated = await AttendanceModel.findById(latest._id);
+    // Notify admin and manager
+    try {
+      const empProfile = await EmployeeProfileModel.findOne({ userId: user.id });
+      const managers = await UserModel.find({ role: { $in: ['admin', 'manager'] } });
+      const fullUser = await UserModel.findById(user.id);
+      for (const mgr of managers) {
+        if (empProfile?.managerId && String(mgr._id) !== String(empProfile.managerId) && mgr.role !== 'admin') continue;
+        await NotificationModel.create({
+          userId: mgr._id,
+          type: 'attendance',
+          title: `انصراف: ${fullUser?.fullName || user.username}`,
+          body: `انصرف بعد ${workHours.toFixed(1)} ساعة${achievements ? ' — ' + achievements.slice(0, 60) : ''}`,
+          link: '/admin/attendance',
+          icon: '🔴',
+        });
+        pushToUser(String(mgr._id), { type: 'notification', title: 'انصراف موظف', body: `${fullUser?.fullName || user.username} انصرف` });
+      }
+    } catch {}
+    res.json(updated);
+  });
+
+  app.post("/api/attendance/ping", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { location } = req.body;
+    const { AttendanceModel } = await import("./models");
+    const latest = await AttendanceModel.findOne({ userId: user.id, checkOut: null });
+    if (!latest) return res.status(400).json({ error: "لا توجد جلسة نشطة" });
+    const update: any = { lastActivityAt: new Date() };
+    if (location?.lat && location?.lng) {
+      update.$push = { locationHistory: { lat: location.lat, lng: location.lng, timestamp: new Date() } };
+    }
+    await AttendanceModel.updateOne({ _id: latest._id }, { $set: { lastActivityAt: new Date() }, ...(update.$push ? { $push: update.$push } : {}) });
+    res.json({ ok: true });
   });
 
   app.get("/api/attendance/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const latest = await storage.getLatestAttendance(String(user.id));
+    const { AttendanceModel } = await import("./models");
+    const latest = await AttendanceModel.findOne({ userId: user.id }).sort({ createdAt: -1 });
     res.json(latest || null);
   });
 
+  app.patch("/api/attendance/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!['admin', 'manager'].includes(me.role)) return res.sendStatus(403);
+    const { AttendanceModel } = await import("./models");
+    const updated = await AttendanceModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    res.json(updated);
+  });
+
   app.get("/api/admin/attendance", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as User).role !== 'admin') {
-      return res.sendStatus(403);
-    }
-    const users = await storage.getUsers();
-    const allAttendance = await Promise.all(users.map(async (u) => {
-      const attendance = await storage.getAttendance(String(u.id));
-      return { user: u, attendance };
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!['admin', 'manager'].includes(me.role)) return res.sendStatus(403);
+    const { AttendanceModel, UserModel, EmployeeProfileModel } = await import("./models");
+    const nonClients = await UserModel.find({ role: { $ne: 'client' } }, 'id fullName username role avatarUrl email');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const result = await Promise.all(nonClients.map(async (u: any) => {
+      const todayAtt = await AttendanceModel.findOne({ userId: u._id, checkIn: { $gte: today } }).sort({ createdAt: -1 });
+      const recentRecords = await AttendanceModel.find({ userId: u._id }).sort({ createdAt: -1 }).limit(7);
+      const profile = await EmployeeProfileModel.findOne({ userId: u._id });
+      return { user: u, todayAttendance: todayAtt, recentRecords, profile };
     }));
-    res.json(allAttendance);
+    res.json(result);
   });
 
   // === SERVICES API ===
@@ -2855,9 +2927,10 @@ export async function registerRoutes(
   // ── Resend Login OTP ──
   app.post("/api/auth/resend-login-otp", async (req, res) => {
     const pendingUserId = req.session.pendingLoginUserId;
-    if (!pendingUserId) return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
+    if (!pendingUserId || pendingUserId === "undefined") return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" });
     const { UserModel, OtpModel } = await import("./models");
-    const user = await UserModel.findById(pendingUserId);
+    let user: any = null;
+    try { user = await UserModel.findById(pendingUserId); } catch { return res.status(400).json({ error: "انتهت جلسة التحقق، أعد تسجيل الدخول" }); }
     if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
     const email = user.email.toLowerCase().trim();
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -3861,11 +3934,25 @@ export async function registerRoutes(
   app.patch("/api/admin/employee-profiles/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { EmployeeProfileModel } = await import("./models");
-    const allowed = ['hourlyRate', 'vacationDays', 'vacationUsed', 'bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
+    const allowed = ['hourlyRate', 'salaryType', 'fixedSalary', 'commissionRate', 'managerId', 'vacationDays', 'vacationUsed', 'bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
     const update: any = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     const profile = await (EmployeeProfileModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
     await logActivity((req.user as any)._id, 'update_employee_profile', 'employee_profile', req.params.id, update, req.ip);
+    res.json(profile);
+  });
+
+  app.patch("/api/admin/users/:userId/salary", async (req, res) => {
+    if (!req.isAuthenticated() || !['admin', 'manager'].includes((req.user as any).role)) return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const allowed = ['hourlyRate', 'salaryType', 'fixedSalary', 'commissionRate', 'managerId'];
+    const update: any = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
+      { userId: req.params.userId },
+      { $set: update },
+      { new: true, upsert: true }
+    );
     res.json(profile);
   });
 
@@ -3895,9 +3982,17 @@ export async function registerRoutes(
       const atts = await (AttendanceModel as any).find({ userId: emp._id, checkIn: { $gte: startDate, $lte: endDate }, checkOut: { $ne: null } });
       const workHours = atts.reduce((acc: number, a: any) => acc + (a.workHours || 0), 0);
       const profile = await (EmployeeProfileModel as any).findOne({ userId: emp._id });
+      const salaryType = profile?.salaryType || 'hourly';
+      let baseSalary = 0;
       const hourlyRate = profile?.hourlyRate || 0;
-      const baseSalary = workHours * hourlyRate;
-      return (PayrollRecordModel as any).create({ userId: emp._id, month, year, workHours, hourlyRate, baseSalary, netSalary: baseSalary });
+      if (salaryType === 'fixed') {
+        baseSalary = profile?.fixedSalary || 0;
+      } else if (salaryType === 'commission') {
+        baseSalary = 0; // commission calculated separately
+      } else {
+        baseSalary = workHours * hourlyRate;
+      }
+      return (PayrollRecordModel as any).create({ userId: emp._id, month, year, workHours, hourlyRate, baseSalary, netSalary: baseSalary, notes: salaryType === 'commission' ? 'عمولة - يحتاج تحديد يدوي' : '' });
     }));
     await logActivity((req.user as any)._id, 'generate_payroll', 'payroll', undefined, { month, year }, req.ip);
     res.json(results);
@@ -5650,202 +5745,6 @@ export async function registerRoutes(
     } catch (e) { res.status(500).json({ error: "فشل إرسال الدفعة" }); }
   });
 
-  // ── Google Sheets: Export orders ────────────────────────────────────────────
-  app.post("/api/admin/export/google-sheets", async (req, res) => {
-    const user = req.user as any;
-    if (!user || !["admin", "manager"].includes(user.role)) {
-      return res.status(403).json({ error: "غير مصرح" });
-    }
-    try {
-      const { OrderModel, UserModel } = await import("./models");
-      const orders = await OrderModel.find({})
-        .populate("userId", "fullName username email phone")
-        .populate("assignedTo", "fullName")
-        .sort({ createdAt: -1 })
-        .lean();
-
-      const sheets = await getUncachableGoogleSheetClient();
-
-      const spreadsheet = await sheets.spreadsheets.create({
-        requestBody: {
-          properties: { title: `قيروكس — الطلبات ${new Date().toLocaleDateString("ar-SA")}` },
-          sheets: [
-            {
-              properties: { title: "الطلبات", sheetId: 0 },
-            },
-          ],
-        },
-      });
-
-      const spreadsheetId = spreadsheet.data.spreadsheetId!;
-
-      const STATUS_LABELS: Record<string, string> = {
-        pending: "قيد المراجعة",
-        approved: "موافق عليه",
-        in_progress: "قيد التنفيذ",
-        completed: "مكتمل",
-        cancelled: "ملغي",
-        rejected: "مرفوض",
-      };
-
-      const header = [
-        "رقم الطلب", "اسم العميل", "اسم المستخدم", "البريد الإلكتروني", "الهاتف",
-        "نوع الخدمة", "الباقة", "الدورة", "الحالة",
-        "المبلغ (ر.س)", "طريقة الدفع", "المسؤول",
-        "ملاحظات", "تاريخ الإنشاء",
-      ];
-
-      const rows = orders.map((o: any) => {
-        const client = o.userId as any;
-        const assignee = o.assignedTo as any;
-        return [
-          o._id?.toString() || "",
-          client?.fullName || "",
-          client?.username || "",
-          client?.email || "",
-          client?.phone || o.phone || "",
-          o.serviceType || "",
-          o.planTier || "",
-          o.planPeriod || "",
-          STATUS_LABELS[o.status] || o.status || "",
-          o.totalAmount?.toString() || "",
-          o.paymentMethod || "",
-          assignee?.fullName || "",
-          o.adminNotes || o.notes || "",
-          new Date(o.createdAt).toLocaleDateString("ar-SA"),
-        ];
-      });
-
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: "الطلبات!A1",
-        valueInputOption: "RAW",
-        requestBody: { values: [header, ...rows] },
-      });
-
-      // Bold header row + freeze it
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              repeatCell: {
-                range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
-                cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.059, green: 0.090, blue: 0.165 } } },
-                fields: "userEnteredFormat(textFormat,backgroundColor)",
-              },
-            },
-            {
-              updateSheetProperties: {
-                properties: { sheetId: 0, gridProperties: { frozenRowCount: 1 } },
-                fields: "gridProperties.frozenRowCount",
-              },
-            },
-          ],
-        },
-      });
-
-      const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-      res.json({ sheetUrl, rowCount: rows.length });
-    } catch (e: any) {
-      console.error("Google Sheets export error:", e?.message);
-      res.status(500).json({ error: e?.message || "فشل التصدير إلى Google Sheets" });
-    }
-  });
-
-  // ── Google Sheets: Import / sync orders from sheet ───────────────────────
-  app.post("/api/admin/import/google-sheets", async (req, res) => {
-    const user = req.user as any;
-    if (!user || !["admin", "manager"].includes(user.role)) {
-      return res.status(403).json({ error: "غير مصرح" });
-    }
-    const { sheetUrl } = req.body;
-    if (!sheetUrl) return res.status(400).json({ error: "رابط الجدول مطلوب" });
-
-    try {
-      // Extract spreadsheet ID from URL
-      const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      if (!match) return res.status(400).json({ error: "رابط Google Sheets غير صحيح" });
-      const spreadsheetId = match[1];
-
-      const sheets = await getUncachableGoogleSheetClient();
-
-      // Get sheet names first
-      const meta = await sheets.spreadsheets.get({ spreadsheetId });
-      const firstSheet = meta.data.sheets?.[0]?.properties?.title || "Sheet1";
-
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${firstSheet}!A1:Z1000`,
-      });
-
-      const rows = response.data.values || [];
-      if (rows.length < 2) return res.status(400).json({ error: "الجدول فارغ أو لا يحتوي على بيانات" });
-
-      const header = rows[0].map((h: string) => h?.trim());
-      const idIndex = header.indexOf("رقم الطلب");
-      const statusIndex = header.indexOf("الحالة");
-      const amountIndex = header.indexOf("المبلغ (ر.س)");
-      const notesIndex = header.indexOf("ملاحظات");
-
-      if (idIndex === -1) {
-        return res.status(400).json({ error: "عمود 'رقم الطلب' مطلوب في الجدول" });
-      }
-
-      const STATUS_MAP: Record<string, string> = {
-        "قيد المراجعة": "pending",
-        "موافق عليه": "approved",
-        "قيد التنفيذ": "in_progress",
-        "مكتمل": "completed",
-        "ملغي": "cancelled",
-        "مرفوض": "rejected",
-        "pending": "pending",
-        "approved": "approved",
-        "in_progress": "in_progress",
-        "completed": "completed",
-        "cancelled": "cancelled",
-        "rejected": "rejected",
-      };
-
-      const { OrderModel } = await import("./models");
-      let updated = 0;
-      let skipped = 0;
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const orderId = row[idIndex]?.trim();
-        if (!orderId || orderId.length < 10) { skipped++; continue; }
-
-        const updateFields: Record<string, any> = {};
-        if (statusIndex !== -1 && row[statusIndex]) {
-          const mapped = STATUS_MAP[row[statusIndex]?.trim()];
-          if (mapped) updateFields.status = mapped;
-        }
-        if (amountIndex !== -1 && row[amountIndex]) {
-          const amt = parseFloat(row[amountIndex]);
-          if (!isNaN(amt)) updateFields.totalAmount = amt;
-        }
-        if (notesIndex !== -1 && row[notesIndex]) {
-          updateFields.adminNotes = row[notesIndex];
-        }
-
-        if (Object.keys(updateFields).length === 0) { skipped++; continue; }
-
-        try {
-          const result = await OrderModel.findByIdAndUpdate(orderId, { $set: updateFields });
-          if (result) updated++;
-          else skipped++;
-        } catch {
-          skipped++;
-        }
-      }
-
-      res.json({ updated, skipped, total: rows.length - 1 });
-    } catch (e: any) {
-      console.error("Google Sheets import error:", e?.message);
-      res.status(500).json({ error: e?.message || "فشل الاستيراد من Google Sheets" });
-    }
-  });
 
   // Initialize seed data
   await seedDatabase();
