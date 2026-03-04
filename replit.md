@@ -433,13 +433,16 @@ The application is a full-stack TypeScript project with a React frontend and Exp
   - Tab 2: Atlas API configs management
   - Test Atlas credentials (auto-fills project list)
   - Create DB user dialog → creates user on Atlas + generates connection string
-- `client/src/pages/AdminAppPublish.tsx` — App publishing configuration:
-  - Master list of app configs per client
-  - Right panel: generated code blocks for selected app
-  - Tabs: Config (app.json / build.gradle / Info.plist), Android (Google Play steps), iOS (App Store steps), .env
-  - Copy buttons on all code blocks
-  - Download app.json and .env files
-  - Supports: Expo, React Native, Flutter, Ionic, Capacitor, PWA
+- `client/src/pages/AdminAppPublish.tsx` — App publishing & package generator:
+  - **مولّد الحزم (Package Builder)**: generates real downloadable ZIP project packages for all 4 platforms
+  - Android APK: Full Android Studio (TWA) project with AndroidManifest + Gradle + CI/CD
+  - Windows EXE: Full Electron project with NSIS installer + system tray + auto-updater
+  - iOS IPA: Full Capacitor project with Info.plist + Podfile + AppDelegate.swift
+  - HarmonyOS HAP: Full DevEco Studio project with EntryAbility.ets + WebView
+  - Permissions configurator: 8 permission types selectable per build
+  - Build history stored in localStorage
+  - Uses jszip (already in node_modules) for client-side ZIP generation
+  - Tabs: مولّد الحزم, حالة الجاهزية, Google Play, App Store, Huawei, Microsoft, ملفات الربط
 - **app-sidebar.tsx** — 3 new admin menu items: MongoDB Atlas, Cron Jobs, نشر التطبيقات
 - **App.tsx** — 3 new admin routes: `/admin/cron-jobs`, `/admin/atlas`, `/admin/app-publish`
 
