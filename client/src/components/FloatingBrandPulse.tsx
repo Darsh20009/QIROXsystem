@@ -46,7 +46,7 @@ export function FloatingBrandPulse() {
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-8 right-4 md:right-6 z-[90] flex flex-col items-end gap-3 pointer-events-none">
+    <div className="fixed bottom-20 md:bottom-8 right-4 md:right-6 z-[90] flex flex-col items-end gap-3 pointer-events-none max-w-[calc(100vw-2rem)]">
       <AnimatePresence mode="wait">
 
         {/* ── Logo State ── */}

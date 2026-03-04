@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>QIROX Studio | مصنع الأنظمة الرقمية - بناء مواقع وتطبيقات احترافية</title>
     <meta name="description" content="QIROX Studio - منصة بناء الأنظمة الرقمية المتكاملة. حلول رقمية احترافية للمطاعم والمتاجر والمؤسسات التعليمية والشركات. نبني أنظمة، نبقى بشراً." />
     <meta name="keywords" content="تصميم مواقع, تطبيقات, أنظمة رقمية, مصنع أنظمة, QIROX, تطوير ويب, السعودية, مصر, SaaS, PWA, تطبيقات جوال" />
@@ -70,8 +70,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <style>
-      html { background: #000; }
-      #root { min-height: 100vh; }
+      html {
+        background: #000;
+        overflow-x: hidden;
+        max-width: 100%;
+      }
+      body {
+        overflow-x: hidden;
+        max-width: 100vw;
+        width: 100%;
+      }
+      #root {
+        min-height: 100vh;
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100vw;
+      }
     </style>
     <script>
       (function() {

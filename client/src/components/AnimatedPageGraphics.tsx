@@ -117,10 +117,11 @@ export function AnimatedBars({
   label?: string; className?: string;
 }) {
   const isMobile = useIsMobile();
-  if (isMobile) return null;
-
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
+
+  if (isMobile) return null;
+
   const strokeColor = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const gridColor = dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
   const labelColor = dark ? "text-white/20" : "text-black/20";
@@ -237,10 +238,11 @@ export function AnimatedRing({
   label?: string; className?: string; size?: number;
 }) {
   const isMobile = useIsMobile();
-  if (isMobile) return null;
-
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
+
+  if (isMobile) return null;
+
   const circumference = 2 * Math.PI * radius;
   const trackColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
   const arcColor = dark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.25)";

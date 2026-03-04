@@ -32,6 +32,12 @@
 [x] 32. Build QMeet — نظام الاجتماعات الكامل (server/qmeet.ts + AdminQMeet.tsx + AdminQMeetDetail.tsx)
 [x] 33. Build Qirox Edit — محرر تصميم احترافي كامل (client/src/pages/QiroxEdit.tsx)
 [x] 34. Fix Render deployment (bcrypt dependency and build allowlist)
+[x] 35. Fix mobile responsiveness — horizontal scroll, zoom, elements not showing on Android/iPhone
+      - Fixed viewport meta: maximum-scale=1.0, user-scalable=no (prevents accidental zoom)
+      - Added overflow-x: hidden to html, body, #root and app wrappers
+      - Fixed React hook violations in AnimatedRing & AnimatedBars (caused Home page crash on mobile)
+      - Added max-width constraints to FloatingBrandPulse and fixed-position elements
+      - Enhanced mobile CSS: container constraints, wide-card limits, global box-sizing
       - Fabric.js كمحرك الكانفاس
       - أشكال: مستطيل، دائرة، مثلث، خط، نجمة، سداسي
       - نصوص مع Google Fonts (20 خطاً عربياً وأجنبياً)
