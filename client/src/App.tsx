@@ -230,7 +230,7 @@ const ALL_PAGES = [
   { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
   { title: "الفواتير", titleEn: "Invoices", url: "/admin/invoices", group: "employee" },
   { title: "كيروكس إيدت", titleEn: "Qirox Edit", url: "/qirox-edit", group: "employee" },
-  { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor", group: "employee" },
+  { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor/portal", group: "employee" },
   { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
   { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
   { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
