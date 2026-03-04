@@ -10,6 +10,32 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 4, 2026 - Session 33)
+
+### قسم الأجهزة والمتجر — إعادة تصميم كاملة بواجهة متجر احترافية
+
+**1. Devices.tsx — إعادة كتابة كاملة:**
+- واجهة متجر احترافية شبه Noon (بطاقات منتج حديثة، شبكة 2-5 عمود)
+- **كاروسيل صور** على بطاقة المنتج مع نقاط التنقل للصور المتعددة
+- **ورقة تفاصيل المنتج** (Sheet slide-in) تفتح عند النقر على المنتج تشمل:
+  - `ImageCarousel` كامل مع مصغّرات وأسهم تنقل
+  - المواصفات في شبكة، وصف كامل، شارة الباقة المرتبطة
+- **نموذج الشحن مُحسَّن:** قائمة اختيار المدن السعودية (22 مدينة) + حقل الحي
+- **تعبئة تلقائية:** بيانات اسم المستلم ورقم الهاتف من ملف المستخدم المسجّل
+- **الشراء الآن:** زر "اشتر الآن" مع إمكانية إضافة للسلة مباشرة من الورقة
+
+**2. AdminProducts.tsx:**
+- إضافة `linkedPlanSlug` — ربط المنتج بباقة نظام من `/api/pricing`
+- عرض شارة "باقة" سيانية على بطاقات المنتج المرتبطة
+
+**3. server/routes.ts — إنشاء شحنة تلقائي:**
+- عند إتمام الطلب (POST /api/orders)، يُفحص كل عنصر في الطلب
+- المنتجات الفيزيائية (type: product, gift) تُنشئ `DeviceShipment` تلقائياً
+- يُرسل إشعار داخل التطبيق للعميل عن طلب الشحن
+
+**4. shared/schema.ts + server/models.ts:**
+- إضافة `linkedPlanSlug?: string` لـ QiroxProduct و InsertQiroxProduct
+
 ## Latest Changes (Mar 3, 2026 - Session 32)
 
 ### QMeet — ترحيل كامل إلى MongoDB الرئيسي + تحسينات شاملة

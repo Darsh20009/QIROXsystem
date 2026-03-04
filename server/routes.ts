@@ -552,17 +552,58 @@ export async function registerRoutes(
     const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
     const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {
-      // Confirm to client
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
-      // Create in-app notification
       const { NotificationModel } = await import("./models");
       await NotificationModel.create({ userId: user.id, type: 'order', title: 'تم استلام طلبك', body: `تم استلام طلبك بنجاح، سنتواصل معك قريباً.`, link: '/dashboard', icon: '📦' });
     }
-    // Notify admin — both internal and system email
     const _clientName = (user as any).fullName || (user as any).username;
     const _clientEmail = (user as any).email || "";
     sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
     sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
+
+    // Auto-create shipment for each physical product item
+    try {
+      const { DeviceShipmentModel, NotificationModel } = await import("./models");
+      const physicalTypes = ["product", "gift"];
+      const physicalItems = (req.body.items || []).filter((it: any) => physicalTypes.includes(it.type));
+      for (const item of physicalItems) {
+        const shipping = item.config?.shipping || {};
+        await DeviceShipmentModel.create({
+          cartOrderId: String(order.id),
+          clientId: user.id,
+          clientName: _clientName,
+          clientEmail: _clientEmail,
+          clientPhone: shipping.phone || (user as any).phone || "",
+          productId: item.refId || item.id || new (await import("mongoose")).default.Types.ObjectId(),
+          productName: item.nameAr || item.name || "منتج",
+          quantity: item.qty || 1,
+          totalPrice: (item.price || 0) * (item.qty || 1),
+          shippingAddress: {
+            name: shipping.recipientName || _clientName,
+            phone: shipping.phone || "",
+            city: shipping.city || "",
+            district: shipping.district || "",
+            street: shipping.address || "",
+            postalCode: shipping.postalCode || "",
+            country: "SA",
+          },
+          status: "pending",
+        });
+      }
+      if (physicalItems.length > 0) {
+        await NotificationModel.create({
+          userId: user.id,
+          type: 'order',
+          title: 'تم إنشاء طلب شحن',
+          body: `تم إنشاء طلب شحن لـ ${physicalItems.length} منتج. سيتم التواصل معك قريباً.`,
+          link: '/devices',
+          icon: '🚚',
+        });
+      }
+    } catch (shipErr) {
+      console.error("[auto-shipment]", shipErr);
+    }
+
     res.status(201).json(order);
   });
 

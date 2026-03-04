@@ -322,6 +322,7 @@ const qiroxProductSchema = new mongoose.Schema({
   brand: String,
   model: String,
   warrantyMonths: { type: Number, default: 0 },
+  linkedPlanSlug: String,
 }, { timestamps: true });
 
 const cartItemSchema = new mongoose.Schema({

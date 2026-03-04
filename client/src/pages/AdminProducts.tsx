@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Pencil, Trash2, Package, Search, Star, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, Search, Star, Image as ImageIcon, Sparkles } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -30,6 +30,7 @@ const emptyForm = {
   category: "device" as const, price: "", currency: "SAR",
   images: [""], serviceSlug: "", badge: "", isActive: true,
   featured: false, specs: "", stock: "-1", displayOrder: "0",
+  linkedPlanSlug: "",
 };
 
 export default function AdminProducts() {
@@ -88,6 +89,8 @@ export default function AdminProducts() {
     setDialogOpen(true);
   };
 
+  const { data: pricingPlans } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
+
   const openEdit = (p: QiroxProduct) => {
     setForm({
       name: p.name, nameAr: p.nameAr, description: p.description || "",
@@ -96,6 +99,7 @@ export default function AdminProducts() {
       serviceSlug: p.serviceSlug || "", badge: p.badge || "", isActive: p.isActive,
       featured: p.featured, specs: p.specs ? JSON.stringify(p.specs, null, 2) : "",
       stock: String(p.stock), displayOrder: String(p.displayOrder),
+      linkedPlanSlug: (p as any).linkedPlanSlug || "",
     });
     setEditingId(p.id);
     setDialogOpen(true);
@@ -220,6 +224,11 @@ export default function AdminProducts() {
                       {p.badge}
                     </div>
                   )}
+                  {(p as any).linkedPlanSlug && (
+                    <div className="absolute bottom-2 left-2 bg-cyan-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" />باقة
+                    </div>
+                  )}
                   {!p.isActive && (
                     <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
                       <span className="text-xs text-black/40 font-medium border border-black/20 px-3 py-1 rounded-full bg-white">غير نشط</span>
@@ -311,6 +320,27 @@ export default function AdminProducts() {
             <div>
               <label className="text-xs font-medium text-black/50 mb-1 block">خاص بالخدمة (slug)</label>
               <Input value={form.serviceSlug} onChange={e => setForm(f => ({ ...f, serviceSlug: e.target.value }))} placeholder="ecommerce-store" data-testid="input-product-service-slug" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-black/50 mb-1 flex items-center gap-1.5 block">
+                <Sparkles className="w-3 h-3 text-cyan-500" /> ربط بباقة نظام (اختياري)
+              </label>
+              <Select value={form.linkedPlanSlug || "none"} onValueChange={v => setForm(f => ({ ...f, linkedPlanSlug: v === "none" ? "" : v }))}>
+                <SelectTrigger data-testid="select-linked-plan"><SelectValue placeholder="لا توجد باقة مرتبطة" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">لا توجد باقة مرتبطة</SelectItem>
+                  {pricingPlans?.map((plan: any) => (
+                    <SelectItem key={plan.id || plan._id} value={plan.slug || plan.nameAr || String(plan.id || plan._id)}>
+                      {plan.nameAr || plan.name} {plan.priceMonthly ? `— ${plan.priceMonthly} ر.س/شهر` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.linkedPlanSlug && (
+                <p className="text-[10px] text-cyan-600 mt-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />سيظهر للعميل أن هذا المنتج يشمل باقة نظام
+                </p>
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-black/50 mb-1 block">بادج</label>

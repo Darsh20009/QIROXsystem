@@ -347,6 +347,7 @@ export interface QiroxProduct {
   specs?: Record<string, any>;
   stock: number;
   displayOrder: number;
+  linkedPlanSlug?: string;
   createdAt?: Date;
 }
 
@@ -366,6 +367,7 @@ export interface InsertQiroxProduct {
   specs?: Record<string, any>;
   stock?: number;
   displayOrder?: number;
+  linkedPlanSlug?: string;
 }
 
 // --- Client Cart (MongoDB) ---
