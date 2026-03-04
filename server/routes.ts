@@ -1180,6 +1180,54 @@ export async function registerRoutes(
     res.json(clients);
   });
 
+  app.get("/api/admin/wallet/topup-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel } = await import("./models");
+    const requests = await WalletTopupModel.find().sort({ createdAt: -1 }).populate('userId', 'fullName email username');
+    res.json(requests);
+  });
+
+  app.post("/api/admin/wallet/topup-approve/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel, WalletTransactionModel, UserModel } = await import("./models");
+    const { sendWalletTopupStatusEmail } = await import("./email");
+    const topup = await WalletTopupModel.findById(req.params.id);
+    if (!topup) return res.sendStatus(404);
+    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
+    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
+      status: 'approved', approvedBy: String(me.id), approvedAt: new Date(),
+    });
+    await WalletTransactionModel.create({
+      userId: topup.userId, type: 'credit', amount: topup.amount,
+      description: `شحن محفظة Qirox Pay - ${topup.bankName || 'تحويل بنكي'}`,
+      addedBy: String(me.id), note: `المرجع: ${topup.bankRef || '-'}`,
+    });
+    const owner = await UserModel.findById(topup.userId);
+    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'approved');
+    res.json({ success: true });
+  });
+
+  app.post("/api/admin/wallet/topup-reject/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as User;
+    if ((me as any).role === 'client') return res.sendStatus(403);
+    const { WalletTopupModel, UserModel } = await import("./models");
+    const { sendWalletTopupStatusEmail } = await import("./email");
+    const topup = await WalletTopupModel.findById(req.params.id);
+    if (!topup) return res.sendStatus(404);
+    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
+    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
+      status: 'rejected', rejectionReason: req.body.reason || '',
+    });
+    const owner = await UserModel.findById(topup.userId);
+    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'rejected', req.body.reason);
+    res.json({ success: true });
+  });
+
   app.get("/api/admin/wallet/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { WalletTransactionModel } = await import("./models");
@@ -1430,56 +1478,6 @@ export async function registerRoutes(
     res.json(requests);
   });
 
-  // Admin: get all pending topup requests
-  app.get("/api/admin/wallet/topup-requests", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const me = req.user as User;
-    if ((me as any).role === 'client') return res.sendStatus(403);
-    const { WalletTopupModel, UserModel } = await import("./models");
-    const requests = await WalletTopupModel.find().sort({ createdAt: -1 }).populate('userId', 'fullName email username');
-    res.json(requests);
-  });
-
-  // Admin: approve topup
-  app.post("/api/admin/wallet/topup-approve/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const me = req.user as User;
-    if ((me as any).role === 'client') return res.sendStatus(403);
-    const { WalletTopupModel, WalletTransactionModel, UserModel } = await import("./models");
-    const { sendWalletTopupStatusEmail } = await import("./email");
-    const topup = await WalletTopupModel.findById(req.params.id);
-    if (!topup) return res.sendStatus(404);
-    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
-    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
-      status: 'approved', approvedBy: String(me.id), approvedAt: new Date(),
-    });
-    await WalletTransactionModel.create({
-      userId: topup.userId, type: 'credit', amount: topup.amount,
-      description: `شحن محفظة Qirox Pay - ${topup.bankName || 'تحويل بنكي'}`,
-      addedBy: String(me.id), note: `المرجع: ${topup.bankRef || '-'}`,
-    });
-    const owner = await UserModel.findById(topup.userId);
-    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'approved');
-    res.json({ success: true });
-  });
-
-  // Admin: reject topup
-  app.post("/api/admin/wallet/topup-reject/:id", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    const me = req.user as User;
-    if ((me as any).role === 'client') return res.sendStatus(403);
-    const { WalletTopupModel, UserModel } = await import("./models");
-    const { sendWalletTopupStatusEmail } = await import("./email");
-    const topup = await WalletTopupModel.findById(req.params.id);
-    if (!topup) return res.sendStatus(404);
-    if (topup.status !== 'pending') return res.status(400).json({ error: "الطلب تمت معالجته بالفعل" });
-    await WalletTopupModel.findByIdAndUpdate(req.params.id, {
-      status: 'rejected', rejectionReason: req.body.reason || '',
-    });
-    const owner = await UserModel.findById(topup.userId);
-    if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'rejected', req.body.reason);
-    res.json({ success: true });
-  });
 
   // === CLIENT DATA REQUESTS ===
 

@@ -43,7 +43,7 @@ export default function AdminWallet() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ type: "debit", amount: "", description: "", note: "" });
+  const [form, setForm] = useState({ type: "credit", amount: "", description: "", note: "" });
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
@@ -139,9 +139,16 @@ export default function AdminWallet() {
             </div>
           </div>
           {selectedClient && (
-            <Button onClick={() => setAddOpen(true)} size="sm" className="mr-auto bg-black text-white hover:bg-black/80 text-xs gap-2" data-testid="button-add-transaction">
-              <Plus className="w-3.5 h-3.5" />إضافة معاملة
-            </Button>
+            <div className="mr-auto flex gap-2">
+              <Button onClick={() => { setForm(f => ({ ...f, type: "credit" })); setAddOpen(true); }} size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5" data-testid="button-add-credit">
+                <Plus className="w-3.5 h-3.5" />شحن المحفظة
+              </Button>
+              <Button onClick={() => { setForm(f => ({ ...f, type: "debit" })); setAddOpen(true); }} size="sm"
+                variant="outline" className="text-rose-600 border-rose-200 hover:border-rose-300 hover:bg-rose-50 text-xs gap-1.5" data-testid="button-add-debit">
+                <TrendingDown className="w-3.5 h-3.5" />إضافة مستحق
+              </Button>
+            </div>
           )}
           {!selectedClient && pendingTopups.length > 0 && (
             <Badge className="mr-auto bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
@@ -374,30 +381,46 @@ export default function AdminWallet() {
     </div>
 
     {/* Add Transaction Dialog */}
-    <Dialog open={addOpen} onOpenChange={setAddOpen}>
+    <Dialog open={addOpen} onOpenChange={o => { setAddOpen(o); if (!o) setForm({ type: "credit", amount: "", description: "", note: "" }); }}>
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-right">إضافة معاملة جديدة</DialogTitle>
+          <DialogTitle className="text-right flex items-center gap-2">
+            {form.type === "credit"
+              ? <><span className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center"><Plus className="w-4 h-4 text-emerald-600" /></span> شحن محفظة العميل</>
+              : <><span className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center"><TrendingDown className="w-4 h-4 text-rose-600" /></span> إضافة مستحق على العميل</>
+            }
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div>
-            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">نوع المعاملة</Label>
-            <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-              <SelectTrigger data-testid="select-tx-type"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="debit">مستحق (مبلغ على العميل)</SelectItem>
-                <SelectItem value="credit">دفعة (مبلغ دفعه العميل)</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Type Switcher */}
+          <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: "credit" }))}
+              data-testid="btn-type-credit"
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${form.type === "credit" ? "bg-emerald-600 text-white shadow" : "text-black/40 hover:text-black/70"}`}>
+              <Plus className="w-3.5 h-3.5" /> شحن المحفظة (إضافة رصيد)
+            </button>
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: "debit" }))}
+              data-testid="btn-type-debit"
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${form.type === "debit" ? "bg-rose-600 text-white shadow" : "text-black/40 hover:text-black/70"}`}>
+              <TrendingDown className="w-3.5 h-3.5" /> إضافة مستحق
+            </button>
           </div>
+          <p className="text-[11px] text-black/40 dark:text-white/40 bg-black/[0.02] rounded-lg px-3 py-2">
+            {form.type === "credit"
+              ? "✅ سيُضاف الرصيد مباشرة لمحفظة العميل ويستطيع استخدامه في الدفع"
+              : "⚠️ سيُسجَّل مبلغ مستحق على العميل (فاتورة/التزام مالي)"}
+          </p>
           <div>
-            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">المبلغ (ر.س)</Label>
+            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">المبلغ (ر.س) <span className="text-red-400">*</span></Label>
             <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.amount}
-              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-tx-amount" />
+              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-tx-amount"
+              className={form.type === "credit" ? "border-emerald-300 focus:border-emerald-500" : "border-rose-300 focus:border-rose-500"} dir="ltr" />
           </div>
           <div>
             <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">الوصف <span className="text-red-400">*</span></Label>
-            <Input placeholder="مثال: دفعة أولى - باقة الاحترافية" value={form.description}
+            <Input
+              placeholder={form.type === "credit" ? "مثال: شحن محفظة بتحويل بنكي" : "مثال: رسوم اشتراك - باقة الاحترافية"}
+              value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))} data-testid="input-tx-description" />
           </div>
           <div>
@@ -409,9 +432,10 @@ export default function AdminWallet() {
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setAddOpen(false)} className="text-xs">إلغاء</Button>
           <Button onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !form.amount || !form.description}
-            className="bg-black text-white hover:bg-black/80 text-xs gap-2" data-testid="button-confirm-add">
-            {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            إضافة
+            className={`text-white text-xs gap-2 ${form.type === "credit" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}
+            data-testid="button-confirm-add">
+            {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : form.type === "credit" ? <Plus className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {form.type === "credit" ? "شحن المحفظة" : "تسجيل المستحق"}
           </Button>
         </DialogFooter>
       </DialogContent>
