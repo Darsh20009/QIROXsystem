@@ -190,10 +190,17 @@ export default function Cart() {
     onError: () => toast({ title: "كوبون غير صالح", variant: "destructive" }),
   });
 
+  // Sync wallet amount when total changes
+  useEffect(() => {
+    if (useWallet) {
+      setWalletAmount(prev => Math.min(prev, Math.min(walletBalance, total)));
+    }
+  }, [total, walletBalance, useWallet]);
+
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       const itemNames = items.map(i => i.nameAr || i.name);
-      const walletUsed = effectiveWalletAmount;
+      const walletUsed = parseFloat(effectiveWalletAmount.toFixed(2));
       const notes = [
         projectNotes ? `الفكرة: ${projectNotes}` : "",
         hasPhysical && shipping.name ? `الشحن: ${shipping.name} — ${shipping.phone} — ${shipping.city} — ${shipping.address}` : "",
@@ -205,7 +212,7 @@ export default function Cart() {
       const r = await apiRequest("POST", "/api/orders", {
         projectType: items.find(i => i.type === "service")?.name || "خدمة رقمية",
         sector: "general",
-        totalAmount: Math.round(total),
+        totalAmount: parseFloat(total.toFixed(2)),
         items: itemNames,
         paymentMethod,
         notes,
@@ -213,21 +220,13 @@ export default function Cart() {
         shippingAddress: hasPhysical && shipping.name ? shipping : undefined,
         walletAmountUsed: walletUsed > 0 ? walletUsed : undefined,
       });
-      const orderData = await r.json();
-      const orderId = orderData.id || orderData._id;
 
-      if (walletUsed > 0) {
-        const walletRes = await apiRequest("POST", "/api/wallet/pay", {
-          amount: walletUsed,
-          orderId,
-          description: `دفع طلب رقم ${orderId} من المحفظة الإلكترونية`,
-        });
-        if (!walletRes.ok) {
-          const err = await walletRes.json();
-          throw new Error(err.error || "فشل الدفع بالمحفظة");
-        }
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.error || err.message || "فشل إرسال الطلب");
       }
 
+      const orderData = await r.json();
       return { ...orderData, walletUsed };
     },
     onSuccess: async (data) => {

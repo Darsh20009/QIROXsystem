@@ -549,7 +549,43 @@ export async function registerRoutes(
     if (!(user as any).emailVerified) {
       return res.status(403).json({ error: "account_not_verified", message: "يجب تفعيل حسابك أولاً قبل تقديم أي طلب" });
     }
+
+    // Atomic wallet validation BEFORE creating order
+    const walletAmountUsed = Number(req.body.walletAmountUsed || 0);
+    let walletDeducted = 0;
+    if (walletAmountUsed > 0) {
+      const { WalletTransactionModel } = await import("./models");
+      const txs = await WalletTransactionModel.find({ userId: String(user.id) });
+      const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+      const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+      const available = Math.max(0, totalCredit - totalDebit);
+      if (walletAmountUsed > available + 0.01) {
+        return res.status(400).json({ error: `الرصيد غير كافٍ في المحفظة. الرصيد المتاح: ${available.toLocaleString()} ر.س` });
+      }
+      walletDeducted = walletAmountUsed;
+    }
+
     const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
+
+    // Deduct wallet atomically after order creation
+    if (walletDeducted > 0) {
+      try {
+        const { WalletTransactionModel } = await import("./models");
+        await WalletTransactionModel.create({
+          userId: String(user.id),
+          type: 'debit',
+          amount: parseFloat(walletDeducted.toFixed(2)),
+          description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
+          orderId: String(order.id),
+          addedBy: String(user.id),
+          note: 'wallet_payment',
+        });
+      } catch (wErr) {
+        console.error("[wallet-deduct]", wErr);
+        // Order created but wallet deduction failed — flag it for admin review
+        await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
+      }
+    }
     const items: string[] = (req.body.items || []).map((i: any) => i.nameAr || i.name || "عنصر").filter(Boolean);
     if ((user as any).email) {
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);

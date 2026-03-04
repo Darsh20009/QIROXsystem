@@ -5,11 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Edit2, Trash2, Briefcase } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, Briefcase, Search, X } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Service } from "@shared/schema";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 
 const categories = [
@@ -54,10 +54,23 @@ export default function AdminServices() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
 
   const { data: services, isLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"]
   });
+
+  const filteredServices = useMemo(() => {
+    if (!services) return [];
+    return services.filter(s => {
+      const matchSearch = !searchQuery ||
+        s.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCategory = filterCategory === "all" || s.category === filterCategory;
+      return matchSearch && matchCategory;
+    });
+  }, [services, searchQuery, filterCategory]);
 
   const toPayload = (data: FormData) => ({
     title: data.title,
@@ -180,6 +193,41 @@ export default function AdminServices() {
         </Button>
       </div>
 
+      {/* Search & Filter Bar */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
+          <Input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="بحث في الخدمات..."
+            className="pr-9 h-10 rounded-xl border-black/[0.1] text-sm"
+            data-testid="input-search-services"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-44 h-10 rounded-xl border-black/[0.1] text-sm" data-testid="select-filter-category">
+            <SelectValue placeholder="كل الفئات" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">كل الفئات</SelectItem>
+            {categories.map(c => (
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {(searchQuery || filterCategory !== "all") && (
+          <span className="text-xs text-black/40 bg-black/[0.04] px-3 py-2 rounded-xl">
+            {filteredServices.length} نتيجة
+          </span>
+        )}
+      </div>
+
       <div className="border border-black/[0.06] bg-white rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -193,7 +241,7 @@ export default function AdminServices() {
               </tr>
             </thead>
             <tbody>
-              {services?.map((service) => (
+              {filteredServices.map((service) => (
                 <tr key={service.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-service-${service.id}`}>
                   <td className="p-4">
                     <div>
@@ -237,10 +285,10 @@ export default function AdminServices() {
                   </td>
                 </tr>
               ))}
-              {(!services || services.length === 0) && (
+              {filteredServices.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-black/30">
-                    لا توجد خدمات بعد
+                    {services?.length ? "لا توجد نتائج مطابقة للبحث" : "لا توجد خدمات بعد"}
                   </td>
                 </tr>
               )}

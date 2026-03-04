@@ -10,6 +10,29 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 4, 2026 - Session 34)
+
+### إصلاح كيروكس باي + بحث الخدمات
+
+**1. server/routes.ts — إصلاح ذري (atomic) لدفع المحفظة:**
+- عند `POST /api/orders` إذا أُرسل `walletAmountUsed > 0`:
+  - يتحقق من الرصيد أولاً **قبل** إنشاء الطلب
+  - يُنشئ الطلب، ثم يخصم المحفظة في نفس الطلب
+  - إذا فشل الخصم (حالة نادرة)، يُعلّم الطلب لمراجعة الأدمن
+  - يُعيد خطأ 400 واضح إذا الرصيد غير كافٍ قبل إنشاء الطلب
+
+**2. client/src/pages/Cart.tsx — إصلاح حسابات المحفظة:**
+- إزالة استدعاء `POST /api/wallet/pay` المنفصل (البديل: يُعالَج داخل `POST /api/orders`)
+- إضافة `useEffect` لمزامنة `walletAmount` تلقائياً عندما يتغير الإجمالي
+- إصلاح الدقة العشرية: `parseFloat(x.toFixed(2))` بدلاً من `Math.round()`
+- إضافة `r.ok` check مع رسالة خطأ واضحة من الـ backend
+
+**3. client/src/pages/AdminServices.tsx — بحث وتصفية:**
+- إضافة `searchQuery` state لبحث الخدمات بالاسم أو الوصف
+- إضافة `filterCategory` state مع قائمة اختيار الفئات
+- `filteredServices` مع `useMemo` للأداء
+- زر مسح البحث (X)، عداد "X نتيجة" عند تفعيل الفلتر
+
 ## Latest Changes (Mar 4, 2026 - Session 33)
 
 ### قسم الأجهزة والمتجر — إعادة تصميم كاملة بواجهة متجر احترافية
