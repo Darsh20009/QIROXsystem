@@ -75,6 +75,7 @@ const allowlist = [
   "recharts",
   "digest-fetch",
   "@paypal/paypal-server-sdk",
+  "bcrypt",
 ];
 
 async function buildAll() {

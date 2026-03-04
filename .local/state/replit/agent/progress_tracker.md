@@ -31,6 +31,7 @@
 [x] 31. Fix admin panel header for mobile (compact layout, user avatar shortcut)
 [x] 32. Build QMeet — نظام الاجتماعات الكامل (server/qmeet.ts + AdminQMeet.tsx + AdminQMeetDetail.tsx)
 [x] 33. Build Qirox Edit — محرر تصميم احترافي كامل (client/src/pages/QiroxEdit.tsx)
+[x] 34. Fix Render deployment (bcrypt dependency and build allowlist)
       - Fabric.js كمحرك الكانفاس
       - أشكال: مستطيل، دائرة، مثلث، خط، نجمة، سداسي
       - نصوص مع Google Fonts (20 خطاً عربياً وأجنبياً)
