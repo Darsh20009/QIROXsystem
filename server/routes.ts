@@ -1999,6 +1999,118 @@ export async function registerRoutes(
     }
   });
 
+  // === SYSTEM OVERVIEW — All module counts in one call ===
+  app.get("/api/admin/system-overview", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const {
+        OrderModel, UserModel, InvoiceModel, ReceiptModel, WalletTransactionModel,
+        SupportTicketModel, InboxMessageModel, InstallmentApplicationModel,
+        InstallmentOfferModel, InvestorModel, PayrollModel, ModificationRequestModel,
+        AttendanceModel, NewsModel, JobModel, DiscountCodeModel, ShipmentModel,
+        ConsultationBookingModel, NotificationModel,
+      } = await import("./models");
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [
+        totalClients, totalEmployees,
+        totalOrders, pendingOrders, inProgressOrders, completedOrders,
+        totalInvoices, unpaidInvoices,
+        totalReceipts,
+        totalTransactions,
+        totalSupportTickets, openSupportTickets,
+        totalMessages, unreadMessages,
+        totalInstallApps, pendingInstallApps,
+        totalInstallOffers,
+        totalInvestors,
+        totalPayroll, thisMonthPayroll,
+        totalModRequests, pendingModRequests,
+        totalAttendanceToday,
+        totalNews, publishedNews,
+        totalJobs, activeJobs,
+        totalDiscountCodes,
+        totalShipments, pendingShipments,
+        totalConsultations,
+        pendingNotifications,
+      ] = await Promise.all([
+        (UserModel as any).countDocuments({ role: "client" }),
+        (UserModel as any).countDocuments({ role: { $nin: ["client", "customer", "investor"] } }),
+        (OrderModel as any).countDocuments(),
+        (OrderModel as any).countDocuments({ status: "pending" }),
+        (OrderModel as any).countDocuments({ status: "in_progress" }),
+        (OrderModel as any).countDocuments({ status: "completed" }),
+        (InvoiceModel as any).countDocuments(),
+        (InvoiceModel as any).countDocuments({ status: { $in: ["draft", "sent"] } }),
+        (ReceiptModel as any).countDocuments(),
+        (WalletTransactionModel as any).countDocuments(),
+        (SupportTicketModel as any).countDocuments(),
+        (SupportTicketModel as any).countDocuments({ status: { $in: ["open", "pending"] } }),
+        (InboxMessageModel as any).countDocuments(),
+        (InboxMessageModel as any).countDocuments({ read: false }),
+        (InstallmentApplicationModel as any).countDocuments(),
+        (InstallmentApplicationModel as any).countDocuments({ status: "pending" }),
+        (InstallmentOfferModel as any).countDocuments(),
+        (InvestorModel as any).countDocuments(),
+        (PayrollModel as any).countDocuments(),
+        (PayrollModel as any).countDocuments({ month: now.getMonth() + 1, year: now.getFullYear() }),
+        (ModificationRequestModel as any).countDocuments(),
+        (ModificationRequestModel as any).countDocuments({ status: "pending" }),
+        (AttendanceModel as any).countDocuments({ createdAt: { $gte: new Date(now.toDateString()) } }),
+        (NewsModel as any).countDocuments(),
+        (NewsModel as any).countDocuments({ published: true }),
+        (JobModel as any).countDocuments(),
+        (JobModel as any).countDocuments({ isActive: true }),
+        (DiscountCodeModel as any).countDocuments(),
+        (ShipmentModel as any).countDocuments(),
+        (ShipmentModel as any).countDocuments({ status: { $in: ["pending", "processing"] } }),
+        (ConsultationBookingModel as any).countDocuments(),
+        (NotificationModel as any).countDocuments({ read: false }),
+      ]);
+
+      // Revenue from completed/active orders
+      const revenueAgg = await (OrderModel as any).aggregate([
+        { $match: { status: { $in: ["completed", "approved", "in_progress"] } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]);
+      const totalRevenue = revenueAgg[0]?.total || 0;
+
+      // Recent activity: last 8 orders
+      const recentOrders = await (OrderModel as any).find()
+        .sort({ createdAt: -1 }).limit(8)
+        .populate("clientId", "fullName email").lean();
+
+      // Recent 5 support tickets
+      const recentTickets = await (SupportTicketModel as any).find()
+        .sort({ createdAt: -1 }).limit(5)
+        .populate("userId", "fullName").lean();
+
+      res.json({
+        overview: {
+          totalClients, totalEmployees, totalRevenue,
+          totalOrders, pendingOrders, inProgressOrders, completedOrders,
+          totalInvoices, unpaidInvoices,
+          totalReceipts, totalTransactions,
+          totalSupportTickets, openSupportTickets,
+          totalMessages, unreadMessages,
+          totalInstallApps, pendingInstallApps, totalInstallOffers,
+          totalInvestors,
+          totalPayroll, thisMonthPayroll,
+          totalModRequests, pendingModRequests,
+          totalAttendanceToday,
+          totalNews, publishedNews,
+          totalJobs, activeJobs,
+          totalDiscountCodes,
+          totalShipments, pendingShipments,
+          totalConsultations,
+          pendingNotifications,
+        },
+        recentOrders,
+        recentTickets,
+      });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // === MODIFICATION REQUESTS API ===
   app.get("/api/modification-requests", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

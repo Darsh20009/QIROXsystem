@@ -19,6 +19,7 @@ import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner"
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
 const AdminServices = lazy(() => import("@/pages/AdminServices"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
 const AdminEmployees = lazy(() => import("@/pages/AdminEmployees"));
@@ -153,7 +154,7 @@ function AdminRouter() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/projects/:id" component={ProjectDetails} />
         <Route path="/project/:section" component={ProjectDetails} />
-        <Route path="/admin" component={Dashboard} />
+        <Route path="/admin" component={AdminSystemMap} />
         <Route path="/admin/services" component={AdminServices} />
         <Route path="/admin/orders" component={AdminOrders} />
         <Route path="/admin/employees" component={AdminEmployees} />
