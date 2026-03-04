@@ -1139,3 +1139,23 @@ const qReportSchema = new mongoose.Schema({
 }, { timestamps: true });
 qReportSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QReportModel = mongoose.models.QReport || mongoose.model("QReport", qReportSchema);
+
+const storePublishConfigSchema = new mongoose.Schema({
+  siteUrl:            { type: String, default: "https://qiroxstudio.online" },
+  appName:            { type: String, default: "QIROX Studio" },
+  appNameAr:          { type: String, default: "كيروكس ستوديو" },
+  appVersion:         { type: String, default: "1.0.0" },
+  androidPackage:     { type: String, default: "" },
+  androidFingerprint: { type: String, default: "" },
+  huaweiPackage:      { type: String, default: "" },
+  huaweiFingerprint:  { type: String, default: "" },
+  appleTeamId:        { type: String, default: "" },
+  appleBundleId:      { type: String, default: "" },
+  msAppId:            { type: String, default: "" },
+  playStoreUrl:       { type: String, default: "" },
+  appStoreUrl:        { type: String, default: "" },
+  huaweiStoreUrl:     { type: String, default: "" },
+  msStoreUrl:         { type: String, default: "" },
+}, { timestamps: true });
+storePublishConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const StorePublishConfigModel = mongoose.models.StorePublishConfig || mongoose.model("StorePublishConfig", storePublishConfigSchema);

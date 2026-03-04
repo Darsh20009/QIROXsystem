@@ -4774,6 +4774,77 @@ export async function registerRoutes(
     res.json(config || null);
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === STORE PUBLISH CONFIG ===
+  // ═══════════════════════════════════════════════════════════
+  app.get("/api/admin/store-publish-config", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StorePublishConfigModel } = await import("./models");
+    let cfg = await StorePublishConfigModel.findOne();
+    if (!cfg) cfg = await StorePublishConfigModel.create({});
+    res.json(cfg);
+  });
+
+  app.put("/api/admin/store-publish-config", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { StorePublishConfigModel } = await import("./models");
+    let cfg = await StorePublishConfigModel.findOne();
+    if (!cfg) {
+      cfg = await StorePublishConfigModel.create(req.body);
+    } else {
+      Object.assign(cfg, req.body);
+      await cfg.save();
+    }
+    res.json(cfg);
+  });
+
+  // /.well-known/assetlinks.json — for Android TWA (Play Store + Huawei)
+  app.get("/.well-known/assetlinks.json", async (req, res) => {
+    const { StorePublishConfigModel } = await import("./models");
+    const cfg = await StorePublishConfigModel.findOne();
+    const entries: any[] = [];
+    if (cfg?.androidPackage && cfg?.androidFingerprint) {
+      entries.push({
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: cfg.androidPackage,
+          sha256_cert_fingerprints: [cfg.androidFingerprint],
+        },
+      });
+    }
+    if (cfg?.huaweiPackage && cfg?.huaweiFingerprint) {
+      entries.push({
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: cfg.huaweiPackage,
+          sha256_cert_fingerprints: [cfg.huaweiFingerprint],
+        },
+      });
+    }
+    res.setHeader("Content-Type", "application/json");
+    res.json(entries);
+  });
+
+  // /.well-known/apple-app-site-association — for iOS App Clips / Universal Links
+  app.get("/.well-known/apple-app-site-association", async (req, res) => {
+    const { StorePublishConfigModel } = await import("./models");
+    const cfg = await StorePublishConfigModel.findOne();
+    const appId = cfg?.appleTeamId && cfg?.appleBundleId
+      ? `${cfg.appleTeamId}.${cfg.appleBundleId}`
+      : null;
+    const aasa: any = {
+      applinks: {
+        apps: [],
+        details: appId ? [{ appID: appId, paths: ["*"] }] : [],
+      },
+      webcredentials: appId ? { apps: [appId] } : { apps: [] },
+    };
+    res.setHeader("Content-Type", "application/json");
+    res.json(aasa);
+  });
+
   // ═══════════════════════════════════════════════════════
   // ══════════════ TOOLS: HTML Publisher ═══════════════════
   // ═══════════════════════════════════════════════════════
