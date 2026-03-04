@@ -24,17 +24,22 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const SESSION_DAYS = 14;
+  const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+  const SESSION_SEC = SESSION_DAYS * 24 * 60 * 60;
+
   const sessionSettings: session.SessionOptions = {
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
       collectionName: 'sessions',
-      ttl: 30 * 24 * 60 * 60, // 30 days
+      ttl: SESSION_SEC,
     }),
     secret: process.env.SESSION_SECRET || "qirox_super_secret_key",
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: SESSION_MS,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax" as const,
       httpOnly: true,

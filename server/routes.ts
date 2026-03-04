@@ -2533,13 +2533,20 @@ export async function registerRoutes(
 
       if (!user) {
         console.error(`[OTP] verify-email: user not found for email=${cleanEmail}`);
-        // Still return success since OTP was valid — user session will handle auth
         res.json({ ok: true, verified: true });
         return;
       }
 
+      // Extend session to 14 days after successful verification
+      const SESSION_14_DAYS = 14 * 24 * 60 * 60 * 1000;
+      if (req.session && req.session.cookie) {
+        req.session.cookie.maxAge = SESSION_14_DAYS;
+        await new Promise<void>((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
+      }
+
       const userName = (user as any).fullName || (user as any).username || "عميل";
       sendWelcomeEmail(cleanEmail, userName).catch(e => console.error("[Email] welcome failed:", e));
+      console.log(`[OTP] verify-email SUCCESS for ${cleanEmail} — session extended to 14 days`);
       res.json({ ok: true, verified: true });
     } catch (err) {
       console.error("[OTP] verify-email exception:", err);
