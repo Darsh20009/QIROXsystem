@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, LifeBuoy, CheckCircle, Send, Download } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/excel";
 
 interface Ticket {
   id: string;
@@ -76,19 +76,19 @@ export default function AdminSupportTickets() {
 
   const exportExcel = () => {
     if (!tickets) return;
-    const ws = XLSX.utils.json_to_sheet(tickets.map(t => ({
-      التاريخ: new Date(t.createdAt).toLocaleString("ar-SA"),
-      العميل: t.userId?.fullName || "-",
-      البريد: t.userId?.email || "-",
-      الموضوع: t.subject,
-      التصنيف: CAT_LABELS[t.category],
-      الأولوية: PRIORITY_LABELS[t.priority],
-      الحالة: STATUS_LABELS[t.status],
-      "رد الأدمن": t.adminReply || "-",
-    })));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "تذاكر الدعم");
-    XLSX.writeFile(wb, "support-tickets.xlsx");
+    exportToExcel("support-tickets.xlsx", [{
+      name: "تذاكر الدعم",
+      data: tickets.map(t => ({
+        التاريخ: new Date(t.createdAt).toLocaleString("ar-SA"),
+        العميل: t.userId?.fullName || "-",
+        البريد: t.userId?.email || "-",
+        الموضوع: t.subject,
+        التصنيف: CAT_LABELS[t.category],
+        الأولوية: PRIORITY_LABELS[t.priority],
+        الحالة: STATUS_LABELS[t.status],
+        "رد الأدمن": t.adminReply || "-",
+      })),
+    }]);
   };
 
   return (

@@ -6,7 +6,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/excel";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface AnalyticsData {
@@ -36,14 +36,12 @@ export default function AdminAnalytics() {
     refetchInterval: 60000,
   });
 
-  const exportToExcel = () => {
+  const exportAnalytics = () => {
     if (!data) return;
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.json_to_sheet(data.monthlyData);
-    XLSX.utils.book_append_sheet(wb, ws1, "البيانات الشهرية");
-    const ws2 = XLSX.utils.json_to_sheet(data.statusDist.map(s => ({ الحالة: STATUS_LABELS[s._id] || s._id, العدد: s.count })));
-    XLSX.utils.book_append_sheet(wb, ws2, "توزيع الطلبات");
-    XLSX.writeFile(wb, "qirox-analytics.xlsx");
+    exportToExcel("qirox-analytics.xlsx", [
+      { name: "البيانات الشهرية", data: data.monthlyData },
+      { name: "توزيع الطلبات", data: data.statusDist.map(s => ({ الحالة: STATUS_LABELS[s._id] || s._id, العدد: s.count })) },
+    ]);
   };
 
   if (isLoading) return (
@@ -71,7 +69,7 @@ export default function AdminAnalytics() {
             <p className="text-xs text-black/35 dark:text-white/35">بيانات حقيقية من قاعدة البيانات</p>
           </div>
         </div>
-        <Button onClick={exportToExcel} variant="outline" size="sm" className="gap-2 border-black/10 dark:border-white/10 dark:text-white">
+        <Button onClick={exportAnalytics} variant="outline" size="sm" className="gap-2 border-black/10 dark:border-white/10 dark:text-white">
           <Download className="w-4 h-4" />
           تصدير Excel
         </Button>

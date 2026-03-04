@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, TrendingUp, Receipt, Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/excel";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface PaymentData {
@@ -31,29 +31,29 @@ export default function PaymentHistory() {
 
   const exportExcel = () => {
     if (!data) return;
-    const ws = XLSX.utils.json_to_sheet([
-      ...(data.orders || []).map((o: any) => ({
-        النوع: "طلب",
-        الخدمة: o.projectType || o.sector || "-",
-        المبلغ: o.totalAmount || 0,
-        "طريقة الدفع": o.paymentMethod || "-",
-        "الدفعة الأولى": o.isDepositPaid ? "✓" : "✗",
-        الحالة: STATUS_LABELS[o.status] || o.status,
-        التاريخ: new Date(o.createdAt).toLocaleDateString("ar-SA"),
-      })),
-      ...(data.invoices || []).map((inv: any) => ({
-        النوع: "فاتورة",
-        الخدمة: `فاتورة #${inv.invoiceNumber}`,
-        المبلغ: inv.totalAmount || 0,
-        "طريقة الدفع": "-",
-        "الدفعة الأولى": inv.status === "paid" ? "✓" : "✗",
-        الحالة: inv.status === "paid" ? "مدفوع" : inv.status === "unpaid" ? "غير مدفوع" : "ملغي",
-        التاريخ: new Date(inv.createdAt).toLocaleDateString("ar-SA"),
-      })),
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "سجل المدفوعات");
-    XLSX.writeFile(wb, "payment-history.xlsx");
+    exportToExcel("payment-history.xlsx", [{
+      name: "سجل المدفوعات",
+      data: [
+        ...(data.orders || []).map((o: any) => ({
+          النوع: "طلب",
+          الخدمة: o.projectType || o.sector || "-",
+          المبلغ: o.totalAmount || 0,
+          "طريقة الدفع": o.paymentMethod || "-",
+          "الدفعة الأولى": o.isDepositPaid ? "✓" : "✗",
+          الحالة: STATUS_LABELS[o.status] || o.status,
+          التاريخ: new Date(o.createdAt).toLocaleDateString("ar-SA"),
+        })),
+        ...(data.invoices || []).map((inv: any) => ({
+          النوع: "فاتورة",
+          الخدمة: `فاتورة #${inv.invoiceNumber}`,
+          المبلغ: inv.totalAmount || 0,
+          "طريقة الدفع": "-",
+          "الدفعة الأولى": inv.status === "paid" ? "✓" : "✗",
+          الحالة: inv.status === "paid" ? "مدفوع" : inv.status === "unpaid" ? "غير مدفوع" : "ملغي",
+          التاريخ: new Date(inv.createdAt).toLocaleDateString("ar-SA"),
+        })),
+      ],
+    }]);
   };
 
   if (isLoading) return (

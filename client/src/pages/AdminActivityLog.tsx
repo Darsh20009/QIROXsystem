@@ -4,7 +4,7 @@ import { Loader2, Activity, User, FileText, ShoppingCart, Briefcase, Star, Downl
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/excel";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface LogEntry {
@@ -46,17 +46,17 @@ export default function AdminActivityLog() {
 
   const exportExcel = () => {
     if (!logs) return;
-    const ws = XLSX.utils.json_to_sheet(logs.map(l => ({
-      التاريخ: new Date(l.createdAt).toLocaleString("ar-SA"),
-      المستخدم: l.userId?.fullName || "نظام",
-      الدور: l.userId?.role || "-",
-      الإجراء: ACTION_LABELS[l.action] || l.action,
-      الكيان: l.entity,
-      "رقم IP": l.ip || "-",
-    })));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "سجل النشاط");
-    XLSX.writeFile(wb, "activity-log.xlsx");
+    exportToExcel("activity-log.xlsx", [{
+      name: "سجل النشاط",
+      data: logs.map(l => ({
+        التاريخ: new Date(l.createdAt).toLocaleString("ar-SA"),
+        المستخدم: l.userId?.fullName || "نظام",
+        الدور: l.userId?.role || "-",
+        الإجراء: ACTION_LABELS[l.action] || l.action,
+        الكيان: l.entity,
+        "رقم IP": l.ip || "-",
+      })),
+    }]);
   };
 
   return (

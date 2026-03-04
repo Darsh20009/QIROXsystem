@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, DollarSign, Download, RefreshCw, CheckCircle, Clock, Banknote } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/excel";
 
 interface PayrollRecord {
   id: string;
@@ -71,21 +71,21 @@ export default function AdminPayroll() {
 
   const exportExcel = () => {
     if (!records) return;
-    const ws = XLSX.utils.json_to_sheet(records.map(r => ({
-      الموظف: r.userId?.fullName || "-",
-      الدور: r.userId?.role || "-",
-      الشهر: `${MONTHS_AR[r.month - 1]} ${r.year}`,
-      "ساعات العمل": r.workHours.toFixed(1),
-      "سعر الساعة": r.hourlyRate,
-      "الراتب الأساسي": r.baseSalary.toFixed(0),
-      "مكافآت": r.bonuses,
-      "خصومات": r.deductions,
-      "صافي الراتب": r.netSalary.toFixed(0),
-      "الحالة": STATUS_LABELS[r.status],
-    })));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "كشف الرواتب");
-    XLSX.writeFile(wb, `payroll-${genYear}-${genMonth}.xlsx`);
+    exportToExcel(`payroll-${genYear}-${genMonth}.xlsx`, [{
+      name: "كشف الرواتب",
+      data: records.map(r => ({
+        الموظف: r.userId?.fullName || "-",
+        الدور: r.userId?.role || "-",
+        الشهر: `${MONTHS_AR[r.month - 1]} ${r.year}`,
+        "ساعات العمل": r.workHours.toFixed(1),
+        "سعر الساعة": r.hourlyRate,
+        "الراتب الأساسي": r.baseSalary.toFixed(0),
+        "مكافآت": r.bonuses,
+        "خصومات": r.deductions,
+        "صافي الراتب": r.netSalary.toFixed(0),
+        "الحالة": STATUS_LABELS[r.status],
+      })),
+    }]);
   };
 
   const total = (records || []).reduce((acc, r) => acc + r.netSalary, 0);
