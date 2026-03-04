@@ -14,6 +14,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { QiroxIcon } from "@/components/qirox-brand";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
@@ -34,33 +35,39 @@ const SEGMENTS = [
 ];
 
 const TIER_META: Record<string, {
-  labelAr: string; labelEn: string; icon: any; isDark?: boolean;
-  gradient: string; headerGrad: string; glow: string; border: string; checkColor: string;
-  ring: string;
+  labelAr: string; labelEn: string; icon: any;
+  accent: string; accentText: string; accentGlow: string;
+  border: string; ring: string; checkColor: string; badgeGrad: string;
 }> = {
   lite: {
     labelAr: "لايت", labelEn: "Lite", icon: Zap,
-    gradient: "from-teal-50 to-white dark:from-teal-950/30 dark:to-gray-900",
-    headerGrad: "from-teal-400 to-emerald-500",
-    glow: "hover:shadow-teal-200/60 dark:hover:shadow-teal-900/60",
-    border: "border-teal-200/70 dark:border-teal-800/50",
-    checkColor: "text-teal-500", ring: "ring-teal-200 dark:ring-teal-800",
+    accent: "from-cyan-500/20 to-cyan-400/10",
+    accentText: "text-cyan-400",
+    accentGlow: "hover:shadow-cyan-500/20",
+    border: "border-white/[0.08]",
+    ring: "ring-cyan-500/30",
+    checkColor: "text-cyan-400",
+    badgeGrad: "from-cyan-500 to-cyan-400",
   },
   pro: {
     labelAr: "برو", labelEn: "Pro", icon: Star,
-    gradient: "from-violet-50 to-white dark:from-violet-950/30 dark:to-gray-900",
-    headerGrad: "from-violet-500 to-purple-600",
-    glow: "hover:shadow-violet-200/60 dark:hover:shadow-violet-900/60",
-    border: "border-violet-300/80 dark:border-violet-700/60",
-    checkColor: "text-violet-500", ring: "ring-violet-300 dark:ring-violet-700",
+    accent: "from-cyan-400/25 to-blue-400/15",
+    accentText: "text-cyan-300",
+    accentGlow: "hover:shadow-cyan-400/25",
+    border: "border-cyan-500/20",
+    ring: "ring-cyan-400/40",
+    checkColor: "text-cyan-300",
+    badgeGrad: "from-cyan-400 to-blue-400",
   },
   infinite: {
-    labelAr: "إنفينتي", labelEn: "Infinite", icon: InfinityIcon, isDark: true,
-    gradient: "from-gray-950 to-gray-900",
-    headerGrad: "from-gray-700 to-black",
-    glow: "hover:shadow-black/50",
-    border: "border-white/10",
-    checkColor: "text-white/50", ring: "ring-white/20",
+    labelAr: "إنفينتي", labelEn: "Infinite", icon: InfinityIcon,
+    accent: "from-amber-400/20 to-cyan-400/15",
+    accentText: "text-amber-300",
+    accentGlow: "hover:shadow-amber-400/20",
+    border: "border-amber-400/20",
+    ring: "ring-amber-400/40",
+    checkColor: "text-amber-300",
+    badgeGrad: "from-amber-400 to-orange-400",
   },
 };
 
@@ -109,12 +116,11 @@ function getPeriodSuffix(period: BillingPeriod, lang: string): string {
   return "";
 }
 
-function TierCard({ plan, period, idx, segmentColor, onSelect, lang }: { plan: any; period: BillingPeriod; idx: number; segmentColor: string; onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string }) {
+function TierCard({ plan, period, idx, onSelect, lang }: { plan: any; period: BillingPeriod; idx: number; segmentColor: string; onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string }) {
   const cfg = TIER_META[plan.tier] || TIER_META.lite;
   const cfgLabel = lang === "ar" ? cfg.labelAr : cfg.labelEn;
-  const Icon = cfg.icon;
   const price = getPeriodPrice(plan, period);
-  const { isDark, isPopular } = { isDark: !!cfg.isDark, isPopular: plan.isPopular };
+  const isPopular = plan.isPopular;
   const monthlyBase = plan.monthlyPrice ?? 0;
   const monthlyEquiv = period === "monthly" ? price
     : period === "sixmonth" ? Math.round(price / 6)
@@ -144,51 +150,58 @@ function TierCard({ plan, period, idx, segmentColor, onSelect, lang }: { plan: a
         <div className="absolute -top-5 inset-x-0 flex justify-center z-20">
           <motion.span
             initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.4 }}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[11px] font-black px-5 py-1.5 rounded-full shadow-lg shadow-violet-500/30"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[11px] font-black px-5 py-1.5 rounded-full shadow-lg shadow-cyan-500/30"
           >
             <Crown className="w-3 h-3" /> الأكثر طلباً
           </motion.span>
         </div>
       )}
 
-      {/* Glow behind card */}
-      {isPopular && (
-        <div className="absolute -inset-1 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-3xl blur-xl pointer-events-none" />
-      )}
-      {isDark && (
-        <div className="absolute -inset-0.5 bg-gradient-to-br from-white/10 to-white/5 rounded-3xl blur-sm pointer-events-none" />
-      )}
+      {/* Outer glow */}
+      <div className={`absolute -inset-0.5 bg-gradient-to-br ${cfg.accent} rounded-3xl blur-md pointer-events-none opacity-70`} />
 
-      <div className={`relative flex flex-col flex-1 rounded-2xl border overflow-hidden transition-all duration-400 hover:-translate-y-2 hover:shadow-2xl ${cfg.glow} ${
+      {/* Card */}
+      <div className={`relative flex flex-col flex-1 rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${cfg.accentGlow} ${
         isPopular ? `${cfg.border} shadow-xl ring-1 ${cfg.ring}` : cfg.border
-      }`}>
-        {isPopular && <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-violet-400 via-purple-400 to-violet-500" />}
+      } bg-[#0a0a0f]`}>
 
-        <div className={`p-6 flex flex-col flex-1 bg-gradient-to-br ${cfg.gradient}`}>
-          {/* Header */}
+        {/* Top accent line */}
+        <div className={`absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r ${cfg.badgeGrad} opacity-80`} />
+
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+
+        <div className="p-6 flex flex-col flex-1">
+          {/* Header row: Logo + Badge */}
           <div className="flex items-center justify-between mb-5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${cfg.headerGrad} shadow-md`}>
-              <Icon className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${cfg.accent} border ${cfg.border}`}>
+                <QiroxIcon className="w-6 h-6 object-contain" />
+              </div>
+              <div>
+                <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest leading-none mb-0.5">QIROX</p>
+                <p className={`text-xs font-black ${cfg.accentText}`}>{lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}</p>
+              </div>
             </div>
-            <span className={`text-xs font-black px-3 py-1.5 rounded-full bg-gradient-to-r ${cfg.headerGrad} text-white shadow-sm`}>
+            <span className={`text-[10px] font-black px-3 py-1.5 rounded-full bg-gradient-to-r ${cfg.badgeGrad} text-white shadow-sm`}>
               {cfgLabel}
             </span>
           </div>
 
-          <h3 className={`text-xl font-black mb-1 ${isDark ? "text-white" : "text-black dark:text-white"}`}>{lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}</h3>
-          <p className={`text-xs mb-5 leading-relaxed min-h-8 ${isDark ? "text-white/40" : "text-black/40 dark:text-white/40"}`}>{lang === "ar" ? plan.descriptionAr : (plan.descriptionEn || plan.descriptionAr)}</p>
+          <p className="text-white/35 text-xs mb-5 leading-relaxed min-h-8">{lang === "ar" ? plan.descriptionAr : (plan.descriptionEn || plan.descriptionAr)}</p>
 
           {/* Price Box */}
-          <div className={`mb-5 p-4 rounded-2xl ${isDark ? "bg-white/[0.06] border border-white/[0.08]" : "bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.05]"}`}>
+          <div className="mb-5 p-4 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
             <AnimatePresence mode="wait">
               <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
                 <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className={`text-4xl font-black tracking-tight ${isDark ? "text-white" : "text-black dark:text-white"}`}>{price.toLocaleString()}</span>
-                  <span className={`text-sm font-bold ${isDark ? "text-white/50" : "text-black/40 dark:text-white/40"}`}>{lang === "ar" ? "ريال" : "SAR"}</span>
-                  <span className={`text-xs ${isDark ? "text-white/30" : "text-black/25 dark:text-white/25"}`}>{getPeriodSuffix(period, lang)}</span>
+                  <span className="text-4xl font-black tracking-tight text-white">{price.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-white/40">{lang === "ar" ? "ريال" : "SAR"}</span>
+                  <span className="text-xs text-white/25">{getPeriodSuffix(period, lang)}</span>
                 </div>
                 {monthlyEquiv && period !== "monthly" && (
-                  <p className={`text-[10px] mt-1.5 flex items-center gap-1 flex-wrap ${isDark ? "text-white/30" : "text-black/30 dark:text-white/30"}`}>
+                  <p className="text-[10px] mt-1.5 flex items-center gap-1 flex-wrap text-white/30">
                     {lang === "ar"
                       ? <span>= <span className="font-bold">{monthlyEquiv.toLocaleString()} ر.س/شهر</span></span>
                       : <span>= <span className="font-bold">{monthlyEquiv.toLocaleString()} SAR/mo</span></span>}
@@ -196,7 +209,7 @@ function TierCard({ plan, period, idx, segmentColor, onSelect, lang }: { plan: a
                   </p>
                 )}
                 {period === "lifetime" && (
-                  <p className={`text-[10px] mt-1.5 flex items-center gap-1 ${isDark ? "text-white/30" : "text-black/30 dark:text-white/30"}`}>
+                  <p className="text-[10px] mt-1.5 flex items-center gap-1 text-white/30">
                     <Globe className="w-3 h-3" /> {lang === "ar" ? "دومين مجاني لمدة 3 سنوات" : "Free domain for 3 years"}
                   </p>
                 )}
@@ -208,10 +221,8 @@ function TierCard({ plan, period, idx, segmentColor, onSelect, lang }: { plan: a
           <div className="space-y-2 flex-1 mb-5">
             {(lang === "ar" ? plan.featuresAr : (plan.featuresEn || plan.featuresAr))?.map((f: string, i: number) => (
               <motion.div key={i} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                className={`flex items-start gap-2.5 text-xs ${isDark ? "text-white/55" : "text-black/55 dark:text-white/55"}`}>
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                  isDark ? "bg-white/10" : "bg-black/[0.04] dark:bg-white/[0.06]"
-                }`}>
+                className="flex items-start gap-2.5 text-xs text-white/50">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-white/[0.06]">
                   <Check className={`w-2.5 h-2.5 ${cfg.checkColor}`} />
                 </div>
                 <span className="leading-relaxed">{f}</span>
@@ -222,13 +233,7 @@ function TierCard({ plan, period, idx, segmentColor, onSelect, lang }: { plan: a
           {/* CTA */}
           <Button
             onClick={() => onSelect(plan, price, period)}
-            className={`w-full h-12 rounded-xl font-bold text-sm gap-2 transition-all shadow-lg ${
-              isDark
-                ? "bg-white text-black hover:bg-white/90 shadow-white/10"
-                : isPopular
-                ? `bg-gradient-to-r ${cfg.headerGrad} text-white hover:opacity-90 shadow-violet-500/20`
-                : `bg-gradient-to-r ${segmentColor} text-white hover:opacity-90`
-            }`}
+            className={`w-full h-12 rounded-xl font-bold text-sm gap-2 transition-all shadow-lg bg-gradient-to-r ${cfg.badgeGrad} text-white hover:opacity-90 hover:shadow-xl`}
             data-testid={`button-select-${plan.tier}`}
           >
             {lang === "ar" ? `اختر ${cfgLabel}` : `Choose ${cfgLabel}`} <ArrowLeft className="w-4 h-4" />
@@ -460,7 +465,7 @@ export default function Prices() {
                 const cfg = TIER_META[p.tier] || TIER_META.lite;
                 return (
                   <div key={p.id} className="p-4 text-center">
-                    <span className={`text-xs font-black px-3 py-1.5 rounded-full bg-gradient-to-r ${cfg.headerGrad} text-white shadow-sm`}>{lang === "ar" ? cfg.labelAr : cfg.labelEn}</span>
+                    <span className={`text-xs font-black px-3 py-1.5 rounded-full bg-gradient-to-r ${cfg.badgeGrad} text-white shadow-sm`}>{lang === "ar" ? cfg.labelAr : cfg.labelEn}</span>
                   </div>
                 );
               })}
@@ -599,7 +604,7 @@ export default function Prices() {
 
       {/* ── Plan Order Dialog ── */}
       <Dialog open={!!selectedPlan} onOpenChange={v => !v && setSelectedPlan(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-3xl border-0 shadow-2xl" dir={dir}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-3xl border border-white/[0.08] shadow-2xl bg-[#0a0a0f]" dir={dir}>
           {selectedPlan && (() => {
             const cfg = TIER_META[selectedPlan.plan.tier] || TIER_META.lite;
             const cfgLabel = lang === "ar" ? cfg.labelAr : cfg.labelEn;
@@ -610,30 +615,34 @@ export default function Prices() {
             return (
               <div className="flex flex-col">
                 {/* Header */}
-                <div className={`p-6 pb-5 bg-gradient-to-br ${cfg.headerGrad} relative overflow-hidden`}>
-                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "20px 20px" }} />
-                  <button onClick={() => setSelectedPlan(null)} className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors z-10">
-                    <X className="w-4 h-4 text-white" />
+                <div className="p-6 pb-5 relative overflow-hidden border-b border-white/[0.06]">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${cfg.accent} opacity-60`} />
+                  <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                    style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
+                  <button onClick={() => setSelectedPlan(null)} className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10">
+                    <X className="w-4 h-4 text-white/70" />
                   </button>
                   <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-                        <cfg.icon className="w-5 h-5 text-white" />
+                      <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
+                        <QiroxIcon className="w-6 h-6 object-contain" />
                       </div>
                       <div>
-                        <p className="text-white/70 text-[11px] font-bold uppercase tracking-wider">{lang === "ar" ? "الباقة المختارة" : "Selected Plan"}</p>
-                        <p className="text-white font-black text-lg leading-tight">{planName}</p>
+                        <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{lang === "ar" ? "الباقة المختارة" : "Selected Plan"}</p>
+                        <p className={`font-black text-lg leading-tight ${cfg.accentText}`}>{planName}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 rounded-full">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full border border-white/10">
                         <span className="text-white font-black text-sm">{selectedPlan.price.toLocaleString()} {lang === "ar" ? "ريال" : "SAR"}</span>
-                        <span className="text-white/50 text-xs">/ {periodLabel}</span>
+                        <span className="text-white/40 text-xs">/ {periodLabel}</span>
                       </div>
+                      <span className={`text-[10px] font-black px-3 py-1.5 rounded-full bg-gradient-to-r ${cfg.badgeGrad} text-white`}>{cfgLabel}</span>
                       {segInfo && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 rounded-full">
-                          <segInfo.icon className="w-3 h-3 text-white/70" />
-                          <span className="text-white/80 text-xs font-medium">{lang === "ar" ? segInfo.labelAr : segInfo.labelEn}</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full border border-white/10">
+                          <segInfo.icon className="w-3 h-3 text-white/50" />
+                          <span className="text-white/60 text-xs font-medium">{lang === "ar" ? segInfo.labelAr : segInfo.labelEn}</span>
                         </div>
                       )}
                     </div>
@@ -642,22 +651,22 @@ export default function Prices() {
 
                 {/* Body */}
                 <div className="p-6">
-                  <p className="text-black/50 text-sm mb-5 leading-relaxed">
+                  <p className="text-white/40 text-sm mb-5 leading-relaxed">
                     {lang === "ar"
-                      ? <>اخترت <strong className="text-black">{planName}</strong>. ستنتقل الآن لإتمام بيانات مشروعك.</>
-                      : <>You selected <strong className="text-black">{planName}</strong>. You'll now complete your project details.</>}
+                      ? <>اخترت <strong className={cfg.accentText}>{planName}</strong>. ستنتقل الآن لإتمام بيانات مشروعك.</>
+                      : <>You selected <strong className={cfg.accentText}>{planName}</strong>. You'll now complete your project details.</>}
                   </p>
                   <div className="space-y-2.5 mb-6">
                     {planFeatures?.slice(0, 5).map((f: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2.5 text-sm text-black/60">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <div key={i} className="flex items-center gap-2.5 text-sm text-white/50">
+                        <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${cfg.checkColor}`} />
                         {f}
                       </div>
                     ))}
                   </div>
                   <Button
                     onClick={handleGoToOrder}
-                    className={`w-full h-12 rounded-2xl font-bold text-sm gap-2 bg-gradient-to-r ${cfg.headerGrad} text-white hover:opacity-90 shadow-lg`}
+                    className={`w-full h-12 rounded-2xl font-bold text-sm gap-2 bg-gradient-to-r ${cfg.badgeGrad} text-white hover:opacity-90 shadow-lg`}
                     data-testid="button-confirm-order"
                   >
                     {lang === "ar" ? "ابدأ طلبك الآن" : "Start Your Order"} <ArrowLeft className="w-4 h-4" />
