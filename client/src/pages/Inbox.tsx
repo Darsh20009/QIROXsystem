@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MessageSquare, Send, Users, Search, Paperclip, Mic, MicOff, X, Download, Play, Pause, Image as ImageIcon, FileText, CheckCheck, Check, Wifi, WifiOff } from "lucide-react";
+import { Loader2, MessageSquare, Send, Users, Search, Paperclip, Mic, MicOff, X, Download, Play, Pause, Image as ImageIcon, FileText, CheckCheck, Check, Wifi, WifiOff, Trash2 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
 
@@ -96,13 +96,19 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
 // ──────────────────────────────────────────────
 // Message Bubble
 // ──────────────────────────────────────────────
-function MessageBubble({ msg, isMe, contact }: { msg: any; isMe: boolean; contact: any }) {
+function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boolean; contact: any; onDelete?: (id: string) => void }) {
+  const [hovered, setHovered] = useState(false);
   const hasText = !!msg.body;
   const hasAttachment = !!msg.attachmentUrl;
   const attachType = msg.attachmentType;
+  const msgId = msg.id || msg._id;
 
   return (
-    <div className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex items-end gap-2 group ${isMe ? "flex-row-reverse" : ""}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} />}
       <div className={`max-w-[72%] rounded-2xl overflow-hidden ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-black/[0.07] text-black rounded-tl-sm"}`}>
         {hasAttachment && attachType === "image" && (
@@ -133,11 +139,21 @@ function MessageBubble({ msg, isMe, contact }: { msg: any; isMe: boolean; contac
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.body}</p>
           </div>
         )}
-        <div className={`px-3.5 pb-2 flex items-center justify-end gap-1 ${hasText ? "" : ""}`}>
+        <div className={`px-3.5 pb-2 flex items-center justify-end gap-1`}>
           <span className={`text-[9px] ${isMe ? "text-white/40" : "text-black/30"}`}>{timeAgo(msg.createdAt)}</span>
           {isMe && <CheckCheck className="w-3 h-3 text-white/40" />}
         </div>
       </div>
+      {hovered && onDelete && (
+        <button
+          onClick={() => onDelete(msgId)}
+          className="w-6 h-6 flex items-center justify-center rounded-full text-black/25 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+          title="حذف الرسالة"
+          data-testid={`button-delete-message-${msgId}`}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -317,6 +333,19 @@ export default function Inbox() {
       }, 2000);
     }
   };
+
+  // ── Delete Message ──
+  const deleteMutation = useMutation({
+    mutationFn: async (msgId: string) => {
+      const r = await apiRequest("DELETE", `/api/inbox/${msgId}`);
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContact?.id] });
+    },
+    onError: () => toast({ title: "تعذّر حذف الرسالة", variant: "destructive" }),
+  });
 
   // ── Send Message ──
   const sendMutation = useMutation({
@@ -595,7 +624,13 @@ export default function Inbox() {
                     {thread.map((msg: any) => {
                       const isMe = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id);
                       return (
-                        <MessageBubble key={msg.id || msg._id} msg={msg} isMe={isMe} contact={activeContact} />
+                        <MessageBubble
+                          key={msg.id || msg._id}
+                          msg={msg}
+                          isMe={isMe}
+                          contact={activeContact}
+                          onDelete={(id) => deleteMutation.mutate(id)}
+                        />
                       );
                     })}
                     <div ref={bottomRef} />

@@ -433,6 +433,7 @@ const inboxMessageSchema = new mongoose.Schema({
   attachmentSize: Number,
   isAutoMessage: { type: Boolean, default: false },
   autoSender: { type: String, default: "" },
+  deletedBy: [{ type: String }],
 }, { timestamps: true });
 
 const csSessionSchema = new mongoose.Schema({

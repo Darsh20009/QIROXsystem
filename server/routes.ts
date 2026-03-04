@@ -2938,13 +2938,33 @@ export async function registerRoutes(
   app.get("/api/inbox", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { InboxMessageModel } = await import("./models");
-    const uid = (req.user as any).id;
-    const msgs = await InboxMessageModel.find({ $or: [{ fromUserId: uid }, { toUserId: uid }] })
+    const uid = String((req.user as any).id);
+    const msgs = await InboxMessageModel.find({
+      $or: [{ fromUserId: uid }, { toUserId: uid }],
+      deletedBy: { $ne: uid },
+    })
       .populate("fromUserId", "username fullName role")
       .populate("toUserId", "username fullName role")
       .sort({ createdAt: -1 })
       .limit(100);
     res.json(msgs);
+  });
+
+  app.delete("/api/inbox/:messageId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { InboxMessageModel } = await import("./models");
+    const uid = String((req.user as any).id);
+    const msg = await InboxMessageModel.findOne({
+      _id: req.params.messageId,
+      $or: [{ fromUserId: uid }, { toUserId: uid }],
+    });
+    if (!msg) return res.sendStatus(404);
+    if (!(msg as any).deletedBy) (msg as any).deletedBy = [];
+    if (!(msg as any).deletedBy.includes(uid)) {
+      (msg as any).deletedBy.push(uid);
+      await msg.save();
+    }
+    res.json({ ok: true });
   });
 
   app.get("/api/inbox/unread-count", async (req, res) => {
@@ -2979,12 +2999,12 @@ export async function registerRoutes(
   app.get("/api/inbox/thread/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { InboxMessageModel } = await import("./models");
-    const me = (req.user as any).id;
+    const me = String((req.user as any).id);
     const other = req.params.userId;
     const msgs = await InboxMessageModel.find({
-      $or: [{ fromUserId: me, toUserId: other }, { fromUserId: other, toUserId: me }]
+      $or: [{ fromUserId: me, toUserId: other }, { fromUserId: other, toUserId: me }],
+      deletedBy: { $ne: me },
     }).populate("fromUserId", "username fullName role").sort({ createdAt: 1 }).limit(200);
-    // Mark as read
     await InboxMessageModel.updateMany({ fromUserId: other, toUserId: me, read: false }, { read: true });
     res.json(msgs);
   });
