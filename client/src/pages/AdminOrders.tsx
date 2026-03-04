@@ -7,7 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Table } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Table, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -97,6 +99,9 @@ export default function AdminOrders() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
   const [isExporting, setIsExporting] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -239,7 +244,7 @@ export default function AdminOrders() {
       const data = await res.json();
       if (data.sheetUrl) {
         window.open(data.sheetUrl, "_blank");
-        toast({ title: "✅ تم التصدير بنجاح", description: "تم إنشاء جدول البيانات في Google Sheets" });
+        toast({ title: "✅ تم التصدير بنجاح", description: `تم تصدير ${data.rowCount} طلب إلى Google Sheets` });
       } else {
         toast({ title: "خطأ في التصدير", description: data.error || "تعذّر التصدير لجداول البيانات", variant: "destructive" });
       }
@@ -247,6 +252,27 @@ export default function AdminOrders() {
       toast({ title: "خطأ", description: e.message, variant: "destructive" });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleImportSheets = async () => {
+    if (!importUrl.trim()) return;
+    setIsImporting(true);
+    try {
+      const res = await apiRequest("POST", "/api/admin/import/google-sheets", { sheetUrl: importUrl.trim() });
+      const data = await res.json();
+      if (data.updated !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+        toast({ title: "✅ تم الاستيراد بنجاح", description: `تم تحديث ${data.updated} طلب (${data.skipped} تم تخطيه)` });
+        setShowImportDialog(false);
+        setImportUrl("");
+      } else {
+        toast({ title: "خطأ في الاستيراد", description: data.error || "تعذّر الاستيراد", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "خطأ", description: e.message, variant: "destructive" });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -272,10 +298,16 @@ export default function AdminOrders() {
           </h1>
           <p className="text-xs text-black/35 mt-0.5">عرض وإدارة وملء بيانات جميع الطلبات</p>
         </div>
-        <Button size="sm" variant="outline" className="gap-2 h-9 text-xs border-green-200 text-green-700 hover:bg-green-50" onClick={handleExportSheets} disabled={isExporting} data-testid="button-export-sheets">
-          {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Table className="w-3.5 h-3.5" />}
-          تصدير لـ Google Sheets
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-2 h-9 text-xs border-green-200 text-green-700 hover:bg-green-50" onClick={handleExportSheets} disabled={isExporting} data-testid="button-export-sheets">
+            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Table className="w-3.5 h-3.5" />}
+            تصدير لـ Sheets
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2 h-9 text-xs border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => setShowImportDialog(true)} data-testid="button-import-sheets">
+            <Upload className="w-3.5 h-3.5" />
+            استيراد من Sheets
+          </Button>
+        </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-40 h-9 text-xs" data-testid="select-filter-status">
             <SelectValue placeholder="تصفية الحالة" />
@@ -909,6 +941,57 @@ export default function AdminOrders() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Import from Google Sheets Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Upload className="w-4 h-4 text-blue-600" />
+              استيراد من Google Sheets
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
+              <p className="font-bold">كيف يعمل الاستيراد؟</p>
+              <p>• يقرأ البيانات من جدول Google Sheets الذي صدّرته مسبقاً</p>
+              <p>• يُحدّث الحالة والمبلغ والملاحظات لكل طلب حسب رقمه</p>
+              <p>• يجب أن يحتوي الجدول على عمود "رقم الطلب"</p>
+            </div>
+            <div>
+              <Label className="text-xs text-black/60 mb-1.5 block">رابط جدول Google Sheets *</Label>
+              <Input
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={importUrl}
+                onChange={e => setImportUrl(e.target.value)}
+                className="h-9 text-sm border-black/[0.10] font-mono text-xs"
+                dir="ltr"
+                data-testid="input-import-sheet-url"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setShowImportDialog(false); setImportUrl(""); }}
+              className="flex-1"
+            >
+              إلغاء
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleImportSheets}
+              disabled={isImporting || !importUrl.trim()}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="button-confirm-import"
+            >
+              {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" /> : <Upload className="w-3.5 h-3.5 ml-1" />}
+              استيراد الآن
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

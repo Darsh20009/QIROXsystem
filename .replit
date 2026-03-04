@@ -56,3 +56,4 @@ EMAIL_SITE_URL = "https://qiroxstudio.online"
 
 [agent]
 expertMode = true
+integrations = ["google-sheet:1.0.0"]

@@ -7,6 +7,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { type User } from "@shared/schema";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
+import { getUncachableGoogleSheetClient } from "./googleSheets";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -5252,6 +5253,203 @@ export async function registerRoutes(
       });
       res.json(payment);
     } catch (e) { res.status(500).json({ error: "فشل إرسال الدفعة" }); }
+  });
+
+  // ── Google Sheets: Export orders ────────────────────────────────────────────
+  app.post("/api/admin/export/google-sheets", async (req, res) => {
+    const user = req.user as any;
+    if (!user || !["admin", "manager"].includes(user.role)) {
+      return res.status(403).json({ error: "غير مصرح" });
+    }
+    try {
+      const { OrderModel, UserModel } = await import("./models");
+      const orders = await OrderModel.find({})
+        .populate("userId", "fullName username email phone")
+        .populate("assignedTo", "fullName")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const sheets = await getUncachableGoogleSheetClient();
+
+      const spreadsheet = await sheets.spreadsheets.create({
+        requestBody: {
+          properties: { title: `قيروكس — الطلبات ${new Date().toLocaleDateString("ar-SA")}` },
+          sheets: [
+            {
+              properties: { title: "الطلبات", sheetId: 0 },
+            },
+          ],
+        },
+      });
+
+      const spreadsheetId = spreadsheet.data.spreadsheetId!;
+
+      const STATUS_LABELS: Record<string, string> = {
+        pending: "قيد المراجعة",
+        approved: "موافق عليه",
+        in_progress: "قيد التنفيذ",
+        completed: "مكتمل",
+        cancelled: "ملغي",
+        rejected: "مرفوض",
+      };
+
+      const header = [
+        "رقم الطلب", "اسم العميل", "اسم المستخدم", "البريد الإلكتروني", "الهاتف",
+        "نوع الخدمة", "الباقة", "الدورة", "الحالة",
+        "المبلغ (ر.س)", "طريقة الدفع", "المسؤول",
+        "ملاحظات", "تاريخ الإنشاء",
+      ];
+
+      const rows = orders.map((o: any) => {
+        const client = o.userId as any;
+        const assignee = o.assignedTo as any;
+        return [
+          o._id?.toString() || "",
+          client?.fullName || "",
+          client?.username || "",
+          client?.email || "",
+          client?.phone || o.phone || "",
+          o.serviceType || "",
+          o.planTier || "",
+          o.planPeriod || "",
+          STATUS_LABELS[o.status] || o.status || "",
+          o.totalAmount?.toString() || "",
+          o.paymentMethod || "",
+          assignee?.fullName || "",
+          o.adminNotes || o.notes || "",
+          new Date(o.createdAt).toLocaleDateString("ar-SA"),
+        ];
+      });
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: "الطلبات!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [header, ...rows] },
+      });
+
+      // Bold header row + freeze it
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              repeatCell: {
+                range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
+                cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.059, green: 0.090, blue: 0.165 } } },
+                fields: "userEnteredFormat(textFormat,backgroundColor)",
+              },
+            },
+            {
+              updateSheetProperties: {
+                properties: { sheetId: 0, gridProperties: { frozenRowCount: 1 } },
+                fields: "gridProperties.frozenRowCount",
+              },
+            },
+          ],
+        },
+      });
+
+      const sheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+      res.json({ sheetUrl, rowCount: rows.length });
+    } catch (e: any) {
+      console.error("Google Sheets export error:", e?.message);
+      res.status(500).json({ error: e?.message || "فشل التصدير إلى Google Sheets" });
+    }
+  });
+
+  // ── Google Sheets: Import / sync orders from sheet ───────────────────────
+  app.post("/api/admin/import/google-sheets", async (req, res) => {
+    const user = req.user as any;
+    if (!user || !["admin", "manager"].includes(user.role)) {
+      return res.status(403).json({ error: "غير مصرح" });
+    }
+    const { sheetUrl } = req.body;
+    if (!sheetUrl) return res.status(400).json({ error: "رابط الجدول مطلوب" });
+
+    try {
+      // Extract spreadsheet ID from URL
+      const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (!match) return res.status(400).json({ error: "رابط Google Sheets غير صحيح" });
+      const spreadsheetId = match[1];
+
+      const sheets = await getUncachableGoogleSheetClient();
+
+      // Get sheet names first
+      const meta = await sheets.spreadsheets.get({ spreadsheetId });
+      const firstSheet = meta.data.sheets?.[0]?.properties?.title || "Sheet1";
+
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${firstSheet}!A1:Z1000`,
+      });
+
+      const rows = response.data.values || [];
+      if (rows.length < 2) return res.status(400).json({ error: "الجدول فارغ أو لا يحتوي على بيانات" });
+
+      const header = rows[0].map((h: string) => h?.trim());
+      const idIndex = header.indexOf("رقم الطلب");
+      const statusIndex = header.indexOf("الحالة");
+      const amountIndex = header.indexOf("المبلغ (ر.س)");
+      const notesIndex = header.indexOf("ملاحظات");
+
+      if (idIndex === -1) {
+        return res.status(400).json({ error: "عمود 'رقم الطلب' مطلوب في الجدول" });
+      }
+
+      const STATUS_MAP: Record<string, string> = {
+        "قيد المراجعة": "pending",
+        "موافق عليه": "approved",
+        "قيد التنفيذ": "in_progress",
+        "مكتمل": "completed",
+        "ملغي": "cancelled",
+        "مرفوض": "rejected",
+        "pending": "pending",
+        "approved": "approved",
+        "in_progress": "in_progress",
+        "completed": "completed",
+        "cancelled": "cancelled",
+        "rejected": "rejected",
+      };
+
+      const { OrderModel } = await import("./models");
+      let updated = 0;
+      let skipped = 0;
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const orderId = row[idIndex]?.trim();
+        if (!orderId || orderId.length < 10) { skipped++; continue; }
+
+        const updateFields: Record<string, any> = {};
+        if (statusIndex !== -1 && row[statusIndex]) {
+          const mapped = STATUS_MAP[row[statusIndex]?.trim()];
+          if (mapped) updateFields.status = mapped;
+        }
+        if (amountIndex !== -1 && row[amountIndex]) {
+          const amt = parseFloat(row[amountIndex]);
+          if (!isNaN(amt)) updateFields.totalAmount = amt;
+        }
+        if (notesIndex !== -1 && row[notesIndex]) {
+          updateFields.adminNotes = row[notesIndex];
+        }
+
+        if (Object.keys(updateFields).length === 0) { skipped++; continue; }
+
+        try {
+          const result = await OrderModel.findByIdAndUpdate(orderId, { $set: updateFields });
+          if (result) updated++;
+          else skipped++;
+        } catch {
+          skipped++;
+        }
+      }
+
+      res.json({ updated, skipped, total: rows.length - 1 });
+    } catch (e: any) {
+      console.error("Google Sheets import error:", e?.message);
+      res.status(500).json({ error: e?.message || "فشل الاستيراد من Google Sheets" });
+    }
   });
 
   // Initialize seed data
