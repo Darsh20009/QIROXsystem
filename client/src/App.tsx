@@ -79,6 +79,7 @@ const AdminDiscountCodes = lazy(() => import("@/pages/AdminDiscountCodes"));
 const AdminShipments = lazy(() => import("@/pages/AdminShipments"));
 const AdminCronJobs = lazy(() => import("@/pages/AdminCronJobs"));
 const AdminMongoAtlas = lazy(() => import("@/pages/AdminMongoAtlas"));
+const AdminConnectionSettings = lazy(() => import("@/pages/AdminConnectionSettings"));
 const AdminAppPublish = lazy(() => import("@/pages/AdminAppPublish"));
 const AdminSystemFeatures = lazy(() => import("@/pages/AdminSystemFeatures"));
 const AdminExtraAddons = lazy(() => import("@/pages/AdminExtraAddons"));
@@ -188,6 +189,7 @@ function AdminRouter() {
         <Route path="/admin/shipments" component={AdminShipments} />
         <Route path="/admin/cron-jobs" component={AdminCronJobs} />
         <Route path="/admin/atlas" component={AdminMongoAtlas} />
+        <Route path="/admin/connection-settings" component={AdminConnectionSettings} />
         <Route path="/admin/app-publish" component={AdminAppPublish} />
         <Route path="/admin/system-features" component={AdminSystemFeatures} />
         <Route path="/admin/extra-addons" component={AdminExtraAddons} />

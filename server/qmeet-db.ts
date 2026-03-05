@@ -1,15 +1,10 @@
 import mongoose from "mongoose";
-
-let qmeetConn: mongoose.Connection | null = null;
+import { connManager } from "./connection-manager";
 
 export function getQMeetConnection(): mongoose.Connection {
-  if (qmeetConn) return qmeetConn;
-  const uri = process.env.MONGODB_URI!;
-  const qmeetUri = uri.replace(/\/([^/?]+)(\?|$)/, "/qmeet_db$2");
-  qmeetConn = mongoose.createConnection(qmeetUri);
-  qmeetConn.on("connected", () => console.log("[QMeet-DB] Connected to qmeet_db"));
-  qmeetConn.on("error", (e) => console.error("[QMeet-DB] Error:", e.message));
-  return qmeetConn;
+  const conn = connManager.qmeetConn;
+  if (conn) return conn;
+  throw new Error("[QMeet-DB] Connection not initialized. Call connectToDatabase() first.");
 }
 
 function getModel<T>(name: string, schema: mongoose.Schema) {

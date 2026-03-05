@@ -5216,6 +5216,174 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ─── System Connection Settings ──────────────────────────────────────────────
+  app.get("/api/admin/connection-settings", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { connManager } = await import("./connection-manager");
+    const { loadSystemSettings } = await import("./system-settings");
+    const saved = await loadSystemSettings();
+    const status = connManager.getStatus();
+    res.json({
+      status,
+      settings: {
+        mainDbUri: saved.mainDbUri || "",
+        prevMainDbUri: saved.prevMainDbUri || "",
+        qmeetDbUri: saved.qmeetDbUri || "",
+        prevQmeetDbUri: saved.prevQmeetDbUri || "",
+        smtp2goApiKey: saved.smtp2goApiKey ? "****" + saved.smtp2goApiKey.slice(-4) : "",
+        smtp2goSender: saved.smtp2goSender || "",
+        smtp2goSenderName: saved.smtp2goSenderName || "",
+        emailLogoUrl: saved.emailLogoUrl || "",
+        emailSiteUrl: saved.emailSiteUrl || "",
+        smtp2goApiKeySet: !!(saved.smtp2goApiKey),
+      },
+      env: {
+        mainDbUri: process.env.MONGODB_URI ? "****" + process.env.MONGODB_URI.slice(-6) : "",
+        smtp2goApiKey: process.env.SMTP2GO_API_KEY ? "****" + process.env.SMTP2GO_API_KEY.slice(-4) : "",
+        smtp2goSender: process.env.SMTP2GO_SENDER || "",
+      },
+    });
+  });
+
+  app.post("/api/admin/connection-settings/main-db", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { uri } = req.body;
+    if (!uri || typeof uri !== "string" || !uri.startsWith("mongodb")) {
+      return res.status(400).json({ error: "URI غير صالح. يجب أن يبدأ بـ mongodb:// أو mongodb+srv://" });
+    }
+    try {
+      const mongoose = await import("mongoose");
+      const testConn = mongoose.default.createConnection(uri);
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          testConn.close().catch(() => {});
+          reject(new Error("انتهت مهلة الاتصال (10 ثانية). تحقق من الـ URI وصلاحيات الشبكة."));
+        }, 10000);
+        testConn.once("connected", () => { clearTimeout(timer); testConn.close().then(resolve).catch(resolve); });
+        testConn.once("error", (e) => { clearTimeout(timer); reject(new Error("فشل الاتصال: " + e.message)); });
+      });
+
+      const { connManager } = await import("./connection-manager");
+      const { saveSystemSettings } = await import("./system-settings");
+      const prevUri = connManager.primaryUri;
+      await saveSystemSettings({ mainDbUri: uri, prevMainDbUri: prevUri });
+      await connManager.switchMain(uri, prevUri);
+      res.json({ ok: true, message: "تم تغيير قاعدة البيانات الرئيسية بنجاح وإعادة الاتصال" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/connection-settings/qmeet-db", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { uri } = req.body;
+    if (!uri || typeof uri !== "string" || !uri.startsWith("mongodb")) {
+      return res.status(400).json({ error: "URI غير صالح" });
+    }
+    try {
+      const mongoose = await import("mongoose");
+      const testConn = mongoose.default.createConnection(uri);
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => { testConn.close().catch(() => {}); reject(new Error("انتهت مهلة الاتصال")); }, 10000);
+        testConn.once("connected", () => { clearTimeout(timer); testConn.close().then(resolve).catch(resolve); });
+        testConn.once("error", (e) => { clearTimeout(timer); reject(new Error("فشل الاتصال: " + e.message)); });
+      });
+
+      const { connManager } = await import("./connection-manager");
+      const { saveSystemSettings } = await import("./system-settings");
+      const prevUri = connManager.qmeetUri;
+      await saveSystemSettings({ qmeetDbUri: uri, prevQmeetDbUri: prevUri });
+      await connManager.switchQMeet(uri, prevUri);
+      res.json({ ok: true, message: "تم تغيير قاعدة بيانات الاجتماعات بنجاح وإعادة الاتصال" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/connection-settings/email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { smtp2goApiKey, smtp2goSender, smtp2goSenderName, emailLogoUrl, emailSiteUrl } = req.body;
+    const updates: Record<string, string> = {};
+    if (smtp2goApiKey && smtp2goApiKey.length > 8 && !smtp2goApiKey.startsWith("****")) updates.smtp2goApiKey = smtp2goApiKey;
+    if (smtp2goSender !== undefined && smtp2goSender !== "") updates.smtp2goSender = smtp2goSender;
+    if (smtp2goSenderName !== undefined && smtp2goSenderName !== "") updates.smtp2goSenderName = smtp2goSenderName;
+    if (emailLogoUrl !== undefined) updates.emailLogoUrl = emailLogoUrl;
+    if (emailSiteUrl !== undefined) updates.emailSiteUrl = emailSiteUrl;
+    try {
+      const { connManager } = await import("./connection-manager");
+      const { saveSystemSettings } = await import("./system-settings");
+      await saveSystemSettings(updates);
+      connManager.setEmailSettings({
+        apiKey: updates.smtp2goApiKey,
+        sender: updates.smtp2goSender,
+        senderName: updates.smtp2goSenderName,
+        logoUrl: updates.emailLogoUrl,
+        siteUrl: updates.emailSiteUrl,
+      } as any);
+      res.json({ ok: true, message: "تم حفظ إعدادات البريد بنجاح" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/connection-settings/test-email", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    try {
+      const { sendTestEmail } = await import("./email");
+      const user = req.user as any;
+      const ok = await sendTestEmail(user.email, user.fullName || user.username);
+      res.json({ ok, message: ok ? "تم إرسال بريد اختباري بنجاح" : "فشل إرسال البريد - تحقق من مفتاح API" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/connection-settings/migrate-record", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { collection, id } = req.body;
+    if (!collection || !id) return res.status(400).json({ error: "collection و id مطلوبان" });
+    try {
+      const { connManager } = await import("./connection-manager");
+      const secConn = connManager.secondaryConn;
+      if (!secConn) return res.status(400).json({ error: "لا يوجد اتصال أرشيف متاح" });
+      const mongoose = await import("mongoose");
+      const secCollection = secConn.collection(collection);
+      let objId: any;
+      try { objId = new mongoose.default.Types.ObjectId(id); } catch { objId = id; }
+      const doc = await secCollection.findOne({ _id: objId });
+      if (!doc) return res.status(404).json({ error: "السجل غير موجود في قاعدة البيانات القديمة" });
+      const primaryCollection = mongoose.default.connection.collection(collection);
+      const exists = await primaryCollection.findOne({ _id: objId });
+      if (!exists) {
+        await primaryCollection.insertOne(doc);
+      }
+      res.json({ ok: true, message: "تم نقل السجل إلى قاعدة البيانات الجديدة بنجاح", doc });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/admin/connection-settings/secondary-search", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    const { collection, query } = req.query;
+    if (!collection) return res.status(400).json({ error: "collection مطلوب" });
+    try {
+      const { connManager } = await import("./connection-manager");
+      const secConn = connManager.secondaryConn;
+      if (!secConn) return res.json({ records: [], hasSecondary: false });
+      const col = secConn.collection(String(collection));
+      const filter = query ? { $or: [
+        { title: { $regex: query, $options: "i" } },
+        { name: { $regex: query, $options: "i" } },
+        { fullName: { $regex: query, $options: "i" } },
+      ]} : {};
+      const records = await col.find(filter).limit(20).toArray();
+      res.json({ records, hasSecondary: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
   // ─── App Publish Config ───────────────────────────────────────────────────────
   app.get("/api/admin/app-configs", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);

@@ -1,21 +1,32 @@
-import mongoose from "mongoose";
-
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI must be set. MongoDB is now the primary database.");
-}
+import { connManager } from "./connection-manager";
+import { loadSystemSettings } from "./system-settings";
 
 export async function connectToDatabase() {
-  try {
-    if (mongoose.connection.readyState === 1) {
-      return mongoose.connection;
-    }
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI must be set. MongoDB is now the primary database.");
+  }
 
-    await mongoose.connect(MONGODB_URI!);
-    console.log("Connected to MongoDB successfully");
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    process.exit(1);
+  await connManager.initFromEnv();
+
+  const saved = await loadSystemSettings();
+
+  if (saved.mainDbUri && saved.mainDbUri !== process.env.MONGODB_URI) {
+    console.log("[DB] Applying saved mainDbUri from SystemSettings...");
+    await connManager.switchMain(saved.mainDbUri, saved.prevMainDbUri || process.env.MONGODB_URI);
+  }
+
+  if (saved.qmeetDbUri) {
+    await connManager.switchQMeet(saved.qmeetDbUri, saved.prevQmeetDbUri);
+  }
+
+  const emailOverrides: Record<string, string> = {};
+  if (saved.smtp2goApiKey) emailOverrides.apiKey = saved.smtp2goApiKey;
+  if (saved.smtp2goSender) emailOverrides.sender = saved.smtp2goSender;
+  if (saved.smtp2goSenderName) emailOverrides.senderName = saved.smtp2goSenderName;
+  if (saved.emailLogoUrl) emailOverrides.logoUrl = saved.emailLogoUrl;
+  if (saved.emailSiteUrl) emailOverrides.siteUrl = saved.emailSiteUrl;
+  if (Object.keys(emailOverrides).length) {
+    connManager.setEmailSettings(emailOverrides as any);
+    console.log("[DB] Email settings applied from SystemSettings");
   }
 }

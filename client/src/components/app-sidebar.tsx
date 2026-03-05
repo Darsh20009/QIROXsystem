@@ -145,6 +145,7 @@ export function AppSidebar() {
     { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", section: "content", allowedRoles: MANAGEMENT_ROLES },
     // Admin — devtools
     { title: "MongoDB Atlas", icon: Database, url: "/admin/atlas", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إعدادات الاتصال" : "Connection Settings", icon: Settings2, url: "/admin/connection-settings", group: "admin", section: "devtools", allowedRoles: ["admin"] },
     { title: "Cron Jobs", icon: Clock, url: "/admin/cron-jobs", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "نشر التطبيقات" : "App Publishing", icon: Smartphone, url: "/admin/app-publish", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
     // Admin — monitoring

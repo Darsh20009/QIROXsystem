@@ -1,9 +1,17 @@
-const API_KEY = process.env.SMTP2GO_API_KEY || "";
-const SENDER = process.env.SMTP2GO_SENDER || "noreply@qiroxstudio.online";
-const SENDER_NAME = process.env.SMTP2GO_SENDER_NAME || "Qirox";
+import { connManager } from "./connection-manager";
+
 const BASE_URL = "https://api.smtp2go.com/v3/email/send";
-const LOGO_URL = process.env.EMAIL_LOGO_URL || "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png";
-const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
+
+function getEmailCfg() {
+  const s = connManager.emailSettings;
+  return {
+    apiKey: s.apiKey || process.env.SMTP2GO_API_KEY || "",
+    sender: s.sender || process.env.SMTP2GO_SENDER || "noreply@qiroxstudio.online",
+    senderName: s.senderName || process.env.SMTP2GO_SENDER_NAME || "Qirox",
+    logoUrl: s.logoUrl || process.env.EMAIL_LOGO_URL || "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png",
+    siteUrl: s.siteUrl || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online",
+  };
+}
 
 function cleanName(name: string): string {
   if (!name) return "عزيزي العميل";
@@ -12,11 +20,12 @@ function cleanName(name: string): string {
 }
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string): Promise<boolean> {
+  const cfg = getEmailCfg();
   try {
     const payload: Record<string, any> = {
-      api_key: API_KEY,
+      api_key: cfg.apiKey,
       to: [`${toName} <${to}>`],
-      sender: `${SENDER_NAME} <${SENDER}>`,
+      sender: `${cfg.senderName} <${cfg.sender}>`,
       subject,
       html_body: htmlBody,
       text_body: textBody || stripHtml(htmlBody),
@@ -93,7 +102,7 @@ function baseTemplate(content: string) {
   </td></tr>
   <tr><td style="${S.body}">${content}</td></tr>
   <tr><td style="${S.footer}">
-    <p style="${S.footerText}">&#169; 2026 QIROX Studio &bull; <a href="${SITE_URL}" style="color:#9ca3af;text-decoration:none;">qiroxstudio.online</a></p>
+    <p style="${S.footerText}">&#169; 2026 QIROX Studio &bull; <a href="${getEmailCfg().siteUrl}" style="color:#9ca3af;text-decoration:none;">qiroxstudio.online</a></p>
   </td></tr>
 </table>
 </td></tr>
@@ -131,7 +140,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<boolea
     title(`اهلاً بك في QIROX، ${displayName}!`) +
     text("تم انشاء حسابك بنجاح. انت الآن جزء من منظومة QIROX لبناء الانظمة الرقمية الاحترافية.") +
     highlight("لوحة التحكم الخاصة بك جاهزة &mdash; تصفح خدماتنا وابدأ مشروعك الأول") +
-    btn(`${SITE_URL}/dashboard`, "الذهاب للوحة التحكم") +
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الذهاب للوحة التحكم") +
     divider() +
     text("اذا لم تقم بانشاء هذا الحساب، تجاهل هذا البريد.", "font-size:12px;color:#9ca3af;")
   );
@@ -353,7 +362,7 @@ export async function sendOrderConfirmationEmail(to: string, name: string, order
     text("محتويات الطلب:") +
     itemsList +
     text(`سيتواصل معك فريق QIROX خلال <strong>24 ساعة</strong> لإتمام الدفع والبدء في التنفيذ.`) +
-    btn(`${SITE_URL}/dashboard`, "متابعة الطلب")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة الطلب")
   );
   return sendEmail(to, displayName, `تأكيد طلبك #${orderId.slice(-8).toUpperCase()} | QIROX`, html);
 }
@@ -375,7 +384,7 @@ export async function sendOrderStatusEmail(to: string, name: string, orderId: st
     badge(s.badgeKey, s.label) +
     text(s.desc) +
     highlight(`رقم الطلب: #${orderId.slice(-8).toUpperCase()}`) +
-    btn(`${SITE_URL}/dashboard`, "عرض الطلب")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الطلب")
   );
   return sendEmail(to, displayName, `تحديث طلبك: ${s.label} | QIROX`, html);
 }
@@ -385,7 +394,7 @@ export async function sendMessageNotificationEmail(to: string, name: string, sen
     tag("رسالة جديدة") +
     title(`لديك رسالة جديدة من ${senderName}`) +
     highlight(`&ldquo;${preview.slice(0, 120)}${preview.length > 120 ? '...' : ''}&rdquo;`) +
-    btn(`${SITE_URL}/dashboard`, "الرد على الرسالة")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الرد على الرسالة")
   );
   return sendEmail(to, name, `رسالة من ${senderName} | QIROX`, html);
 }
@@ -420,7 +429,7 @@ export async function sendProjectUpdateEmail(to: string, name: string, projectNa
     ]) +
     progressBar +
     (note ? highlight(`ملاحظة: ${note}`) : "") +
-    btn(`${SITE_URL}/dashboard`, "متابعة المشروع")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
   );
   return sendEmail(to, name, `تحديث مشروع: ${projectName} | QIROX`, html);
 }
@@ -444,7 +453,7 @@ export async function sendTaskAssignedEmail(to: string, name: string, taskTitle:
     title("تم تكليفك بمهمة جديدة") +
     text(`مرحباً ${cleanName(name)}، تم اسناد مهمة جديدة اليك في مشروع <strong>${projectName}</strong>:`) +
     infoTable(rows) +
-    btn(`${SITE_URL}/dashboard`, "عرض المهمة")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض المهمة")
   );
   return sendEmail(to, name, `مهمة جديدة: ${taskTitle} | QIROX`, html);
 }
@@ -460,7 +469,7 @@ export async function sendTaskCompletedEmail(to: string, name: string, taskTitle
       ["انجزها", completedBy],
       ["التاريخ", new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })],
     ]) +
-    btn(`${SITE_URL}/dashboard`, "متابعة المشروع")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
   );
   return sendEmail(to, name, `انجاز مهمة: ${taskTitle} | QIROX`, html);
 }
@@ -504,7 +513,7 @@ export async function sendFeaturesEmail(
     </table>` +
     divider() +
     text("يمكنك متابعة تقدم مشروعك وجميع التفاصيل من خلال لوحة التحكم.", "font-size:12px;color:#9ca3af;") +
-    btn(`${SITE_URL}/dashboard`, "متابعة المشروع")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "متابعة المشروع")
   );
   return sendEmail(to, toName, `ملف مميزات مشروعك | ${projectName} | QIROX`, html);
 }
@@ -531,7 +540,7 @@ export async function sendAdminNewClientEmail(adminEmail: string, clientName: st
       ["الهاتف", clientPhone || "—"],
       ["التاريخ", new Date().toLocaleString('ar-SA')],
     ]) +
-    btn(`${SITE_URL}/admin/customers`, "عرض العميل")
+    btn(`${getEmailCfg().siteUrl}/admin/customers`, "عرض العميل")
   );
   return sendEmail(adminEmail, "فريق QIROX", `عميل جديد: ${clientName} | QIROX`, html);
 }
@@ -552,7 +561,7 @@ export async function sendAdminNewOrderEmail(adminEmail: string, clientName: str
     infoTable(rows) +
     `<p style="${S.text}font-weight:700;">الخدمات المطلوبة:</p>` +
     servicesList +
-    btn(`${SITE_URL}/admin/orders`, "مراجعة الطلب الآن")
+    btn(`${getEmailCfg().siteUrl}/admin/orders`, "مراجعة الطلب الآن")
   );
   return sendEmail(adminEmail, "فريق QIROX", `طلب جديد من ${clientName} | QIROX`, html);
 }
@@ -568,7 +577,7 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
       ["كلمة المرور", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${password}</span>`],
     ]) +
     `<p style="margin:0 0 14px 0;font-size:13px;color:#ef4444;">يُرجى تغيير كلمة المرور فور تسجيل الدخول لأول مرة.</p>` +
-    btn(`${SITE_URL}/login`, "تسجيل الدخول الآن") +
+    btn(`${getEmailCfg().siteUrl}/login`, "تسجيل الدخول الآن") +
     divider() +
     text("اذا لم تطلب انشاء هذا الحساب، تواصل معنا فوراً.", "font-size:12px;color:#9ca3af;")
   );
@@ -617,7 +626,7 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
     infoTable(totalsRows) +
     (invoice.notes ? text(`<strong>ملاحظات:</strong> ${invoice.notes}`, "font-size:13px;margin-top:12px;") : "") +
     text("معلومات التحويل البنكي: IBAN: SA0380205098017222121010", "font-size:12px;color:#9ca3af;") +
-    btn(`${SITE_URL}/dashboard`, "عرض الفاتورة في لوحة التحكم")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض الفاتورة في لوحة التحكم")
   );
   return sendEmail(to, clientName, `فاتورة رقم ${invoice.invoiceNumber} | QIROX`, html);
 }
@@ -648,7 +657,7 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
     </table>` +
     infoTable(rows) +
     `<p style="margin:14px 0;font-size:13px;font-weight:700;color:#16a34a;">تم استلام المبلغ بنجاح &mdash; شكراً لثقتك في QIROX</p>` +
-    btn(`${SITE_URL}/dashboard`, "عرض لوحة التحكم")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض لوحة التحكم")
   );
   return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html);
 }
@@ -678,7 +687,7 @@ export async function sendConsultationConfirmationEmail(to: string, clientName: 
     ]) +
     (data.meetingLink ? btn(data.meetingLink, "انضم للاجتماع") : "") +
     text("إذا أردت إلغاء أو تعديل الموعد، تواصل معنا قبل 24 ساعة على الأقل.") +
-    btn(`${SITE_URL}/consultation`, "عرض تفاصيل الحجز")
+    btn(`${getEmailCfg().siteUrl}/consultation`, "عرض تفاصيل الحجز")
   );
   return sendEmail(to, clientName, "تأكيد موعد الاستشارة | QIROX", html);
 }
@@ -709,7 +718,7 @@ export async function sendConsultationNotificationEmail(to: string, staffName: s
       ["نوع الاستشارة", typeLabel],
       ["الموضوع", data.topic || "استشارة عامة"],
     ]) +
-    btn(`${SITE_URL}/dashboard/consultations`, "تأكيد الموعد")
+    btn(`${getEmailCfg().siteUrl}/dashboard/consultations`, "تأكيد الموعد")
   );
   return sendEmail(to, staffName, `حجز استشارة جديد من ${data.clientName} | QIROX`, html);
 }
@@ -741,7 +750,7 @@ export async function sendShipmentUpdateEmail(to: string, clientName: string, da
       ...(data.estimatedDelivery ? [["الوصول المتوقع", data.estimatedDelivery] as [string,string]] : []),
     ]) +
     (data.note ? `<p style="${S.text}">${data.note}</p>` : "") +
-    (data.courierUrl ? btn(data.courierUrl, "تتبع شحنتك") : btn(`${SITE_URL}/dashboard`, "عرض طلباتي"))
+    (data.courierUrl ? btn(data.courierUrl, "تتبع شحنتك") : btn(`${getEmailCfg().siteUrl}/dashboard`, "عرض طلباتي"))
   );
   return sendEmail(to, clientName, `تحديث شحنة: ${data.productName} | QIROX`, html);
 }
@@ -805,12 +814,12 @@ export async function sendTestEmail(to: string, name: string): Promise<boolean> 
     text(`مرحباً ${name}، هذا بريد تجريبي للتأكد من ان نظام ارسال البريد الالكتروني في QIROX يعمل بشكل صحيح.`) +
     infoTable([
       ["النظام", "SMTP2GO"],
-      ["المرسل", SENDER],
+      ["المرسل", getEmailCfg().sender],
       ["التوقيت", new Date().toLocaleString('ar-SA')],
       ["الحالة", badge("badgeGreen", "يعمل")],
     ]) +
     text("جميع انواع البريد الالكتروني جاهزة: ترحيب، تأكيد طلب، تحديث حالة، اشعار مشروع، اسناد مهمة.") +
-    btn(`${SITE_URL}/dashboard`, "الذهاب للوحة التحكم")
+    btn(`${getEmailCfg().siteUrl}/dashboard`, "الذهاب للوحة التحكم")
   );
   return sendEmail(to, name, "اختبار نظام البريد | QIROX", html);
 }
@@ -905,7 +914,7 @@ export async function sendWalletTopupStatusEmail(to: string, name: string, amoun
             }
           </p>
           ${!isApproved && reason ? `<p style="margin:0 0 20px 0;font-size:13px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;"><strong>السبب:</strong> ${reason}</p>` : ''}
-          <a href="${SITE_URL}/dashboard/wallet" style="display:inline-block;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#06b6d4;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;">
+          <a href="${getEmailCfg().siteUrl}/dashboard/wallet" style="display:inline-block;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#06b6d4;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:700;">
             عرض المحفظة
           </a>
         </td>

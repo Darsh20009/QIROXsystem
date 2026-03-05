@@ -10,6 +10,35 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 5, 2026 - Session 38)
+
+### إعدادات الاتصال الديناميكية (Dynamic Connection Settings)
+
+نظام كامل لتغيير قواعد البيانات وخدمة البريد من لوحة الأدمن دون إعادة نشر.
+
+**الملفات الجديدة:**
+- `server/connection-manager.ts` — يدير اتصالات Primary + Secondary (Archive) + QMeet مع دعم التبديل الحي
+- `server/system-settings.ts` — يحفظ الإعدادات في قاعدة Bootstrap (env-var) منفصلة دائماً
+- `client/src/pages/AdminConnectionSettings.tsx` — واجهة الأدمن لإدارة كل الإعدادات
+
+**التعديلات:**
+- `server/db.ts` — يبدأ بـ connManager ويُطبق الإعدادات المحفوظة
+- `server/qmeet-db.ts` — يستخدم connManager.qmeetConn بدل إنشاء اتصال خاص
+- `server/email.ts` — متغيرات الإعداد الثابتة أصبحت `getEmailCfg()` ديناميكية
+- `server/routes.ts` — API routes جديدة لإدارة الاتصالات ونقل السجلات
+- `client/src/App.tsx` + `app-sidebar.tsx` — تسجيل الصفحة والرابط
+
+**المنطق:**
+- عند تغيير URI → يُختبر الاتصال أولاً → القديمة تصبح Secondary/Archive → الجديدة هي Primary
+- البيانات القديمة لا تُحذف (تبقى في Archive قابلة للقراءة)
+- يمكن نقل سجلات محددة من Archive للجديدة بالبحث أو ID مباشرة
+- تغيير إعدادات البريد ينعكس فوراً بدون إعادة تشغيل
+
+**Route الصفحة:** `/admin/connection-settings` (admin فقط)
+
+### إصلاح الوضع الليلي لألوان الشارات والحالات
+أضيف 43 قاعدة CSS لتحويل الألوان الفاتحة (`bg-amber-50`, `bg-red-50`, `bg-blue-100`, إلخ) إلى مكافئاتها الداكنة في الوضع الليلي.
+
 ## Latest Changes (Mar 4, 2026 - Session 37)
 
 ### نظام توثيق الجهاز (Device 2FA) عند تسجيل الدخول
