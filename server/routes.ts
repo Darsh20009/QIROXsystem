@@ -3301,31 +3301,42 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  // Step 3: Generate authentication options (login — requires identifier)
+  // Step 3: Generate authentication options (login)
+  // If identifier provided → targeted flow (only user's credentials shown)
+  // If no identifier → discoverable/resident-key flow (browser shows its own picker)
   app.post("/api/auth/webauthn/auth-options", async (req, res) => {
     try {
       const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
       const { UserModel, WebAuthnCredentialModel } = await import("./models");
       const { identifier } = req.body;
-      if (!identifier) return res.status(400).json({ error: "أدخل البريد الإلكتروني أو اسم المستخدم" });
-      const id = String(identifier).toLowerCase().trim();
-      const user = await UserModel.findOne({
-        $or: [{ email: id }, { username: id }, { phone: id }, { whatsappNumber: id }],
-      });
-      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
-      const creds = await WebAuthnCredentialModel.find({ userId: user._id });
-      if (!creds.length) return res.status(404).json({ error: "لم يتم تسجيل بصمة لهذا الحساب بعد" });
-      const allowCredentials = creds.map((c: any) => ({
-        id: c.credentialId,
-        transports: c.transports as AuthenticatorTransportFuture[],
-      }));
+
+      let allowCredentials: { id: string; transports: AuthenticatorTransportFuture[] }[] = [];
+      let resolvedUserId: string | null = null;
+
+      if (identifier) {
+        const id = String(identifier).toLowerCase().trim();
+        const user = await UserModel.findOne({
+          $or: [{ email: id }, { username: id }, { phone: id }, { whatsappNumber: id }],
+        });
+        if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+        const creds = await WebAuthnCredentialModel.find({ userId: user._id });
+        if (!creds.length) return res.status(404).json({ error: "لم يتم تسجيل بصمة لهذا الحساب بعد" });
+        allowCredentials = creds.map((c: any) => ({
+          id: c.credentialId,
+          transports: c.transports as AuthenticatorTransportFuture[],
+        }));
+        resolvedUserId = String(user._id);
+      }
+      // If no identifier: allowCredentials stays empty → browser shows discoverable credential picker
+
       const options = await generateAuthenticationOptions({
         rpID: RP_ID,
-        allowCredentials,
+        allowCredentials: allowCredentials.length ? allowCredentials : undefined,
         userVerification: "preferred",
       });
       (req.session as any).webauthnAuthChallenge = options.challenge;
-      (req.session as any).webauthnAuthUserId = String(user._id);
+      if (resolvedUserId) (req.session as any).webauthnAuthUserId = resolvedUserId;
+      else delete (req.session as any).webauthnAuthUserId;
       await new Promise<void>((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
       res.json(options);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -3338,11 +3349,17 @@ export async function registerRoutes(
       const { UserModel, WebAuthnCredentialModel, DeviceTokenModel } = await import("./models");
       const { randomBytes, createHash } = await import("crypto");
       const expectedChallenge = (req.session as any).webauthnAuthChallenge;
-      const userId = (req.session as any).webauthnAuthUserId;
-      if (!expectedChallenge || !userId) return res.status(400).json({ error: "جلسة التحقق منتهية، أعد المحاولة" });
+      const sessionUserId = (req.session as any).webauthnAuthUserId as string | undefined;
+      if (!expectedChallenge) return res.status(400).json({ error: "جلسة التحقق منتهية، أعد المحاولة" });
       const { response: assertion } = req.body;
-      const credRecord = await WebAuthnCredentialModel.findOne({ credentialId: assertion.id, userId });
-      if (!credRecord) return res.status(400).json({ error: "لم يتم التعرف على هذا الجهاز" });
+
+      // Find credential — filter by userId if known (targeted), otherwise discoverable (lookup by credentialId only)
+      const credRecord = sessionUserId
+        ? await WebAuthnCredentialModel.findOne({ credentialId: assertion.id, userId: sessionUserId })
+        : await WebAuthnCredentialModel.findOne({ credentialId: assertion.id });
+
+      if (!credRecord) return res.status(400).json({ error: "لم يتم التعرف على هذا الجهاز، يرجى تسجيل البصمة أولاً" });
+
       const verification = await verifyAuthenticationResponse({
         response: assertion,
         expectedChallenge,
@@ -3359,7 +3376,10 @@ export async function registerRoutes(
       await WebAuthnCredentialModel.updateOne({ _id: credRecord._id }, { counter: verification.authenticationInfo.newCounter, lastUsed: new Date() });
       delete (req.session as any).webauthnAuthChallenge;
       delete (req.session as any).webauthnAuthUserId;
-      const user = await UserModel.findById(userId);
+
+      // Resolve user — from session or from credential record (discoverable flow)
+      const resolvedUserId = sessionUserId || String(credRecord.userId);
+      const user = await UserModel.findById(resolvedUserId);
       if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
       req.login(user as any, async (err) => {
         if (err) return next(err);

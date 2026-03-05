@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { checkBiometricAvailable, loginWithBiometric } from "@/hooks/use-biometric";
+import {
+  checkBiometricAvailable,
+  isBiometricRegisteredLocally,
+  loginWithBiometric,
+} from "@/hooks/use-biometric";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Fingerprint, Loader2 } from "lucide-react";
@@ -14,32 +17,27 @@ interface Props {
 
 export function BiometricButton({ prefillIdentifier = "", onSuccess, className }: Props) {
   const [available, setAvailable] = useState<boolean | null>(null);
-  const [identifier, setIdentifier] = useState(prefillIdentifier);
+  const [registeredLocally, setRegisteredLocally] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showInput, setShowInput] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    checkBiometricAvailable().then(setAvailable);
+    checkBiometricAvailable().then(ok => {
+      setAvailable(ok);
+      if (ok) setRegisteredLocally(isBiometricRegisteredLocally());
+    });
   }, []);
 
-  useEffect(() => {
-    setIdentifier(prefillIdentifier);
-  }, [prefillIdentifier]);
-
-  if (!available) return null;
+  // Only show if biometric hardware is available AND a credential was previously registered on this device
+  if (!available || !registeredLocally) return null;
 
   const handleLogin = async () => {
-    const id = identifier.trim();
-    if (!id) {
-      setShowInput(true);
-      return;
-    }
     setLoading(true);
     try {
-      const user = await loginWithBiometric(id);
-      toast({ title: `مرحباً ${user.fullName || user.username}`, description: "تم تسجيل الدخول بالبصمة" });
+      // Use discoverable flow (no identifier needed) if no prefill; otherwise targeted flow
+      const user = await loginWithBiometric(prefillIdentifier || undefined);
+      toast({ title: `مرحباً ${user.fullName || user.username}`, description: "تم تسجيل الدخول بالبصمة ✅" });
       if (onSuccess) {
         onSuccess(user);
       } else {
@@ -53,12 +51,12 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
       }
     } catch (err: any) {
       const msg = err.message || "";
-      if (msg.includes("لم يتم تسجيل بصمة") || msg.includes("غير موجود")) {
-        toast({ title: "لا توجد بصمة مسجّلة", description: msg, variant: "destructive" });
-      } else if (msg.toLowerCase().includes("cancel") || msg.includes("NotAllowed")) {
+      if (msg.toLowerCase().includes("cancel") || msg.includes("NotAllowed") || msg.includes("AbortError")) {
         toast({ title: "تم الإلغاء", description: "لم يتم التحقق من البصمة" });
+      } else if (msg.includes("لم يتم التعرف") || msg.includes("تسجيل البصمة")) {
+        toast({ title: "البصمة غير مسجّلة", description: "سجّل دخولك بكلمة المرور ثم أضف بصمتك من الملف الشخصي", variant: "destructive" });
       } else {
-        toast({ title: "تعذّر تسجيل الدخول", description: msg, variant: "destructive" });
+        toast({ title: "تعذّر تسجيل الدخول بالبصمة", description: msg, variant: "destructive" });
       }
     } finally {
       setLoading(false);
@@ -66,19 +64,7 @@ export function BiometricButton({ prefillIdentifier = "", onSuccess, className }
   };
 
   return (
-    <div className={`flex flex-col gap-2 ${className || ""}`}>
-      {showInput && !prefillIdentifier && (
-        <Input
-          dir="ltr"
-          placeholder="البريد الإلكتروني أو اسم المستخدم"
-          value={identifier}
-          onChange={e => setIdentifier(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleLogin()}
-          className="text-center"
-          autoFocus
-          data-testid="input-biometric-identifier"
-        />
-      )}
+    <div className={className}>
       <Button
         type="button"
         variant="outline"

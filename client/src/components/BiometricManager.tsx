@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { checkBiometricAvailable, registerBiometric } from "@/hooks/use-biometric";
+import { checkBiometricAvailable, registerBiometric, clearBiometricLocal } from "@/hooks/use-biometric";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +48,10 @@ export function BiometricManager() {
       await apiRequest("DELETE", `/api/auth/webauthn/credentials/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/webauthn/credentials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/webauthn/credentials"] }).then(() => {
+        const remaining = queryClient.getQueryData<Credential[]>(["/api/auth/webauthn/credentials"]);
+        if (!remaining || remaining.length === 0) clearBiometricLocal();
+      });
       toast({ title: "تم حذف البصمة" });
     },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),

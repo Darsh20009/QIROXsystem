@@ -24,6 +24,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ModificationRequest, Order } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { BiometricManager } from "@/components/BiometricManager";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
@@ -2539,6 +2540,17 @@ export default function Dashboard() {
             )}
           </motion.div>
         )}
+
+        {/* Account Security — Biometric Registration for clients */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }} className="mb-8">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5">
+            <p className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <KeyRound className="w-3.5 h-3.5" />
+              {L ? "أمان الحساب" : "Account Security"}
+            </p>
+            <BiometricManager />
+          </div>
+        </motion.div>
 
         {/* CTA Band */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

@@ -2,6 +2,8 @@ import { startRegistration, startAuthentication } from "@simplewebauthn/browser"
 import { saveDeviceToken } from "./use-auth";
 import { queryClient } from "@/lib/queryClient";
 
+const BIOMETRIC_DEVICE_KEY = "qirox_biometric_device";
+
 export function isBiometricSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -17,6 +19,21 @@ export async function checkBiometricAvailable(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Mark that a biometric has been registered on this device */
+export function markBiometricRegistered(): void {
+  try { localStorage.setItem(BIOMETRIC_DEVICE_KEY, "1"); } catch {}
+}
+
+/** Check if any biometric was previously registered from this browser */
+export function isBiometricRegisteredLocally(): boolean {
+  try { return localStorage.getItem(BIOMETRIC_DEVICE_KEY) === "1"; } catch { return false; }
+}
+
+/** Clear local biometric flag (e.g. after deleting all credentials) */
+export function clearBiometricLocal(): void {
+  try { localStorage.removeItem(BIOMETRIC_DEVICE_KEY); } catch {}
 }
 
 async function apiFetch(url: string, body?: object) {
@@ -38,16 +55,26 @@ export async function registerBiometric(deviceName?: string): Promise<void> {
     response: attestation,
     deviceName: deviceName || getDeviceLabel(),
   });
+  markBiometricRegistered();
   await queryClient.invalidateQueries({ queryKey: ["/api/auth/webauthn/credentials"] });
 }
 
-export async function loginWithBiometric(identifier: string): Promise<any> {
-  const options = await apiFetch("/api/auth/webauthn/auth-options", { identifier });
+/**
+ * Login with biometric.
+ * - If identifier provided: targeted flow (server returns only user's credentials)
+ * - If no identifier: discoverable/resident-key flow (browser shows its own picker)
+ */
+export async function loginWithBiometric(identifier?: string): Promise<any> {
+  const body: Record<string, string> = {};
+  if (identifier?.trim()) body.identifier = identifier.trim();
+
+  const options = await apiFetch("/api/auth/webauthn/auth-options", body);
   const assertion = await startAuthentication({ optionsJSON: options });
   const user = await apiFetch("/api/auth/webauthn/auth-verify", { response: assertion });
   if (user.deviceToken) {
     saveDeviceToken(user.deviceToken);
   }
+  markBiometricRegistered();
   const userData = { ...user };
   delete userData.deviceToken;
   queryClient.setQueryData(["/api/user"], userData);
