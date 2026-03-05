@@ -1,6 +1,7 @@
 // @ts-nocheck
 import type { Express } from "express";
 import type { Server } from "http";
+import type { AuthenticatorTransportFuture } from "@simplewebauthn/types";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -3208,6 +3209,170 @@ export async function registerRoutes(
     sendLoginOtpEmail(email, user.fullName || user.username, code, ua).catch(console.error);
     res.json({ ok: true });
   });
+  // ── WebAuthn / Passkey Biometric Auth ──
+  const RP_NAME = "QIROX Studio";
+  const RP_ID = process.env.NODE_ENV === "production" ? (process.env.RP_ID || "qiroxstudio.online") : "localhost";
+  const ORIGIN = process.env.NODE_ENV === "production"
+    ? (process.env.WEBAUTHN_ORIGIN || "https://qiroxstudio.online")
+    : "http://localhost:5000";
+
+  // List user's registered passkeys
+  app.get("/api/auth/webauthn/credentials", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { WebAuthnCredentialModel } = await import("./models");
+    const creds = await WebAuthnCredentialModel.find({ userId: (req.user as any)._id || (req.user as any).id }).sort({ createdAt: -1 });
+    res.json(creds);
+  });
+
+  // Delete a passkey
+  app.delete("/api/auth/webauthn/credentials/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { WebAuthnCredentialModel } = await import("./models");
+    const cred = await WebAuthnCredentialModel.findOneAndDelete({ _id: req.params.id, userId: (req.user as any)._id || (req.user as any).id });
+    if (!cred) return res.sendStatus(404);
+    res.sendStatus(204);
+  });
+
+  // Step 1: Generate registration options (user must be logged in)
+  app.post("/api/auth/webauthn/register-options", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { generateRegistrationOptions } = await import("@simplewebauthn/server");
+      const { WebAuthnCredentialModel } = await import("./models");
+      const user = req.user as any;
+      const userId = String(user._id || user.id);
+      const existing = await WebAuthnCredentialModel.find({ userId });
+      const excludeCredentials = existing.map((c: any) => ({
+        id: c.credentialId,
+        transports: c.transports as AuthenticatorTransportFuture[],
+      }));
+      const options = await generateRegistrationOptions({
+        rpName: RP_NAME,
+        rpID: RP_ID,
+        userName: user.email || user.username || userId,
+        userDisplayName: user.fullName || user.username || "مستخدم",
+        attestationType: "none",
+        excludeCredentials,
+        authenticatorSelection: {
+          residentKey: "preferred",
+          userVerification: "preferred",
+          authenticatorAttachment: "platform",
+        },
+      });
+      (req.session as any).webauthnRegChallenge = options.challenge;
+      await new Promise<void>((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
+      res.json(options);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Step 2: Verify registration response and save credential
+  app.post("/api/auth/webauthn/register-verify", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
+      const { WebAuthnCredentialModel } = await import("./models");
+      const user = req.user as any;
+      const expectedChallenge = (req.session as any).webauthnRegChallenge;
+      if (!expectedChallenge) return res.status(400).json({ error: "لا يوجد تحدي تسجيل نشط، أعد المحاولة" });
+      const { response: attestation, deviceName } = req.body;
+      const verification = await verifyRegistrationResponse({
+        response: attestation,
+        expectedChallenge,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+      });
+      if (!verification.verified || !verification.registrationInfo) {
+        return res.status(400).json({ error: "فشل التحقق من البصمة" });
+      }
+      const { credential } = verification.registrationInfo;
+      const userId = String(user._id || user.id);
+      await WebAuthnCredentialModel.create({
+        userId,
+        credentialId: credential.id,
+        credentialPublicKey: Buffer.from(credential.publicKey),
+        counter: credential.counter,
+        transports: attestation.response?.transports || [],
+        deviceName: deviceName || "جهاز محفوظ",
+        userAgent: req.headers['user-agent'] || "",
+        lastUsed: new Date(),
+      });
+      delete (req.session as any).webauthnRegChallenge;
+      res.json({ ok: true, verified: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Step 3: Generate authentication options (login — requires identifier)
+  app.post("/api/auth/webauthn/auth-options", async (req, res) => {
+    try {
+      const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
+      const { UserModel, WebAuthnCredentialModel } = await import("./models");
+      const { identifier } = req.body;
+      if (!identifier) return res.status(400).json({ error: "أدخل البريد الإلكتروني أو اسم المستخدم" });
+      const id = String(identifier).toLowerCase().trim();
+      const user = await UserModel.findOne({
+        $or: [{ email: id }, { username: id }, { phone: id }, { whatsappNumber: id }],
+      });
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+      const creds = await WebAuthnCredentialModel.find({ userId: user._id });
+      if (!creds.length) return res.status(404).json({ error: "لم يتم تسجيل بصمة لهذا الحساب بعد" });
+      const allowCredentials = creds.map((c: any) => ({
+        id: c.credentialId,
+        transports: c.transports as AuthenticatorTransportFuture[],
+      }));
+      const options = await generateAuthenticationOptions({
+        rpID: RP_ID,
+        allowCredentials,
+        userVerification: "preferred",
+      });
+      (req.session as any).webauthnAuthChallenge = options.challenge;
+      (req.session as any).webauthnAuthUserId = String(user._id);
+      await new Promise<void>((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
+      res.json(options);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Step 4: Verify authentication response and log user in
+  app.post("/api/auth/webauthn/auth-verify", async (req, res, next) => {
+    try {
+      const { verifyAuthenticationResponse } = await import("@simplewebauthn/server");
+      const { UserModel, WebAuthnCredentialModel, DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+      const expectedChallenge = (req.session as any).webauthnAuthChallenge;
+      const userId = (req.session as any).webauthnAuthUserId;
+      if (!expectedChallenge || !userId) return res.status(400).json({ error: "جلسة التحقق منتهية، أعد المحاولة" });
+      const { response: assertion } = req.body;
+      const credRecord = await WebAuthnCredentialModel.findOne({ credentialId: assertion.id, userId });
+      if (!credRecord) return res.status(400).json({ error: "لم يتم التعرف على هذا الجهاز" });
+      const verification = await verifyAuthenticationResponse({
+        response: assertion,
+        expectedChallenge,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+        credential: {
+          id: credRecord.credentialId,
+          publicKey: new Uint8Array(credRecord.credentialPublicKey),
+          counter: credRecord.counter,
+          transports: credRecord.transports as AuthenticatorTransportFuture[],
+        },
+      });
+      if (!verification.verified) return res.status(400).json({ error: "فشل التحقق بالبصمة" });
+      await WebAuthnCredentialModel.updateOne({ _id: credRecord._id }, { counter: verification.authenticationInfo.newCounter, lastUsed: new Date() });
+      delete (req.session as any).webauthnAuthChallenge;
+      delete (req.session as any).webauthnAuthUserId;
+      const user = await UserModel.findById(userId);
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+      req.login(user as any, async (err) => {
+        if (err) return next(err);
+        const plainToken = randomBytes(48).toString("hex");
+        const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers['user-agent'] || "", expiresAt });
+        const safeUser = sanitizeUser(user);
+        res.json({ ...safeUser, deviceToken: plainToken });
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus } from "lucide-react";
+import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck } from "lucide-react";
+import { BiometricManager } from "@/components/BiometricManager";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -200,6 +201,18 @@ export default function EmployeeProfile() {
                 placeholder="1xxxxxxxxx" dir="ltr" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Biometric / Passkey */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" /> الأمان والبصمة
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BiometricManager />
         </CardContent>
       </Card>
 

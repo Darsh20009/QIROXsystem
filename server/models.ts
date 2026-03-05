@@ -1286,6 +1286,19 @@ storePublishConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = 
 export const StorePublishConfigModel = mongoose.models.StorePublishConfig || mongoose.model("StorePublishConfig", storePublishConfigSchema);
 
 // ── Device Trust Tokens ──
+const webAuthnCredentialSchema = new mongoose.Schema({
+  userId:              { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  credentialId:        { type: String, required: true, unique: true },
+  credentialPublicKey: { type: Buffer, required: true },
+  counter:             { type: Number, required: true, default: 0 },
+  transports:          { type: [String], default: [] },
+  deviceName:          { type: String, default: "جهاز محفوظ" },
+  userAgent:           { type: String, default: "" },
+  lastUsed:            { type: Date },
+}, { timestamps: true });
+webAuthnCredentialSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret._id; delete ret.__v; delete ret.credentialPublicKey; return ret; } });
+export const WebAuthnCredentialModel = mongoose.models.WebAuthnCredential || mongoose.model("WebAuthnCredential", webAuthnCredentialSchema);
+
 const deviceTokenSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   tokenHash: { type: String, required: true, index: true },

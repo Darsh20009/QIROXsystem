@@ -19,6 +19,7 @@ import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { BiometricButton } from "@/components/BiometricButton";
 
 export default function Login() {
   const [location] = useLocation();
@@ -869,6 +870,17 @@ export default function Login() {
                   </>
                 )}
               </Button>
+
+              {!isRegister && (
+                <>
+                  <div className="flex items-center gap-3 my-1">
+                    <div className="flex-1 h-px bg-black/[0.07]" />
+                    <span className="text-xs text-black/30 font-medium">أو</span>
+                    <div className="flex-1 h-px bg-black/[0.07]" />
+                  </div>
+                  <BiometricButton prefillIdentifier={form.watch("username") || ""} />
+                </>
+              )}
             </form>
           </Form>
 
