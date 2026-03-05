@@ -2717,6 +2717,74 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // === SHIPPING COMPANIES ===
+  const ALLOWED_SHIPPING_ROLES = ["admin", "manager"];
+
+  app.get("/api/admin/shipping-companies", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      const companies = await ShippingCompanyModel.find().sort({ sortOrder: 1, createdAt: 1 });
+      res.json(companies);
+    } catch { res.status(500).json({ error: "فشل تحميل شركات الشحن" }); }
+  });
+
+  app.get("/api/shipping-companies", async (_req, res) => {
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      const companies = await ShippingCompanyModel.find({ isActive: true }).sort({ sortOrder: 1 });
+      res.json(companies);
+    } catch { res.status(500).json({ error: "فشل" }); }
+  });
+
+  app.post("/api/admin/shipping-companies", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      const company = await ShippingCompanyModel.create(req.body);
+      res.status(201).json(company);
+    } catch (err: any) { res.status(500).json({ error: err.message || "فشل الإنشاء" }); }
+  });
+
+  app.patch("/api/admin/shipping-companies/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      const company = await ShippingCompanyModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      if (!company) return res.status(404).json({ error: "غير موجودة" });
+      res.json(company);
+    } catch (err: any) { res.status(500).json({ error: err.message || "فشل التحديث" }); }
+  });
+
+  app.delete("/api/admin/shipping-companies/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      await ShippingCompanyModel.findByIdAndDelete(req.params.id);
+      res.sendStatus(204);
+    } catch { res.status(500).json({ error: "فشل الحذف" }); }
+  });
+
+  // Seed default shipping companies if none exist
+  app.post("/api/admin/shipping-companies/seed-defaults", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ShippingCompanyModel } = await import("./models");
+      const existing = await ShippingCompanyModel.countDocuments();
+      if (existing > 0) return res.json({ message: "البيانات موجودة مسبقاً", count: existing });
+      const defaults = [
+        { name: "SMSA Express", nameAr: "سمسا إكسبرس", logo: "🟠", color: "#FF6B00", basePrice: 25, outsideCityPrice: 35, estimatedDays: "1-2 أيام", outsideCityDays: "2-4 أيام", trackingUrlTemplate: "https://www.smsa.com/tracking/index.html?trackingNumber={code}", regions: ["riyadh", "saudi"], sortOrder: 1 },
+        { name: "Saudi Post (SPL)", nameAr: "البريد السعودي", logo: "🟢", color: "#00843D", basePrice: 15, outsideCityPrice: 20, estimatedDays: "2-3 أيام", outsideCityDays: "3-5 أيام", trackingUrlTemplate: "https://spl.com.sa/en/track?Track={code}", regions: ["riyadh", "saudi", "gcc"], sortOrder: 2 },
+        { name: "Aramex", nameAr: "أرامكس", logo: "🔴", color: "#E30613", basePrice: 35, outsideCityPrice: 50, estimatedDays: "1-2 أيام", outsideCityDays: "2-3 أيام", trackingUrlTemplate: "https://www.aramex.com/track/results?ShipmentNumber={code}", regions: ["riyadh", "saudi", "gcc", "international"], sortOrder: 3 },
+        { name: "DHL Express", nameAr: "دي إتش إل", logo: "🟡", color: "#FFCC00", basePrice: 50, outsideCityPrice: 70, estimatedDays: "1 يوم", outsideCityDays: "2-3 أيام", trackingUrlTemplate: "https://www.dhl.com/sa-en/home/tracking.html?tracking-id={code}", regions: ["riyadh", "saudi", "gcc", "international"], sortOrder: 4 },
+        { name: "J&T Express", nameAr: "جي آند تي", logo: "🔵", color: "#E31837", basePrice: 20, outsideCityPrice: 30, estimatedDays: "2-3 أيام", outsideCityDays: "3-5 أيام", trackingUrlTemplate: "https://www.jtexpress.sa/tracking?billCode={code}", regions: ["riyadh", "saudi"], sortOrder: 5 },
+        { name: "Naqel Express", nameAr: "نقل إكسبرس", logo: "🟤", color: "#8B4513", basePrice: 22, outsideCityPrice: 32, estimatedDays: "2-3 أيام", outsideCityDays: "3-6 أيام", trackingUrlTemplate: "https://www.naqelexpress.com/tracking/?trackId={code}", regions: ["riyadh", "saudi"], sortOrder: 6 },
+      ];
+      await ShippingCompanyModel.insertMany(defaults);
+      res.json({ message: "تم إضافة شركات الشحن الافتراضية", count: defaults.length });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // === CART ===
   app.get("/api/cart", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

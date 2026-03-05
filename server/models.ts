@@ -328,6 +328,14 @@ const qiroxProductSchema = new mongoose.Schema({
   model: String,
   warrantyMonths: { type: Number, default: 0 },
   linkedPlanSlug: String,
+  requiresShipping: { type: Boolean, default: false },
+  shippingProviders: [{
+    companyId:   { type: String, required: true },
+    nameAr:      String,
+    customPrice: Number,
+    customOutsideCityPrice: Number,
+    isActive:    { type: Boolean, default: true },
+  }],
 }, { timestamps: true });
 
 const cartItemSchema = new mongoose.Schema({
@@ -751,7 +759,23 @@ const deviceShipmentSchema = new mongoose.Schema({
   statusHistory: [{ status: String, note: String, timestamp: { type: Date, default: Date.now } }],
 }, { timestamps: true });
 
-[consultationSlotSchema, consultationBookingSchema, discountCodeSchema, deviceShipmentSchema].forEach(s => {
+const shippingCompanySchema = new mongoose.Schema({
+  name:              { type: String, required: true },
+  nameAr:            { type: String, required: true },
+  logo:              { type: String, default: "🚚" },
+  color:             { type: String, default: "#000000" },
+  basePrice:         { type: Number, default: 0 },
+  outsideCityPrice:  { type: Number, default: 0 },
+  estimatedDays:     { type: String, default: "2-3 أيام" },
+  outsideCityDays:   { type: String, default: "3-5 أيام" },
+  trackingUrlTemplate: { type: String, default: "" },
+  regions: { type: [String], default: ["riyadh"] },
+  notes:   { type: String, default: "" },
+  isActive: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+}, { timestamps: true });
+
+[consultationSlotSchema, consultationBookingSchema, discountCodeSchema, deviceShipmentSchema, shippingCompanySchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -760,6 +784,7 @@ export const ConsultationSlotModel = mongoose.models.ConsultationSlot || mongoos
 export const ConsultationBookingModel = mongoose.models.ConsultationBooking || mongoose.model("ConsultationBooking", consultationBookingSchema);
 export const DiscountCodeModel = mongoose.models.DiscountCode || mongoose.model("DiscountCode", discountCodeSchema);
 export const DeviceShipmentModel = mongoose.models.DeviceShipment || mongoose.model("DeviceShipment", deviceShipmentSchema);
+export const ShippingCompanyModel = mongoose.models.ShippingCompany || mongoose.model("ShippingCompany", shippingCompanySchema);
 
 const cronRunLogSchema = new mongoose.Schema({
   runAt: { type: Date, default: Date.now },
