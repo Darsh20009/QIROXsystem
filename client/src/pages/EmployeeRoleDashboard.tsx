@@ -371,6 +371,7 @@ function SalesDashboard() {
 
   const newOrders = orders?.filter(o => o.status === "pending").length || 0;
   const thisMonthOrders = orders?.filter((o: any) => {
+    if (o.status === "cancelled" || o.status === "rejected") return false;
     const d = new Date(o.createdAt || o.appliedAt);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
