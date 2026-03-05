@@ -92,9 +92,9 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [isRegister]);
 
-  // Verification step state (email = تفعيل الحساب, device = توثيق الجهاز)
+  // Verification step state (email = تفعيل الحساب عند التسجيل فقط)
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
-  const [verifyMode, setVerifyMode] = useState<"email" | "device">("email");
+  const verifyMode = "email" as const;
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -142,7 +142,7 @@ export default function Login() {
     setIsVerifying(true);
     setVerifyError("");
 
-    const endpoint = verifyMode === "device" ? "/api/auth/verify-login-otp" : "/api/auth/verify-email";
+    const endpoint = "/api/auth/verify-email";
     const body = { code, email: verifyStep!.email };
 
     let res: Response;
@@ -166,21 +166,9 @@ export default function Login() {
       return;
     }
 
-    // Save device token if returned (device verification flow)
+    // Save device token if returned
     if (data.deviceToken) {
       saveDeviceToken(data.deviceToken);
-    }
-
-    // For email verification (legacy), generate device token and save it
-    if (verifyMode === "email") {
-      try {
-        await fetch("/api/auth/verify-device", { method: "POST", credentials: "include" });
-        const dtRes = await fetch("/api/auth/generate-device-token", { method: "POST", credentials: "include" });
-        if (dtRes.ok) {
-          const dtData = await dtRes.json();
-          if (dtData.deviceToken) saveDeviceToken(dtData.deviceToken);
-        }
-      } catch {}
     }
 
     // Set user data in cache directly from response (correct query key)
@@ -211,14 +199,7 @@ export default function Login() {
     setIsResending(true);
     setVerifyError("");
     try {
-      const endpoint = verifyMode === "device" ? "/api/auth/resend-login-otp" : "/api/auth/resend-verification";
-      const resendBody = verifyMode === "device" ? { email: verifyStep!.email } : undefined;
-      const res = await fetch(endpoint, {
-        method: "POST",
-        credentials: "include",
-        headers: resendBody ? { "Content-Type": "application/json" } : undefined,
-        body: resendBody ? JSON.stringify(resendBody) : undefined,
-      });
+      const res = await fetch("/api/auth/resend-verification", { method: "POST", credentials: "include" });
       if (res.ok) {
         toast({ title: "تم إعادة الإرسال!", description: "تحقق من صندوق الوارد أو مجلد الإسبام" });
         setOtpCode(["", "", "", "", "", ""]);
@@ -285,7 +266,6 @@ export default function Login() {
                 description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
               });
             }
-            setVerifyMode("email");
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           } else {
             queryClient.setQueryData(["/api/user"], user);
@@ -306,17 +286,8 @@ export default function Login() {
     } else {
       login(data, {
         onSuccess: (user: any) => {
-          // Device verification required (new — all users)
-          if (user.needsDeviceVerification && user.email) {
-            setVerifyMode("device");
-            setOtpCode(["", "", "", "", "", ""]);
-            setVerifyError("");
-            setVerifyStep({ email: user.email, name: user.name || user.fullName || user.username || "" });
-            return;
-          }
-          // Legacy email verification (clients only)
+          // Only show email verification if client hasn't verified yet (after registration)
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
-            setVerifyMode("email");
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           }
         },
@@ -508,47 +479,24 @@ export default function Login() {
             className="w-full max-w-md"
           >
             <div className="text-center mb-8">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 ${verifyMode === "device" ? "bg-black" : "bg-black"}`}>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
                 <ShieldCheck className="w-8 h-8 text-white" />
               </div>
-              {verifyMode === "device" ? (
-                <>
-                  <h1 className="text-2xl font-black font-heading text-black mb-2">توثيق الجهاز</h1>
-                  <p className="text-black/40 text-sm leading-relaxed">
-                    أرسلنا رمز توثيق الجهاز المكوّن من 6 أرقام إلى<br />
-                    <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
-                  <p className="text-black/40 text-sm leading-relaxed">
-                    أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
-                    <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
-                  </p>
-                </>
-              )}
+              <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
+              <p className="text-black/40 text-sm leading-relaxed">
+                أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
+                <span className="text-black font-semibold" dir="ltr">{verifyStep.email}</span>
+              </p>
             </div>
 
             {/* Info notice */}
-            <div className={`border rounded-xl px-4 py-3 mb-5 flex items-start gap-3 ${verifyMode === "device" ? "bg-blue-50 border-blue-200/60" : "bg-amber-50 border-amber-200/60"}`}>
-              <span className={`text-base mt-0.5 flex-shrink-0 ${verifyMode === "device" ? "text-blue-500" : "text-amber-500"}`}>{verifyMode === "device" ? "🔐" : "⚠️"}</span>
+            <div className="border rounded-xl px-4 py-3 mb-5 flex items-start gap-3 bg-amber-50 border-amber-200/60">
+              <span className="text-base mt-0.5 flex-shrink-0 text-amber-500">⚠️</span>
               <div>
-                {verifyMode === "device" ? (
-                  <>
-                    <p className="text-blue-800 text-xs font-semibold mb-0.5">جهاز جديد</p>
-                    <p className="text-blue-700 text-[11px] leading-relaxed">
-                      هذا الجهاز غير مألوف. أدخل الرمز لتوثيقه وسيُتذكّر لمدة <strong>14 يوماً</strong>. إذا لم يصل الرمز، تحقق من <strong>الإسبام</strong>.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
-                    <p className="text-amber-700 text-[11px] leading-relaxed">
-                      تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
-                    </p>
-                  </>
-                )}
+                <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
+                <p className="text-amber-700 text-[11px] leading-relaxed">
+                  تحقق من مجلد <strong>الإسبام / Spam</strong> أو البريد غير المرغوب فيه — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
+                </p>
               </div>
             </div>
 
@@ -589,9 +537,7 @@ export default function Login() {
               data-testid="button-verify-otp"
             >
               {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                verifyMode === "device"
-                  ? <><ShieldCheck className="w-4 h-4 ml-2" />توثيق الجهاز</>
-                  : <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد الحساب</>
+                <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد الحساب</>
               )}
             </Button>
 
@@ -609,7 +555,7 @@ export default function Login() {
             </div>
 
             <p className="text-center text-[11px] text-black/25 mt-4">
-              {verifyMode === "device" ? "الرمز صالح لمدة 15 دقيقة" : "الرمز صالح لمدة 30 دقيقة"}
+              {"الرمز صالح لمدة 30 دقيقة"}
             </p>
           </motion.div>
         ) : (

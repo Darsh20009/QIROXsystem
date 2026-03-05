@@ -460,62 +460,17 @@ export async function registerRoutes(
   });
 
   app.post(api.auth.login.path, (req, res, next) => {
-    const passportLogin = (req: any, res: any, next: any) => {
-       import("passport").then((passport) => {
-         passport.default.authenticate("local", (err: any, user: any, info: any) => {
-          if (err) return next(err);
-          if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
-
-          const deviceToken = req.headers['x-device-token'] as string | undefined;
-
-          const checkDeviceTrust = async () => {
-            if (!deviceToken) {
-              console.log(`[DeviceTrust] No token header for user=${user.email}`);
-              return false;
-            }
-            const { DeviceTokenModel } = await import("./models");
-            const crypto = await import("crypto");
-            const tokenHash = crypto.createHash("sha256").update(deviceToken).digest("hex");
-            // Use string comparison to avoid ObjectId type mismatch
-            const found = await DeviceTokenModel.findOne({
-              userId: user._id,
-              tokenHash,
-              expiresAt: { $gt: new Date() },
-            });
-            console.log(`[DeviceTrust] user=${user.email} tokenHash=${tokenHash.slice(0,8)}... found=${!!found}`);
-            return !!found;
-          };
-
-          checkDeviceTrust().then(async (trusted) => {
-            if (trusted) {
-              // Device trusted — log in directly
-              req.login(user, (err: any) => {
-                if (err) return next(err);
-                res.status(200).json(sanitizeUser(user));
-              });
-              return;
-            }
-
-            // Device NOT trusted — need OTP verification
-            // Store pending user in session without full login
-            req.session.pendingLoginUserId = String(user._id);
-            req.session.save(async (saveErr: any) => {
-              if (saveErr) return next(saveErr);
-              const { OtpModel } = await import("./models");
-              const code = Math.floor(100000 + Math.random() * 900000).toString();
-              const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-              const email = user.email.toLowerCase().trim();
-              await OtpModel.updateMany({ email, used: false, type: "login_otp" }, { used: true });
-              await OtpModel.create({ email, code, expiresAt, type: "login_otp" });
-              const ua = req.headers['user-agent'] as string | undefined;
-              sendLoginOtpEmail(email, user.fullName || user.username, code, ua).catch(console.error);
-              res.status(200).json({ needsDeviceVerification: true, email: user.email, name: user.fullName || user.username });
-            });
-          }).catch(next);
-        })(req, res, next);
-       });
-    }
-    passportLogin(req, res, next);
+    import("passport").then((passport) => {
+      passport.default.authenticate("local", (err: any, user: any) => {
+        if (err) return next(err);
+        if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
+        // Log user in directly — no device OTP required
+        req.login(user, (loginErr: any) => {
+          if (loginErr) return next(loginErr);
+          res.status(200).json(sanitizeUser(user));
+        });
+      })(req, res, next);
+    });
   });
 
   app.post(api.auth.logout.path, (req, res, next) => {
