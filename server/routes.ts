@@ -925,7 +925,22 @@ export async function registerRoutes(
       walletDeducted = walletAmountUsed;
     }
 
-    const order = await storage.createOrder({ ...req.body, userId: String(user.id) });
+    const ALLOWED_ORDER_FIELDS = [
+      "serviceId","serviceType","planTier","planPeriod","planSegment",
+      "businessName","phone","notes","items",
+      "projectType","sector","competitors","visualStyle","favoriteExamples",
+      "requiredFunctions","requiredSystems","siteLanguage",
+      "whatsappIntegration","socialIntegration","hasLogo","needsLogoDesign",
+      "hasHosting","hasDomain",
+      "logoUrl","brandIdentityUrl","filesUrl","contentUrl","imagesUrl",
+      "videoUrl","accessCredentials","files","requirements",
+      "paymentMethod","paymentProofUrl","totalAmount","walletAmountUsed",
+    ];
+    const safeBody: Record<string, unknown> = {};
+    for (const key of ALLOWED_ORDER_FIELDS) {
+      if (key in req.body) safeBody[key] = req.body[key];
+    }
+    const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending" } as any);
 
     // Deduct wallet atomically after order creation
     if (walletDeducted > 0) {
@@ -6540,9 +6555,8 @@ export async function seedDatabase() {
     });
     console.log("Admin account created: admin@qirox.tech");
   } else {
-    const hashedPassword = await hashPassword("qadmin");
-    await UserModel.updateOne({ username: adminUsername }, { $set: { password: hashedPassword, role: "admin", email: adminEmail } });
-    console.log(`Admin credentials reset: qadmin/qadmin — email: ${adminEmail}`);
+    await UserModel.updateOne({ username: adminUsername }, { $set: { role: "admin", email: adminEmail } });
+    console.log(`[Seed] Admin account verified: ${adminUsername}`);
   }
 
   const existingServices = await storage.getServices();
