@@ -13,6 +13,30 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
+
+// ── Rate limiters ────────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "محاولات كثيرة جداً، حاول مجدداً بعد 15 دقيقة" },
+});
+const otpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
+});
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
+});
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
 import { pushNotification, broadcastNotification } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
@@ -25,7 +49,18 @@ function sanitizeUser(user: any): any {
   if (Array.isArray(user)) return user.map(sanitizeUser);
   const obj = typeof user.toJSON === "function" ? user.toJSON() : { ...user };
   delete obj.password;
+  delete obj.walletPin;
+  delete obj.walletCardNumber;
   return obj;
+}
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
 }
 
 function translateError(err: any): string {
@@ -464,7 +499,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.auth.login.path, (req, res, next) => {
+  app.post(api.auth.login.path, loginLimiter, (req, res, next) => {
     import("passport").then((passport) => {
       passport.default.authenticate("local", (err: any, user: any) => {
         if (err) return next(err);
@@ -654,20 +689,24 @@ export async function registerRoutes(
   });
 
   // === CONTACT FORM ===
-  app.post("/api/contact", async (req, res) => {
+  app.post("/api/contact", contactLimiter, async (req, res) => {
     try {
       const { name, email, subject, message } = req.body;
       if (!name || !email || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
-      await sendDirectEmail("support@qiroxstudio.online", "QIROX", subject || "رسالة جديدة من نموذج التواصل", `
+      const safeName = escapeHtml(String(name).trim().slice(0, 200));
+      const safeEmail = escapeHtml(String(email).trim().slice(0, 200));
+      const safeSubject = escapeHtml(String(subject || "").trim().slice(0, 300));
+      const safeMessage = escapeHtml(String(message).trim().slice(0, 5000));
+      await sendDirectEmail("support@qiroxstudio.online", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${name}</td></tr>
-            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${email}</td></tr>
-            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${subject || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${safeName}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${safeEmail}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${safeSubject || '—'}</td></tr>
           </table>
           <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;border:1px solid #eee;">
-            <p style="color:#111;line-height:1.7;white-space:pre-wrap;">${message}</p>
+            <p style="color:#111;line-height:1.7;white-space:pre-wrap;">${safeMessage}</p>
           </div>
           <p style="color:#999;font-size:12px;margin-top:24px;">تم الإرسال من موقع QIROX Studio</p>
         </div>
@@ -836,12 +875,34 @@ export async function registerRoutes(
       return res.status(403).json({ error: "account_not_verified", message: "يجب تفعيل حسابك أولاً قبل تقديم أي طلب" });
     }
 
-    // Atomic wallet validation BEFORE creating order
-    const walletAmountUsed = Number(req.body.walletAmountUsed || 0);
+    // ── Server-side totalAmount validation from cart ─────────────
+    const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
+    const VAT_RATE = 0.15;
+    const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
+    let serverTotal: number | null = null;
+    if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
+      const subtotal = cart.items.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (Number(i.qty) || 1), 0);
+      const discount = Number(cart.discountAmount) || 0;
+      const afterDiscount = Math.max(0, subtotal - discount);
+      serverTotal = parseFloat((afterDiscount * (1 + VAT_RATE)).toFixed(2));
+      const clientTotal = parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
+      if (Math.abs(clientTotal - serverTotal) > 1.5) {
+        return res.status(400).json({ error: `إجمالي الطلب غير مطابق. المتوقع: ${serverTotal.toLocaleString()} ر.س` });
+      }
+    }
+
+    // ── Wallet validation BEFORE creating order ───────────────────
+    const orderTotal = serverTotal ?? parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
+    let walletAmountUsed = Number(req.body.walletAmountUsed || 0);
     const walletPayPin = req.body.walletPayPin as string | undefined;
     let walletDeducted = 0;
+
+    // Cap walletAmountUsed to order total — prevent over-deduction
+    if (walletAmountUsed > orderTotal + 0.01) {
+      walletAmountUsed = orderTotal;
+    }
+
     if (walletAmountUsed > 0) {
-      const { UserModel, WalletTransactionModel } = await import("./models");
       const bcrypt = await import("bcrypt");
       // PIN validation: if card has a PIN set, it must be provided and correct
       const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
@@ -869,19 +930,26 @@ export async function registerRoutes(
     // Deduct wallet atomically after order creation
     if (walletDeducted > 0) {
       try {
-        const { WalletTransactionModel } = await import("./models");
-        await WalletTransactionModel.create({
-          userId: String(user.id),
-          type: 'debit',
-          amount: parseFloat(walletDeducted.toFixed(2)),
-          description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
-          orderId: String(order.id),
-          addedBy: String(user.id),
-          note: 'wallet_payment',
-        });
+        // Double-check balance to mitigate race conditions
+        const freshTxs = await WalletTransactionModel.find({ userId: String(user.id) });
+        const freshDebit = freshTxs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+        const freshCredit = freshTxs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+        const freshAvailable = Math.max(0, freshCredit - freshDebit);
+        if (walletDeducted > freshAvailable + 0.01) {
+          await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: رصيد المحفظة غير كافٍ — يرجى مراجعة الدفع]' } as any).catch(() => {});
+        } else {
+          await WalletTransactionModel.create({
+            userId: String(user.id),
+            type: 'debit',
+            amount: parseFloat(walletDeducted.toFixed(2)),
+            description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
+            orderId: String(order.id),
+            addedBy: String(user.id),
+            note: 'wallet_payment',
+          });
+        }
       } catch (wErr) {
         console.error("[wallet-deduct]", wErr);
-        // Order created but wallet deduction failed — flag it for admin review
         await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: فشل خصم المحفظة تلقائياً — يرجى المراجعة]' } as any).catch(() => {});
       }
     }
@@ -1694,7 +1762,7 @@ export async function registerRoutes(
     if (!cardNumber || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
     const { UserModel, WalletPayOtpModel, WalletTransactionModel } = await import("./models");
     const { sendWalletPayOtpEmail } = await import("./email");
-    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true });
+    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true }).select("+walletCardNumber +walletPin");
     if (!owner) return res.status(404).json({ error: "البطاقة غير موجودة أو غير مفعّلة" });
     if (!owner.walletPin) return res.status(400).json({ error: "البطاقة لم يتم تفعيلها بعد" });
     // Check balance
@@ -1722,7 +1790,7 @@ export async function registerRoutes(
     const { cardNumber, otp, amount, description } = req.body;
     if (!cardNumber || !otp || !amount) return res.status(400).json({ error: "بيانات ناقصة" });
     const { UserModel, WalletPayOtpModel, WalletTransactionModel } = await import("./models");
-    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true });
+    const owner = await UserModel.findOne({ walletCardNumber: cardNumber, walletCardActive: true }).select("+walletCardNumber +walletPin");
     if (!owner) return res.status(404).json({ error: "البطاقة غير موجودة" });
     // Cannot charge from your own card via external flow
     if (String(owner._id) === String(requester.id)) return res.status(400).json({ error: "لا يمكنك شحن محفظتك من بطاقتك الخاصة" });
@@ -3013,7 +3081,7 @@ export async function registerRoutes(
   // ═══════════════════════════════════════════════════════════
   // === OTP / FORGOT PASSWORD / RESET PASSWORD ===
   // ═══════════════════════════════════════════════════════════
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", otpLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       if (!email) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
@@ -3049,7 +3117,7 @@ export async function registerRoutes(
   }
 
   // Verify email OTP (after registration)
-  app.post("/api/auth/verify-email", async (req, res) => {
+  app.post("/api/auth/verify-email", otpLimiter, async (req, res) => {
     try {
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
@@ -3125,7 +3193,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/verify-otp", async (req, res) => {
+  app.post("/api/auth/verify-otp", otpLimiter, async (req, res) => {
     try {
       const { email, code } = req.body;
       if (!email || !code) return res.status(400).json({ error: "البريد والرمز مطلوبان" });
@@ -3138,7 +3206,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", otpLimiter, async (req, res) => {
     try {
       const { email, code, newPassword } = req.body;
       if (!email || !code || !newPassword) return res.status(400).json({ error: "جميع الحقول مطلوبة" });
@@ -3209,7 +3277,7 @@ export async function registerRoutes(
   });
 
   // ── Verify Login OTP (Device Trust) ──
-  app.post("/api/auth/verify-login-otp", async (req, res, next) => {
+  app.post("/api/auth/verify-login-otp", otpLimiter, async (req, res, next) => {
     const { code, email: rawEmail } = req.body;
     if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل الرمز المكوّن من 6 أرقام" });
     if (!rawEmail) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
@@ -3261,7 +3329,7 @@ export async function registerRoutes(
   });
 
   // ── Resend Login OTP ──
-  app.post("/api/auth/resend-login-otp", async (req, res) => {
+  app.post("/api/auth/resend-login-otp", otpLimiter, async (req, res) => {
     const { email: rawEmail } = req.body;
     if (!rawEmail) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
     const { UserModel, OtpModel } = await import("./models");
