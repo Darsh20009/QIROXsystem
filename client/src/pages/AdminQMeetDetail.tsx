@@ -141,9 +141,11 @@ export default function AdminQMeetDetail() {
 
   const sendInvitesMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/qmeet/meetings/${id}/send-invites`, {}),
-    onSuccess: (data: any) => {
-      toast({ title: `تم إرسال ${data.sent} دعوة` });
+    onSuccess: async (res: any) => {
+      const data = await res.json().catch(() => ({}));
+      toast({ title: `تم إرسال ${data.sent ?? 0} دعوة` });
     },
+    onError: () => toast({ title: "فشل إرسال الدعوات", variant: "destructive" }),
   });
 
   function copyLink() {

@@ -156,6 +156,7 @@ export default function MeetingRoom() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const screenSharingRef = useRef(false);
   const activePanelRef = useRef<PanelTab | null>(null);
+  const wasKickedRef = useRef(false);
 
   const [joined, setJoined] = useState(false);
   const [wasKicked, setWasKicked] = useState(false);
@@ -341,6 +342,7 @@ export default function MeetingRoom() {
         break;
       }
       case "webrtc_kicked": {
+        wasKickedRef.current = true;
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         pcsRef.current.forEach(pc => pc.close());
         pcsRef.current.clear();
@@ -448,12 +450,13 @@ export default function MeetingRoom() {
 
     ws.onclose = () => {
       setWsReady(false);
-      // Auto-reconnect if still in meeting (not kicked)
-      reconnectTimerRef.current = setTimeout(() => {
-        if (wsRef.current?.readyState !== WebSocket.OPEN) {
-          connectWs(uid, rId, uName);
-        }
-      }, 3000);
+      if (!wasKickedRef.current) {
+        reconnectTimerRef.current = setTimeout(() => {
+          if (wsRef.current?.readyState !== WebSocket.OPEN) {
+            connectWs(uid, rId, uName);
+          }
+        }, 3000);
+      }
     };
     ws.onerror = () => { ws.close(); };
   }, [handleWsMessage]);
@@ -467,6 +470,7 @@ export default function MeetingRoom() {
   }, [userId, roomId, userName, localStream, mediaError, getMedia, connectWs]);
 
   const leaveMeeting = useCallback(() => {
+    wasKickedRef.current = true;
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     sendWs({ type: "webrtc_leave", roomId });
     pcsRef.current.forEach(pc => pc.close());

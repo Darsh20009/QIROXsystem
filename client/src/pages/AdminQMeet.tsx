@@ -86,7 +86,11 @@ export default function AdminQMeet() {
 
   const sendInvitesMutation = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/qmeet/meetings/${id}/send-invites`, {}),
-    onSuccess: (data: any) => toast({ title: `✅ تم إرسال ${data.sent} دعوة من ${data.total}` }),
+    onSuccess: async (res: any) => {
+      const data = await res.json().catch(() => ({}));
+      toast({ title: `✅ تم إرسال ${data.sent ?? 0} دعوة من ${data.total ?? 0}` });
+    },
+    onError: () => toast({ title: "فشل إرسال الدعوات", variant: "destructive" }),
   });
 
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }));
