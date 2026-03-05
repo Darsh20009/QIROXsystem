@@ -775,7 +775,20 @@ const shippingCompanySchema = new mongoose.Schema({
   sortOrder: { type: Number, default: 0 },
 }, { timestamps: true });
 
-[consultationSlotSchema, consultationBookingSchema, discountCodeSchema, deviceShipmentSchema, shippingCompanySchema].forEach(s => {
+const countrySchema = new mongoose.Schema({
+  nameAr:       { type: String, required: true },
+  nameEn:       { type: String, required: true },
+  code:         { type: String, required: true, unique: true, uppercase: true },
+  flag:         { type: String, default: "🌍" },
+  phoneCode:    { type: String, default: "" },
+  currency:     { type: String, default: "" },
+  currencyAr:   { type: String, default: "" },
+  continent:    { type: String, default: "آسيا" },
+  isActive:     { type: Boolean, default: true },
+  sortOrder:    { type: Number, default: 0 },
+}, { timestamps: true });
+
+[consultationSlotSchema, consultationBookingSchema, discountCodeSchema, deviceShipmentSchema, shippingCompanySchema, countrySchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -785,6 +798,7 @@ export const ConsultationBookingModel = mongoose.models.ConsultationBooking || m
 export const DiscountCodeModel = mongoose.models.DiscountCode || mongoose.model("DiscountCode", discountCodeSchema);
 export const DeviceShipmentModel = mongoose.models.DeviceShipment || mongoose.model("DeviceShipment", deviceShipmentSchema);
 export const ShippingCompanyModel = mongoose.models.ShippingCompany || mongoose.model("ShippingCompany", shippingCompanySchema);
+export const CountryModel = mongoose.models.Country || mongoose.model("Country", countrySchema);
 
 const cronRunLogSchema = new mongoose.Schema({
   runAt: { type: Date, default: Date.now },

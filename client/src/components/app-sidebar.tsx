@@ -119,6 +119,7 @@ export function AppSidebar() {
     { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "شركات الشحن" : "Shipping Companies", icon: Truck, url: "/admin/shipping", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إدارة الدول" : "Countries", icon: Globe, url: "/admin/countries", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },

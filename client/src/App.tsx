@@ -47,6 +47,7 @@ const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
 const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
 const AdminShipping = lazy(() => import("@/pages/AdminShipping"));
+const AdminCountries = lazy(() => import("@/pages/AdminCountries"));
 const Devices = lazy(() => import("@/pages/Devices"));
 const Cart = lazy(() => import("@/pages/Cart"));
 const InternalGate = lazy(() => import("@/pages/InternalGate"));
@@ -173,6 +174,7 @@ function AdminRouter() {
         <Route path="/admin/customers" component={AdminCustomers} />
         <Route path="/admin/products" component={AdminProducts} />
         <Route path="/admin/shipping" component={AdminShipping} />
+        <Route path="/admin/countries" component={AdminCountries} />
         <Route path="/admin/analytics" component={AdminAnalytics} />
         <Route path="/admin/activity-log" component={AdminActivityLog} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />

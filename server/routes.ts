@@ -2785,6 +2785,92 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // === COUNTRIES ===
+  const ALLOWED_COUNTRY_ROLES = ["admin", "manager"];
+
+  app.get("/api/admin/countries", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { CountryModel } = await import("./models");
+      const countries = await CountryModel.find().sort({ sortOrder: 1, nameAr: 1 });
+      res.json(countries);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/countries", async (_req, res) => {
+    try {
+      const { CountryModel } = await import("./models");
+      const countries = await CountryModel.find({ isActive: true }).sort({ sortOrder: 1, nameAr: 1 });
+      res.json(countries);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/countries", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { CountryModel } = await import("./models");
+      const country = await CountryModel.create(req.body);
+      res.status(201).json(country);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/countries/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { CountryModel } = await import("./models");
+      const country = await CountryModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      if (!country) return res.sendStatus(404);
+      res.json(country);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/countries/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { CountryModel } = await import("./models");
+      await CountryModel.findByIdAndDelete(req.params.id);
+      res.sendStatus(204);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/countries/seed-defaults", async (req, res) => {
+    if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { CountryModel } = await import("./models");
+      const existing = await CountryModel.countDocuments();
+      if (existing > 0) return res.json({ message: "البيانات موجودة مسبقاً", count: existing });
+      const defaults = [
+        { nameAr: "المملكة العربية السعودية", nameEn: "Saudi Arabia",       code: "SA", flag: "🇸🇦", phoneCode: "+966", currency: "SAR", currencyAr: "ريال سعودي",   continent: "آسيا",    sortOrder: 1  },
+        { nameAr: "الإمارات العربية المتحدة", nameEn: "United Arab Emirates",code: "AE", flag: "🇦🇪", phoneCode: "+971", currency: "AED", currencyAr: "درهم إماراتي", continent: "آسيا",    sortOrder: 2  },
+        { nameAr: "مصر",                      nameEn: "Egypt",               code: "EG", flag: "🇪🇬", phoneCode: "+20",  currency: "EGP", currencyAr: "جنيه مصري",    continent: "أفريقيا", sortOrder: 3  },
+        { nameAr: "الكويت",                   nameEn: "Kuwait",              code: "KW", flag: "🇰🇼", phoneCode: "+965", currency: "KWD", currencyAr: "دينار كويتي",  continent: "آسيا",    sortOrder: 4  },
+        { nameAr: "قطر",                      nameEn: "Qatar",               code: "QA", flag: "🇶🇦", phoneCode: "+974", currency: "QAR", currencyAr: "ريال قطري",    continent: "آسيا",    sortOrder: 5  },
+        { nameAr: "البحرين",                  nameEn: "Bahrain",             code: "BH", flag: "🇧🇭", phoneCode: "+973", currency: "BHD", currencyAr: "دينار بحريني", continent: "آسيا",    sortOrder: 6  },
+        { nameAr: "عُمان",                    nameEn: "Oman",                code: "OM", flag: "🇴🇲", phoneCode: "+968", currency: "OMR", currencyAr: "ريال عُماني",   continent: "آسيا",    sortOrder: 7  },
+        { nameAr: "الأردن",                   nameEn: "Jordan",              code: "JO", flag: "🇯🇴", phoneCode: "+962", currency: "JOD", currencyAr: "دينار أردني",   continent: "آسيا",    sortOrder: 8  },
+        { nameAr: "لبنان",                    nameEn: "Lebanon",             code: "LB", flag: "🇱🇧", phoneCode: "+961", currency: "LBP", currencyAr: "ليرة لبنانية", continent: "آسيا",    sortOrder: 9  },
+        { nameAr: "العراق",                   nameEn: "Iraq",                code: "IQ", flag: "🇮🇶", phoneCode: "+964", currency: "IQD", currencyAr: "دينار عراقي",  continent: "آسيا",    sortOrder: 10 },
+        { nameAr: "سوريا",                    nameEn: "Syria",               code: "SY", flag: "🇸🇾", phoneCode: "+963", currency: "SYP", currencyAr: "ليرة سورية",   continent: "آسيا",    sortOrder: 11 },
+        { nameAr: "فلسطين",                   nameEn: "Palestine",           code: "PS", flag: "🇵🇸", phoneCode: "+970", currency: "ILS", currencyAr: "شيكل",          continent: "آسيا",    sortOrder: 12 },
+        { nameAr: "اليمن",                    nameEn: "Yemen",               code: "YE", flag: "🇾🇪", phoneCode: "+967", currency: "YER", currencyAr: "ريال يمني",     continent: "آسيا",    sortOrder: 13 },
+        { nameAr: "ليبيا",                    nameEn: "Libya",               code: "LY", flag: "🇱🇾", phoneCode: "+218", currency: "LYD", currencyAr: "دينار ليبي",    continent: "أفريقيا", sortOrder: 14 },
+        { nameAr: "تونس",                     nameEn: "Tunisia",             code: "TN", flag: "🇹🇳", phoneCode: "+216", currency: "TND", currencyAr: "دينار تونسي",  continent: "أفريقيا", sortOrder: 15 },
+        { nameAr: "الجزائر",                  nameEn: "Algeria",             code: "DZ", flag: "🇩🇿", phoneCode: "+213", currency: "DZD", currencyAr: "دينار جزائري", continent: "أفريقيا", sortOrder: 16 },
+        { nameAr: "المغرب",                   nameEn: "Morocco",             code: "MA", flag: "🇲🇦", phoneCode: "+212", currency: "MAD", currencyAr: "درهم مغربي",   continent: "أفريقيا", sortOrder: 17 },
+        { nameAr: "السودان",                  nameEn: "Sudan",               code: "SD", flag: "🇸🇩", phoneCode: "+249", currency: "SDG", currencyAr: "جنيه سوداني",  continent: "أفريقيا", sortOrder: 18 },
+        { nameAr: "الصومال",                  nameEn: "Somalia",             code: "SO", flag: "🇸🇴", phoneCode: "+252", currency: "SOS", currencyAr: "شلن صومالي",   continent: "أفريقيا", sortOrder: 19 },
+        { nameAr: "موريتانيا",                nameEn: "Mauritania",          code: "MR", flag: "🇲🇷", phoneCode: "+222", currency: "MRU", currencyAr: "أوقية",         continent: "أفريقيا", sortOrder: 20 },
+        { nameAr: "تركيا",                    nameEn: "Turkey",              code: "TR", flag: "🇹🇷", phoneCode: "+90",  currency: "TRY", currencyAr: "ليرة تركية",   continent: "آسيا",    sortOrder: 21 },
+        { nameAr: "باكستان",                  nameEn: "Pakistan",            code: "PK", flag: "🇵🇰", phoneCode: "+92",  currency: "PKR", currencyAr: "روبية باكستانية", continent: "آسيا", sortOrder: 22 },
+        { nameAr: "الهند",                    nameEn: "India",               code: "IN", flag: "🇮🇳", phoneCode: "+91",  currency: "INR", currencyAr: "روبية هندية",   continent: "آسيا",    sortOrder: 23 },
+        { nameAr: "المملكة المتحدة",           nameEn: "United Kingdom",      code: "GB", flag: "🇬🇧", phoneCode: "+44",  currency: "GBP", currencyAr: "جنيه إسترليني", continent: "أوروبا", sortOrder: 24 },
+        { nameAr: "الولايات المتحدة",          nameEn: "United States",       code: "US", flag: "🇺🇸", phoneCode: "+1",   currency: "USD", currencyAr: "دولار أمريكي", continent: "أمريكا",  sortOrder: 25 },
+      ];
+      await CountryModel.insertMany(defaults);
+      res.json({ message: "تم إضافة الدول الافتراضية", count: defaults.length });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // === CART ===
   app.get("/api/cart", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
