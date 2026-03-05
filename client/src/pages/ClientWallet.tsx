@@ -172,14 +172,10 @@ export default function ClientWallet() {
     mutationFn: async () => {
       if (pinForm.newPin !== pinForm.confirmPin) throw new Error("كلمتا المرور غير متطابقتين");
       if (pinForm.newPin.length < 4) throw new Error("كلمة المرور يجب أن تكون 4 أحرف على الأقل");
-      const r = await apiRequest("POST", "/api/wallet/card/set-pin", {
+      await apiRequest("POST", "/api/wallet/card/set-pin", {
         pin: pinForm.newPin,
         currentPin: pinForm.currentPin || undefined,
       });
-      if (!r.ok) {
-        const d = await r.json();
-        throw new Error(d.error || "فشل");
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/card"] });
@@ -193,13 +189,12 @@ export default function ClientWallet() {
   // Topup request
   const topupMutation = useMutation({
     mutationFn: async () => {
-      const r = await apiRequest("POST", "/api/wallet/topup-request", {
+      await apiRequest("POST", "/api/wallet/topup-request", {
         amount: Number(topupForm.amount),
         bankName: topupForm.bankName,
         bankRef: topupForm.bankRef,
         note: topupForm.note,
       });
-      if (!r.ok) throw new Error("فشل إرسال الطلب");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/topup-requests"] });
@@ -218,10 +213,6 @@ export default function ClientWallet() {
         amount: Number(shareForm.amount),
         description: shareForm.description,
       });
-      if (!r.ok) {
-        const d = await r.json();
-        throw new Error(d.error || "فشل");
-      }
       return r.json();
     },
     onSuccess: (data) => {
@@ -240,10 +231,6 @@ export default function ClientWallet() {
         amount: Number(shareForm.amount),
         description: shareForm.description,
       });
-      if (!r.ok) {
-        const d = await r.json();
-        throw new Error(d.error || "فشل");
-      }
       return r.json();
     },
     onSuccess: () => {

@@ -27,8 +27,26 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
-  return res;
+  if (!res.ok) {
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.error || json.message || "حدث خطأ غير متوقع، حاول مجدداً");
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(text || res.statusText || "حدث خطأ غير متوقع، حاول مجدداً");
+      }
+      throw e;
+    }
+  }
+
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : {};
+
+  return new Response(JSON.stringify(body), {
+    status: res.status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

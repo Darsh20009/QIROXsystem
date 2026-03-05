@@ -230,11 +230,6 @@ export default function Cart() {
         walletPayPin: walletPin || undefined,
       });
 
-      if (!r.ok) {
-        const err = await r.json();
-        throw new Error(err.error || err.message || "فشل إرسال الطلب");
-      }
-
       const orderData = await r.json();
       return { ...orderData, walletUsed };
     },

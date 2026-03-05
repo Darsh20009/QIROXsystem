@@ -61,11 +61,10 @@ export default function AdminWallet() {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const r = await apiRequest("POST", "/api/admin/wallet/transaction", {
+      await apiRequest("POST", "/api/admin/wallet/transaction", {
         userId: selectedClient!.id, type: form.type,
         amount: Number(form.amount), description: form.description, note: form.note,
       });
-      if (!r.ok) throw new Error("فشل إضافة المعاملة");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet", selectedClient?.id] });
@@ -87,8 +86,7 @@ export default function AdminWallet() {
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const r = await apiRequest("POST", `/api/admin/wallet/topup-approve/${id}`);
-      if (!r.ok) throw new Error("فشل الاعتماد");
+      await apiRequest("POST", `/api/admin/wallet/topup-approve/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet/topup-requests"] });
@@ -99,8 +97,7 @@ export default function AdminWallet() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const r = await apiRequest("POST", `/api/admin/wallet/topup-reject/${id}`, { reason });
-      if (!r.ok) throw new Error("فشل الرفض");
+      await apiRequest("POST", `/api/admin/wallet/topup-reject/${id}`, { reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wallet/topup-requests"] });

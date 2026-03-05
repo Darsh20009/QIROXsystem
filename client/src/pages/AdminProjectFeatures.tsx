@@ -87,7 +87,6 @@ export default function AdminProjectFeatures() {
   const addMutation = useMutation({
     mutationFn: async (data: any) => {
       const r = await apiRequest("POST", `/api/projects/${selectedProjectId}/features`, data);
-      if (!r.ok) throw new Error((await r.json()).error);
       return r.json();
     },
     onSuccess: () => {
@@ -102,7 +101,6 @@ export default function AdminProjectFeatures() {
   const editMutation = useMutation({
     mutationFn: async (data: any) => {
       const r = await apiRequest("PATCH", `/api/projects/${selectedProjectId}/features/${editFeature.id}`, data);
-      if (!r.ok) throw new Error((await r.json()).error);
       return r.json();
     },
     onSuccess: () => {
@@ -115,8 +113,7 @@ export default function AdminProjectFeatures() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const r = await apiRequest("DELETE", `/api/projects/${selectedProjectId}/features/${id}`, {});
-      if (!r.ok) throw new Error("فشل الحذف");
+      await apiRequest("DELETE", `/api/projects/${selectedProjectId}/features/${id}`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "features"] });
