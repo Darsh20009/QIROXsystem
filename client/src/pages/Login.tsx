@@ -65,6 +65,8 @@ export default function Login() {
     saveDeviceToken(googleToken);
     // Remove params from URL
     window.history.replaceState({}, "", window.location.pathname);
+    // Clear any OTP/verification state — Google users are already verified
+    setVerifyStep(null);
     // Refresh user data then navigate
     queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
       setLocation(nextPath);

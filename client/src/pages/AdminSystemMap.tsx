@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
@@ -47,8 +48,8 @@ function ModCard({
     <Link href={href}>
       <motion.div
         whileHover={{ y: -2, scale: 1.01 }}
-        className={`relative p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 bg-white
-          ${urgent && subCount ? "border-amber-200 shadow-amber-50 shadow-md" : "border-black/[0.07] hover:border-black/20 hover:shadow-sm"}`}
+        className={`relative p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 bg-white dark:bg-[#161b22]
+          ${urgent && subCount ? "border-amber-200 shadow-amber-50 shadow-md" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 hover:shadow-sm"}`}
         data-testid={`sysmap-${href.replace(/\//g, "-")}`}
       >
         <div className="flex items-start gap-2.5">
@@ -56,9 +57,9 @@ function ModCard({
             <Icon className={`w-4.5 h-4.5 ${color}`} style={{ width: 18, height: 18 }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-black leading-tight truncate">{label}</p>
+            <p className="text-[12px] font-bold text-black dark:text-white leading-tight truncate">{label}</p>
             {count !== undefined && (
-              <p className="text-[11px] text-black/40 mt-0.5">{count.toLocaleString()}</p>
+              <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{count.toLocaleString()}</p>
             )}
           </div>
           {urgent && subCount && subCount > 0 ? (
@@ -66,13 +67,13 @@ function ModCard({
               {subCount}
             </span>
           ) : subCount && subCount > 0 ? (
-            <span className="text-[10px] font-bold bg-black/[0.07] text-black/60 rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shrink-0 mt-0.5">
+            <span className="text-[10px] font-bold bg-black/[0.07] dark:bg-white/[0.07] text-black/60 dark:text-white/60 rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shrink-0 mt-0.5">
               {subCount}
             </span>
           ) : null}
         </div>
         {sub && (
-          <p className="text-[9px] text-black/30 mt-1.5 pr-12 leading-relaxed">{sub}</p>
+          <p className="text-[9px] text-black/30 dark:text-white/30 mt-1.5 pr-12 leading-relaxed">{sub}</p>
         )}
       </motion.div>
     </Link>
@@ -86,10 +87,10 @@ function Cluster({
   title: string; color: string; borderColor: string; children: React.ReactNode; icon?: any; badge?: number;
 }) {
   return (
-    <div className={`rounded-2xl border-2 ${borderColor} p-4 bg-white/60 backdrop-blur-sm`}>
+    <div className={`rounded-2xl border-2 ${borderColor} p-4 bg-white/60 dark:bg-white/[0.04] backdrop-blur-sm`}>
       <div className="flex items-center gap-2 mb-3">
         {Icon && <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${color}`}><Icon className="w-3.5 h-3.5 text-white" /></div>}
-        <p className={`text-[11px] font-black uppercase tracking-widest ${color.includes("bg-") ? "text-black/60" : color.replace("bg-", "text-")}`}>
+        <p className={`text-[11px] font-black uppercase tracking-widest ${color.includes("bg-") ? "text-black/60 dark:text-white/60" : color.replace("bg-", "text-")}`}>
           {title}
         </p>
         {badge !== undefined && badge > 0 && (
@@ -108,7 +109,7 @@ function FlowArrow({ label }: { label?: string }) {
   return (
     <div className="flex items-center justify-center py-0.5">
       <div className="flex flex-col items-center gap-0.5">
-        {label && <span className="text-[8px] text-black/25 font-medium">{label}</span>}
+        {label && <span className="text-[8px] text-black/25 dark:text-white/25 font-medium">{label}</span>}
         <div className="w-px h-4 bg-black/10" />
         <ChevronRight className="w-3 h-3 text-black/15 rotate-90 -mt-1" />
       </div>
@@ -120,14 +121,14 @@ function FlowArrow({ label }: { label?: string }) {
 function StatBox({ label, value, icon: Icon, color, sub }: any) {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-black/[0.07] px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+      className="bg-white dark:bg-[#161b22] rounded-2xl border border-black/[0.07] dark:border-white/[0.07] px-5 py-4 flex items-center gap-4 hover:shadow-md transition-shadow">
       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-[10px] text-black/35 font-medium mb-0.5">{label}</p>
-        <p className="text-xl font-black text-black leading-none">{value}</p>
-        {sub && <p className="text-[9px] text-black/25 mt-0.5">{sub}</p>}
+        <p className="text-[10px] text-black/35 dark:text-white/35 font-medium mb-0.5">{label}</p>
+        <p className="text-xl font-black text-black dark:text-white leading-none">{value}</p>
+        {sub && <p className="text-[9px] text-black/25 dark:text-white/25 mt-0.5">{sub}</p>}
       </div>
     </motion.div>
   );
@@ -143,11 +144,20 @@ const orderStatusMap: any = {
   cancelled: { label: "ملغي", color: "text-gray-500 bg-gray-50 border-gray-100" },
 };
 
+const MANAGEMENT_ROLES = ["admin", "manager"];
+
 // ─── Main Component ───────────────────────────────────────────
 export default function AdminSystemMap() {
   const { data: user } = useUser();
   const { language: lang } = useI18n();
   const ar = lang === "ar";
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (user && !MANAGEMENT_ROLES.includes(user.role)) {
+      navigate("/employee/role-dashboard");
+    }
+  }, [user]);
 
   const { data: sysData, isLoading, refetch, isFetching } = useQuery<any>({
     queryKey: ["/api/admin/system-overview"],
@@ -164,21 +174,21 @@ export default function AdminSystemMap() {
   const dateStr = now.toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   if (isLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f7f7]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f7f7] dark:bg-[#0d1117]">
       <div className="text-center">
         <Loader2 className="w-8 h-8 animate-spin mx-auto text-black/20" />
-        <p className="text-xs text-black/30 mt-3">جاري تحميل خريطة النظام...</p>
+        <p className="text-xs text-black/30 dark:text-white/30 mt-3">جاري تحميل خريطة النظام...</p>
       </div>
     </div>
   );
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f7f7f7]">
+    <div dir="rtl" className="min-h-screen bg-[#f7f7f7] dark:bg-[#0d1117]">
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/* HEADER                                                  */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <div className="bg-white border-b border-black/[0.07] px-6 py-4 sticky top-0 z-20 backdrop-blur-md bg-white/95">
+      <div className="bg-white dark:bg-[#161b22] border-b border-black/[0.07] dark:border-white/[0.07] px-6 py-4 sticky top-0 z-20 backdrop-blur-md bg-white/95 dark:bg-[#161b22]/95">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center">
@@ -186,10 +196,10 @@ export default function AdminSystemMap() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-black text-black">خريطة النظام</h1>
+                <h1 className="text-base font-black text-black dark:text-white">خريطة النظام</h1>
                 <Badge className="bg-black text-white text-[9px] font-bold px-2 py-0.5 border-0">QIROX Studio</Badge>
               </div>
-              <p className="text-[10px] text-black/35">{dateStr}</p>
+              <p className="text-[10px] text-black/35 dark:text-white/35">{dateStr}</p>
             </div>
           </div>
 
@@ -201,11 +211,11 @@ export default function AdminSystemMap() {
               </div>
             )}
             <button onClick={() => refetch()} disabled={isFetching}
-              className="w-8 h-8 rounded-xl border border-black/[0.08] flex items-center justify-center hover:bg-black/[0.03] transition-colors"
+              className="w-8 h-8 rounded-xl border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors"
               title="تحديث البيانات">
-              <RefreshCw className={`w-3.5 h-3.5 text-black/40 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-black/40 dark:text-white/40 ${isFetching ? "animate-spin" : ""}`} />
             </button>
-            <div className="text-[10px] text-black/25">يتجدد كل دقيقة</div>
+            <div className="text-[10px] text-black/25 dark:text-white/25">يتجدد كل دقيقة</div>
           </div>
         </div>
       </div>
@@ -216,7 +226,7 @@ export default function AdminSystemMap() {
         {/* LEVEL 1 — KEY METRICS                                   */}
         {/* ═══════════════════════════════════════════════════════ */}
         <div>
-          <p className="text-[9px] font-black text-black/25 uppercase tracking-[0.2em] mb-3">المستوى الأول — الأرقام الرئيسية</p>
+          <p className="text-[9px] font-black text-black/25 dark:text-white/25 uppercase tracking-[0.2em] mb-3">المستوى الأول — الأرقام الرئيسية</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
               { label: "إجمالي الإيرادات", value: `${((ov.totalRevenue || 0) / 1000).toFixed(0)}K ر.س`, icon: DollarSign, color: "text-emerald-600 bg-emerald-50", sub: "من الطلبات المكتملة" },
@@ -227,13 +237,13 @@ export default function AdminSystemMap() {
               { label: "الإشعارات المعلقة", value: ov.pendingNotifications || 0, icon: Bell, color: "text-red-600 bg-red-50", sub: "لم تُقرأ بعد" },
             ].map((s, i) => (
               <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className="bg-white rounded-2xl border border-black/[0.07] px-4 py-4 hover:shadow-sm transition-all duration-200">
+                <div className="bg-white dark:bg-[#161b22] rounded-2xl border border-black/[0.07] dark:border-white/[0.07] px-4 py-4 hover:shadow-sm transition-all duration-200">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${s.color.split(" ")[1]}`}>
                     <s.icon className={`w-4.5 h-4.5 ${s.color.split(" ")[0]}`} style={{ width: 18, height: 18 }} />
                   </div>
-                  <p className="text-xl font-black text-black leading-none">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</p>
-                  <p className="text-[10px] font-bold text-black/50 mt-1">{s.label}</p>
-                  {s.sub && <p className="text-[9px] text-black/25 mt-0.5">{s.sub}</p>}
+                  <p className="text-xl font-black text-black dark:text-white leading-none">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</p>
+                  <p className="text-[10px] font-bold text-black/50 dark:text-white/50 mt-1">{s.label}</p>
+                  {s.sub && <p className="text-[9px] text-black/25 dark:text-white/25 mt-0.5">{s.sub}</p>}
                 </div>
               </motion.div>
             ))}
@@ -244,7 +254,7 @@ export default function AdminSystemMap() {
         {/* LEVEL 2 — SYSTEM MAP (6 clusters)                       */}
         {/* ═══════════════════════════════════════════════════════ */}
         <div>
-          <p className="text-[9px] font-black text-black/25 uppercase tracking-[0.2em] mb-3">المستوى الثاني — خريطة وحدات النظام</p>
+          <p className="text-[9px] font-black text-black/25 dark:text-white/25 uppercase tracking-[0.2em] mb-3">المستوى الثاني — خريطة وحدات النظام</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
@@ -291,8 +301,8 @@ export default function AdminSystemMap() {
               <FlowArrow label="ترقيات" />
               <ModCard icon={Shield} label="الترقيات والأدوار" href="/admin/promotions"
                 color="text-purple-600" bg="bg-purple-50" />
-              <div className="mt-2 pt-2 border-t border-black/[0.05]">
-                <p className="text-[9px] text-black/30 font-bold uppercase tracking-wider mb-2">أيضاً</p>
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
+                <p className="text-[9px] text-black/30 dark:text-white/30 font-bold uppercase tracking-wider mb-2">أيضاً</p>
                 <div className="grid grid-cols-2 gap-2">
                   <ModCard icon={Briefcase} label="الوظائف" count={ov.activeJobs}
                     sub={`من ${ov.totalJobs || 0} وظيفة`}
@@ -324,8 +334,8 @@ export default function AdminSystemMap() {
               <FlowArrow label="استشارات" />
               <ModCard icon={CalendarCheck} label="الاستشارات" count={ov.totalConsultations}
                 href="/admin/consultations" color="text-green-600" bg="bg-green-50" />
-              <div className="mt-2 pt-2 border-t border-black/[0.05]">
-                <p className="text-[9px] text-black/30 font-bold uppercase tracking-wider mb-2">نشر</p>
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
+                <p className="text-[9px] text-black/30 dark:text-white/30 font-bold uppercase tracking-wider mb-2">نشر</p>
                 <div className="grid grid-cols-2 gap-2">
                   <ModCard icon={Newspaper} label="الأخبار" count={ov.publishedNews}
                     sub={`من ${ov.totalNews || 0}`}
@@ -350,8 +360,8 @@ export default function AdminSystemMap() {
               <FlowArrow />
               <ModCard icon={Video} label="QMeet — الاجتماعات" href="/admin/qmeet"
                 color="text-purple-600" bg="bg-purple-50" />
-              <div className="mt-2 pt-2 border-t border-black/[0.05]">
-                <p className="text-[9px] text-black/30 font-bold uppercase tracking-wider mb-2">طلبات العملاء</p>
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
+                <p className="text-[9px] text-black/30 dark:text-white/30 font-bold uppercase tracking-wider mb-2">طلبات العملاء</p>
                 <ModCard icon={ClipboardList} label="طلبات البيانات" href="/admin/data-requests"
                   color="text-slate-600" bg="bg-slate-50" />
               </div>
@@ -425,7 +435,7 @@ export default function AdminSystemMap() {
               <FlowArrow />
               <ModCard icon={Smartphone} label="نشر التطبيق" href="/admin/app-publish"
                 color="text-blue-600" bg="bg-blue-50" sub="Android · iOS · Windows · HarmonyOS" />
-              <div className="mt-2 pt-2 border-t border-black/[0.05]">
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
                 <div className="grid grid-cols-2 gap-2">
                   <ModCard icon={Users} label="الشركاء" href="/admin/partners"
                     color="text-indigo-600" bg="bg-indigo-50" />
@@ -441,43 +451,43 @@ export default function AdminSystemMap() {
         {/* LEVEL 3 — LIVE ACTIVITY                                 */}
         {/* ═══════════════════════════════════════════════════════ */}
         <div>
-          <p className="text-[9px] font-black text-black/25 uppercase tracking-[0.2em] mb-3">المستوى الثالث — النشاط الفوري</p>
+          <p className="text-[9px] font-black text-black/25 dark:text-white/25 uppercase tracking-[0.2em] mb-3">المستوى الثالث — النشاط الفوري</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Recent Orders — 3 cols */}
-            <div className="lg:col-span-3 bg-white rounded-2xl border border-black/[0.07] overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.05]">
+            <div className="lg:col-span-3 bg-white dark:bg-[#161b22] rounded-2xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.05] dark:border-white/[0.05]">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4 text-blue-500" />
-                  <p className="text-sm font-black text-black">آخر الطلبات</p>
+                  <p className="text-sm font-black text-black dark:text-white">آخر الطلبات</p>
                   <Badge variant="outline" className="text-[9px] font-bold">{ov.totalOrders}</Badge>
                 </div>
                 <Link href="/admin/orders">
-                  <span className="text-[10px] text-black/35 hover:text-black/60 flex items-center gap-1 cursor-pointer transition-colors">
+                  <span className="text-[10px] text-black/35 dark:text-white/35 hover:text-black/60 dark:text-white/60 flex items-center gap-1 cursor-pointer transition-colors">
                     عرض الكل <ChevronRight className="w-3 h-3" />
                   </span>
                 </Link>
               </div>
-              <div className="divide-y divide-black/[0.04]">
+              <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                 {recentOrders.length === 0 ? (
-                  <div className="px-5 py-8 text-center text-xs text-black/25">لا توجد طلبات بعد</div>
+                  <div className="px-5 py-8 text-center text-xs text-black/25 dark:text-white/25">لا توجد طلبات بعد</div>
                 ) : recentOrders.slice(0, 8).map((order: any) => {
                   const st = orderStatusMap[order.status] || orderStatusMap.pending;
                   return (
                     <Link key={order._id} href={`/admin/orders`}>
-                      <div className="flex items-center gap-3 px-5 py-3 hover:bg-black/[0.01] transition-colors cursor-pointer" data-testid={`order-row-${order._id}`}>
+                      <div className="flex items-center gap-3 px-5 py-3 hover:bg-black/[0.01] dark:hover:bg-white/[0.03] transition-colors cursor-pointer" data-testid={`order-row-${order._id}`}>
                         <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                           <ShoppingBag className="w-3.5 h-3.5 text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-black truncate">
+                          <p className="text-[11px] font-bold text-black dark:text-white truncate">
                             {order.clientId?.fullName || order.clientName || "عميل"}
                           </p>
-                          <p className="text-[10px] text-black/35 truncate">{order.serviceName || "—"}</p>
+                          <p className="text-[10px] text-black/35 dark:text-white/35 truncate">{order.serviceName || "—"}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${st.color}`}>{st.label}</span>
-                          <span className="text-[10px] text-black/40 font-mono">{(order.totalAmount || 0).toLocaleString()} ر.س</span>
+                          <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">{(order.totalAmount || 0).toLocaleString()} ر.س</span>
                         </div>
                       </div>
                     </Link>
@@ -489,10 +499,10 @@ export default function AdminSystemMap() {
             {/* Right side — 2 cols: tickets + pending summary */}
             <div className="lg:col-span-2 space-y-4">
               {/* Pending Actions */}
-              <div className="bg-white rounded-2xl border border-black/[0.07] p-4">
+              <div className="bg-white dark:bg-[#161b22] rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <AlertTriangle className="w-4 h-4 text-amber-500" />
-                  <p className="text-sm font-black text-black">يحتاج انتباه</p>
+                  <p className="text-sm font-black text-black dark:text-white">يحتاج انتباه</p>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -507,7 +517,7 @@ export default function AdminSystemMap() {
                       <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-50/50 border border-amber-100/50 hover:bg-amber-50 transition-colors cursor-pointer">
                         <div className="flex items-center gap-2">
                           <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
-                          <span className="text-[11px] font-bold text-black/70">{item.label}</span>
+                          <span className="text-[11px] font-bold text-black/70 dark:text-white/70">{item.label}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] font-black text-amber-700">{item.count}</span>
@@ -526,28 +536,28 @@ export default function AdminSystemMap() {
               </div>
 
               {/* Recent Support Tickets */}
-              <div className="bg-white rounded-2xl border border-black/[0.07] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.05]">
+              <div className="bg-white dark:bg-[#161b22] rounded-2xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.05]">
                   <div className="flex items-center gap-2">
                     <LifeBuoy className="w-3.5 h-3.5 text-indigo-500" />
-                    <p className="text-[12px] font-black text-black">آخر تذاكر الدعم</p>
+                    <p className="text-[12px] font-black text-black dark:text-white">آخر تذاكر الدعم</p>
                   </div>
                   <Link href="/admin/support-tickets">
-                    <span className="text-[10px] text-black/35 hover:text-black/60 cursor-pointer">عرض الكل</span>
+                    <span className="text-[10px] text-black/35 dark:text-white/35 hover:text-black/60 dark:text-white/60 cursor-pointer">عرض الكل</span>
                   </Link>
                 </div>
-                <div className="divide-y divide-black/[0.04]">
+                <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                   {recentTickets.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-[11px] text-black/25">لا توجد تذاكر</div>
+                    <div className="px-4 py-6 text-center text-[11px] text-black/25 dark:text-white/25">لا توجد تذاكر</div>
                   ) : recentTickets.map((ticket: any) => (
                     <Link key={ticket._id} href="/admin/support-tickets">
-                      <div className="flex items-start gap-2.5 px-4 py-3 hover:bg-black/[0.01] cursor-pointer transition-colors">
+                      <div className="flex items-start gap-2.5 px-4 py-3 hover:bg-black/[0.01] dark:hover:bg-white/[0.03] cursor-pointer transition-colors">
                         <div className="w-7 h-7 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 mt-0.5">
                           <LifeBuoy className="w-3 h-3 text-indigo-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-black truncate">{ticket.subject}</p>
-                          <p className="text-[9px] text-black/35">{ticket.userId?.fullName || "مجهول"}</p>
+                          <p className="text-[11px] font-bold text-black dark:text-white truncate">{ticket.subject}</p>
+                          <p className="text-[9px] text-black/35 dark:text-white/35">{ticket.userId?.fullName || "مجهول"}</p>
                         </div>
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${ticket.status === "open" ? "bg-red-50 text-red-600 border border-red-100" : "bg-green-50 text-green-600 border border-green-100"}`}>
                           {ticket.status === "open" ? "مفتوح" : "مغلق"}
@@ -566,7 +576,7 @@ export default function AdminSystemMap() {
           <p className="text-[9px] text-black/20">QIROX Studio System Map · v2.0</p>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            <p className="text-[9px] text-black/25">النظام يعمل بشكل طبيعي</p>
+            <p className="text-[9px] text-black/25 dark:text-white/25">النظام يعمل بشكل طبيعي</p>
           </div>
         </div>
       </div>

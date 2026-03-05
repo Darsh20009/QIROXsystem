@@ -165,7 +165,12 @@ export async function registerRoutes(
           const tokenHash = createHash("sha256").update(plainToken).digest("hex");
           const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
           await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
-          const redirectPath = user.role === "client" ? "/dashboard" : "/admin";
+          const MGMT_ROLES = ["admin", "manager"];
+          const redirectPath = user.role === "client"
+            ? "/dashboard"
+            : MGMT_ROLES.includes(user.role)
+              ? "/admin"
+              : "/employee/role-dashboard";
           // Pass device token via /login?googleToken=... so client can store it, then navigates
           res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
         });
