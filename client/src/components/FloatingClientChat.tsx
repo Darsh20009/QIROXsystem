@@ -74,6 +74,11 @@ function playNotif() {
 
 export function FloatingClientChat() {
   const { data: user } = useUser();
+  if (!user || user.role !== "client") return null;
+  return <FloatingClientChatInner user={user} />;
+}
+
+function FloatingClientChatInner({ user }: { user: any }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -93,8 +98,6 @@ export function FloatingClientChat() {
   const sessionIdRef = useRef<string | null>(null);
   const typingTimerRef = useRef<any>(null);
   const agentTypingTimerRef = useRef<any>(null);
-
-  if (!user || user.role !== "client") return null;
 
   // ── Fetch active session ───────────────────────────────────────────────
   const { data: session, isLoading: sessionLoading, refetch: refetchSession } = useQuery<any>({

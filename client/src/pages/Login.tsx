@@ -359,14 +359,28 @@ export default function Login() {
 
           {/* Google login badge */}
           {googleEnabled && !isEmployeeRegister && (
-            <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-                <SiGoogle className="w-4 h-4 text-[#4285F4]" />
+            <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+              {/* Google color top bar */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] flex">
+                <div className="flex-1 bg-[#4285F4]/70" />
+                <div className="flex-1 bg-[#EA4335]/70" />
+                <div className="flex-1 bg-[#FBBC05]/70" />
+                <div className="flex-1 bg-[#34A853]/70" />
               </div>
-              <div>
-                <p className="text-white text-xs font-semibold">تسجيل دخول سريع</p>
-                <p className="text-white/30 text-[10px]">ادخل بحسابك على Google بضغطة واحدة</p>
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-md shadow-black/20">
+                <SiGoogle className="w-[18px] h-[18px] text-[#4285F4]" />
               </div>
+              <div className="flex-1">
+                <p className="text-white text-xs font-bold">دخول سريع بـ Google</p>
+                <p className="text-white/30 text-[10px] mt-0.5">آمن · مشفّر · بضغطة واحدة</p>
+              </div>
+              {/* Live green dot */}
+              <span className="flex items-center gap-1 shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34A853] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34A853]" />
+                </span>
+              </span>
             </div>
           )}
         </div>
@@ -600,26 +614,72 @@ export default function Login() {
           {/* Google OAuth Button */}
           {googleEnabled && !isEmployeeRegister && (
             <div className="mb-5">
-              <Button
+              <motion.button
                 type="button"
-                variant="outline"
-                className="w-full h-12 rounded-xl border border-black/[0.12] bg-white hover:bg-black/[0.02] text-black font-semibold text-sm flex items-center justify-center gap-3 transition-all shadow-sm"
                 onClick={handleGoogleLogin}
                 disabled={googleLoading}
                 data-testid="btn-google-login"
+                whileHover={!googleLoading ? { y: -2 } : {}}
+                whileTap={!googleLoading ? { y: 0, scale: 0.99 } : {}}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="w-full relative overflow-hidden rounded-xl border border-black/[0.1] bg-white flex items-center gap-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed group"
+                style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}
               >
-                {googleLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <SiGoogle className="w-4 h-4 text-[#4285F4]" />
-                )}
-                {googleLoading
-                  ? "جارٍ الاتصال..."
-                  : isRegister
-                  ? "إنشاء حساب بـ Google"
-                  : "تسجيل الدخول بـ Google"
-                }
-              </Button>
+                {/* Shimmer sweep on hover */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%)",
+                    x: "-120%",
+                  }}
+                  animate={googleLoading ? {} : undefined}
+                  whileHover={{ x: "120%" }}
+                  transition={{ duration: 0.45, ease: "easeInOut" }}
+                />
+
+                {/* Google colored icon column */}
+                <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-black/[0.07] bg-gradient-to-br from-white to-black/[0.02]">
+                  {/* Four Google color corner dots */}
+                  <span className="absolute top-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-[#4285F4] opacity-70" />
+                  <span className="absolute top-[7px] left-[7px] w-[5px] h-[5px] rounded-full bg-[#EA4335] opacity-70" />
+                  <span className="absolute bottom-[7px] left-[7px] w-[5px] h-[5px] rounded-full bg-[#FBBC05] opacity-70" />
+                  <span className="absolute bottom-[7px] right-[7px] w-[5px] h-[5px] rounded-full bg-[#34A853] opacity-70" />
+                  {googleLoading ? (
+                    <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="#E5E5E5" strokeWidth="2.5" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#4285F4" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  ) : (
+                    <SiGoogle className="w-[22px] h-[22px] text-[#4285F4]" />
+                  )}
+                </div>
+
+                {/* Text area */}
+                <div className="flex-1 px-4 py-3.5 text-right">
+                  <p className="text-black font-bold text-[14px] leading-snug">
+                    {googleLoading
+                      ? "جارٍ الاتصال بـ Google..."
+                      : isRegister
+                      ? "إنشاء حساب بـ Google"
+                      : "تسجيل الدخول بـ Google"
+                    }
+                  </p>
+                  {!googleLoading && (
+                    <p className="text-black/35 text-[10.5px] font-medium mt-0.5">
+                      دخول سريع · آمن · بضغطة واحدة
+                    </p>
+                  )}
+                </div>
+
+                {/* Google 4-color bottom bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] flex">
+                  <div className="flex-1 bg-[#4285F4]" />
+                  <div className="flex-1 bg-[#EA4335]" />
+                  <div className="flex-1 bg-[#FBBC05]" />
+                  <div className="flex-1 bg-[#34A853]" />
+                </div>
+              </motion.button>
+
               <div className="flex items-center gap-3 mt-4">
                 <div className="flex-1 h-px bg-black/[0.07]" />
                 <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
