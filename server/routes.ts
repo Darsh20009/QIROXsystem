@@ -79,9 +79,13 @@ export async function registerRoutes(
     if (GOOGLE_ENABLED) {
       const { Strategy: GoogleStrategy } = await import("passport-google-oauth20");
       const passport = (await import("passport")).default;
+      // In dev, use Replit domain if available so OAuth redirect works in the browser
+      const devDomain = process.env.REPLIT_DEV_DOMAIN;
       const CALLBACK_URL =
         process.env.NODE_ENV === "production"
           ? "https://qiroxstudio.online/api/auth/google/callback"
+          : devDomain
+          ? `https://${devDomain}/api/auth/google/callback`
           : `http://localhost:5000/api/auth/google/callback`;
 
       passport.use(
