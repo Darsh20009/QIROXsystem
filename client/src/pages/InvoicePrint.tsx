@@ -19,6 +19,7 @@ export default function InvoicePrint() {
       if (!r.ok) throw new Error("not found");
       return r.json();
     },
+    enabled: !!params.id,
   });
 
   const sendEmailMutation = useMutation({

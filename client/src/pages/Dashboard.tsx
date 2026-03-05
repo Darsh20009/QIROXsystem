@@ -1831,7 +1831,7 @@ export default function Dashboard() {
                 </div>
                 {(cartData?.items?.length ?? 0) > 0 && (
                   <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                    {cartData.items.length}
+                    {cartData?.items?.length}
                   </span>
                 )}
               </div>

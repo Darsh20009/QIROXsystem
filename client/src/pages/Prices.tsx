@@ -268,7 +268,7 @@ export default function Prices() {
     navigate(`/order?${q.toString()}`);
   }
 
-  const activeSeg = SEGMENTS.find(s => s.key === segment)!;
+  const activeSeg = SEGMENTS.find(s => s.key === segment) ?? SEGMENTS[0];
   const tierPlans = plans?.filter((p: any) =>
     p.segment === segment && ["lite","pro","infinite"].includes(p.tier ?? "")
   ).sort((a: any, b: any) =>

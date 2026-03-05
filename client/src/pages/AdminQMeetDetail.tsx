@@ -64,6 +64,7 @@ export default function AdminQMeetDetail() {
       if (!r.ok) throw new Error("لم يتم العثور على الاجتماع");
       return r.json();
     },
+    enabled: !!id,
   });
 
   const { data: feedbacks, isLoading: feedbacksLoading } = useQuery<any[]>({
@@ -73,6 +74,7 @@ export default function AdminQMeetDetail() {
       if (!r.ok) return [];
       return r.json();
     },
+    enabled: !!id,
   });
 
   const { data: reports, isLoading: reportsLoading } = useQuery<any[]>({
@@ -82,6 +84,7 @@ export default function AdminQMeetDetail() {
       if (!r.ok) return [];
       return r.json();
     },
+    enabled: !!id,
   });
 
   const feedbackMutation = useMutation({
