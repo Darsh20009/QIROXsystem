@@ -12,9 +12,10 @@ import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { SiGoogle } from "react-icons/si";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
@@ -30,9 +31,50 @@ export default function Login() {
   const queryClient = useQueryClient();
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleCallbackHandled = useRef(false);
 
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
+
+  // Check if Google OAuth is enabled on the server
+  useEffect(() => {
+    fetch("/api/auth/google/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setGoogleEnabled(!!d.enabled))
+      .catch(() => {});
+  }, []);
+
+  // Handle Google OAuth callback: pick up device token from URL param and navigate
+  useEffect(() => {
+    if (googleCallbackHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const googleToken = params.get("googleToken");
+    const nextPath = params.get("next") || "/dashboard";
+    if (!googleToken) {
+      // Also handle ?error= from Google OAuth failure
+      const googleError = params.get("error");
+      if (googleError) {
+        toast({ title: "فشل تسجيل الدخول بـ Google", description: "حدث خطأ أثناء الاتصال بـ Google، حاول مرة أخرى", variant: "destructive" });
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      return;
+    }
+    googleCallbackHandled.current = true;
+    saveDeviceToken(googleToken);
+    // Remove params from URL
+    window.history.replaceState({}, "", window.location.pathname);
+    // Refresh user data then navigate
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
+      setLocation(nextPath);
+    });
+  }, []);
+
+  const handleGoogleLogin = () => {
+    setGoogleLoading(true);
+    window.location.href = "/api/auth/google";
+  };
 
   const identifierHints = ["user123", "name@email.com", "+966XXXXXXXXX"];
   const [hintIndex, setHintIndex] = useState(0);
@@ -198,7 +240,9 @@ export default function Login() {
     email: z.string().email("بريد إلكتروني غير صالح"),
     fullName: z.string().min(2, "الاسم الكامل مطلوب"),
     confirmPassword: z.string(),
-    whatsappNumber: z.string().optional(),
+    whatsappNumber: isEmployeeRegister
+      ? z.string().optional()
+      : z.string().min(5, "رقم الجوال مطلوب"),
     country: z.string().optional(),
     businessType: z.string().optional(),
     role: z.string().optional(),
@@ -339,6 +383,19 @@ export default function Login() {
               </div>
             ))}
           </div>
+
+          {/* Google login badge */}
+          {googleEnabled && !isEmployeeRegister && (
+            <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-3">
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
+                <SiGoogle className="w-4 h-4 text-[#4285F4]" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-semibold">تسجيل دخول سريع</p>
+                <p className="text-white/30 text-[10px]">ادخل بحسابك على Google بضغطة واحدة</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom quote */}
@@ -592,6 +649,37 @@ export default function Login() {
             )}
           </AnimatePresence>
 
+          {/* Google OAuth Button */}
+          {googleEnabled && !isEmployeeRegister && (
+            <div className="mb-5">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 rounded-xl border border-black/[0.12] bg-white hover:bg-black/[0.02] text-black font-semibold text-sm flex items-center justify-center gap-3 transition-all shadow-sm"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                data-testid="btn-google-login"
+              >
+                {googleLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <SiGoogle className="w-4 h-4 text-[#4285F4]" />
+                )}
+                {googleLoading
+                  ? "جارٍ الاتصال..."
+                  : isRegister
+                  ? "إنشاء حساب بـ Google"
+                  : "تسجيل الدخول بـ Google"
+                }
+              </Button>
+              <div className="flex items-center gap-3 mt-4">
+                <div className="flex-1 h-px bg-black/[0.07]" />
+                <span className="text-xs text-black/30 font-medium">أو بالبريد وكلمة المرور</span>
+                <div className="flex-1 h-px bg-black/[0.07]" />
+              </div>
+            </div>
+          )}
+
           {/* Form */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -719,7 +807,10 @@ export default function Login() {
                     name="whatsappNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-black/50 text-xs font-semibold">رقم الواتساب / الهاتف</FormLabel>
+                        <FormLabel className="text-black/50 text-xs font-semibold flex items-center gap-1">
+                          رقم الواتساب / الهاتف
+                          {!isEmployeeRegister && <span className="text-red-500">*</span>}
+                        </FormLabel>
                         <FormControl>
                           <CountryPhoneInput
                             value={field.value || ""}

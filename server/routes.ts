@@ -70,6 +70,109 @@ export async function registerRoutes(
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
 
+  // ─── Google OAuth ───────────────────────────────────────────────────────────
+  {
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    const GOOGLE_ENABLED = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+
+    if (GOOGLE_ENABLED) {
+      const { Strategy: GoogleStrategy } = await import("passport-google-oauth20");
+      const passport = (await import("passport")).default;
+      const CALLBACK_URL =
+        process.env.NODE_ENV === "production"
+          ? "https://qiroxstudio.online/api/auth/google/callback"
+          : `http://localhost:5000/api/auth/google/callback`;
+
+      passport.use(
+        new GoogleStrategy(
+          { clientID: GOOGLE_CLIENT_ID!, clientSecret: GOOGLE_CLIENT_SECRET!, callbackURL: CALLBACK_URL },
+          async (_accessToken, _refreshToken, profile, done) => {
+            try {
+              const { UserModel } = await import("./models");
+              const email = profile.emails?.[0]?.value?.toLowerCase().trim();
+              if (!email) return done(new Error("لم يتم الحصول على البريد الإلكتروني من Google"));
+
+              // Try to find by googleId first, then by email
+              let user = await UserModel.findOne({ googleId: profile.id });
+              if (!user) {
+                user = await UserModel.findOne({ email });
+              }
+
+              if (user) {
+                // Link google account if not already linked
+                if (!user.googleId) {
+                  user.googleId = profile.id;
+                  user.googleAvatarUrl = profile.photos?.[0]?.value || "";
+                  user.emailVerified = true;
+                  await user.save();
+                }
+                return done(null, user);
+              }
+
+              // Create new user from Google profile
+              const { randomBytes } = await import("crypto");
+              const rawUsername = (email.split("@")[0] + randomBytes(2).toString("hex")).replace(/[^a-z0-9_]/gi, "").slice(0, 20) || `user${randomBytes(4).toString("hex")}`;
+              let username = rawUsername;
+              let suffix = 1;
+              while (await UserModel.findOne({ username })) {
+                username = `${rawUsername}${suffix++}`;
+              }
+              const randomPw = await hashPassword(randomBytes(32).toString("hex"));
+              const newUser = await UserModel.create({
+                username,
+                password: randomPw,
+                email,
+                fullName: profile.displayName || email.split("@")[0],
+                googleId: profile.id,
+                googleAvatarUrl: profile.photos?.[0]?.value || "",
+                emailVerified: true,
+                role: "client",
+              });
+              return done(null, newUser);
+            } catch (err: any) {
+              return done(err);
+            }
+          }
+        )
+      );
+    }
+
+    // Route: start Google OAuth flow
+    app.get("/api/auth/google", async (req, res, next) => {
+      if (!GOOGLE_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ Google غير مفعّل حالياً" });
+      const passport = (await import("passport")).default;
+      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+    });
+
+    // Route: Google OAuth callback
+    app.get("/api/auth/google/callback", async (req, res, next) => {
+      if (!GOOGLE_ENABLED) return res.redirect("/login?error=google_disabled");
+      const passport = (await import("passport")).default;
+      const { DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+
+      passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=google_failed");
+        req.login(user, async (loginErr) => {
+          if (loginErr) return res.redirect("/login?error=google_failed");
+          // Issue device token (trusted device — Google already verified identity)
+          const plainToken = randomBytes(48).toString("hex");
+          const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+          const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+          await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          const redirectPath = user.role === "client" ? "/dashboard" : "/admin";
+          // Pass device token via /login?googleToken=... so client can store it, then navigates
+          res.redirect(`/login?googleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+        });
+      })(req, res, next);
+    });
+
+    // Route: check if google is enabled
+    app.get("/api/auth/google/status", (_req, res) => res.json({ enabled: GOOGLE_ENABLED }));
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
       const ext = path.extname(filePath).toLowerCase();

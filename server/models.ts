@@ -3,8 +3,10 @@ import { roles } from "@shared/schema";
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, default: "" },
   email: { type: String, required: true, unique: true },
+  googleId: { type: String, sparse: true, index: true },
+  googleAvatarUrl: String,
   role: { type: String, enum: [...roles], default: "client", required: true },
   fullName: { type: String, required: true },
   phone: String,
