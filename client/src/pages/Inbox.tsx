@@ -52,16 +52,31 @@ function Avatar({ name, role, online }: { name: string; role?: string; online?: 
 // ──────────────────────────────────────────────
 // Voice Message Player
 // ──────────────────────────────────────────────
+function getAudioMimeType(url: string): string {
+  const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
+  if (ext === "oga" || ext === "ogg") return "audio/ogg";
+  if (ext === "weba" || ext === "webm") return "audio/webm";
+  if (ext === "m4a") return "audio/mp4";
+  if (ext === "mp3") return "audio/mpeg";
+  if (ext === "wav") return "audio/wav";
+  if (ext === "aac") return "audio/aac";
+  return "";
+}
+
 function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   const toggle = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || loadError) return;
     if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else { audioRef.current.play(); setPlaying(true); }
+    else {
+      audioRef.current.play().catch(() => setLoadError(true));
+      setPlaying(true);
+    }
   };
 
   const btnCls = isMe
@@ -70,24 +85,30 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const trackCls = isMe ? "bg-white/25" : "bg-black/10";
   const fillCls = isMe ? "bg-white/80" : "bg-black/50";
   const textCls = isMe ? "text-white/55" : "text-black/40";
+  const mimeType = getAudioMimeType(url);
 
   return (
     <div className="flex items-center gap-2 min-w-[160px]">
-      <audio ref={audioRef} src={url}
+      <audio ref={audioRef} preload="metadata"
         onTimeUpdate={() => {
           if (audioRef.current) setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0);
         }}
         onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
         onEnded={() => { setPlaying(false); setProgress(0); }}
-      />
-      <button onClick={toggle} className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls}`}>
+        onError={() => setLoadError(true)}
+      >
+        <source src={url} type={mimeType || undefined} />
+      </audio>
+      <button onClick={toggle} className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls} ${loadError ? "opacity-40 cursor-not-allowed" : ""}`} title={loadError ? "تعذّر تشغيل الصوت" : undefined}>
         {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
       </button>
       <div className="flex-1">
         <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}>
           <div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${progress}%` }} />
         </div>
-        <span className={`text-[9px] ${textCls} mt-0.5 block`}>{duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}</span>
+        <span className={`text-[9px] ${textCls} mt-0.5 block`}>
+          {loadError ? "⚠️ تعذّر التشغيل" : duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}
+        </span>
       </div>
     </div>
   );
@@ -396,7 +417,7 @@ export default function Inbox() {
 
   // ── Voice Recording ──
   const getSupportedMimeType = () => {
-    const types = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4", "audio/mpeg"];
+    const types = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"];
     for (const t of types) {
       try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {}
     }
@@ -410,22 +431,23 @@ export default function Inbox() {
       const chunks: BlobPart[] = [];
       const mimeType = getSupportedMimeType();
       const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setIsRecording(false);
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         setRecordingTime(0);
         if (activeContact?.id) sendVoiceRecording(activeContact.id, false);
-        const finalType = mimeType || "audio/webm";
-        const ext = finalType.includes("mp4") ? "mp4" : finalType.includes("ogg") ? "ogg" : "webm";
+        const finalType = mimeType || mr.mimeType || "audio/webm";
+        const ext = finalType.includes("mp4") ? "m4a" : finalType.includes("ogg") ? "oga" : "weba";
         const blob = new Blob(chunks, { type: finalType });
-        if (blob.size < 500) return; // Too short
+        if (blob.size < 100) return;
         const formData = new FormData();
         formData.append("file", blob, `voice_${Date.now()}.${ext}`);
         setUploadingFile(true);
         try {
-          const res = await fetch("/api/upload", { method: "POST", body: formData });
+          const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+          if (!res.ok) throw new Error("upload failed");
           const data = await res.json();
           if (data.url) {
             sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: "رسالة صوتية", attachmentSize: blob.size });
@@ -436,7 +458,7 @@ export default function Inbox() {
           setUploadingFile(false);
         }
       };
-      mr.start();
+      mr.start(100);
       setMediaRecorder(mr);
       setIsRecording(true);
       setRecordingTime(0);

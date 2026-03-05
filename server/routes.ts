@@ -54,7 +54,7 @@ const upload = multer({
   }),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav|webm|ogg|m4a|aac|opus)$/i;
+    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|mp3|wav|webm|ogg|oga|weba|m4a|aac|opus)$/i;
     if (allowed.test(path.extname(file.originalname))) {
       cb(null, true);
     } else {
@@ -69,7 +69,15 @@ export async function registerRoutes(
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
 
-  app.use("/uploads", express.static(uploadsDir));
+  app.use("/uploads", express.static(uploadsDir, {
+    setHeaders: (res, filePath) => {
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === ".weba") res.setHeader("Content-Type", "audio/webm");
+      else if (ext === ".oga") res.setHeader("Content-Type", "audio/ogg");
+      else if (ext === ".m4a") res.setHeader("Content-Type", "audio/mp4");
+      else if (ext === ".opus") res.setHeader("Content-Type", "audio/ogg; codecs=opus");
+    },
+  }));
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString(), service: "QIROX Studio" });
