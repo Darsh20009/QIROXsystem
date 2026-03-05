@@ -153,9 +153,16 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: any) => { const res = await apiRequest("PATCH", `/api/admin/pricing/${plan?.id}`, data); return res.json(); },
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PATCH", `/api/admin/pricing/${plan?.id}`, data);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `خطأ ${res.status}`);
+      }
+      return res.json();
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/pricing"] }); toast({ title: "تم تحديث الباقة" }); onClose(); },
-    onError: () => toast({ title: "خطأ في تحديث الباقة", variant: "destructive" }),
+    onError: (e: any) => toast({ title: "خطأ في تحديث الباقة", description: e.message, variant: "destructive" }),
   });
 
   const isPending = createMutation.isPending || updateMutation.isPending;

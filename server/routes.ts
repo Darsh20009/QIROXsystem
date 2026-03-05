@@ -1831,7 +1831,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/templates", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const template = await storage.createSectorTemplate(req.body);
@@ -1839,7 +1839,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/templates/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const template = await storage.updateSectorTemplate(req.params.id, req.body);
@@ -1847,7 +1847,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/templates/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     await storage.deleteSectorTemplate(req.params.id);
@@ -1861,7 +1861,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/pricing", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const plan = await storage.createPricingPlan(req.body);
@@ -1869,15 +1869,21 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/pricing/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
-    const plan = await storage.updatePricingPlan(req.params.id, req.body);
-    res.json(plan);
+    try {
+      const plan = await storage.updatePricingPlan(req.params.id, req.body);
+      if (!plan) return res.status(404).json({ error: "الباقة غير موجودة" });
+      res.json(plan);
+    } catch (err: any) {
+      if (err.code === 11000) return res.status(400).json({ error: "الـ slug موجود مسبقاً، اختر اسماً مختلفاً" });
+      res.status(500).json({ error: "فشل تحديث الباقة" });
+    }
   });
 
   app.delete("/api/admin/pricing/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     await storage.deletePricingPlan(req.params.id);
