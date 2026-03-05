@@ -85,7 +85,7 @@ const orderSchema = new mongoose.Schema({
   accessCredentials: String,
   files: { type: mongoose.Schema.Types.Mixed },
   // Payment
-  paymentMethod: { type: String, enum: ["bank_transfer", "paypal"] },
+  paymentMethod: { type: String, enum: ["bank_transfer", "paypal", "wallet", "mixed", "stc_pay", "apple_pay", "cash", "other"] },
   paymentProofUrl: String,
   totalAmount: Number,
   isDepositPaid: { type: Boolean, default: false },
