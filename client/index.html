@@ -75,6 +75,10 @@
         overflow-x: hidden;
         max-width: 100%;
       }
+      html.dark {
+        background: hsl(222, 47%, 6%);
+        color-scheme: dark;
+      }
       body {
         overflow-x: hidden;
         max-width: 100vw;
@@ -87,6 +91,22 @@
         max-width: 100vw;
       }
     </style>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('qirox-theme');
+          if (t === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (!t) {
+            var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+            if (mq && mq.matches) {
+              document.documentElement.classList.add('dark');
+              localStorage.setItem('qirox-theme', 'dark');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <script>
       (function() {
         var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
