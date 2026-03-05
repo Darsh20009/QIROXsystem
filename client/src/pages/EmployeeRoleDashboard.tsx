@@ -12,7 +12,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle,
   Wrench, Code2, ShieldCheck, BarChart3, Palette, Upload, ExternalLink,
   FileText, Users, Activity, Wallet, Receipt, Banknote, Target,
-  ChevronRight, Star, Zap, Globe
+  ChevronRight, Star, Zap, Globe, Wand2
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -518,6 +518,24 @@ export default function EmployeeRoleDashboard() {
     <div className="relative overflow-hidden">
       <PageGraphics variant="dashboard" />
       {roleDashboard}
+      <motion.div {...fade(0.3)} className="mt-4">
+        <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+          <CardContent className="p-5">
+            <Link href="/my-tools">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900/30 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wand2 className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-black dark:text-white">أدواتي ومميزاتي ⚡</p>
+                  <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">أدوات PDF والتقنية والاختصارات المتاحة لك</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 mr-auto" />
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
