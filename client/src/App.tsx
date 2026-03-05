@@ -529,11 +529,13 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
       this.setState({ retried: true }, () => {
         window.location.reload();
       });
+    } else if (!isChunkError) {
+      this.setState({ retried: true });
     }
   }
 
   render() {
-    if (this.state.hasError && this.state.retried) {
+    if (this.state.hasError) {
       return (
         <div
           dir="rtl"

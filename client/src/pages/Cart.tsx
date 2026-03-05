@@ -234,14 +234,20 @@ export default function Cart() {
       return { ...orderData, walletUsed };
     },
     onSuccess: async (data) => {
-      setSavedItems([...items]);
-      setSavedTotal(total);
+      const snapshotItems = [...items];
+      const snapshotTotal = total;
+      setSavedItems(snapshotItems);
+      setSavedTotal(snapshotTotal);
       setSavedOrderId(data.id || data._id || "");
       setSavedWalletUsed(data.walletUsed || 0);
-      await clearMutation.mutateAsync();
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       setPreCheckoutOpen(false);
       setCheckoutDone(true);
+      // clean up cart and refresh wallet in background
+      try {
+        await clearMutation.mutateAsync();
+        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      } catch (_) {}
     },
     onError: (e: any) => toast({ title: e.message || "فشل إرسال الطلب، يرجى المحاولة مرة أخرى", variant: "destructive" }),
   });
