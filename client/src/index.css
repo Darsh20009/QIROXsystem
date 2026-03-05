@@ -497,7 +497,89 @@
 .dark .divide-gray-100 > * + * { border-color: hsl(222 47% 14%) !important; }
 .dark .divide-gray-200 > * + * { border-color: hsl(222 47% 17%) !important; }
 
-/* ── Custom component classes ── */
+/* ── Colored light backgrounds → dark equivalents (status badges, icon containers) ── */
+
+/* Amber / Yellow */
+.dark .bg-amber-50  { background-color: hsl(38 60% 8%)  !important; }
+.dark .bg-amber-100 { background-color: hsl(38 60% 12%) !important; }
+.dark .bg-amber-200 { background-color: hsl(38 60% 16%) !important; }
+.dark .bg-yellow-50  { background-color: hsl(48 60% 8%)  !important; }
+.dark .bg-yellow-100 { background-color: hsl(48 60% 12%) !important; }
+.dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900 { color: hsl(38 80% 62%) !important; }
+.dark .text-amber-600 { color: hsl(38 80% 55%) !important; }
+.dark .border-amber-200 { border-color: hsl(38 60% 20%) !important; }
+.dark .border-amber-300 { border-color: hsl(38 60% 25%) !important; }
+.dark .hover\:bg-amber-100:hover { background-color: hsl(38 60% 14%) !important; }
+
+/* Red / Rose */
+.dark .bg-red-50   { background-color: hsl(0 60% 8%)   !important; }
+.dark .bg-red-100  { background-color: hsl(0 60% 12%)  !important; }
+.dark .bg-rose-50  { background-color: hsl(350 60% 8%) !important; }
+.dark .bg-rose-100 { background-color: hsl(350 60% 12%)!important; }
+.dark .text-red-700, .dark .text-red-800, .dark .text-red-900 { color: hsl(0 80% 65%) !important; }
+.dark .text-red-600  { color: hsl(0 80% 58%) !important; }
+.dark .border-red-200 { border-color: hsl(0 60% 20%)  !important; }
+.dark .border-red-300 { border-color: hsl(0 60% 26%)  !important; }
+.dark .hover\:bg-red-100:hover { background-color: hsl(0 60% 14%) !important; }
+
+/* Green / Teal / Emerald */
+.dark .bg-green-50    { background-color: hsl(142 50% 7%)  !important; }
+.dark .bg-green-100   { background-color: hsl(142 50% 11%) !important; }
+.dark .bg-teal-50     { background-color: hsl(165 50% 7%)  !important; }
+.dark .bg-teal-100    { background-color: hsl(165 50% 11%) !important; }
+.dark .bg-emerald-50  { background-color: hsl(152 50% 7%)  !important; }
+.dark .bg-emerald-100 { background-color: hsl(152 50% 11%) !important; }
+.dark .text-green-700, .dark .text-green-800, .dark .text-green-900 { color: hsl(142 60% 52%) !important; }
+.dark .text-green-600  { color: hsl(142 60% 46%) !important; }
+.dark .border-green-200 { border-color: hsl(142 50% 18%) !important; }
+.dark .border-green-300 { border-color: hsl(142 50% 23%) !important; }
+.dark .hover\:bg-green-100:hover { background-color: hsl(142 50% 13%) !important; }
+
+/* Blue / Indigo / Sky / Cyan */
+.dark .bg-blue-50   { background-color: hsl(213 60% 8%)  !important; }
+.dark .bg-blue-100  { background-color: hsl(213 60% 12%) !important; }
+.dark .bg-indigo-50  { background-color: hsl(239 50% 8%)  !important; }
+.dark .bg-indigo-100 { background-color: hsl(239 50% 12%) !important; }
+.dark .bg-sky-50    { background-color: hsl(200 60% 8%)  !important; }
+.dark .bg-sky-100   { background-color: hsl(200 60% 12%) !important; }
+.dark .bg-cyan-50   { background-color: hsl(186 60% 8%)  !important; }
+.dark .bg-cyan-100  { background-color: hsl(186 60% 12%) !important; }
+.dark .text-blue-700, .dark .text-blue-800, .dark .text-blue-900 { color: hsl(213 80% 65%) !important; }
+.dark .text-blue-600  { color: hsl(213 80% 58%) !important; }
+.dark .text-indigo-700, .dark .text-indigo-800 { color: hsl(239 70% 70%) !important; }
+.dark .text-indigo-600 { color: hsl(239 70% 63%) !important; }
+.dark .border-blue-200   { border-color: hsl(213 60% 20%) !important; }
+.dark .border-blue-300   { border-color: hsl(213 60% 25%) !important; }
+.dark .border-indigo-200 { border-color: hsl(239 50% 22%) !important; }
+.dark .hover\:bg-blue-100:hover   { background-color: hsl(213 60% 14%) !important; }
+.dark .hover\:bg-indigo-100:hover { background-color: hsl(239 50% 14%) !important; }
+
+/* Purple / Violet */
+.dark .bg-purple-50   { background-color: hsl(270 50% 8%)  !important; }
+.dark .bg-purple-100  { background-color: hsl(270 50% 13%) !important; }
+.dark .bg-violet-50   { background-color: hsl(263 50% 8%)  !important; }
+.dark .bg-violet-100  { background-color: hsl(263 50% 13%) !important; }
+.dark .text-purple-700, .dark .text-purple-800 { color: hsl(270 70% 72%) !important; }
+.dark .text-purple-600  { color: hsl(270 70% 65%) !important; }
+.dark .border-purple-200 { border-color: hsl(270 50% 22%) !important; }
+.dark .border-purple-300 { border-color: hsl(270 50% 28%) !important; }
+.dark .hover\:bg-purple-100:hover { background-color: hsl(270 50% 15%) !important; }
+
+/* Pink */
+.dark .bg-pink-50   { background-color: hsl(328 55% 8%)  !important; }
+.dark .bg-pink-100  { background-color: hsl(328 55% 12%) !important; }
+.dark .text-pink-700, .dark .text-pink-800 { color: hsl(328 70% 68%) !important; }
+.dark .text-pink-600  { color: hsl(328 70% 60%) !important; }
+.dark .border-pink-200 { border-color: hsl(328 55% 20%) !important; }
+
+/* Orange */
+.dark .bg-orange-50   { background-color: hsl(24 60% 8%)  !important; }
+.dark .bg-orange-100  { background-color: hsl(24 60% 12%) !important; }
+.dark .text-orange-700, .dark .text-orange-800 { color: hsl(24 80% 60%) !important; }
+.dark .text-orange-600  { color: hsl(24 80% 53%) !important; }
+.dark .border-orange-200 { border-color: hsl(24 60% 20%) !important; }
+
+/* Custom component classes ── */
 .dark .glass-card {
   background: hsl(222 47% 10%) !important;
   border-color: hsl(222 47% 17%) !important;
