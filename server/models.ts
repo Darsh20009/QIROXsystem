@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema({
   walletCardNumber: { type: String, unique: true, sparse: true, select: false },
   walletPin: { type: String, select: false },
   walletCardActive: { type: Boolean, default: false },
+  walletBalance: { type: Number, default: 0, min: 0 },
   // ── Enhanced Profile Fields ──
   jobTitle: { type: String, default: "" },
   bio: { type: String, default: "" },

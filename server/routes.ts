@@ -99,6 +99,31 @@ const upload = multer({
   },
 });
 
+// ── Atomic Wallet Helpers ────────────────────────────────────────────────────
+// Uses MongoDB document-level atomicity ($inc with condition) — safe without Replica Set
+
+async function atomicWalletCredit(userId: string, amount: number): Promise<void> {
+  const { UserModel } = await import("./models");
+  await UserModel.findByIdAndUpdate(userId, { $inc: { walletBalance: amount } });
+}
+
+async function atomicWalletDebit(userId: string, amount: number): Promise<boolean> {
+  const { UserModel } = await import("./models");
+  const result = await UserModel.findOneAndUpdate(
+    { _id: userId, walletBalance: { $gte: amount - 0.005 } },
+    { $inc: { walletBalance: -amount } }
+  );
+  return !!result;
+}
+
+async function getWalletBalance(userId: string): Promise<number> {
+  const { UserModel } = await import("./models");
+  const user = await UserModel.findById(userId).select("walletBalance");
+  return Math.max(0, (user as any)?.walletBalance ?? 0);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -357,6 +382,27 @@ export async function registerRoutes(
   app.get("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.sendStatus(403);
+    }
+    const { UserModel } = await import("./models");
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const search = (req.query.search as string || "").trim();
+    const roleFilter = req.query.role as string;
+    if (page > 0) {
+      const filter: any = {};
+      if (search) filter.$or = [
+        { username: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+      if (roleFilter && roleFilter !== 'all') filter.role = roleFilter;
+      const total = await UserModel.countDocuments(filter);
+      const docs = await UserModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+      return res.json({ data: sanitizeUser(docs), total, page, totalPages: Math.ceil(total / limit) });
     }
     const users = await storage.getUsers();
     res.json(sanitizeUser(users));
@@ -720,6 +766,30 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") {
       return res.sendStatus(403);
     }
+    const { OrderModel } = await import("./models");
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const search = (req.query.search as string || "").trim();
+    const statusFilter = req.query.status as string;
+    const filter: any = {};
+    if (search) filter.$or = [
+      { businessName: { $regex: search, $options: 'i' } },
+      { serviceType: { $regex: search, $options: 'i' } },
+      { planTier: { $regex: search, $options: 'i' } },
+    ];
+    if (statusFilter && statusFilter !== 'all') filter.status = statusFilter;
+    if (page > 0) {
+      const total = await OrderModel.countDocuments(filter);
+      const docs = await OrderModel.find(filter)
+        .populate('userId', 'fullName email phone username')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+      const data = docs.map((o: any) => ({ ...o, id: o._id.toString(), client: o.userId }));
+      return res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
+    }
+    // Backward-compat: no page param → return array (capped at 500)
     const orders = await storage.getOrdersWithUsers();
     res.json(orders);
   });
@@ -915,10 +985,7 @@ export async function registerRoutes(
           return res.status(400).json({ error: "wallet_pin_invalid", message: "كلمة مرور المحفظة غير صحيحة" });
         }
       }
-      const txs = await WalletTransactionModel.find({ userId: String(user.id) });
-      const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
-      const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
-      const available = Math.max(0, totalCredit - totalDebit);
+      const available = await getWalletBalance(String(user.id));
       if (walletAmountUsed > available + 0.01) {
         return res.status(400).json({ error: `الرصيد غير كافٍ في المحفظة. الرصيد المتاح: ${available.toLocaleString()} ر.س` });
       }
@@ -945,23 +1012,16 @@ export async function registerRoutes(
     // Deduct wallet atomically after order creation
     if (walletDeducted > 0) {
       try {
-        // Double-check balance to mitigate race conditions
-        const freshTxs = await WalletTransactionModel.find({ userId: String(user.id) });
-        const freshDebit = freshTxs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
-        const freshCredit = freshTxs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
-        const freshAvailable = Math.max(0, freshCredit - freshDebit);
-        if (walletDeducted > freshAvailable + 0.01) {
-          await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: رصيد المحفظة غير كافٍ — يرجى مراجعة الدفع]' } as any).catch(() => {});
-        } else {
+        const debitAmt = parseFloat(walletDeducted.toFixed(2));
+        const ok = await atomicWalletDebit(String(user.id), debitAmt);
+        if (ok) {
           await WalletTransactionModel.create({
-            userId: String(user.id),
-            type: 'debit',
-            amount: parseFloat(walletDeducted.toFixed(2)),
+            userId: String(user.id), type: 'debit', amount: debitAmt,
             description: `دفع طلب #${String(order.id)} من محفظة كيروكس باي`,
-            orderId: String(order.id),
-            addedBy: String(user.id),
-            note: 'wallet_payment',
+            orderId: String(order.id), addedBy: String(user.id), note: 'wallet_payment',
           });
+        } else {
+          await storage.updateOrder(String(order.id), { notes: ((order as any).notes || '') + ' [تحذير: رصيد المحفظة غير كافٍ — يرجى مراجعة الدفع]' } as any).catch(() => {});
         }
       } catch (wErr) {
         console.error("[wallet-deduct]", wErr);
@@ -1549,10 +1609,15 @@ export async function registerRoutes(
     const { WalletTransactionModel } = await import("./models");
     const userId = user.role === 'client' ? String(user.id) : req.query.userId as string;
     if (!userId) return res.status(400).json({ error: "userId required" });
-    const txs = await WalletTransactionModel.find({ userId }).sort({ createdAt: -1 });
-    const totalDebit = txs.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
-    const totalCredit = txs.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
-    res.json({ transactions: txs, totalDebit, totalCredit, outstanding: totalDebit - totalCredit });
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 30));
+    const total = await WalletTransactionModel.countDocuments({ userId });
+    const txs = await WalletTransactionModel.find({ userId })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const balance = await getWalletBalance(userId);
+    res.json({ transactions: txs, balance, total, page, totalPages: Math.ceil(total / limit) });
   });
 
   app.get("/api/admin/wallet/clients", async (req, res) => {
@@ -1588,6 +1653,7 @@ export async function registerRoutes(
       description: `شحن محفظة Qirox Pay - ${topup.bankName || 'تحويل بنكي'}`,
       addedBy: String(me.id), note: `المرجع: ${topup.bankRef || '-'}`,
     });
+    await atomicWalletCredit(String(topup.userId), topup.amount);
     const owner = await UserModel.findById(topup.userId);
     if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'approved');
     res.json({ success: true });
@@ -1613,13 +1679,17 @@ export async function registerRoutes(
   app.get("/api/admin/wallet/:userId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { WalletTransactionModel } = await import("./models");
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const total = await WalletTransactionModel.countDocuments({ userId: req.params.userId });
     const txs = await WalletTransactionModel.find({ userId: req.params.userId })
       .populate('addedBy', 'fullName username')
       .populate('orderId', 'serviceType planTier')
-      .sort({ createdAt: -1 });
-    const totalDebit = txs.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
-    const totalCredit = txs.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
-    res.json({ transactions: txs, totalDebit, totalCredit, outstanding: totalDebit - totalCredit });
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const balance = await getWalletBalance(req.params.userId);
+    res.json({ transactions: txs, balance, total, page, totalPages: Math.ceil(total / limit) });
   });
 
   app.post("/api/admin/wallet/transaction", async (req, res) => {
@@ -1633,6 +1703,8 @@ export async function registerRoutes(
       userId, type, amount: Number(amount), description, orderId: orderId || undefined,
       addedBy: String(me.id), note: note || '',
     });
+    if (type === 'credit') await atomicWalletCredit(String(userId), Number(amount));
+    else if (type === 'debit') await atomicWalletDebit(String(userId), Number(amount));
     res.status(201).json(tx);
   });
 
@@ -1661,22 +1733,19 @@ export async function registerRoutes(
     const { WalletTransactionModel } = await import("./models");
     const { amount, orderId, description } = req.body;
     if (!amount || Number(amount) <= 0) return res.status(400).json({ error: "المبلغ غير صحيح" });
-    const txs = await WalletTransactionModel.find({ userId: String(user.id) });
-    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
-    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
-    const available = Math.max(0, totalCredit - totalDebit);
-    if (Number(amount) > available) return res.status(400).json({ error: "الرصيد غير كافٍ", available });
+    const debitAmt = parseFloat(Number(amount).toFixed(2));
+    const ok = await atomicWalletDebit(String(user.id), debitAmt);
+    if (!ok) {
+      const available = await getWalletBalance(String(user.id));
+      return res.status(400).json({ error: "الرصيد غير كافٍ", available });
+    }
     const tx = await WalletTransactionModel.create({
-      userId: String(user.id),
-      type: 'debit',
-      amount: Number(amount),
+      userId: String(user.id), type: 'debit', amount: debitAmt,
       description: description || `دفع من المحفظة الإلكترونية`,
-      orderId: orderId || undefined,
-      addedBy: String(user.id),
-      note: 'wallet_payment',
+      orderId: orderId || undefined, addedBy: String(user.id), note: 'wallet_payment',
     });
-    const newAvailable = available - Number(amount);
-    res.status(201).json({ success: true, amountUsed: Number(amount), remainingBalance: newAvailable, transactionId: tx._id });
+    const newAvailable = await getWalletBalance(String(user.id));
+    res.status(201).json({ success: true, amountUsed: debitAmt, remainingBalance: newAvailable, transactionId: tx._id });
   });
 
   // === QIROX PAY CARD ROUTES ===
@@ -1684,13 +1753,10 @@ export async function registerRoutes(
   app.get("/api/wallet/card", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const { UserModel, WalletTransactionModel } = await import("./models");
+    const { UserModel } = await import("./models");
     const dbUser = await UserModel.findById(String(user.id)).select("+walletCardNumber +walletPin +walletCardActive");
     if (!dbUser) return res.sendStatus(404);
-    const txs = await WalletTransactionModel.find({ userId: String(user.id) });
-    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
-    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
-    const balance = Math.max(0, totalCredit - totalDebit);
+    const balance = await getWalletBalance(String(user.id));
     res.json({
       cardNumber: dbUser.walletCardNumber || null,
       cardActive: dbUser.walletCardActive || false,
@@ -1815,23 +1881,24 @@ export async function registerRoutes(
       amount: Number(amount),
     });
     if (!pending) return res.status(400).json({ error: "رمز OTP غير صحيح أو منتهي الصلاحية" });
-    // Verify balance again
-    const txs = await WalletTransactionModel.find({ userId: String(owner._id) });
-    const totalDebit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
-    const totalCredit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
-    const balance = Math.max(0, totalCredit - totalDebit);
-    if (Number(amount) > balance) return res.status(400).json({ error: "الرصيد غير كافٍ" });
+    // Verify balance atomically (deduct first, then create record)
     const finalAmount = parseFloat(Number(amount).toFixed(2));
     const label = description || pending.description || 'شحن من بطاقة Qirox Pay';
     // Mark OTP as used
     await WalletPayOtpModel.findByIdAndUpdate(pending._id, { used: true });
-    // Debit card owner
+    // Atomic debit owner
+    const ownerOk = await atomicWalletDebit(String(owner._id), finalAmount);
+    if (!ownerOk) {
+      await WalletPayOtpModel.findByIdAndUpdate(pending._id, { used: false });
+      return res.status(400).json({ error: "الرصيد غير كافٍ" });
+    }
     await WalletTransactionModel.create({
       userId: String(owner._id), type: 'debit', amount: finalAmount,
       description: `${label} — تحويل إلى ${(requester as any).fullName || requester.username}`,
       addedBy: String(requester.id), note: 'qirox_pay_external_out',
     });
-    // Credit requester's wallet
+    // Atomic credit requester
+    await atomicWalletCredit(String(requester.id), finalAmount);
     const creditTx = await WalletTransactionModel.create({
       userId: String(requester.id), type: 'credit', amount: finalAmount,
       description: `${label} — من بطاقة ${owner.fullName || owner.username}`,
@@ -6559,6 +6626,27 @@ export async function seedDatabase() {
     console.log(`[Seed] Admin account verified: ${adminUsername}`);
   }
 
+  // ── Migrate walletBalance from transactions (one-time sync for existing data) ──
+  try {
+    const { WalletTransactionModel: WTM } = await import("./models");
+    const userIds: string[] = await WTM.distinct('userId');
+    let migrated = 0;
+    for (const uid of userIds) {
+      const user = await UserModel.findById(uid).select("walletBalance");
+      if (!user) continue;
+      if ((user as any).walletBalance !== 0 && (user as any).walletBalance !== undefined && (user as any).walletBalance !== null) continue;
+      const txs = await WTM.find({ userId: uid });
+      const credit = txs.filter((t: any) => t.type === 'credit').reduce((s: number, t: any) => s + t.amount, 0);
+      const debit = txs.filter((t: any) => t.type === 'debit').reduce((s: number, t: any) => s + t.amount, 0);
+      const balance = Math.max(0, parseFloat((credit - debit).toFixed(2)));
+      await UserModel.findByIdAndUpdate(uid, { walletBalance: balance });
+      migrated++;
+    }
+    if (migrated > 0) console.log(`[WalletMigration] Synced walletBalance for ${migrated} users`);
+  } catch (e) {
+    console.error("[WalletMigration] Error:", e);
+  }
+
   const existingServices = await storage.getServices();
   if (existingServices.length === 0) {
     await storage.createService({
@@ -7178,9 +7266,8 @@ export async function registerInstallmentRoutes(app: Express) {
 
     const amountDue = (payment as any).totalDue;
 
-    // Wallet balance check
-    const txns = await WalletTransactionModel.find({ userId: user._id });
-    const balance = txns.reduce((s: number, t: any) => s + (t.type === "credit" ? t.amount : -t.amount), 0);
+    // Wallet balance check (atomic)
+    const balance = await getWalletBalance(String(user._id));
     if (balance < amountDue) return res.status(400).json({ error: `رصيد المحفظة غير كافٍ. الرصيد: ${balance.toFixed(2)} ريال` });
 
     // Validate PIN if set (fetch fresh user from DB)
@@ -7192,7 +7279,9 @@ export async function registerInstallmentRoutes(app: Express) {
       if (!valid) return res.status(400).json({ error: "رقم PIN غير صحيح" });
     }
 
-    // Deduct from wallet
+    // Deduct from wallet (atomic)
+    const debitOk = await atomicWalletDebit(String(user._id), amountDue);
+    if (!debitOk) return res.status(400).json({ error: `الرصيد غير كافٍ أو تم تعديله. يرجى المحاولة مجدداً` });
     const txn = await WalletTransactionModel.create({
       userId: user._id,
       type: "debit",
