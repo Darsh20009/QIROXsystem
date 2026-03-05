@@ -525,24 +525,13 @@ export function registerQMeetRoutes(app: Express) {
       const joinReq = joinRequests[reqIdx];
       const newStatus = action === "approve" ? "approved" : "rejected";
 
-      const update: any = { [`joinRequests.${reqIdx}.status`]: newStatus };
-
-      if (action === "approve") {
-        // Add user to participants
-        update["$addToSet"] = { participantIds: joinReq.userId };
-        if (joinReq.userEmail) update["$addToSet"].participantEmails = joinReq.userEmail;
-        if (joinReq.userName) update["$addToSet"].participantNames = joinReq.userName;
-      }
+      const addToSet: any = { participantIds: joinReq.userId };
+      if (joinReq.userEmail) addToSet.participantEmails = joinReq.userEmail;
+      if (joinReq.userName) addToSet.participantNames = joinReq.userName;
 
       await QMeetingModel.findByIdAndUpdate(meeting._id, {
         $set: { [`joinRequests.${reqIdx}.status`]: newStatus },
-        ...(action === "approve" ? {
-          $addToSet: {
-            participantIds: joinReq.userId,
-            participantEmails: joinReq.userEmail,
-            participantNames: joinReq.userName,
-          }
-        } : {}),
+        ...(action === "approve" ? { $addToSet: addToSet } : {}),
       });
 
       // Notify the requester via WebSocket
