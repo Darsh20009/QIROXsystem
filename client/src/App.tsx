@@ -112,6 +112,8 @@ const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
 const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
 const AdminSwitchReminders = lazy(() => import("@/pages/AdminSwitchReminders"));
 const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
+const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
+const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder"];
 

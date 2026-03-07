@@ -2201,6 +2201,250 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === CLIENT API KEYS SYSTEM ===
+  // ═══════════════════════════════════════════════════════════
+
+  // Helper: validate Bearer API key and return { clientId, scopes, keyDoc }
+  async function resolveApiKey(req: any, res: any): Promise<{ clientId: string; scopes: string[]; keyDoc: any } | null> {
+    const auth = req.headers.authorization || "";
+    if (!auth.startsWith("Bearer qrx_")) {
+      res.status(401).json({ error: "Missing or invalid Authorization header. Use: Bearer qrx_live_..." });
+      return null;
+    }
+    const rawKey = auth.slice(7);
+    const hash = crypto.createHash("sha256").update(rawKey).digest("hex");
+    const { ClientApiKeyModel } = await import("./models");
+    const keyDoc = await ClientApiKeyModel.findOne({ keyHash: hash });
+    if (!keyDoc) { res.status(401).json({ error: "API key not found" }); return null; }
+    if (!keyDoc.isActive) { res.status(403).json({ error: "API key is disabled" }); return null; }
+    if (keyDoc.expiresAt && keyDoc.expiresAt < new Date()) { res.status(403).json({ error: "API key has expired" }); return null; }
+    // Update usage stats (non-blocking)
+    ClientApiKeyModel.findByIdAndUpdate(keyDoc._id, { $set: { lastUsedAt: new Date() }, $inc: { requestCount: 1 } }).exec().catch(() => {});
+    return { clientId: String(keyDoc.clientId), scopes: keyDoc.scopes, keyDoc };
+  }
+
+  function requireScope(scopes: string[], scope: string, res: any): boolean {
+    if (!scopes.includes(scope)) {
+      res.status(403).json({ error: `Forbidden: key does not have '${scope}' scope` });
+      return false;
+    }
+    return true;
+  }
+
+  // ── Client: list own API keys ──
+  app.get("/api/my-api-keys", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientApiKeyModel } = await import("./models");
+    const keys = await ClientApiKeyModel.find({ clientId: me._id || me.id }).sort({ createdAt: -1 });
+    res.json(keys);
+  });
+
+  // ── Client: create API key ──
+  app.post("/api/my-api-keys", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientApiKeyModel } = await import("./models");
+    const { name, projectName, scopes, expiresAt, allowedOrigins } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: "اسم المفتاح مطلوب" });
+
+    // Limit 10 active keys per client
+    const count = await ClientApiKeyModel.countDocuments({ clientId: me._id || me.id, isActive: true });
+    if (count >= 10) return res.status(400).json({ error: "الحد الأقصى 10 مفاتيح نشطة" });
+
+    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers"];
+    const cleanScopes = Array.isArray(scopes) ? scopes.filter((s: string) => VALID_SCOPES.includes(s)) : ["orders", "projects", "invoices", "stats"];
+    if (cleanScopes.length === 0) return res.status(400).json({ error: "يجب اختيار صلاحية واحدة على الأقل" });
+
+    const rawKey = "qrx_live_" + crypto.randomBytes(28).toString("hex");
+    const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+    const keyPrefix = rawKey.slice(0, 16) + "...";
+
+    try {
+      const doc = await ClientApiKeyModel.create({
+        clientId: me._id || me.id,
+        name: name.trim(),
+        projectName: (projectName || "").trim(),
+        keyHash, keyPrefix,
+        scopes: cleanScopes,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        allowedOrigins: Array.isArray(allowedOrigins) ? allowedOrigins.map((o: string) => o.trim()).filter(Boolean) : [],
+      });
+      res.status(201).json({ ...doc.toJSON(), rawKey }); // rawKey shown ONCE
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // ── Client: update key (name, active, scopes, allowedOrigins) ──
+  app.patch("/api/my-api-keys/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientApiKeyModel } = await import("./models");
+    const doc = await ClientApiKeyModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
+    if (!doc) return res.sendStatus(404);
+    const { name, isActive, scopes, allowedOrigins, projectName } = req.body;
+    if (name !== undefined) doc.name = name;
+    if (projectName !== undefined) doc.projectName = projectName;
+    if (isActive !== undefined) doc.isActive = isActive;
+    if (scopes !== undefined) doc.scopes = scopes;
+    if (allowedOrigins !== undefined) doc.allowedOrigins = allowedOrigins;
+    await doc.save();
+    res.json(doc.toJSON());
+  });
+
+  // ── Client: delete/revoke key ──
+  app.delete("/api/my-api-keys/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientApiKeyModel } = await import("./models");
+    await ClientApiKeyModel.findOneAndDelete({ _id: req.params.id, clientId: me._id || me.id });
+    res.sendStatus(204);
+  });
+
+  // ── Admin: all keys ──
+  app.get("/api/admin/api-keys", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientApiKeyModel, UserModel } = await import("./models");
+    const { clientId, status } = req.query as any;
+    const filter: any = {};
+    if (clientId) filter.clientId = clientId;
+    if (status === "active") filter.isActive = true;
+    if (status === "inactive") filter.isActive = false;
+    const keys = await ClientApiKeyModel.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    // Attach client names
+    const clientIds = [...new Set(keys.map((k: any) => String(k.clientId)))];
+    const users = await (UserModel as any).find({ _id: { $in: clientIds } }).select("fullName email username").lean();
+    const userMap: any = {};
+    users.forEach((u: any) => { userMap[String(u._id)] = u; });
+    const result = keys.map((k: any) => ({ ...k, id: String(k._id), client: userMap[String(k.clientId)] || null }));
+    res.json(result);
+  });
+
+  app.patch("/api/admin/api-keys/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientApiKeyModel } = await import("./models");
+    const doc = await ClientApiKeyModel.findById(req.params.id);
+    if (!doc) return res.sendStatus(404);
+    const { isActive, scopes, name } = req.body;
+    if (isActive !== undefined) doc.isActive = isActive;
+    if (scopes !== undefined) doc.scopes = scopes;
+    if (name !== undefined) doc.name = name;
+    await doc.save();
+    res.json(doc.toJSON());
+  });
+
+  app.delete("/api/admin/api-keys/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ClientApiKeyModel } = await import("./models");
+    await ClientApiKeyModel.findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // === PUBLIC V1 API (authenticated via Bearer API key) ===
+  // ══════════════════════════════════════════════════════════════
+
+  // GET /api/v1/me — client identity
+  app.get("/api/v1/me", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    const { UserModel } = await import("./models");
+    const user = await (UserModel as any).findById(ctx.clientId).select("fullName email username phone subscriptionStatus subscriptionExpiresAt subscriptionSegmentNameAr createdAt").lean();
+    if (!user) return res.status(404).json({ error: "Client not found" });
+    res.json({ id: String((user as any)._id), ...(user as any), scopes: ctx.scopes });
+  });
+
+  // GET /api/v1/orders — client's orders
+  app.get("/api/v1/orders", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "orders", res)) return;
+    const { OrderModel } = await import("./models");
+    const { limit = "50", skip = "0", status } = req.query as any;
+    const filter: any = { clientId: ctx.clientId };
+    if (status) filter.status = status;
+    const orders = await (OrderModel as any).find(filter).sort({ createdAt: -1 }).skip(Number(skip)).limit(Math.min(Number(limit), 100)).lean();
+    const total = await (OrderModel as any).countDocuments(filter);
+    res.json({ total, data: orders.map((o: any) => ({ ...o, id: String(o._id) })) });
+  });
+
+  // GET /api/v1/projects — client's projects
+  app.get("/api/v1/projects", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "projects", res)) return;
+    const { ProjectModel } = await import("./models");
+    const { limit = "20", skip = "0" } = req.query as any;
+    const projects = await (ProjectModel as any).find({ clientId: ctx.clientId }).sort({ createdAt: -1 }).skip(Number(skip)).limit(Math.min(Number(limit), 50)).lean();
+    const total = await (ProjectModel as any).countDocuments({ clientId: ctx.clientId });
+    res.json({ total, data: projects.map((p: any) => ({ ...p, id: String(p._id) })) });
+  });
+
+  // GET /api/v1/invoices — client's invoices
+  app.get("/api/v1/invoices", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "invoices", res)) return;
+    const { InvoiceModel } = await import("./models");
+    const { limit = "50", skip = "0", status } = req.query as any;
+    const filter: any = { clientId: ctx.clientId };
+    if (status) filter.status = status;
+    const invoices = await (InvoiceModel as any).find(filter).sort({ createdAt: -1 }).skip(Number(skip)).limit(Math.min(Number(limit), 100)).lean();
+    const total = await (InvoiceModel as any).countDocuments(filter);
+    res.json({ total, data: invoices.map((i: any) => ({ ...i, id: String(i._id) })) });
+  });
+
+  // GET /api/v1/stats — business statistics
+  app.get("/api/v1/stats", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "stats", res)) return;
+    const { OrderModel, InvoiceModel, ProjectModel } = await import("./models");
+    const cid = ctx.clientId;
+    const [
+      totalOrders, activeProjects, totalInvoices,
+      paidInvoices, pendingInvoices,
+    ] = await Promise.all([
+      (OrderModel as any).countDocuments({ clientId: cid }),
+      (ProjectModel as any).countDocuments({ clientId: cid, status: { $nin: ["completed", "cancelled"] } }),
+      (InvoiceModel as any).countDocuments({ clientId: cid }),
+      (InvoiceModel as any).find({ clientId: cid, status: "paid" }).select("total").lean(),
+      (InvoiceModel as any).countDocuments({ clientId: cid, status: "pending" }),
+    ]);
+    const totalRevenue = (paidInvoices as any[]).reduce((s: number, i: any) => s + (i.total || 0), 0);
+    res.json({
+      orders: { total: totalOrders },
+      projects: { active: activeProjects },
+      invoices: { total: totalInvoices, paid: paidInvoices.length, pending: pendingInvoices, totalRevenue },
+    });
+  });
+
+  // GET /api/v1/wallet — wallet balance + recent transactions
+  app.get("/api/v1/wallet", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "wallet", res)) return;
+    const { UserModel, WalletTransactionModel } = await import("./models");
+    const user = await (UserModel as any).findById(ctx.clientId).select("walletBalance").lean();
+    const txns = await (WalletTransactionModel as any).find({ userId: ctx.clientId }).sort({ createdAt: -1 }).limit(20).lean();
+    res.json({
+      balance: (user as any)?.walletBalance || 0,
+      transactions: txns.map((t: any) => ({ ...t, id: String(t._id) })),
+    });
+  });
+
+  // GET /api/v1/customers — (orders customers/contacts for this client)
+  app.get("/api/v1/customers", async (req, res) => {
+    const ctx = await resolveApiKey(req, res); if (!ctx) return;
+    if (!requireScope(ctx.scopes, "customers", res)) return;
+    const { OrderModel } = await import("./models");
+    const orders = await (OrderModel as any).find({ clientId: ctx.clientId }).select("customerName customerEmail customerPhone createdAt").lean();
+    // Deduplicate by email/phone
+    const seen = new Set<string>();
+    const customers = orders.filter((o: any) => {
+      const key = o.customerEmail || o.customerPhone || String(o._id);
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }).map((o: any) => ({ name: o.customerName, email: o.customerEmail, phone: o.customerPhone, firstOrderAt: o.createdAt }));
+    res.json({ total: customers.length, data: customers });
+  });
+
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

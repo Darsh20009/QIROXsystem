@@ -1328,6 +1328,23 @@ deviceTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 deviceTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const DeviceTokenModel = mongoose.models.DeviceToken || mongoose.model("DeviceToken", deviceTokenSchema);
 
+// ── Client API Keys ──────────────────────────────────────────────────────────
+const clientApiKeySchema = new mongoose.Schema({
+  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:          { type: String, required: true },
+  projectName:   { type: String, default: "" },
+  keyHash:       { type: String, required: true, index: true },
+  keyPrefix:     { type: String, required: true },
+  scopes:        { type: [String], default: ["orders", "projects", "invoices", "stats"] },
+  isActive:      { type: Boolean, default: true },
+  expiresAt:     { type: Date, default: null },
+  lastUsedAt:    { type: Date, default: null },
+  requestCount:  { type: Number, default: 0 },
+  allowedOrigins:{ type: [String], default: [] },
+}, { timestamps: true });
+clientApiKeySchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.keyHash; return ret; } });
+export const ClientApiKeyModel = mongoose.models.ClientApiKey || mongoose.model("ClientApiKey", clientApiKeySchema);
+
 // ── Switch Reminder (تذكير التحويل من مزود آخر) ────────────────────────────
 const switchReminderSchema = new mongoose.Schema({
   name:                { type: String, required: true },
