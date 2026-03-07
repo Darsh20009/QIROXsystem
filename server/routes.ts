@@ -1278,6 +1278,43 @@ export async function registerRoutes(
         pushNotification(String((project as any).clientId), { title: notifMsg, body: (project as any).name || "مشروعك", icon: '🚀', link: `/projects/${req.params.id}` });
       }
     } catch (e) { console.error("[Email] project update email error:", e); }
+
+    // ── Auto-start subscription when project reaches "delivery" status ──
+    try {
+      const statusChanged = input.status && oldProject?.status !== input.status;
+      if (statusChanged && input.status === "delivery" && (project as any).clientId) {
+        const { UserModel, NotificationModel } = await import("./models");
+        const client = await UserModel.findById((project as any).clientId);
+        if (client && (client as any).subscriptionPeriod && !(client as any).subscriptionStartDate) {
+          // Calculate duration based on plan
+          const period = (client as any).subscriptionPeriod as string;
+          const durationDays = period === "monthly" ? 30 : period === "6months" ? 180 : 365;
+          const startDate = new Date();
+          const expiresAt = new Date(startDate.getTime() + durationDays * 86400000);
+          await UserModel.findByIdAndUpdate(client._id, {
+            $set: { subscriptionStartDate: startDate, subscriptionExpiresAt: expiresAt, subscriptionStatus: "active" },
+          });
+          console.log(`[Subscription] Auto-started for client ${client._id} on project delivery. Expires: ${expiresAt.toISOString()}`);
+          // Notify all managers/admins
+          const staff = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").lean();
+          const clientName = (client as any).fullName || (client as any).username || "العميل";
+          const projectName = (project as any).name || "المشروع";
+          for (const emp of staff) {
+            await NotificationModel.create({
+              userId: String(emp._id), type: 'subscription',
+              title: `🚀 بدأ اشتراك ${clientName}`,
+              body: `تم تسليم مشروع "${projectName}" — بدأ العد التنازلي للاشتراك (${durationDays} يوم)`,
+              link: '/admin/subscription-plans', icon: '📅',
+            }).catch(() => {});
+            pushNotification(String(emp._id), {
+              title: `بدأ اشتراك ${clientName}`,
+              body: `تم تسليم "${projectName}" — ينتهي الاشتراك: ${expiresAt.toLocaleDateString("ar-SA")}`,
+              icon: '📅', link: '/admin/subscription-plans',
+            });
+          }
+        }
+      }
+    } catch (e) { console.error("[Subscription] auto-start error:", e); }
   });
 
   // === TASKS API ===
@@ -5616,24 +5653,72 @@ export async function registerRoutes(
     }
   });
 
-  // Admin: get all client subscriptions
+  // Admin: get all client subscriptions (enhanced with countdown + urgency)
   app.get("/api/admin/subscriptions", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","accountant"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { UserModel } = await import("./models");
-      const users = await UserModel.find({ role: "client", subscriptionStatus: { $in: ["active","expired"] } })
-        .select("fullName email subscriptionSegmentNameAr subscriptionPeriod subscriptionStartDate subscriptionExpiresAt subscriptionStatus");
-      // Auto-update expired subscriptions
       const now = new Date();
-      const toExpire = users.filter(u => (u as any).subscriptionExpiresAt && new Date((u as any).subscriptionExpiresAt) < now && (u as any).subscriptionStatus === "active");
-      if (toExpire.length > 0) {
-        await UserModel.updateMany({ _id: { $in: toExpire.map(u => u._id) } }, { $set: { subscriptionStatus: "expired" } });
-      }
-      const refreshed = await UserModel.find({ role: "client", subscriptionStatus: { $in: ["active","expired"] } })
-        .select("fullName email subscriptionSegmentNameAr subscriptionPeriod subscriptionStartDate subscriptionExpiresAt subscriptionStatus");
-      res.json(refreshed);
+      // Auto-expire
+      await UserModel.updateMany(
+        { role: "client", subscriptionStatus: "active", subscriptionExpiresAt: { $lt: now } },
+        { $set: { subscriptionStatus: "expired" } }
+      );
+      const users = await UserModel.find({ role: "client", subscriptionStatus: { $in: ["active","expired","suspended"] } })
+        .select("fullName email subscriptionSegmentNameAr subscriptionPeriod subscriptionStartDate subscriptionExpiresAt subscriptionStatus renewalReminderSentAt")
+        .lean();
+      // Compute urgency fields per client
+      const result = users.map((u: any) => {
+        const start = u.subscriptionStartDate ? new Date(u.subscriptionStartDate) : null;
+        const end = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt) : null;
+        const totalMs = start && end ? end.getTime() - start.getTime() : null;
+        const remainingMs = end ? Math.max(0, end.getTime() - now.getTime()) : null;
+        const remainingDays = remainingMs !== null ? Math.ceil(remainingMs / 86400000) : null;
+        const percentRemaining = totalMs && remainingMs !== null ? Math.round((remainingMs / totalMs) * 100) : null;
+        const needsRenewal = percentRemaining !== null && percentRemaining <= 10 && u.subscriptionStatus === "active";
+        return { ...u, id: String(u._id), totalMs, remainingDays, percentRemaining, needsRenewal };
+      });
+      res.json(result);
     } catch (err) {
       res.status(500).json({ error: "فشل تحميل الاشتراكات" });
+    }
+  });
+
+  // Admin: quick renewal (extend by same period from today or end of current subscription)
+  app.post("/api/admin/users/:id/subscription/renew", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { UserModel, NotificationModel } = await import("./models");
+      const user = await UserModel.findById(req.params.id);
+      if (!user) return res.status(404).json({ error: "العميل غير موجود" });
+      const { segmentId, segmentNameAr, period, startFrom } = req.body; // startFrom: "today"|"expiry"
+      const currentPeriod = period || (user as any).subscriptionPeriod;
+      const durationDays = currentPeriod === "monthly" ? 30 : currentPeriod === "6months" ? 180 : 365;
+      const baseDate = startFrom === "expiry" && (user as any).subscriptionExpiresAt
+        ? new Date((user as any).subscriptionExpiresAt)
+        : new Date();
+      const newExpiry = new Date(baseDate.getTime() + durationDays * 86400000);
+      const updates: any = {
+        subscriptionStatus: "active",
+        subscriptionStartDate: baseDate,
+        subscriptionExpiresAt: newExpiry,
+        subscriptionPeriod: currentPeriod,
+        renewalReminderSentAt: null, // Reset reminder flag
+      };
+      if (segmentId) updates.subscriptionSegmentId = segmentId;
+      if (segmentNameAr) updates.subscriptionSegmentNameAr = segmentNameAr;
+      await UserModel.findByIdAndUpdate(user._id, { $set: updates });
+      // Notify client
+      await NotificationModel.create({
+        userId: String(user._id), type: 'subscription',
+        title: '✅ تم تجديد اشتراكك',
+        body: `تم تجديد اشتراكك حتى ${newExpiry.toLocaleDateString("ar-SA")}`,
+        link: '/dashboard', icon: '🎉',
+      }).catch(() => {});
+      pushNotification(String(user._id), { title: 'تم تجديد اشتراكك', body: `ينتهي بتاريخ ${newExpiry.toLocaleDateString("ar-SA")}`, icon: '🎉', link: '/dashboard' });
+      res.json({ success: true, newExpiry });
+    } catch (err) {
+      res.status(500).json({ error: "فشل تجديد الاشتراك" });
     }
   });
 
@@ -7169,6 +7254,57 @@ export async function registerRoutes(
     } catch (e) { res.status(500).json({ error: "فشل إرسال الدفعة" }); }
   });
 
+
+  // ── Daily subscription renewal reminder job ──────────────────────────────
+  async function checkSubscriptionRenewals() {
+    try {
+      const { UserModel, NotificationModel } = await import("./models");
+      const now = new Date();
+      // Find active subscriptions with ≤10% time remaining
+      const clients = await UserModel.find({
+        role: "client", subscriptionStatus: "active",
+        subscriptionStartDate: { $ne: null }, subscriptionExpiresAt: { $gt: now },
+        $or: [
+          { renewalReminderSentAt: null },
+          { renewalReminderSentAt: { $lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }, // don't repeat within 7 days
+        ],
+      }).lean();
+      const staff = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").lean();
+      let notified = 0;
+      for (const client of clients) {
+        const start = new Date((client as any).subscriptionStartDate);
+        const end = new Date((client as any).subscriptionExpiresAt);
+        const totalMs = end.getTime() - start.getTime();
+        const remainingMs = end.getTime() - now.getTime();
+        if (totalMs <= 0) continue;
+        const pct = remainingMs / totalMs;
+        if (pct > 0.10) continue; // Not yet at 10%
+        const remainingDays = Math.ceil(remainingMs / 86400000);
+        const clientName = (client as any).fullName || (client as any).email || "عميل";
+        // Notify all staff
+        for (const emp of staff) {
+          await NotificationModel.create({
+            userId: String(emp._id), type: 'renewal_reminder',
+            title: `⚠️ تجديد اشتراك ${clientName}`,
+            body: `تواصل مع ${clientName} لتجديد اشتراكه — باقي ${remainingDays} ${remainingDays === 1 ? "يوم" : "أيام"} فقط`,
+            link: '/admin/subscription-plans', icon: '🔔',
+          }).catch(() => {});
+          pushNotification(String(emp._id), {
+            title: `⚠️ تجديد اشتراك ${clientName}`,
+            body: `باقي ${remainingDays} أيام على انتهاء اشتراك ${clientName}`,
+            icon: '🔔', link: '/admin/subscription-plans',
+          });
+        }
+        // Mark reminder as sent
+        await UserModel.findByIdAndUpdate((client as any)._id, { $set: { renewalReminderSentAt: now } });
+        notified++;
+      }
+      if (notified > 0) console.log(`[SubscriptionReminder] Sent renewal reminders for ${notified} client(s)`);
+    } catch (e) { console.error("[SubscriptionReminder] error:", e); }
+  }
+  // Run immediately on startup then every 24 hours
+  setTimeout(() => checkSubscriptionRenewals().catch(() => {}), 5000);
+  setInterval(() => checkSubscriptionRenewals().catch(() => {}), 24 * 60 * 60 * 1000);
 
   // Initialize seed data
   await seedDatabase();

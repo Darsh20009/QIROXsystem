@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Loader2, Crown, Clock, CheckCircle2, AlertCircle,
-  Users, CreditCard, Layers, ChevronRight, RefreshCcw, Star
+  Users, CreditCard, Layers, ChevronRight, RefreshCcw, Star, Bell, Zap, PhoneCall, CalendarCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -31,6 +31,7 @@ interface SegmentPricing {
 
 interface ClientSubscription {
   id: string;
+  _id: string;
   fullName: string;
   email: string;
   subscriptionSegmentNameAr: string;
@@ -38,6 +39,10 @@ interface ClientSubscription {
   subscriptionStartDate: string;
   subscriptionExpiresAt: string;
   subscriptionStatus: string;
+  renewalReminderSentAt: string | null;
+  remainingDays: number | null;
+  percentRemaining: number | null;
+  needsRenewal: boolean;
 }
 
 interface SubServiceRequest {
@@ -93,6 +98,9 @@ export default function AdminSubscriptionPlans() {
   const [selectedReq, setSelectedReq] = useState<SubServiceRequest | null>(null);
   const [reqStatus, setReqStatus] = useState("");
   const [reqAdminNotes, setReqAdminNotes] = useState("");
+  const [renewDialog, setRenewDialog] = useState(false);
+  const [renewTarget, setRenewTarget] = useState<ClientSubscription | null>(null);
+  const [renewFrom, setRenewFrom] = useState<"today"|"expiry">("expiry");
 
   const { data: segments, isLoading: loadingSegments } = useQuery<SegmentPricing[]>({
     queryKey: ["/api/admin/segment-pricing"],
@@ -156,6 +164,17 @@ export default function AdminSubscriptionPlans() {
       setReqDialog(false);
       toast({ title: "تم تحديث الطلب" });
     },
+  });
+
+  const quickRenewMutation = useMutation({
+    mutationFn: ({ userId, startFrom }: { userId: string; startFrom: string }) =>
+      apiRequest("POST", `/api/admin/users/${userId}/subscription/renew`, { startFrom }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
+      setRenewDialog(false);
+      toast({ title: "✅ تم تجديد الاشتراك بنجاح", description: "تم تجديد اشتراك العميل وإرسال إشعار له" });
+    },
+    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
   const handleSaveSegment = () => {
@@ -244,8 +263,13 @@ export default function AdminSubscriptionPlans() {
             <TabsTrigger value="pricing" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2">
               <CreditCard className="w-3.5 h-3.5" /> أسعار القطاعات
             </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2">
+            <TabsTrigger value="subscriptions" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 gap-2 relative">
               <Users className="w-3.5 h-3.5" /> اشتراكات العملاء
+              {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {subscriptions.filter(s => s.needsRenewal).length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="requests" className="rounded-xl font-bold text-xs data-[state=active]:bg-black data-[state=active]:text-white h-9 px-5 relative gap-2">
               <Layers className="w-3.5 h-3.5" /> طلبات الخدمات الفرعية
@@ -334,12 +358,28 @@ export default function AdminSubscriptionPlans() {
 
           {/* ─── SUBSCRIPTIONS TAB ─── */}
           <TabsContent value="subscriptions">
+            {/* Urgency banner */}
+            {subscriptions && subscriptions.filter(s => s.needsRenewal).length > 0 && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                className="mb-5 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-4.5 h-4.5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-black text-red-800 text-sm">
+                    {subscriptions.filter(s => s.needsRenewal).length} عميل يحتاج التجديد الآن
+                  </p>
+                  <p className="text-red-600 text-xs mt-0.5">اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً</p>
+                </div>
+              </motion.div>
+            )}
+
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-bold text-black flex items-center gap-2">
                 <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
                   <Users className="w-3.5 h-3.5 text-white" />
                 </div>
-                اشتراكات العملاء النشطة
+                اشتراكات العملاء ({subscriptions?.length || 0})
               </h2>
             </div>
 
@@ -350,68 +390,101 @@ export default function AdminSubscriptionPlans() {
             ) : !subscriptions || subscriptions.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
                 <Users className="w-10 h-10 text-black/10 mx-auto mb-4" />
-                <h3 className="font-bold text-black/40 mb-2">لا توجد اشتراكات نشطة</h3>
-                <p className="text-xs text-black/30">اشتراكات العملاء ستظهر هنا فور تعيينها</p>
+                <h3 className="font-bold text-black/40 mb-2">لا توجد اشتراكات</h3>
+                <p className="text-xs text-black/30">ستبدأ الاشتراكات تلقائياً عند تسليم المشاريع</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-black/[0.06] bg-black/[0.02]">
-                      <th className="text-right text-[11px] font-bold text-black/40 px-6 py-3">العميل</th>
-                      <th className="text-right text-[11px] font-bold text-black/40 px-4 py-3">القطاع</th>
-                      <th className="text-right text-[11px] font-bold text-black/40 px-4 py-3">الفترة</th>
-                      <th className="text-right text-[11px] font-bold text-black/40 px-4 py-3">تاريخ الانتهاء</th>
-                      <th className="text-right text-[11px] font-bold text-black/40 px-4 py-3">الحالة</th>
-                      <th className="text-right text-[11px] font-bold text-black/40 px-4 py-3">إجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subscriptions.map((sub, i) => {
-                      const st = statusConfig[sub.subscriptionStatus] || statusConfig.none;
-                      const StatusIcon = st.icon;
-                      const expiresAt = sub.subscriptionExpiresAt ? new Date(sub.subscriptionExpiresAt) : null;
-                      const daysLeft = expiresAt ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000) : null;
-                      return (
-                        <tr key={sub.id} className={`border-b border-black/[0.04] hover:bg-black/[0.01] transition-colors ${i % 2 === 0 ? "" : "bg-black/[0.01]"}`}>
-                          <td className="px-6 py-4">
-                            <p className="font-bold text-sm text-black">{sub.fullName}</p>
-                            <p className="text-[10px] text-black/40">{sub.email}</p>
-                          </td>
-                          <td className="px-4 py-4">
-                            <p className="text-sm text-black/70">{sub.subscriptionSegmentNameAr || "—"}</p>
-                          </td>
-                          <td className="px-4 py-4">
-                            <p className="text-sm text-black/70">{periodLabels[sub.subscriptionPeriod] || "—"}</p>
-                          </td>
-                          <td className="px-4 py-4">
-                            {expiresAt ? (
-                              <div>
-                                <p className="text-sm text-black/70">{expiresAt.toLocaleDateString("ar-SA")}</p>
-                                {daysLeft !== null && (
-                                  <p className={`text-[10px] font-bold ${daysLeft <= 7 ? "text-red-600" : daysLeft <= 30 ? "text-amber-600" : "text-green-600"}`}>
-                                    {daysLeft > 0 ? `متبقي ${daysLeft} يوم` : "منتهي"}
-                                  </p>
+              <div className="space-y-3">
+                {/* Sort: urgent first */}
+                {[...subscriptions].sort((a, b) => {
+                  if (a.needsRenewal && !b.needsRenewal) return -1;
+                  if (!a.needsRenewal && b.needsRenewal) return 1;
+                  return (a.percentRemaining ?? 100) - (b.percentRemaining ?? 100);
+                }).map((sub, i) => {
+                  const st = statusConfig[sub.subscriptionStatus] || statusConfig.none;
+                  const StatusIcon = st.icon;
+                  const expiresAt = sub.subscriptionExpiresAt ? new Date(sub.subscriptionExpiresAt) : null;
+                  const pct = sub.percentRemaining ?? 0;
+                  const progressColor = sub.subscriptionStatus === "expired" ? "bg-gray-400"
+                    : pct <= 10 ? "bg-red-500"
+                    : pct <= 25 ? "bg-amber-500"
+                    : pct <= 50 ? "bg-yellow-400"
+                    : "bg-green-500";
+                  const cardBorder = sub.needsRenewal ? "border-red-200 bg-red-50/30" : "border-black/[0.06] bg-white";
+                  return (
+                    <motion.div key={sub.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                      <div className={`rounded-2xl border p-4 transition-all hover:shadow-sm ${cardBorder}`} data-testid={`sub-card-${sub.id}`}>
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          {/* Left: client info */}
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${sub.needsRenewal ? "bg-red-100" : "bg-black/[0.04]"}`}>
+                              {sub.needsRenewal
+                                ? <Bell className="w-4 h-4 text-red-600 animate-pulse" />
+                                : <StatusIcon className={`w-4 h-4 ${st.color}`} />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-black text-sm text-black">{sub.fullName}</p>
+                                <Badge className={`text-[10px] border gap-1 ${st.bg} ${st.color} py-0`}>
+                                  <StatusIcon className="w-2.5 h-2.5" /> {st.label}
+                                </Badge>
+                                {sub.needsRenewal && (
+                                  <span className="text-[10px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full animate-pulse">
+                                    يحتاج مراسلة!
+                                  </span>
                                 )}
                               </div>
-                            ) : "—"}
-                          </td>
-                          <td className="px-4 py-4">
-                            <Badge className={`text-[10px] border gap-1 ${st.bg} ${st.color}`}>
-                              <StatusIcon className="w-3 h-3" />
-                              {st.label}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-4">
-                            <Button size="sm" variant="outline" onClick={() => openSubDialog(sub)} className="h-7 px-3 text-[11px] rounded-lg border-black/[0.08] gap-1" data-testid={`button-set-sub-${sub.id}`}>
-                              <RefreshCcw className="w-3 h-3" /> تجديد
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              <p className="text-[11px] text-black/40 mt-0.5">{sub.email}</p>
+                              <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-black/50">
+                                {sub.subscriptionSegmentNameAr && <span className="bg-black/[0.04] px-2 py-0.5 rounded-full">{sub.subscriptionSegmentNameAr}</span>}
+                                {sub.subscriptionPeriod && <span>{periodLabels[sub.subscriptionPeriod] || sub.subscriptionPeriod}</span>}
+                                {expiresAt && <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />ينتهي: {expiresAt.toLocaleDateString("ar-SA")}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Right: countdown + actions */}
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            {sub.remainingDays !== null && sub.subscriptionStatus === "active" && (
+                              <div className="text-left">
+                                <p className={`text-xl font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-black"}`}>
+                                  {sub.remainingDays}
+                                </p>
+                                <p className="text-[10px] text-black/40 text-center">يوم متبقي</p>
+                              </div>
+                            )}
+                            <div className="flex gap-1.5">
+                              <Button size="sm" onClick={() => { setRenewTarget(sub); setRenewFrom("expiry"); setRenewDialog(true); }}
+                                className={`h-7 px-3 text-[11px] rounded-lg gap-1 font-bold ${sub.needsRenewal ? "bg-red-600 hover:bg-red-700 text-white" : "bg-black text-white hover:bg-black/80"}`}
+                                data-testid={`btn-quick-renew-${sub.id}`}>
+                                <Zap className="w-3 h-3" /> تجديد سريع
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openSubDialog(sub)}
+                                className="h-7 px-3 text-[11px] rounded-lg border-black/[0.08] gap-1"
+                                data-testid={`button-set-sub-${sub.id}`}>
+                                <RefreshCcw className="w-3 h-3" /> يدوي
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        {sub.subscriptionStatus === "active" && sub.percentRemaining !== null && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-black/30">المدة المتبقية</span>
+                              <span className={`text-[10px] font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-green-600"}`}>
+                                {pct}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${progressColor}`} style={{ width: `${Math.max(2, pct)}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -475,6 +548,62 @@ export default function AdminSubscriptionPlans() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* ─── QUICK RENEWAL DIALOG ─── */}
+      <Dialog open={renewDialog} onOpenChange={setRenewDialog}>
+        <DialogContent className="max-w-sm rounded-3xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="font-black text-lg text-right flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-500" />
+              تجديد سريع — {renewTarget?.fullName}
+            </DialogTitle>
+          </DialogHeader>
+          {renewTarget && (
+            <div className="space-y-4">
+              <div className={`rounded-2xl p-3 border ${renewTarget.needsRenewal ? "bg-red-50 border-red-200" : "bg-black/[0.02] border-black/[0.06]"}`}>
+                <p className="text-xs text-black/50 mb-1">الخطة الحالية</p>
+                <p className="font-bold text-sm text-black">{renewTarget.subscriptionSegmentNameAr || "—"} · {periodLabels[renewTarget.subscriptionPeriod] || renewTarget.subscriptionPeriod}</p>
+                {renewTarget.subscriptionExpiresAt && (
+                  <p className="text-xs text-black/40 mt-1">ينتهي: {new Date(renewTarget.subscriptionExpiresAt).toLocaleDateString("ar-SA")}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-black/50 mb-2 block">بداية الاشتراك الجديد</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setRenewFrom("expiry")}
+                    className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "expiry" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
+                    data-testid="btn-renew-from-expiry"
+                  >
+                    <p className="text-xs font-bold">من نهاية الحالي</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">تجديد متواصل</p>
+                  </button>
+                  <button
+                    onClick={() => setRenewFrom("today")}
+                    className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "today" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
+                    data-testid="btn-renew-from-today"
+                  >
+                    <p className="text-xs font-bold">من اليوم</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">بدء فوري</p>
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => quickRenewMutation.mutate({ userId: renewTarget.id || (renewTarget as any)._id, startFrom: renewFrom })}
+                disabled={quickRenewMutation.isPending}
+                className="w-full h-11 rounded-2xl bg-black hover:bg-black/80 text-white gap-2 font-bold"
+                data-testid="btn-confirm-renew"
+              >
+                {quickRenewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                تجديد الاشتراك الآن
+              </Button>
+              <p className="text-center text-[11px] text-black/30">سيُرسَل إشعار للعميل تلقائياً بعد التجديد</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ─── SEGMENT DIALOG ─── */}
       <Dialog open={segmentDialog} onOpenChange={setSegmentDialog}>
