@@ -313,6 +313,28 @@ export const PAGE_HINTS: PageHint[] = [
     roles: ["client"],
   },
   {
+    key: "/my-api-keys",
+    icon: "🔑",
+    color: "from-violet-600 to-indigo-600",
+    titleAr: "مفاتيح API",
+    titleEn: "API Keys",
+    descAr: "اربط متجرك أو تطبيقك بنظام Qirox مباشرةً لجلب الطلبات والإحصائيات والمشاريع برمجياً.",
+    descEn: "Connect your store or app directly to Qirox to programmatically fetch orders, stats, and projects.",
+    featuresAr: [
+      "أنشئ مفاتيح API آمنة ومشفرة",
+      "تحكم بالصلاحيات: طلبات، مشاريع، فواتير، محفظة",
+      "كل طلب API يُسجَّل للمراقبة والحماية",
+      "مفاتيح غير محدودة المدة أو مع تاريخ انتهاء",
+    ],
+    featuresEn: [
+      "Create secure, hashed API keys",
+      "Control scopes: orders, projects, invoices, wallet",
+      "All API calls are logged for monitoring and security",
+      "Keys can be permanent or set to expire",
+    ],
+    roles: ["client"],
+  },
+  {
     key: "/my-consultations",
     icon: "📅",
     color: "from-indigo-600 to-blue-600",

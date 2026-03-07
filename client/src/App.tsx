@@ -221,6 +221,8 @@ function AdminRouter() {
         <Route path="/admin/investors" component={AdminInvestors} />
         <Route path="/admin/switch-reminders" component={AdminSwitchReminders} />
         <Route path="/switch-reminder" component={SwitchReminder} />
+        <Route path="/my-api-keys" component={MyApiKeys} />
+        <Route path="/admin/api-keys" component={AdminApiKeys} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />
