@@ -3438,10 +3438,13 @@ export async function registerRoutes(
   });
   // ── WebAuthn / Passkey Biometric Auth ──
   const RP_NAME = "QIROX Studio";
-  const RP_ID = process.env.NODE_ENV === "production" ? (process.env.RP_ID || "qiroxstudio.online") : "localhost";
+  const _devDomain = process.env.REPLIT_DEV_DOMAIN;
+  const RP_ID = process.env.NODE_ENV === "production"
+    ? (process.env.RP_ID || "qiroxstudio.online")
+    : (_devDomain || "localhost");
   const ORIGIN = process.env.NODE_ENV === "production"
     ? (process.env.WEBAUTHN_ORIGIN || "https://qiroxstudio.online")
-    : "http://localhost:5000";
+    : (_devDomain ? `https://${_devDomain}` : "http://localhost:5000");
 
   // List user's registered passkeys
   app.get("/api/auth/webauthn/credentials", async (req, res) => {
