@@ -343,6 +343,26 @@ export default function ClientWallet() {
                   ))}
                 </div>
 
+                {/* PIN activation notice */}
+                {!cardData.hasPin && (
+                  <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-300/60 dark:border-amber-700/40 p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">البطاقة تحتاج تفعيل</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                        لاستخدام البطاقة في الدفع أو السماح للآخرين بالدفع منها، يجب تعيين كلمة مرور الدفع أولاً.
+                      </p>
+                      <button
+                        onClick={() => setPinModal(true)}
+                        className="mt-2 text-xs font-bold text-amber-700 dark:text-amber-300 underline"
+                        data-testid="button-activate-card"
+                      >
+                        اضغط هنا لتعيين كلمة المرور وتفعيل البطاقة ←
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Card Info */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
                   <div className="px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.08]">
@@ -350,11 +370,11 @@ export default function ClientWallet() {
                   </div>
                   <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                     {[
-                      { label: "رقم البطاقة", value: fmtCard(cardData.cardNumber), mono: true },
+                      { label: "رقم البطاقة", value: fmtCard(cardData.cardNumber!), mono: true },
                       { label: "اسم حامل البطاقة", value: cardData.holderName },
                       { label: "تاريخ الانتهاء", value: "12/99" },
-                      { label: "كلمة مرور الدفع", value: cardData.hasPin ? "••••••••  (مُفعَّلة)" : "غير مُعيَّنة — اضغط 'تعيين كلمة المرور'" },
-                      { label: "حالة البطاقة", value: cardData.cardActive ? "نشطة ✓" : "غير نشطة" },
+                      { label: "كلمة مرور الدفع", value: cardData.hasPin ? "••••••••  (مُفعَّلة ✓)" : "⚠ غير مُعيَّنة — البطاقة غير مفعّلة" },
+                      { label: "حالة البطاقة", value: (cardData.cardActive && cardData.hasPin) ? "نشطة ومفعّلة ✓" : cardData.cardActive ? "البطاقة موجودة — تحتاج تعيين كلمة المرور" : "غير نشطة" },
                     ].map(({ label, value, mono }) => (
                       <div key={label} className="px-5 py-3 flex items-center justify-between">
                         <span className="text-xs text-black/40 dark:text-white/40">{label}</span>

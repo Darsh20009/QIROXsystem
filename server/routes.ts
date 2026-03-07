@@ -1781,7 +1781,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     const { UserModel } = await import("./models");
-    const dbUser = await UserModel.findById(String(user.id));
+    const dbUser = await UserModel.findById(String(user.id)).select("+walletCardNumber +walletCardActive");
     if (!dbUser) return res.sendStatus(404);
     if (dbUser.walletCardNumber) return res.json({ cardNumber: dbUser.walletCardNumber, cardActive: dbUser.walletCardActive });
     // Generate unique 16-digit card number prefixed with 4747
@@ -1827,9 +1827,9 @@ export async function registerRoutes(
     const bcrypt = await import("bcrypt");
     const { amount, description, pin, orderId } = req.body;
     if (!pin || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
-    const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
+    const dbUser = await UserModel.findById(String(user.id)).select("+walletPin +walletCardNumber +walletCardActive");
     if (!dbUser) return res.sendStatus(404);
-    if (!dbUser.walletCardNumber || !dbUser.walletCardActive) return res.status(400).json({ error: "البطاقة غير مفعّلة" });
+    if (!dbUser.walletCardNumber || !dbUser.walletCardActive) return res.status(400).json({ error: "البطاقة غير مفعّلة — يرجى إنشاء بطاقة Qirox Pay أولاً" });
     if (!dbUser.walletPin) return res.status(400).json({ error: "يجب تعيين كلمة مرور الدفع أولاً" });
     const validPin = await bcrypt.compare(String(pin), dbUser.walletPin);
     if (!validPin) return res.status(400).json({ error: "كلمة مرور الدفع غير صحيحة" });
@@ -1870,7 +1870,13 @@ export async function registerRoutes(
       description: description || 'دفع خارجي بـ Qirox Pay',
       otp, expiresAt,
     });
-    await sendWalletPayOtpEmail(owner.email, owner.fullName, otp, Number(amount), description || 'دفع خارجي');
+    try {
+      await sendWalletPayOtpEmail(owner.email, owner.fullName, otp, Number(amount), description || 'دفع خارجي');
+    } catch (emailErr: any) {
+      console.error("[Wallet OTP] Failed to send OTP email:", emailErr?.message);
+      // OTP was saved; email failed — return error so user knows email wasn't delivered
+      return res.status(500).json({ error: "تم إنشاء رمز OTP لكن فشل إرساله بالبريد الإلكتروني. يرجى المحاولة لاحقاً أو التواصل مع الدعم." });
+    }
     res.json({ success: true, ownerName: owner.fullName, maskedEmail: owner.email.replace(/(.{2}).+(@.+)/, '$1***$2') });
   });
 
