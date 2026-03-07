@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield
+  TrendingUp, Shield, Bell
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -73,6 +73,7 @@ export function AppSidebar() {
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client", section: "services" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client", section: "services" },
     { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client", section: "services" },
+    { title: ar ? "تذكيرني قبل انتهاء اشتراكي" : "Renewal Reminder", icon: Bell, url: "/switch-reminder", group: "client", section: "services" },
     // Client — account
     { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client", section: "account" },
     { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client", section: "account" },
@@ -123,6 +124,7 @@ export function AppSidebar() {
     { title: ar ? "شركات الشحن" : "Shipping Companies", icon: Truck, url: "/admin/shipping", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إدارة الدول" : "Countries", icon: Globe, url: "/admin/countries", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "تذكيرات التحويل" : "Switch Reminders", icon: Bell, url: "/admin/switch-reminders", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },

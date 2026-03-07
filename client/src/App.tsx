@@ -110,8 +110,10 @@ const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
 const AdminQiroxSettings = lazy(() => import("@/pages/AdminQiroxSettings"));
 const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
 const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
+const AdminSwitchReminders = lazy(() => import("@/pages/AdminSwitchReminders"));
+const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder"];
 
 function PageLoader() {
   return (
@@ -215,6 +217,8 @@ function AdminRouter() {
         <Route path="/admin/qirox-settings" component={AdminQiroxSettings} />
         <Route path="/admin/promotions" component={AdminPromotions} />
         <Route path="/admin/investors" component={AdminInvestors} />
+        <Route path="/admin/switch-reminders" component={AdminSwitchReminders} />
+        <Route path="/switch-reminder" component={SwitchReminder} />
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />

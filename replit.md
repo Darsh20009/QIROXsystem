@@ -617,6 +617,29 @@ The application is a full-stack TypeScript project with a React frontend and Exp
   - Added `/api/badges` query (refreshes every 30s)
   - Badge counts (red dot + number) shown on: Inbox, Support Tickets, Orders — in both employee and admin sections
 
+## Previous Changes (Mar 7, 2026 - Session 19)
+
+### New Feature: Switch Reminder (تذكير التحويل)
+A lead-generation system allowing potential clients to register their existing subscription with another provider. Qirox Studio then contacts them before the subscription expires.
+
+**Backend (server/models.ts)**
+- `SwitchReminderModel` — stores name, phone, email, currentProvider, serviceType, subscriptionEndDate, notes, status (pending/contacted/converted/not_interested), adminNotes, contactedAt, userId
+
+**Backend (server/routes.ts)**
+- `POST /api/switch-reminder` — public route (rate-limited: 5/hour), works for logged-in and anonymous users; validates future expiry date
+- `GET /api/admin/switch-reminders?status=` — admin/manager list sorted by soonest expiry
+- `PATCH /api/admin/switch-reminders/:id` — admin update status & notes; sets contactedAt on first contact
+- `DELETE /api/admin/switch-reminders/:id` — admin delete
+
+**New Pages (client/src/pages/)**
+- `SwitchReminder.tsx` — Public-facing form with hero, benefits grid, and social proof; auto-fills from logged-in user data; success state after submission
+- `AdminSwitchReminders.tsx` — Admin dashboard with urgency color coding (red ≤7d, amber ≤30d, green), status filter, search, detail dialog with WhatsApp quick-dial, inline status/notes editing
+
+**Updated Files**
+- `App.tsx` — Added lazy imports + routes for both pages; `/switch-reminder` added to publicRoutes
+- `app-sidebar.tsx` — Added "تذكيرات التحويل" to admin operations section; "تذكيرني قبل انتهاء اشتراكي" to client services section; added Bell icon import
+- `page-hints.ts` — Added hint card for `/switch-reminder` route
+
 ## Previous Changes (Mar 3, 2026 - Session 18)
 
 ### New Features: Consultation Booking, Discount Codes, Shipment Tracking

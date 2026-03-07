@@ -1322,3 +1322,20 @@ const deviceTokenSchema = new mongoose.Schema({
 deviceTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 deviceTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const DeviceTokenModel = mongoose.models.DeviceToken || mongoose.model("DeviceToken", deviceTokenSchema);
+
+// ── Switch Reminder (تذكير التحويل من مزود آخر) ────────────────────────────
+const switchReminderSchema = new mongoose.Schema({
+  name:                { type: String, required: true },
+  phone:               { type: String, required: true },
+  email:               { type: String, default: "" },
+  currentProvider:     { type: String, required: true },
+  serviceType:         { type: String, default: "" },
+  subscriptionEndDate: { type: Date, required: true },
+  notes:               { type: String, default: "" },
+  status:              { type: String, enum: ["pending", "contacted", "converted", "not_interested"], default: "pending" },
+  adminNotes:          { type: String, default: "" },
+  contactedAt:         { type: Date, default: null },
+  userId:              { type: String, default: null },
+}, { timestamps: true });
+switchReminderSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SwitchReminderModel = mongoose.models.SwitchReminder || mongoose.model("SwitchReminder", switchReminderSchema);

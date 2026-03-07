@@ -291,6 +291,28 @@ export const PAGE_HINTS: PageHint[] = [
     roles: ["client"],
   },
   {
+    key: "/switch-reminder",
+    icon: "🔔",
+    color: "from-violet-600 to-purple-600",
+    titleAr: "تذكير تجديد الاشتراك",
+    titleEn: "Renewal Reminder",
+    descAr: "سجّل موعد انتهاء اشتراكك مع أي شركة أخرى وسيتواصل معك فريقنا قبل الانتهاء.",
+    descEn: "Register your current subscription expiry and we'll reach out before it ends.",
+    featuresAr: [
+      "أدخل اسم الشركة الحالية وموعد انتهاء الاشتراك",
+      "سيتواصل معك فريق Qirox قبل الموعد",
+      "اكتشف مميزاتنا واتخذ قرارك بهدوء",
+      "الخدمة مجانية وبدون أي التزام",
+    ],
+    featuresEn: [
+      "Enter your current provider and expiry date",
+      "Qirox team will reach out before it expires",
+      "Learn about our features and decide calmly",
+      "Free service with no commitment",
+    ],
+    roles: ["client"],
+  },
+  {
     key: "/my-consultations",
     icon: "📅",
     color: "from-indigo-600 to-blue-600",

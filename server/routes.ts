@@ -2135,6 +2135,72 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === SWITCH REMINDER (تذكير التحويل) ===
+  // ═══════════════════════════════════════════════════════════
+
+  const switchReminderLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: { error: "تجاوزت الحد المسموح به. حاول بعد ساعة." } });
+
+  // Public submit (anyone — logged in or not)
+  app.post("/api/switch-reminder", switchReminderLimiter, async (req, res) => {
+    const { SwitchReminderModel } = await import("./models");
+    const { name, phone, email, currentProvider, serviceType, subscriptionEndDate, notes } = req.body;
+    if (!name?.trim() || !phone?.trim() || !currentProvider?.trim() || !subscriptionEndDate) {
+      return res.status(400).json({ error: "الاسم والجوال واسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبة" });
+    }
+    const endDate = new Date(subscriptionEndDate);
+    if (isNaN(endDate.getTime()) || endDate < new Date()) {
+      return res.status(400).json({ error: "تاريخ انتهاء الاشتراك يجب أن يكون في المستقبل" });
+    }
+    try {
+      const userId = req.isAuthenticated() ? String((req.user as any)._id || (req.user as any).id) : null;
+      const reminder = await SwitchReminderModel.create({
+        name: name.trim(), phone: phone.trim(), email: (email || "").trim(),
+        currentProvider: currentProvider.trim(), serviceType: (serviceType || "").trim(),
+        subscriptionEndDate: endDate, notes: (notes || "").trim(), userId,
+      });
+      res.status(201).json({ success: true, id: reminder.id });
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // Admin list — sorted by soonest expiry
+  app.get("/api/admin/switch-reminders", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { SwitchReminderModel } = await import("./models");
+    const { status } = req.query as any;
+    const filter: any = status && status !== "all" ? { status } : {};
+    const reminders = await SwitchReminderModel.find(filter).sort({ subscriptionEndDate: 1 }).limit(500);
+    res.json(reminders);
+  });
+
+  // Admin update (status, notes)
+  app.patch("/api/admin/switch-reminders/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { SwitchReminderModel } = await import("./models");
+    const { status, adminNotes } = req.body;
+    try {
+      const doc = await SwitchReminderModel.findById(req.params.id);
+      if (!doc) return res.sendStatus(404);
+      if (status) doc.status = status;
+      if (adminNotes !== undefined) doc.adminNotes = adminNotes;
+      if (status === "contacted" && !doc.contactedAt) doc.contactedAt = new Date();
+      await doc.save();
+      res.json(doc.toJSON());
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
+  // Admin delete
+  app.delete("/api/admin/switch-reminders/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { SwitchReminderModel } = await import("./models");
+    await SwitchReminderModel.findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  });
+
   // === CHAT API ===
   app.get("/api/projects/:projectId/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
