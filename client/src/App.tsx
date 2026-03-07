@@ -114,8 +114,9 @@ const AdminSwitchReminders = lazy(() => import("@/pages/AdminSwitchReminders"));
 const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
 const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
 const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
+const Demos = lazy(() => import("@/pages/Demos"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
 function PageLoader() {
   return (
@@ -154,6 +155,7 @@ function PublicRouter() {
         <Route path="/systems" component={Systems} />
         <Route path="/clients-group" component={ClientsGroup} />
         <Route path="/barcode-studio" component={BarcodeStudio} />
+        <Route path="/demos" component={Demos} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

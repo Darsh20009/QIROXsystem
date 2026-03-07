@@ -202,6 +202,7 @@ export default function Navigation() {
     { href: "/", label: t("nav.home") },
     { href: "/devices", label: lang === "ar" ? "الأجهزة" : "Devices" },
     { href: "/prices", label: t("nav.prices") },
+    { href: "/demos", label: lang === "ar" ? "النماذج" : "Demos" },
     { href: "/consultation", label: lang === "ar" ? "احجز استشارة" : "Book Consultation" },
     { href: "/about", label: t("nav.about") },
     { href: "/partners", label: t("nav.partners") },

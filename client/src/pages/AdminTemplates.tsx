@@ -16,9 +16,10 @@ import {
   Loader2, Plus, Pencil, Trash2, Layers, CreditCard,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe, Star, BadgePercent,
-  Sparkles, Tag, Check, UtensilsCrossed, ShoppingBag, Building2, Home, Infinity, Zap
+  Sparkles, Tag, Check, UtensilsCrossed, ShoppingBag, Building2, Home, Infinity, Zap,
+  X, ExternalLink, Link2, ListChecks
 } from "lucide-react";
-import type { SectorTemplate, PricingPlan } from "@shared/schema";
+import type { SectorTemplate, PricingPlan, FeatureDetail } from "@shared/schema";
 
 const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; bg: string }> = {
   restaurant:  { labelAr: "مطاعم ومقاهي",   icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
@@ -48,11 +49,19 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
     priceMax: template?.priceMax || 0,
     estimatedDuration: template?.estimatedDuration || "",
     heroColor: template?.heroColor || "#0f172a",
+    demoUrl: template?.demoUrl || "",
     status: (template?.status || "active") as "active" | "coming_soon" | "archived",
     features: template?.features?.join(", ") || "",
     featuresAr: template?.featuresAr?.join("، ") || "",
     tags: template?.tags?.join(", ") || "",
   });
+  const [featuresDetails, setFeaturesDetails] = useState<FeatureDetail[]>(
+    template?.featuresDetails?.length ? template.featuresDetails : []
+  );
+  const addFeatureDetail = () => setFeaturesDetails(f => [...f, { titleAr: "", title: "", descAr: "", icon: "✨" }]);
+  const removeFeatureDetail = (i: number) => setFeaturesDetails(f => f.filter((_, idx) => idx !== i));
+  const updateFeatureDetail = (i: number, key: keyof FeatureDetail, val: string) =>
+    setFeaturesDetails(f => f.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => { const res = await apiRequest("POST", "/api/admin/templates", data); return res.json(); },
@@ -73,6 +82,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       features: formData.features.split(",").map(s => s.trim()).filter(Boolean),
       featuresAr: formData.featuresAr.split("،").map(s => s.trim()).filter(Boolean),
       tags: formData.tags.split(",").map(s => s.trim()).filter(Boolean),
+      featuresDetails,
     };
     template ? updateMutation.mutate(payload) : createMutation.mutate(payload);
   };
@@ -115,6 +125,40 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       <div><label className="text-xs font-medium text-black/50 block mb-1">لون الهيرو</label><div className="flex gap-2"><input type="color" value={formData.heroColor} onChange={e => setFormData({...formData, heroColor: e.target.value})} className="w-10 h-10 rounded cursor-pointer border border-black/[0.08]" /><Input value={formData.heroColor} onChange={e => setFormData({...formData, heroColor: e.target.value})} className="flex-1" /></div></div>
       <div><label className="text-xs font-medium text-black/50 block mb-1">الميزات (عربي، مفصولة بـ ،)</label><Textarea rows={2} value={formData.featuresAr} onChange={e => setFormData({...formData, featuresAr: e.target.value})} placeholder="ميزة 1، ميزة 2، ميزة 3" /></div>
       <div><label className="text-xs font-medium text-black/50 block mb-1">Features (EN, comma separated)</label><Textarea rows={2} value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} placeholder="Feature 1, Feature 2" /></div>
+
+      {/* Demo URL */}
+      <div>
+        <label className="text-xs font-medium text-black/50 block mb-1 flex items-center gap-1.5"><Link2 className="w-3 h-3" /> رابط الديمو</label>
+        <Input value={formData.demoUrl} onChange={e => setFormData({...formData, demoUrl: e.target.value})} placeholder="https://demo.example.com" dir="ltr" data-testid="input-demo-url" />
+      </div>
+
+      {/* Feature Details (usage guide per feature) */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-black/50 flex items-center gap-1.5"><ListChecks className="w-3 h-3" /> تفاصيل المميزات (دليل الاستخدام)</label>
+          <Button type="button" size="sm" variant="outline" onClick={addFeatureDetail} className="h-6 px-2 text-[10px] rounded-lg gap-1" data-testid="btn-add-feature-detail">
+            <Plus className="w-3 h-3" /> إضافة ميزة
+          </Button>
+        </div>
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {featuresDetails.map((fd, i) => (
+            <div key={i} className="bg-black/[0.02] dark:bg-white/[0.02] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06] relative" data-testid={`feature-detail-${i}`}>
+              <button type="button" onClick={() => removeFeatureDetail(i)} className="absolute top-2 left-2 w-5 h-5 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center">
+                <X className="w-3 h-3 text-red-600" />
+              </button>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <Input value={fd.icon} onChange={e => updateFeatureDetail(i, "icon", e.target.value)} placeholder="✨" className="h-8 text-center text-lg" title="Emoji أو رمز" />
+                <Input value={fd.titleAr} onChange={e => updateFeatureDetail(i, "titleAr", e.target.value)} placeholder="اسم الميزة (عربي)" className="h-8 text-xs col-span-2" />
+              </div>
+              <Textarea value={fd.descAr} onChange={e => updateFeatureDetail(i, "descAr", e.target.value)} placeholder="كيفية استخدام هذه الميزة..." rows={2} className="text-xs" />
+            </div>
+          ))}
+          {featuresDetails.length === 0 && (
+            <p className="text-center text-[11px] text-black/30 py-3">لم يتم إضافة تفاصيل للمميزات بعد</p>
+          )}
+        </div>
+      </div>
+
       <Button type="submit" className="w-full premium-btn" disabled={isPending}>
         {isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
         {template ? "تحديث القالب" : "إنشاء القالب"}
@@ -566,7 +610,14 @@ export default function AdminTemplates() {
                             {template.status === "active" ? "نشط" : template.status === "coming_soon" ? "قريباً" : "مؤرشف"}
                           </Badge>
                         </div>
-                        <div className="text-xs text-black/30 dark:text-white/30">{template.priceMin?.toLocaleString()} - {template.priceMax?.toLocaleString()} {template.currency} · {template.estimatedDuration}</div>
+                        <div className="text-xs text-black/30 dark:text-white/30 flex items-center gap-2">
+                          <span>{template.priceMin?.toLocaleString()} - {template.priceMax?.toLocaleString()} {template.currency} · {template.estimatedDuration}</span>
+                          {template.demoUrl && (
+                            <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:text-blue-700 font-medium" data-testid={`link-demo-${template.slug}`}>
+                              <ExternalLink className="w-3 h-3" /> ديمو
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingTemplate(template); setTemplateDialog(true); }} data-testid={`button-edit-${template.slug}`}>

@@ -10,6 +10,31 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 7, 2026 - Session 42)
+
+### Demo Templates System — نماذج القوالب التفاعلية
+
+**Backend Changes:**
+- `server/models.ts`: Added `featureDetailSchema` (sub-schema with `titleAr`, `title`, `descAr`, `icon`) and embedded `featuresDetails: [featureDetailSchema]` array into `sectorTemplateSchema`
+- `shared/schema.ts`: Added `FeatureDetail` interface; added `featuresDetails?: FeatureDetail[]` to both `SectorTemplate` and `InsertSectorTemplate` interfaces
+
+**Admin Changes (`AdminTemplates.tsx`):**
+- New `demoUrl` field in TemplateForm (with link icon)
+- New `featuresDetails` editor in TemplateForm — add/remove feature cards each with emoji icon, Arabic title, and Arabic usage description
+- `featuresDetails` included in create/update payload
+- Template list view shows clickable "ديمو" link when `demoUrl` is set
+
+**Public Page (`client/src/pages/Demos.tsx` — NEW):**
+- Hero section with headline + stats (live demos count, total templates, free trial)
+- Sticky filter bar with search input + category buttons (restaurant, ecommerce, education, corporate, realestate, healthcare)
+- Template card grid: color banner with heroColor, status badge, category badge, quick stats (duration, price range, feature count), features pills, collapsible feature details guide (accordion per feature), "جرّب الديمو" button → opens demoUrl in new tab, "ابدأ مشروعك" button → links to /order?template=slug
+- CTA section for custom projects + free consultation link
+- Responsive, RTL, dark mode supported
+
+**Routing:**
+- `App.tsx`: Added `Demos` lazy import + `/demos` public route + `/demos` to `publicRoutes` array
+- `Navigation.tsx`: Added "النماذج" link after /prices
+
 ## Latest Changes (Mar 7, 2026 - Session 41)
 
 ### ملف شخصي إبداعي + أفاتار + QMeet تفاعلي

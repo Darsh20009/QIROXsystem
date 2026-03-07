@@ -213,6 +213,13 @@ const applicationSchema = new mongoose.Schema({
   appliedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
+const featureDetailSchema = new mongoose.Schema({
+  titleAr: { type: String, default: "" },
+  title:   { type: String, default: "" },
+  descAr:  { type: String, default: "" },
+  icon:    { type: String, default: "✨" },
+}, { _id: false });
+
 const sectorTemplateSchema = new mongoose.Schema({
   name: { type: String, required: true },
   nameAr: { type: String, required: true },
@@ -223,6 +230,7 @@ const sectorTemplateSchema = new mongoose.Schema({
   icon: String,
   features: [String],
   featuresAr: [String],
+  featuresDetails: { type: [featureDetailSchema], default: [] },
   tags: [String],
   priceMin: Number,
   priceMax: Number,

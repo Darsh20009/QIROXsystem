@@ -208,6 +208,13 @@ export const applications = pgTable("applications", {
 });
 
 // --- Sector Templates (types only - uses MongoDB) ---
+export interface FeatureDetail {
+  titleAr: string;
+  title: string;
+  descAr: string;
+  icon: string;
+}
+
 export interface SectorTemplate {
   id: string;
   name: string;
@@ -219,6 +226,7 @@ export interface SectorTemplate {
   icon?: string;
   features?: string[];
   featuresAr?: string[];
+  featuresDetails?: FeatureDetail[];
   tags?: string[];
   priceMin?: number;
   priceMax?: number;
@@ -241,6 +249,7 @@ export interface InsertSectorTemplate {
   icon?: string;
   features?: string[];
   featuresAr?: string[];
+  featuresDetails?: FeatureDetail[];
   tags?: string[];
   priceMin?: number;
   priceMax?: number;
