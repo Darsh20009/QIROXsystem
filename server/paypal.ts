@@ -110,7 +110,7 @@ export async function createPaypalOrder(req: Request, res: Response) {
     };
 
     const { body, ...httpResponse } = await ordersController.createOrder(collect);
-    const jsonResponse = JSON.parse(String(body));
+    const jsonResponse = typeof body === "string" ? JSON.parse(body) : body;
     res.status(httpResponse.statusCode).json(jsonResponse);
   } catch (error) {
     console.error("Failed to create order:", error);
@@ -130,7 +130,7 @@ export async function capturePaypalOrder(req: Request, res: Response) {
     };
 
     const { body, ...httpResponse } = await ordersController.captureOrder(collect);
-    const jsonResponse = JSON.parse(String(body));
+    const jsonResponse = typeof body === "string" ? JSON.parse(body) : body;
     res.status(httpResponse.statusCode).json(jsonResponse);
   } catch (error) {
     console.error("Failed to capture order:", error);

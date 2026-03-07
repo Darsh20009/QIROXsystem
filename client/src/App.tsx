@@ -225,6 +225,7 @@ function AdminRouter() {
         <Route path="/payment-history" component={PaymentHistory} />
         <Route path="/cart" component={Cart} />
         <Route path="/inbox" component={Inbox} />
+        <Route path="/admin/settings">{() => { window.location.replace("/admin/qirox-settings"); return null; }}</Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>

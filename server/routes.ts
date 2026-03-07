@@ -380,7 +380,7 @@ export async function registerRoutes(
 
   // Admin users list (Only for admin)
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const { UserModel } = await import("./models");
@@ -412,7 +412,7 @@ export async function registerRoutes(
   const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "jobTitle", "bio"];
 
   app.post("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -452,7 +452,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/users/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -486,7 +486,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/users/:id/avatar", (req, res, next) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     upload.single("file")(req, res, async (err) => {
       if (err instanceof multer.MulterError) return res.status(400).json({ error: "حجم الملف كبير جداً" });
       if (err) return res.status(400).json({ error: translateError(err) });
@@ -521,7 +521,7 @@ export async function registerRoutes(
 
   // Admin reset password for any user → auto-generate + send email + return to admin
   app.post("/api/admin/users/:id/reset-password", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) return res.sendStatus(404);
@@ -711,7 +711,7 @@ export async function registerRoutes(
 
   // === ADMIN SERVICES API ===
   app.post("/api/admin/services", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const service = await storage.createService(req.body);
@@ -719,7 +719,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/services/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     const service = await storage.updateService(req.params.id, req.body);
@@ -727,7 +727,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/services/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     await storage.deleteService(req.params.id);
@@ -2131,7 +2131,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/news", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const news = await storage.createNews({ ...req.body, authorId: (req.user as any).id });
       res.status(201).json(news);
@@ -2139,7 +2139,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/news/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const news = await storage.updateNews(req.params.id, req.body);
       res.json(news);
@@ -2147,7 +2147,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/news/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       await storage.deleteNews(req.params.id);
       res.sendStatus(204);
@@ -2161,7 +2161,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/jobs", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const job = await storage.createJob(req.body);
       res.status(201).json(job);
@@ -2169,7 +2169,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/jobs/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const job = await storage.updateJob(req.params.id, req.body);
       res.json(job);
@@ -2177,7 +2177,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/jobs/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       await storage.deleteJob(req.params.id);
       res.sendStatus(204);
@@ -2209,13 +2209,13 @@ export async function registerRoutes(
 
   // === APPLICATIONS API ===
   app.get("/api/admin/applications", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const applications = await storage.getApplications();
     res.json(applications);
   });
 
   app.patch("/api/admin/applications/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const application = await storage.updateApplication(req.params.id, req.body);
       res.json(application);
@@ -2224,7 +2224,7 @@ export async function registerRoutes(
 
   // Hire applicant as employee → create account + send credentials
   app.post("/api/admin/applications/:id/hire", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { role, username, email, fullName, phone } = req.body;
       if (!role || !username || !email || !fullName) {
@@ -2270,7 +2270,7 @@ export async function registerRoutes(
 
   // === ADMIN CUSTOMERS API ===
   app.get("/api/admin/customers", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const users = await storage.getUsers();
     res.json(sanitizeUser(users.filter((u: any) => u.role === "client")));
   });
@@ -2354,7 +2354,7 @@ export async function registerRoutes(
 
   // === ADMIN STATS API ===
   app.get("/api/admin/stats", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);
     }
     try {
@@ -2795,14 +2795,14 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/mod-plan-configs", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModPlanConfigModel } = await import("./models");
     const configs = await ModPlanConfigModel.find().sort({ planTier: 1, planPeriod: 1 });
     res.json(configs);
   });
 
   app.post("/api/admin/mod-plan-configs", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModPlanConfigModel } = await import("./models");
     const { planTier, planPeriod, modificationsPerPeriod, quotaMonths, notes } = req.body;
     if (!planTier || !planPeriod || !modificationsPerPeriod) return res.status(400).json({ error: "البيانات ناقصة" });
@@ -2813,7 +2813,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/mod-plan-configs/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModPlanConfigModel } = await import("./models");
     try {
       const updated = await ModPlanConfigModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -2823,7 +2823,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/mod-plan-configs/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModPlanConfigModel } = await import("./models");
     await ModPlanConfigModel.findByIdAndDelete(req.params.id);
     res.sendStatus(204);
@@ -2837,7 +2837,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/mod-type-prices", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModTypePriceModel } = await import("./models");
     const { nameAr, name, description, price, sortOrder } = req.body;
     if (!nameAr || price === undefined) return res.status(400).json({ error: "الاسم والسعر مطلوبان" });
@@ -2849,7 +2849,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/mod-type-prices/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModTypePriceModel } = await import("./models");
     if (req.body.price !== undefined && req.body.price > 50) return res.status(400).json({ error: "الحد الأقصى للسعر هو 50 ريال" });
     try {
@@ -2860,14 +2860,14 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/mod-type-prices/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModTypePriceModel } = await import("./models");
     await ModTypePriceModel.findByIdAndDelete(req.params.id);
     res.sendStatus(204);
   });
 
   app.get("/api/admin/mod-quota-addons", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModQuotaAddonModel, UserModel, OrderModel } = await import("./models");
     const addons = await ModQuotaAddonModel.find().sort({ createdAt: -1 });
     const enriched = await Promise.all(addons.map(async (a: any) => {
@@ -2880,7 +2880,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/mod-quota-addons/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.sendStatus(403);
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModQuotaAddonModel } = await import("./models");
     try {
       const addon = await ModQuotaAddonModel.findById(req.params.id);

@@ -189,13 +189,15 @@ export default function MeetingRoom() {
   const [raisedHand, setRaisedHand] = useState(false);
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const REACTION_EMOJIS = ["👍","❤️","😂","🎉","👏","🔥","🚀","😮"];
+  const reactionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const addFloating = (emoji: string, name: string) => {
+  const addFloating = useCallback((emoji: string, name: string) => {
     const id = Math.random().toString(36).slice(2);
     const x = 20 + Math.random() * 60;
     setFloatingReactions(prev => [...prev, { id, emoji, name, x }]);
-    setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
-  };
+    const t = setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
+    reactionTimersRef.current.push(t);
+  }, []);
 
   const sendReaction = (emoji: string) => {
     setShowEmojiPicker(false);
@@ -432,7 +434,7 @@ export default function MeetingRoom() {
         break;
       }
     }
-  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast]);
+  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating]);
 
   const getMedia = useCallback(async () => {
     const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
@@ -462,7 +464,11 @@ export default function MeetingRoom() {
 
   useEffect(() => {
     getMedia();
-    return () => { localStreamRef.current?.getTracks().forEach(t => t.stop()); };
+    return () => {
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      reactionTimersRef.current.forEach(clearTimeout);
+      reactionTimersRef.current = [];
+    };
   }, [getMedia]);
 
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
