@@ -17,6 +17,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingClientChat } from "@/components/FloatingClientChat";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
+import { PageHintCard } from "@/components/PageHintCard";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -704,6 +705,7 @@ function AppInner() {
             </main>
             <MobileBottomNav />
             <FloatingClientChat />
+            <PageHintCard />
             <Toaster />
           </div>
         </div>
