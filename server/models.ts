@@ -33,6 +33,8 @@ const userSchema = new mongoose.Schema({
   additionalRoles: { type: [String], default: [] },
   trustedIp: String,
   trustedUntil: Date,
+  quickPin: { type: String, select: false },
+  quickPinSetAt: { type: Date, select: false },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({

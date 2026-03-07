@@ -3623,6 +3623,70 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── Quick PIN Auth (fallback for devices without biometric sensors) ──
+  app.get("/api/auth/quick-pin/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { UserModel } = await import("./models");
+    const user = await UserModel.findById((req.user as any)._id).select("+quickPin +quickPinSetAt");
+    if (!user) return res.sendStatus(404);
+    res.json({ hasPin: !!user.quickPin, setAt: user.quickPinSetAt || null });
+  });
+
+  app.post("/api/auth/quick-pin/set", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { pin } = req.body;
+    if (!pin || String(pin).length < 4 || String(pin).length > 8 || !/^\d+$/.test(String(pin))) {
+      return res.status(400).json({ error: "الرمز يجب أن يكون بين 4 و8 أرقام" });
+    }
+    const bcrypt = await import("bcrypt");
+    const hashed = await bcrypt.hash(String(pin), 10);
+    const { UserModel } = await import("./models");
+    await UserModel.updateOne({ _id: (req.user as any)._id }, { quickPin: hashed, quickPinSetAt: new Date() });
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/auth/quick-pin/remove", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { UserModel } = await import("./models");
+    await UserModel.updateOne({ _id: (req.user as any)._id }, { $unset: { quickPin: "", quickPinSetAt: "" } });
+    res.json({ ok: true });
+  });
+
+  app.post("/api/auth/quick-pin/login", async (req, res, next) => {
+    try {
+      const { identifier, pin } = req.body;
+      if (!identifier || !pin) return res.status(400).json({ error: "يرجى إدخال اسم المستخدم والرمز" });
+      if (!/^\d{4,8}$/.test(String(pin))) return res.status(400).json({ error: "رمز غير صالح" });
+
+      const { UserModel, DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+      const id = String(identifier).trim().toLowerCase();
+      const user = await UserModel.findOne({
+        $or: [
+          { username: { $regex: new RegExp(`^${id}$`, "i") } },
+          { email: { $regex: new RegExp(`^${id}$`, "i") } },
+        ],
+      }).select("+quickPin");
+
+      if (!user || !user.quickPin) {
+        return res.status(401).json({ error: "الرمز السريع غير مفعّل لهذا الحساب" });
+      }
+      const bcrypt = await import("bcrypt");
+      const valid = await bcrypt.compare(String(pin), user.quickPin);
+      if (!valid) return res.status(401).json({ error: "الرمز السريع غير صحيح" });
+
+      req.login(user as any, async (err) => {
+        if (err) return next(err);
+        const plainToken = randomBytes(48).toString("hex");
+        const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+        const safeUser = sanitizeUser(user);
+        res.json({ ...safeUser, deviceToken: plainToken });
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");

@@ -21,6 +21,7 @@ import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricButton } from "@/components/BiometricButton";
+import { QuickPinButton } from "@/components/QuickPinButton";
 
 export default function Login() {
   const [location] = useLocation();
@@ -978,6 +979,7 @@ export default function Login() {
                     <div className="flex-1 h-px bg-black/[0.07]" />
                   </div>
                   <BiometricButton prefillIdentifier={form.watch("username") || ""} />
+                  <QuickPinButton prefillIdentifier={form.watch("username") || ""} />
                 </>
               )}
             </form>
