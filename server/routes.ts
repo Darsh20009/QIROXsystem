@@ -6273,6 +6273,19 @@ export async function registerRoutes(
   // ═══════════════════════════════════════════════════════════
   // === STORE PUBLISH CONFIG ===
   // ═══════════════════════════════════════════════════════════
+
+  // Public: returns only download URLs + enabled flags (no auth needed)
+  app.get("/api/app-downloads", async (req, res) => {
+    const { StorePublishConfigModel } = await import("./models");
+    const cfg = await StorePublishConfigModel.findOne();
+    res.json({
+      playStore:   { url: cfg?.playStoreUrl || "", enabled: cfg?.playStoreEnabled ?? false },
+      appStore:    { url: cfg?.appStoreUrl || "", enabled: cfg?.appStoreEnabled ?? false },
+      msStore:     { url: cfg?.msStoreUrl || "", enabled: cfg?.msStoreEnabled ?? false },
+      huaweiStore: { url: cfg?.huaweiStoreUrl || "", enabled: cfg?.huaweiStoreEnabled ?? false },
+    });
+  });
+
   app.get("/api/admin/store-publish-config", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     const { StorePublishConfigModel } = await import("./models");

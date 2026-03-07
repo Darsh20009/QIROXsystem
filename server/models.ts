@@ -1295,6 +1295,11 @@ const storePublishConfigSchema = new mongoose.Schema({
   appStoreUrl:        { type: String, default: "" },
   huaweiStoreUrl:     { type: String, default: "" },
   msStoreUrl:         { type: String, default: "" },
+  // Public download visibility (false = "coming soon")
+  playStoreEnabled:   { type: Boolean, default: false },
+  appStoreEnabled:    { type: Boolean, default: false },
+  msStoreEnabled:     { type: Boolean, default: false },
+  huaweiStoreEnabled: { type: Boolean, default: false },
 }, { timestamps: true });
 storePublishConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const StorePublishConfigModel = mongoose.models.StorePublishConfig || mongoose.model("StorePublishConfig", storePublishConfigSchema);

@@ -11,8 +11,9 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone
 } from "lucide-react";
+import { SiGoogleplay, SiApple, SiMicrosoft } from "react-icons/si";
 
 type Settings = {
   companyName: string; companyNameAr: string; domain: string;
@@ -40,7 +41,19 @@ const EMPTY: Settings = {
   profitDistribution: [],
 };
 
-type Section = "company" | "contact" | "social" | "financial" | "distribution";
+type StoreConfig = {
+  playStoreUrl: string; playStoreEnabled: boolean;
+  appStoreUrl: string;  appStoreEnabled: boolean;
+  msStoreUrl: string;   msStoreEnabled: boolean;
+};
+
+const EMPTY_STORE: StoreConfig = {
+  playStoreUrl: "", playStoreEnabled: false,
+  appStoreUrl: "",  appStoreEnabled: false,
+  msStoreUrl: "",   msStoreEnabled: false,
+};
+
+type Section = "company" | "contact" | "social" | "financial" | "distribution" | "appdownload";
 
 export default function AdminQiroxSettings() {
   const { toast } = useToast();
@@ -60,6 +73,35 @@ export default function AdminQiroxSettings() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/qirox-settings"] });
       setDirty(false);
       toast({ title: "✅ تم حفظ الإعدادات بنجاح" });
+    },
+    onError: () => toast({ title: "فشل الحفظ", variant: "destructive" }),
+  });
+
+  // Store Config (app downloads)
+  const [store, setStore] = useState<StoreConfig>(EMPTY_STORE);
+  const [storeDirty, setStoreDirty] = useState(false);
+  const { data: storeData } = useQuery<any>({ queryKey: ["/api/admin/store-publish-config"] });
+  useEffect(() => {
+    if (storeData) {
+      setStore({
+        playStoreUrl: storeData.playStoreUrl || "",
+        playStoreEnabled: storeData.playStoreEnabled ?? false,
+        appStoreUrl: storeData.appStoreUrl || "",
+        appStoreEnabled: storeData.appStoreEnabled ?? false,
+        msStoreUrl: storeData.msStoreUrl || "",
+        msStoreEnabled: storeData.msStoreEnabled ?? false,
+      });
+      setStoreDirty(false);
+    }
+  }, [storeData]);
+  const setS = (k: keyof StoreConfig, v: any) => { setStore(s => ({ ...s, [k]: v })); setStoreDirty(true); };
+  const saveStoreMutation = useMutation({
+    mutationFn: () => apiRequest("PUT", "/api/admin/store-publish-config", store),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/store-publish-config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/app-downloads"] });
+      setStoreDirty(false);
+      toast({ title: "✅ تم حفظ روابط التحميل بنجاح" });
     },
     onError: () => toast({ title: "فشل الحفظ", variant: "destructive" }),
   });
@@ -85,6 +127,7 @@ export default function AdminQiroxSettings() {
     { id: "social", label: "السوشيال ميديا", icon: Globe, color: "text-purple-500" },
     { id: "financial", label: "التقييم المالي", icon: DollarSign, color: "text-amber-500" },
     { id: "distribution", label: "توزيع الأرباح", icon: BarChart3, color: "text-cyan-500" },
+    { id: "appdownload", label: "تحميل التطبيق", icon: Smartphone, color: "text-violet-500" },
   ];
 
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
@@ -285,15 +328,111 @@ export default function AdminQiroxSettings() {
               )}
             </div>
           )}
+          {/* App Downloads */}
+          {section === "appdownload" && (
+            <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-6 bg-white dark:bg-gray-900">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-violet-500" />
+                <h3 className="font-bold text-black dark:text-white">روابط تحميل التطبيق</h3>
+              </div>
+              <p className="text-xs text-black/40 dark:text-white/40">
+                هذه الروابط ستظهر في الفوتر للزوار. إذا أضفت رابطاً وفعّلت النشر، يظهر زر التحميل. إذا أضفت الرابط فقط بدون تفعيل، يظهر كـ "قريباً".
+              </p>
+
+              {[
+                {
+                  key: "playStore" as const,
+                  label: "Google Play (Android)",
+                  urlKey: "playStoreUrl" as const,
+                  enabledKey: "playStoreEnabled" as const,
+                  icon: <SiGoogleplay className="w-5 h-5 text-white" />,
+                  iconBg: "bg-[#01875f]",
+                  placeholder: "https://play.google.com/store/apps/details?id=...",
+                },
+                {
+                  key: "appStore" as const,
+                  label: "App Store (iOS / Apple)",
+                  urlKey: "appStoreUrl" as const,
+                  enabledKey: "appStoreEnabled" as const,
+                  icon: <SiApple className="w-5 h-5 text-white" />,
+                  iconBg: "bg-black",
+                  placeholder: "https://apps.apple.com/app/...",
+                },
+                {
+                  key: "msStore" as const,
+                  label: "Microsoft Store (Windows)",
+                  urlKey: "msStoreUrl" as const,
+                  enabledKey: "msStoreEnabled" as const,
+                  icon: <SiMicrosoft className="w-5 h-5 text-white" />,
+                  iconBg: "bg-[#0078d4]",
+                  placeholder: "https://apps.microsoft.com/store/detail/...",
+                },
+              ].map(p => (
+                <div key={p.key} className="border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-9 h-9 ${p.iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                      {p.icon}
+                    </span>
+                    <span className="font-semibold text-sm text-black dark:text-white">{p.label}</span>
+                    {store[p.enabledKey] && store[p.urlKey] && (
+                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">نشط — يظهر في الفوتر</span>
+                    )}
+                    {!store[p.enabledKey] && store[p.urlKey] && (
+                      <span className="mr-auto text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-medium">قريباً — يظهر معطّلاً</span>
+                    )}
+                    {!store[p.urlKey] && (
+                      <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.08] dark:border-white/[0.08] px-2 py-0.5 rounded-full font-medium">مخفي — لا رابط</span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="label-xs">رابط الصفحة في المتجر</label>
+                    <Input
+                      value={store[p.urlKey]}
+                      onChange={e => setS(p.urlKey, e.target.value)}
+                      placeholder={p.placeholder}
+                      dir="ltr"
+                      data-testid={`input-${p.key}-url`}
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer select-none" data-testid={`toggle-${p.key}-enabled`}>
+                    <div
+                      onClick={() => setS(p.enabledKey, !store[p.enabledKey])}
+                      className={`relative w-10 h-5 rounded-full transition-colors duration-200 flex-shrink-0 ${store[p.enabledKey] ? "bg-green-500" : "bg-black/15 dark:bg-white/15"}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${store[p.enabledKey] ? "right-0.5" : "left-0.5"}`} />
+                    </div>
+                    <span className="text-sm text-black/60 dark:text-white/60">
+                      {store[p.enabledKey] ? "مفعّل — زر التحميل يعمل" : "قريباً — زر معطّل بشارة \"قريباً\""}
+                    </span>
+                  </label>
+                </div>
+              ))}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={() => saveStoreMutation.mutate()}
+                  disabled={!storeDirty || saveStoreMutation.isPending}
+                  data-testid="btn-save-store"
+                  className="gap-2 bg-gradient-to-l from-violet-600 to-purple-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-500/20"
+                >
+                  {saveStoreMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  {saveStoreMutation.isPending ? "جارٍ الحفظ..." : "حفظ روابط التحميل"}
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
 
-        {/* Save Button */}
+        {/* Save Button — only for non-appdownload sections */}
+        {section !== "appdownload" && (
         <div className="flex justify-end pb-8">
           <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-blue-500/20" data-testid="btn-save-settings">
             {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
           </Button>
         </div>
+        )}
       </div>
 
       <style>{`.label-xs { display: block; font-size: 11px; color: rgba(0,0,0,0.4); margin-bottom: 4px; font-weight: 500; }.dark .label-xs { color: rgba(255,255,255,0.4); }`}</style>

@@ -617,6 +617,21 @@ The application is a full-stack TypeScript project with a React frontend and Exp
   - Added `/api/badges` query (refreshes every 30s)
   - Badge counts (red dot + number) shown on: Inbox, Support Tickets, Orders — in both employee and admin sections
 
+## Previous Changes (Mar 7, 2026 - Session 20)
+
+### New Feature: App Download Links in Footer
+Admins can configure Google Play, App Store, and Microsoft Store links. Each can be "active" (clickable badge) or "coming soon" (disabled badge). Shown in footer only when at least one URL is configured.
+
+**Backend (server/models.ts)**
+- Added `playStoreEnabled`, `appStoreEnabled`, `msStoreEnabled`, `huaweiStoreEnabled` boolean fields to `StorePublishConfigModel`
+
+**Backend (server/routes.ts)**
+- Added `GET /api/app-downloads` — public endpoint, no auth, returns `{ playStore, appStore, msStore, huaweiStore }` with `url` and `enabled` per platform
+
+**Updated Files**
+- `Footer.tsx` — fetches `/api/app-downloads`, renders download buttons with official brand icons (SiGoogleplay, SiApple, SiMicrosoft); active = clickable dark button; coming soon = disabled grayed button with "قريباً" badge; hidden if no URL configured
+- `AdminQiroxSettings.tsx` — added "تحميل التطبيق" tab (section: `appdownload`) with URL input + enabled/coming-soon toggle per platform; separate save button with its own mutation for StorePublishConfig; status indicators (نشط / قريباً / مخفي)
+
 ## Previous Changes (Mar 7, 2026 - Session 19)
 
 ### New Feature: Switch Reminder (تذكير التحويل)
