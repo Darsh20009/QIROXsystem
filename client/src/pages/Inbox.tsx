@@ -12,6 +12,7 @@ import {
   ArrowRight, Phone, MoreVertical, Smile, Trash2
 } from "lucide-react";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
+import { UserAvatar } from "@/components/UserAvatar";
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -61,17 +62,23 @@ function getRoleGradient(role?: string) {
 }
 
 // ─────────────────────────────────────────────────────────
-// Avatar
+// Avatar (uses UserAvatar for photo/custom avatar support)
 // ─────────────────────────────────────────────────────────
-function Avatar({ name, role, online, size = "md" }: { name: string; role?: string; online?: boolean; size?: "sm" | "md" | "lg" }) {
-  const grad = getRoleGradient(role);
-  const sz = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-10 h-10 text-sm";
+function Avatar({ name, role, online, size = "md", profilePhotoUrl, avatarConfig }: {
+  name: string; role?: string; online?: boolean; size?: "sm" | "md" | "lg";
+  profilePhotoUrl?: string; avatarConfig?: string;
+}) {
+  const avatarSize = size === "sm" ? "sm" : size === "lg" ? "lg" : "md";
   const dotSz = size === "sm" ? "w-2 h-2 border" : "w-2.5 h-2.5 border-2";
   return (
     <div className="relative flex-shrink-0">
-      <div className={`${sz} rounded-full bg-gradient-to-br ${grad} flex items-center justify-center font-black text-white shadow-sm`}>
-        {(name || "?")[0].toUpperCase()}
-      </div>
+      <UserAvatar
+        profilePhotoUrl={profilePhotoUrl}
+        avatarConfig={avatarConfig}
+        name={name}
+        role={role}
+        size={avatarSize as any}
+      />
       {online !== undefined && (
         <div className={`absolute bottom-0 left-0 ${dotSz} rounded-full border-white dark:border-gray-900 ${online ? "bg-emerald-400" : "bg-gray-300 dark:bg-gray-600"}`} />
       )}
@@ -174,7 +181,7 @@ function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boole
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} size="sm" />}
+      {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} size="sm" profilePhotoUrl={contact?.profilePhotoUrl} avatarConfig={contact?.avatarConfig} />}
 
       <div className={`max-w-[72%] sm:max-w-[60%] rounded-2xl overflow-hidden shadow-sm ${
         isMe
@@ -395,6 +402,8 @@ export default function Inbox() {
           id: oid,
           fullName: other?.fullName || other?.username || "مستخدم",
           role: other?.role || "client",
+          profilePhotoUrl: other?.profilePhotoUrl || "",
+          avatarConfig: other?.avatarConfig || "",
           lastMsg: msg.body || (msg.attachmentType === "voice" ? "🎙️ رسالة صوتية" : msg.attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق"),
           lastAt: msg.createdAt,
           unread: 0,
@@ -590,7 +599,7 @@ export default function Inbox() {
             <button onClick={backToContacts} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300" data-testid="button-back-to-contacts">
               <ArrowRight className="w-4 h-4" />
             </button>
-            <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} size="sm" />
+            <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} size="sm" profilePhotoUrl={activeContact.profilePhotoUrl} avatarConfig={activeContact.avatarConfig} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{activeContact.fullName}</p>
               <p className="text-[10px] text-gray-400">
@@ -711,7 +720,7 @@ export default function Inbox() {
                       }`}
                       data-testid={`contact-${c.id}`}
                     >
-                      <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" />
+                      <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" profilePhotoUrl={c.profilePhotoUrl} avatarConfig={c.avatarConfig} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
                           <p className={`text-xs font-bold truncate ${isActive ? "text-violet-700 dark:text-violet-300" : "text-gray-800 dark:text-gray-100"}`}>{c.fullName}</p>
@@ -755,7 +764,7 @@ export default function Inbox() {
             <>
               {/* ── Chat Header (desktop only) ── */}
               <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-5 py-3 items-center gap-3 flex-shrink-0 shadow-sm">
-                <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} />
+                <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} profilePhotoUrl={activeContact.profilePhotoUrl} avatarConfig={activeContact.avatarConfig} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
                   <div className="flex items-center gap-1.5 h-4">

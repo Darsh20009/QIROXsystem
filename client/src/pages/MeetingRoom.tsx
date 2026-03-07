@@ -13,8 +13,9 @@ import {
   PhoneOff, MessageSquare, X, Send, Users, Copy, Check,
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
-  Layout, ExternalLink, CheckCircle2, XCircle, Bell
+  Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
@@ -180,6 +181,34 @@ export default function MeetingRoom() {
   const [drawSize, setDrawSize] = useState(3);
   const [drawMode, setDrawMode] = useState<"pen" | "eraser">("pen");
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Emoji reactions
+  type FloatingReaction = { id: string; emoji: string; name: string; x: number; };
+  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [raisedHand, setRaisedHand] = useState(false);
+  const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
+  const REACTION_EMOJIS = ["👍","❤️","😂","🎉","👏","🔥","🚀","😮"];
+
+  const addFloating = (emoji: string, name: string) => {
+    const id = Math.random().toString(36).slice(2);
+    const x = 20 + Math.random() * 60;
+    setFloatingReactions(prev => [...prev, { id, emoji, name, x }]);
+    setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
+  };
+
+  const sendReaction = (emoji: string) => {
+    setShowEmojiPicker(false);
+    addFloating(emoji, "أنت");
+    sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName });
+  };
+
+  const toggleRaiseHand = () => {
+    const newVal = !raisedHand;
+    setRaisedHand(newVal);
+    sendWs({ type: "webrtc_raise_hand", roomId, raised: newVal, name: userName, userId });
+    if (newVal) addFloating("🙋", "أنت");
+  };
 
   // Page viewer states
   const [selectedPage, setSelectedPage] = useState(SYSTEM_PAGES[0].path);
@@ -387,6 +416,19 @@ export default function MeetingRoom() {
         });
         toast({ title: "طلب انضمام جديد", description: `${data.userName} يطلب الدخول للاجتماع` });
         setActivePanel("requests");
+        break;
+      }
+      case "webrtc_reaction": {
+        addFloating(data.emoji, data.name || "مشارك");
+        break;
+      }
+      case "webrtc_raise_hand": {
+        setRaisedHands(prev => {
+          const next = new Set(prev);
+          if (data.raised) { next.add(data.userId || data.name); addFloating("🙋", data.name || "مشارك"); }
+          else next.delete(data.userId || data.name);
+          return next;
+        });
         break;
       }
     }
@@ -782,7 +824,7 @@ export default function MeetingRoom() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-gray-950 flex flex-col relative" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-white/[0.06] shrink-0">
         <div className="flex items-center gap-3">
@@ -1154,6 +1196,52 @@ export default function MeetingRoom() {
         )}
       </div>
 
+      {/* Floating reactions overlay */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+        <AnimatePresence>
+          {floatingReactions.map(r => (
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 0, y: 0, scale: 0.5 }}
+              animate={{ opacity: 1, y: -220, scale: 1.2 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 2.8, ease: "easeOut" }}
+              className="absolute bottom-20 flex flex-col items-center gap-1"
+              style={{ left: `${r.x}%` }}
+            >
+              <span className="text-4xl filter drop-shadow-lg">{r.emoji}</span>
+              <span className="text-white/60 text-[10px] bg-black/40 rounded-full px-2 py-0.5 backdrop-blur-sm">{r.name}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Emoji Picker popup */}
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 bg-gray-800 border border-white/10 rounded-2xl p-3 shadow-2xl"
+          >
+            <div className="flex gap-2 flex-wrap justify-center max-w-[200px]">
+              {REACTION_EMOJIS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => sendReaction(emoji)}
+                  className="text-2xl hover:scale-125 transition-transform p-1 rounded-xl hover:bg-white/10"
+                  data-testid={`btn-reaction-${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Control bar — mobile-first */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-1 safe-area-bottom" style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
         {/* Panel toggles */}
@@ -1193,8 +1281,23 @@ export default function MeetingRoom() {
           </button>
         </div>
 
-        <div className="w-32 hidden md:flex justify-end">
-          <span className="text-white/20 text-[10px]">QMeet</span>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={toggleRaiseHand}
+            className={`p-2 sm:p-2.5 rounded-full border transition-all ${raisedHand ? "bg-amber-500 border-amber-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
+            title={raisedHand ? "إنزال اليد" : "رفع اليد"}
+            data-testid="button-raise-hand"
+          >
+            <Hand className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowEmojiPicker(p => !p)}
+            className={`p-2 sm:p-2.5 rounded-full border transition-all ${showEmojiPicker ? "bg-violet-500 border-violet-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
+            title="تفاعل بإيموجي"
+            data-testid="button-emoji-reaction"
+          >
+            <Smile className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

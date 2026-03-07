@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile } from "lucide-react";
 import { BiometricManager } from "@/components/BiometricManager";
+import { UserAvatar } from "@/components/UserAvatar";
+import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-auth";
 
 interface Profile {
   id: string;
@@ -24,13 +28,24 @@ interface Profile {
   nationalId?: string;
   hireDate?: string;
   jobTitle?: string;
+  profilePhotoUrl?: string;
+  avatarConfig?: string;
 }
+
+type PhotoTab = "photo" | "avatar";
 
 export default function EmployeeProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: user } = useUser();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Partial<Profile>>({});
   const [newSkill, setNewSkill] = useState("");
+  const [photoTab, setPhotoTab] = useState<PhotoTab>("photo");
+  const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["/api/employee/profile"],
@@ -51,8 +66,49 @@ export default function EmployeeProfile() {
   });
 
   useEffect(() => {
-    if (profile) setForm(profile);
+    if (profile) {
+      setForm(profile);
+      if (profile.avatarConfig) {
+        try { setAvatarCfg(JSON.parse(profile.avatarConfig)); } catch {}
+      }
+    }
   }, [profile]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast({ title: "الصورة كبيرة جداً — الحد الأقصى 1.5 MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string;
+      setPhotoPreview(base64);
+      setSavingPhoto(true);
+      try {
+        await apiRequest("POST", "/api/profile/photo", { photoBase64: base64 });
+        queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        toast({ title: "✅ تم رفع الصورة" });
+      } catch {
+        toast({ title: "فشل رفع الصورة", variant: "destructive" });
+      } finally { setSavingPhoto(false); }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveAvatar = async () => {
+    setSavingAvatar(true);
+    try {
+      await apiRequest("POST", "/api/profile/avatar-config", { avatarConfig: JSON.stringify(avatarCfg) });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "✅ تم حفظ الأفاتار" });
+    } catch {
+      toast({ title: "فشل الحفظ", variant: "destructive" });
+    } finally { setSavingAvatar(false); }
+  };
 
   const saveMutation = useMutation({
     mutationFn: () => apiRequest("PATCH", "/api/employee/profile", form).then(r => r.json()),
@@ -100,6 +156,75 @@ export default function EmployeeProfile() {
           حفظ
         </Button>
       </div>
+
+      {/* Photo & Avatar Section */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <Camera className="w-4 h-4" /> صورتي الشخصية
+            </h3>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} data-testid="input-photo-employee" />
+          <div className="flex gap-2 mb-4 p-1 bg-black/5 dark:bg-white/5 rounded-xl">
+            {(["photo", "avatar"] as PhotoTab[]).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setPhotoTab(tab)}
+                data-testid={`tab-employee-${tab}`}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  photoTab === tab
+                    ? "bg-white dark:bg-white/10 text-black dark:text-white shadow-sm"
+                    : "text-black/50 dark:text-white/40"
+                }`}
+              >
+                {tab === "photo" ? <><Camera className="w-3.5 h-3.5" />رفع صورة</> : <><Smile className="w-3.5 h-3.5" />أفاتار</>}
+              </button>
+            ))}
+          </div>
+          <AnimatePresence mode="wait">
+            {photoTab === "photo" ? (
+              <motion.div key="photo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <UserAvatar
+                    profilePhotoUrl={photoPreview ?? profile?.profilePhotoUrl}
+                    avatarConfig={profile?.avatarConfig}
+                    name={user?.fullName}
+                    role={user?.role}
+                    size="2xl"
+                    showRing
+                  />
+                  {savingPhoto && (
+                    <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={savingPhoto}
+                  size="sm"
+                  className="gap-2 bg-black dark:bg-white text-white dark:text-black"
+                  data-testid="btn-upload-photo-employee"
+                >
+                  {savingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                  {photoPreview || profile?.profilePhotoUrl ? "تغيير الصورة" : "رفع صورة"}
+                </Button>
+                <p className="text-xs text-black/30 dark:text-white/30">JPG أو PNG، الحد الأقصى 1.5MB</p>
+              </motion.div>
+            ) : (
+              <motion.div key="avatar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <AvatarBuilder
+                  config={avatarCfg}
+                  onChange={setAvatarCfg}
+                  onSave={saveAvatar}
+                  saving={savingAvatar}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
 
       {/* Vacation Summary */}
       <div className="grid grid-cols-3 gap-4">

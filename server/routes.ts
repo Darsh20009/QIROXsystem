@@ -1523,8 +1523,8 @@ export async function registerRoutes(
     const { ProjectIssueModel } = await import("./models");
     try {
       const issues = await ProjectIssueModel.find({ projectId: req.params.projectId })
-        .populate('fromUserId', 'fullName username role')
-        .populate('toUserId', 'fullName username role')
+        .populate('fromUserId', 'fullName username role profilePhotoUrl avatarConfig')
+        .populate('toUserId', 'fullName username role profilePhotoUrl avatarConfig')
         .sort({ createdAt: -1 }).lean();
       res.json(issues);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
@@ -1559,8 +1559,8 @@ export async function registerRoutes(
       const updates: any = { ...req.body };
       if (updates.status === 'resolved') updates.resolvedAt = new Date();
       const updated = await ProjectIssueModel.findByIdAndUpdate(req.params.iid, updates, { new: true })
-        .populate('fromUserId', 'fullName username role')
-        .populate('toUserId', 'fullName username role');
+        .populate('fromUserId', 'fullName username role profilePhotoUrl avatarConfig')
+        .populate('toUserId', 'fullName username role profilePhotoUrl avatarConfig');
       res.json(updated);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -3768,8 +3768,8 @@ export async function registerRoutes(
       $or: [{ fromUserId: uid }, { toUserId: uid }],
       deletedBy: { $ne: uid },
     })
-      .populate("fromUserId", "username fullName role")
-      .populate("toUserId", "username fullName role")
+      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
+      .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig")
       .sort({ createdAt: -1 })
       .limit(100);
     res.json(msgs);
@@ -3829,7 +3829,7 @@ export async function registerRoutes(
     const msgs = await InboxMessageModel.find({
       $or: [{ fromUserId: me, toUserId: other }, { fromUserId: other, toUserId: me }],
       deletedBy: { $ne: me },
-    }).populate("fromUserId", "username fullName role").sort({ createdAt: 1 }).limit(200);
+    }).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig").sort({ createdAt: 1 }).limit(200);
     await InboxMessageModel.updateMany({ fromUserId: other, toUserId: me, read: false }, { read: true });
     res.json(msgs);
   });
@@ -3862,8 +3862,8 @@ export async function registerRoutes(
       sendMessageNotificationEmail(toUser.email, toUser.fullName || toUser.username, me.fullName || me.username, notifBody).catch(console.error);
     }
     const populated = await InboxMessageModel.findById(msg._id)
-      .populate("fromUserId", "username fullName role")
-      .populate("toUserId", "username fullName role");
+      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
+      .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig");
     // Push via WebSocket for real-time delivery
     pushToUser(String(toUserId), { type: "new_message", message: populated });
     res.status(201).json(populated);
@@ -4016,7 +4016,7 @@ export async function registerRoutes(
     if (!session) return res.sendStatus(404);
     if (me.role === 'client' && String(session.clientId) !== String(me.id)) return res.sendStatus(403);
     const msgs = await InboxMessageModel.find({ csSessionId: session._id })
-      .populate("fromUserId", "username fullName role")
+      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
       .sort({ createdAt: 1 }).limit(300);
     // Mark messages from other party as read
     const otherId = me.role === 'client' ? session.agentId : session.clientId;
@@ -4060,7 +4060,7 @@ export async function registerRoutes(
       const msg = await InboxMessageModel.create(msgData);
       session.lastMessageAt = new Date();
       await session.save();
-      const populated = await InboxMessageModel.findById(msg._id).populate("fromUserId", "username fullName role");
+      const populated = await InboxMessageModel.findById(msg._id).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig");
       // Push via WebSocket
       const notifBody = body?.trim() || (attachmentType === "voice" ? "🎙️ رسالة صوتية" : attachmentType === "image" ? "🖼️ صورة" : "📎 مرفق");
       if (toUserId) {
@@ -6414,6 +6414,72 @@ export async function registerRoutes(
       const updated = await UserModel.findByIdAndUpdate(req.params.id, {
         $set: { ...(jobTitle !== undefined && { jobTitle }), ...(bio !== undefined && { bio }), ...(profilePhotoUrl !== undefined && { profilePhotoUrl }), ...(additionalRoles !== undefined && { additionalRoles }) }
       }, { new: true }).select("-password");
+      res.json(updated);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // Avatar config save (JSON)
+  app.post("/api/profile/avatar-config", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const { avatarConfig } = req.body;
+      if (!avatarConfig || typeof avatarConfig !== "string") return res.status(400).json({ error: "avatarConfig مطلوب" });
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { avatarConfig } }, { new: true }).select("-password");
+      res.json({ success: true, avatarConfig: updated?.avatarConfig });
+    } catch (e) { res.status(500).json({ error: "فشل الحفظ" }); }
+  });
+
+  // Profile photo save (base64 string)
+  app.post("/api/profile/photo", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const { photoBase64 } = req.body;
+      if (!photoBase64 || typeof photoBase64 !== "string") return res.status(400).json({ error: "photoBase64 مطلوب" });
+      if (photoBase64.length > 2_000_000) return res.status(413).json({ error: "الصورة كبيرة جداً (max 1.5MB)" });
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl: photoBase64 } }, { new: true }).select("-password");
+      res.json({ success: true, profilePhotoUrl: updated?.profilePhotoUrl });
+    } catch (e) { res.status(500).json({ error: "فشل رفع الصورة" }); }
+  });
+
+  // Remove profile photo
+  app.delete("/api/profile/photo", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl: "" } });
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "فشل الحذف" }); }
+  });
+
+  // Get full profile (photo + avatar + social)
+  app.get("/api/profile/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const user = await UserModel.findById(uid).select("-password -walletPin -walletCardNumber -quickPin");
+      if (!user) return res.sendStatus(404);
+      res.json(user);
+    } catch (e) { res.status(500).json({ error: "فشل جلب الملف الشخصي" }); }
+  });
+
+  // Update full profile (social links + bio + jobTitle)
+  app.patch("/api/profile/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const uid = (req.user as any)._id || (req.user as any).id;
+      const allowed = ["fullName", "bio", "jobTitle", "phone", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube"];
+      const update: any = {};
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) update[key] = req.body[key];
+      }
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: update }, { new: true }).select("-password -walletPin -walletCardNumber -quickPin");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });

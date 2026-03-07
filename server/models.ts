@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema({
   trustedUntil: Date,
   quickPin: { type: String, select: false },
   quickPinSetAt: { type: Date, select: false },
+  avatarConfig: { type: String, default: "" },
+  instagram: { type: String, default: "" },
+  twitter: { type: String, default: "" },
+  linkedin: { type: String, default: "" },
+  snapchat: { type: String, default: "" },
+  tiktok: { type: String, default: "" },
+  youtube: { type: String, default: "" },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({

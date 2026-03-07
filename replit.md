@@ -10,6 +10,28 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 7, 2026 - Session 41)
+
+### ملف شخصي إبداعي + أفاتار + QMeet تفاعلي
+
+**المكونات الجديدة:**
+- `client/src/components/AvatarBuilder.tsx` — بناء أفاتار SVG مخصص (9 فئات: خلفية، وجه، بشرة، شعر+لون، عيون، حواجب، فم، إكسسوار)
+- `client/src/components/UserAvatar.tsx` — مكون عرض الصورة/الأفاتار بالأولوية: صورة→أفاتار SVG→حرف أولي
+
+**الصفحات الجديدة:**
+- `client/src/pages/ClientProfile.tsx` — صفحة ملف شخصي إبداعية للعميل: بطاقة هيرو، رفع صورة، بناء أفاتار، إحصائيات، شارات (gamification)، روابط التواصل الاجتماعي
+
+**Backend:**
+- `server/models.ts` — أضيفت حقول: `avatarConfig`, `instagram`, `twitter`, `linkedin`, `snapchat`, `tiktok`, `youtube`
+- `server/routes.ts` — API جديدة: `POST /api/profile/photo`, `POST /api/profile/avatar-config`, `DELETE /api/profile/photo`, `GET /api/profile/me`, `PATCH /api/profile/me`
+
+**التحديثات:**
+- `EmployeeProfile.tsx` — قسم رفع صورة + بناء أفاتار بتبديل تبويب
+- `Inbox.tsx` — يعرض صور المستخدمين الحقيقية/أفاتارهم بجانب رسائل الشات
+- `MeetingRoom.tsx` — تفاعلات إيموجي طائرة (8 ردود فعل) + رفع اليد 🙋 + بث الإيموجي عبر WebSocket
+- `App.tsx` — مسار `/profile` جديد
+- `app-sidebar.tsx` — رابط "ملفي الشخصي" للعملاء
+
 ## Latest Changes (Mar 7, 2026 - Session 40)
 
 ### أدواتي ومميزاتي — 50 أداة جديدة (My Tools — 50 New Tools)

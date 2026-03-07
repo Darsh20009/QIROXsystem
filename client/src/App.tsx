@@ -105,6 +105,7 @@ const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
 const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
 const MyTools = lazy(() => import("@/pages/MyTools"));
 const ToolPage = lazy(() => import("@/pages/ToolPage"));
+const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
 const AdminQiroxSettings = lazy(() => import("@/pages/AdminQiroxSettings"));
 const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
 const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
@@ -216,6 +217,7 @@ function AdminRouter() {
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />
+        <Route path="/profile" component={ClientProfile} />
         <Route path="/employee/new-order" component={EmployeeNewOrder} />
         <Route path="/employee/checklist" component={DevChecklist} />
         <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
