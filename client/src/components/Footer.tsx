@@ -63,59 +63,11 @@ export default function Footer() {
             <p className="text-black/40 dark:text-white/40 text-[15px] leading-[1.8] max-w-sm mb-8">
               {t("footer.description")}
             </p>
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-4">
               <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium">الرياض</span>
               <span className="w-1 h-1 rounded-full bg-black/10 dark:bg-white/10" />
               <span className="text-[11px] tracking-[3px] uppercase text-black/30 dark:text-white/30 font-medium">القاهرة</span>
             </div>
-
-            {/* App Download Buttons */}
-            {STORES.length > 0 && (
-              <div>
-                <p className="text-[10px] tracking-[2px] uppercase text-black/25 dark:text-white/25 font-medium mb-3">
-                  {lang === "ar" ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {STORES.map(store => (
-                    store.enabled ? (
-                      <a
-                        key={store.key}
-                        href={store.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid={`footer-download-${store.key}`}
-                        className="flex items-center gap-2.5 bg-black dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 border border-white/5 text-white rounded-xl px-3 py-2 transition-all duration-200 group"
-                      >
-                        <span className={`${store.iconBg} w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          {store.icon}
-                        </span>
-                        <div className="leading-tight">
-                          <p className="text-[9px] text-white/40 group-hover:text-white/60 transition-colors">{store.label}</p>
-                          <p className="text-[11px] font-bold text-white whitespace-nowrap">{store.name}</p>
-                        </div>
-                      </a>
-                    ) : (
-                      <div
-                        key={store.key}
-                        data-testid={`footer-coming-soon-${store.key}`}
-                        className="relative flex items-center gap-2.5 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-2 cursor-default overflow-hidden"
-                      >
-                        <span className="w-7 h-7 rounded-lg bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0 text-black/20 dark:text-white/20">
-                          {store.icon}
-                        </span>
-                        <div className="leading-tight">
-                          <p className="text-[9px] text-black/25 dark:text-white/25">{store.label}</p>
-                          <p className="text-[11px] font-bold text-black/40 dark:text-white/40 whitespace-nowrap">{store.name}</p>
-                        </div>
-                        <span className="absolute top-1 left-1 text-[8px] font-bold bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md leading-none">
-                          {lang === "ar" ? "قريباً" : "Soon"}
-                        </span>
-                      </div>
-                    )
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="md:col-span-2 md:col-start-7">
@@ -175,6 +127,57 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        {/* App Download Strip — shown above the copyright bar */}
+        {STORES.length > 0 && (
+          <>
+            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+              <p className="text-[11px] tracking-[2px] uppercase text-black/25 dark:text-white/25 font-medium flex-shrink-0">
+                {lang === "ar" ? "حمّل تطبيق كيروكس" : "Download Qirox App"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {STORES.map(store => (
+                  store.enabled ? (
+                    <a
+                      key={store.key}
+                      href={store.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`footer-download-${store.key}`}
+                      className="flex items-center gap-2.5 bg-black dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 border border-white/5 text-white rounded-xl px-3 py-2 transition-all duration-200 group"
+                    >
+                      <span className={`${store.iconBg} w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0`}>
+                        {store.icon}
+                      </span>
+                      <div className="leading-tight">
+                        <p className="text-[9px] text-white/40 group-hover:text-white/60 transition-colors">{store.label}</p>
+                        <p className="text-[11px] font-bold text-white whitespace-nowrap">{store.name}</p>
+                      </div>
+                    </a>
+                  ) : (
+                    <div
+                      key={store.key}
+                      data-testid={`footer-coming-soon-${store.key}`}
+                      className="relative flex items-center gap-2.5 bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.07] dark:border-white/[0.07] rounded-xl px-3 py-2 cursor-default overflow-hidden"
+                    >
+                      <span className="w-7 h-7 rounded-lg bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0 text-black/20 dark:text-white/20">
+                        {store.icon}
+                      </span>
+                      <div className="leading-tight">
+                        <p className="text-[9px] text-black/25 dark:text-white/25">{store.label}</p>
+                        <p className="text-[11px] font-bold text-black/40 dark:text-white/40 whitespace-nowrap">{store.name}</p>
+                      </div>
+                      <span className="absolute top-1 left-1 text-[8px] font-bold bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md leading-none">
+                        {lang === "ar" ? "قريباً" : "Soon"}
+                      </span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
 
