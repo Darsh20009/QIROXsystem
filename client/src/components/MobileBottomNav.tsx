@@ -4,10 +4,29 @@ import {
   LayoutDashboard, FileText, MessageSquare, Headphones, Wallet,
   ShoppingCart, BarChart3, Users, Wrench, User
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp } from "react-icons/si";
+
+const SOCIAL_DEFS = [
+  { key: "instagram", Icon: SiInstagram, color: "#E1306C" },
+  { key: "twitter",   Icon: SiX,         color: "#000000" },
+  { key: "linkedin",  Icon: SiLinkedin,  color: "#0077B5" },
+  { key: "snapchat",  Icon: SiSnapchat,  color: "#FFFC00" },
+  { key: "tiktok",    Icon: SiTiktok,    color: "#010101" },
+  { key: "youtube",   Icon: SiYoutube,   color: "#FF0000" },
+  { key: "whatsapp",  Icon: SiWhatsapp,  color: "#25D366" },
+];
 
 export function MobileBottomNav() {
   const [location] = useLocation();
   const { data: user } = useUser();
+
+  const { data: publicSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const socialLinks = SOCIAL_DEFS.filter(s => publicSettings?.[s.key]);
 
   if (!user) return null;
 
@@ -42,6 +61,30 @@ export function MobileBottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-t border-black/[0.06] dark:border-white/[0.06] safe-bottom">
+      {/* Social Links Strip */}
+      {socialLinks.length > 0 && (
+        <div className="flex items-center justify-center gap-3 px-4 py-1.5 border-b border-black/[0.04] dark:border-white/[0.04]">
+          {socialLinks.map(({ key, Icon, color }) => {
+            const url = publicSettings?.[key] || "";
+            const href = key === "whatsapp"
+              ? `https://wa.me/${url.replace(/[^0-9]/g, "")}`
+              : url.startsWith("http") ? url : `https://${url}`;
+            return (
+              <a
+                key={key}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid={`mobile-nav-social-${key}`}
+                className="flex items-center justify-center w-6 h-6 rounded-md transition-opacity hover:opacity-70"
+                style={{ color }}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </a>
+            );
+          })}
+        </div>
+      )}
       <div className="flex items-stretch justify-around h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {items.map((item) => {
           const isActive = location === item.url;

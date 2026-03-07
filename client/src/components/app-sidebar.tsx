@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp } from "react-icons/si";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];
 const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
@@ -159,6 +160,21 @@ export function AppSidebar() {
     queryKey: ["/api/attendance/status"],
     enabled: !!user && user.role !== "client",
   }) as { data: { checkIn?: string; checkOut?: string } | null };
+
+  const { data: publicSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const socialLinks = [
+    { key: "instagram",  Icon: SiInstagram,  color: "#E1306C", label: "Instagram" },
+    { key: "twitter",    Icon: SiX,          color: "#000000", label: "X" },
+    { key: "linkedin",   Icon: SiLinkedin,   color: "#0077B5", label: "LinkedIn" },
+    { key: "snapchat",   Icon: SiSnapchat,   color: "#FFFC00", label: "Snapchat" },
+    { key: "tiktok",     Icon: SiTiktok,     color: "#010101", label: "TikTok" },
+    { key: "youtube",    Icon: SiYoutube,    color: "#FF0000", label: "YouTube" },
+    { key: "whatsapp",   Icon: SiWhatsapp,   color: "#25D366", label: "WhatsApp" },
+  ].filter(s => publicSettings?.[s.key]);
 
   const { data: badges } = useQuery<{ messages: number; tickets: number; orders: number; total: number }>({
     queryKey: ["/api/badges"],
@@ -400,6 +416,32 @@ export function AppSidebar() {
         )}
       </SidebarContent>
       <SidebarFooter className="p-4 border-t border-black/[0.06] dark:border-white/[0.06] space-y-2">
+        {/* Social Media Links */}
+        {socialLinks.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 flex-wrap py-1">
+            {socialLinks.map(({ key, Icon, color, label }) => {
+              const url = publicSettings?.[key] || "";
+              const href = key === "whatsapp"
+                ? `https://wa.me/${url.replace(/[^0-9]/g, "")}`
+                : url.startsWith("http") ? url : `https://${url}`;
+              return (
+                <a
+                  key={key}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={label}
+                  data-testid={`sidebar-social-${key}`}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors"
+                  style={{ color }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </a>
+              );
+            })}
+          </div>
+        )}
+
         {/* Theme + Lang toggles */}
         <div className="flex items-center gap-2">
           <button

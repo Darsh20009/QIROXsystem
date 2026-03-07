@@ -6342,6 +6342,16 @@ export async function registerRoutes(
   // ══════════════ QIROX SYSTEM SETTINGS ═══════════════════════════════
   // ═══════════════════════════════════════════════════════════════════
 
+  app.get("/api/public/settings", async (_req, res) => {
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
+      if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, contactPhone, contactEmail, companyName, companyNameAr } = settings;
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, contactPhone, contactEmail, companyName, companyNameAr });
+    } catch { res.json({}); }
+  });
+
   app.get("/api/admin/qirox-settings", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as any;
