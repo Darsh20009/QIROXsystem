@@ -15,7 +15,7 @@ import { useI18n } from "@/lib/i18n";
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { SiGoogle } from "react-icons/si";
+import { SiGoogle, SiGithub } from "react-icons/si";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { CountryPhoneInput } from "@/components/CountryPhoneInput";
 import { CountrySelect } from "@/components/CountrySelect";
@@ -35,6 +35,9 @@ export default function Login() {
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleCallbackHandled = useRef(false);
+  const [githubEnabled, setGithubEnabled] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const githubCallbackHandled = useRef(false);
 
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
@@ -77,6 +80,42 @@ export default function Login() {
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
     window.location.href = "/api/auth/google";
+  };
+
+  // Check if GitHub OAuth is enabled on the server
+  useEffect(() => {
+    fetch("/api/auth/github/status", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setGithubEnabled(!!d.enabled))
+      .catch(() => {});
+  }, []);
+
+  // Handle GitHub OAuth callback
+  useEffect(() => {
+    if (githubCallbackHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const githubToken = params.get("githubToken");
+    const nextPath = params.get("next") || "/dashboard";
+    if (!githubToken) {
+      const githubError = params.get("error");
+      if (githubError && githubError.includes("github")) {
+        toast({ title: "فشل تسجيل الدخول بـ GitHub", description: "حدث خطأ أثناء الاتصال بـ GitHub، حاول مرة أخرى", variant: "destructive" });
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+      return;
+    }
+    githubCallbackHandled.current = true;
+    saveDeviceToken(githubToken);
+    window.history.replaceState({}, "", window.location.pathname);
+    setVerifyStep(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] }).then(() => {
+      setLocation(nextPath);
+    });
+  }, []);
+
+  const handleGithubLogin = () => {
+    setGithubLoading(true);
+    window.location.href = "/api/auth/github";
   };
 
   const identifierHints = ["user123", "name@email.com", "+966XXXXXXXXX"];
@@ -358,30 +397,51 @@ export default function Login() {
             ))}
           </div>
 
-          {/* Google login badge */}
-          {googleEnabled && !isEmployeeRegister && (
-            <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
-              {/* Google color top bar */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] flex">
-                <div className="flex-1 bg-[#4285F4]/70" />
-                <div className="flex-1 bg-[#EA4335]/70" />
-                <div className="flex-1 bg-[#FBBC05]/70" />
-                <div className="flex-1 bg-[#34A853]/70" />
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-md shadow-black/20">
-                <SiGoogle className="w-[18px] h-[18px] text-[#4285F4]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white text-xs font-bold">دخول سريع بـ Google</p>
-                <p className="text-white/30 text-[10px] mt-0.5">آمن · مشفّر · بضغطة واحدة</p>
-              </div>
-              {/* Live green dot */}
-              <span className="flex items-center gap-1 shrink-0">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34A853] opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34A853]" />
-                </span>
-              </span>
+          {/* Social login badges */}
+          {(googleEnabled || githubEnabled) && !isEmployeeRegister && (
+            <div className="flex flex-col gap-2">
+              {googleEnabled && (
+                <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+                  {/* Google color top bar */}
+                  <div className="absolute top-0 left-0 right-0 h-[2px] flex">
+                    <div className="flex-1 bg-[#4285F4]/70" />
+                    <div className="flex-1 bg-[#EA4335]/70" />
+                    <div className="flex-1 bg-[#FBBC05]/70" />
+                    <div className="flex-1 bg-[#34A853]/70" />
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-md shadow-black/20">
+                    <SiGoogle className="w-[18px] h-[18px] text-[#4285F4]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white text-xs font-bold">دخول سريع بـ Google</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">آمن · مشفّر · بضغطة واحدة</p>
+                  </div>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34A853] opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34A853]" />
+                    </span>
+                  </span>
+                </div>
+              )}
+              {githubEnabled && (
+                <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/20" />
+                  <div className="w-9 h-9 rounded-lg bg-[#24292e] flex items-center justify-center shrink-0 shadow-md shadow-black/20">
+                    <SiGithub className="w-[18px] h-[18px] text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white text-xs font-bold">دخول سريع بـ GitHub</p>
+                    <p className="text-white/30 text-[10px] mt-0.5">آمن · مشفّر · بضغطة واحدة</p>
+                  </div>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white/70" />
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -612,10 +672,10 @@ export default function Login() {
             )}
           </AnimatePresence>
 
-          {/* Google OAuth Button */}
-          {googleEnabled && !isEmployeeRegister && (
+          {/* Social OAuth Buttons */}
+          {(googleEnabled || githubEnabled) && !isEmployeeRegister && (
             <div className="mb-5">
-              <motion.button
+              {googleEnabled && <motion.button
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={googleLoading}
@@ -679,7 +739,48 @@ export default function Login() {
                   <div className="flex-1 bg-[#FBBC05]" />
                   <div className="flex-1 bg-[#34A853]" />
                 </div>
-              </motion.button>
+              </motion.button>}
+
+              {/* GitHub OAuth Button */}
+              {githubEnabled && (
+                <motion.button
+                  type="button"
+                  onClick={handleGithubLogin}
+                  disabled={githubLoading}
+                  data-testid="btn-github-login"
+                  whileHover={!githubLoading ? { y: -2 } : {}}
+                  whileTap={!githubLoading ? { y: 0, scale: 0.99 } : {}}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="w-full mt-3 relative overflow-hidden rounded-xl border border-black/[0.1] bg-[#24292e] flex items-center gap-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.12)" }}
+                >
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)", x: "-120%" }}
+                    whileHover={{ x: "120%" }}
+                    transition={{ duration: 0.45, ease: "easeInOut" }}
+                  />
+                  <div className="relative flex-shrink-0 w-[58px] h-[58px] flex items-center justify-center border-l border-white/10 bg-black/20">
+                    {githubLoading ? (
+                      <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="2.5" />
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <SiGithub className="w-[22px] h-[22px] text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1 px-4 py-3.5 text-right">
+                    <p className="text-white font-bold text-[14px] leading-snug">
+                      {githubLoading ? "جارٍ الاتصال بـ GitHub..." : isRegister ? "إنشاء حساب بـ GitHub" : "تسجيل الدخول بـ GitHub"}
+                    </p>
+                    {!githubLoading && (
+                      <p className="text-white/40 text-[10.5px] font-medium mt-0.5">دخول سريع · آمن · بضغطة واحدة</p>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10" />
+                </motion.button>
+              )}
 
               <div className="flex items-center gap-3 mt-4">
                 <div className="flex-1 h-px bg-black/[0.07]" />

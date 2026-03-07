@@ -241,6 +241,108 @@ export async function registerRoutes(
     app.get("/api/auth/google/status", (_req, res) => res.json({ enabled: GOOGLE_ENABLED }));
   }
   // ────────────────────────────────────────────────────────────────────────────
+  // === GITHUB OAUTH ===
+  {
+    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+    const GITHUB_ENABLED = !!(GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET);
+
+    if (GITHUB_ENABLED) {
+      const { Strategy: GitHubStrategy } = await import("passport-github2");
+      const passport = (await import("passport")).default;
+      const devDomain = process.env.REPLIT_DEV_DOMAIN;
+      const CALLBACK_URL =
+        process.env.NODE_ENV === "production"
+          ? "https://qiroxstudio.online/api/auth/github/callback"
+          : devDomain
+          ? `https://${devDomain}/api/auth/github/callback`
+          : `http://localhost:5000/api/auth/github/callback`;
+
+      passport.use(
+        new GitHubStrategy(
+          { clientID: GITHUB_CLIENT_ID!, clientSecret: GITHUB_CLIENT_SECRET!, callbackURL: CALLBACK_URL, scope: ["user:email"] },
+          async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
+            try {
+              const { UserModel } = await import("./models");
+              const email = (profile.emails?.[0]?.value || "").toLowerCase().trim()
+                || `github_${profile.id}@noemail.qirox`;
+
+              let user = await UserModel.findOne({ githubId: profile.id });
+              if (!user && email && !email.includes("@noemail.qirox")) {
+                user = await UserModel.findOne({ email });
+              }
+
+              if (user) {
+                if (!user.githubId) {
+                  user.githubId = profile.id;
+                  user.githubAvatarUrl = profile.photos?.[0]?.value || "";
+                  if (!email.includes("@noemail.qirox")) user.emailVerified = true;
+                  await user.save();
+                }
+                return done(null, user);
+              }
+
+              const { randomBytes } = await import("crypto");
+              const rawUsername = ((profile.username || email.split("@")[0]) + randomBytes(2).toString("hex"))
+                .replace(/[^a-z0-9_]/gi, "").slice(0, 20) || `user${randomBytes(4).toString("hex")}`;
+              let username = rawUsername;
+              let suffix = 1;
+              while (await UserModel.findOne({ username })) username = `${rawUsername}${suffix++}`;
+
+              const randomPw = await hashPassword(randomBytes(32).toString("hex"));
+              const newUser = await UserModel.create({
+                username,
+                password: randomPw,
+                email,
+                fullName: profile.displayName || profile.username || username,
+                githubId: profile.id,
+                githubAvatarUrl: profile.photos?.[0]?.value || "",
+                emailVerified: !email.includes("@noemail.qirox"),
+                role: "client",
+              });
+              return done(null, newUser);
+            } catch (err: any) {
+              return done(err);
+            }
+          }
+        )
+      );
+    }
+
+    app.get("/api/auth/github", async (req, res, next) => {
+      if (!GITHUB_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ GitHub غير مفعّل حالياً" });
+      const passport = (await import("passport")).default;
+      passport.authenticate("github", { scope: ["user:email"] })(req, res, next);
+    });
+
+    app.get("/api/auth/github/callback", async (req, res, next) => {
+      if (!GITHUB_ENABLED) return res.redirect("/login?error=github_disabled");
+      const passport = (await import("passport")).default;
+      const { DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+
+      passport.authenticate("github", { failureRedirect: "/login?error=github_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=github_failed");
+        req.login(user, async (loginErr) => {
+          if (loginErr) return res.redirect("/login?error=github_failed");
+          const plainToken = randomBytes(48).toString("hex");
+          const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+          const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+          await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          const MGMT_ROLES = ["admin", "manager"];
+          const redirectPath = user.role === "client"
+            ? "/dashboard"
+            : MGMT_ROLES.includes(user.role)
+              ? "/admin"
+              : "/employee/role-dashboard";
+          res.redirect(`/login?githubToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+        });
+      })(req, res, next);
+    });
+
+    app.get("/api/auth/github/status", (_req, res) => res.json({ enabled: GITHUB_ENABLED }));
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {

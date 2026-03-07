@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   googleId: { type: String, sparse: true, index: true },
   googleAvatarUrl: String,
+  githubId: { type: String, sparse: true, index: true },
+  githubAvatarUrl: String,
   role: { type: String, enum: [...roles], default: "client", required: true },
   fullName: { type: String, required: true },
   phone: String,
