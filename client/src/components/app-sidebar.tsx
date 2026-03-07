@@ -167,13 +167,13 @@ export function AppSidebar() {
   });
 
   const socialLinks = [
-    { key: "instagram",  Icon: SiInstagram,  color: "#E1306C", label: "Instagram" },
-    { key: "twitter",    Icon: SiX,          color: "#000000", label: "X" },
-    { key: "linkedin",   Icon: SiLinkedin,   color: "#0077B5", label: "LinkedIn" },
-    { key: "snapchat",   Icon: SiSnapchat,   color: "#FFFC00", label: "Snapchat" },
-    { key: "tiktok",     Icon: SiTiktok,     color: "#010101", label: "TikTok" },
-    { key: "youtube",    Icon: SiYoutube,    color: "#FF0000", label: "YouTube" },
-    { key: "whatsapp",   Icon: SiWhatsapp,   color: "#25D366", label: "WhatsApp" },
+    { key: "instagram",  Icon: SiInstagram,  color: "#E1306C", darkColor: "#E1306C", label: "Instagram" },
+    { key: "twitter",    Icon: SiX,          color: "#000000", darkColor: "#ffffff", label: "X" },
+    { key: "linkedin",   Icon: SiLinkedin,   color: "#0077B5", darkColor: "#0e9fe6", label: "LinkedIn" },
+    { key: "snapchat",   Icon: SiSnapchat,   color: "#FFFC00", darkColor: "#ffe600", label: "Snapchat" },
+    { key: "tiktok",     Icon: SiTiktok,     color: "#010101", darkColor: "#ffffff", label: "TikTok" },
+    { key: "youtube",    Icon: SiYoutube,    color: "#FF0000", darkColor: "#FF0000", label: "YouTube" },
+    { key: "whatsapp",   Icon: SiWhatsapp,   color: "#25D366", darkColor: "#25D366", label: "WhatsApp" },
   ].filter(s => publicSettings?.[s.key]);
 
   const { data: badges } = useQuery<{ messages: number; tickets: number; orders: number; total: number }>({
@@ -419,7 +419,7 @@ export function AppSidebar() {
         {/* Social Media Links */}
         {socialLinks.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 flex-wrap py-1">
-            {socialLinks.map(({ key, Icon, color, label }) => {
+            {socialLinks.map(({ key, Icon, color, darkColor, label }) => {
               const url = publicSettings?.[key] || "";
               const href = key === "whatsapp"
                 ? `https://wa.me/${url.replace(/[^0-9]/g, "")}`
@@ -433,7 +433,7 @@ export function AppSidebar() {
                   title={label}
                   data-testid={`sidebar-social-${key}`}
                   className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors"
-                  style={{ color }}
+                  style={{ color: theme === "dark" ? darkColor : color }}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </a>

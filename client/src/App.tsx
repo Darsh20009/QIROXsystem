@@ -655,35 +655,40 @@ function AppInner() {
         <div className={`min-h-screen flex w-full bg-white dark:bg-gray-950 overflow-x-hidden ${dir}`}>
           <AppSidebar />
           <div className="flex-1 flex flex-col min-h-screen">
-            <header className="h-14 md:h-16 border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 md:bg-white/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
-              <div className="flex items-center gap-2 md:gap-4">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-              </div>
-              <div className="flex items-center gap-1.5 md:gap-2">
-                {user && <div className="hidden sm:block"><GlobalSearch /></div>}
-                <ClientQuickNav />
-                <button
-                  onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="bg-black/[0.03] dark:bg-white/[0.04] text-black/70 dark:text-white/70 border border-black/[0.08] dark:border-white/[0.08] px-2.5 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
-                  data-testid="button-lang-toggle"
-                >
-                  {lang === "ar" ? "EN" : "ع"}
-                </button>
-                <button
-                  onClick={toggle}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
-                  data-testid="button-theme-toggle"
-                  title={theme === "dark" ? "وضع نهاري" : "وضع ليلي"}
-                >
-                  {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-black/50" />}
-                </button>
-                {user && (
-                  <div className="flex items-center gap-1.5 md:hidden">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black">
-                      {(user.fullName || "U")[0]}
+            <header
+              className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 md:bg-white/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl sticky top-0 z-40"
+              style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+            >
+              <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-4">
+                <div className="flex items-center gap-2 md:gap-4">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                </div>
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  {user && <div className="hidden sm:block"><GlobalSearch /></div>}
+                  <ClientQuickNav />
+                  <button
+                    onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                    className="bg-black/[0.03] dark:bg-white/[0.04] text-black/70 dark:text-white/70 border border-black/[0.08] dark:border-white/[0.08] px-2.5 md:px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
+                    data-testid="button-lang-toggle"
+                  >
+                    {lang === "ar" ? "EN" : "ع"}
+                  </button>
+                  <button
+                    onClick={toggle}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-all"
+                    data-testid="button-theme-toggle"
+                    title={theme === "dark" ? "وضع نهاري" : "وضع ليلي"}
+                  >
+                    {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-black/50" />}
+                  </button>
+                  {user && (
+                    <div className="flex items-center gap-1.5 md:hidden">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black">
+                        {(user.fullName || "U")[0]}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </header>
             <GlobalNotificationBanner />

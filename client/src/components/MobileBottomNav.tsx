@@ -6,20 +6,23 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp } from "react-icons/si";
+import { useTheme } from "@/lib/theme";
 
 const SOCIAL_DEFS = [
-  { key: "instagram", Icon: SiInstagram, color: "#E1306C" },
-  { key: "twitter",   Icon: SiX,         color: "#000000" },
-  { key: "linkedin",  Icon: SiLinkedin,  color: "#0077B5" },
-  { key: "snapchat",  Icon: SiSnapchat,  color: "#FFFC00" },
-  { key: "tiktok",    Icon: SiTiktok,    color: "#010101" },
-  { key: "youtube",   Icon: SiYoutube,   color: "#FF0000" },
-  { key: "whatsapp",  Icon: SiWhatsapp,  color: "#25D366" },
+  { key: "instagram", Icon: SiInstagram, color: "#E1306C",  darkColor: "#E1306C"  },
+  { key: "twitter",   Icon: SiX,         color: "#000000",  darkColor: "#ffffff"  },
+  { key: "linkedin",  Icon: SiLinkedin,  color: "#0077B5",  darkColor: "#0e9fe6"  },
+  { key: "snapchat",  Icon: SiSnapchat,  color: "#FFFC00",  darkColor: "#ffe600"  },
+  { key: "tiktok",    Icon: SiTiktok,    color: "#010101",  darkColor: "#ffffff"  },
+  { key: "youtube",   Icon: SiYoutube,   color: "#FF0000",  darkColor: "#FF0000"  },
+  { key: "whatsapp",  Icon: SiWhatsapp,  color: "#25D366",  darkColor: "#25D366"  },
 ];
 
 export function MobileBottomNav() {
   const [location] = useLocation();
   const { data: user } = useUser();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const { data: publicSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/public/settings"],
@@ -64,7 +67,7 @@ export function MobileBottomNav() {
       {/* Social Links Strip */}
       {socialLinks.length > 0 && (
         <div className="flex items-center justify-center gap-3 px-4 py-1.5 border-b border-black/[0.04] dark:border-white/[0.04]">
-          {socialLinks.map(({ key, Icon, color }) => {
+          {socialLinks.map(({ key, Icon, color, darkColor }) => {
             const url = publicSettings?.[key] || "";
             const href = key === "whatsapp"
               ? `https://wa.me/${url.replace(/[^0-9]/g, "")}`
@@ -77,7 +80,7 @@ export function MobileBottomNav() {
                 rel="noopener noreferrer"
                 data-testid={`mobile-nav-social-${key}`}
                 className="flex items-center justify-center w-6 h-6 rounded-md transition-opacity hover:opacity-70"
-                style={{ color }}
+                style={{ color: isDark ? darkColor : color }}
               >
                 <Icon className="w-3.5 h-3.5" />
               </a>
