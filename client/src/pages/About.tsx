@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Code2, Layers, Globe, Cpu, GitBranch, TrendingUp,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap
+  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users
 } from "lucide-react";
+import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 
 const sectorIcons: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
@@ -30,9 +32,28 @@ const stagger = {
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
+const roleLabelsAr: Record<string, string> = {
+  admin: "مدير النظام", manager: "مدير", developer: "مطور", designer: "مصمم",
+  accountant: "محاسب", sales: "مبيعات", sales_manager: "مدير مبيعات",
+  support: "دعم فني", merchant: "توصيل", investor: "مستثمر",
+};
+
+const socialLinks = [
+  { key: "instagram", icon: SiInstagram, color: "hover:text-pink-500" },
+  { key: "twitter", icon: SiX, color: "hover:text-black dark:hover:text-white" },
+  { key: "linkedin", icon: SiLinkedin, color: "hover:text-blue-600" },
+  { key: "snapchat", icon: SiSnapchat, color: "hover:text-yellow-400" },
+  { key: "tiktok", icon: SiTiktok, color: "hover:text-black dark:hover:text-white" },
+  { key: "youtube", icon: SiYoutube, color: "hover:text-red-500" },
+];
+
 export default function About() {
   const { data: templates } = useTemplates();
   const { t, lang, dir } = useI18n();
+
+  const { data: team = [] } = useQuery<any[]>({
+    queryKey: ["/api/public/team"],
+  });
 
   const features = [
     {
@@ -181,6 +202,57 @@ export default function About() {
           </div>
         </div>
       </section>
+
+      {/* Team */}
+      {team.length > 0 && (
+        <section className="py-28 bg-[#fafafa] relative">
+          <div className="container mx-auto px-4">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+              <div className="text-center mb-16">
+                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-6">
+                  <Users className="w-3.5 h-3.5 text-black/40" />
+                  <span className="text-black/40 text-xs tracking-wider uppercase">OUR TEAM</span>
+                </motion.div>
+                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black mb-4">
+                  {lang === "ar" ? "الفريق" : "Team"} <span className="text-gray-400">{lang === "ar" ? "المتخصص" : "Members"}</span>
+                </motion.h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                {team.map((member: any, idx: number) => {
+                  const hasSocials = socialLinks.some(s => !!member[s.key]);
+                  return (
+                    <motion.div key={member._id || idx} variants={fadeUp} custom={idx}>
+                      <div className="bg-white border border-black/[0.06] p-6 rounded-2xl text-center group hover:shadow-lg hover:shadow-black/[0.04] transition-all" data-testid={`card-team-${idx}`}>
+                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-black/[0.04] flex items-center justify-center mb-4">
+                          {member.avatarUrl ? (
+                            <img src={member.avatarUrl} alt={member.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xl font-black text-black/20">{member.fullName?.charAt(0)}</span>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-sm text-black mb-1">{member.fullName}</h3>
+                        <p className="text-[11px] text-black/40 mb-1">{member.jobTitle || roleLabelsAr[member.role] || member.role}</p>
+                        {member.bio && <p className="text-[10px] text-black/25 leading-relaxed mb-3 line-clamp-2">{member.bio}</p>}
+                        {hasSocials && (
+                          <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-black/[0.05]">
+                            {socialLinks.map(({ key, icon: Icon, color }) =>
+                              member[key] ? (
+                                <a key={key} href={member[key]} target="_blank" rel="noopener noreferrer" className={`text-black/20 transition-colors ${color}`} data-testid={`link-${key}-${idx}`}>
+                                  <Icon size={13} />
+                                </a>
+                              ) : null
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Tech Stack */}
       <section className="py-28 bg-[#fafafa] relative">

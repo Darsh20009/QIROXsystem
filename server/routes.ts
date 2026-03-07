@@ -409,7 +409,7 @@ export async function registerRoutes(
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "jobTitle", "bio"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
@@ -924,6 +924,16 @@ export async function registerRoutes(
       employees = employees.filter((u: any) => allowed.includes(u.role));
     }
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
+  });
+
+  app.get("/api/public/team", async (_req, res) => {
+    try {
+      const { UserModel } = await import("./models");
+      const team = await UserModel.find({ role: { $nin: ["client", "customer"] } })
+        .select("fullName role jobTitle avatarUrl instagram twitter linkedin snapchat tiktok youtube bio")
+        .lean();
+      res.json(team);
+    } catch { res.status(500).json([]); }
   });
 
   // === ORDERS API ===

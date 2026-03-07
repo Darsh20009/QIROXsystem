@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link } from "lucide-react";
+import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -54,9 +55,17 @@ interface EmployeeForm {
   fixedSalary: string;
   hourlyRate: string;
   commissionRate: string;
+  jobTitle: string;
+  bio: string;
+  instagram: string;
+  twitter: string;
+  linkedin: string;
+  snapchat: string;
+  tiktok: string;
+  youtube: string;
 }
 
-const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "", salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "" };
+const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "", salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "", jobTitle: "", bio: "", instagram: "", twitter: "", linkedin: "", snapchat: "", tiktok: "", youtube: "" };
 
 interface CredentialResult {
   username: string;
@@ -201,7 +210,14 @@ export default function AdminEmployees() {
 
   const startEdit = (emp: User) => {
     setEditingId(String(emp.id));
-    setForm({ username: emp.username, password: "", email: emp.email, fullName: emp.fullName, role: emp.role, phone: emp.phone || "" });
+    setForm({
+      username: emp.username, password: "", email: emp.email, fullName: emp.fullName, role: emp.role, phone: emp.phone || "",
+      salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "",
+      jobTitle: (emp as any).jobTitle || "", bio: (emp as any).bio || "",
+      instagram: (emp as any).instagram || "", twitter: (emp as any).twitter || "",
+      linkedin: (emp as any).linkedin || "", snapchat: (emp as any).snapchat || "",
+      tiktok: (emp as any).tiktok || "", youtube: (emp as any).youtube || "",
+    });
     setShowForm(true);
   };
 
@@ -329,7 +345,45 @@ export default function AdminEmployees() {
                       <Input type="number" value={form.commissionRate} onChange={e => setForm({ ...form, commissionRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-commission-rate" />
                     </div>
                   )}
+                  <div>
+                    <Label className="text-[11px] text-black/40 mb-1.5 block">المسمى الوظيفي</Label>
+                    <Input value={form.jobTitle} onChange={e => setForm({ ...form, jobTitle: e.target.value })} placeholder="مطور واجهات أمامية" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-jobtitle" />
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <Label className="text-[11px] text-black/40 mb-1.5 block">نبذة شخصية</Label>
+                    <Input value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} placeholder="نبذة مختصرة تظهر في صفحة الفريق..." className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-bio" />
+                  </div>
                 </div>
+
+                <div className="mt-5 pt-4 border-t border-black/[0.06]">
+                  <p className="text-[11px] font-bold text-black/40 mb-3 flex items-center gap-1.5"><Link className="w-3 h-3" /> حسابات السوشيال ميديا (تظهر في صفحة الفريق)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      { key: "instagram", icon: SiInstagram, color: "text-pink-500", placeholder: "https://instagram.com/username", label: "Instagram" },
+                      { key: "twitter", icon: SiX, color: "text-black dark:text-white", placeholder: "https://x.com/username", label: "X (Twitter)" },
+                      { key: "linkedin", icon: SiLinkedin, color: "text-blue-600", placeholder: "https://linkedin.com/in/username", label: "LinkedIn" },
+                      { key: "snapchat", icon: SiSnapchat, color: "text-yellow-400", placeholder: "https://snapchat.com/add/username", label: "Snapchat" },
+                      { key: "tiktok", icon: SiTiktok, color: "text-black dark:text-white", placeholder: "https://tiktok.com/@username", label: "TikTok" },
+                      { key: "youtube", icon: SiYoutube, color: "text-red-500", placeholder: "https://youtube.com/@channel", label: "YouTube" },
+                    ].map(({ key, icon: Icon, color, placeholder, label }) => (
+                      <div key={key} className="relative">
+                        <div className={`absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${color}`}>
+                          <Icon size={14} />
+                        </div>
+                        <Input
+                          value={(form as any)[key]}
+                          onChange={e => setForm({ ...form, [key]: e.target.value })}
+                          placeholder={placeholder}
+                          className="h-9 text-xs border-black/[0.08] pr-9"
+                          dir="ltr"
+                          data-testid={`input-emp-${key}`}
+                        />
+                        <Label className="absolute -top-4 right-0 text-[10px] text-black/30">{label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2 mt-5">
                   <Button variant="outline" size="sm" className="text-xs h-8 border-black/[0.08]" onClick={resetForm} data-testid="button-cancel-emp">إلغاء</Button>
                   <Button
