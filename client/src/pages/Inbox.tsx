@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
@@ -6,13 +6,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MessageSquare, Send, Users, Search, Paperclip, Mic, MicOff, X, Download, Play, Pause, Image as ImageIcon, FileText, CheckCheck, Check, Wifi, WifiOff, Trash2 } from "lucide-react";
-import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import {
+  Loader2, MessageSquare, Send, Users, Search, Paperclip,
+  Mic, X, Download, Play, Pause, FileText, CheckCheck, Check,
+  ArrowRight, Phone, MoreVertical, Smile, Trash2
+} from "lucide-react";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
 
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 // Helpers
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 function timeAgo(date: string) {
   const d = new Date(date);
   const now = new Date();
@@ -23,6 +26,10 @@ function timeAgo(date: string) {
   return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
 }
 
+function formatTime(date: string) {
+  return new Date(date).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+}
+
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -30,28 +37,51 @@ function formatSize(bytes: number) {
 }
 
 function roleLabel(role: string) {
-  const map: Record<string, string> = { admin: "مدير", manager: "مدير عام", developer: "مطور", designer: "مصمم", support: "دعم", client: "عميل", sales: "مبيعات", sales_manager: "مدير مبيعات", accountant: "محاسب" };
+  const map: Record<string, string> = {
+    admin: "مدير", manager: "مدير عام", developer: "مطور",
+    designer: "مصمم", support: "دعم", client: "عميل",
+    sales: "مبيعات", sales_manager: "مدير مبيعات", accountant: "محاسب",
+  };
   return map[role] || role;
 }
 
-function Avatar({ name, role, online }: { name: string; role?: string; online?: boolean }) {
-  const colors: Record<string, string> = { admin: "bg-black text-white", manager: "bg-gray-800 text-white", developer: "bg-violet-600 text-white", designer: "bg-pink-600 text-white", client: "bg-blue-600 text-white", support: "bg-green-600 text-white", sales: "bg-orange-600 text-white" };
-  const cls = colors[role || ""] || "bg-gray-500 text-white";
+function getRoleGradient(role?: string) {
+  const map: Record<string, string> = {
+    admin:         "from-gray-800 to-black",
+    manager:       "from-slate-700 to-slate-900",
+    developer:     "from-violet-500 to-indigo-600",
+    designer:      "from-pink-500 to-rose-600",
+    client:        "from-blue-500 to-cyan-600",
+    support:       "from-emerald-500 to-green-600",
+    sales:         "from-orange-500 to-amber-600",
+    sales_manager: "from-red-500 to-orange-600",
+    accountant:    "from-teal-500 to-cyan-600",
+  };
+  return map[role || ""] || "from-gray-500 to-gray-700";
+}
+
+// ─────────────────────────────────────────────────────────
+// Avatar
+// ─────────────────────────────────────────────────────────
+function Avatar({ name, role, online, size = "md" }: { name: string; role?: string; online?: boolean; size?: "sm" | "md" | "lg" }) {
+  const grad = getRoleGradient(role);
+  const sz = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-10 h-10 text-sm";
+  const dotSz = size === "sm" ? "w-2 h-2 border" : "w-2.5 h-2.5 border-2";
   return (
     <div className="relative flex-shrink-0">
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black ${cls}`}>
+      <div className={`${sz} rounded-full bg-gradient-to-br ${grad} flex items-center justify-center font-black text-white shadow-sm`}>
         {(name || "?")[0].toUpperCase()}
       </div>
       {online !== undefined && (
-        <div className={`absolute bottom-0 left-0 w-2.5 h-2.5 rounded-full border-2 border-white ${online ? "bg-green-500" : "bg-gray-300"}`} />
+        <div className={`absolute bottom-0 left-0 ${dotSz} rounded-full border-white dark:border-gray-900 ${online ? "bg-emerald-400" : "bg-gray-300 dark:bg-gray-600"}`} />
       )}
     </div>
   );
 }
 
-// ──────────────────────────────────────────────
-// Voice Message Player
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Voice Player
+// ─────────────────────────────────────────────────────────
 function getAudioMimeType(url: string): string {
   const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
   if (ext === "oga" || ext === "ogg") return "audio/ogg";
@@ -59,7 +89,6 @@ function getAudioMimeType(url: string): string {
   if (ext === "m4a") return "audio/mp4";
   if (ext === "mp3") return "audio/mpeg";
   if (ext === "wav") return "audio/wav";
-  if (ext === "aac") return "audio/aac";
   return "";
 }
 
@@ -73,50 +102,65 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const toggle = () => {
     if (!audioRef.current || loadError) return;
     if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else {
-      audioRef.current.play().catch(() => setLoadError(true));
-      setPlaying(true);
-    }
+    else { audioRef.current.play().catch(() => setLoadError(true)); setPlaying(true); }
   };
 
-  const btnCls = isMe
-    ? "bg-white/20 hover:bg-white/30 text-white"
-    : "bg-black/10 hover:bg-black/20 text-black";
-  const trackCls = isMe ? "bg-white/25" : "bg-black/10";
-  const fillCls = isMe ? "bg-white/80" : "bg-black/50";
-  const textCls = isMe ? "text-white/55" : "text-black/40";
   const mimeType = getAudioMimeType(url);
 
   return (
-    <div className="flex items-center gap-2 min-w-[160px]">
+    <div className="flex items-center gap-2.5 min-w-[160px] max-w-[220px]">
       <audio ref={audioRef} preload="metadata"
-        onTimeUpdate={() => {
-          if (audioRef.current) setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0);
-        }}
-        onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
+        onTimeUpdate={() => audioRef.current && setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0)}
+        onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
         onEnded={() => { setPlaying(false); setProgress(0); }}
         onError={() => setLoadError(true)}
       >
         <source src={url} type={mimeType || undefined} />
       </audio>
-      <button onClick={toggle} className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${btnCls} ${loadError ? "opacity-40 cursor-not-allowed" : ""}`} title={loadError ? "تعذّر تشغيل الصوت" : undefined}>
+      <button
+        onClick={toggle}
+        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+          isMe ? "bg-white/20 hover:bg-white/30 text-white" : "bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200"
+        } ${loadError ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
         {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
       </button>
       <div className="flex-1">
-        <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}>
-          <div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${progress}%` }} />
+        <div className={`h-1.5 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
+          <div
+            className={`h-full rounded-full transition-all ${isMe ? "bg-white/70" : "bg-gray-500 dark:bg-gray-300"}`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
-        <span className={`text-[9px] ${textCls} mt-0.5 block`}>
-          {loadError ? "⚠️ تعذّر التشغيل" : duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}
+        <span className={`text-[9px] mt-0.5 block ${isMe ? "text-white/50" : "text-gray-400 dark:text-gray-400"}`}>
+          {loadError ? "⚠️ خطأ" : duration > 0 ? `${Math.floor(duration)}ث` : "🎙️ صوتية"}
         </span>
       </div>
     </div>
   );
 }
 
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Read Receipt Icon
+// ─────────────────────────────────────────────────────────
+function ReadReceipt({ read }: { read: boolean }) {
+  if (read) {
+    return (
+      <span title="شاهد الرسالة" className="flex items-center">
+        <CheckCheck className="w-3.5 h-3.5 text-sky-300" />
+      </span>
+    );
+  }
+  return (
+    <span title="تم الإرسال">
+      <Check className="w-3.5 h-3.5 text-white/40" />
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // Message Bubble
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boolean; contact: any; onDelete?: (id: string) => void }) {
   const [hovered, setHovered] = useState(false);
   const hasText = !!msg.body;
@@ -130,58 +174,94 @@ function MessageBubble({ msg, isMe, contact, onDelete }: { msg: any; isMe: boole
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} />}
-      <div className={`max-w-[72%] rounded-2xl overflow-hidden ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-black/[0.07] text-black rounded-tl-sm"}`}>
+      {!isMe && <Avatar name={contact?.fullName || "?"} role={contact?.role} size="sm" />}
+
+      <div className={`max-w-[72%] sm:max-w-[60%] rounded-2xl overflow-hidden shadow-sm ${
+        isMe
+          ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-tr-sm"
+          : "bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] text-gray-900 dark:text-gray-100 rounded-tl-sm"
+      }`}>
+        {/* Image */}
         {hasAttachment && attachType === "image" && (
           <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
-            <img src={msg.attachmentUrl} alt={msg.attachmentName || "صورة"} className="max-w-[240px] max-h-[200px] object-cover" />
+            <img src={msg.attachmentUrl} alt={msg.attachmentName || "صورة"} className="max-w-[240px] max-h-[200px] object-cover hover:opacity-90 transition-opacity" />
           </a>
         )}
+        {/* Voice */}
         {hasAttachment && attachType === "voice" && (
-          <div className="px-3 py-2.5">
+          <div className="px-3.5 py-3">
             <VoicePlayer url={msg.attachmentUrl} isMe={isMe} />
           </div>
         )}
+        {/* File */}
         {hasAttachment && attachType === "file" && (
           <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer"
-            className={`flex items-center gap-2 px-3 py-2.5 hover:opacity-80 transition-opacity ${isMe ? "text-white" : "text-black"}`}>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.06]"}`}>
-              <FileText className="w-4 h-4" />
+            className={`flex items-center gap-2.5 px-3.5 py-3 hover:opacity-80 transition-opacity ${isMe ? "text-white" : "text-gray-800 dark:text-gray-200"}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-violet-100 dark:bg-violet-900/30"}`}>
+              <FileText className={`w-4 h-4 ${isMe ? "text-white" : "text-violet-600 dark:text-violet-400"}`} />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold truncate max-w-[160px]">{msg.attachmentName || "ملف"}</p>
-              {msg.attachmentSize && <p className={`text-[9px] ${isMe ? "text-white/50" : "text-black/40"}`}>{formatSize(msg.attachmentSize)}</p>}
+              {msg.attachmentSize && <p className={`text-[9px] ${isMe ? "text-white/50" : "text-gray-400"}`}>{formatSize(msg.attachmentSize)}</p>}
             </div>
             <Download className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
           </a>
         )}
+        {/* Text */}
         {hasText && (
           <div className="px-3.5 py-2.5">
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.body}</p>
           </div>
         )}
-        <div className={`px-3.5 pb-2 flex items-center justify-end gap-1`}>
-          <span className={`text-[9px] ${isMe ? "text-white/40" : "text-black/30"}`}>{timeAgo(msg.createdAt)}</span>
-          {isMe && <CheckCheck className="w-3 h-3 text-white/40" />}
+        {/* Footer */}
+        <div className="px-3.5 pb-2 flex items-center justify-end gap-1.5">
+          <span className={`text-[9px] ${isMe ? "text-white/40" : "text-gray-400 dark:text-gray-500"}`}>
+            {formatTime(msg.createdAt)}
+          </span>
+          {isMe && <ReadReceipt read={!!msg.read} />}
         </div>
       </div>
+
+      {/* Delete button */}
       {hovered && onDelete && (
         <button
           onClick={() => onDelete(msgId)}
-          className="w-6 h-6 flex items-center justify-center rounded-full text-black/25 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
-          title="حذف الرسالة"
+          className="w-6 h-6 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+          title="حذف"
           data-testid={`button-delete-message-${msgId}`}
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-3 h-3" />
         </button>
       )}
     </div>
   );
 }
 
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Date Separator
+// ─────────────────────────────────────────────────────────
+function DateSeparator({ date }: { date: string }) {
+  const d = new Date(date);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  let label = d.toLocaleDateString("ar-SA", { weekday: "long", month: "long", day: "numeric" });
+  if (d.toDateString() === today.toDateString()) label = "اليوم";
+  else if (d.toDateString() === yesterday.toDateString()) label = "الأمس";
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium px-2 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-black/[0.05] dark:border-white/[0.05] py-0.5">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // Sound Notification
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 let audioCtx: AudioContext | null = null;
 function playNotificationSound() {
   try {
@@ -192,16 +272,31 @@ function playNotificationSound() {
     gain.connect(audioCtx.destination);
     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(660, audioCtx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.2);
   } catch {}
 }
 
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Typing Indicator
+// ─────────────────────────────────────────────────────────
+function TypingDots() {
+  return (
+    <div className="flex items-end gap-2 px-1">
+      <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+        {[0, 150, 300].map(delay => (
+          <span key={delay} className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // Main Component
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
 export default function Inbox() {
   const { data: user } = useUser();
   const { toast } = useToast();
@@ -218,13 +313,13 @@ export default function Inbox() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showContacts, setShowContacts] = useState(true); // mobile view toggle
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const lastMsgCountRef = useRef(0);
-
+  const inputRef = useRef<HTMLInputElement>(null);
   const activeContactIdRef = useRef<string | null>(null);
   activeContactIdRef.current = activeContact?.id || null;
 
@@ -241,28 +336,22 @@ export default function Inbox() {
         }
         if (fromId !== String(me?.id)) {
           playNotificationSound();
-          // Browser notification
           if (Notification.permission === "granted") {
-            const senderName = evt.message?.fromUserId?.fullName || evt.message?.fromUserId?.username || "رسالة";
+            const senderName = evt.message?.fromUserId?.fullName || "رسالة";
             new Notification(`💬 ${senderName}`, { body: evt.message?.body || "رسالة جديدة", tag: `msg-${fromId}` });
           }
         }
       }
-      if (evt.type === "typing") {
-        if (String(evt.fromUserId) === activeContactIdRef.current) {
-          setIsTypingRemote(evt.isTyping);
-          if (evt.isTyping) setTimeout(() => setIsTypingRemote(false), 4000);
-        }
+      if (evt.type === "typing" && String(evt.fromUserId) === activeContactIdRef.current) {
+        setIsTypingRemote(evt.isTyping);
+        if (evt.isTyping) setTimeout(() => setIsTypingRemote(false), 4000);
       }
-      if (evt.type === "voice_recording") {
-        if (String(evt.fromUserId) === activeContactIdRef.current) {
-          setIsVoiceRemote(evt.isRecording);
-        }
+      if (evt.type === "voice_recording" && String(evt.fromUserId) === activeContactIdRef.current) {
+        setIsVoiceRemote(evt.isRecording);
       }
     },
   });
 
-  // Request notification permission on mount
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
@@ -326,27 +415,26 @@ export default function Inbox() {
     c.fullName.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom when thread loads
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+    return () => clearTimeout(timer);
   }, [thread]);
 
-  // Clear typing remote after inactivity
+  // Focus input when chat opens on mobile
   useEffect(() => {
-    if (isTypingRemote) {
-      const t = setTimeout(() => setIsTypingRemote(false), 5000);
-      return () => clearTimeout(t);
+    if (activeContact && !showContacts) {
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [isTypingRemote]);
+  }, [activeContact, showContacts]);
 
-  // ── Send Typing ──
+  // ── Typing ──
   const handleInputChange = (val: string) => {
     setMessageText(val);
     if (activeContact?.id) {
-      if (!isTypingLocal) {
-        setIsTypingLocal(true);
-        sendTyping(activeContact.id, true);
-      }
+      if (!isTypingLocal) { setIsTypingLocal(true); sendTyping(activeContact.id, true); }
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => {
         setIsTypingLocal(false);
@@ -355,12 +443,9 @@ export default function Inbox() {
     }
   };
 
-  // ── Delete Message ──
+  // ── Mutations ──
   const deleteMutation = useMutation({
-    mutationFn: async (msgId: string) => {
-      const r = await apiRequest("DELETE", `/api/inbox/${msgId}`);
-      return r.json();
-    },
+    mutationFn: async (msgId: string) => (await apiRequest("DELETE", `/api/inbox/${msgId}`)).json(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inbox"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inbox/thread", activeContact?.id] });
@@ -368,12 +453,10 @@ export default function Inbox() {
     onError: () => toast({ title: "تعذّر حذف الرسالة", variant: "destructive" }),
   });
 
-  // ── Send Message ──
   const sendMutation = useMutation({
     mutationFn: async (data: { body?: string; attachmentUrl?: string; attachmentType?: string; attachmentName?: string; attachmentSize?: number }) => {
       if (!activeContact?.id) return;
-      const r = await apiRequest("POST", "/api/inbox", { toUserId: activeContact.id, ...data });
-      return r.json();
+      return (await apiRequest("POST", "/api/inbox", { toUserId: activeContact.id, ...data })).json();
     },
     onSuccess: () => {
       setMessageText("");
@@ -401,26 +484,21 @@ export default function Inbox() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (!data.url) throw new Error("فشل الرفع");
-      const isImage = file.type.startsWith("image/");
       sendMutation.mutate({
         attachmentUrl: data.url,
-        attachmentType: isImage ? "image" : "file",
+        attachmentType: file.type.startsWith("image/") ? "image" : "file",
         attachmentName: file.name,
         attachmentSize: file.size,
       });
     } catch {
       toast({ title: "فشل رفع الملف", variant: "destructive" });
-    } finally {
-      setUploadingFile(false);
-    }
+    } finally { setUploadingFile(false); }
   };
 
   // ── Voice Recording ──
   const getSupportedMimeType = () => {
-    const types = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"];
-    for (const t of types) {
-      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {}
-    }
+    const types = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    for (const t of types) { try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {} }
     return "";
   };
 
@@ -431,7 +509,7 @@ export default function Inbox() {
       const chunks: BlobPart[] = [];
       const mimeType = getSupportedMimeType();
       const mr = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-      mr.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      mr.ondataavailable = e => { if (e.data?.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setIsRecording(false);
@@ -449,14 +527,9 @@ export default function Inbox() {
           const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
           if (!res.ok) throw new Error("upload failed");
           const data = await res.json();
-          if (data.url) {
-            sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: "رسالة صوتية", attachmentSize: blob.size });
-          }
-        } catch {
-          toast({ title: "فشل إرسال الصوت", variant: "destructive" });
-        } finally {
-          setUploadingFile(false);
-        }
+          if (data.url) sendMutation.mutate({ attachmentUrl: data.url, attachmentType: "voice", attachmentName: "رسالة صوتية", attachmentSize: blob.size });
+        } catch { toast({ title: "فشل إرسال الصوت", variant: "destructive" }); }
+        finally { setUploadingFile(false); }
       };
       mr.start(100);
       setMediaRecorder(mr);
@@ -464,85 +537,143 @@ export default function Inbox() {
       setRecordingTime(0);
       if (activeContact?.id) sendVoiceRecording(activeContact.id, true);
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-    } catch {
-      toast({ title: "لا يمكن الوصول للمايك", variant: "destructive" });
-    }
+    } catch { toast({ title: "لا يمكن الوصول للمايك", variant: "destructive" }); }
   };
 
-  const stopRecording = () => {
-    mediaRecorder?.stop();
-    setMediaRecorder(null);
-  };
-
+  const stopRecording = () => { mediaRecorder?.stop(); setMediaRecorder(null); };
   const cancelRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.ondataavailable = null;
-      mediaRecorder.onstop = null;
-      mediaRecorder.stop();
-      setMediaRecorder(null);
-    }
+    if (mediaRecorder) { mediaRecorder.ondataavailable = null; mediaRecorder.onstop = null; mediaRecorder.stop(); setMediaRecorder(null); }
     setIsRecording(false);
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     setRecordingTime(0);
     if (activeContact?.id) sendVoiceRecording(activeContact.id, false);
   };
 
+  // Group messages by date
+  const groupedThread = (() => {
+    const groups: { date: string; messages: any[] }[] = [];
+    for (const msg of thread) {
+      const dateKey = new Date(msg.createdAt).toDateString();
+      const last = groups[groups.length - 1];
+      if (last?.date === dateKey) last.messages.push(msg);
+      else groups.push({ date: dateKey, messages: [msg] });
+    }
+    return groups;
+  })();
+
   const totalUnread = contacts.reduce((s, c) => s + c.unread, 0);
 
+  const openChat = (contact: any) => {
+    setActiveContact(contact);
+    setIsTypingRemote(false);
+    setIsVoiceRemote(false);
+    setShowContacts(false);
+  };
+
+  const backToContacts = () => {
+    setShowContacts(true);
+  };
+
   if (!user) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
-      <p className="text-black/40 text-sm">يجب تسجيل الدخول</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <p className="text-gray-400 text-sm">يجب تسجيل الدخول</p>
     </div>
   );
 
   return (
-    <div className="h-screen bg-[#f8f8f8] flex flex-col relative" dir="rtl">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
+    <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col" dir="rtl">
 
-      {/* Page Header */}
-      <div className="bg-white border-b border-black/[0.06] px-5 py-4 flex items-center justify-between flex-shrink-0 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center relative">
-            <MessageSquare className="w-4 h-4 text-white" />
-            {totalUnread > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                {totalUnread > 9 ? "9+" : totalUnread}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="font-black text-black text-sm">صندوق الرسائل</h1>
-            <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-green-500" : "bg-red-400"}`} />
-              <p className="text-[10px] text-black/35">{connected ? "متصل" : "جاري الاتصال..."}</p>
+      {/* ── Top Bar (mobile only) ── */}
+      <div className="md:hidden bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-4 py-3 flex items-center gap-3 flex-shrink-0 safe-top">
+        {!showContacts && activeContact ? (
+          <>
+            <button onClick={backToContacts} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300" data-testid="button-back-to-contacts">
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{activeContact.fullName}</p>
+              <p className="text-[10px] text-gray-400">
+                {isTypingRemote ? "يكتب..." : isVoiceRemote ? "يسجل صوتاً..." : onlineUsers.has(activeContact.id) ? "متصل الآن" : roleLabel(activeContact.role)}
+              </p>
             </div>
-          </div>
-        </div>
+            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center relative shadow-sm">
+              <MessageSquare className="w-4 h-4 text-white" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </span>
+              )}
+            </div>
+            <h1 className="font-black text-gray-900 dark:text-white text-sm flex-1">صندوق الرسائل</h1>
+            <div className={`flex items-center gap-1 text-[10px] ${connected ? "text-emerald-500" : "text-red-400"}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+              {connected ? "متصل" : "..."}
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative z-10">
-        {/* ── Contacts Sidebar ── */}
-        <div className="w-[260px] border-l border-black/[0.06] bg-white flex flex-col flex-shrink-0">
-          <div className="p-3 border-b border-black/[0.05]">
-            <div className="relative">
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/25" />
-              <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)} className="h-8 text-xs pr-8 bg-black/[0.03] border-transparent" data-testid="input-search-contacts" />
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── Contacts Panel ── */}
+        <div className={`
+          ${showContacts ? "flex" : "hidden"} md:flex
+          w-full md:w-[300px] lg:w-[320px]
+          flex-col flex-shrink-0
+          bg-white dark:bg-gray-900
+          md:border-l border-black/[0.06] dark:border-white/[0.06]
+        `}>
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm relative">
+                <MessageSquare className="w-4 h-4 text-white" />
+                {totalUnread > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{totalUnread > 9 ? "9+" : totalUnread}</span>
+                )}
+              </div>
+              <div>
+                <h1 className="font-black text-sm text-gray-900 dark:text-white">الرسائل</h1>
+                <div className="flex items-center gap-1">
+                  <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} />
+                  <p className="text-[10px] text-gray-400">{connected ? "متصل" : "جاري الاتصال..."}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* New Message for non-clients */}
+          {/* Search */}
+          <div className="px-3 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]">
+            <div className="relative">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <Input
+                placeholder="بحث في المحادثات..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-8 text-xs pr-8 bg-gray-50 dark:bg-gray-800 border-transparent focus:border-violet-300 dark:focus:border-violet-700"
+                data-testid="input-search-contacts"
+              />
+            </div>
+          </div>
+
+          {/* New Message (employees only) */}
           {me?.role !== "client" && employees.length > 0 && (
-            <div className="p-3 border-b border-black/[0.05]">
+            <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.04]">
               <select
                 value={newContactId}
                 onChange={e => {
                   const u = employees.find((emp: any) => emp.id === e.target.value);
-                  if (u) { setActiveContact({ id: u.id, fullName: u.fullName || u.username, role: u.role }); setNewContactId(""); }
+                  if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: u.role }); setNewContactId(""); }
                 }}
-                className="w-full h-8 text-xs border border-black/[0.08] rounded-lg px-2 bg-white text-black/60"
+                className="w-full h-8 text-xs border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"
                 data-testid="select-new-contact"
               >
-                <option value="">+ رسالة جديدة</option>
+                <option value="">+ رسالة جديدة للفريق</option>
                 {employees.filter((e: any) => e.id !== me.id).map((e: any) => (
                   <option key={e.id} value={e.id}>{e.fullName || e.username} ({roleLabel(e.role)})</option>
                 ))}
@@ -550,36 +681,51 @@ export default function Inbox() {
             </div>
           )}
 
+          {/* Contacts List */}
           <ScrollArea className="flex-1">
             {loadingMsgs ? (
-              <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-black/20" /></div>
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-300 dark:text-gray-600" />
+              </div>
             ) : filteredContacts.length === 0 ? (
-              <div className="py-10 text-center px-4">
-                <Users className="w-8 h-8 text-black/10 mx-auto mb-2" />
-                <p className="text-xs text-black/30">لا توجد محادثات بعد</p>
+              <div className="py-12 text-center px-6">
+                <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Users className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                </div>
+                <p className="text-xs font-semibold text-gray-400">لا توجد محادثات بعد</p>
+                <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">ابدأ محادثة جديدة أعلاه</p>
               </div>
             ) : (
-              <div>
+              <div className="py-1">
                 {filteredContacts.map(c => {
                   const isOnline = onlineUsers.has(c.id);
+                  const isActive = activeContact?.id === c.id;
                   return (
                     <button
                       key={c.id}
-                      onClick={() => { setActiveContact(c); setIsTypingRemote(false); setIsVoiceRemote(false); }}
-                      className={`w-full flex items-center gap-3 px-3 py-3 text-right transition-colors hover:bg-black/[0.02] border-b border-black/[0.04] ${activeContact?.id === c.id ? "bg-black/[0.04]" : ""}`}
+                      onClick={() => openChat(c)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-all duration-150 ${
+                        isActive
+                          ? "bg-violet-50 dark:bg-violet-900/20 border-r-2 border-violet-500"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-800/60 border-r-2 border-transparent"
+                      }`}
                       data-testid={`contact-${c.id}`}
                     >
-                      <Avatar name={c.fullName} role={c.role} online={isOnline} />
+                      <Avatar name={c.fullName} role={c.role} online={isOnline} size="md" />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-black truncate">{c.fullName}</p>
-                          <span className="text-[9px] text-black/30 flex-shrink-0">{timeAgo(c.lastAt)}</span>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className={`text-xs font-bold truncate ${isActive ? "text-violet-700 dark:text-violet-300" : "text-gray-800 dark:text-gray-100"}`}>{c.fullName}</p>
+                          <span className="text-[9px] text-gray-400 flex-shrink-0 mr-1">{timeAgo(c.lastAt)}</span>
                         </div>
-                        <p className="text-[10px] text-black/40 truncate mt-0.5">{c.lastMsg}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{c.lastMsg}</p>
+                          {c.unread > 0 && (
+                            <span className="w-4 h-4 bg-violet-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center flex-shrink-0 mr-1">
+                              {c.unread > 9 ? "9+" : c.unread}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      {c.unread > 0 && (
-                        <span className="w-4 h-4 bg-black text-white text-[9px] font-bold rounded-full flex items-center justify-center flex-shrink-0">{c.unread}</span>
-                      )}
                     </button>
                   );
                 })}
@@ -589,130 +735,174 @@ export default function Inbox() {
         </div>
 
         {/* ── Chat Area ── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`
+          ${!showContacts || activeContact ? "flex" : "hidden"} md:flex
+          flex-1 flex-col overflow-hidden
+          bg-gray-50 dark:bg-gray-950
+        `}>
           {!activeContact ? (
+            /* Empty state */
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-black/[0.04] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="w-7 h-7 text-black/15" />
+              <div className="text-center px-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+                  <MessageSquare className="w-9 h-9 text-violet-400 dark:text-violet-500" />
                 </div>
-                <p className="text-sm font-bold text-black/30">اختر محادثة للبدء</p>
-                <p className="text-xs text-black/20 mt-1">أو ابدأ محادثة جديدة</p>
+                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">اختر محادثة للبدء</p>
+                <p className="text-xs text-gray-400 dark:text-gray-600 mt-1.5">ستظهر رسائلك هنا</p>
               </div>
             </div>
           ) : (
             <>
-              {/* Chat Header */}
-              <div className="bg-white border-b border-black/[0.06] px-5 py-3 flex items-center gap-3 flex-shrink-0">
+              {/* ── Chat Header (desktop only) ── */}
+              <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-5 py-3 items-center gap-3 flex-shrink-0 shadow-sm">
                 <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-black">{activeContact.fullName}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
                   <div className="flex items-center gap-1.5 h-4">
                     {isVoiceRemote ? (
                       <span className="text-[10px] text-purple-500 animate-pulse flex items-center gap-1">
-                        <Mic className="w-2.5 h-2.5" />يسجل صوتاً...
+                        <Mic className="w-2.5 h-2.5" /> يسجل صوتاً...
                       </span>
                     ) : isTypingRemote ? (
-                      <span className="text-[10px] text-blue-500 flex items-center gap-1">
+                      <span className="text-[10px] text-violet-500 font-medium flex items-center gap-1">
                         <span className="flex gap-0.5">
-                          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          {[0, 150, 300].map(d => <span key={d} className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
                         </span>
                         يكتب...
                       </span>
                     ) : (
-                      <p className="text-[10px] text-black/40 flex items-center gap-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(activeContact.id) ? "bg-green-500" : "bg-gray-300"}`} />
-                        {onlineUsers.has(activeContact.id) ? "متصل الآن" : `${roleLabel(activeContact.role)}`}
+                      <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(activeContact.id) ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`} />
+                        {onlineUsers.has(activeContact.id) ? "متصل الآن" : roleLabel(activeContact.role)}
                       </p>
                     )}
                   </div>
                 </div>
+                <div className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} title={connected ? "متصل" : "غير متصل"} />
+                </div>
               </div>
 
-              {/* Messages */}
-              <ScrollArea className="flex-1 px-4 py-4">
+              {/* ── Messages Area ── */}
+              <ScrollArea className="flex-1 px-3 sm:px-5 py-4">
                 {loadingThread ? (
-                  <div className="flex items-center justify-center py-10">
-                    <Loader2 className="w-5 h-5 animate-spin text-black/20" />
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-300 dark:text-gray-600" />
                   </div>
                 ) : thread.length === 0 ? (
-                  <div className="text-center py-10">
-                    <p className="text-xs text-black/30">ابدأ المحادثة</p>
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <MessageSquare className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                    </div>
+                    <p className="text-xs text-gray-400">ابدأ المحادثة الآن</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {thread.map((msg: any) => {
-                      const isMe = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id);
-                      return (
-                        <MessageBubble
-                          key={msg.id || msg._id}
-                          msg={msg}
-                          isMe={isMe}
-                          contact={activeContact}
-                          onDelete={(id) => deleteMutation.mutate(id)}
-                        />
-                      );
-                    })}
+                  <div className="space-y-1.5">
+                    {groupedThread.map(({ date, messages }) => (
+                      <div key={date}>
+                        <DateSeparator date={messages[0].createdAt} />
+                        <div className="space-y-1.5">
+                          {messages.map((msg: any) => {
+                            const isMe = String(msg.fromUserId?.id || msg.fromUserId) === String(me?.id);
+                            return (
+                              <MessageBubble
+                                key={msg.id || msg._id}
+                                msg={msg}
+                                isMe={isMe}
+                                contact={activeContact}
+                                onDelete={(id) => deleteMutation.mutate(id)}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    {(isTypingRemote || isVoiceRemote) && <TypingDots />}
                     <div ref={bottomRef} />
                   </div>
                 )}
               </ScrollArea>
 
-              {/* Input Area */}
-              <div className="bg-white border-t border-black/[0.06] p-3 flex-shrink-0">
+              {/* ── Input Area ── */}
+              <div className="bg-white dark:bg-gray-900 border-t border-black/[0.06] dark:border-white/[0.06] p-3 flex-shrink-0 safe-bottom">
                 {/* Recording Bar */}
                 {isRecording && (
-                  <div className="flex items-center gap-3 mb-3 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    <span className="text-xs font-semibold text-red-600 flex-1">
+                  <div className="flex items-center gap-3 mb-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-xl px-3 py-2.5">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 flex-1">
                       تسجيل... {recordingTime}ث
                     </span>
-                    <button onClick={cancelRecording} className="text-red-400 hover:text-red-600" data-testid="button-cancel-recording">
+                    <button onClick={cancelRecording} className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" data-testid="button-cancel-recording">
                       <X className="w-4 h-4" />
                     </button>
-                    <button onClick={stopRecording} className="bg-red-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-red-600 transition-colors font-semibold" data-testid="button-stop-recording">
-                      إرسال
+                    <button
+                      onClick={stopRecording}
+                      className="bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors font-semibold flex items-center gap-1"
+                      data-testid="button-stop-recording"
+                    >
+                      <Send className="w-3 h-3" /> إرسال
                     </button>
                   </div>
                 )}
 
                 <form onSubmit={e => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
-                  {/* File Attach */}
-                  <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} data-testid="input-file-upload" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile || isRecording}
-                    className="w-9 h-9 flex items-center justify-center text-black/30 hover:text-black/70 transition-colors rounded-xl hover:bg-black/[0.04] flex-shrink-0" data-testid="button-attach-file">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }}
+                    data-testid="input-file-upload"
+                  />
+
+                  {/* Attach */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile || isRecording}
+                    className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 flex-shrink-0"
+                    data-testid="button-attach-file"
+                  >
                     {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                   </button>
 
-                  {/* Voice Recording */}
-                  {!isRecording ? (
-                    <button type="button" onClick={startRecording} disabled={uploadingFile}
-                      className="w-9 h-9 flex items-center justify-center text-black/30 hover:text-black/70 transition-colors rounded-xl hover:bg-black/[0.04] flex-shrink-0" data-testid="button-start-recording">
+                  {/* Voice */}
+                  {!isRecording && (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={uploadingFile}
+                      className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors rounded-xl hover:bg-violet-50 dark:hover:bg-violet-900/20 flex-shrink-0"
+                      data-testid="button-start-recording"
+                    >
                       <Mic className="w-4 h-4" />
                     </button>
-                  ) : null}
+                  )}
 
                   {/* Text Input */}
                   {!isRecording && (
-                    <Input
-                      value={messageText}
-                      onChange={e => handleInputChange(e.target.value)}
-                      placeholder="اكتب رسالتك..."
-                      className="flex-1 h-9 text-sm bg-black/[0.03] border-transparent focus:bg-white focus:border-black/20"
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                      data-testid="input-message"
-                    />
+                    <div className="flex-1 relative">
+                      <Input
+                        ref={inputRef}
+                        value={messageText}
+                        onChange={e => handleInputChange(e.target.value)}
+                        placeholder="اكتب رسالتك..."
+                        className="h-10 text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-violet-400 dark:focus:border-violet-600 rounded-xl pr-3 pl-3"
+                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                        data-testid="input-message"
+                      />
+                    </div>
                   )}
 
-                  {/* Send Button */}
+                  {/* Send */}
                   {!isRecording && (
-                    <Button type="submit" size="icon"
-                      className="w-9 h-9 bg-black text-white rounded-xl hover:bg-black/80 flex-shrink-0"
+                    <Button
+                      type="submit"
+                      size="icon"
+                      className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 shadow-sm flex-shrink-0 disabled:opacity-50"
                       disabled={!messageText.trim() || sendMutation.isPending}
-                      data-testid="button-send-message">
+                      data-testid="button-send-message"
+                    >
                       {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   )}

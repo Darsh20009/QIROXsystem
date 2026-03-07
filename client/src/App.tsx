@@ -9,6 +9,7 @@ import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -589,6 +590,17 @@ function AppInner() {
   const { theme, toggle } = useTheme();
 
   useWebSocket(user?.id);
+  const { status: pushStatus, subscribe: pushSubscribe } = usePushNotifications();
+  useEffect(() => {
+    if (!user) return;
+    if (pushStatus !== "default") return;
+    const t = setTimeout(() => {
+      if (Notification.permission === "default" || Notification.permission === "granted") {
+        pushSubscribe().catch(() => {});
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [user, pushStatus]);
 
   if (showSplash) {
     return (
