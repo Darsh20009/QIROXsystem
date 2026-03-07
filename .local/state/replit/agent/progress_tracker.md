@@ -33,20 +33,3 @@
 [x] 33. Build Qirox Edit — محرر تصميم احترافي كامل (client/src/pages/QiroxEdit.tsx)
 [x] 34. Fix Render deployment (bcrypt dependency and build allowlist)
 [x] 35. Fix mobile responsiveness — horizontal scroll, zoom, elements not showing on Android/iPhone
-      - Fixed viewport meta: maximum-scale=1.0, user-scalable=no (prevents accidental zoom)
-      - Added overflow-x: hidden to html, body, #root and app wrappers
-      - Fixed React hook violations in AnimatedRing & AnimatedBars (caused Home page crash on mobile)
-      - Added max-width constraints to FloatingBrandPulse and fixed-position elements
-      - Enhanced mobile CSS: container constraints, wide-card limits, global box-sizing
-      - Fabric.js كمحرك الكانفاس
-      - أشكال: مستطيل، دائرة، مثلث، خط، نجمة، سداسي
-      - نصوص مع Google Fonts (20 خطاً عربياً وأجنبياً)
-      - تحميل صور من الجهاز
-      - خلفيات: ألوان صلبة + 6 تدرجات لونية
-      - 5 قوالب جاهزة
-      - لوحة خصائص: موضع، حجم، دوران، شفافية، لون، خط
-      - لوحة الطبقات (رؤية، إخفاء)
-      - تراجع وإعادة (Ctrl+Z, Ctrl+Y)
-      - تصدير: PNG، JPEG، PDF، SVG
-      - 9 أحجام كانفاس جاهزة (إنستقرام، فيسبوك، يوتيوب، A4، إلخ)
-      - تكبير/تصغير، اختصارات لوحة المفاتيح
