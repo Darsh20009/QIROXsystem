@@ -1522,7 +1522,7 @@ export default function Dashboard() {
 
   const { data: upcomingMeetings = [] } = useQuery<any[]>({
     queryKey: ['/api/qmeet/upcoming'],
-    enabled: !!(user?.role === 'client'),
+    enabled: !!user,
     refetchInterval: 60000,
   });
 

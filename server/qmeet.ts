@@ -423,6 +423,31 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
+  // ── Upcoming meetings for the current user (any role) ──────────────────────
+
+  app.get("/api/qmeet/upcoming", requireAuth, async (req: any, res) => {
+    try {
+      const userId = String(req.user._id || req.user.id);
+      const userEmail = (req.user.email || "").toLowerCase().trim();
+      // Include meetings that are live or scheduled (starting within the next 7 days or already live)
+      const windowStart = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2h ago (covers live meetings)
+      const windowEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days ahead
+      const filter: any = {
+        status: { $in: ["scheduled", "live"] },
+        scheduledAt: { $gte: windowStart, $lte: windowEnd },
+        $or: [
+          { hostId: userId },
+          { participantIds: userId },
+          ...(userEmail ? [{ participantEmails: userEmail }] : []),
+        ],
+      };
+      const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: 1 }).limit(20);
+      res.json(meetings);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── Join by code: find meeting ──────────────────────────────────────────────
 
   app.get("/api/qmeet/by-code/:code", requireAuth, async (req: any, res) => {

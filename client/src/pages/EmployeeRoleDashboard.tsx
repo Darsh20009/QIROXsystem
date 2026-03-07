@@ -12,7 +12,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle,
   Wrench, Code2, ShieldCheck, BarChart3, Palette, Upload, ExternalLink,
   FileText, Users, Activity, Wallet, Receipt, Banknote, Target,
-  ChevronRight, Star, Zap, Globe, Wand2
+  ChevronRight, Star, Zap, Globe, Wand2, Video, Calendar, KeyRound
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -487,6 +487,69 @@ function SalesDashboard() {
   );
 }
 
+// ── UPCOMING MEETINGS WIDGET ───────────────────────────────────────────────────
+function UpcomingMeetingsWidget() {
+  const { data: meetings = [] } = useQuery<any[]>({
+    queryKey: ["/api/qmeet/upcoming"],
+    refetchInterval: 60000,
+  });
+
+  if (meetings.length === 0) return null;
+
+  return (
+    <motion.div {...fade(0.15)} className="mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-violet-600 rounded-xl flex items-center justify-center">
+            <Video className="w-3.5 h-3.5 text-white" />
+          </div>
+          <h2 className="text-sm font-bold text-black dark:text-white">اجتماعاتك القادمة</h2>
+          <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{meetings.length} اجتماع</span>
+        </div>
+        <a href="/meet/join" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="employee-join-meeting-btn">
+          <KeyRound className="w-3.5 h-3.5" />
+          انضم بكود
+        </a>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {meetings.map((m: any) => {
+          const scheduledDate = new Date(m.scheduledAt);
+          const isLive = m.status === "live";
+          const dateStr = scheduledDate.toLocaleDateString("ar-SA", { weekday: "short", month: "short", day: "numeric" });
+          const timeStr = scheduledDate.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+          return (
+            <div key={m._id} data-testid={`employee-card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-700" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
+              {isLive && (
+                <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-100 dark:bg-violet-900/60 dark:text-violet-300 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+                  مباشر الآن
+                </span>
+              )}
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isLive ? "bg-violet-600" : "bg-black/[0.06] dark:bg-white/[0.08]"}`}>
+                  <Video className={`w-4 h-4 ${isLive ? "text-white" : "text-black/50 dark:text-white/50"}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-black dark:text-white truncate">{m.title}</p>
+                  <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{m.hostName}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-3 h-3 text-black/30 dark:text-white/30 flex-shrink-0" />
+                <span className="text-[11px] text-black/50 dark:text-white/50">{dateStr} — {timeStr}</span>
+              </div>
+              <button onClick={() => window.open(m.meetingLink, "_blank")} className={`w-full flex items-center justify-center gap-1.5 rounded-xl h-8 text-xs font-bold transition-colors ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black hover:bg-black/80 text-white"}`} data-testid={`employee-join-meeting-btn-${m._id}`}>
+                <Video className="w-3 h-3" />
+                {isLive ? "انضم الآن" : "انضم للاجتماع"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
   const { data: user } = useUser();
@@ -519,6 +582,7 @@ export default function EmployeeRoleDashboard() {
     <div className="relative overflow-hidden">
       <PageGraphics variant="dashboard" />
       {roleDashboard}
+      <UpcomingMeetingsWidget />
       <motion.div {...fade(0.3)} className="mt-4">
         <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
           <CardContent className="p-5">
