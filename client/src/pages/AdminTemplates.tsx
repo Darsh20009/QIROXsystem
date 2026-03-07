@@ -123,8 +123,9 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
   );
 }
 
-function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }) {
+function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: PricingPlan; onClose: () => void; templates?: SectorTemplate[]; defaultSegment?: string }) {
   const { toast } = useToast();
+  const firstSegment = templates?.[0]?.category || defaultSegment || "restaurant";
   const [formData, setFormData] = useState({
     name: (plan as any)?.name || "",
     nameAr: plan?.nameAr || "",
@@ -132,7 +133,7 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
     description: plan?.description || "",
     descriptionAr: plan?.descriptionAr || "",
     tier: (plan as any)?.tier || "pro",
-    segment: (plan as any)?.segment || "restaurant",
+    segment: (plan as any)?.segment || defaultSegment || firstSegment,
     monthlyPrice: (plan as any)?.monthlyPrice?.toString() || "",
     sixMonthPrice: (plan as any)?.sixMonthPrice?.toString() || "",
     annualPrice: (plan as any)?.annualPrice?.toString() || "",
@@ -202,13 +203,21 @@ function PlanForm({ plan, onClose }: { plan?: PricingPlan; onClose: () => void }
     { value: "custom",   label: "مخصصة 🏢",  desc: "Enterprise" },
   ];
 
-  const SEGMENT_OPTIONS = Object.entries(SEGMENT_META).map(([key, val]) => ({ value: key, labelAr: val.labelAr, icon: val.icon }));
+  const uniqueTemplateCategories = Array.from(new Set(templates?.map(t => t.category).filter(Boolean) ?? []));
+  const SEGMENT_OPTIONS = uniqueTemplateCategories.length > 0
+    ? uniqueTemplateCategories.map(cat => {
+        const meta = SEGMENT_META[cat];
+        const tmpl = templates?.find(t => t.category === cat);
+        const Icon = meta?.icon || Globe;
+        return { value: cat, labelAr: tmpl?.nameAr || meta?.labelAr || cat, icon: Icon };
+      })
+    : Object.entries(SEGMENT_META).map(([key, val]) => ({ value: key, labelAr: val.labelAr, icon: val.icon }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
       {/* Segment selector */}
       <div>
-        <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">نوع المشروع / القطاع *</label>
+        <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">القالب / نوع المشروع *</label>
         <div className="grid grid-cols-3 gap-2">
           {SEGMENT_OPTIONS.map(opt => {
             const Icon = opt.icon;
@@ -334,7 +343,7 @@ export default function AdminTemplates() {
 
   const [planDialog, setPlanDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | undefined>(undefined);
-  const [segmentFilter, setSegmentFilter] = useState<string>("restaurant");
+  const [segmentFilter, setSegmentFilter] = useState<string>("");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/templates/${id}`); },
@@ -346,7 +355,10 @@ export default function AdminTemplates() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/pricing"] }); toast({ title: "تم حذف الباقة" }); },
   });
 
-  const openNewPlan = () => { setEditingPlan(undefined); setPlanDialog(true); };
+  const allTemplateCategories = Array.from(new Set(templates?.map(t => t.category).filter(Boolean) ?? []));
+  const activeSegment = segmentFilter || allTemplateCategories[0] || "restaurant";
+
+  const openNewPlan = (seg?: string) => { setEditingPlan(undefined); if (seg) setSegmentFilter(seg); setPlanDialog(true); };
   const openEditPlan = (plan: PricingPlan) => { setEditingPlan(plan); setPlanDialog(true); };
 
   const discount = (plan: PricingPlan) =>
@@ -383,31 +395,54 @@ export default function AdminTemplates() {
             </Button>
           </div>
 
-          {/* Segment filter */}
+          {/* Segment filter — built from actual templates */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {Object.entries(SEGMENT_META).map(([key, meta]) => {
-              const Icon = meta.icon;
-              const count = plans?.filter((p: any) => p.segment === key).length ?? 0;
-              return (
-                <button key={key} onClick={() => setSegmentFilter(key)} data-testid={`filter-segment-${key}`}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                    segmentFilter === key ? `${meta.bg} ${meta.color}` : "border-black/[0.07] text-black/40 hover:border-black/15"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {meta.labelAr}
-                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${segmentFilter === key ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
-                </button>
-              );
-            })}
+            {allTemplateCategories.length === 0
+              ? Object.entries(SEGMENT_META).map(([key, meta]) => {
+                  const Icon = meta.icon;
+                  const count = plans?.filter((p: any) => p.segment === key).length ?? 0;
+                  return (
+                    <button key={key} onClick={() => setSegmentFilter(key)} data-testid={`filter-segment-${key}`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                        activeSegment === key ? `${meta.bg} ${meta.color}` : "border-black/[0.07] text-black/40 hover:border-black/15"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {meta.labelAr}
+                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeSegment === key ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
+                    </button>
+                  );
+                })
+              : allTemplateCategories.map(cat => {
+                  const meta = SEGMENT_META[cat];
+                  const Icon = meta?.icon || Globe;
+                  const tmpl = templates?.find(t => t.category === cat);
+                  const label = tmpl?.nameAr || meta?.labelAr || cat;
+                  const count = plans?.filter((p: any) => p.segment === cat).length ?? 0;
+                  const isActive = activeSegment === cat;
+                  return (
+                    <button key={cat} onClick={() => setSegmentFilter(cat)} data-testid={`filter-segment-${cat}`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                        isActive ? `${meta?.bg || "bg-black/5"} ${meta?.color || "text-black dark:text-white"}` : "border-black/[0.07] text-black/40 hover:border-black/15"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${isActive ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
+                    </button>
+                  );
+                })
+            }
           </div>
 
           {plansLoading ? (
             <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-black/30 dark:text-white/30" /></div>
           ) : (() => {
-            const segMeta = SEGMENT_META[segmentFilter];
-            const SegIcon = segMeta?.icon;
-            const filteredPlans = plans?.filter((p: any) => p.segment === segmentFilter)
+            const segMeta = SEGMENT_META[activeSegment];
+            const tmplForSeg = templates?.find(t => t.category === activeSegment);
+            const SegIcon = segMeta?.icon || Globe;
+            const segLabel = tmplForSeg?.nameAr || segMeta?.labelAr || activeSegment;
+            const filteredPlans = plans?.filter((p: any) => p.segment === activeSegment)
               .sort((a: any, b: any) => (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[a.tier ?? ""] ?? 9) - (({ lite:1, pro:2, infinite:3 } as Record<string,number>)[b.tier ?? ""] ?? 9)) ?? [];
 
             const TIER_PILL: Record<string, string> = {
@@ -423,10 +458,10 @@ export default function AdminTemplates() {
             return (
               <div>
                 {/* Section header */}
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-5 ${segMeta?.bg || ""}`}>
-                  {SegIcon && <SegIcon className={`w-5 h-5 ${segMeta?.color}`} />}
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-5 ${segMeta?.bg || "bg-black/[0.02] border-black/[0.06]"}`}>
+                  <SegIcon className={`w-5 h-5 ${segMeta?.color || "text-black/50"}`} />
                   <div>
-                    <p className={`font-black text-sm ${segMeta?.color}`}>{segMeta?.labelAr}</p>
+                    <p className={`font-black text-sm ${segMeta?.color || "text-black dark:text-white"}`}>{segLabel}</p>
                     <p className="text-[10px] text-black/40">{filteredPlans.length} باقة — يمكنك تعديل الأسعار والمزايا</p>
                   </div>
                 </div>
@@ -493,9 +528,9 @@ export default function AdminTemplates() {
                   ))}
 
                   {/* Add new card */}
-                  <button onClick={openNewPlan} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 hover:text-black/50 transition-all min-h-[200px]">
+                  <button onClick={() => openNewPlan(activeSegment)} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 hover:text-black/50 transition-all min-h-[200px]">
                     <Plus className="w-7 h-7" />
-                    <span className="text-sm font-medium">باقة جديدة لـ {segMeta?.labelAr}</span>
+                    <span className="text-sm font-medium">باقة جديدة لـ {segLabel}</span>
                   </button>
                 </div>
               </div>
@@ -569,7 +604,7 @@ export default function AdminTemplates() {
               {editingPlan ? "تعديل الباقة" : "إنشاء باقة جديدة"}
             </DialogTitle>
           </DialogHeader>
-          <PlanForm plan={editingPlan} onClose={() => setPlanDialog(false)} />
+          <PlanForm plan={editingPlan} onClose={() => setPlanDialog(false)} templates={templates ?? []} defaultSegment={activeSegment} />
         </DialogContent>
       </Dialog>
     </div>
