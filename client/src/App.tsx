@@ -104,6 +104,7 @@ const QMeetJoinByCode = lazy(() => import("@/pages/QMeetJoinByCode"));
 const ClientDataRequests = lazy(() => import("@/pages/ClientDataRequests"));
 const AdminDataRequests = lazy(() => import("@/pages/AdminDataRequests"));
 const MyTools = lazy(() => import("@/pages/MyTools"));
+const ToolPage = lazy(() => import("@/pages/ToolPage"));
 const AdminQiroxSettings = lazy(() => import("@/pages/AdminQiroxSettings"));
 const AdminPromotions = lazy(() => import("@/pages/AdminPromotions"));
 const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
@@ -207,6 +208,7 @@ function AdminRouter() {
         <Route path="/admin/installments" component={AdminInstallments} />
         <Route path="/my-requests" component={ClientDataRequests} />
         <Route path="/admin/data-requests" component={AdminDataRequests} />
+        <Route path="/my-tools/:toolId" component={ToolPage} />
         <Route path="/my-tools" component={MyTools} />
         <Route path="/admin/qirox-settings" component={AdminQiroxSettings} />
         <Route path="/admin/promotions" component={AdminPromotions} />

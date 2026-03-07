@@ -10,6 +10,28 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 7, 2026 - Session 40)
+
+### أدواتي ومميزاتي — 50 أداة جديدة (My Tools — 50 New Tools)
+
+تم إضافة 50 أداة جديدة كاملة الوظائف مع فتح كل أداة في صفحة مستقلة.
+
+**الملفات الجديدة:**
+- `client/src/pages/ToolPage.tsx` — صفحة الأداة الفردية تحتوي على جميع 62 أداة (12 قديمة + 50 جديدة)
+
+**الملفات المعدّلة:**
+- `client/src/pages/MyTools.tsx` — أُعيدت كتابتها كشبكة جمالية تعرض جميع الأدوات مع بحث وتصفية بالفئة
+- `client/src/App.tsx` — إضافة lazy import و route لـ `/my-tools/:toolId`
+
+**الأدوات الجديدة (50 أداة):**
+- النصوص: عداد الكلمات، محوّل الحالة، مقارنة النصوص، عاكس النص، مرتب الأسطر، إزالة المكررات، إيجاد/استبدال، نص تجريبي
+- الرياضيات: حاسبة النسبة، BMI، محوّل الوحدات، حاسبة العمر، أرقام رومانية، محوّل ثنائي/هكس، حاسبة الخصم، أرقام بالكلمات
+- التصميم: محوّل الألوان، منشئ التدرج، QR Code، منشئ الظل، الحواف المدورة، لوحة الألوان، مدقق التباين
+- المطورين: صورة→Base64، JWT decoder، JSON formatter، Regex tester، Unix Timestamp، URL encoder، HTML Entities، Markdown→HTML، SHA Hash
+- الإنتاجية: مؤقت بومودورو، عد تنازلي، ساعة العالم، منشئ فاتورة، مفكرة سريعة، محلل كلمة مرور، مدقق البريد، منشئ هاشتاقات
+- الصور: ضغط الصور، تحويل أبيض/أسود، تغيير حجم الصور
+- عربية/أخرى: إزالة التشكيل، التقويم الهجري، نص→مورس، اختبار سرعة الطباعة، ضغط CSS، SVG→PNG، محوّل الأنظمة العددية
+
 ## Latest Changes (Mar 5, 2026 - Session 38)
 
 ### إعدادات الاتصال الديناميكية (Dynamic Connection Settings)
