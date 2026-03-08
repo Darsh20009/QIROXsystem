@@ -4,14 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { SectorTemplate, FeatureDetail } from "@shared/schema";
 import {
-  ExternalLink, Play, ChevronDown, ChevronUp, ArrowRight, Star,
+  Play, ChevronDown, ArrowRight, Star,
   Clock, Tag, Zap, Search, Filter, Globe, CheckCircle2,
   ShoppingBag, UtensilsCrossed, GraduationCap, Building2, Home, Heart,
-  Loader2, Sparkles, ListChecks, Info, Package,
+  Loader2, Sparkles, ListChecks, Package,
 } from "lucide-react";
 
 const CATEGORY_META: Record<string, { labelAr: string; icon: any; color: string; bg: string; border: string }> = {

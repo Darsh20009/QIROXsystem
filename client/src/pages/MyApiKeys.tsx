@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Key, Plus, Copy, Check, Trash2, Power, PowerOff, Eye, EyeOff,
-  ShieldCheck, Clock, Activity, Globe, Code2, Loader2, X, AlertTriangle,
-  RefreshCw, Terminal, Zap, Lock, BookOpen, ChevronRight, ExternalLink,
+  ShieldCheck, Clock, Activity, Loader2, X, AlertTriangle,
+  Terminal, Zap, Lock,
 } from "lucide-react";
-import { useToast as useT } from "@/hooks/use-toast";
+
 
 type ApiKey = {
   id: string;

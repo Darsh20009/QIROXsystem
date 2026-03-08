@@ -32,7 +32,9 @@ const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; 
 
 const IconMap: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Globe
+  User, Heart, ShoppingCart, Coffee, Globe,
+  Star, BadgePercent, Tag, Sparkles, Check, UtensilsCrossed,
+  ShoppingBag, Building2, Home, Infinity, Zap,
 };
 
 function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClose: () => void }) {

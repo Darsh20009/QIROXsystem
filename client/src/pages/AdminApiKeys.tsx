@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Key, Search, Filter, Power, PowerOff, Trash2, Activity, Clock,
-  Loader2, Shield, Users, Globe, AlertTriangle, CheckCircle2, Lock,
-  Code2, ChevronRight, BarChart3,
+  Loader2, Users, Globe,
 } from "lucide-react";
 
 type ApiKey = {

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Loader2, Crown, Clock, CheckCircle2, AlertCircle,
-  Users, CreditCard, Layers, ChevronRight, RefreshCcw, Star, Bell, Zap, PhoneCall, CalendarCheck
+  Users, CreditCard, Layers, ChevronRight, RefreshCcw, Bell, Zap, CalendarCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
