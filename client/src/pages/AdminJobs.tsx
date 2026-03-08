@@ -498,37 +498,37 @@ export default function AdminJobs() {
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">المسمى الوظيفي *</label>
-              <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="مطور واجهات أمامية" data-testid="input-job-title" />
+              <Input value={formData.title} onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))} placeholder="مطور واجهات أمامية" data-testid="input-job-title" />
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">وصف الوظيفة *</label>
-              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="وصف تفصيلي للوظيفة والمهام..." rows={4} data-testid="input-job-description" />
+              <Textarea value={formData.description} onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))} placeholder="وصف تفصيلي للوظيفة والمهام..." rows={4} data-testid="input-job-description" />
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">المتطلبات (كل متطلب في سطر)</label>
-              <Textarea value={formData.requirements} onChange={(e) => setFormData({ ...formData, requirements: e.target.value })} placeholder="خبرة 2+ سنة في React&#10;إتقان TypeScript" rows={4} data-testid="input-job-requirements" />
+              <Textarea value={formData.requirements} onChange={(e) => setFormData(f => ({ ...f, requirements: e.target.value }))} placeholder="خبرة 2+ سنة في React&#10;إتقان TypeScript" rows={4} data-testid="input-job-requirements" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">الموقع</label>
-                <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="الرياض، السعودية" data-testid="input-job-location" />
+                <Input value={formData.location} onChange={(e) => setFormData(f => ({ ...f, location: e.target.value }))} placeholder="الرياض، السعودية" data-testid="input-job-location" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">نطاق الراتب</label>
-                <Input value={formData.salaryRange} onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })} placeholder="5,000 - 10,000 ر.س" data-testid="input-job-salary" />
+                <Input value={formData.salaryRange} onChange={(e) => setFormData(f => ({ ...f, salaryRange: e.target.value }))} placeholder="5,000 - 10,000 ر.س" data-testid="input-job-salary" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">نوع الدوام</label>
-                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                <Select value={formData.type} onValueChange={(v) => setFormData(f => ({ ...f, type: v }))}>
                   <SelectTrigger data-testid="select-job-type"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(typeMap).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">الحالة</label>
-                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                <Select value={formData.status} onValueChange={(v) => setFormData(f => ({ ...f, status: v }))}>
                   <SelectTrigger data-testid="select-job-status"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="open">مفتوح</SelectItem>

@@ -206,6 +206,7 @@ export class MongoStorage implements IStorage {
 
   async updateAttendance(id: string, updates: Partial<InsertAttendance>): Promise<Attendance> {
     const attendance = await AttendanceModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!attendance) throw new Error("Record not found");
     return { ...attendance.toObject(), id: attendance._id.toString() } as any;
   }
 
@@ -231,6 +232,7 @@ export class MongoStorage implements IStorage {
 
   async updateService(id: string, updates: Partial<InsertService>): Promise<Service> {
     const service = await ServiceModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!service) throw new Error("Record not found");
     return { ...service.toObject(), id: service._id.toString() } as any;
   }
 
@@ -265,6 +267,7 @@ export class MongoStorage implements IStorage {
 
   async updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order> {
     const order = await OrderModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!order) throw new Error("Record not found");
     return { ...order.toObject(), id: order._id.toString() } as any;
   }
 
@@ -291,6 +294,7 @@ export class MongoStorage implements IStorage {
 
   async updateProject(id: string, updates: Partial<InsertProject>): Promise<Project> {
     const project = await ProjectModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!project) throw new Error("Record not found");
     return { ...project.toObject(), id: project._id.toString() } as any;
   }
 
@@ -301,6 +305,7 @@ export class MongoStorage implements IStorage {
 
   async updateTask(id: string, updates: Partial<InsertTask>): Promise<Task> {
     const task = await TaskModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!task) throw new Error("Record not found");
     return { ...task.toObject(), id: task._id.toString() } as any;
   }
 
@@ -327,6 +332,7 @@ export class MongoStorage implements IStorage {
 
   async updateVaultItem(id: string, updates: Partial<InsertProjectVault>): Promise<ProjectVault> {
     const item = await ProjectVaultModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -343,6 +349,7 @@ export class MongoStorage implements IStorage {
 
   async updateNews(id: string, updates: Partial<InsertNews>): Promise<News> {
     const item = await NewsModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -363,6 +370,7 @@ export class MongoStorage implements IStorage {
 
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job> {
     const item = await JobModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -383,6 +391,7 @@ export class MongoStorage implements IStorage {
 
   async updateApplication(id: string, updates: Partial<InsertApplication>): Promise<Application> {
     const item = await ApplicationModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -409,6 +418,7 @@ export class MongoStorage implements IStorage {
 
   async updateSectorTemplate(id: string, updates: Partial<InsertSectorTemplate>): Promise<SectorTemplate> {
     const item = await SectorTemplateModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -434,6 +444,7 @@ export class MongoStorage implements IStorage {
 
   async updatePricingPlan(id: string, updates: Partial<InsertPricingPlan>): Promise<PricingPlan> {
     const item = await PricingPlanModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -459,6 +470,7 @@ export class MongoStorage implements IStorage {
 
   async updatePartner(id: string, updates: Partial<InsertPartner>): Promise<Partner> {
     const item = await PartnerModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -479,6 +491,7 @@ export class MongoStorage implements IStorage {
 
   async updateModificationRequest(id: string, data: Partial<InsertModificationRequest>): Promise<ModificationRequest> {
     const item = await ModificationRequestModel.findByIdAndUpdate(id, data, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 
@@ -508,6 +521,7 @@ export class MongoStorage implements IStorage {
 
   async updateQiroxProduct(id: string, updates: Partial<InsertQiroxProduct>): Promise<QiroxProduct> {
     const item = await QiroxProductModel.findByIdAndUpdate(id, updates, { new: true });
+    if (!item) throw new Error("Record not found");
     return { ...item.toObject(), id: item._id.toString() } as any;
   }
 

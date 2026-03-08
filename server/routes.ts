@@ -1781,10 +1781,14 @@ export async function registerRoutes(
       .limit(limit);
     const balance = await getWalletBalance(userId);
     // Compute aggregated stats across all transactions (not just paginated)
-    const statsAgg = await WalletTransactionModel.aggregate([
-      { $match: { userId } },
+    // Must cast userId string to ObjectId since aggregate() bypasses Mongoose auto-casting
+    const mongoose = await import("mongoose");
+    let userObjectId: any;
+    try { userObjectId = new mongoose.default.Types.ObjectId(userId); } catch { userObjectId = null; }
+    const statsAgg = userObjectId ? await WalletTransactionModel.aggregate([
+      { $match: { userId: userObjectId } },
       { $group: { _id: "$type", total: { $sum: "$amount" } } }
-    ]);
+    ]) : [];
     const totalCredit = statsAgg.find((a: any) => a._id === 'credit')?.total || 0;
     const totalDebit  = statsAgg.find((a: any) => a._id === 'debit')?.total  || 0;
     const outstanding = parseFloat(Math.max(0, totalDebit - totalCredit).toFixed(2));
