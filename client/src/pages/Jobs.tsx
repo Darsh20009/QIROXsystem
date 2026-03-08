@@ -72,27 +72,6 @@ interface ApplicationForm {
 }
 const emptyForm: ApplicationForm = { name: "", email: "", phone: "", coverLetter: "", cvUrl: "", cvFileName: "" };
 
-function FloatingOrbs() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <PageGraphics variant="hero-light" />
-      {[
-        { w: 400, h: 400, top: "-10%", right: "-5%",  from: "from-blue-400/10",  to: "to-purple-400/10",  dur: 8 },
-        { w: 300, h: 300, top: "30%",  left: "-8%",   from: "from-pink-400/10",  to: "to-orange-400/10",  dur: 10 },
-        { w: 200, h: 200, top: "60%",  right: "10%",  from: "from-green-400/10", to: "to-cyan-400/10",    dur: 7 },
-        { w: 150, h: 150, top: "15%",  left: "30%",   from: "from-amber-400/8",  to: "to-red-400/8",      dur: 12 },
-      ].map((orb, i) => (
-        <motion.div
-          key={i}
-          className={`absolute rounded-full bg-gradient-to-br ${orb.from} ${orb.to} blur-3xl`}
-          style={{ width: orb.w, height: orb.h, top: orb.top, ...(orb.right ? { right: orb.right } : { left: orb.left }) }}
-          animate={{ y: [0, -30, 0], x: [0, 15, 0], scale: [1, 1.1, 1] }}
-          transition={{ duration: orb.dur, repeat: Infinity, ease: "easeInOut" }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function GridPattern() {
   return (
@@ -616,7 +595,7 @@ export default function Jobs() {
       {/* ─── HERO ─── */}
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-black dark:bg-gray-950 pt-16">
         <GridPattern />
-        <FloatingOrbs />
+        <PageGraphics variant="hero-light" />
 
         {/* Noise texture */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E\")" }} />
@@ -826,7 +805,7 @@ export default function Jobs() {
 
       {/* ─── CTA BOTTOM ─── */}
       <section className="py-24 bg-black dark:bg-gray-950 relative overflow-hidden">
-        <FloatingOrbs />
+        <PageGraphics variant="hero-light" />
         <GridPattern />
         <div className="relative z-10 text-center px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>

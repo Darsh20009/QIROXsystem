@@ -103,44 +103,44 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
       <div className="grid grid-cols-2 gap-4">
-        <div><label className="text-xs font-medium text-black/50 block mb-1">الاسم (EN)</label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} data-testid="input-template-name" /></div>
-        <div><label className="text-xs font-medium text-black/50 block mb-1">الاسم (عربي)</label><Input value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} data-testid="input-template-nameAr" /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">الاسم (EN)</label><Input value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} data-testid="input-template-name" /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">الاسم (عربي)</label><Input value={formData.nameAr} onChange={e => setFormData(f => ({...f, nameAr: e.target.value}))} data-testid="input-template-nameAr" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div><label className="text-xs font-medium text-black/50 block mb-1">Slug</label><Input value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} /></div>
-        <div><label className="text-xs font-medium text-black/50 block mb-1">التصنيف</label><Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">Slug</label><Input value={formData.slug} onChange={e => setFormData(f => ({...f, slug: e.target.value}))} /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">التصنيف</label><Input value={formData.category} onChange={e => setFormData(f => ({...f, category: e.target.value}))} /></div>
       </div>
-      <div><label className="text-xs font-medium text-black/50 block mb-1">وصف عربي</label><Textarea rows={2} value={formData.descriptionAr} onChange={e => setFormData({...formData, descriptionAr: e.target.value})} /></div>
-      <div><label className="text-xs font-medium text-black/50 block mb-1">وصف انجليزي</label><Textarea rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+      <div><label className="text-xs font-medium text-black/50 block mb-1">وصف عربي</label><Textarea rows={2} value={formData.descriptionAr} onChange={e => setFormData(f => ({...f, descriptionAr: e.target.value}))} /></div>
+      <div><label className="text-xs font-medium text-black/50 block mb-1">وصف انجليزي</label><Textarea rows={2} value={formData.description} onChange={e => setFormData(f => ({...f, description: e.target.value}))} /></div>
       <div className="grid grid-cols-3 gap-4">
-        <div><label className="text-xs font-medium text-black/50 block mb-1">السعر من</label><Input type="number" value={formData.priceMin} onChange={e => setFormData({...formData, priceMin: Number(e.target.value)})} /></div>
-        <div><label className="text-xs font-medium text-black/50 block mb-1">السعر إلى</label><Input type="number" value={formData.priceMax} onChange={e => setFormData({...formData, priceMax: Number(e.target.value)})} /></div>
-        <div><label className="text-xs font-medium text-black/50 block mb-1">مدة التنفيذ</label><Input value={formData.estimatedDuration} onChange={e => setFormData({...formData, estimatedDuration: e.target.value})} placeholder="7-14 يوم" /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">السعر من</label><Input type="number" value={formData.priceMin} onChange={e => setFormData(f => ({...f, priceMin: Number(e.target.value)}))} /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">السعر إلى</label><Input type="number" value={formData.priceMax} onChange={e => setFormData(f => ({...f, priceMax: Number(e.target.value)}))} /></div>
+        <div><label className="text-xs font-medium text-black/50 block mb-1">مدة التنفيذ</label><Input value={formData.estimatedDuration} onChange={e => setFormData(f => ({...f, estimatedDuration: e.target.value}))} placeholder="7-14 يوم" /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-xs font-medium text-black/50 block mb-1">الأيقونة</label>
-          <select value={formData.icon} onChange={e => setFormData({...formData, icon: e.target.value})} className="w-full h-10 rounded-lg border border-black/[0.08] px-3 text-sm dark:bg-gray-900 dark:border-white/[0.08]">
+          <select value={formData.icon} onChange={e => setFormData(f => ({...f, icon: e.target.value}))} className="w-full h-10 rounded-lg border border-black/[0.08] px-3 text-sm dark:bg-gray-900 dark:border-white/[0.08]">
             {Object.keys(IconMap).map(k => <option key={k} value={k}>{k}</option>)}
           </select>
         </div>
         <div>
           <label className="text-xs font-medium text-black/50 block mb-1">الحالة</label>
-          <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})} className="w-full h-10 rounded-lg border border-black/[0.08] px-3 text-sm dark:bg-gray-900 dark:border-white/[0.08]">
+          <select value={formData.status} onChange={e => setFormData(f => ({...f, status: e.target.value as any}))} className="w-full h-10 rounded-lg border border-black/[0.08] px-3 text-sm dark:bg-gray-900 dark:border-white/[0.08]">
             <option value="active">نشط</option>
             <option value="coming_soon">قريباً</option>
             <option value="archived">مؤرشف</option>
           </select>
         </div>
       </div>
-      <div><label className="text-xs font-medium text-black/50 block mb-1">لون الهيرو</label><div className="flex gap-2"><input type="color" value={formData.heroColor} onChange={e => setFormData({...formData, heroColor: e.target.value})} className="w-10 h-10 rounded cursor-pointer border border-black/[0.08]" /><Input value={formData.heroColor} onChange={e => setFormData({...formData, heroColor: e.target.value})} className="flex-1" /></div></div>
-      <div><label className="text-xs font-medium text-black/50 block mb-1">الميزات (عربي، مفصولة بـ ،)</label><Textarea rows={2} value={formData.featuresAr} onChange={e => setFormData({...formData, featuresAr: e.target.value})} placeholder="ميزة 1، ميزة 2، ميزة 3" /></div>
-      <div><label className="text-xs font-medium text-black/50 block mb-1">Features (EN, comma separated)</label><Textarea rows={2} value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} placeholder="Feature 1, Feature 2" /></div>
+      <div><label className="text-xs font-medium text-black/50 block mb-1">لون الهيرو</label><div className="flex gap-2"><input type="color" value={formData.heroColor} onChange={e => setFormData(f => ({...f, heroColor: e.target.value}))} className="w-10 h-10 rounded cursor-pointer border border-black/[0.08]" /><Input value={formData.heroColor} onChange={e => setFormData(f => ({...f, heroColor: e.target.value}))} className="flex-1" /></div></div>
+      <div><label className="text-xs font-medium text-black/50 block mb-1">الميزات (عربي، مفصولة بـ ،)</label><Textarea rows={2} value={formData.featuresAr} onChange={e => setFormData(f => ({...f, featuresAr: e.target.value}))} placeholder="ميزة 1، ميزة 2، ميزة 3" /></div>
+      <div><label className="text-xs font-medium text-black/50 block mb-1">Features (EN, comma separated)</label><Textarea rows={2} value={formData.features} onChange={e => setFormData(f => ({...f, features: e.target.value}))} placeholder="Feature 1, Feature 2" /></div>
 
       {/* Demo URL */}
       <div>
         <label className="text-xs font-medium text-black/50 block mb-1 flex items-center gap-1.5"><Link2 className="w-3 h-3" /> رابط الديمو</label>
-        <Input value={formData.demoUrl} onChange={e => setFormData({...formData, demoUrl: e.target.value})} placeholder="https://demo.example.com" dir="ltr" data-testid="input-demo-url" />
+        <Input value={formData.demoUrl} onChange={e => setFormData(f => ({...f, demoUrl: e.target.value}))} placeholder="https://demo.example.com" dir="ltr" data-testid="input-demo-url" />
       </div>
 
       {/* Feature Details (usage guide per feature) */}
@@ -278,7 +278,7 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
             const Icon = opt.icon;
             const isActive = formData.segment === opt.value;
             return (
-              <button key={opt.value} type="button" onClick={() => setFormData({...formData, segment: opt.value})}
+              <button key={opt.value} type="button" onClick={() => setFormData(f => ({...f, segment: opt.value}))}
                 className={`flex items-center gap-2 p-2.5 rounded-xl border text-right transition-all ${isActive ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20 dark:hover:border-white/20"}`}>
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[11px] font-bold truncate">{opt.labelAr}</span>
@@ -293,7 +293,7 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
         <label className="text-xs font-semibold text-black/50 dark:text-white/50 block mb-2">مستوى الباقة *</label>
         <div className="grid grid-cols-4 gap-2">
           {TIER_OPTIONS.map(opt => (
-            <button key={opt.value} type="button" onClick={() => setFormData({...formData, tier: opt.value})}
+            <button key={opt.value} type="button" onClick={() => setFormData(f => ({...f, tier: opt.value}))}
               className={`p-2.5 rounded-xl border text-center transition-all ${formData.tier === opt.value ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-black/[0.08] dark:border-white/[0.08] hover:border-black/20"}`}>
               <div className="text-sm font-bold">{opt.label}</div>
               <div className="text-[10px] opacity-60">{opt.desc}</div>
@@ -309,11 +309,11 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">اسم الباقة (عربي) *</label><Input value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} placeholder="لايت / برو / إنفينتي" required /></div>
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Plan Name (EN)</label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Lite / Pro / Infinite" /></div>
+        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">اسم الباقة (عربي) *</label><Input value={formData.nameAr} onChange={e => setFormData(f => ({...f, nameAr: e.target.value}))} placeholder="لايت / برو / إنفينتي" required /></div>
+        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Plan Name (EN)</label><Input value={formData.name} onChange={e => setFormData(f => ({...f, name: e.target.value}))} placeholder="Lite / Pro / Infinite" /></div>
       </div>
 
-      <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">وصف الباقة (عربي)</label><Textarea rows={2} value={formData.descriptionAr} onChange={e => setFormData({...formData, descriptionAr: e.target.value})} placeholder="وصف مختصر للباقة..." /></div>
+      <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">وصف الباقة (عربي)</label><Textarea rows={2} value={formData.descriptionAr} onChange={e => setFormData(f => ({...f, descriptionAr: e.target.value}))} placeholder="وصف مختصر للباقة..." /></div>
 
       {/* 4 Pricing fields */}
       <div className="p-4 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.01] space-y-3">
@@ -321,19 +321,19 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📅 شهري</label>
-            <Input type="number" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} placeholder="199" />
+            <Input type="number" value={formData.monthlyPrice} onChange={e => setFormData(f => ({...f, monthlyPrice: e.target.value}))} placeholder="199" />
           </div>
           <div>
             <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📅 نصف سنوي (6 أشهر)</label>
-            <Input type="number" value={formData.sixMonthPrice} onChange={e => setFormData({...formData, sixMonthPrice: e.target.value})} placeholder="399" />
+            <Input type="number" value={formData.sixMonthPrice} onChange={e => setFormData(f => ({...f, sixMonthPrice: e.target.value}))} placeholder="399" />
           </div>
           <div>
             <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">📆 سنوي</label>
-            <Input type="number" value={formData.annualPrice} onChange={e => setFormData({...formData, annualPrice: e.target.value})} placeholder="699" />
+            <Input type="number" value={formData.annualPrice} onChange={e => setFormData(f => ({...f, annualPrice: e.target.value}))} placeholder="699" />
           </div>
           <div>
             <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">∞ مدى الحياة</label>
-            <Input type="number" value={formData.lifetimePrice} onChange={e => setFormData({...formData, lifetimePrice: e.target.value})} placeholder="3999" />
+            <Input type="number" value={formData.lifetimePrice} onChange={e => setFormData(f => ({...f, lifetimePrice: e.target.value}))} placeholder="3999" />
           </div>
         </div>
         {formData.monthlyPrice && formData.annualPrice && (
@@ -344,18 +344,18 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
         )}
         <div>
           <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">نص بادج العرض</label>
-          <Input value={formData.offerLabel} onChange={e => setFormData({...formData, offerLabel: e.target.value})} placeholder="الأوفر / الأشهر / لفترة محدودة" />
+          <Input value={formData.offerLabel} onChange={e => setFormData(f => ({...f, offerLabel: e.target.value}))} placeholder="الأوفر / الأشهر / لفترة محدودة" />
         </div>
       </div>
 
       {/* Features */}
       <div>
         <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">المزايا (عربي) — سطر لكل ميزة</label>
-        <Textarea rows={6} value={formData.featuresAr} onChange={e => setFormData({...formData, featuresAr: e.target.value})} placeholder={"تصميم احترافي\nاستضافة مدفوعة\nدعم فني 24/7\nلوحة تحكم"} className="text-sm" />
+        <Textarea rows={6} value={formData.featuresAr} onChange={e => setFormData(f => ({...f, featuresAr: e.target.value}))} placeholder={"تصميم احترافي\nاستضافة مدفوعة\nدعم فني 24/7\nلوحة تحكم"} className="text-sm" />
       </div>
       <div>
         <label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">Features (EN) — one per line</label>
-        <Textarea rows={4} value={formData.features} onChange={e => setFormData({...formData, features: e.target.value})} placeholder={"Professional design\nHosting\n24/7 support"} className="text-sm" />
+        <Textarea rows={4} value={formData.features} onChange={e => setFormData(f => ({...f, features: e.target.value}))} placeholder={"Professional design\nHosting\n24/7 support"} className="text-sm" />
       </div>
 
       {/* Flags */}
@@ -365,19 +365,19 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
             <p className="text-xs font-semibold text-black/70 dark:text-white/70">الأكثر طلباً</p>
             <p className="text-[10px] text-black/30 dark:text-white/30">يُبرز البطاقة</p>
           </div>
-          <Switch checked={formData.isPopular} onCheckedChange={v => setFormData({...formData, isPopular: v})} />
+          <Switch checked={formData.isPopular} onCheckedChange={v => setFormData(f => ({...f, isPopular: v}))} />
         </div>
         <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
           <div>
             <p className="text-xs font-semibold text-black/70 dark:text-white/70">باقة مخصصة</p>
             <p className="text-[10px] text-black/30 dark:text-white/30">Enterprise</p>
           </div>
-          <Switch checked={formData.isCustom} onCheckedChange={v => setFormData({...formData, isCustom: v})} />
+          <Switch checked={formData.isCustom} onCheckedChange={v => setFormData(f => ({...f, isCustom: v}))} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">ترتيب العرض</label><Input type="number" value={formData.sortOrder} onChange={e => setFormData({...formData, sortOrder: e.target.value})} /></div>
+        <div><label className="text-xs font-medium text-black/50 dark:text-white/50 block mb-1">ترتيب العرض</label><Input type="number" value={formData.sortOrder} onChange={e => setFormData(f => ({...f, sortOrder: e.target.value}))} /></div>
       </div>
 
       <Button type="submit" className="w-full premium-btn" disabled={isPending || !formData.nameAr}>

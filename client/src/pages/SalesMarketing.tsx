@@ -270,16 +270,16 @@ export default function SalesMarketing() {
           <div className="space-y-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">عنوان البوستر *</label>
-              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="بوستر عرض رمضان 2025" data-testid="input-post-title" />
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="بوستر عرض رمضان 2025" data-testid="input-post-title" />
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">رابط الصورة *</label>
-              <Input value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." dir="ltr" data-testid="input-post-image-url" />
+              <Input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} placeholder="https://..." dir="ltr" data-testid="input-post-image-url" />
               <p className="text-[11px] text-black/30 mt-1">ارفع الصورة على Canva أو Imgur وضع الرابط هنا</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">المنصة المستهدفة</label>
-              <Select value={form.platform} onValueChange={v => setForm({ ...form, platform: v })}>
+              <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v }))}>
                 <SelectTrigger data-testid="select-post-platform"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="instagram">انستغرام</SelectItem>
@@ -293,7 +293,7 @@ export default function SalesMarketing() {
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">وصف (اختياري)</label>
-              <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="وصف البوستر والهدف منه..." rows={2} data-testid="input-post-description" />
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف البوستر والهدف منه..." rows={2} data-testid="input-post-description" />
             </div>
             <div className="flex gap-3">
               <Button className="flex-1 premium-btn gap-2" onClick={() => uploadMutation.mutate(form)} disabled={uploadMutation.isPending || !form.title || !form.imageUrl} data-testid="button-submit-post">
