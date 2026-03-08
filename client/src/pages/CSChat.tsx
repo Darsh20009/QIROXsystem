@@ -535,6 +535,7 @@ function ClientView({ user }: { user: any }) {
 function AgentView({ user }: { user: any }) {
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showSessions, setShowSessions] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState("");
@@ -634,7 +635,7 @@ function AgentView({ user }: { user: any }) {
     },
     onSuccess: (s: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
-      setSelectedId(s.id); setStatusFilter("active");
+      setSelectedId(s.id); setStatusFilter("active"); setShowSessions(false);
       toast({ title: "تم استلام المحادثة" });
     },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
@@ -670,7 +671,7 @@ function AgentView({ user }: { user: any }) {
   return (
     <div className="flex h-full" dir="rtl">
       {/* ── Left: Sessions List ── */}
-      <div className="w-72 flex-shrink-0 border-l border-black/[0.07] dark:border-white/[0.07] flex flex-col bg-white dark:bg-gray-900">
+      <div className={`${showSessions ? "flex" : "hidden"} md:flex w-full md:w-72 flex-shrink-0 border-l border-black/[0.07] dark:border-white/[0.07] flex-col bg-white dark:bg-gray-900`}>
         <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07]">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-black text-sm text-black dark:text-white">المحادثات</h2>
@@ -696,7 +697,7 @@ function AgentView({ user }: { user: any }) {
                 const cName = s.client?.fullName || s.client?.username || "عميل";
                 const isSelected = s.id === selectedId;
                 return (
-                  <div key={s.id} onClick={() => setSelectedId(s.id)} className={`rounded-xl p-3 cursor-pointer transition-all border ${isSelected ? "bg-black text-white border-transparent" : "bg-transparent border-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:border-black/[0.06] dark:hover:border-white/[0.06]"}`} data-testid={`session-item-${s.id}`}>
+                  <div key={s.id} onClick={() => { setSelectedId(s.id); setShowSessions(false); }} className={`rounded-xl p-3 cursor-pointer transition-all border ${isSelected ? "bg-black text-white border-transparent" : "bg-transparent border-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:border-black/[0.06] dark:hover:border-white/[0.06]"}`} data-testid={`session-item-${s.id}`}>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${isSelected ? "bg-white/20 text-white" : "bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 text-violet-700 dark:text-violet-300"}`}>{cName[0]?.toUpperCase()}</div>
@@ -732,17 +733,25 @@ function AgentView({ user }: { user: any }) {
 
       {/* ── Right: Chat + Client Profile ── */}
       {selectedId && selected ? (
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`${!showSessions ? "flex" : "hidden"} md:flex flex-1 flex-col min-w-0`}>
           {/* Chat header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
+          <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
+            {/* Mobile back button */}
+            <button
+              onClick={() => { setShowSessions(true); }}
+              className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex-shrink-0"
+              data-testid="button-back-to-sessions"
+            >
+              <ChevronRight className="w-4 h-4 text-black/60 dark:text-white/60" />
+            </button>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-black flex-shrink-0">
               {(selected.client?.fullName || selected.client?.username || "؟")[0]?.toUpperCase()}
             </div>
-            <div className="flex-1">
-              <p className="font-black text-sm text-black dark:text-white">{selected.client?.fullName || selected.client?.username}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-sm text-black dark:text-white truncate">{selected.client?.fullName || selected.client?.username}</p>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${statusInfo(selected.status).color}`}>{statusInfo(selected.status).label}</span>
-                {selected.subject && <span className="text-[10px] text-black/40 dark:text-white/30 truncate max-w-[150px]">{selected.subject}</span>}
+                {selected.subject && <span className="text-[10px] text-black/40 dark:text-white/30 truncate max-w-[100px] sm:max-w-[150px]">{selected.subject}</span>}
               </div>
             </div>
             <div className="flex items-center gap-1.5">
@@ -883,7 +892,7 @@ function AgentView({ user }: { user: any }) {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-center p-8">
+        <div className="hidden md:flex flex-1 items-center justify-center text-center p-8">
           <div>
             <MessageSquare className="w-12 h-12 mx-auto text-black/10 dark:text-white/10 mb-3" />
             <p className="text-sm text-black/30 dark:text-white/20">اختر محادثة للبدء</p>
@@ -939,7 +948,7 @@ export default function CSChat() {
   const isAgent = me?.role && ['support', 'admin', 'manager'].includes(me.role);
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="flex flex-col h-[100dvh] sm:h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
       {/* Page title bar */}
       <div className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-gray-900 border-b border-black/[0.07] dark:border-white/[0.07] flex-shrink-0">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">

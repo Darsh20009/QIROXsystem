@@ -95,9 +95,6 @@ export function AppSidebar() {
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "services" },
     { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "services" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "services" },
-    // Employee — communication
-    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
-    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication", allowedRoles: ["support", "admin", "manager"] },
     // Employee — finance
     { title: ar ? "المالية" : "Finance", icon: Wallet, url: "/admin/finance", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
