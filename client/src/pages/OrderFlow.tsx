@@ -118,12 +118,12 @@ const SECTOR_META: Record<string, { label: string; icon: any; color: string }> =
 };
 
 const VISUAL_STYLES = [
-  { value: "luxury",  label: "فاخر وراقي",    desc: "أسود، ذهبي، رمادي داكن", icon: "👑" },
-  { value: "modern",  label: "حديث ونظيف",   desc: "أبيض، رمادي، أزرق",      icon: "✨" },
-  { value: "bold",    label: "جريء وملفت",    desc: "ألوان زاهية وجريئة",     icon: "⚡" },
-  { value: "minimal", label: "مينيمال",       desc: "قليل الألوان، واضح",      icon: "◻️" },
-  { value: "classic", label: "كلاسيكي",       desc: "بيج، بني، تراثي",        icon: "🕰️" },
-  { value: "custom",  label: "حسب هويتي",    desc: "ألواني وخطوطي الخاصة",   icon: "🎨" },
+  { value: "luxury",  label: "فاخر وراقي",   desc: "أسود، ذهبي، رمادي داكن", icon: Crown,     color: "from-yellow-500 to-amber-600" },
+  { value: "modern",  label: "حديث ونظيف",   desc: "أبيض، رمادي، أزرق فاتح", icon: Sparkles,  color: "from-blue-400 to-cyan-500" },
+  { value: "bold",    label: "جريء وملفت",   desc: "ألوان زاهية وجريئة",     icon: Zap,       color: "from-orange-400 to-red-500" },
+  { value: "minimal", label: "مينيمال",      desc: "قليل الألوان، واضح",      icon: Layers,    color: "from-slate-400 to-gray-600" },
+  { value: "classic", label: "كلاسيكي",      desc: "بيج، بني، طابع تراثي",    icon: Star,      color: "from-amber-400 to-orange-500" },
+  { value: "custom",  label: "حسب هويتي",   desc: "ألواني وخطوطي الخاصة",   icon: Globe,     color: "from-violet-400 to-purple-500" },
 ];
 
 const TIER_VISUAL: Record<string, {
@@ -292,7 +292,7 @@ export default function OrderFlow() {
   const [walletAmount, setWalletAmount]   = useState(0);
 
   const [formData, setFormData] = useState({
-    businessName: "", phone: "", sector: "", visualStyle: "", siteLanguage: "ar",
+    businessName: "", phone: "", sector: segmentFromUrl || "", visualStyle: "", siteLanguage: "ar",
     whatsappIntegration: false, socialIntegration: false,
     hasLogo: false, needsLogoDesign: false, requiredFunctions: "",
   });
@@ -816,18 +816,36 @@ export default function OrderFlow() {
 
                   <div>
                     <Label className="text-xs font-bold text-black/45 dark:text-white/45 uppercase tracking-wider mb-2 block">{lang === "ar" ? "القطاع *" : "Sector *"}</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {sectors.map(s => (
-                        <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, sector: s.value }))} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                          data-testid={`sector-${s.value}`}
-                          className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.sector === s.value ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/20 dark:hover:border-white/20"}`}>
-                          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-2 shadow-sm`}>
-                            <s.icon className="w-4 h-4 text-white" />
+                    {segmentFromUrl ? (
+                      (() => {
+                        const locked = sectors.find(s => s.value === segmentFromUrl) || { value: segmentFromUrl, label: SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl, icon: Globe, color: "from-slate-400 to-gray-600" };
+                        return (
+                          <div className="flex items-center gap-3 border-2 border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl px-4 py-3 shadow-sm">
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${locked.color} flex items-center justify-center shrink-0 shadow-sm`}>
+                              <locked.icon className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-black dark:text-white">{locked.label}</p>
+                              <p className="text-[10px] text-black/40 dark:text-white/40">{lang === "ar" ? "محدد من صفحة الباقات" : "Selected from pricing page"}</p>
+                            </div>
+                            <Lock className="w-4 h-4 text-black/25 dark:text-white/25 shrink-0" />
                           </div>
-                          <p className="text-xs font-bold text-black dark:text-white">{s.label}</p>
-                        </motion.button>
-                      ))}
-                    </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {sectors.map(s => (
+                          <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, sector: s.value }))} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                            data-testid={`sector-${s.value}`}
+                            className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.sector === s.value ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/20 dark:hover:border-white/20"}`}>
+                            <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-2 shadow-sm`}>
+                              <s.icon className="w-4 h-4 text-white" />
+                            </div>
+                            <p className="text-xs font-bold text-black dark:text-white">{s.label}</p>
+                          </motion.button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -837,7 +855,9 @@ export default function OrderFlow() {
                         <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, visualStyle: s.value }))} whileHover={{ scale: 1.02 }}
                           data-testid={`style-${s.value}`}
                           className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.visualStyle === s.value ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/15 dark:hover:border-white/15"}`}>
-                          <span className="text-xl mb-1 block">{s.icon}</span>
+                          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-2 shadow-sm`}>
+                            <s.icon className="w-4 h-4 text-white" />
+                          </div>
                           <p className="text-xs font-bold text-black dark:text-white">{s.label}</p>
                           <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5 leading-tight">{s.desc}</p>
                         </motion.button>
