@@ -409,7 +409,7 @@ function ClientView({ user }: { user: any }) {
   const agentName = agent?.fullName || agent?.username || "خدمة العملاء";
 
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col flex-1 min-h-0" dir="rtl">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
         <div className="relative">
@@ -669,7 +669,7 @@ function AgentView({ user }: { user: any }) {
   const waitingCount = sessions.filter((s: any) => s.status === 'waiting').length;
 
   return (
-    <div className="flex h-full" dir="rtl">
+    <div className="flex flex-1 min-h-0" dir="rtl">
       {/* ── Left: Sessions List ── */}
       <div className={`${showSessions ? "flex" : "hidden"} md:flex w-full md:w-72 flex-shrink-0 border-l border-black/[0.07] dark:border-white/[0.07] flex-col bg-white dark:bg-gray-900`}>
         <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07]">
