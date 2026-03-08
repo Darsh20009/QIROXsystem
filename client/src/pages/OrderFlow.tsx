@@ -16,7 +16,7 @@ import {
   Dumbbell, Zap, Star, Package, BarChart, Shield, Sparkles,
   Copy, ClipboardCheck, Lock, Plus, Minus,
   ShoppingCart, BadgeCheck, Crown, Layers, Smartphone, Map,
-  Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash
+  Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash, LayoutGrid
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -285,6 +285,7 @@ export default function OrderFlow() {
   const [selectedPlan, setSelectedPlan]   = useState<string>(planFromUrl || "pro");
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [deviceCart, setDeviceCart]       = useState<Record<string, number>>({});
+  const [deviceBundles, setDeviceBundles] = useState<Record<string, number>>({});
   const [submittedOrder, setSubmittedOrder] = useState<{ id: string; amount: number; walletUsed?: number } | null>(null);
   const [postProofFiles, setPostProofFiles] = useState<UploadedFile[]>([]);
   const [copiedIban, setCopiedIban]       = useState(false);
@@ -346,10 +347,16 @@ export default function OrderFlow() {
   const handleFileRemove = (field: string, index: number) =>
     setUploadedFiles(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
 
-  const planPrice   = priceFromUrl || 0;
-  const addonsTotal = selectedAddons.reduce((sum, id) => sum + (extraAddons.find((a: any) => a.id === id)?.price || 0), 0);
+  const planPrice    = priceFromUrl || 0;
+  const addonsTotal  = selectedAddons.reduce((sum, id) => sum + (extraAddons.find((a: any) => a.id === id)?.price || 0), 0);
   const devicesTotal = Object.entries(deviceCart).reduce((sum, [pid, qty]) => sum + ((products.find((p: any) => p.id === pid)?.price || 0) * qty), 0);
-  const grandTotal  = planPrice + addonsTotal + devicesTotal;
+  const bundlesTotal = Object.entries(deviceBundles).reduce((sum, [pid, bidx]) => {
+    const p = products.find((pr: any) => pr.id === pid);
+    const bundle = p?.planBundles?.[bidx];
+    if (!bundle || bundle.isFree) return sum;
+    return sum + (bundle.customPrice || 0);
+  }, 0);
+  const grandTotal   = planPrice + addonsTotal + devicesTotal + bundlesTotal;
 
   /* wallet */
   const walletBalance = walletData ? Math.max(0, walletData.totalCredit - walletData.totalDebit) : 0;
@@ -363,7 +370,12 @@ export default function OrderFlow() {
       const filesStructured = Object.fromEntries(Object.entries(uploadedFiles).map(([k, f]) => [k, f.map(x => x.url).filter(Boolean)]));
       const orderDevices = Object.entries(deviceCart).filter(([,q]) => q > 0).map(([pid, qty]) => {
         const p = products.find((pr: any) => pr.id === pid);
-        return { id: pid, name: p?.name||"", nameAr: p?.nameAr||"", quantity: qty, price: p?.price||0 };
+        const bundleIdx = deviceBundles[pid];
+        const bundle = (typeof bundleIdx === "number") ? p?.planBundles?.[bundleIdx] : undefined;
+        return {
+          id: pid, name: p?.name||"", nameAr: p?.nameAr||"", quantity: qty, price: p?.price||0,
+          ...(bundle ? { bundle: { planNameAr: bundle.planNameAr, planTier: bundle.planTier, planSegment: bundle.planSegment, price: bundle.isFree ? 0 : (bundle.customPrice || 0), isFree: bundle.isFree } } : {}),
+        };
       });
       const orderAddons = selectedAddons.map(id => {
         const a = extraAddons.find((ad: any) => ad.id === id);
@@ -384,7 +396,13 @@ export default function OrderFlow() {
         items: [
           { name: `Package ${PLAN_LABELS[selectedPlan]}`, nameAr: `باقة ${PLAN_LABELS[selectedPlan]}`, price: planPrice, qty: 1 },
           ...orderAddons.map(a => ({ name: a.name, nameAr: a.nameAr, price: a.price, qty: 1 })),
-          ...orderDevices.map(d => ({ name: d.name, nameAr: d.nameAr, price: d.price, qty: d.quantity })),
+          ...orderDevices.flatMap(d => {
+            const items = [{ name: d.name, nameAr: d.nameAr, price: d.price, qty: d.quantity }];
+            if ((d as any).bundle && !(d as any).bundle.isFree && (d as any).bundle.price > 0) {
+              items.push({ name: (d as any).bundle.planNameAr, nameAr: (d as any).bundle.planNameAr, price: (d as any).bundle.price, qty: 1 });
+            }
+            return items;
+          }),
         ],
       };
       const orderRes = await apiRequest("POST", "/api/orders", body);
@@ -431,10 +449,19 @@ export default function OrderFlow() {
   const handleNext = () => { if (canNext()) setStep(s => s + 1); };
   const handleBack = () => setStep(s => s - 1);
   const toggleAddon = (id: string) => setSelectedAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const setDeviceQty = (pid: string, delta: number) => setDeviceCart(prev => {
-    const curr = prev[pid] || 0; const next = Math.max(0, curr + delta);
-    const updated = { ...prev }; if (next === 0) delete updated[pid]; else updated[pid] = next; return updated;
-  });
+  const setDeviceQty = (pid: string, delta: number) => {
+    setDeviceCart(prev => {
+      const curr = prev[pid] || 0; const next = Math.max(0, curr + delta);
+      const updated = { ...prev }; if (next === 0) delete updated[pid]; else updated[pid] = next; return updated;
+    });
+    if (delta < 0) {
+      setDeviceBundles(prev => {
+        const curr = (deviceCart[pid] || 0) + delta;
+        if (curr <= 0) { const u = { ...prev }; delete u[pid]; return u; }
+        return prev;
+      });
+    }
+  };
 
   if (isUserLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
 
@@ -927,19 +954,28 @@ export default function OrderFlow() {
                     <p className="text-xs text-black/25 dark:text-white/25">{lang === "ar" ? "يمكنك المتابعة للخطوة التالية" : "You can continue to the next step"}</p>
                   </div>
                 ) : (
-                  <div className="grid gap-3">
+                  <div className="grid gap-4">
                     {products.filter((p: any) => p.isActive !== false).map((p: any) => {
                       const qty = deviceCart[p.id] || 0;
+                      const hasBundles = Array.isArray(p.planBundles) && p.planBundles.length > 0;
+                      const selectedBundleIdx = deviceBundles[p.id];
+                      const selectedBundle = typeof selectedBundleIdx === "number" ? p.planBundles?.[selectedBundleIdx] : null;
+                      const BUNDLE_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
+                      const BUNDLE_COLORS: Record<string, string> = { lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600", infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500" };
+                      const BUNDLE_TIER_LABELS: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينتي", custom: "مخصص" };
                       return (
                         <motion.div key={p.id} data-testid={`product-card-${p.id}`}
-                          className={`bg-white dark:bg-gray-900 border-2 rounded-3xl p-4 transition-all ${qty > 0 ? "border-black dark:border-white shadow-md" : "border-black/[0.06] dark:border-white/[0.06]"}`}>
-                          <div className="flex items-center gap-4">
+                          className={`bg-white dark:bg-gray-900 border-2 rounded-3xl transition-all ${qty > 0 ? "border-black dark:border-white shadow-md" : "border-black/[0.06] dark:border-white/[0.06]"}`}>
+                          <div className="flex items-center gap-4 p-4">
                             {p.imageUrl
                               ? <img src={p.imageUrl} alt={p.nameAr||p.name} className="w-16 h-16 object-cover rounded-2xl shrink-0 shadow-sm" />
                               : <div className="w-16 h-16 bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl flex items-center justify-center shrink-0"><Package className="w-7 h-7 text-black/20 dark:text-white/20" /></div>
                             }
                             <div className="flex-1 min-w-0">
-                              <p className="font-black text-black dark:text-white">{p.nameAr || p.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-black text-black dark:text-white">{p.nameAr || p.name}</p>
+                                {hasBundles && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-700/40">{p.planBundles.length} باقة</span>}
+                              </div>
                               {p.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 line-clamp-1">{p.descriptionAr}</p>}
                               <p className="font-black text-black dark:text-white mt-1">{p.price?.toLocaleString()} <span className="text-xs font-normal text-black/40 dark:text-white/40">ر.س</span></p>
                             </div>
@@ -953,6 +989,53 @@ export default function OrderFlow() {
                               </button>
                             </div>
                           </div>
+
+                          {/* Bundle picker — shown when product is selected AND has bundles */}
+                          {qty > 0 && hasBundles && (
+                            <AnimatePresence>
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                                className="border-t border-black/[0.06] dark:border-white/[0.06] px-4 pb-4 pt-3">
+                                <p className="text-xs font-bold text-black/50 dark:text-white/50 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                  <Crown className="w-3.5 h-3.5 text-violet-500" />
+                                  {lang === "ar" ? "اختر الباقة المرفقة مع الجهاز" : "Select bundle included with device"}
+                                  {!selectedBundle && <span className="text-red-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">مطلوب</span>}
+                                </p>
+                                <div className="grid gap-2">
+                                  {p.planBundles.map((bundle: any, bidx: number) => {
+                                    const BIcon = BUNDLE_ICONS[bundle.planTier] || LayoutGrid;
+                                    const isSelected = selectedBundleIdx === bidx;
+                                    return (
+                                      <button key={bidx} onClick={() => setDeviceBundles(prev => ({ ...prev, [p.id]: bidx }))}
+                                        data-testid={`bundle-option-${p.id}-${bidx}`}
+                                        className={`flex items-center gap-3 border-2 rounded-2xl px-3 py-2.5 text-right transition-all ${isSelected ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/25 dark:hover:border-white/25"}`}>
+                                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${BUNDLE_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"} flex items-center justify-center shrink-0 shadow-sm`}>
+                                          <BIcon className="w-4 h-4 text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-right">
+                                          <div className="flex items-center gap-2 justify-between">
+                                            <p className="text-sm font-bold text-black dark:text-white truncate">{bundle.planNameAr}</p>
+                                            <span className="text-xs font-black text-black dark:text-white shrink-0">
+                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : `${(bundle.customPrice || 0).toLocaleString()} ر.س`}
+                                            </span>
+                                          </div>
+                                          {bundle.planDescAr && <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5 truncate">{bundle.planDescAr}</p>}
+                                          {bundle.features?.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                              {bundle.features.slice(0, 3).map((f: string, fi: number) => (
+                                                <span key={fi} className="text-[9px] bg-black/[0.04] dark:bg-white/[0.05] text-black/50 dark:text-white/50 px-1.5 py-0.5 rounded-md">{f}</span>
+                                              ))}
+                                              {bundle.features.length > 3 && <span className="text-[9px] text-black/30 dark:text-white/30">+{bundle.features.length - 3}</span>}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {isSelected && <div className="w-4 h-4 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0"><Check className="w-2.5 h-2.5 text-white dark:text-black" /></div>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            </AnimatePresence>
+                          )}
                         </motion.div>
                       );
                     })}
@@ -1006,10 +1089,25 @@ export default function OrderFlow() {
                     })}
                     {Object.entries(deviceCart).map(([pid, qty]) => {
                       const p = products.find((pr: any) => pr.id === pid);
+                      const bundleIdx = deviceBundles[pid];
+                      const bundle = typeof bundleIdx === "number" ? p?.planBundles?.[bundleIdx] : null;
                       return p ? (
-                        <div key={pid} className="px-6 py-3 flex justify-between items-center">
-                          <span className="text-sm text-black/55 dark:text-white/55">{p.nameAr || p.name} ×{qty}</span>
-                          <span className="text-sm font-medium text-black dark:text-white">{(p.price * qty).toLocaleString()} ر.س</span>
+                        <div key={pid}>
+                          <div className="px-6 py-3 flex justify-between items-center">
+                            <span className="text-sm text-black/55 dark:text-white/55">{p.nameAr || p.name} ×{qty}</span>
+                            <span className="text-sm font-medium text-black dark:text-white">{(p.price * qty).toLocaleString()} ر.س</span>
+                          </div>
+                          {bundle && (
+                            <div className="px-6 py-2 flex justify-between items-center bg-violet-50/50 dark:bg-violet-900/10">
+                              <div className="flex items-center gap-1.5">
+                                <Crown className="w-3 h-3 text-violet-500" />
+                                <span className="text-xs text-violet-700 dark:text-violet-400">{bundle.planNameAr}</span>
+                              </div>
+                              <span className="text-xs font-medium text-violet-700 dark:text-violet-400">
+                                {bundle.isFree ? "مجاني" : `${(bundle.customPrice || 0).toLocaleString()} ر.س`}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ) : null;
                     })}

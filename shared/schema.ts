@@ -339,6 +339,16 @@ export interface InsertPartner {
 }
 
 // --- Qirox Products / Devices (MongoDB) ---
+export interface ProductPlanBundle {
+  planNameAr: string;
+  planDescAr?: string;
+  planTier: 'lite' | 'pro' | 'infinite' | 'custom';
+  planSegment?: string;
+  customPrice: number;
+  isFree: boolean;
+  features?: string[];
+}
+
 export interface QiroxProduct {
   id: string;
   name: string;
@@ -357,6 +367,7 @@ export interface QiroxProduct {
   stock: number;
   displayOrder: number;
   linkedPlanSlug?: string;
+  planBundles?: ProductPlanBundle[];
   createdAt?: Date;
 }
 

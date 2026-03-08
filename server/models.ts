@@ -351,6 +351,15 @@ const qiroxProductSchema = new mongoose.Schema({
   model: String,
   warrantyMonths: { type: Number, default: 0 },
   linkedPlanSlug: String,
+  planBundles: [{
+    planNameAr: { type: String, required: true },
+    planDescAr: String,
+    planTier: { type: String, enum: ['lite', 'pro', 'infinite', 'custom'], default: 'custom' },
+    planSegment: String,
+    customPrice: { type: Number, default: 0 },
+    isFree: { type: Boolean, default: false },
+    features: [String],
+  }],
   requiresShipping: { type: Boolean, default: false },
   shippingProviders: [{
     companyId:   { type: String, required: true },

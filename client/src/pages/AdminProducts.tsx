@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   Loader2, Plus, Pencil, Trash2, Package, Search, Star, Image as ImageIcon,
-  Sparkles, Truck, Globe, MapPin, Clock, ExternalLink, Info
+  Sparkles, Truck, Globe, MapPin, Clock, ExternalLink, Info,
+  Crown, Zap, Infinity as InfinityIcon, LayoutGrid, X, CheckSquare, DollarSign
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +43,28 @@ interface ShippingProvider {
   isActive: boolean;
 }
 
+interface PlanBundle {
+  planNameAr: string;
+  planDescAr: string;
+  planTier: string;
+  planSegment: string;
+  customPrice: number | "";
+  isFree: boolean;
+  features: string;
+}
+
+const emptyBundle: PlanBundle = {
+  planNameAr: "", planDescAr: "", planTier: "custom",
+  planSegment: "", customPrice: "", isFree: false, features: "",
+};
+
+const TIER_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
+const TIER_COLORS: Record<string, string> = {
+  lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600",
+  infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500",
+};
+const TIER_LABELS: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينتي", custom: "مخصص" };
+
 const categoryLabels: Record<string, { label: string; color: string }> = {
   device:   { label: "جهاز / معدات",      color: "bg-blue-50 text-blue-700 border-blue-200" },
   hosting:  { label: "استضافة",           color: "bg-purple-50 text-purple-700 border-purple-200" },
@@ -59,6 +82,7 @@ const emptyForm = {
   featured: false, specs: "", stock: "-1", displayOrder: "0",
   linkedPlanSlug: "", requiresShipping: false,
   shippingProviders: [] as ShippingProvider[],
+  planBundles: [] as PlanBundle[],
 };
 
 export default function AdminProducts() {
@@ -141,6 +165,15 @@ export default function AdminProducts() {
       linkedPlanSlug: (p as any).linkedPlanSlug || "",
       requiresShipping: (p as any).requiresShipping ?? false,
       shippingProviders: providers,
+      planBundles: ((p as any).planBundles || []).map((b: any) => ({
+        planNameAr: b.planNameAr || "",
+        planDescAr: b.planDescAr || "",
+        planTier: b.planTier || "custom",
+        planSegment: b.planSegment || "",
+        customPrice: b.customPrice ?? "",
+        isFree: b.isFree ?? false,
+        features: Array.isArray(b.features) ? b.features.join("، ") : (b.features || ""),
+      })) as PlanBundle[],
     });
     setEditingId(p.id);
     setDialogOpen(true);
@@ -156,6 +189,15 @@ export default function AdminProducts() {
       customPrice: sp.customPrice === "" ? undefined : Number(sp.customPrice),
       customOutsideCityPrice: sp.customOutsideCityPrice === "" ? undefined : Number(sp.customOutsideCityPrice),
     }));
+    const cleanedBundles = form.planBundles.map(b => ({
+      planNameAr: b.planNameAr,
+      planDescAr: b.planDescAr || undefined,
+      planTier: b.planTier,
+      planSegment: b.planSegment || undefined,
+      customPrice: b.isFree ? 0 : (b.customPrice === "" ? 0 : Number(b.customPrice)),
+      isFree: b.isFree,
+      features: b.features ? b.features.split(/[،,\n]+/).map(f => f.trim()).filter(Boolean) : [],
+    }));
     const payload = {
       ...form,
       price: Number(form.price),
@@ -164,6 +206,7 @@ export default function AdminProducts() {
       images: form.images.filter(Boolean),
       specs: specsObj,
       shippingProviders: cleanedProviders,
+      planBundles: cleanedBundles,
     };
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: payload });
@@ -375,15 +418,21 @@ export default function AdminProducts() {
           </DialogHeader>
 
           <Tabs defaultValue="info" className="mt-2">
-            <TabsList className="w-full grid grid-cols-3 h-9 mb-4">
-              <TabsTrigger value="info" className="text-xs gap-1.5"><Package className="w-3.5 h-3.5" />المعلومات</TabsTrigger>
-              <TabsTrigger value="shipping" className="text-xs gap-1.5">
-                <Truck className="w-3.5 h-3.5" />الشحن
-                {form.shippingProviders.length > 0 && (
-                  <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full mr-1">{form.shippingProviders.length}</span>
+            <TabsList className="w-full grid grid-cols-4 h-9 mb-4">
+              <TabsTrigger value="info" className="text-xs gap-1"><Package className="w-3 h-3" />المعلومات</TabsTrigger>
+              <TabsTrigger value="bundles" className="text-xs gap-1">
+                <Crown className="w-3 h-3" />الباقات
+                {form.planBundles.length > 0 && (
+                  <span className="bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.planBundles.length}</span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="advanced" className="text-xs gap-1.5"><Sparkles className="w-3.5 h-3.5" />متقدم</TabsTrigger>
+              <TabsTrigger value="shipping" className="text-xs gap-1">
+                <Truck className="w-3 h-3" />الشحن
+                {form.shippingProviders.length > 0 && (
+                  <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.shippingProviders.length}</span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="advanced" className="text-xs gap-1"><Sparkles className="w-3 h-3" />متقدم</TabsTrigger>
             </TabsList>
 
             {/* ── TAB: INFO ── */}
@@ -439,6 +488,115 @@ export default function AdminProducts() {
                   <Switch checked={form.featured} onCheckedChange={v => setForm(f => ({ ...f, featured: v }))} data-testid="switch-product-featured" />
                 </div>
               </div>
+            </TabsContent>
+
+            {/* ── TAB: PLAN BUNDLES ── */}
+            <TabsContent value="bundles" className="space-y-4">
+              <div className="flex items-start justify-between gap-3 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-2xl border border-violet-200/60 dark:border-violet-700/30">
+                <div>
+                  <p className="text-sm font-bold text-violet-800 dark:text-violet-300 flex items-center gap-2">
+                    <Crown className="w-4 h-4" />
+                    باقات مرفقة بهذا المنتج
+                  </p>
+                  <p className="text-[11px] text-violet-600 dark:text-violet-400 mt-0.5">عند شراء المنتج، يختار العميل إحدى الباقات المرفقة ويتم تسعيرها مع المنتج</p>
+                </div>
+                <Button size="sm" variant="outline" className="border-violet-300 dark:border-violet-600 text-violet-700 dark:text-violet-300 text-xs shrink-0"
+                  onClick={() => setForm(f => ({ ...f, planBundles: [...f.planBundles, { ...emptyBundle }] }))}
+                  data-testid="btn-add-bundle">
+                  <Plus className="w-3.5 h-3.5 ml-1" /> إضافة باقة
+                </Button>
+              </div>
+
+              {form.planBundles.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-black/[0.07] dark:border-white/[0.07] rounded-2xl">
+                  <Crown className="w-10 h-10 mx-auto mb-3 text-black/15 dark:text-white/15" />
+                  <p className="text-sm text-black/40 dark:text-white/40 mb-1">لا توجد باقات مرفقة</p>
+                  <p className="text-xs text-black/25 dark:text-white/25">اضغط "إضافة باقة" لإرفاق باقة بهذا المنتج</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {form.planBundles.map((bundle, idx) => {
+                    const TierIcon = TIER_ICONS[bundle.planTier] || LayoutGrid;
+                    return (
+                      <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                        className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl overflow-hidden"
+                        data-testid={`bundle-card-${idx}`}>
+                        <div className={`h-1 bg-gradient-to-r ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"}`} />
+                        <div className="p-4 space-y-3">
+                          <div className="flex items-center gap-2 justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"} flex items-center justify-center`}>
+                                <TierIcon className="w-4 h-4 text-white" />
+                              </div>
+                              <span className="text-sm font-bold text-black dark:text-white">
+                                {bundle.planNameAr || `باقة ${idx + 1}`}
+                              </span>
+                            </div>
+                            <button onClick={() => setForm(f => ({ ...f, planBundles: f.planBundles.filter((_, i) => i !== idx) }))}
+                              className="text-red-400 hover:text-red-600 transition-colors" data-testid={`btn-remove-bundle-${idx}`}>
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">اسم الباقة (عربي) *</label>
+                              <Input value={bundle.planNameAr} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planNameAr: e.target.value } : b) }))}
+                                placeholder="باقة المطاعم الأساسية" className="h-9 text-sm" data-testid={`input-bundle-name-${idx}`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">المستوى</label>
+                              <Select value={bundle.planTier} onValueChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planTier: v } : b) }))}>
+                                <SelectTrigger className="h-9 text-sm" data-testid={`select-bundle-tier-${idx}`}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(TIER_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">القطاع (اختياري)</label>
+                              <Input value={bundle.planSegment} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planSegment: e.target.value } : b) }))}
+                                placeholder="restaurant" className="h-9 text-sm" data-testid={`input-bundle-segment-${idx}`} />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-green-500" />
+                              <span className="text-xs font-medium text-black/60 dark:text-white/60">الباقة مجانية</span>
+                            </div>
+                            <Switch checked={bundle.isFree} onCheckedChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, isFree: v } : b) }))}
+                              data-testid={`switch-bundle-free-${idx}`} />
+                          </div>
+
+                          {!bundle.isFree && (
+                            <div>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">سعر الباقة (ر.س) *</label>
+                              <Input type="number" value={bundle.customPrice} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, customPrice: e.target.value === "" ? "" : Number(e.target.value) } : b) }))}
+                                placeholder="0" className="h-9 text-sm" data-testid={`input-bundle-price-${idx}`} />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">وصف الباقة</label>
+                            <Input value={bundle.planDescAr} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planDescAr: e.target.value } : b) }))}
+                              placeholder="باقة متكاملة للمطاعم..." className="h-9 text-sm" data-testid={`input-bundle-desc-${idx}`} />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">
+                              <CheckSquare className="w-3 h-3 inline ml-1" />المميزات (افصل بفاصلة أو سطر جديد)
+                            </label>
+                            <Textarea value={bundle.features} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, features: e.target.value } : b) }))}
+                              placeholder="نظام طلبات، تطبيق جوال، لوحة تحكم..." rows={2} className="resize-none text-xs"
+                              data-testid={`textarea-bundle-features-${idx}`} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
 
             {/* ── TAB: SHIPPING ── */}
