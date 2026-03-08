@@ -235,7 +235,7 @@ export default function Privacy() {
                   : "If you have any questions about our privacy policy, you can reach us at:"}
               </p>
               <p className="text-sm text-black/60 font-medium" data-testid="privacy-contact-email">
-                privacy@qiroxstudio.online
+                info@qiroxstudio.online
               </p>
             </div>
           </motion.div>

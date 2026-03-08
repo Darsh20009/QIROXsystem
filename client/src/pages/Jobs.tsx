@@ -801,7 +801,7 @@ export default function Jobs() {
               </motion.div>
               <h3 className="text-xl font-black text-black/40 dark:text-white/40 mb-2">{lang === "ar" ? "لا توجد وظائف مفتوحة حالياً" : "No open positions right now"}</h3>
               <p className="text-sm text-black/25 dark:text-white/25 mb-8">{lang === "ar" ? "نحن دائماً نبحث عن المواهب — أرسل لنا سيرتك الذاتية وسنتواصل معك" : "We're always looking for talent — send your CV and we'll reach out"}</p>
-              <a href="mailto:careers@qiroxstudio.online"
+              <a href="mailto:info@qiroxstudio.online"
                 className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-xl font-bold text-sm hover:opacity-80 transition-opacity">
                 <Send className="w-4 h-4" />
                 {lang === "ar" ? "أرسل سيرتك الذاتية" : "Send your CV"}
@@ -838,10 +838,10 @@ export default function Jobs() {
               {lang === "ar" ? "إذا كنت تؤمن أنك ستضيف قيمة لفريقنا، نريد أن نسمع منك بغض النظر عن الوظائف المعلنة"
                 : "If you believe you'll add value to our team, we want to hear from you regardless of posted openings"}
             </p>
-            <a href="mailto:careers@qiroxstudio.online"
+            <a href="mailto:info@qiroxstudio.online"
               className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-2xl font-black text-sm hover:bg-white/90 transition-all hover:scale-105 shadow-xl shadow-white/10">
               <Mail className="w-4 h-4" />
-              careers@qiroxstudio.online
+              info@qiroxstudio.online
             </a>
           </motion.div>
         </div>

@@ -288,7 +288,7 @@ export default function Terms() {
                   : "If you have any questions about our Terms & Conditions, don't hesitate to contact us:"}
               </p>
               <p className="text-sm text-black/60 font-medium" data-testid="terms-contact-email">
-                legal@qiroxstudio.online
+                info@qiroxstudio.online
               </p>
             </div>
           </motion.div>
