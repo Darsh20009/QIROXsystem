@@ -1176,6 +1176,51 @@ export default function AdminAppPublish() {
   ];
   const readyCount = readinessChecklist.filter(x => x.done).length;
 
+  // ─── Download Helper ──────────────────────────────────────
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // ─── Re-download a saved package ──────────────────────────
+  const [redownloading, setRedownloading] = useState<number | null>(null);
+  const handleRedownload = async (pkg: any) => {
+    setRedownloading(pkg.id);
+    try {
+      let zip: JSZip;
+      const perms = pkg.perms || ["internet", "notifications", "storage"];
+      switch (pkg.platform) {
+        case "android":
+          zip = generateAndroidZip(data, perms, appName, data.androidPackage || "com.qirox.studio", pkg.version, siteUrl);
+          break;
+        case "windows":
+          zip = generateWindowsZip(data, appName, pkg.version, siteUrl);
+          break;
+        case "ios":
+          zip = generateIosZip(data, appName, data.appleBundleId || "com.qirox.studio", pkg.version, siteUrl);
+          break;
+        case "harmony":
+          zip = generateHarmonyZip(data, appName, pkg.version, siteUrl, data.huaweiPackage || "com.qirox.studio.harmony");
+          break;
+        default:
+          throw new Error("منصة غير معروفة");
+      }
+      const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+      triggerDownload(blob, pkg.filename);
+      toast({ title: "✅ تم إعادة تنزيل الحزمة" });
+    } catch (err: any) {
+      toast({ title: "خطأ في إعادة التنزيل", description: err.message, variant: "destructive" });
+    } finally {
+      setRedownloading(null);
+    }
+  };
+
   // ─── Generate Package ─────────────────────────────────────
   const handleGenerate = async () => {
     setGenerating(true);
@@ -1218,9 +1263,7 @@ export default function AdminAppPublish() {
 
       const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
       const filename = `qirox-studio-${selectedPlatform}-${buildVer}-${Date.now()}.zip`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
+      triggerDownload(blob, filename);
 
       // Save to history
       const pkg = {
@@ -1588,10 +1631,22 @@ export default function AdminAppPublish() {
                         <div key={pkg.id} data-testid={`pkg-${pkg.id}`} className="flex items-center gap-2 p-2.5 rounded-xl bg-black/[0.02] border border-black/[0.05]">
                           <Icon className={`w-4 h-4 shrink-0 ${plt?.color || "text-black/40"}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold text-black truncate">{pkg.platformLabel}</p>
-                            <p className="text-[9px] text-black/40 font-mono">v{pkg.version} · {pkg.size}</p>
+                            <p className="text-[11px] font-bold text-black dark:text-white truncate">{pkg.platformLabel}</p>
+                            <p className="text-[9px] text-black/40 dark:text-white/30 font-mono">v{pkg.version} · {pkg.size}</p>
                           </div>
                           <Badge variant="outline" className="text-[9px] shrink-0">{pkg.ext}</Badge>
+                          <button
+                            onClick={() => handleRedownload(pkg)}
+                            disabled={redownloading === pkg.id}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.10] transition-colors shrink-0 disabled:opacity-40"
+                            title="إعادة تنزيل"
+                            data-testid={`btn-redownload-${pkg.id}`}
+                          >
+                            {redownloading === pkg.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin text-black/50 dark:text-white/50" />
+                              : <Download className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
+                            }
+                          </button>
                         </div>
                       );
                     })}
