@@ -10,6 +10,30 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 8, 2026 - Session 43)
+
+### مواقع التواصل + تحميل الأنظمة + إصلاحات متعددة
+
+**مواقع التواصل الاجتماعي:**
+- `Footer.tsx`: أضيف query لـ `/api/public/settings` + قسم "تابعنا" بأيقونات Instagram/X/LinkedIn/TikTok/Snapchat/YouTube/WhatsApp
+- `Home.tsx`: أضيف قسم "تابعنا على منصات التواصل" قبل Footer يعرض أيقونات التواصل الاجتماعي من API
+- الأيقونات تظهر فقط إذا كانت الروابط مُعبأة في إعدادات النظام
+
+**قسم تحميل الأنظمة (Homepage):**
+- `Home.tsx`: أضيف قسم جديد `section-downloads` بين قسم المحمول وقسم الكاروسيل
+- ثلاث بطاقات داكنة: App Store (iOS)، Google Play (Android)، Microsoft Store (Windows)
+- بطاقة مفعّلة ولها رابط → "تحميل الآن" — بطاقة بدون رابط → "قريباً يتوفر"
+- `AdminQiroxSettings.tsx`: حُدّث نص الإشعار من "يظهر في الفوتر" إلى "يظهر في الرئيسية والفوتر"
+
+**تقييد صلاحيات الباقات:**
+- `AdminSubscriptionPlans.tsx`: أزرار إضافة/تعديل/حذف قطاعات الأسعار مخفية لغير المشرف الرئيسي (admin فقط)
+
+**صفحة النماذج:**
+- `Demos.tsx`: تُعرض فقط القوالب التي لها رابط `demoUrl` (القوالب بدون ديمو لا تظهر للزوار)
+
+**توحيد البريد الإلكتروني:**
+- استبدل جميع عناوين البريد في الصفحات العامة (support@، privacy@، legal@، careers@) بـ `info@qiroxstudio.online` في: Contact.tsx، Privacy.tsx، Terms.tsx، Jobs.tsx، InvoicePrint.tsx
+
 ## Latest Changes (Mar 7, 2026 - Session 42)
 
 ### Demo Templates System — نماذج القوالب التفاعلية
