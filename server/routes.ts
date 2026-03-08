@@ -3714,7 +3714,7 @@ export async function registerRoutes(
       const userName = (user as any).fullName || (user as any).username || "عميل";
       sendWelcomeEmail(cleanEmail, userName).catch(e => console.error("[Email] welcome failed:", e));
       console.log(`[OTP] verify-email SUCCESS for ${cleanEmail} — session extended to 14 days`);
-      res.json({ ok: true, verified: true });
+      res.json({ ok: true, verified: true, role: (user as any).role || "client" });
     } catch (err) {
       console.error("[OTP] verify-email exception:", err);
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });

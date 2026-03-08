@@ -213,10 +213,8 @@ export default function Login() {
       saveDeviceToken(data.deviceToken);
     }
 
-    // Set user data in cache directly from response (correct query key)
-    const userData = { ...data };
-    delete userData.deviceToken;
-    queryClient.setQueryData(["/api/user"], userData);
+    // Invalidate user cache so Dashboard fetches fresh data
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
     setIsVerifying(false);
     const name = verifyStep!.name;
