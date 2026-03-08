@@ -154,6 +154,9 @@ const TIER_VISUAL: Record<string, {
   },
 };
 
+const BUNDLE_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
+const BUNDLE_COLORS: Record<string, string> = { lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600", infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500" };
+
 const STEP_CONFIG = [
   { label: "الباقة",       labelEn: "Package",  icon: Crown },
   { label: "الإضافات",     labelEn: "Add-ons",  icon: Plus },
@@ -444,22 +447,27 @@ export default function OrderFlow() {
   const canNext = () => {
     if (step === 1) return !!selectedPlan;
     if (step === 3) return !!formData.businessName && !!formData.sector;
+    if (step === 4) {
+      const activeProducts = (products || []).filter((p: any) => p.isActive !== false);
+      return Object.entries(deviceCart).every(([pid]) => {
+        const p = activeProducts.find((pr: any) => pr.id === pid);
+        if (!p || !Array.isArray(p.planBundles) || p.planBundles.length === 0) return true;
+        return typeof deviceBundles[pid] === "number";
+      });
+    }
     return true;
   };
   const handleNext = () => { if (canNext()) setStep(s => s + 1); };
   const handleBack = () => setStep(s => s - 1);
   const toggleAddon = (id: string) => setSelectedAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const setDeviceQty = (pid: string, delta: number) => {
+    const curr = deviceCart[pid] || 0;
+    const next = Math.max(0, curr + delta);
     setDeviceCart(prev => {
-      const curr = prev[pid] || 0; const next = Math.max(0, curr + delta);
       const updated = { ...prev }; if (next === 0) delete updated[pid]; else updated[pid] = next; return updated;
     });
-    if (delta < 0) {
-      setDeviceBundles(prev => {
-        const curr = (deviceCart[pid] || 0) + delta;
-        if (curr <= 0) { const u = { ...prev }; delete u[pid]; return u; }
-        return prev;
-      });
+    if (next === 0) {
+      setDeviceBundles(prev => { const u = { ...prev }; delete u[pid]; return u; });
     }
   };
 
@@ -960,9 +968,6 @@ export default function OrderFlow() {
                       const hasBundles = Array.isArray(p.planBundles) && p.planBundles.length > 0;
                       const selectedBundleIdx = deviceBundles[p.id];
                       const selectedBundle = typeof selectedBundleIdx === "number" ? p.planBundles?.[selectedBundleIdx] : null;
-                      const BUNDLE_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: InfinityIcon, custom: LayoutGrid };
-                      const BUNDLE_COLORS: Record<string, string> = { lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600", infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500" };
-                      const BUNDLE_TIER_LABELS: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينتي", custom: "مخصص" };
                       return (
                         <motion.div key={p.id} data-testid={`product-card-${p.id}`}
                           className={`bg-white dark:bg-gray-900 border-2 rounded-3xl transition-all ${qty > 0 ? "border-black dark:border-white shadow-md" : "border-black/[0.06] dark:border-white/[0.06]"}`}>
