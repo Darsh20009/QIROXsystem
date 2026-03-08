@@ -82,14 +82,8 @@ export default function VerifyEmail() {
       return;
     }
 
-    // Refresh user session (non-critical — don't block success screen on this)
-    try {
-      const userRes = await fetch("/api/auth/user", { credentials: "include" });
-      if (userRes.ok) {
-        const updatedUser = await userRes.json();
-        queryClient.setQueryData(["/api/auth/user"], updatedUser);
-      }
-    } catch { /* ignore — verification already succeeded */ }
+    // Refresh user session so dashboard loads with verified state
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
     setIsVerifying(false);
     setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
