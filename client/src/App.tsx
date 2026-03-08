@@ -601,6 +601,7 @@ function AppInner() {
     }
   });
   const [location] = useLocation();
+  const isFullBleed = location === "/cs-chat" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
@@ -708,10 +709,18 @@ function AppInner() {
               </div>
             </header>
             <GlobalNotificationBanner />
-            <main className="flex-1 overflow-auto p-3 sm:p-5 md:p-8 md:pb-8 dark:bg-gray-950" style={{ ["--safe-pb" as any]: "env(safe-area-inset-bottom, 0px)" } as React.CSSProperties} id="main-content">
-              <div className="max-w-7xl mx-auto w-full">
+            <main
+              className={`flex-1 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 sm:p-5 md:p-8 md:pb-8"}`}
+              style={{ ["--safe-pb" as any]: "env(safe-area-inset-bottom, 0px)" } as React.CSSProperties}
+              id="main-content"
+            >
+              {isFullBleed ? (
                 <AdminRouter />
-              </div>
+              ) : (
+                <div className="max-w-7xl mx-auto w-full">
+                  <AdminRouter />
+                </div>
+              )}
             </main>
             <MobileBottomNav />
             <FloatingClientChat />

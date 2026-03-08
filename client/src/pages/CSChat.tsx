@@ -939,7 +939,7 @@ export default function CSChat() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-black/30" />
       </div>
     );
@@ -948,7 +948,7 @@ export default function CSChat() {
   const isAgent = me?.role && ['support', 'admin', 'manager'].includes(me.role);
 
   return (
-    <div className="flex flex-col h-[100dvh] sm:h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="flex flex-col flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950" dir="rtl">
       {/* Page title bar */}
       <div className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-gray-900 border-b border-black/[0.07] dark:border-white/[0.07] flex-shrink-0">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
