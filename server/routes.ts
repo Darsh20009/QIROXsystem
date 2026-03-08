@@ -1780,7 +1780,15 @@ export async function registerRoutes(
       .skip((page - 1) * limit)
       .limit(limit);
     const balance = await getWalletBalance(userId);
-    res.json({ transactions: txs, balance, total, page, totalPages: Math.ceil(total / limit) });
+    // Compute aggregated stats across all transactions (not just paginated)
+    const statsAgg = await WalletTransactionModel.aggregate([
+      { $match: { userId } },
+      { $group: { _id: "$type", total: { $sum: "$amount" } } }
+    ]);
+    const totalCredit = statsAgg.find((a: any) => a._id === 'credit')?.total || 0;
+    const totalDebit  = statsAgg.find((a: any) => a._id === 'debit')?.total  || 0;
+    const outstanding = parseFloat(Math.max(0, totalDebit - totalCredit).toFixed(2));
+    res.json({ transactions: txs, balance, totalDebit, totalCredit, outstanding, total, page, totalPages: Math.ceil(total / limit) });
   });
 
   app.get("/api/admin/wallet/clients", async (req, res) => {
