@@ -309,7 +309,7 @@ export default function AdminServices() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الخدمة *</label>
               <Input
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
                 placeholder="مثال: نظام المطاعم"
                 data-testid="input-title"
               />
@@ -318,7 +318,7 @@ export default function AdminServices() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">الوصف *</label>
               <Textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
                 className="min-h-[80px]"
                 placeholder="وصف تفصيلي للخدمة"
                 data-testid="input-description"
@@ -326,7 +326,7 @@ export default function AdminServices() {
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">الفئة</label>
-              <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+              <Select value={formData.category} onValueChange={(v) => setFormData(f => ({ ...f, category: v }))}>
                 <SelectTrigger data-testid="select-category">
                   <SelectValue />
                 </SelectTrigger>
@@ -343,7 +343,7 @@ export default function AdminServices() {
                 <Input
                   type="number"
                   value={formData.priceMin}
-                  onChange={(e) => setFormData({ ...formData, priceMin: e.target.value })}
+                  onChange={(e) => setFormData(f => ({ ...f, priceMin: e.target.value }))}
                   placeholder="5000"
                   data-testid="input-priceMin"
                 />
@@ -353,7 +353,7 @@ export default function AdminServices() {
                 <Input
                   type="number"
                   value={formData.priceMax}
-                  onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                  onChange={(e) => setFormData(f => ({ ...f, priceMax: e.target.value }))}
                   placeholder="15000"
                   data-testid="input-priceMax"
                 />
@@ -364,7 +364,7 @@ export default function AdminServices() {
                 <label className="block text-sm font-medium text-black/60 mb-1.5">المدة المتوقعة</label>
                 <Input
                   value={formData.estimatedDuration}
-                  onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })}
+                  onChange={(e) => setFormData(f => ({ ...f, estimatedDuration: e.target.value }))}
                   placeholder="2-4 أسابيع"
                   data-testid="input-duration"
                 />
@@ -373,7 +373,7 @@ export default function AdminServices() {
                 <label className="block text-sm font-medium text-black/60 mb-1.5">الأيقونة</label>
                 <Input
                   value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  onChange={(e) => setFormData(f => ({ ...f, icon: e.target.value }))}
                   placeholder="Utensils"
                   data-testid="input-icon"
                 />
@@ -383,7 +383,7 @@ export default function AdminServices() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">المميزات (مفصولة بفاصلة)</label>
               <Input
                 value={formData.features}
-                onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, features: e.target.value }))}
                 placeholder="ميزة 1, ميزة 2, ميزة 3"
                 data-testid="input-features"
               />
@@ -393,14 +393,14 @@ export default function AdminServices() {
                 label="صور المحفظة"
                 multiple
                 value={formData.portfolioImages ? formData.portfolioImages.split(",").map(s => s.trim()).filter(Boolean) : []}
-                onChange={(urls) => setFormData({ ...formData, portfolioImages: urls.join(", ") })}
+                onChange={(urls) => setFormData(f => ({ ...f, portfolioImages: urls.join(", ") }))}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">رابط المحفظة</label>
               <Input
                 value={formData.portfolioUrl}
-                onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, portfolioUrl: e.target.value }))}
                 placeholder="https://example.com/portfolio"
                 data-testid="input-portfolio-url"
               />

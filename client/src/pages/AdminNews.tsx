@@ -267,7 +267,7 @@ export default function AdminNews() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">العنوان *</label>
               <Input
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
                 placeholder="عنوان المقال"
                 data-testid="input-news-title"
               />
@@ -276,7 +276,7 @@ export default function AdminNews() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">مقتطف قصير</label>
               <Textarea
                 value={formData.excerpt}
-                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, excerpt: e.target.value }))}
                 placeholder="وصف مختصر يظهر في القوائم..."
                 rows={2}
                 data-testid="input-news-excerpt"
@@ -286,7 +286,7 @@ export default function AdminNews() {
               <label className="block text-sm font-medium text-black/60 mb-1.5">المحتوى الكامل *</label>
               <Textarea
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={(e) => setFormData(f => ({ ...f, content: e.target.value }))}
                 placeholder="اكتب محتوى المقال هنا..."
                 rows={8}
                 data-testid="input-news-content"
@@ -296,12 +296,12 @@ export default function AdminNews() {
               <ImageUpload
                 label="صورة المقال"
                 value={formData.imageUrl}
-                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                onChange={(url) => setFormData(f => ({ ...f, imageUrl: url }))}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-black/60 mb-1.5">الحالة</label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+              <Select value={formData.status} onValueChange={(v) => setFormData(f => ({ ...f, status: v }))}>
                 <SelectTrigger data-testid="select-news-status">
                   <SelectValue />
                 </SelectTrigger>
