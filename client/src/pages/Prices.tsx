@@ -6,11 +6,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useI18n } from "@/lib/i18n";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Sparkles, Shield, Headphones,
   Clock, Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
-  Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
+  Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight, Dumbbell, Store,
   CheckCircle2
 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -25,14 +25,25 @@ const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelA
   { key: "lifetime", labelAr: "مدى الحياة", labelEn: "Lifetime",  sublabelAr: "دفعة واحدة",     sublabelEn: "One-time",       icon: InfinityIcon,  badgeAr: "دائم ∞",    badgeEn: "Forever ∞" },
 ];
 
-const SEGMENTS = [
-  { key: "restaurant",  labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "from-orange-500 to-red-500",    bg: "bg-orange-500",   glow: "shadow-orange-500/40" },
-  { key: "ecommerce",   labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "from-blue-500 to-cyan-500",     bg: "bg-blue-500",     glow: "shadow-blue-500/40" },
-  { key: "education",   labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "from-violet-500 to-purple-500", bg: "bg-violet-500",   glow: "shadow-violet-500/40" },
-  { key: "corporate",   labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "from-slate-500 to-gray-600",    bg: "bg-slate-600",    glow: "shadow-slate-500/40" },
-  { key: "realestate",  labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "from-teal-500 to-emerald-500",  bg: "bg-teal-500",     glow: "shadow-teal-500/40" },
-  { key: "healthcare",  labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "from-rose-500 to-pink-500",     bg: "bg-rose-500",     glow: "shadow-rose-500/40" },
-];
+const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string; bg: string; glow: string }> = {
+  restaurant:  { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "from-orange-500 to-red-500",    bg: "bg-orange-500",   glow: "shadow-orange-500/40" },
+  ecommerce:   { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "from-blue-500 to-cyan-500",     bg: "bg-blue-500",     glow: "shadow-blue-500/40" },
+  store:       { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "from-blue-500 to-cyan-500",     bg: "bg-blue-500",     glow: "shadow-blue-500/40" },
+  education:   { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "from-violet-500 to-purple-500", bg: "bg-violet-500",   glow: "shadow-violet-500/40" },
+  corporate:   { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "from-slate-500 to-gray-600",    bg: "bg-slate-600",    glow: "shadow-slate-500/40" },
+  other:       { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "from-slate-500 to-gray-600",    bg: "bg-slate-600",    glow: "shadow-slate-500/40" },
+  realestate:  { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "from-teal-500 to-emerald-500",  bg: "bg-teal-500",     glow: "shadow-teal-500/40" },
+  healthcare:  { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "from-rose-500 to-pink-500",     bg: "bg-rose-500",     glow: "shadow-rose-500/40" },
+  health:      { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "from-rose-500 to-pink-500",     bg: "bg-rose-500",     glow: "shadow-rose-500/40" },
+  fitness:     { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "from-green-500 to-emerald-500", bg: "bg-green-500",    glow: "shadow-green-500/40" },
+  beauty:      { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "from-pink-500 to-fuchsia-500",  bg: "bg-pink-500",     glow: "shadow-pink-500/40" },
+  tech:        { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "from-blue-500 to-indigo-500",   bg: "bg-blue-600",     glow: "shadow-blue-500/40" },
+  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "from-orange-500 to-red-500",    bg: "bg-orange-500",   glow: "shadow-orange-500/40" },
+  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "from-blue-500 to-cyan-500",     bg: "bg-blue-500",     glow: "shadow-blue-500/40" },
+  institutional: { labelAr: "مؤسسات وجمعيات",  labelEn: "Institutions",  icon: Building2,       color: "from-slate-500 to-gray-600",    bg: "bg-slate-600",    glow: "shadow-slate-500/40" },
+  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "from-purple-500 to-indigo-500", bg: "bg-purple-600",   glow: "shadow-purple-500/40" },
+  general:       { labelAr: "عام",              labelEn: "General",       icon: Globe,           color: "from-slate-500 to-gray-600",    bg: "bg-slate-600",    glow: "shadow-slate-500/40" },
+};
 
 const TIER_META: Record<string, {
   labelAr: string; labelEn: string; icon: any;
@@ -247,7 +258,22 @@ function TierCard({ plan, period, idx, onSelect, lang }: { plan: any; period: Bi
 export default function Prices() {
   const { data: plans, isLoading } = usePricingPlans();
   const { lang, dir } = useI18n();
-  const [segment, setSegment] = useState("restaurant");
+
+  const segments = useMemo(() => {
+    if (!plans || plans.length === 0) return Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
+    const seen = new Set<string>();
+    const result: (typeof SEGMENT_LOOKUP[string] & { key: string })[] = [];
+    for (const p of plans) {
+      const k: string = p.segment;
+      if (!k || k === "general" || seen.has(k)) continue;
+      seen.add(k);
+      const meta = SEGMENT_LOOKUP[k] ?? { labelAr: k, labelEn: k, icon: Globe, color: "from-slate-500 to-gray-600", bg: "bg-slate-600", glow: "shadow-slate-500/40" };
+      result.push({ key: k, ...meta });
+    }
+    return result.length > 0 ? result : Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
+  }, [plans]);
+
+  const [segment, setSegment] = useState("");
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const [selectedPlan, setSelectedPlan] = useState<{ plan: any; price: number; period: BillingPeriod } | null>(null);
   const [, navigate] = useLocation();
@@ -268,7 +294,11 @@ export default function Prices() {
     navigate(`/order?${q.toString()}`);
   }
 
-  const activeSeg = SEGMENTS.find(s => s.key === segment) ?? SEGMENTS[0];
+  useEffect(() => {
+    if (!segment && segments.length > 0) setSegment(segments[0].key);
+  }, [segments, segment]);
+
+  const activeSeg = segments.find(s => s.key === segment) ?? segments[0] ?? { key: "general", labelAr: "عام", labelEn: "General", icon: Globe, color: "from-slate-500 to-gray-600", bg: "bg-slate-600", glow: "shadow-slate-500/40" };
   const tierPlans = plans?.filter((p: any) =>
     p.segment === segment && ["lite","pro","infinite"].includes(p.tier ?? "")
   ).sort((a: any, b: any) =>
@@ -331,7 +361,7 @@ export default function Prices() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <p className="text-center text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-5">{lang === "ar" ? "اختر نوع المشروع" : "Choose Project Type"}</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="segment-selector">
-            {SEGMENTS.map(seg => {
+            {segments.map(seg => {
               const Icon = seg.icon;
               const isActive = segment === seg.key;
               return (
@@ -610,7 +640,7 @@ export default function Prices() {
           {selectedPlan && (() => {
             const cfg = TIER_META[selectedPlan.plan.tier] || TIER_META.lite;
             const cfgLabel = lang === "ar" ? cfg.labelAr : cfg.labelEn;
-            const segInfo = SEGMENTS.find(s => s.key === selectedPlan.plan.segment);
+            const segInfo = segments.find(s => s.key === selectedPlan.plan.segment) ?? (SEGMENT_LOOKUP[selectedPlan.plan.segment] ? { key: selectedPlan.plan.segment, ...SEGMENT_LOOKUP[selectedPlan.plan.segment] } : null);
             const periodLabel = lang === "ar" ? PERIODS.find(p => p.key === selectedPlan.period)?.labelAr : PERIODS.find(p => p.key === selectedPlan.period)?.labelEn;
             const planName = lang === "ar" ? (selectedPlan.plan.nameAr || cfgLabel) : (selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || cfgLabel);
             const planFeatures = lang === "ar" ? selectedPlan.plan.featuresAr : (selectedPlan.plan.featuresEn || selectedPlan.plan.featuresAr);

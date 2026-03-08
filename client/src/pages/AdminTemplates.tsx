@@ -22,12 +22,21 @@ import {
 import type { SectorTemplate, PricingPlan, FeatureDetail } from "@shared/schema";
 
 const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; bg: string }> = {
-  restaurant:  { labelAr: "مطاعم ومقاهي",   icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
-  ecommerce:   { labelAr: "متاجر إلكترونية", icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
-  education:   { labelAr: "منصات تعليمية",   icon: GraduationCap,   color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
-  corporate:   { labelAr: "شركات ومؤسسات",   icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
-  realestate:  { labelAr: "عقارات",          icon: Home,            color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
-  healthcare:  { labelAr: "صحة وعيادات",     icon: Heart,           color: "text-rose-600",   bg: "bg-rose-50 border-rose-200" },
+  restaurant:    { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  food:          { labelAr: "مطاعم وكافيهات",  icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
+  store:         { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  ecommerce:     { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  commerce:      { labelAr: "متاجر إلكترونية",  icon: ShoppingBag,     color: "text-blue-600",   bg: "bg-blue-50 border-blue-200" },
+  education:     { labelAr: "تعليم وأكاديميات", icon: GraduationCap,   color: "text-violet-600", bg: "bg-violet-50 border-violet-200" },
+  fitness:       { labelAr: "لياقة وجيم",       icon: Dumbbell,        color: "text-green-600",  bg: "bg-green-50 border-green-200" },
+  health:        { labelAr: "صحة ولياقة",       icon: Dumbbell,        color: "text-green-600",  bg: "bg-green-50 border-green-200" },
+  healthcare:    { labelAr: "صحة وعيادات",      icon: Heart,           color: "text-rose-600",   bg: "bg-rose-50 border-rose-200" },
+  tech:          { labelAr: "تقنية وبرمجة",     icon: Globe,           color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200" },
+  beauty:        { labelAr: "تجميل وصالونات",  icon: Sparkles,        color: "text-pink-600",   bg: "bg-pink-50 border-pink-200" },
+  corporate:     { labelAr: "شركات ومؤسسات",    icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
+  institutional: { labelAr: "مؤسسات وجمعيات",   icon: Building2,       color: "text-slate-600",  bg: "bg-slate-50 border-slate-200" },
+  personal:      { labelAr: "خدمات شخصية",      icon: User,            color: "text-purple-600", bg: "bg-purple-50 border-purple-200" },
+  realestate:    { labelAr: "عقارات",           icon: Home,            color: "text-teal-600",   bg: "bg-teal-50 border-teal-200" },
 };
 
 const IconMap: Record<string, any> = {

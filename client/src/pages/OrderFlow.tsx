@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -97,14 +97,25 @@ function FeatureIcon({ name }: { name: string }) {
   return <I className="w-3.5 h-3.5 shrink-0" />;
 }
 
-const SECTORS = [
-  { value: "restaurant", label: "مطاعم وكافيهات", icon: UtensilsCrossed, color: "from-orange-400 to-red-500" },
-  { value: "store",      label: "متاجر إلكترونية", icon: Store,           color: "from-blue-400 to-cyan-500" },
-  { value: "education",  label: "تعليم وأكاديميات", icon: GraduationCap,  color: "from-violet-400 to-purple-500" },
-  { value: "health",     label: "صحة ولياقة",       icon: Dumbbell,       color: "from-green-400 to-emerald-500" },
-  { value: "realestate", label: "عقارات",           icon: Building2,      color: "from-teal-400 to-emerald-500" },
-  { value: "other",      label: "شركات ومؤسسات",   icon: Globe,          color: "from-slate-400 to-gray-600" },
-];
+const SECTOR_META: Record<string, { label: string; icon: any; color: string }> = {
+  restaurant:    { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-orange-400 to-red-500" },
+  food:          { label: "مطاعم وكافيهات",    icon: UtensilsCrossed, color: "from-orange-400 to-red-500" },
+  store:         { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
+  ecommerce:     { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
+  commerce:      { label: "متاجر إلكترونية",   icon: Store,           color: "from-blue-400 to-cyan-500" },
+  education:     { label: "تعليم وأكاديميات",  icon: GraduationCap,   color: "from-violet-400 to-purple-500" },
+  fitness:       { label: "لياقة وجيم",        icon: Dumbbell,        color: "from-green-400 to-emerald-500" },
+  health:        { label: "صحة ولياقة",        icon: Dumbbell,        color: "from-green-400 to-emerald-500" },
+  healthcare:    { label: "صحة وعيادات",       icon: Sparkles,        color: "from-rose-400 to-pink-500" },
+  realestate:    { label: "عقارات",            icon: Building2,       color: "from-teal-400 to-emerald-500" },
+  beauty:        { label: "تجميل وصالونات",   icon: Sparkles,        color: "from-pink-400 to-fuchsia-500" },
+  tech:          { label: "تقنية وبرمجة",     icon: Globe,           color: "from-blue-400 to-indigo-500" },
+  corporate:     { label: "شركات ومؤسسات",    icon: Building2,       color: "from-slate-400 to-gray-500" },
+  institutional: { label: "مؤسسات وجمعيات",   icon: Building2,       color: "from-slate-400 to-gray-600" },
+  personal:      { label: "خدمات شخصية",      icon: Globe,           color: "from-purple-400 to-indigo-500" },
+  other:         { label: "شركات ومؤسسات",    icon: Globe,           color: "from-slate-400 to-gray-600" },
+  general:       { label: "عام",               icon: Globe,           color: "from-slate-400 to-gray-600" },
+};
 
 const VISUAL_STYLES = [
   { value: "luxury",  label: "فاخر وراقي",    desc: "أسود، ذهبي، رمادي داكن", icon: "👑" },
@@ -243,6 +254,27 @@ export default function OrderFlow() {
   const { data: systemFeatures = [] } = useQuery<any[]>({ queryKey: ["/api/system-features"] });
   const { data: extraAddons = [] }    = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
   const { data: products = [] }       = useQuery<any[]>({ queryKey: ["/api/products"] });
+  const { data: sectorTemplates = [] } = useQuery<any[]>({ queryKey: ["/api/templates"], staleTime: 5 * 60 * 1000 });
+
+  const sectors = useMemo(() => {
+    const seen = new Set<string>();
+    const seenLabels = new Set<string>();
+    const result: { value: string; label: string; icon: any; color: string }[] = [];
+    const ordered = [...sectorTemplates].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    for (const t of ordered) {
+      const rawKey = (t.category || t.sector || "").trim();
+      if (!rawKey) continue;
+      const meta = SECTOR_META[rawKey] ?? { label: t.nameAr?.trim() || rawKey, icon: Globe, color: "from-slate-400 to-gray-600" };
+      if (seen.has(rawKey) || seenLabels.has(meta.label)) continue;
+      seen.add(rawKey);
+      seenLabels.add(meta.label);
+      result.push({ value: rawKey, label: meta.label, icon: meta.icon, color: meta.color });
+    }
+    if (result.length === 0) {
+      return Object.entries(SECTOR_META).slice(0, 8).map(([k, v]) => ({ value: k, label: v.label, icon: v.icon, color: v.color }));
+    }
+    return result;
+  }, [sectorTemplates]);
   const { data: bankSettings }        = useQuery<typeof DEFAULT_BANK>({ queryKey: ["/api/bank-settings"] });
   const bank = bankSettings || DEFAULT_BANK;
   const { data: walletData }          = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
@@ -785,7 +817,7 @@ export default function OrderFlow() {
                   <div>
                     <Label className="text-xs font-bold text-black/45 dark:text-white/45 uppercase tracking-wider mb-2 block">{lang === "ar" ? "القطاع *" : "Sector *"}</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {SECTORS.map(s => (
+                      {sectors.map(s => (
                         <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, sector: s.value }))} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                           data-testid={`sector-${s.value}`}
                           className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.sector === s.value ? "border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] shadow-sm" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/20 dark:hover:border-white/20"}`}>
