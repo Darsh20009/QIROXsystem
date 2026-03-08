@@ -2,7 +2,7 @@ import webpush from "web-push";
 
 const VAPID_PUBLIC = "BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4";
 const VAPID_PRIVATE = "eFqX9qfBVzFTErtXbAEl-WqN1sBqoQfwHbafUGtXeGk";
-const VAPID_EMAIL = "mailto:support@qiroxstudio.online";
+const VAPID_EMAIL = "mailto:info@qiroxstudio.online";
 
 webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 

@@ -470,8 +470,8 @@ export async function registerRoutes(
           await OtpModel.create({ email: String(user.email).toLowerCase().trim(), code, expiresAt, type: "email_verify" });
           sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
           console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
-          const adminEmail = "info@qiroxstudio.online";
-          sendAdminNewClientEmail(adminEmail, user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
+          sendAdminNewClientEmail("info@qiroxstudio.online", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
+          sendAdminNewClientEmail("qiroxsystem@gmail.com", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
         }
         res.status(201).json({ ...sanitizeUser(user), emailVerified: false, needsVerification: true });
       });
@@ -845,7 +845,7 @@ export async function registerRoutes(
       const safeEmail = escapeHtml(String(email).trim().slice(0, 200));
       const safeSubject = escapeHtml(String(subject || "").trim().slice(0, 300));
       const safeMessage = escapeHtml(String(message).trim().slice(0, 5000));
-      await sendDirectEmail("support@qiroxstudio.online", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
+      await sendDirectEmail("info@qiroxstudio.online", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -859,6 +859,20 @@ export async function registerRoutes(
           <p style="color:#999;font-size:12px;margin-top:24px;">تم الإرسال من موقع QIROX Studio</p>
         </div>
       `);
+      sendDirectEmail("qiroxsystem@gmail.com", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${safeName}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${safeEmail}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${safeSubject || '—'}</td></tr>
+          </table>
+          <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;border:1px solid #eee;">
+            <p style="color:#111;line-height:1.7;white-space:pre-wrap;">${safeMessage}</p>
+          </div>
+          <p style="color:#999;font-size:12px;margin-top:24px;">تم الإرسال من موقع QIROX Studio</p>
+        </div>
+      `).catch(console.error);
       res.json({ success: true });
     } catch (err: any) { res.status(500).json({ error: "فشل إرسال الرسالة، يرجى المحاولة مرة أخرى" }); }
   });
@@ -2639,7 +2653,7 @@ export async function registerRoutes(
       const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
       if (!jobId || !fullName || !email) return res.status(400).json({ error: "يرجى تعبئة الحقول المطلوبة" });
       const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "" });
-      sendDirectEmail("support@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, `
+      const hrEmailBody = `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;">طلب توظيف جديد</h2>
           <table style="width:100%;border-collapse:collapse;">
@@ -2651,7 +2665,9 @@ export async function registerRoutes(
           </table>
           ${coverLetter ? `<div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;"><p style="color:#111;line-height:1.7;">${coverLetter}</p></div>` : ''}
         </div>
-      `).catch(console.error);
+      `;
+      sendDirectEmail("info@qiroxstudio.online", "QIROX HR", `طلب توظيف جديد — ${fullName}`, hrEmailBody).catch(console.error);
+      sendDirectEmail("qiroxsystem@gmail.com", "QIROX HR", `طلب توظيف جديد — ${fullName}`, hrEmailBody).catch(console.error);
       res.status(201).json(application);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -4966,11 +4982,8 @@ export async function registerRoutes(
       // Send welcome email with credentials
       sendWelcomeWithCredentialsEmail(normalizedEmail, fullName, username, password).catch(console.error);
       // Notify admin
-      sendAdminNewClientEmail(
-        "info@qiroxstudio.online",
-        fullName, normalizedEmail, phone || "",
-        actor.fullName || actor.username
-      ).catch(console.error);
+      sendAdminNewClientEmail("info@qiroxstudio.online", fullName, normalizedEmail, phone || "", actor.fullName || actor.username).catch(console.error);
+      sendAdminNewClientEmail("qiroxsystem@gmail.com", fullName, normalizedEmail, phone || "", actor.fullName || actor.username).catch(console.error);
 
       let createdOrder = null;
       if (projectType || idea || (services && services.length > 0)) {
