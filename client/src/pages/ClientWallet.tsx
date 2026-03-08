@@ -17,6 +17,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
+interface BankSettings {
+  bankName: string;
+  beneficiaryName: string;
+  iban: string;
+  accountNumber: string;
+  swiftCode?: string;
+  notes?: string;
+}
+
 interface WalletTx {
   id: string;
   type: "debit" | "credit";
@@ -154,6 +163,7 @@ export default function ClientWallet() {
   const { data: walletData, isLoading: loadingWallet } = useQuery<WalletData>({ queryKey: ["/api/wallet"] });
   const { data: cardData, isLoading: loadingCard } = useQuery<CardData>({ queryKey: ["/api/wallet/card"] });
   const { data: topupHistory, isLoading: loadingTopup } = useQuery<TopupRequest[]>({ queryKey: ["/api/wallet/topup-requests"] });
+  const { data: bankSettings } = useQuery<BankSettings>({ queryKey: ["/api/bank-settings"] });
 
   const txs = walletData?.transactions || [];
 
@@ -598,10 +608,24 @@ export default function ClientWallet() {
           <div className="space-y-4 py-2">
             <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/10 dark:to-blue-900/10 rounded-xl border border-cyan-200/40 dark:border-cyan-800/30 p-4 text-sm">
               <p className="font-bold text-cyan-900 dark:text-cyan-300 mb-2">بيانات الحساب البنكي:</p>
-              <div className="space-y-1 text-cyan-700 dark:text-cyan-400 text-xs">
-                <p>🏦 البنك: بنك الراجحي</p>
-                <p>📋 IBAN: SA89 2000 0001 9234 5678 9012</p>
-                <p>👤 اسم المستفيد: شركة كيروكس للتقنية</p>
+              <div className="space-y-1.5 text-cyan-700 dark:text-cyan-400 text-xs">
+                {bankSettings?.bankName && <p>🏦 البنك: {bankSettings.bankName}</p>}
+                {bankSettings?.beneficiaryName && <p>👤 اسم المستفيد: {bankSettings.beneficiaryName}</p>}
+                {bankSettings?.iban && (
+                  <div className="flex items-center gap-2">
+                    <p dir="ltr" className="font-mono tracking-wide">📋 IBAN: {bankSettings.iban}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(bankSettings.iban); toast({ title: "تم نسخ الـ IBAN" }); }}
+                      className="text-cyan-500 hover:text-cyan-700 transition-colors" title="نسخ">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                {bankSettings?.accountNumber && <p>🔢 رقم الحساب: {bankSettings.accountNumber}</p>}
+                {bankSettings?.swiftCode && <p>🌐 SWIFT: {bankSettings.swiftCode}</p>}
+                {bankSettings?.notes && <p className="text-cyan-600/70 dark:text-cyan-400/70 mt-1 border-t border-cyan-200/30 pt-1">{bankSettings.notes}</p>}
+                {!bankSettings?.iban && !bankSettings?.bankName && (
+                  <p className="text-black/40 dark:text-white/40">جارٍ تحميل بيانات الحساب...</p>
+                )}
               </div>
             </div>
             <div>
