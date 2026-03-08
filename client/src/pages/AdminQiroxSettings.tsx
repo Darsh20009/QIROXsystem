@@ -375,7 +375,7 @@ export default function AdminQiroxSettings() {
                     </span>
                     <span className="font-semibold text-sm text-black dark:text-white">{p.label}</span>
                     {store[p.enabledKey] && store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">نشط — يظهر في الفوتر</span>
+                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">نشط — يظهر في الرئيسية والفوتر</span>
                     )}
                     {!store[p.enabledKey] && store[p.urlKey] && (
                       <span className="mr-auto text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-medium">قريباً — يظهر معطّلاً</span>

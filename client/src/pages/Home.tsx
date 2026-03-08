@@ -34,7 +34,7 @@ import {
   Utensils, Bell, Clock, Wifi, Receipt, Truck,
   Tag, Filter, RefreshCw, TrendingUp,
   Lock, Cloud, Cpu, Globe2, MessageSquare,
-  Copy, X, Flame, Timer, ChevronDown
+  Copy, X, Flame, Timer, ChevronDown, AppWindow, Download
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
@@ -88,6 +88,15 @@ export default function Home() {
 
   const { data: publicSettings } = useQuery<{ instagram?: string; twitter?: string; linkedin?: string; snapchat?: string; youtube?: string; tiktok?: string; whatsapp?: string }>({
     queryKey: ["/api/public/settings"],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: appDownloads } = useQuery<{
+    playStore: { url: string; enabled: boolean };
+    appStore:  { url: string; enabled: boolean };
+    msStore:   { url: string; enabled: boolean };
+  }>({
+    queryKey: ["/api/app-downloads"],
     staleTime: 10 * 60 * 1000,
   });
 
@@ -766,6 +775,128 @@ export default function Home() {
                   </motion.div>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* APP DOWNLOADS SECTION */}
+      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-downloads">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={stagger}
+          >
+            <div className="text-center mb-14" dir={dir}>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.04] mb-5">
+                <Download className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "تحميل الأنظمة" : "Download Our Apps"}</span>
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
+                {lang === "ar" ? <>حمّل نظامك<br /><span className="text-black/30 dark:text-white/30">على جميع الأجهزة</span></> : <>Download Your System<br /><span className="text-black/30 dark:text-white/30">on All Devices</span></>}
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-base max-w-xl mx-auto leading-relaxed">
+                {lang === "ar"
+                  ? "أنظمة QIROX متاحة على متجر آبل، جوجل بلاي، ومتجر مايكروسوفت. حمّل تطبيقك الآن أو انتظر الإطلاق قريباً."
+                  : "QIROX systems are available on App Store, Google Play, and Microsoft Store. Download your app now or wait for the upcoming launch."}
+              </motion.p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              {[
+                {
+                  key: "appStore",
+                  icon: <SiApple className="w-8 h-8" />,
+                  iconColor: "text-white",
+                  iconBg: "bg-black dark:bg-white/10",
+                  gradientFrom: "from-gray-900",
+                  gradientTo: "to-gray-700",
+                  platform: lang === "ar" ? "آبل" : "Apple",
+                  name: "App Store",
+                  desc: lang === "ar" ? "لأجهزة iPhone و iPad" : "For iPhone & iPad",
+                  badge: "iOS",
+                  badgeColor: "bg-white/10 text-white/60",
+                  available: appDownloads?.appStore.enabled && !!appDownloads?.appStore.url,
+                  url: appDownloads?.appStore.url,
+                  dark: true,
+                },
+                {
+                  key: "playStore",
+                  icon: <SiGoogleplay className="w-7 h-7" />,
+                  iconColor: "text-white",
+                  iconBg: "bg-[#01875f]",
+                  gradientFrom: "from-[#0d2d1c]",
+                  gradientTo: "to-[#0a4a2a]",
+                  platform: lang === "ar" ? "جوجل" : "Google",
+                  name: "Play Store",
+                  desc: lang === "ar" ? "لأجهزة Android" : "For Android devices",
+                  badge: "Android",
+                  badgeColor: "bg-[#01875f]/20 text-[#4ade80]",
+                  available: appDownloads?.playStore.enabled && !!appDownloads?.playStore.url,
+                  url: appDownloads?.playStore.url,
+                  dark: true,
+                },
+                {
+                  key: "msStore",
+                  icon: <AppWindow className="w-7 h-7" />,
+                  iconColor: "text-white",
+                  iconBg: "bg-[#0078d4]",
+                  gradientFrom: "from-[#0a1929]",
+                  gradientTo: "to-[#0c2a4a]",
+                  platform: lang === "ar" ? "مايكروسوفت" : "Microsoft",
+                  name: "Microsoft Store",
+                  desc: lang === "ar" ? "لأجهزة Windows" : "For Windows devices",
+                  badge: "Windows",
+                  badgeColor: "bg-[#0078d4]/20 text-[#60a5fa]",
+                  available: appDownloads?.msStore.enabled && !!appDownloads?.msStore.url,
+                  url: appDownloads?.msStore.url,
+                  dark: true,
+                },
+              ].map((store, i) => (
+                <motion.div key={store.key} variants={fadeUp} custom={i + 3}>
+                  <div
+                    className={`rounded-3xl bg-gradient-to-br ${store.gradientFrom} ${store.gradientTo} border border-white/[0.07] p-7 flex flex-col h-full relative overflow-hidden group`}
+                    data-testid={`download-card-${store.key}`}
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/[0.02] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                    <div className="flex items-start justify-between mb-6">
+                      <div className={`w-14 h-14 rounded-2xl ${store.iconBg} flex items-center justify-center shadow-lg`}>
+                        <span className={store.iconColor}>{store.icon}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/[0.08] ${store.badgeColor}`}>
+                        {store.badge}
+                      </span>
+                    </div>
+
+                    <div className="flex-1" dir={dir}>
+                      <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">{store.platform}</p>
+                      <h3 className="text-lg font-bold text-white mb-1">{store.name}</h3>
+                      <p className="text-[13px] text-white/40 mb-6">{store.desc}</p>
+                    </div>
+
+                    {store.available ? (
+                      <a
+                        href={store.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`button-download-${store.key}`}
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 text-white text-sm font-bold transition-all duration-200 group-hover:shadow-lg"
+                      >
+                        <Download className="w-4 h-4" />
+                        {lang === "ar" ? "تحميل الآن" : "Download Now"}
+                      </a>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] cursor-default">
+                        <Clock className="w-3.5 h-3.5 text-white/25" />
+                        <span className="text-white/30 text-sm font-medium">{lang === "ar" ? "قريباً يتوفر" : "Coming Soon"}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         </div>
