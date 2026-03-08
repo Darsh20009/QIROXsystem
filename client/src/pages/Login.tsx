@@ -426,8 +426,14 @@ export default function Login() {
               )}
               {githubEnabled && (
                 <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/20" />
-                  <div className="w-9 h-9 rounded-lg bg-[#24292e] flex items-center justify-center shrink-0 shadow-md shadow-black/20">
+                  {/* GitHub brand gradient top bar */}
+                  <div className="absolute top-0 left-0 right-0 h-[2px] flex">
+                    <div className="flex-1 bg-[#6e40c9]/80" />
+                    <div className="flex-1 bg-[#8957e5]/80" />
+                    <div className="flex-1 bg-white/40" />
+                    <div className="flex-1 bg-[#58a6ff]/80" />
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#161b22] to-[#30363d] flex items-center justify-center shrink-0 shadow-md shadow-black/30 border border-white/[0.08]">
                     <SiGithub className="w-[18px] h-[18px] text-white" />
                   </div>
                   <div className="flex-1">
@@ -436,8 +442,8 @@ export default function Login() {
                   </div>
                   <span className="flex items-center gap-1 shrink-0">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white/70" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8957e5] opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#8957e5]" />
                     </span>
                   </span>
                 </div>
