@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useUser } from "@/hooks/use-auth";
 
 interface SegmentPricing {
   id: string;
@@ -87,6 +88,8 @@ const emptySegment: Partial<SegmentPricing> = {
 };
 
 export default function AdminSubscriptionPlans() {
+  const { data: currentUser } = useUser();
+  const isAdmin = (currentUser as any)?.role === "admin";
   const { toast } = useToast();
   const [segmentDialog, setSegmentDialog] = useState(false);
   const [editingSegment, setEditingSegment] = useState<Partial<SegmentPricing>>(emptySegment);
@@ -290,9 +293,11 @@ export default function AdminSubscriptionPlans() {
                 </div>
                 قطاعات الأسعار
               </h2>
-              <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2 font-bold" data-testid="button-add-segment">
-                <Plus className="w-3.5 h-3.5" /> إضافة قطاع
-              </Button>
+              {isAdmin && (
+                <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2 font-bold" data-testid="button-add-segment">
+                  <Plus className="w-3.5 h-3.5" /> إضافة قطاع
+                </Button>
+              )}
             </div>
 
             {loadingSegments ? (
@@ -304,9 +309,11 @@ export default function AdminSubscriptionPlans() {
                 <CreditCard className="w-10 h-10 text-black/10 mx-auto mb-4" />
                 <h3 className="font-bold text-black/40 mb-2">لا توجد قطاعات بعد</h3>
                 <p className="text-xs text-black/30 mb-6">أضف قطاع وحدد الأسعار المناسبة لكل فترة</p>
-                <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
-                  <Plus className="w-3.5 h-3.5" /> إضافة أول قطاع
-                </Button>
+                {isAdmin && (
+                  <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
+                    <Plus className="w-3.5 h-3.5" /> إضافة أول قطاع
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -322,12 +329,16 @@ export default function AdminSubscriptionPlans() {
                           {!seg.isActive && (
                             <Badge className="bg-white/10 text-white/60 border-0 text-[10px]">غير نشط</Badge>
                           )}
-                          <button onClick={() => openEditSegment(seg)} className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-edit-segment-${seg.id}`}>
-                            <Pencil className="w-3.5 h-3.5 text-white" />
-                          </button>
-                          <button onClick={() => { if (confirm("حذف هذا القطاع؟")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
-                            <Trash2 className="w-3.5 h-3.5 text-white" />
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button onClick={() => openEditSegment(seg)} className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-edit-segment-${seg.id}`}>
+                                <Pencil className="w-3.5 h-3.5 text-white" />
+                              </button>
+                              <button onClick={() => { if (confirm("حذف هذا القطاع؟")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
+                                <Trash2 className="w-3.5 h-3.5 text-white" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="p-5 grid grid-cols-2 gap-3">

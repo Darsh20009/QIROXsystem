@@ -11,7 +11,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Partner } from "@shared/schema";
 
-import { SiApple, SiGoogleplay } from "react-icons/si";
+import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
 import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
 import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
 import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
@@ -85,6 +85,22 @@ export default function Home() {
   const { data: discountCodes } = useQuery<any[]>({
     queryKey: ["/api/discount-codes/public"],
   });
+
+  const { data: publicSettings } = useQuery<{ instagram?: string; twitter?: string; linkedin?: string; snapchat?: string; youtube?: string; tiktok?: string; whatsapp?: string }>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const SOCIAL_ITEMS = [
+    { key: "instagram", icon: <SiInstagram className="w-5 h-5" />, url: publicSettings?.instagram, label: "Instagram" },
+    { key: "twitter",   icon: <SiX className="w-5 h-5" />,          url: publicSettings?.twitter,   label: "X / Twitter" },
+    { key: "linkedin",  icon: <SiLinkedin className="w-5 h-5" />,  url: publicSettings?.linkedin,  label: "LinkedIn" },
+    { key: "tiktok",    icon: <SiTiktok className="w-5 h-5" />,    url: publicSettings?.tiktok,    label: "TikTok" },
+    { key: "snapchat",  icon: <SiSnapchat className="w-5 h-5" />,  url: publicSettings?.snapchat,  label: "Snapchat" },
+    { key: "youtube",   icon: <SiYoutube className="w-5 h-5" />,   url: publicSettings?.youtube,   label: "YouTube" },
+    { key: "whatsapp",  icon: <SiWhatsapp className="w-5 h-5" />,  url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
+  ].filter(s => !!s.url);
+
   const [activeCarouselIdx, setActiveCarouselIdx] = useState(0);
 
   const currentCode = discountCodes && discountCodes.length > 0
@@ -1038,6 +1054,31 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {SOCIAL_ITEMS.length > 0 && (
+        <section className="py-16 relative" data-testid="section-social">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-8" dir={dir}>
+              {lang === "ar" ? "تابعنا على منصات التواصل" : "Follow Us"}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {SOCIAL_ITEMS.map(s => (
+                <a
+                  key={s.key}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  data-testid={`home-social-${s.key}`}
+                  className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center text-black/35 dark:text-white/35 hover:text-white dark:hover:text-black transition-all duration-200 hover:scale-105"
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <InstallPrompt />
       <Footer />

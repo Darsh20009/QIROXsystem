@@ -217,7 +217,7 @@ export default function Demos() {
     queryKey: ["/api/templates"],
   });
 
-  const activeTemplates = templates.filter(t => t.status !== "archived");
+  const activeTemplates = templates.filter(t => t.status !== "archived" && !!t.demoUrl);
 
   const categories = ["all", ...Array.from(new Set(activeTemplates.map(t => t.category)))];
 
@@ -227,7 +227,7 @@ export default function Demos() {
     return matchCat && matchSearch;
   }).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-  const totalWithDemo = activeTemplates.filter(t => !!t.demoUrl).length;
+  const totalWithDemo = activeTemplates.length;
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">

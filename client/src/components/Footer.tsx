@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { SiGoogleplay, SiApple } from "react-icons/si";
+import { SiGoogleplay, SiApple, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
 import { AppWindow } from "lucide-react";
 
 type AppDownloads = {
@@ -12,6 +12,18 @@ type AppDownloads = {
   appStore:    { url: string; enabled: boolean };
   msStore:     { url: string; enabled: boolean };
   huaweiStore: { url: string; enabled: boolean };
+};
+
+type PublicSettings = {
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  snapchat?: string;
+  youtube?: string;
+  tiktok?: string;
+  whatsapp?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 };
 
 export default function Footer() {
@@ -22,6 +34,21 @@ export default function Footer() {
     queryKey: ["/api/app-downloads"],
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: publicSettings } = useQuery<PublicSettings>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const SOCIAL_LINKS = [
+    { key: "instagram",  icon: <SiInstagram className="w-4 h-4" />,  url: publicSettings?.instagram,  label: "Instagram" },
+    { key: "twitter",    icon: <SiX className="w-4 h-4" />,           url: publicSettings?.twitter,    label: "X / Twitter" },
+    { key: "linkedin",   icon: <SiLinkedin className="w-4 h-4" />,   url: publicSettings?.linkedin,   label: "LinkedIn" },
+    { key: "tiktok",     icon: <SiTiktok className="w-4 h-4" />,     url: publicSettings?.tiktok,     label: "TikTok" },
+    { key: "snapchat",   icon: <SiSnapchat className="w-4 h-4" />,   url: publicSettings?.snapchat,   label: "Snapchat" },
+    { key: "youtube",    icon: <SiYoutube className="w-4 h-4" />,    url: publicSettings?.youtube,    label: "YouTube" },
+    { key: "whatsapp",   icon: <SiWhatsapp className="w-4 h-4" />,   url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
+  ].filter(s => !!s.url);
 
   const STORES = [
     {
@@ -174,6 +201,32 @@ export default function Footer() {
                       </span>
                     </div>
                   )
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {SOCIAL_LINKS.length > 0 && (
+          <>
+            <div className="h-[1px] bg-black/[0.06] dark:bg-white/[0.06] mb-8" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+              <p className="text-[11px] tracking-[2px] uppercase text-black/25 dark:text-white/25 font-medium flex-shrink-0">
+                {lang === "ar" ? "تابعنا" : "Follow Us"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {SOCIAL_LINKS.map(s => (
+                  <a
+                    key={s.key}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    data-testid={`footer-social-${s.key}`}
+                    className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-center text-black/40 dark:text-white/40 hover:text-white dark:hover:text-black transition-all duration-200"
+                  >
+                    {s.icon}
+                  </a>
                 ))}
               </div>
             </div>
