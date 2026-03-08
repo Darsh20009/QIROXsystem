@@ -4,7 +4,8 @@ import { ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { SiGoogleplay, SiApple, SiMicrosoft } from "react-icons/si";
+import { SiGoogleplay, SiApple } from "react-icons/si";
+import { AppWindow } from "lucide-react";
 
 type AppDownloads = {
   playStore:   { url: string; enabled: boolean };
@@ -43,7 +44,7 @@ export default function Footer() {
     },
     {
       key: "msStore",
-      icon: <SiMicrosoft className="w-5 h-5 text-white" />,
+      icon: <AppWindow className="w-5 h-5 text-white" />,
       iconBg: "bg-[#0078d4]",
       label: lang === "ar" ? "احصل عليه من" : "Get it from",
       name: "Microsoft Store",

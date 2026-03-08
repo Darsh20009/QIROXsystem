@@ -11,9 +11,9 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow
 } from "lucide-react";
-import { SiGoogleplay, SiApple, SiMicrosoft } from "react-icons/si";
+import { SiGoogleplay, SiApple } from "react-icons/si";
 
 type Settings = {
   companyName: string; companyNameAr: string; domain: string;
@@ -363,7 +363,7 @@ export default function AdminQiroxSettings() {
                   label: "Microsoft Store (Windows)",
                   urlKey: "msStoreUrl" as const,
                   enabledKey: "msStoreEnabled" as const,
-                  icon: <SiMicrosoft className="w-5 h-5 text-white" />,
+                  icon: <AppWindow className="w-5 h-5 text-white" />,
                   iconBg: "bg-[#0078d4]",
                   placeholder: "https://apps.microsoft.com/store/detail/...",
                 },
