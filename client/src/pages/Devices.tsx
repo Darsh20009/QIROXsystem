@@ -171,16 +171,26 @@ function ShippingForm({ user, form, setForm }: {
   );
 }
 
+const TIER_META_SIMPLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  lite:     { label: "لايت",    color: "text-teal-700 dark:text-teal-300",    bg: "bg-teal-50 dark:bg-teal-900/20",    border: "border-teal-200 dark:border-teal-700/40" },
+  pro:      { label: "برو",     color: "text-violet-700 dark:text-violet-300", bg: "bg-violet-50 dark:bg-violet-900/20", border: "border-violet-200 dark:border-violet-700/40" },
+  infinite: { label: "إنفينتي", color: "text-amber-700 dark:text-amber-300",   bg: "bg-amber-50 dark:bg-amber-900/20",   border: "border-amber-200 dark:border-amber-700/40" },
+  custom:   { label: "مخصص",   color: "text-blue-700 dark:text-blue-300",     bg: "bg-blue-50 dark:bg-blue-900/20",     border: "border-blue-200 dark:border-blue-700/40" },
+};
+
 function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending }: {
   product: QiroxProduct;
   user: any;
   onClose: () => void;
-  onAddToCart: (shipping?: typeof emptyShipping | null, notes?: string) => void;
+  onAddToCart: (shipping?: typeof emptyShipping | null, notes?: string, selectedBundle?: any) => void;
   isPending: boolean;
 }) {
   const cfg = categoryConfig[p.category] || categoryConfig.other;
   const Icon = cfg.icon;
   const isPhysical = PHYSICAL_CATS.includes(p.category);
+  const planBundles: any[] = (p as any).planBundles || [];
+  const hasBundles = planBundles.length > 0;
+  const [selectedBundleIdx, setSelectedBundleIdx] = useState<number | null>(hasBundles ? 0 : null);
   const [shippingForm, setShippingForm] = useState<typeof emptyShipping>({
     recipientName: user?.fullName || "",
     phone: user?.phone || "",
@@ -192,16 +202,24 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
   const [digitalNotes, setDigitalNotes] = useState("");
   const [shippingError, setShippingError] = useState("");
 
+  const selectedBundle = selectedBundleIdx !== null ? planBundles[selectedBundleIdx] : null;
+  const bundlePrice = selectedBundle ? (selectedBundle.isFree ? 0 : (selectedBundle.customPrice || 0)) : 0;
+  const totalPrice = p.price + bundlePrice;
+
   function handleBuy() {
+    if (hasBundles && selectedBundleIdx === null) {
+      setShippingError("يرجى اختيار باقة من القائمة");
+      return;
+    }
     if (isPhysical) {
       if (!shippingForm.recipientName.trim()) { setShippingError("يرجى إدخال اسم المستلم"); return; }
       if (!shippingForm.phone.trim()) { setShippingError("يرجى إدخال رقم الجوال"); return; }
       if (!shippingForm.city) { setShippingError("يرجى اختيار المدينة"); return; }
       if (!shippingForm.address.trim()) { setShippingError("يرجى إدخال العنوان التفصيلي"); return; }
       setShippingError("");
-      onAddToCart(shippingForm);
+      onAddToCart(shippingForm, digitalNotes, selectedBundle);
     } else {
-      onAddToCart(null, digitalNotes);
+      onAddToCart(null, digitalNotes, selectedBundle);
     }
   }
 
@@ -292,13 +310,109 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
             </div>
           )}
 
-          {/* Linked plan */}
-          {(p as any).linkedPlanSlug && (
-            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-2xl p-4">
+          {/* Linked plan (static label) */}
+          {(p as any).linkedPlanSlug && !hasBundles && (
+            <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-2xl p-4">
               <p className="text-xs font-black text-cyan-700 dark:text-cyan-300 mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />يأتي مع باقة نظام
               </p>
               <p className="text-sm text-cyan-900 dark:text-cyan-100">{(p as any).linkedPlanSlug}</p>
+            </div>
+          )}
+
+          {/* ── Plan Bundles Selector ── */}
+          {hasBundles && (
+            <div>
+              <h3 className="text-xs font-black text-black/60 dark:text-white/60 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                اختر الباقة المرفقة
+                <span className="text-red-500">*</span>
+              </h3>
+              <div className="space-y-2.5">
+                {planBundles.map((bundle: any, idx: number) => {
+                  const tierMeta = TIER_META_SIMPLE[bundle.planTier] || TIER_META_SIMPLE.custom;
+                  const isSelected = selectedBundleIdx === idx;
+                  const bPrice = bundle.isFree ? 0 : (bundle.customPrice || 0);
+                  const features: string[] = Array.isArray(bundle.features) ? bundle.features : [];
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => { setSelectedBundleIdx(idx); setShippingError(""); }}
+                      data-testid={`bundle-option-${idx}`}
+                      className={`w-full text-right rounded-2xl border-2 p-4 transition-all duration-200 ${
+                        isSelected
+                          ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 shadow-sm"
+                          : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/15 dark:hover:border-white/15"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tierMeta.bg} ${tierMeta.color} ${tierMeta.border}`}>
+                              {tierMeta.label}
+                            </span>
+                            <span className="text-sm font-black text-black dark:text-white truncate">{bundle.planNameAr}</span>
+                          </div>
+                          {bundle.planDescAr && (
+                            <p className="text-xs text-black/45 dark:text-white/45 leading-relaxed mb-2">{bundle.planDescAr}</p>
+                          )}
+                          {features.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {features.slice(0, 4).map((f: string, fi: number) => (
+                                <span key={fi} className="text-[10px] flex items-center gap-1 text-black/50 dark:text-white/50">
+                                  <Check className="w-2.5 h-2.5 text-emerald-500" />{f}
+                                </span>
+                              ))}
+                              {features.length > 4 && (
+                                <span className="text-[10px] text-black/30 dark:text-white/30">+{features.length - 4}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          {bundle.isFree ? (
+                            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">مجاناً</span>
+                          ) : (
+                            <div>
+                              <span className="text-sm font-black text-black dark:text-white">+{bPrice.toLocaleString()}</span>
+                              <span className="text-[10px] text-black/35 dark:text-white/35 block">ر.س</span>
+                            </div>
+                          )}
+                          <div className={`mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center mx-auto ${isSelected ? "border-violet-500 bg-violet-500" : "border-black/20 dark:border-white/20"}`}>
+                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Price summary */}
+              {selectedBundle && (
+                <div className="mt-3 p-3 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
+                  <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
+                    <span>سعر المنتج</span>
+                    <span>{p.price.toLocaleString()} ر.س</span>
+                  </div>
+                  {bundlePrice > 0 && (
+                    <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
+                      <span>الباقة: {selectedBundle.planNameAr}</span>
+                      <span>+{bundlePrice.toLocaleString()} ر.س</span>
+                    </div>
+                  )}
+                  {selectedBundle.isFree && (
+                    <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 mb-1">
+                      <span>الباقة: {selectedBundle.planNameAr}</span>
+                      <span>مجاناً</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between font-black text-sm text-black dark:text-white border-t border-black/[0.06] dark:border-white/[0.06] pt-1.5 mt-1">
+                    <span>الإجمالي</span>
+                    <span>{totalPrice.toLocaleString()} ر.س</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -321,6 +435,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                 </h3>
                 <Textarea value={digitalNotes} onChange={e => setDigitalNotes(e.target.value)}
                   placeholder="أي تفاصيل إضافية..." className="rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm resize-none h-20" data-testid="input-product-notes" />
+                {shippingError && <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{shippingError}</p>}
               </div>
             )}
           </div>
@@ -337,7 +452,10 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
             data-testid="button-buy-now"
           >
             {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-            أضف للسلة
+            {hasBundles && totalPrice !== p.price
+              ? `أضف للسلة — ${totalPrice.toLocaleString()} ر.س`
+              : "أضف للسلة"
+            }
           </Button>
         ) : p.stock === 0 ? (
           <div className="w-full h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center justify-center">
@@ -489,21 +607,33 @@ export default function Devices() {
   const { data: myShipments } = useQuery<any[]>({ queryKey: ["/api/shipments/my"], enabled: !!user });
 
   const addToCartMutation = useMutation({
-    mutationFn: async ({ product, shipping, notes }: { product: QiroxProduct; shipping?: typeof emptyShipping | null; notes?: string }) => {
+    mutationFn: async ({ product, shipping, notes, selectedBundle }: { product: QiroxProduct; shipping?: typeof emptyShipping | null; notes?: string; selectedBundle?: any }) => {
       const isPhysical = PHYSICAL_CATS.includes(product.category);
       const type = product.category === "domain" ? "domain" : product.category === "email" ? "email" : product.category === "hosting" ? "hosting" : product.category === "gift" ? "gift" : "product";
+      const bundlePrice = selectedBundle ? (selectedBundle.isFree ? 0 : (selectedBundle.customPrice || 0)) : 0;
+      const totalPrice = product.price + bundlePrice;
       const res = await apiRequest("POST", "/api/cart/items", {
         type,
         refId: product.id,
         name: product.name,
         nameAr: product.nameAr,
-        price: product.price,
+        price: totalPrice,
         qty: 1,
         imageUrl: product.images?.[0],
         config: {
           ...product.specs,
           ...(isPhysical && shipping ? { shipping } : {}),
           ...(notes ? { notes } : {}),
+          ...(selectedBundle ? {
+            planBundle: {
+              planNameAr: selectedBundle.planNameAr,
+              planTier: selectedBundle.planTier,
+              planSegment: selectedBundle.planSegment || "",
+              customPrice: bundlePrice,
+              isFree: selectedBundle.isFree,
+              features: selectedBundle.features || [],
+            },
+          } : {}),
         },
       });
       return res.json();
@@ -729,9 +859,9 @@ export default function Devices() {
               product={selectedProduct}
               user={user}
               onClose={() => setSelectedProduct(null)}
-              onAddToCart={(shipping, notes) => {
+              onAddToCart={(shipping, notes, selectedBundle) => {
                 if (!user) { toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" }); return; }
-                addToCartMutation.mutate({ product: selectedProduct, shipping: shipping ?? undefined, notes });
+                addToCartMutation.mutate({ product: selectedProduct, shipping: shipping ?? undefined, notes, selectedBundle });
               }}
               isPending={addToCartMutation.isPending}
             />
