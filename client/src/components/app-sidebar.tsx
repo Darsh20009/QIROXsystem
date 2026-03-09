@@ -337,7 +337,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar side={lang === "ar" ? "right" : "left"} className={`bg-white dark:bg-gray-950 ${lang === "ar" ? "border-l" : "border-r"} border-black/[0.06] dark:border-white/[0.06]`}>
-      <SidebarHeader className="p-4 border-b border-black/[0.06]">
+      <SidebarHeader
+        className="px-4 pb-4 border-b border-black/[0.06]"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))' }}
+      >
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain dark:invert" />
@@ -421,7 +424,10 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-black/[0.06] dark:border-white/[0.06] space-y-2">
+      <SidebarFooter
+        className="px-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06] space-y-2"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+      >
         {/* Social Media Links */}
         {socialLinks.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 flex-wrap py-1">

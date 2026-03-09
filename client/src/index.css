@@ -1070,6 +1070,25 @@
   }
 }
 
+/* ===== SAFE AREA — SIDEBAR / SHEET ON MOBILE ===== */
+/* Ensure sidebar header always clears the notch/camera area */
+[data-sidebar="sidebar"][data-mobile="true"] [data-slot="sidebar-header"],
+[data-slot="sidebar-header"] {
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+}
+
+[data-sidebar="sidebar"][data-mobile="true"] [data-slot="sidebar-footer"],
+[data-slot="sidebar-footer"] {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* SheetContent wrapper safe area on mobile */
+[data-radix-popper-content-wrapper],
+[role="dialog"][data-state="open"] {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @keyframes shimmer {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
