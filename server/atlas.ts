@@ -12,14 +12,17 @@ function headers(token?: string) {
 }
 
 async function getOAuthToken(clientId: string, clientSecret: string): Promise<string> {
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const body = new URLSearchParams();
   body.set("grant_type", "client_credentials");
-  body.set("client_id", clientId);
-  body.set("client_secret", clientSecret);
 
   const res = await fetch(TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "application/json",
+      "Authorization": `Basic ${credentials}`,
+    },
     body: body.toString(),
   });
 
