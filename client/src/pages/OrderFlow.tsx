@@ -818,10 +818,19 @@ export default function OrderFlow() {
                             selected ? "border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.02] shadow-md" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 hover:border-black/20 dark:hover:border-white/20"
                           }`}>
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                              selected ? "bg-black dark:bg-white" : "bg-black/[0.05] dark:bg-white/[0.05]"
-                            }`}>
-                              {selected
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all overflow-hidden relative ${
+                              selected ? "ring-2 ring-black dark:ring-white" : ""
+                            } ${a.imageUrl ? "bg-black/[0.03] dark:bg-white/[0.03]" : selected ? "bg-black dark:bg-white" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
+                              {a.imageUrl ? (
+                                <>
+                                  <img src={a.imageUrl} alt={a.nameAr} className="w-full h-full object-cover" />
+                                  {selected && (
+                                    <div className="absolute inset-0 bg-black/50 dark:bg-white/30 flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-white" />
+                                    </div>
+                                  )}
+                                </>
+                              ) : selected
                                 ? <Check className="w-4 h-4 text-white dark:text-black" />
                                 : <Plus className="w-4 h-4 text-black/40 dark:text-white/40" />}
                             </div>

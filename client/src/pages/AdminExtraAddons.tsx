@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock } from "lucide-react";
+import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock, Image as ImageIcon } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { ImageUpload } from "@/components/ImageUpload";
 
 const CATEGORIES = [
   { value: "feature",     label: "ميزة إضافية",    color: "bg-blue-100 text-blue-700" },
@@ -55,6 +56,7 @@ const empty = {
   name: "", nameAr: "", description: "", descriptionAr: "",
   icon: "Plus", price: 0, currency: "SAR", category: "feature",
   sortOrder: 0, isActive: true, segments: [] as string[], plans: [] as string[],
+  imageUrl: "",
 };
 
 function MultiToggle({ label, options, selected, onChange }: {
@@ -141,6 +143,7 @@ export default function AdminExtraAddons() {
       icon: a.icon || "Plus", price: a.price || 0, currency: a.currency || "SAR",
       category: a.category || "feature", sortOrder: a.sortOrder || 0,
       isActive: a.isActive, segments: a.segments || [], plans: a.plans || [],
+      imageUrl: a.imageUrl || "",
     });
     setOpen(true);
   }
@@ -213,6 +216,15 @@ export default function AdminExtraAddons() {
               className={`border transition-all ${a.isActive ? "border-black/[0.06]" : "border-black/[0.04] opacity-70"}`}>
               <CardContent className="p-3.5 flex items-center gap-4">
                 <Switch checked={a.isActive} onCheckedChange={v => toggleActive.mutate({ id: a.id, isActive: v })} data-testid={`switch-addon-${a.id}`} />
+
+                {/* Addon thumbnail */}
+                <div className="w-10 h-10 rounded-xl border border-black/[0.06] overflow-hidden bg-black/[0.03] flex items-center justify-center shrink-0">
+                  {a.imageUrl ? (
+                    <img src={a.imageUrl} alt={a.nameAr} className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-4 h-4 text-black/20" />
+                  )}
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -319,6 +331,19 @@ export default function AdminExtraAddons() {
                   onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))}
                   data-testid="input-addon-order" />
               </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="border border-black/[0.07] rounded-xl p-4 bg-black/[0.01] space-y-2">
+              <p className="text-xs font-black text-black/50 uppercase tracking-widest flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> صورة الإضافة (اختيارية)
+              </p>
+              <ImageUpload
+                label=""
+                value={form.imageUrl}
+                onChange={url => setForm(f => ({ ...f, imageUrl: url }))}
+              />
+              <p className="text-[10px] text-black/30">تظهر بجانب اسم الإضافة عند اختيارها من صفحة الطلب</p>
             </div>
 
             {/* Segment restriction */}

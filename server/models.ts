@@ -966,6 +966,8 @@ const extraAddonSchema = new mongoose.Schema({
   includedInPlans: { type: [String], default: [] },
   // Free quota for included plans
   freeQuotaForIncluded: { type: Number, default: 0 },
+  // Optional image
+  imageUrl: { type: String, default: "" },
 }, { timestamps: true });
 
 // ── ProjectAddonSubscription (اشتراك ميزة لمشروع) ──────────────────────────
