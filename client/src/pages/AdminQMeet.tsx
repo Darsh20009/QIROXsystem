@@ -56,6 +56,15 @@ export default function AdminQMeet() {
   const { data: meetings = [], isLoading: meetingsLoading, refetch } = useQuery<any[]>({ queryKey: ["/api/qmeet/meetings"] });
   const { data: clients = [] } = useQuery<any[]>({ queryKey: ["/api/qmeet/clients"], enabled: openCreate });
 
+  const [instantResult, setInstantResult] = useState<any>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyInstant = (text: string, field: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/qmeet/meetings", data),
     onSuccess: () => {
@@ -65,6 +74,17 @@ export default function AdminQMeet() {
       setOpenCreate(false); setForm(EMPTY_FORM);
     },
     onError: (e: any) => toast({ title: "خطأ في الإنشاء", description: e.message, variant: "destructive" }),
+  });
+
+  const instantMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/qmeet/instant", {}),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
+      qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
+      setInstantResult(data);
+    },
+    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -175,6 +195,16 @@ export default function AdminQMeet() {
               </Button>
               <Button onClick={() => navigate("/meet/join")} variant="outline" className="gap-2 border-black/10 dark:border-white/10" data-testid="button-join-by-code">
                 <Key className="w-4 h-4" /> انضمام بكود
+              </Button>
+              <Button
+                onClick={() => instantMutation.mutate()}
+                disabled={instantMutation.isPending}
+                variant="outline"
+                className="gap-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                data-testid="button-quick-meeting"
+              >
+                {instantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                اجتماع سريع
               </Button>
               {isManagement && (
                 <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
@@ -498,6 +528,79 @@ export default function AdminQMeet() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Instant Meeting Result Dialog */}
+      <Dialog open={!!instantResult} onOpenChange={v => { if (!v) setInstantResult(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
+              تم إنشاء الاجتماع السريع
+            </DialogTitle>
+          </DialogHeader>
+          {instantResult && (
+            <div className="space-y-4 pt-2">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-2xl p-4">
+                <p className="text-green-700 dark:text-green-300 text-sm font-semibold">{instantResult.title}</p>
+                <p className="text-green-600/70 dark:text-green-400/60 text-xs mt-1">الاجتماع مباشر الآن · {instantResult.durationMinutes} دقيقة</p>
+              </div>
+
+              {/* Join Code */}
+              <div>
+                <p className="text-xs text-black/50 dark:text-white/40 font-medium mb-1.5">كود الانضمام</p>
+                <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl px-4 py-3">
+                  <span className="font-mono font-black text-xl tracking-[0.3em] text-black dark:text-white flex-1">{instantResult.joinCode}</span>
+                  <button
+                    onClick={() => copyInstant(instantResult.joinCode, "code")}
+                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    data-testid="button-copy-instant-code"
+                  >
+                    {copiedField === "code" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Shareable Link */}
+              <div>
+                <p className="text-xs text-black/50 dark:text-white/40 font-medium mb-1.5">رابط الانضمام المباشر</p>
+                <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl px-3 py-2.5">
+                  <span className="text-xs text-black/60 dark:text-white/50 font-mono flex-1 truncate">
+                    {`${window.location.origin}/meet/join?code=${instantResult.joinCode}`}
+                  </span>
+                  <button
+                    onClick={() => copyInstant(`${window.location.origin}/meet/join?code=${instantResult.joinCode}`, "sharelink")}
+                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+                    data-testid="button-copy-instant-sharelink"
+                  >
+                    {copiedField === "sharelink" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <Button
+                  onClick={() => { navigate(instantResult.meetingLink); setInstantResult(null); }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                  data-testid="button-enter-instant-meeting"
+                >
+                  <Video className="w-4 h-4" />
+                  ادخل الاجتماع
+                </Button>
+                <Button
+                  onClick={() => setInstantResult(null)}
+                  variant="outline"
+                  className="border-black/10 dark:border-white/10"
+                  data-testid="button-close-instant-result"
+                >
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

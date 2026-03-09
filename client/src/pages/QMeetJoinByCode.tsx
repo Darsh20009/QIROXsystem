@@ -35,7 +35,7 @@ function getOrCreateGuestId(): string {
 
 export default function QMeetJoinByCode() {
   const { data: user } = useUser();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("enter_code");
@@ -45,9 +45,28 @@ export default function QMeetJoinByCode() {
   const [meetingLink, setMeetingLink] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
+  const autoLookupDoneRef = useRef(false);
 
   // Resolve the effective user ID (logged-in or guest)
   const effectiveUserId = user ? (user._id || user.id) : getOrCreateGuestId();
+
+  // Auto-fill code from URL ?code= param and trigger lookup
+  useEffect(() => {
+    if (autoLookupDoneRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlCode = (params.get("code") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (urlCode.length === 6) {
+      autoLookupDoneRef.current = true;
+      setCode(urlCode);
+      // lookup immediately
+      setLoading(true);
+      fetch(`/api/qmeet/by-code/${urlCode}`)
+        .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || "كود غير صحيح"))))
+        .then(data => { setMeetingInfo(data); setStep("meeting_info"); })
+        .catch(err => toast({ title: "خطأ", description: err?.message || "كود غير صحيح أو الاجتماع غير متاح", variant: "destructive" }))
+        .finally(() => setLoading(false));
+    }
+  }, [toast]);
 
   // WebSocket listener for approval notification (works for both logged-in and guest)
   useEffect(() => {

@@ -626,6 +626,48 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
+  // ── Instant / Quick Meeting ───────────────────────────────────────────────
+
+  app.post("/api/qmeet/instant", requireAuth, async (req: any, res) => {
+    try {
+      const userName = req.user.fullName || req.user.username;
+      const userId = String(req.user._id || req.user.id);
+      const title = (req.body.title || "").trim() || `اجتماع سريع — ${userName}`;
+      const duration = parseInt(req.body.durationMinutes) || 60;
+      const now = new Date();
+      const endsAt = new Date(now.getTime() + duration * 60 * 1000);
+      const roomName = generateRoomName();
+      const meetingLink = `/meet/${roomName}`;
+
+      const meeting = await QMeetingModel.create({
+        title,
+        description: "",
+        hostId: userId,
+        hostName: userName,
+        scheduledAt: now,
+        endsAt,
+        durationMinutes: duration,
+        roomName,
+        meetingLink,
+        status: "live",
+        type: "internal",
+        participantIds: [userId],
+        participantEmails: [],
+        participantNames: [],
+        consultationBookingId: null,
+        notes: "",
+        agenda: [],
+        joinCode: generateJoinCode(),
+        joinRequests: [],
+        reminderSent: false,
+      });
+
+      res.status(201).json(meeting);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── Stats ─────────────────────────────────────────────────────────────────
 
   app.get("/api/qmeet/stats", requireManagement, async (_req, res) => {

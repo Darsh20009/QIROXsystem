@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones, Upload, Video } from "lucide-react";
+import { Loader2, Plus, FileText, Activity, Clock, Layers, LogIn, LogOut, TrendingUp, Calendar, CheckCircle2, AlertCircle, Timer, ArrowUpRight, Package, CreditCard, Eye, Wrench, Users, DollarSign, Settings, LayoutGrid, Handshake, ShoppingBag, ShoppingCart, UserCog, KeyRound, Copy, Check, Newspaper, Briefcase, ChevronLeft, BarChart3, Phone, Mail, User, Link2, ExternalLink, Server, Globe, Building2, ChevronRight, Crown, Sparkles, MessageSquare, XCircle, Headphones, Upload, Video, Zap } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -1526,6 +1526,25 @@ export default function Dashboard() {
     refetchInterval: 60000,
   });
 
+  const [instantMeetResult, setInstantMeetResult] = useState<any>(null);
+  const [instantCopied, setInstantCopied] = useState<string | null>(null);
+
+  const copyInstantField = (text: string, field: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setInstantCopied(field);
+    setTimeout(() => setInstantCopied(null), 2000);
+  };
+
+  const instantMeetMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/qmeet/instant", {}),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ['/api/qmeet/upcoming'] });
+      setInstantMeetResult(data);
+    },
+    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+  });
+
   const cancelModMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/modification-requests/${id}/cancel`, {});
@@ -1910,6 +1929,15 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2">
               {upcomingMeetings.length > 0 && <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{upcomingMeetings.length} {L ? "اجتماع" : "meeting(s)"}</span>}
+              <button
+                onClick={() => instantMeetMutation.mutate()}
+                disabled={instantMeetMutation.isPending}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-700/50 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-60"
+                data-testid="button-quick-meeting-dashboard"
+              >
+                {instantMeetMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                {L ? "اجتماع سريع" : "Quick Meeting"}
+              </button>
               <button onClick={() => setLocation("/meet/join")} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="button-join-by-code-dashboard">
                 <KeyRound className="w-3.5 h-3.5" />
                 {L ? "انضم بكود" : "Join by Code"}
@@ -3013,6 +3041,77 @@ export default function Dashboard() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Instant Meeting Result Dialog */}
+      <Dialog open={!!instantMeetResult} onOpenChange={v => { if (!v) setInstantMeetResult(null); }}>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
+              {L ? "تم إنشاء الاجتماع السريع" : "Quick Meeting Created"}
+            </DialogTitle>
+          </DialogHeader>
+          {instantMeetResult && (
+            <div className="space-y-4 pt-2">
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-2xl p-4">
+                <p className="text-green-700 dark:text-green-300 text-sm font-semibold">{instantMeetResult.title}</p>
+                <p className="text-green-600/70 dark:text-green-400/60 text-xs mt-1">{L ? "الاجتماع مباشر الآن" : "Meeting is live now"} · {instantMeetResult.durationMinutes} {L ? "دقيقة" : "min"}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-black/50 dark:text-white/40 font-medium mb-1.5">{L ? "كود الانضمام" : "Join Code"}</p>
+                <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl px-4 py-3">
+                  <span className="font-mono font-black text-xl tracking-[0.3em] text-black dark:text-white flex-1">{instantMeetResult.joinCode}</span>
+                  <button
+                    onClick={() => copyInstantField(instantMeetResult.joinCode, "code")}
+                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    data-testid="button-copy-dashboard-instant-code"
+                  >
+                    {instantCopied === "code" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-black/50 dark:text-white/40 font-medium mb-1.5">{L ? "رابط الانضمام المباشر" : "Direct Join Link"}</p>
+                <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl px-3 py-2.5">
+                  <span className="text-xs text-black/60 dark:text-white/50 font-mono flex-1 truncate">
+                    {`${window.location.origin}/meet/join?code=${instantMeetResult.joinCode}`}
+                  </span>
+                  <button
+                    onClick={() => copyInstantField(`${window.location.origin}/meet/join?code=${instantMeetResult.joinCode}`, "link")}
+                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+                    data-testid="button-copy-dashboard-instant-link"
+                  >
+                    {instantCopied === "link" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <Button
+                  onClick={() => { setLocation(instantMeetResult.meetingLink); setInstantMeetResult(null); }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                  data-testid="button-enter-dashboard-instant-meeting"
+                >
+                  <Video className="w-4 h-4" />
+                  {L ? "ادخل الاجتماع" : "Enter Meeting"}
+                </Button>
+                <Button
+                  onClick={() => setInstantMeetResult(null)}
+                  variant="outline"
+                  className="border-black/10 dark:border-white/10"
+                  data-testid="button-close-dashboard-instant"
+                >
+                  {L ? "إغلاق" : "Close"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
