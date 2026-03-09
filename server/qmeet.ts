@@ -600,11 +600,19 @@ export function registerQMeetRoutes(app: Express) {
 
   // ── Check my join request status ──────────────────────────────────────────
 
-  app.get("/api/qmeet/by-code/:code/my-status", requireAuth, async (req: any, res) => {
+  app.get("/api/qmeet/by-code/:code/my-status", async (req: any, res) => {
     try {
       const code = String(req.params.code).toUpperCase().trim();
       const meeting = await QMeetingModel.findOne({ joinCode: code });
       if (!meeting) return res.status(404).json({ message: "كود غير صحيح" });
+      if (!req.isAuthenticated() && !req.query.guestId) return res.json({ status: "none" });
+      const guestId = req.query.guestId as string | undefined;
+      if (guestId) {
+        const joinRequests: any[] = meeting.joinRequests || [];
+        const req_ = joinRequests.find((r: any) => r.guestId && String(r.guestId) === guestId);
+        if (!req_) return res.json({ status: "none" });
+        return res.json({ status: req_.status, meetingLink: req_.status === "approved" ? meeting.meetingLink : null });
+      }
       const userId = String(req.user._id || req.user.id);
       if ((meeting.participantIds || []).includes(userId)) {
         return res.json({ status: "approved", meetingLink: meeting.meetingLink });

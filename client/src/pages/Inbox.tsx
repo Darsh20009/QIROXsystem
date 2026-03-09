@@ -421,7 +421,7 @@ export default function Inbox() {
   })();
 
   const filteredContacts = contacts.filter(c =>
-    c.fullName.toLowerCase().includes(search.toLowerCase())
+    (c.fullName || c.username || "").toLowerCase().includes(search.toLowerCase())
   );
 
   // Scroll to bottom when thread loads

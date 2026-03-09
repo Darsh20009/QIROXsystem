@@ -41,7 +41,7 @@ export default function AdminActivityLog() {
   });
 
   const filtered = (logs || []).filter(l =>
-    !search || (l.action.includes(search) || l.userId?.fullName.includes(search) || l.entity.includes(search))
+    !search || (l.action.includes(search) || l.userId?.fullName?.includes(search) || l.entity.includes(search))
   );
 
   const exportExcel = () => {

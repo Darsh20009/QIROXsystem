@@ -751,7 +751,7 @@ export default function AdminJobs() {
             <div className="space-y-5 mt-4">
               {hireApp && (
                 <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold shrink-0">{hireApp.fullName[0]}</div>
+                  <div className="w-10 h-10 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold shrink-0">{(hireApp.fullName || hireApp.email || "?")[0]}</div>
                   <div>
                     <p className="font-bold text-sm">{hireApp.fullName}</p>
                     <p className="text-xs text-black/40 dark:text-white/40" dir="ltr">{hireApp.email}</p>

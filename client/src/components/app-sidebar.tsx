@@ -471,10 +471,10 @@ export function AppSidebar() {
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black shrink-0">
-                {user.fullName[0]}
+                {(user.fullName || user.username || "?")[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate text-black dark:text-white">{user.fullName}</p>
+                <p className="text-sm font-bold truncate text-black dark:text-white">{user.fullName || user.username}</p>
                 <p className="text-[10px] text-black/25 dark:text-white/25 truncate">{user.role}</p>
               </div>
             </div>

@@ -238,7 +238,7 @@ export default function AdminEmployees() {
     : filterRole === 'client' ? clients
     : employees.filter(e => e.role === filterRole)
   ).filter(e =>
-    !search || e.fullName.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase())
+    !search || (e.fullName || "").toLowerCase().includes(search.toLowerCase()) || (e.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>;
@@ -562,7 +562,7 @@ export default function AdminEmployees() {
               {credResult?.fullName && (
                 <div className="text-center pb-2 border-b border-black/[0.06]">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold">{credResult.fullName[0]}</span>
+                    <span className="text-white font-bold">{(credResult.fullName || credResult.username || "?")[0]}</span>
                   </div>
                   <p className="font-bold text-black text-sm">{credResult.fullName}</p>
                 </div>

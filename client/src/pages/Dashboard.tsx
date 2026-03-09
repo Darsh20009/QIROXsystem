@@ -363,7 +363,7 @@ function AdminDashboard({ user }: { user: any }) {
           <div>
             <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{dateStr}</p>
             <h1 className="text-xl font-bold text-black dark:text-white font-heading" data-testid="text-admin-greeting">
-              مرحباً، {user.fullName}
+              مرحباً، {user.fullName || user.username}
             </h1>
           </div>
           <Badge className="bg-black text-white border-0 text-xs font-medium px-3 py-1.5">مدير النظام</Badge>
@@ -692,7 +692,7 @@ function EmployeeDashboard({ user }: { user: any }) {
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <h1 className="text-xl font-bold text-black dark:text-white font-heading">مرحباً، {user.fullName}</h1>
+            <h1 className="text-xl font-bold text-black dark:text-white font-heading">مرحباً، {user.fullName || user.username}</h1>
           </div>
           <div className="flex items-center gap-3">
             <Badge className="bg-black/[0.06] text-black/60 dark:text-white/60 border-0 text-xs px-3 py-1.5">
@@ -1697,7 +1697,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{dateStr}</p>
                 <h1 className="text-xl font-black text-black dark:text-white font-heading">
-                  {getGreeting(lang)}{L ? "،" : ","} {user.fullName.split(" ")[0]}
+                  {getGreeting(lang)}{L ? "،" : ","} {(user.fullName || user.username || "")?.split(" ")[0]}
                 </h1>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{user.email}</p>
               </div>

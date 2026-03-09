@@ -294,9 +294,9 @@ export default function Navigation() {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.06]">
                       <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold bg-black dark:bg-white text-white dark:text-black">
-                        {user.fullName[0]}
+                        {(user.fullName || user.username || "?")[0]}
                       </div>
-                      <span className="text-sm text-black/60 dark:text-white/60">{user.fullName.split(' ')[0]}</span>
+                      <span className="text-sm text-black/60 dark:text-white/60">{(user.fullName || user.username || "")?.split(' ')[0]}</span>
                     </div>
                     <button
                       onClick={() => logout()}

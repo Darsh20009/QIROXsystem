@@ -108,7 +108,7 @@ export default function AdminInvestors() {
   const pendingPayments = payments.filter(p => p.status === "pending").length;
 
   const filteredUsers = (allUsersResp?.users || []).filter(u =>
-    u.fullName.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase())
+    (u.fullName || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
   );
   const existingUserIds = new Set(investors.map(i => i.userId?._id));
 

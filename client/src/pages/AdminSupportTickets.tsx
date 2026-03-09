@@ -70,7 +70,7 @@ export default function AdminSupportTickets() {
 
   const filtered = (tickets || []).filter(t => {
     if (statusFilter !== "all" && t.status !== statusFilter) return false;
-    if (search && !t.subject.includes(search) && !t.userId?.fullName.includes(search)) return false;
+    if (search && !t.subject.includes(search) && !t.userId?.fullName?.includes(search)) return false;
     return true;
   });
 
