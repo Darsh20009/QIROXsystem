@@ -815,69 +815,72 @@ export default function MeetingRoom() {
   }, [sendWs, roomId, userName, audioOn, cameraFacing]);
 
   const startScreenShare = useCallback(async () => {
-    // Check API support
-    if (!navigator.mediaDevices?.getDisplayMedia) {
+    // getDisplayMedia MUST be called immediately — no state updates or toasts before it
+    // (mobile browsers require it to be the first async op after the user gesture)
+    if (typeof navigator?.mediaDevices?.getDisplayMedia !== "function") {
       const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
       toast({
         title: "مشاركة الشاشة غير مدعومة",
         description: isIOS
-          ? "تتطلب iOS 17.4 أو أحدث مع متصفح Safari المحدّث"
-          : "متصفحك لا يدعم مشاركة الشاشة — جرّب Chrome أو Edge",
+          ? "تتطلب iOS 17.4 أو أحدث مع Safari"
+          : "متصفحك لا يدعم مشاركة الشاشة — استخدم Chrome أو Edge",
         variant: "destructive",
       });
       return;
     }
+    let screen: MediaStream;
     try {
-      const screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      if (!screen.getVideoTracks().length) {
-        toast({ title: "لم يتم اختيار شاشة", description: "الرجاء اختيار شاشة أو نافذة للمشاركة", variant: "destructive" });
-        return;
-      }
-      const screenTrack = screen.getVideoTracks()[0];
-      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
-      const audio = localStreamRef.current?.getAudioTracks()[0];
-      const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
-
-      const peersNeedingRenegotiation: string[] = [];
-      pcsRef.current.forEach((pc, peerId) => {
-        const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) {
-          sender.replaceTrack(screenTrack);
-        } else {
-          // Camera was off — add track and renegotiate
-          pc.addTrack(screenTrack, newStream);
-          peersNeedingRenegotiation.push(peerId);
-        }
-      });
-
-      localStreamRef.current = newStream;
-      setLocalStream(newStream);
-      setVideoOn(true);
-      setScreenSharing(true);
-      setScreenSharerPeerId(userId || "local");
-      setScreenSharerName(userName);
-      sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: true });
-      sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
-      screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
-
-      // Send new offers for renegotiation (for peers that had no video sender)
-      for (const peerId of peersNeedingRenegotiation) {
-        const pc = pcsRef.current.get(peerId);
-        if (!pc) continue;
-        try {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
-        } catch {}
-      }
+      // ← First await after user gesture — must stay here
+      screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
     } catch (err: any) {
-      const name = err?.name;
-      if (name === "NotAllowedError" || name === "AbortError") return;
-      if (name === "NotSupportedError" || name === "TypeError") {
-        toast({ title: "مشاركة الشاشة غير مدعومة", description: "متصفحك أو جهازك لا يدعم هذه الميزة", variant: "destructive" });
+      const n = err?.name;
+      if (n === "NotAllowedError" || n === "AbortError") return;
+      if (n === "NotSupportedError" || n === "InvalidStateError") {
+        toast({ title: "مشاركة الشاشة غير مدعومة", description: "متصفحك أو نظامك لا يدعم هذه الميزة", variant: "destructive" });
       } else {
-        toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن عند ظهور طلب النظام", variant: "destructive" });
+        toast({ title: "تعذّرت مشاركة الشاشة", description: "اقبل طلب الإذن عند ظهوره", variant: "destructive" });
       }
+      return;
+    }
+    if (!screen.getVideoTracks().length) {
+      screen.getTracks().forEach(t => t.stop());
+      toast({ title: "لم يتم اختيار شاشة", description: "اختر شاشة أو نافذة للمشاركة", variant: "destructive" });
+      return;
+    }
+    const screenTrack = screen.getVideoTracks()[0];
+    localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+    const audio = localStreamRef.current?.getAudioTracks()[0];
+    const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
+
+    const peersNeedingRenegotiation: string[] = [];
+    pcsRef.current.forEach((pc, peerId) => {
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) {
+        sender.replaceTrack(screenTrack);
+      } else {
+        pc.addTrack(screenTrack, newStream);
+        peersNeedingRenegotiation.push(peerId);
+      }
+    });
+
+    localStreamRef.current = newStream;
+    setLocalStream(newStream);
+    setVideoOn(true);
+    setScreenSharing(true);
+    setScreenSharerPeerId(userId || "local");
+    setScreenSharerName(userName);
+    sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: true });
+    sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
+    screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
+
+    for (const peerId of peersNeedingRenegotiation) {
+      const pc = pcsRef.current.get(peerId);
+      if (!pc) continue;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+      } catch {}
     }
   }, [sendWs, roomId, userId, userName, audioOn, toast, stopScreenShare]);
 
@@ -897,14 +900,6 @@ export default function MeetingRoom() {
         variant: "destructive",
       });
       return;
-    }
-    // Android guidance toast
-    if (/Android/i.test(navigator.userAgent)) {
-      toast({
-        title: "مشاركة الشاشة",
-        description: "ستنتقل لاختيار الشاشة — اختر ما تريد مشاركته ثم ارجع للتطبيق",
-        duration: 4000,
-      });
     }
     // Host OR staff with no one else sharing → share directly without approval
     if (isHost || (isStaff && !screenSharerPeerId) || screenShareApproved) {
