@@ -6752,14 +6752,18 @@ export async function registerRoutes(
   const { SystemFeatureModel, ExtraAddonModel } = await import("./models");
 
   app.get("/api/system-features", async (_req, res) => {
-    const features = await SystemFeatureModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
-    res.json(features);
+    try {
+      const features = await SystemFeatureModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
+      res.json(features);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.get("/api/admin/system-features", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
-    const features = await SystemFeatureModel.find().sort({ sortOrder: 1, createdAt: 1 });
-    res.json(features);
+    try {
+      const features = await SystemFeatureModel.find().sort({ sortOrder: 1, createdAt: 1 });
+      res.json(features);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.post("/api/admin/system-features", async (req, res) => {
@@ -6780,28 +6784,31 @@ export async function registerRoutes(
 
   app.delete("/api/admin/system-features/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
-    await SystemFeatureModel.findByIdAndDelete(req.params.id);
-    res.json({ ok: true });
+    try {
+      await SystemFeatureModel.findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.get("/api/extra-addons", async (req, res) => {
-    const { segment, plan } = req.query as { segment?: string; plan?: string };
-    const query: any = { isActive: true };
-    // If segment provided, return addons with no segment restriction OR matching this segment
-    // If plan provided, return addons with no plan restriction OR matching this plan
-    const addons = await ExtraAddonModel.find(query).sort({ sortOrder: 1, createdAt: 1 });
-    const filtered = addons.filter((a: any) => {
-      const segOk = !a.segments?.length || !segment || a.segments.includes(segment);
-      const planOk = !a.plans?.length || !plan || a.plans.includes(plan);
-      return segOk && planOk;
-    });
-    res.json(filtered);
+    try {
+      const { segment, plan } = req.query as { segment?: string; plan?: string };
+      const addons = await ExtraAddonModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
+      const filtered = addons.filter((a: any) => {
+        const segOk = !a.segments?.length || !segment || a.segments.includes(segment);
+        const planOk = !a.plans?.length || !plan || a.plans.includes(plan);
+        return segOk && planOk;
+      });
+      res.json(filtered);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.get("/api/admin/extra-addons", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
-    const addons = await ExtraAddonModel.find().sort({ sortOrder: 1, createdAt: 1 });
-    res.json(addons);
+    try {
+      const addons = await ExtraAddonModel.find().sort({ sortOrder: 1, createdAt: 1 });
+      res.json(addons);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.post("/api/admin/extra-addons", async (req, res) => {
@@ -6822,8 +6829,10 @@ export async function registerRoutes(
 
   app.delete("/api/admin/extra-addons/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
-    await ExtraAddonModel.findByIdAndDelete(req.params.id);
-    res.json({ ok: true });
+    try {
+      await ExtraAddonModel.findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.post("/api/admin/extra-addons/seed-defaults", async (req, res) => {
@@ -6860,12 +6869,14 @@ export async function registerRoutes(
       { nameAr: "نظام إدارة الطلاب والكورسات", name: "LMS (Student Management)", descriptionAr: "نظام إدارة الطلاب والدورات والاختبارات والشهادات", category: "feature", price: 2000, icon: "GraduationCap", sortOrder: 83, segments: ["education"], plans: [] },
       { nameAr: "نظام CRM لإدارة العملاء", name: "CRM System", descriptionAr: "نظام إدارة علاقات العملاء وتتبع المتابعات والصفقات", category: "feature", price: 1600, icon: "Users", sortOrder: 84, segments: ["corporate","realestate","healthcare"], plans: ["pro","infinite"] },
     ];
-    let added = 0;
-    for (const d of defaults) {
-      const exists = await ExtraAddonModel.findOne({ nameAr: d.nameAr });
-      if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true, currency: "SAR" }); added++; }
-    }
-    res.json({ ok: true, added, skipped: defaults.length - added });
+    try {
+      let added = 0;
+      for (const d of defaults) {
+        const exists = await ExtraAddonModel.findOne({ nameAr: d.nameAr });
+        if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true, currency: "SAR" }); added++; }
+      }
+      res.json({ ok: true, added, skipped: defaults.length - added });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // ─── Cron Jobs ───────────────────────────────────────────────────────────────

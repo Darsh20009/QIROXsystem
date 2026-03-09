@@ -6,7 +6,6 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,9 +13,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
-  Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
-  Loader2, CircleDot, RefreshCw, Key, Hash, Pencil, Check,
-  Shield, Globe, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook
+  Copy, Radio, Search, Zap,
+  Loader2, RefreshCw, Key, Hash, Pencil, Check,
+  Shield, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";

@@ -446,18 +446,19 @@ export function registerQMeetRoutes(app: Express) {
     try {
       const userId = String(req.user._id || req.user.id);
       const userEmail = (req.user.email || "").toLowerCase().trim();
-      // Include meetings that are live or scheduled (starting within the next 7 days or already live)
-      const windowStart = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2h ago (covers live meetings)
-      const windowEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days ahead
-      const filter: any = {
-        status: { $in: ["scheduled", "live"] },
-        scheduledAt: { $gte: windowStart, $lte: windowEnd },
-        $or: [
-          { hostId: userId },
-          { participantIds: userId },
-          ...(userEmail ? [{ participantEmails: userEmail }] : []),
-        ],
-      };
+      const isManagement = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(req.user.role);
+      // Management sees all scheduled/live meetings; clients see only their own
+      const filter: any = isManagement
+        ? { status: { $in: ["scheduled", "live"] } }
+        : {
+            status: { $in: ["scheduled", "live"] },
+            scheduledAt: { $gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+            $or: [
+              { hostId: userId },
+              { participantIds: userId },
+              ...(userEmail ? [{ participantEmails: userEmail }] : []),
+            ],
+          };
       const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: 1 }).limit(20);
       res.json(meetings);
     } catch (err: any) {
@@ -740,21 +741,6 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
-  // ── Upcoming meetings for a user ──────────────────────────────────────────
-
-  app.get("/api/qmeet/upcoming", requireAuth, async (req: any, res) => {
-    try {
-      const uid = String(req.user._id || req.user.id);
-      const isManagement = ["admin", "manager"].includes(req.user.role);
-      const filter: any = isManagement
-        ? { status: { $in: ["scheduled", "live"] } }
-        : { participantIds: uid, status: { $in: ["scheduled", "live"] } };
-      const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: 1 }).limit(5);
-      res.json(meetings);
-    } catch (err: any) {
-      res.status(500).json({ message: err.message });
-    }
-  });
 
   // ── Meeting notes (per-participant, stored on meeting notes field) ──────────
   app.post("/api/qmeet/meetings-notes/:roomName", requireAuth, async (req: any, res) => {
