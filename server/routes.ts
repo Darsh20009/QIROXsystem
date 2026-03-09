@@ -5131,14 +5131,19 @@ export async function registerRoutes(
     const actor = req.user as any;
     if (actor.role === "client") return res.sendStatus(403);
     const { q } = req.query as any;
-    if (!q || String(q).trim().length < 2) return res.json([]);
     const { UserModel } = await import("./models");
-    const regex = new RegExp(String(q).trim(), "i");
-    const clients = await UserModel.find({
-      role: "client",
-      $or: [{ fullName: regex }, { email: regex }, { username: regex }, { phone: regex }],
-    }).select("_id fullName email username phone").limit(10).lean();
-    res.json(clients.map((c: any) => ({ id: String(c._id), fullName: c.fullName, email: c.email, username: c.username, phone: c.phone })));
+    const trimmed = q ? String(q).trim() : "";
+    const filter: any = { role: "client" };
+    if (trimmed.length >= 2) {
+      const regex = new RegExp(trimmed, "i");
+      filter.$or = [{ fullName: regex }, { email: regex }, { username: regex }, { phone: regex }];
+    }
+    const clients = await UserModel.find(filter)
+      .select("_id fullName email username phone businessType")
+      .sort({ createdAt: -1 })
+      .limit(trimmed.length >= 2 ? 15 : 30)
+      .lean();
+    res.json(clients.map((c: any) => ({ id: String(c._id), fullName: c.fullName, email: c.email, username: c.username, phone: c.phone, businessType: c.businessType })));
   });
 
   // ═══════════════════════════════════════════════════════════

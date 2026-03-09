@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -87,17 +87,18 @@ export default function EmployeeNewOrder() {
   /* ── Existing client search ── */
   const [clientSearch, setClientSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null); // kept for potential future use
 
-  const { data: searchResults = [], isFetching: searchLoading } = useQuery<any[]>({
+  const { data: clientList = [], isFetching: searchLoading } = useQuery<any[]>({
     queryKey: ["/api/employee/search-clients", clientSearch],
     queryFn: async () => {
-      if (clientSearch.trim().length < 2) return [];
-      const r = await apiRequest("GET", `/api/employee/search-clients?q=${encodeURIComponent(clientSearch)}`);
+      const q = clientSearch.trim();
+      const url = q.length >= 2 ? `/api/employee/search-clients?q=${encodeURIComponent(q)}` : "/api/employee/search-clients";
+      const r = await fetch(url, { credentials: "include" });
+      if (!r.ok) return [];
       return r.json();
     },
-    enabled: clientSearch.trim().length >= 2,
+    staleTime: 10_000,
   });
 
   /* ── Order fields ── */
@@ -181,12 +182,6 @@ export default function EmployeeNewOrder() {
 
   const autoTotal = selectedItems.reduce((s, i) => s + (i.price || 0), 0);
 
-  /* ─ Close dropdown on outside click ─ */
-  useEffect(() => {
-    function handle(e: MouseEvent) { if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowClientDropdown(false); }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, []);
 
   /* ─────────────────────────────────── RENDER ─────────────────────────────── */
   return (
@@ -329,66 +324,106 @@ export default function EmployeeNewOrder() {
           {step === "client" && mode === "existing" && (
             <motion.div key="client-existing" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.3 }}>
               <div className="bg-white border border-black/[0.06] rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
+                <div className="flex items-center gap-2 mb-5">
                   <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center"><Users className="w-4 h-4 text-white" /></div>
                   <div>
-                    <h2 className="font-bold text-black text-base">بحث عن عميل موجود</h2>
-                    <p className="text-black/35 text-xs">ابحث بالاسم أو البريد أو رقم الهاتف</p>
+                    <h2 className="font-bold text-black text-base">اختر عميلاً</h2>
+                    <p className="text-black/35 text-xs">ابحث أو تصفّح القائمة واضغط على العميل لتحديده</p>
                   </div>
                 </div>
 
-                <div ref={searchRef} className="relative">
-                  <div className="relative">
-                    <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                    <input
-                      value={clientSearch}
-                      onChange={e => { setClientSearch(e.target.value); setShowClientDropdown(true); setSelectedClient(null); }}
-                      onFocus={() => setShowClientDropdown(true)}
-                      placeholder="ابحث بالاسم أو البريد أو الجوال..."
-                      className="w-full h-12 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
-                      data-testid="input-search-client"
-                    />
-                    {searchLoading && <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 animate-spin" />}
-                  </div>
-                  {showClientDropdown && searchResults.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-black/[0.08] rounded-xl shadow-lg overflow-hidden">
-                      {searchResults.map((c: any) => (
-                        <button key={c.id} className="w-full text-right px-4 py-3 hover:bg-black/[0.03] transition-colors flex items-center gap-3 border-b border-black/[0.04] last:border-0"
-                          onClick={() => { setSelectedClient(c); setClientSearch(c.fullName || c.email); setShowClientDropdown(false); }}
-                          data-testid={`client-result-${c.id}`}>
-                          <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-600">
-                            {(c.fullName || c.username || "?").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-black truncate">{c.fullName || c.username}</p>
-                            <p className="text-xs text-black/40 truncate">{c.email} {c.phone ? `· ${c.phone}` : ""}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {showClientDropdown && clientSearch.trim().length >= 2 && !searchLoading && searchResults.length === 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-black/[0.08] rounded-xl shadow-lg px-4 py-6 text-center text-sm text-black/40">
-                      لم يُعثر على عميل بهذا البحث
-                    </div>
-                  )}
-                </div>
-
+                {/* Selected client banner */}
                 {selectedClient && (
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold text-green-700">
-                      {(selectedClient.fullName || selectedClient.email || "?").charAt(0).toUpperCase()}
+                  <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 bg-black text-white rounded-xl p-3.5 flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-black">
+                      {(selectedClient.fullName || "?").charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-sm text-black">{selectedClient.fullName}</p>
-                      <p className="text-xs text-black/50">{selectedClient.email} {selectedClient.phone ? `· ${selectedClient.phone}` : ""}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{selectedClient.fullName}</p>
+                      <p className="text-white/50 text-xs truncate">{selectedClient.email}{selectedClient.phone ? ` · ${selectedClient.phone}` : ""}</p>
                     </div>
-                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <button onClick={() => setSelectedClient(null)}
+                        className="text-white/30 hover:text-white/70 transition-colors"
+                        data-testid="button-clear-client">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </motion.div>
                 )}
 
-                <div className="mt-6">
-                  <Button onClick={() => { if (!clientValid) { toast({ title: "يجب تحديد عميل أولاً", variant: "destructive" }); return; } setStep("order"); }} disabled={!selectedClient} className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2" data-testid="button-next-order-existing">
+                {/* Search box */}
+                <div ref={searchRef} className="relative mb-4">
+                  <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                  <input
+                    value={clientSearch}
+                    onChange={e => { setClientSearch(e.target.value); setSelectedClient(null); }}
+                    placeholder="ابحث بالاسم أو البريد أو الجوال..."
+                    className="w-full h-11 pr-10 pl-10 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
+                    data-testid="input-search-client"
+                  />
+                  {searchLoading
+                    ? <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 animate-spin" />
+                    : clientSearch && <button onClick={() => setClientSearch("")} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/20 hover:text-black/50"><X className="w-4 h-4" /></button>
+                  }
+                </div>
+
+                {/* Client grid */}
+                <div className="max-h-72 overflow-y-auto rounded-xl border border-black/[0.06] divide-y divide-black/[0.04]">
+                  {searchLoading && clientList.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-black/20 mx-auto" />
+                    </div>
+                  ) : clientList.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <Users className="w-8 h-8 text-black/10 mx-auto mb-2" />
+                      <p className="text-sm text-black/30">
+                        {clientSearch.trim().length >= 2 ? "لم يُعثر على عميل بهذا البحث" : "لا يوجد عملاء مسجلون بعد"}
+                      </p>
+                    </div>
+                  ) : clientList.map((c: any) => {
+                    const isSelected = selectedClient?.id === c.id;
+                    return (
+                      <button key={c.id}
+                        onClick={() => setSelectedClient(isSelected ? null : c)}
+                        className={`w-full text-right px-4 py-3 flex items-center gap-3 transition-all ${isSelected ? "bg-black/[0.04]" : "hover:bg-black/[0.02]"}`}
+                        data-testid={`client-row-${c.id}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-black transition-all ${isSelected ? "bg-black text-white" : "bg-black/[0.06] text-black/50"}`}>
+                          {(c.fullName || c.username || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-semibold text-sm truncate ${isSelected ? "text-black" : "text-black/80"}`}>
+                            {c.fullName || c.username}
+                          </p>
+                          <p className="text-xs text-black/35 truncate">
+                            {c.email}{c.phone ? ` · ${c.phone}` : ""}{c.businessType ? ` · ${c.businessType}` : ""}
+                          </p>
+                        </div>
+                        {isSelected
+                          ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          : <div className="w-5 h-5 rounded-full border-2 border-black/10 flex-shrink-0" />
+                        }
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {clientList.length > 0 && (
+                  <p className="text-[11px] text-black/25 mt-2 text-center">
+                    {clientSearch.trim().length >= 2
+                      ? `${clientList.length} نتيجة`
+                      : `آخر ${clientList.length} عميل مسجل`}
+                  </p>
+                )}
+
+                <div className="mt-5">
+                  <Button
+                    onClick={() => { if (!selectedClient) { toast({ title: "يجب تحديد عميل أولاً", variant: "destructive" }); return; } setStep("order"); }}
+                    disabled={!selectedClient}
+                    className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2 disabled:opacity-40"
+                    data-testid="button-next-order-existing">
                     التالي: تفاصيل الطلب <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </div>
