@@ -259,14 +259,16 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
   ];
 
   const uniqueTemplateCategories = Array.from(new Set(templates?.map(t => t.category).filter(Boolean) ?? []));
-  const SEGMENT_OPTIONS = uniqueTemplateCategories.length > 0
-    ? uniqueTemplateCategories.map(cat => {
-        const meta = SEGMENT_META[cat];
-        const tmpl = templates?.find(t => t.category === cat);
-        const Icon = meta?.icon || Globe;
-        return { value: cat, labelAr: tmpl?.nameAr || meta?.labelAr || cat, icon: Icon };
-      })
-    : Object.entries(SEGMENT_META).map(([key, val]) => ({ value: key, labelAr: val.labelAr, icon: val.icon }));
+  const allKnownSegments = Array.from(new Set([
+    ...Object.keys(SEGMENT_META),
+    ...uniqueTemplateCategories,
+  ]));
+  const SEGMENT_OPTIONS = allKnownSegments.map(key => {
+    const meta = SEGMENT_META[key];
+    const tmpl = templates?.find(t => t.category === key);
+    const Icon = meta?.icon || Globe;
+    return { value: key, labelAr: tmpl?.nameAr || meta?.labelAr || key, icon: Icon };
+  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1">
@@ -411,7 +413,9 @@ export default function AdminTemplates() {
   });
 
   const allTemplateCategories = Array.from(new Set(templates?.map(t => t.category).filter(Boolean) ?? []));
-  const activeSegment = segmentFilter || allTemplateCategories[0] || "restaurant";
+  const allPlanSegments = Array.from(new Set(plans?.map((p: any) => p.segment).filter(Boolean) ?? []));
+  const allSegmentKeys = Array.from(new Set([...allPlanSegments, ...allTemplateCategories]));
+  const activeSegment = segmentFilter || allPlanSegments[0] || allTemplateCategories[0] || "restaurant";
 
   const openNewPlan = (seg?: string) => { setEditingPlan(undefined); if (seg) setSegmentFilter(seg); setPlanDialog(true); };
   const openEditPlan = (plan: PricingPlan) => { setEditingPlan(plan); setPlanDialog(true); };
@@ -450,44 +454,27 @@ export default function AdminTemplates() {
             </Button>
           </div>
 
-          {/* Segment filter — built from actual templates */}
+          {/* Segment filter — built from actual plan segments + template categories */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {allTemplateCategories.length === 0
-              ? Object.entries(SEGMENT_META).map(([key, meta]) => {
-                  const Icon = meta.icon;
-                  const count = plans?.filter((p: any) => p.segment === key).length ?? 0;
-                  return (
-                    <button key={key} onClick={() => setSegmentFilter(key)} data-testid={`filter-segment-${key}`}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                        activeSegment === key ? `${meta.bg} ${meta.color}` : "border-black/[0.07] text-black/40 hover:border-black/15"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {meta.labelAr}
-                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${activeSegment === key ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
-                    </button>
-                  );
-                })
-              : allTemplateCategories.map(cat => {
-                  const meta = SEGMENT_META[cat];
-                  const Icon = meta?.icon || Globe;
-                  const tmpl = templates?.find(t => t.category === cat);
-                  const label = tmpl?.nameAr || meta?.labelAr || cat;
-                  const count = plans?.filter((p: any) => p.segment === cat).length ?? 0;
-                  const isActive = activeSegment === cat;
-                  return (
-                    <button key={cat} onClick={() => setSegmentFilter(cat)} data-testid={`filter-segment-${cat}`}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                        isActive ? `${meta?.bg || "bg-black/5"} ${meta?.color || "text-black dark:text-white"}` : "border-black/[0.07] text-black/40 hover:border-black/15"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {label}
-                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${isActive ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
-                    </button>
-                  );
-                })
-            }
+            {(allSegmentKeys.length > 0 ? allSegmentKeys : Object.keys(SEGMENT_META)).map(key => {
+              const meta = SEGMENT_META[key];
+              const Icon = meta?.icon || Globe;
+              const tmpl = templates?.find(t => t.category === key);
+              const label = tmpl?.nameAr || meta?.labelAr || key;
+              const count = plans?.filter((p: any) => p.segment === key).length ?? 0;
+              const isActive = activeSegment === key;
+              return (
+                <button key={key} onClick={() => setSegmentFilter(key)} data-testid={`filter-segment-${key}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                    isActive ? `${meta?.bg || "bg-black/5 border-black/10"} ${meta?.color || "text-black dark:text-white"}` : "border-black/[0.07] text-black/40 hover:border-black/15"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${isActive ? "bg-black/10" : "bg-black/[0.04]"}`}>{count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {plansLoading ? (
