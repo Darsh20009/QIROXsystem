@@ -157,6 +157,7 @@ function PublicRouter() {
         <Route path="/clients-group" component={ClientsGroup} />
         <Route path="/barcode-studio" component={BarcodeStudio} />
         <Route path="/demos" component={Demos} />
+        <Route path="/switch-reminder" component={SwitchReminder} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
