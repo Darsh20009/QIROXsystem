@@ -723,43 +723,35 @@ export default function MeetingRoom() {
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
     const newFacing = cameraFacing === "user" ? "environment" : "user";
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: newFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      const camTrack = stream.getVideoTracks()[0];
-      pcsRef.current.forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) sender.replaceTrack(camTrack);
-      });
-      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
-      const audio = localStreamRef.current?.getAudioTracks()[0];
-      const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
-      localStreamRef.current = newStream;
-      setLocalStream(newStream);
-      setCameraFacing(newFacing);
-    } catch {
+    let camStream: MediaStream | null = null;
+    // Try exact first (preferred — guarantees the correct lens)
+    // Fall back to non-exact (wider compatibility for devices that don't honour exact)
+    for (const constraints of [
+      { facingMode: { exact: newFacing } },
+      { facingMode: newFacing },
+    ] as MediaTrackConstraints[]) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: newFacing },
-          audio: false,
-        });
-        const camTrack = stream.getVideoTracks()[0];
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(camTrack);
-        });
-        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
-        const audio = localStreamRef.current?.getAudioTracks()[0];
-        const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
-        localStreamRef.current = newStream;
-        setLocalStream(newStream);
-        setCameraFacing(newFacing);
+        camStream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
+        break;
       } catch {
-        toast({ title: "تعذّر قلب الكاميرا", description: "الجهاز لا يدعم هذه الميزة أو لا توجد كاميرا أمامية/خلفية", variant: "destructive" });
+        // try next constraints set
       }
     }
+    if (!camStream) {
+      toast({ title: "تعذّر قلب الكاميرا", description: "تأكد من وجود كاميرا أمامية وخلفية", variant: "destructive" });
+      return;
+    }
+    const camTrack = camStream.getVideoTracks()[0];
+    pcsRef.current.forEach(pc => {
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) sender.replaceTrack(camTrack);
+    });
+    localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+    const audio = localStreamRef.current?.getAudioTracks()[0];
+    const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
+    localStreamRef.current = newStream;
+    setLocalStream(newStream);
+    setCameraFacing(newFacing);
   }, [videoOn, screenSharing, cameraFacing, toast]);
 
   const stopScreenShare = useCallback(async () => {
@@ -902,9 +894,11 @@ export default function MeetingRoom() {
       return;
     }
     // Host OR staff with no one else sharing → share directly without approval
+    // NOTE: setScreenShareApproved(false) is called AFTER startScreenShare to avoid
+    // breaking the user gesture chain before getDisplayMedia is called on mobile.
     if (isHost || (isStaff && !screenSharerPeerId) || screenShareApproved) {
-      setScreenShareApproved(false);
       await startScreenShare();
+      setScreenShareApproved(false);
     } else {
       if (screenSharePending) {
         toast({ title: "في الانتظار", description: "طلبك قيد المراجعة من المضيف" });
