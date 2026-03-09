@@ -713,12 +713,12 @@ export default function MeetingRoom() {
   }, [audioOn, videoOn, roomId, sendWs]);
 
   const toggleVideo = useCallback(() => {
-    if (!localStreamRef.current) return;
+    if (!localStreamRef.current || screenSharing) return;
     const enabled = !videoOn;
     localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = enabled; });
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
@@ -779,6 +779,7 @@ export default function MeetingRoom() {
       localStreamRef.current = newStream;
       setLocalStream(newStream);
       setVideoOn(true);
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: true });
     } catch {
       // Camera unavailable — remove video senders and renegotiate
       const peersNeedingRenegotiation: string[] = [];
@@ -795,6 +796,7 @@ export default function MeetingRoom() {
       localStreamRef.current = newStream;
       setLocalStream(newStream);
       setVideoOn(false);
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: false });
       // Renegotiate to inform peers video is gone
       for (const peerId of peersNeedingRenegotiation) {
         const pc = pcsRef.current.get(peerId);
@@ -810,7 +812,7 @@ export default function MeetingRoom() {
     setScreenSharerPeerId(null);
     setScreenSharerName(null);
     sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
-  }, [sendWs, roomId, userName, cameraFacing]);
+  }, [sendWs, roomId, userName, audioOn, cameraFacing]);
 
   const startScreenShare = useCallback(async () => {
     try {
@@ -834,9 +836,11 @@ export default function MeetingRoom() {
 
       localStreamRef.current = newStream;
       setLocalStream(newStream);
+      setVideoOn(true);
       setScreenSharing(true);
       setScreenSharerPeerId(userId || "local");
       setScreenSharerName(userName);
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: true });
       sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
       screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
 
@@ -855,7 +859,7 @@ export default function MeetingRoom() {
         toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
       }
     }
-  }, [sendWs, roomId, userId, userName, toast, stopScreenShare]);
+  }, [sendWs, roomId, userId, userName, audioOn, toast, stopScreenShare]);
 
   const toggleScreenShare = useCallback(async () => {
     if (screenSharingRef.current) {
