@@ -10,6 +10,7 @@ import {
   Loader2, ArrowRight, ArrowLeft, RefreshCw, ChevronDown, ChevronUp,
   Package, Briefcase, Copy, Check, Eye, EyeOff, Search, Users,
   Crown, Smartphone, Star, Zap, Sparkles, Tag, Percent, Scissors,
+  Globe2, Code2, Shield, Database, Monitor, Wifi, PlusCircle, Layers,
 } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,6 +46,10 @@ const BUSINESS_TYPES = [
   "عقارات", "خدمات", "تقنية", "ترفيه", "أخرى",
 ];
 const PLAN_ICONS: Record<string, any> = { Zap, Star, Crown, Sparkles, Package };
+const ADDON_ICONS: Record<string, any> = {
+  Smartphone, Globe, Globe2, Code2, Shield, Database, Monitor, Wifi,
+  Zap, Star, Package, Plus, PlusCircle, Layers, Briefcase, Tag,
+};
 const BILLING_LABELS: Record<string, string> = {
   monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة",
 };
@@ -125,7 +130,7 @@ export default function EmployeeNewOrder() {
   const [discountValue, setDiscountValue] = useState("");
 
   /* ── API data ── */
-  const { data: availableServices = [] } = useQuery<any[]>({ queryKey: ["/api/services"] });
+  const { data: extraAddons = [] } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
   const { data: pricingPlans = [] } = useQuery<any[]>({ queryKey: ["/api/pricing"] });
   const { data: products = [] } = useQuery<any[]>({ queryKey: ["/api/products"] });
 
@@ -558,22 +563,35 @@ export default function EmployeeNewOrder() {
                 </div>
               )}
 
-              {/* ── Services ── */}
-              {availableServices.length > 0 && (
+              {/* ── Extra Addons ── */}
+              {extraAddons.length > 0 && (
                 <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Briefcase className="w-4 h-4 text-black/30" />
-                    <span className="text-sm font-bold text-black">الخدمات</span>
+                  <div className="flex items-center gap-2 mb-4">
+                    <PlusCircle className="w-4 h-4 text-black/30" />
+                    <span className="text-sm font-bold text-black">الإضافات المتاحة</span>
+                    <span className="text-[11px] text-black/25 mr-auto">اضغط لإضافتها للطلب</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableServices.map((svc: any) => {
-                      const selected = selectedItems.some(s => s.id === (svc.id || svc._id));
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {extraAddons.map((addon: any) => {
+                      const addonId = `addon-${addon.id || addon._id}`;
+                      const selected = selectedItems.some(s => s.id === addonId);
+                      const IconComp = ADDON_ICONS[addon.icon] || PlusCircle;
                       return (
-                        <button key={svc.id || svc._id} onClick={() => toggleItem({ id: svc.id || svc._id, name: svc.name, nameAr: svc.nameAr || svc.name, price: svc.price, type: "service" })}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${selected ? "bg-black text-white border-black" : "bg-black/[0.02] text-black/60 border-black/[0.08] hover:border-black/25"}`}
-                          data-testid={`service-${svc.id || svc._id}`}>
-                          {selected && <Check className="inline w-3 h-3 ml-1" />}
-                          {svc.nameAr || svc.name}
+                        <button
+                          key={addon.id || addon._id}
+                          onClick={() => toggleItem({ id: addonId, name: addon.name, nameAr: addon.nameAr || addon.name, price: addon.price || 0, type: "addon" })}
+                          className={`flex items-center gap-2.5 p-3 rounded-xl border-2 text-right transition-all ${selected ? "border-black bg-black text-white" : "border-black/[0.08] hover:border-black/25 bg-white"}`}
+                          data-testid={`addon-${addon.id || addon._id}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? "bg-white/20" : "bg-black/[0.05]"}`}>
+                            <IconComp className={`w-4 h-4 ${selected ? "text-white" : "text-black/50"}`} />
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className={`font-semibold text-xs truncate ${selected ? "text-white" : "text-black"}`}>{addon.nameAr || addon.name}</p>
+                            {addon.price > 0 && (
+                              <p className={`text-[11px] ${selected ? "text-white/60" : "text-black/40"}`}>{addon.price.toLocaleString()} ر.س</p>
+                            )}
+                          </div>
+                          {selected && <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -628,8 +646,8 @@ export default function EmployeeNewOrder() {
                     <div className="space-y-1.5">
                       {selectedItems.map(item => (
                         <div key={item.id} className="flex items-center gap-2 bg-black/[0.02] rounded-lg px-3 py-2">
-                          <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${item.type === "plan" ? "bg-purple-100" : item.type === "product" ? "bg-blue-100" : "bg-gray-100"}`}>
-                            {item.type === "plan" ? <Crown className="w-3 h-3 text-purple-600" /> : item.type === "product" ? <Smartphone className="w-3 h-3 text-blue-600" /> : <Tag className="w-3 h-3 text-gray-500" />}
+                          <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${item.type === "plan" ? "bg-purple-100" : item.type === "product" ? "bg-blue-100" : item.type === "addon" ? "bg-green-100" : "bg-gray-100"}`}>
+                            {item.type === "plan" ? <Crown className="w-3 h-3 text-purple-600" /> : item.type === "product" ? <Smartphone className="w-3 h-3 text-blue-600" /> : item.type === "addon" ? <PlusCircle className="w-3 h-3 text-green-600" /> : <Tag className="w-3 h-3 text-gray-500" />}
                           </div>
                           <span className="flex-1 text-xs text-black font-medium truncate">{item.nameAr || item.name}</span>
                           {item.price != null && item.price > 0 && <span className="text-xs text-black/40 font-mono flex-shrink-0">{item.price.toLocaleString()} ر.س</span>}
