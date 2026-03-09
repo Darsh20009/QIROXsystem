@@ -24,8 +24,7 @@ import { BiometricButton } from "@/components/BiometricButton";
 import { QuickPinButton } from "@/components/QuickPinButton";
 
 export default function Login() {
-  const [location] = useLocation();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { t, dir, lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();

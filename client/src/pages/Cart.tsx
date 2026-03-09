@@ -194,10 +194,10 @@ export default function Cart() {
 
   const couponMutation = useMutation({
     mutationFn: async () => {
-      const r = await apiRequest("POST", "/api/cart/coupon", { couponCode: coupon, discount: 50 }); return r.json();
+      const r = await apiRequest("POST", "/api/cart/coupon", { couponCode: coupon }); return r.json();
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); toast({ title: "✓ تم تطبيق الكوبون بنجاح" }); },
-    onError: () => toast({ title: "كوبون غير صالح", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e?.message || "كوبون غير صالح أو منتهي الصلاحية", variant: "destructive" }),
   });
 
   // Sync wallet amount when total changes
@@ -1106,7 +1106,7 @@ export default function Cart() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-black/40 text-xs">اسم المستفيد</span>
-                          <span className="font-bold text-xs text-black">{BANK.accountName}</span>
+                          <span className="font-bold text-xs text-black">{BANK.beneficiaryName}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-black/40 text-xs">المبلغ المطلوب</span>

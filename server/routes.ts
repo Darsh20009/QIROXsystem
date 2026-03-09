@@ -3652,9 +3652,32 @@ export async function registerRoutes(
   app.post("/api/cart/coupon", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const userId = String((req.user as any).id);
-    const { couponCode, discount } = req.body;
-    const cart = await storage.applyCoupon(userId, couponCode, discount);
-    res.json(cart);
+    const { couponCode } = req.body;
+    if (!couponCode) return res.status(400).json({ error: "كود الخصم مطلوب" });
+    try {
+      const { DiscountCodeModel } = await import("./models");
+      const now = new Date();
+      const code = await DiscountCodeModel.findOne({
+        code: couponCode.toUpperCase().trim(),
+        isActive: true,
+        $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gt: now } }],
+      });
+      if (!code) return res.status(400).json({ error: "كود الخصم غير صالح أو منتهي الصلاحية" });
+      if (code.usageLimit && code.usageCount >= code.usageLimit) return res.status(400).json({ error: "تم استنفاد هذا الكود" });
+      const currentCart = await storage.getCart(userId);
+      const subtotal = (currentCart?.items || []).reduce((s: number, i: any) => s + i.price * i.qty, 0);
+      if (code.minOrderAmount && subtotal < code.minOrderAmount) return res.status(400).json({ error: `الحد الأدنى للطلب ${code.minOrderAmount} ر.س` });
+      let discountAmount = 0;
+      if (code.type === "percentage") {
+        discountAmount = (subtotal * code.value) / 100;
+        if (code.maxDiscountAmount) discountAmount = Math.min(discountAmount, code.maxDiscountAmount);
+      } else {
+        discountAmount = Math.min(code.value, subtotal);
+      }
+      discountAmount = Math.round(discountAmount);
+      const cart = await storage.applyCoupon(userId, code.code, discountAmount);
+      res.json(cart);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // === ORDER SPECS (for employees to fill / clients to view) ===
