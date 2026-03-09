@@ -14,9 +14,37 @@ import {
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
   Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand,
-  MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera
+  MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+function getAvatarColor(name: string): [string, string] {
+  const palette: [string, string][] = [
+    ["#1d4ed8", "#6366f1"],
+    ["#0891b2", "#0284c7"],
+    ["#059669", "#0d9488"],
+    ["#7c3aed", "#a855f7"],
+    ["#dc2626", "#e11d48"],
+    ["#d97706", "#ea580c"],
+  ];
+  const i = ((name?.charCodeAt(0) || 65) + (name?.charCodeAt(1) || 65)) % palette.length;
+  return palette[i];
+}
+
+function useMeetingTimer() {
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
@@ -76,6 +104,7 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
   peer: Peer; local?: boolean; spotlight?: boolean; onKick?: () => void; canKick?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [from, to] = getAvatarColor(peer.name || "A");
 
   const videoCallbackRef = useCallback((el: HTMLVideoElement | null) => {
     if (el && peer.stream) {
@@ -93,9 +122,18 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
 
   const objectFit = spotlight ? "object-contain" : "object-cover";
   const showVideo = peer.stream && peer.videoOn;
+  const avatarSize = spotlight ? "w-28 h-28 text-5xl" : "w-16 h-16 text-2xl";
 
   return (
-    <div className={`relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center ${spotlight ? "h-full w-full" : "aspect-video"} group transition-all duration-200 ${peer.speaking ? "ring-2 ring-green-400 ring-offset-1 ring-offset-gray-900" : ""}`}>
+    <div
+      className={`relative overflow-hidden flex items-center justify-center group transition-all duration-300
+        ${spotlight ? "h-full w-full rounded-none" : "aspect-video rounded-2xl"}
+        ${peer.speaking
+          ? "ring-2 ring-green-400/90 shadow-[0_0_0_2px_rgba(74,222,128,0.35),0_0_24px_rgba(74,222,128,0.2)]"
+          : "ring-1 ring-white/[0.07]"
+        }`}
+      style={{ background: showVideo ? "#000" : `linear-gradient(135deg, #131b2e 0%, #1a2540 100%)` }}
+    >
       {!local && peer.stream && (
         <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       )}
@@ -103,49 +141,53 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
       {showVideo ? (
         <video
           ref={videoCallbackRef}
-          autoPlay
-          playsInline
-          muted={local}
-          className={`w-full h-full ${objectFit} bg-gray-900`}
+          autoPlay playsInline muted={local}
+          className={`w-full h-full ${objectFit}`}
           data-testid={`video-tile-${peer.id}`}
         />
       ) : (
-        <div className="flex flex-col items-center gap-3">
-          <div className={`relative rounded-full overflow-hidden transition-all duration-200 ${spotlight ? "w-28 h-28" : "w-16 h-16"} ${peer.speaking ? "ring-4 ring-green-400 ring-offset-2 ring-offset-gray-900" : ""}`}>
-            {peer.photoUrl ? (
-              <img src={peer.photoUrl} alt={peer.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-bold" style={{ fontSize: spotlight ? "2.5rem" : "1.5rem" }}>
-                {peer.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
-            )}
+        <div className="flex flex-col items-center gap-3 select-none">
+          <div
+            className={`${avatarSize} rounded-full flex items-center justify-center font-bold text-white shadow-lg transition-all duration-300
+              ${peer.speaking ? "ring-4 ring-green-400/60 shadow-[0_0_20px_rgba(74,222,128,0.35)]" : ""}`}
+            style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+          >
+            {peer.photoUrl
+              ? <img src={peer.photoUrl} alt={peer.name} className="w-full h-full object-cover rounded-full" />
+              : (peer.name?.charAt(0)?.toUpperCase() || "?")}
           </div>
-          <span className="text-white/70 text-sm font-medium">{peer.name}</span>
+          {spotlight && <span className="text-white/60 text-sm font-medium mt-1">{peer.name}</span>}
         </div>
       )}
 
-      {/* Speaking wave animation overlay */}
-      {peer.speaking && (
-        <div className="absolute inset-0 pointer-events-none rounded-2xl border-2 border-green-400 animate-pulse" />
-      )}
+      {/* Gradient overlay at bottom */}
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/75 to-transparent pointer-events-none" />
 
-      {/* Bottom name bar */}
-      <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all ${peer.speaking ? "bg-green-500/80" : "bg-black/60"}`}>
-          {peer.speaking && <span className="flex gap-0.5 items-end h-3">
-            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "60%", animationDelay: "0ms" }} />
-            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "100%", animationDelay: "100ms" }} />
-            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "40%", animationDelay: "200ms" }} />
-          </span>}
-          <span className="text-white">{local ? `أنت (${peer.name})` : peer.name}</span>
+      {/* Name + audio bar */}
+      <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between">
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium backdrop-blur-sm transition-all max-w-[80%]
+          ${peer.speaking ? "bg-green-500/80 text-white" : "bg-black/55 text-white/90"}`}>
+          {peer.speaking && (
+            <span className="flex gap-[2px] items-end h-3 shrink-0">
+              <span className="w-[3px] bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "60%", animationDelay: "0ms" }} />
+              <span className="w-[3px] bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "100%", animationDelay: "100ms" }} />
+              <span className="w-[3px] bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "40%", animationDelay: "200ms" }} />
+            </span>
+          )}
+          <span className="truncate">{local ? `أنت` : peer.name}</span>
         </div>
-        {!peer.audioOn && <span className="bg-red-500/80 text-white rounded-full p-0.5"><MicOff className="w-3 h-3" /></span>}
+        {!peer.audioOn && (
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-red-500/80 backdrop-blur-sm shrink-0">
+            <MicOff className="w-3 h-3 text-white" />
+          </div>
+        )}
       </div>
 
+      {/* Kick button */}
       {canKick && onKick && !local && (
         <button
           onClick={onKick}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 text-white rounded-lg p-1.5 hover:bg-red-600"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-500/90 backdrop-blur-sm text-white rounded-lg p-1.5 hover:bg-red-600 hover:scale-105"
           title="طرد المشارك"
           data-testid={`button-kick-${peer.id}`}
         >
@@ -214,6 +256,7 @@ export default function MeetingRoom() {
   const [copied, setCopied] = useState(false);
   const [wsReady, setWsReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const meetingTimer = useMeetingTimer();
 
   const [drawColor, setDrawColor] = useState("#ffffff");
   const [drawSize, setDrawSize] = useState(3);
@@ -1048,20 +1091,27 @@ export default function MeetingRoom() {
 
   if (meetingLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-white/30" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+          </div>
+          <p className="text-white/30 text-sm">جاري التحميل...</p>
+        </div>
       </div>
     );
   }
 
   if (meetingError || !meeting) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-center p-6" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center text-center p-6" dir="rtl" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
         <div className="space-y-4">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
+          <div className="w-16 h-16 rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
           <h2 className="text-white text-xl font-bold">الاجتماع غير موجود</h2>
-          <p className="text-white/50">رابط الاجتماع غير صحيح أو منتهي الصلاحية</p>
-          <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+          <p className="text-white/40">رابط الاجتماع غير صحيح أو منتهي الصلاحية</p>
+          <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/15 text-white/70 hover:bg-white/10">
             إغلاق
           </Button>
         </div>
@@ -1071,12 +1121,14 @@ export default function MeetingRoom() {
 
   if (wasKicked) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-center p-6" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center text-center p-6" dir="rtl" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
         <div className="space-y-4">
-          <UserMinus className="w-12 h-12 text-red-400 mx-auto" />
+          <div className="w-16 h-16 rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto">
+            <UserMinus className="w-8 h-8 text-red-400" />
+          </div>
           <h2 className="text-white text-xl font-bold">تم إزالتك من الاجتماع</h2>
-          <p className="text-white/50">قام المضيف بإزالتك من هذا الاجتماع</p>
-          <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+          <p className="text-white/40">قام المضيف بإزالتك من هذا الاجتماع</p>
+          <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/15 text-white/70 hover:bg-white/10">
             إغلاق
           </Button>
         </div>
@@ -1103,25 +1155,27 @@ export default function MeetingRoom() {
       setShowGuestNameInput(false);
     };
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6" dir="rtl">
-        <div className="w-full max-w-sm space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
-              <Video className="w-7 h-7 text-white" />
+      <div className="min-h-screen flex items-center justify-center p-6" dir="rtl" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/25 mb-5">
+              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+              <span className="text-blue-300 text-xs font-medium">QMeet</span>
             </div>
-            <h1 className="text-white text-xl font-bold">{meeting.title}</h1>
-            <p className="text-white/40 text-sm">{meeting.hostName}</p>
+            <h1 className="text-white text-xl font-bold mb-1">{meeting.title}</h1>
+            <p className="text-white/35 text-sm">{meeting.hostName}</p>
           </div>
-          <div className="bg-gray-900 rounded-2xl p-6 space-y-4">
+          <div className="rounded-2xl p-6 space-y-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", backdropFilter: "blur(12px)" }}>
             <div>
-              <label className="text-white/60 text-sm font-medium block mb-1.5">اسمك في الاجتماع <span className="text-red-400">*</span></label>
+              <label className="text-white/55 text-xs font-semibold uppercase tracking-wide block mb-2">اسمك في الاجتماع</label>
               <input
                 type="text"
                 value={directGuestName}
                 onChange={e => setDirectGuestName(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && directGuestName.trim() && handleGuestSubmit()}
-                placeholder="أدخل اسمك ليظهر للمشاركين"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                placeholder="أدخل اسمك..."
+                className="w-full rounded-xl px-4 py-3 text-white placeholder:text-white/25 text-sm outline-none transition-all"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
                 autoFocus
                 data-testid="input-guest-name-room"
               />
@@ -1129,7 +1183,8 @@ export default function MeetingRoom() {
             <button
               onClick={handleGuestSubmit}
               disabled={!directGuestName.trim()}
-              className="w-full h-11 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-colors"
+              className="w-full h-11 rounded-xl text-white font-semibold transition-all disabled:opacity-40 hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #2563eb, #4f46e5)" }}
               data-testid="button-submit-guest-name"
             >
               متابعة للاجتماع
@@ -1141,53 +1196,87 @@ export default function MeetingRoom() {
   }
 
   if (!joined) {
+    const [lobbyFrom, lobbyTo] = getAvatarColor(userName);
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6" dir="rtl">
-        <div className="w-full max-w-lg space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
-              <Video className="w-7 h-7 text-white" />
-            </div>
-            <h1 className="text-white text-2xl font-bold">{meeting.title}</h1>
-            <p className="text-white/50 text-sm">{meeting.hostName} • {new Date(meeting.scheduledAt).toLocaleString("ar-SA")}</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
+        <div className="w-full max-w-4xl flex flex-col lg:flex-row gap-6 items-center lg:items-stretch">
 
-          <div className="bg-gray-900 rounded-2xl overflow-hidden aspect-video relative">
+          {/* Camera preview */}
+          <div className="w-full lg:flex-1 rounded-2xl overflow-hidden relative shadow-2xl" style={{ aspectRatio: "16/9", background: "#0d1420" }}>
             {localStream && videoOn ? (
-              <video ref={(el) => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); } }} autoPlay muted playsInline className="w-full h-full object-cover" />
+              <video
+                ref={(el) => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); } }}
+                autoPlay muted playsInline
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-3xl font-bold text-white">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-xl"
+                  style={{ background: `linear-gradient(135deg, ${lobbyFrom}, ${lobbyTo})` }}
+                >
                   {userName.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-white/60">{userName}</span>
+                <span className="text-white/50 text-sm">{userName}</span>
               </div>
             )}
-          </div>
-
-          {mediaError && (
-            <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-xl p-3 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-              <p className="text-yellow-300 text-sm">{mediaError}</p>
+            {/* Media controls overlay */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
+              <button
+                onClick={toggleAudio}
+                className={`p-3 rounded-full border backdrop-blur-sm transition-all hover:scale-105 ${audioOn ? "bg-white/15 border-white/20 text-white" : "bg-red-500/90 border-red-400/50 text-white"}`}
+                data-testid="button-toggle-audio-lobby"
+                title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"}
+              >
+                {audioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={toggleVideo}
+                className={`p-3 rounded-full border backdrop-blur-sm transition-all hover:scale-105 ${videoOn ? "bg-white/15 border-white/20 text-white" : "bg-red-500/90 border-red-400/50 text-white"}`}
+                data-testid="button-toggle-video-lobby"
+                title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
+              >
+                {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </button>
             </div>
-          )}
-
-          <div className="flex gap-3 justify-center">
-            <button onClick={toggleAudio} className={`p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white" : "bg-red-500 border-red-400 text-white"}`} data-testid="button-toggle-audio-lobby">
-              {audioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-            </button>
-            <button onClick={toggleVideo} className={`p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white" : "bg-red-500 border-red-400 text-white"}`} data-testid="button-toggle-video-lobby">
-              {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-            </button>
           </div>
 
-          <div className="flex gap-3">
-            <Button onClick={joinMeeting} className="flex-1 bg-green-600 hover:bg-green-500 text-white h-11" data-testid="button-join-meeting">
-              انضم للاجتماع
-            </Button>
-            <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/20 text-white hover:bg-white/10 h-11" data-testid="button-cancel-join">
-              إلغاء
-            </Button>
+          {/* Join card */}
+          <div className="w-full lg:w-80 flex flex-col justify-center gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/25 mb-4">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                <span className="text-blue-300 text-xs font-medium">QMeet</span>
+              </div>
+              <h1 className="text-white text-2xl font-bold leading-tight mb-1">{meeting.title}</h1>
+              <p className="text-white/35 text-sm">{meeting.hostName}</p>
+            </div>
+
+            {mediaError && (
+              <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
+                <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
+              </div>
+            )}
+
+            <div className="space-y-2.5">
+              <button
+                onClick={joinMeeting}
+                className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
+                style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
+                data-testid="button-join-meeting"
+              >
+                انضم الآن
+              </button>
+              <button
+                onClick={() => window.close() || navigate("/dashboard")}
+                className="w-full h-11 rounded-xl font-medium text-white/50 hover:text-white/70 transition-all"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+                data-testid="button-cancel-join"
+              >
+                إلغاء
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1205,20 +1294,34 @@ export default function MeetingRoom() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col relative" dir="rtl">
+    <div className="min-h-screen flex flex-col relative" dir="rtl" style={{ background: "linear-gradient(160deg, #080e1a 0%, #0a1020 50%, #080e1a 100%)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-white/[0.06] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 shrink-0" style={{ background: "rgba(8,14,26,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3">
-          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">مباشر</Badge>
-          <span className="text-white font-semibold truncate max-w-48">{meeting.title}</span>
-          {!wsReady && <span className="text-[10px] text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full">إعادة الاتصال...</span>}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)" }}>
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-green-300 text-[10px] font-semibold">مباشر</span>
+          </div>
+          <span className="text-white font-semibold text-sm truncate max-w-48">{meeting.title}</span>
+          {!wsReady && (
+            <span className="text-[10px] text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-500/20">إعادة الاتصال...</span>
+          )}
         </div>
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 text-white/40 text-xs mr-2">
-            <Users className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white/40 text-xs" style={{ background: "rgba(255,255,255,0.05)" }}>
+            <Clock className="w-3 h-3" />
+            <span className="font-mono">{meetingTimer}</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white/40 text-xs" style={{ background: "rgba(255,255,255,0.05)" }}>
+            <Users className="w-3 h-3" />
             <span>{totalPeers}</span>
           </div>
-          <button onClick={copyLink} className="p-2 text-white/50 hover:text-white rounded-lg hover:bg-white/10 transition-colors" title="نسخ الرابط" data-testid="button-copy-link">
+          <button
+            onClick={copyLink}
+            className="p-2 rounded-xl text-white/40 hover:text-white transition-all hover:bg-white/10"
+            title="نسخ الرابط"
+            data-testid="button-copy-link"
+          >
             {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
@@ -1234,35 +1337,25 @@ export default function MeetingRoom() {
             const otherPeers = allPeers.filter(p => p.id !== screenSharerPeerId);
             return (
               <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 border-b border-blue-500/20 shrink-0">
-                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-blue-300 text-xs font-medium">
+                <div className="flex items-center gap-2.5 px-4 py-2 shrink-0" style={{ background: "rgba(37,99,235,0.12)", borderBottom: "1px solid rgba(37,99,235,0.2)" }}>
+                  <Monitor className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <span className="text-blue-200/90 text-xs font-medium">
                     {sharerIsLocal ? "أنت تشارك شاشتك" : `${screenSharerName || "مشارك"} يشارك شاشته`}
                   </span>
                   {sharerIsLocal && (
-                    <button onClick={toggleScreenShare} className="mr-auto text-blue-400 hover:text-red-400 text-xs underline transition-colors">إيقاف المشاركة</button>
+                    <button onClick={toggleScreenShare} className="mr-auto px-3 py-1 rounded-full text-xs font-medium transition-all" style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}>
+                      إيقاف المشاركة
+                    </button>
                   )}
                 </div>
                 <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-                  {sharerPeer && (
-                    <VideoTile
-                      peer={sharerPeer}
-                      local={sharerIsLocal}
-                      spotlight={true}
-                      canKick={false}
-                    />
-                  )}
+                  {sharerPeer && <VideoTile peer={sharerPeer} local={sharerIsLocal} spotlight={true} canKick={false} />}
                 </div>
                 {otherPeers.length > 0 && (
-                  <div className="h-28 sm:h-32 shrink-0 flex gap-2 px-2 pb-2 overflow-x-auto scrollbar-none bg-gray-950">
+                  <div className="h-28 sm:h-32 shrink-0 flex gap-2 px-2 py-2 overflow-x-auto scrollbar-none" style={{ background: "rgba(8,14,26,0.8)" }}>
                     {otherPeers.map(peer => (
                       <div key={peer.id} className="shrink-0 w-44 sm:w-48">
-                        <VideoTile
-                          peer={peer}
-                          local={peer.id === (userId || "local")}
-                          canKick={isAdmin}
-                          onKick={() => kickPeer(peer.id)}
-                        />
+                        <VideoTile peer={peer} local={peer.id === (userId || "local")} canKick={isAdmin} onKick={() => kickPeer(peer.id)} />
                       </div>
                     ))}
                   </div>
@@ -1270,8 +1363,8 @@ export default function MeetingRoom() {
               </div>
             );
           })() : (
-          <div className="flex-1 p-2 sm:p-3 overflow-hidden">
-            <div className={`grid ${gridCols} gap-2.5 h-full max-h-[calc(100vh-140px)]`}>
+          <div className="flex-1 p-2.5 sm:p-4 overflow-hidden">
+            <div className={`grid ${gridCols} gap-2.5 h-full`} style={{ maxHeight: "calc(100vh - 140px)" }}>
               {allPeers.map(peer => (
                 <VideoTile
                   key={peer.id}
@@ -1288,13 +1381,22 @@ export default function MeetingRoom() {
 
         {/* Side panel */}
         {activePanel && (
-          <div className="w-80 bg-gray-900 border-r border-white/[0.06] flex flex-col shrink-0">
-            <div className="flex border-b border-white/[0.06] overflow-x-auto scrollbar-none shrink-0">
+          <AnimatePresence>
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -20, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-80 flex flex-col shrink-0"
+              style={{ background: "rgba(10,16,30,0.97)", borderRight: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(20px)" }}
+            >
+            <div className="flex items-center border-b overflow-x-auto scrollbar-none shrink-0" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
               {PANEL_TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActivePanel(tab.id)}
-                  className={`relative flex items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors ${activePanel === tab.id ? "text-white border-b-2 border-white" : "text-white/40 hover:text-white/70"}`}
+                  className={`relative flex items-center gap-1.5 px-3 py-3 text-[11px] font-medium whitespace-nowrap transition-all ${activePanel === tab.id ? "text-white" : "text-white/35 hover:text-white/60"}`}
+                  style={activePanel === tab.id ? { borderBottom: "2px solid #3b82f6" } : {}}
                   data-testid={`button-panel-${tab.id}`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
@@ -1647,7 +1749,8 @@ export default function MeetingRoom() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
+          </AnimatePresence>
         )}
       </div>
 
@@ -1679,7 +1782,8 @@ export default function MeetingRoom() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 bg-gray-800 border border-white/10 rounded-2xl p-3 shadow-2xl"
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 rounded-2xl p-3 shadow-2xl backdrop-blur-xl"
+            style={{ background: "rgba(12,18,32,0.97)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <div className="flex gap-2 flex-wrap justify-center max-w-[200px]">
               {REACTION_EMOJIS.map(emoji => (
@@ -1699,19 +1803,19 @@ export default function MeetingRoom() {
 
       {/* Screen share pending notification */}
       {screenSharePending && !isHost && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-blue-900/90 border border-blue-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2 shadow-xl backdrop-blur">
-          <Loader2 className="w-3.5 h-3.5 text-blue-300 animate-spin" />
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl whitespace-nowrap" style={{ background: "rgba(37,99,235,0.15)", border: "1px solid rgba(59,130,246,0.3)" }}>
+          <Loader2 className="w-3.5 h-3.5 text-blue-300 animate-spin shrink-0" />
           <span className="text-blue-200 text-xs font-medium">في انتظار موافقة المضيف على مشاركة شاشتك...</span>
-          <button onClick={() => setScreenSharePending(false)} className="text-blue-400 hover:text-white ml-1"><X className="w-3.5 h-3.5" /></button>
+          <button onClick={() => setScreenSharePending(false)} className="text-blue-400/60 hover:text-blue-200 transition-colors"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
-      {/* Screen share approved notification — user must click to actually start */}
+      {/* Screen share approved notification */}
       {screenShareApproved && !screenSharing && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-green-900/90 border border-green-500/50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-xl backdrop-blur animate-pulse">
-          <MonitorUp className="w-4 h-4 text-green-300" />
-          <span className="text-green-200 text-sm font-semibold">✅ تمت الموافقة! اضغط على زر مشاركة الشاشة الآن</span>
-          <button onClick={() => setScreenShareApproved(false)} className="text-green-400 hover:text-white ml-1"><X className="w-3.5 h-3.5" /></button>
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl whitespace-nowrap animate-pulse" style={{ background: "rgba(22,163,74,0.15)", border: "1px solid rgba(74,222,128,0.3)" }}>
+          <MonitorUp className="w-4 h-4 text-green-300 shrink-0" />
+          <span className="text-green-200 text-sm font-semibold">تمت الموافقة! اضغط على زر مشاركة الشاشة الآن</span>
+          <button onClick={() => setScreenShareApproved(false)} className="text-green-400/60 hover:text-green-200 transition-colors"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
@@ -1723,7 +1827,8 @@ export default function MeetingRoom() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.18 }}
-            className="absolute bottom-[72px] left-2 right-2 z-40 bg-gray-800/95 backdrop-blur border border-white/10 rounded-2xl p-3 shadow-2xl"
+            className="absolute bottom-[72px] left-2 right-2 z-40 rounded-2xl p-3 shadow-2xl backdrop-blur-xl"
+            style={{ background: "rgba(12,18,32,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <div className="grid grid-cols-4 gap-2 mb-3">
               {PANEL_TABS.map(tab => (
@@ -1768,68 +1873,132 @@ export default function MeetingRoom() {
       </AnimatePresence>
 
       {/* Control bar */}
-      <div className="flex items-center justify-between px-3 py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-2 safe-area-bottom" style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
-
+      <div
+        className="flex items-center justify-between px-3 shrink-0 gap-2"
+        style={{
+          background: "rgba(6,10,20,0.92)",
+          backdropFilter: "blur(20px)",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          paddingTop: "10px",
+          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+        }}
+      >
         {/* Left: panel tabs on desktop; "..." on mobile */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Desktop panel tabs */}
           <div className="hidden sm:flex items-center gap-0.5 overflow-x-auto scrollbar-none">
             {PANEL_TABS.map(tab => (
-              <button key={tab.id} onClick={() => togglePanel(tab.id)}
-                className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-[11px] font-medium transition-all shrink-0 ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
-                title={tab.label} data-testid={`button-panel-toggle-${tab.id}`}>
+              <button
+                key={tab.id}
+                onClick={() => togglePanel(tab.id)}
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-[10px] font-medium transition-all shrink-0 ${
+                  activePanel === tab.id
+                    ? "text-blue-300"
+                    : "text-white/35 hover:text-white/60"
+                }`}
+                style={activePanel === tab.id ? { background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.2)" } : {}}
+                title={tab.label}
+                data-testid={`button-panel-toggle-${tab.id}`}
+              >
                 <tab.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
                 {tab.id === 'chat' && unreadChat > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">{unreadChat > 9 ? "9+" : unreadChat}</span>
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                    {unreadChat > 9 ? "9+" : unreadChat}
+                  </span>
                 )}
               </button>
             ))}
           </div>
-          {/* Mobile: "..." button */}
-          <button onClick={() => setShowMoreMenu(p => !p)}
-            className={`sm:hidden flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-[10px] font-medium transition-all ${showMoreMenu ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
-            data-testid="button-more-menu">
+          <button
+            onClick={() => setShowMoreMenu(p => !p)}
+            className={`sm:hidden flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-[10px] font-medium transition-all ${showMoreMenu ? "text-blue-300" : "text-white/35 hover:text-white/60"}`}
+            style={showMoreMenu ? { background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.2)" } : {}}
+            data-testid="button-more-menu"
+          >
             <MoreHorizontal className="w-5 h-5" />
             <span>المزيد</span>
           </button>
         </div>
 
-        {/* Center: essential media controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={toggleAudio} className={`p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
+        {/* Center: core controls pill */}
+        <div className="flex items-center gap-2 shrink-0 px-3 py-2 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <button
+            onClick={toggleAudio}
+            className={`p-3 rounded-full transition-all hover:scale-105 ${audioOn ? "text-white" : "text-white"}`}
+            style={audioOn
+              ? { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }
+              : { background: "rgba(239,68,68,0.85)", border: "1px solid rgba(239,68,68,0.6)" }}
+            title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"}
+            data-testid="button-toggle-audio"
+          >
             {audioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
           </button>
-          <button onClick={toggleVideo} className={`p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
+          <button
+            onClick={toggleVideo}
+            className={`p-3 rounded-full transition-all hover:scale-105 text-white`}
+            style={videoOn
+              ? { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }
+              : { background: "rgba(239,68,68,0.85)", border: "1px solid rgba(239,68,68,0.6)" }}
+            title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
+            data-testid="button-toggle-video"
+          >
             {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
           </button>
           {videoOn && !screenSharing && (
-            <button onClick={flipCamera} className="p-3 rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-all" title={`قلب الكاميرا (${cameraFacing === "user" ? "أمامية" : "خلفية"})`} data-testid="button-flip-camera">
+            <button
+              onClick={flipCamera}
+              className="p-3 rounded-full text-white/70 hover:text-white transition-all hover:scale-105"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+              title={`قلب الكاميرا (${cameraFacing === "user" ? "أمامية" : "خلفية"})`}
+              data-testid="button-flip-camera"
+            >
               <SwitchCamera className="w-5 h-5" />
             </button>
           )}
-          {/* Screen share — visible on ALL devices */}
-          <button onClick={toggleScreenShare}
-            className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : screenShareApproved ? "bg-green-500 border-green-400 text-white animate-pulse" : screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}
+          <button
+            onClick={toggleScreenShare}
+            className="p-3 rounded-full text-white transition-all hover:scale-105"
+            style={screenSharing
+              ? { background: "rgba(37,99,235,0.9)", border: "1px solid rgba(59,130,246,0.5)" }
+              : screenShareApproved
+              ? { background: "rgba(22,163,74,0.9)", border: "1px solid rgba(74,222,128,0.5)", animation: "pulse 1.5s infinite" }
+              : screenSharePending
+              ? { background: "rgba(234,179,8,0.2)", border: "1px solid rgba(234,179,8,0.35)" }
+              : { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
             title={screenSharing ? "إيقاف مشاركة الشاشة" : screenShareApproved ? "تمت الموافقة — اضغط لبدء المشاركة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
-            data-testid="button-screen-share">
+            data-testid="button-screen-share"
+          >
             {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
           </button>
-          <button onClick={leaveMeeting} className="p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
+          <button
+            onClick={leaveMeeting}
+            className="p-3 rounded-full text-white transition-all hover:scale-105 hover:brightness-110"
+            style={{ background: "rgba(220,38,38,0.9)", border: "1px solid rgba(239,68,68,0.5)" }}
+            title="مغادرة الاجتماع"
+            data-testid="button-leave-meeting"
+          >
             <PhoneOff className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Right: hand + emoji (desktop only — on mobile they're in the "..." menu) */}
+        {/* Right: raise hand + emoji (desktop only) */}
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          <button onClick={toggleRaiseHand}
-            className={`p-2.5 rounded-full border transition-all ${raisedHand ? "bg-amber-500 border-amber-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
-            title={raisedHand ? "إنزال اليد" : "رفع اليد"} data-testid="button-raise-hand">
+          <button
+            onClick={toggleRaiseHand}
+            className={`p-2.5 rounded-xl transition-all hover:scale-105 ${raisedHand ? "text-amber-300" : "text-white/40 hover:text-white/70"}`}
+            style={raisedHand ? { background: "rgba(245,158,11,0.2)", border: "1px solid rgba(245,158,11,0.3)" } : {}}
+            title={raisedHand ? "إنزال اليد" : "رفع اليد"}
+            data-testid="button-raise-hand"
+          >
             <Hand className="w-5 h-5" />
           </button>
-          <button onClick={() => setShowEmojiPicker(p => !p)}
-            className={`p-2.5 rounded-full border transition-all ${showEmojiPicker ? "bg-violet-500 border-violet-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
-            title="تفاعل بإيموجي" data-testid="button-emoji-reaction">
+          <button
+            onClick={() => setShowEmojiPicker(p => !p)}
+            className={`p-2.5 rounded-xl transition-all hover:scale-105 ${showEmojiPicker ? "text-violet-300" : "text-white/40 hover:text-white/70"}`}
+            style={showEmojiPicker ? { background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)" } : {}}
+            title="تفاعل بإيموجي"
+            data-testid="button-emoji-reaction"
+          >
             <Smile className="w-5 h-5" />
           </button>
         </div>
