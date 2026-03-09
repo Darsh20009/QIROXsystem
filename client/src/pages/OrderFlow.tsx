@@ -581,7 +581,7 @@ export default function OrderFlow() {
                 <span className="text-violet-300 text-xs font-bold flex items-center gap-1">دُفع {submittedOrder.walletUsed.toLocaleString()} <SARIcon size={10} className="opacity-60" /> من المحفظة</span>
               </div>
               {submittedOrder.walletUsed < grandTotal && (
-                <div className="text-white/40 text-xs flex items-center gap-1">المتبقي: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-50" /></div>
+                <div className="text-white/40 text-xs flex items-center gap-1">المتبقي: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-70" /></div>
               )}
             </div>
           ) : null}
@@ -761,7 +761,7 @@ export default function OrderFlow() {
                             {planFromUrl === tier && priceFromUrl > 0 && (
                               <div className={`inline-flex items-baseline gap-1.5 mb-3 px-3 py-1.5 rounded-xl ${v.isDark ? "bg-white/10" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
                                 <span className={`text-2xl font-black ${v.isDark ? "text-white" : "text-black dark:text-white"}`}>{priceFromUrl.toLocaleString()}</span>
-                                <SARIcon size={12} className={v.isDark ? "opacity-40" : "opacity-35"} />
+                                <SARIcon size={12} className={v.isDark ? "opacity-70" : "opacity-70"} />
                               </div>
                             )}
                             {features.length > 0 && (
@@ -845,7 +845,7 @@ export default function OrderFlow() {
                     className="bg-black dark:bg-white rounded-2xl px-5 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/55 dark:text-black/55">{selectedAddons.length} إضافة مختارة</span>
-                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{addonsTotal.toLocaleString()} <SARIcon size={14} className="opacity-55" /></span>
+                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{addonsTotal.toLocaleString()} <SARIcon size={14} className="opacity-75" /></span>
                     </div>
                   </motion.div>
                 )}
@@ -1008,7 +1008,7 @@ export default function OrderFlow() {
                                 {hasBundles && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-700/40">{p.planBundles.length} باقة</span>}
                               </div>
                               {p.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 line-clamp-1">{p.descriptionAr}</p>}
-                              <p className="font-black text-black dark:text-white mt-1 flex items-center gap-1">{p.price?.toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
+                              <p className="font-black text-black dark:text-white mt-1 flex items-center gap-1">{p.price?.toLocaleString()} <SARIcon size={11} className="opacity-70" /></p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <button onClick={() => setDeviceQty(p.id, -1)} className="w-9 h-9 rounded-full border-2 border-black/15 dark:border-white/15 flex items-center justify-center hover:border-black dark:hover:border-white transition-all" data-testid={`btn-minus-${p.id}`}>
@@ -1046,7 +1046,7 @@ export default function OrderFlow() {
                                           <div className="flex items-center gap-2 justify-between">
                                             <p className="text-sm font-bold text-black dark:text-white truncate">{bundle.planNameAr}</p>
                                             <span className="text-xs font-black text-black dark:text-white shrink-0">
-                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : <span className="flex items-center gap-0.5">{(bundle.customPrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" /></span>}
+                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : <span className="flex items-center gap-0.5">{(bundle.customPrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>}
                                             </span>
                                           </div>
                                           {bundle.planDescAr && <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5 truncate">{bundle.planDescAr}</p>}
@@ -1078,7 +1078,7 @@ export default function OrderFlow() {
                     className="bg-black dark:bg-white rounded-2xl px-5 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/55 dark:text-black/55">{lang === "ar" ? "إجمالي الأجهزة" : "Devices Total"}</span>
-                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{devicesTotal.toLocaleString()} <SARIcon size={14} className="opacity-55" /></span>
+                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{devicesTotal.toLocaleString()} <SARIcon size={14} className="opacity-75" /></span>
                     </div>
                   </motion.div>
                 )}
@@ -1107,14 +1107,14 @@ export default function OrderFlow() {
                         </div>
                         <span className="text-sm font-semibold text-black dark:text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Package`}</span>
                       </div>
-                      <span className="font-bold text-sm text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
+                      <span className="font-bold text-sm text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
                     </div>
                     {selectedAddons.map(id => {
                       const a = extraAddons.find((ad: any) => ad.id === id);
                       return a ? (
                         <div key={id} className="px-6 py-3 flex justify-between items-center">
                           <span className="text-sm text-black/55 dark:text-white/55">{a.nameAr}</span>
-                          <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{a.price.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
+                          <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{a.price.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
                         </div>
                       ) : null;
                     })}
@@ -1126,7 +1126,7 @@ export default function OrderFlow() {
                         <div key={pid}>
                           <div className="px-6 py-3 flex justify-between items-center">
                             <span className="text-sm text-black/55 dark:text-white/55">{p.nameAr || p.name} ×{qty}</span>
-                            <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{(p.price * qty).toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
+                            <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{(p.price * qty).toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
                           </div>
                           {bundle && (
                             <div className="px-6 py-2 flex justify-between items-center bg-violet-50/50 dark:bg-violet-900/10">
@@ -1255,7 +1255,7 @@ export default function OrderFlow() {
                         ) : (
                           <div className="flex justify-between text-sm pt-1 border-t border-cyan-100 dark:border-cyan-800/50">
                             <span className="font-semibold text-black/60 dark:text-white/60">{lang === "ar" ? "المتبقي بالتحويل" : "Remaining via transfer"}</span>
-                            <span className="font-black text-black dark:text-white flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={12} className="opacity-50" /></span>
+                            <span className="font-black text-black dark:text-white flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={12} className="opacity-70" /></span>
                           </div>
                         )}
                       </div>
@@ -1280,9 +1280,9 @@ export default function OrderFlow() {
                       </div>
                       <div className="text-right">
                         <span className="text-white/50 text-xs">المبلغ المطلوب</span>
-                        <p className="text-white font-black text-xl flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={15} className="opacity-50" /></p>
+                        <p className="text-white font-black text-xl flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={15} className="opacity-70" /></p>
                         {effectiveWalletAmt > 0 && (
-                          <p className="text-white/40 text-xs line-through flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={10} className="opacity-40" /></p>
+                          <p className="text-white/40 text-xs line-through flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={10} className="opacity-70" /></p>
                         )}
                       </div>
                     </div>
@@ -1350,7 +1350,7 @@ export default function OrderFlow() {
             </Button>
           ) : (
             <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}
-              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-50" data-testid="button-submit">
+              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-70" data-testid="button-submit">
               {submitMutation.isPending
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جاري الإرسال..." : "Submitting..."}</>
                 : <>{lang === "ar" ? "إرسال الطلب" : "Submit Order"} {lang === "ar" ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}</>}

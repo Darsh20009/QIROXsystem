@@ -108,20 +108,20 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
         </div>
       )}
       <div className={`max-w-[70%] rounded-2xl overflow-hidden ${isMe ? "bg-black text-white rounded-tr-sm" : "bg-white border border-black/[0.07] text-black rounded-tl-sm dark:bg-gray-800 dark:text-white dark:border-white/[0.08]"}`}>
-        {!isMe && <p className="px-3 pt-2 text-[10px] font-bold opacity-50">{nm}</p>}
+        {!isMe && <p className="px-3 pt-2 text-[10px] font-bold opacity-70">{nm}</p>}
         {msg.attachmentType === "image" && <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer"><img src={msg.attachmentUrl} alt="" className="max-w-[220px] max-h-[180px] object-cover" /></a>}
         {msg.attachmentType === "voice" && <div className="px-3 py-2"><VoicePlayer url={msg.attachmentUrl} isMe={isMe} /></div>}
         {msg.attachmentType === "file" && (
           <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2.5 hover:opacity-80 ${isMe ? "text-white" : "text-black dark:text-white"}`}>
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.06] dark:bg-white/[0.1]"}`}><FileText className="w-3.5 h-3.5" /></div>
-            <div className="min-w-0"><p className="text-xs font-semibold truncate max-w-[140px]">{msg.attachmentName || "ملف"}</p>{msg.attachmentSize && <p className="text-[9px] opacity-50">{formatSize(msg.attachmentSize)}</p>}</div>
+            <div className="min-w-0"><p className="text-xs font-semibold truncate max-w-[140px]">{msg.attachmentName || "ملف"}</p>{msg.attachmentSize && <p className="text-[9px] opacity-70">{formatSize(msg.attachmentSize)}</p>}</div>
             <Download className="w-3 h-3 opacity-60 flex-shrink-0" />
           </a>
         )}
         {msg.body && <div className="px-3.5 py-2.5"><p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.body}</p></div>}
         <div className="px-3.5 pb-2 flex items-center justify-end gap-1">
-          <span className="text-[9px] opacity-40">{timeAgo(msg.createdAt)}</span>
-          {isMe && <CheckCheck className="w-3 h-3 opacity-40" />}
+          <span className="text-[9px] opacity-70">{timeAgo(msg.createdAt)}</span>
+          {isMe && <CheckCheck className="w-3 h-3 opacity-70" />}
         </div>
       </div>
     </div>

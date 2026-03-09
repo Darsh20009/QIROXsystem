@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -348,7 +349,7 @@ export default function AdminReceipts() {
                         <div className="text-[10px] text-black/35">{client?.email}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-bold text-black text-xs">{r.amount?.toLocaleString()} ر.س</div>
+                        <div className="font-bold text-black text-xs flex items-center gap-1">{r.amount?.toLocaleString()} <SARIcon size={10} /></div>
                         {r.amountInWords && <div className="text-[10px] text-black/30 leading-tight max-w-[140px]">{r.amountInWords}</div>}
                       </td>
                       <td className="px-4 py-3 text-xs text-black/50">{METHOD_LABELS[r.paymentMethod] || r.paymentMethod}</td>

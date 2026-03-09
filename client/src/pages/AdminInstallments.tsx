@@ -196,7 +196,7 @@ export default function AdminInstallments() {
                         <span>فترة: <b className="text-black/70 dark:text-white/60">{PERIOD_LABELS[app.planPeriod] || app.planPeriod}</b></span>
                         <span className="flex items-center gap-0.5">الإجمالي: <b className="text-emerald-600 flex items-center gap-0.5">{app.grandTotal?.toFixed(2)} <SARIcon size={10} className="opacity-60" /></b></span>
                         <span>{app.paidInstallments || 0}/{app.installmentCount} أقساط</span>
-                        <span className="flex items-center gap-0.5">{app.installmentAmount?.toFixed(0)} <SARIcon size={10} className="opacity-50" />/قسط</span>
+                        <span className="flex items-center gap-0.5">{app.installmentAmount?.toFixed(0)} <SARIcon size={10} className="opacity-70" />/قسط</span>
                       </div>
                       {app.clientNotes && <p className="text-xs text-black/40 mt-1 truncate">ملاحظة: {app.clientNotes}</p>}
                     </div>
@@ -376,10 +376,10 @@ export default function AdminInstallments() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><p className="text-black/40 text-xs">العميل</p><p className="font-bold">{appDetail.application?.clientId?.fullName}</p></div>
                 <div><p className="text-black/40 text-xs">الحالة</p><span className={`text-xs px-2 py-0.5 rounded-full font-bold ${STATUS_COLOR[appDetail.application?.status]}`}>{STATUS_LABEL[appDetail.application?.status]}</span></div>
-                <div><p className="text-black/40 text-xs">قيمة الباقة</p><p className="font-bold flex items-center gap-1">{appDetail.application?.totalAmount?.toFixed(2)} <SARIcon size={11} className="opacity-45" /></p></div>
-                <div><p className="text-black/40 text-xs">رسوم الخدمة</p><p className="font-bold text-emerald-600 flex items-center gap-1">{appDetail.application?.serviceFee?.toFixed(2)} <SARIcon size={11} className="opacity-50" /></p></div>
-                <div><p className="text-black/40 text-xs">الإجمالي</p><p className="font-black text-lg flex items-center gap-1">{appDetail.application?.grandTotal?.toFixed(2)} <SARIcon size={13} className="opacity-50" /></p></div>
-                <div><p className="text-black/40 text-xs">القسط الواحد</p><p className="font-bold flex items-center gap-1">{appDetail.application?.installmentAmount?.toFixed(2)} <SARIcon size={11} className="opacity-45" /></p></div>
+                <div><p className="text-black/40 text-xs">قيمة الباقة</p><p className="font-bold flex items-center gap-1">{appDetail.application?.totalAmount?.toFixed(2)} <SARIcon size={11} className="opacity-60" /></p></div>
+                <div><p className="text-black/40 text-xs">رسوم الخدمة</p><p className="font-bold text-emerald-600 flex items-center gap-1">{appDetail.application?.serviceFee?.toFixed(2)} <SARIcon size={11} className="opacity-70" /></p></div>
+                <div><p className="text-black/40 text-xs">الإجمالي</p><p className="font-black text-lg flex items-center gap-1">{appDetail.application?.grandTotal?.toFixed(2)} <SARIcon size={13} className="opacity-70" /></p></div>
+                <div><p className="text-black/40 text-xs">القسط الواحد</p><p className="font-bold flex items-center gap-1">{appDetail.application?.installmentAmount?.toFixed(2)} <SARIcon size={11} className="opacity-60" /></p></div>
               </div>
               {appDetail.application?.clientNotes && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-sm">
@@ -394,7 +394,7 @@ export default function AdminInstallments() {
                     <div key={p.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-xl px-3 py-2 text-sm">
                       <span className="font-medium text-black/60">القسط {p.installmentNumber}</span>
                       <span className="text-xs text-black/40">{new Date(p.dueDate).toLocaleDateString("ar-SA")}</span>
-                      <span className="font-bold flex items-center gap-1">{p.totalDue?.toFixed(2)} <SARIcon size={11} className="opacity-45" />{p.penalty > 0 && <span className="text-red-500 text-xs mr-1">(+{p.penalty} غرامة)</span>}</span>
+                      <span className="font-bold flex items-center gap-1">{p.totalDue?.toFixed(2)} <SARIcon size={11} className="opacity-60" />{p.penalty > 0 && <span className="text-red-500 text-xs mr-1">(+{p.penalty} غرامة)</span>}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${PAYMENT_COLOR[p.status]}`}>{PAYMENT_STATUS[p.status]}</span>
                     </div>
                   ))}

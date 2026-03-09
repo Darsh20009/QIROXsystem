@@ -231,7 +231,7 @@ export default function AdminShipping() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`bg-white dark:bg-[#111] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden transition-all ${!c.isActive ? "opacity-50" : "hover:shadow-md"}`}
+              className={`bg-white dark:bg-[#111] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden transition-all ${!c.isActive ? "opacity-70" : "hover:shadow-md"}`}
               data-testid={`company-card-${c.id}`}
             >
               {/* Header strip */}

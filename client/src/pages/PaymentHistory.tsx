@@ -95,7 +95,7 @@ export default function PaymentHistory() {
                 <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
               <p className="text-lg font-black text-black dark:text-white flex items-center gap-1">
-                {s.value}{s.hasSAR && <SARIcon size={13} className="opacity-40" />}
+                {s.value}{s.hasSAR && <SARIcon size={13} className="opacity-60" />}
               </p>
             </CardContent>
           </Card>
@@ -122,7 +122,7 @@ export default function PaymentHistory() {
                     </div>
                   </div>
                   <div className="text-left shrink-0">
-                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(order.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
+                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(order.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-60" /></p>
                     <p className="text-[10px] text-black/25 dark:text-white/25">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</p>
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export default function PaymentHistory() {
                     </Badge>
                   </div>
                   <div className="text-left shrink-0">
-                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(inv.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
+                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(inv.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-60" /></p>
                     <p className="text-[10px] text-black/25 dark:text-white/25">{new Date(inv.createdAt).toLocaleDateString("ar-SA")}</p>
                   </div>
                 </div>

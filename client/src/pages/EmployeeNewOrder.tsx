@@ -453,7 +453,7 @@ export default function EmployeeNewOrder() {
                   <Button
                     onClick={() => { if (!selectedClient) { toast({ title: "يجب تحديد عميل أولاً", variant: "destructive" }); return; } setStep("order"); }}
                     disabled={!selectedClient}
-                    className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2 disabled:opacity-40"
+                    className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2 disabled:opacity-70"
                     data-testid="button-next-order-existing">
                     التالي: تفاصيل الطلب <ArrowLeft className="w-4 h-4" />
                   </Button>

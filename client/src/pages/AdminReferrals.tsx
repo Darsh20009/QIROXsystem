@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Gift, Loader2, Users } from "lucide-react";
+import SARIcon from "@/components/SARIcon";
 
 export default function AdminReferrals() {
   const { data: referrals = [], isLoading } = useQuery<any[]>({
@@ -37,7 +38,7 @@ export default function AdminReferrals() {
         </div>
         <div className="rounded-2xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-4 text-center">
           <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{totalCredits}</p>
-          <p className="text-xs text-black/40 dark:text-white/40 mt-1">ريال وُزّعت</p>
+          <p className="text-xs text-black/40 dark:text-white/40 mt-1 flex items-center justify-center gap-1"><SARIcon size={11} /> وُزّعت</p>
         </div>
       </div>
 
@@ -65,7 +66,7 @@ export default function AdminReferrals() {
                     <td className="px-4 py-3 text-black/80 dark:text-white/75">{r.referrerId?.fullName || r.referrerId?.username || "—"}</td>
                     <td className="px-4 py-3 text-black/80 dark:text-white/75">{r.referredId?.fullName || r.referredId?.username || "—"}</td>
                     <td className="px-4 py-3"><code className="text-xs font-mono text-black/60 dark:text-white/55 bg-black/[0.04] dark:bg-white/[0.04] px-2 py-0.5 rounded">{r.code}</code></td>
-                    <td className="px-4 py-3 font-bold text-emerald-600 dark:text-emerald-400">{r.creditAmount} ر.س</td>
+                    <td className="px-4 py-3 font-bold text-emerald-600 dark:text-emerald-400"><span className="flex items-center gap-1">{r.creditAmount} <SARIcon size={11} /></span></td>
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${statusColor[r.status] || ""}`}>{statusLabel[r.status] || r.status}</span></td>
                     <td className="px-4 py-3 text-xs text-black/40 dark:text-white/40">{new Date(r.createdAt).toLocaleDateString("ar-SA")}</td>
                   </tr>

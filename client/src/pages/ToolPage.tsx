@@ -931,7 +931,7 @@ function CalcDiscountPanel() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 flex items-center gap-1">السعر الأصلي (<SARIcon size={10} className="opacity-50" />)</label><Input type="number" value={original} onChange={e => setOriginal(e.target.value)} placeholder="100" /></div>
+        <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 flex items-center gap-1">السعر الأصلي (<SARIcon size={10} className="opacity-70" />)</label><Input type="number" value={original} onChange={e => setOriginal(e.target.value)} placeholder="100" /></div>
         <div><label className="text-xs text-black/40 dark:text-white/40 mb-1 block">نسبة الخصم %</label><Input type="number" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="20" min={0} max={100} /></div>
       </div>
       {result && (
@@ -1523,8 +1523,8 @@ function InvoiceGenPanel() {
         <button onClick={addItem} className="flex items-center gap-2 text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors"><Plus className="w-3 h-3"/>إضافة بند</button>
       </div>
       <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] text-sm space-y-1">
-        <div className="flex justify-between text-black/60 dark:text-white/60"><span>المجموع</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={11} className="opacity-50" /></span></div>
-        <div className="flex justify-between text-black/60 dark:text-white/60"><span>ضريبة 15%</span><span className="flex items-center gap-1">{vat.toFixed(2)} <SARIcon size={11} className="opacity-50" /></span></div>
+        <div className="flex justify-between text-black/60 dark:text-white/60"><span>المجموع</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={11} className="opacity-70" /></span></div>
+        <div className="flex justify-between text-black/60 dark:text-white/60"><span>ضريبة 15%</span><span className="flex items-center gap-1">{vat.toFixed(2)} <SARIcon size={11} className="opacity-70" /></span></div>
         <div className="flex justify-between font-bold text-black dark:text-white text-base pt-1 border-t border-black/[0.07] dark:border-white/[0.07]"><span>الإجمالي</span><span className="flex items-center gap-1">{(total+vat).toFixed(2)} <SARIcon size={13} className="opacity-60" /></span></div>
       </div>
       <Button onClick={print} className="w-full gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white" data-testid="btn-print-invoice"><Printer className="w-4 h-4"/>طباعة / حفظ PDF</Button>

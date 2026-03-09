@@ -421,7 +421,7 @@ export default function AdminOrders() {
                       )}
                     </td>
                     <td className="p-4 text-sm font-semibold text-black/70">
-                      {order.totalAmount ? <span className="flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={11} className="opacity-45" /></span> : "—"}
+                      {order.totalAmount ? <span className="flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={11} className="opacity-60" /></span> : "—"}
                     </td>
                     <td className="p-4 text-xs text-black/30">
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : "—"}
@@ -475,7 +475,7 @@ export default function AdminOrders() {
                     {statusMap[selectedOrder.status]?.label || selectedOrder.status}
                   </span>
                   {selectedOrder.totalAmount && (
-                    <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-40" /></span>
+                    <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                   )}
                   {selectedOrder.client?.fullName && (
                     <span className="text-[10px] text-black/30">{selectedOrder.client.fullName}</span>
@@ -641,7 +641,7 @@ export default function AdminOrders() {
                         <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
                         <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
                           <div className="flex justify-between"><p className="text-xs text-black/50">طريقة الدفع</p><p className="text-xs font-bold text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</p></div>
-                          <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-50" /></> : "—"}</p></div>
+                          <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></> : "—"}</p></div>
                           <div className="flex justify-between"><p className="text-xs text-black/50">الدفعة الأولى</p>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                               {selectedOrder.isDepositPaid ? "مدفوعة ✓" : "لم تُدفع"}

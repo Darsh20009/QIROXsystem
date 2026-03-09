@@ -172,7 +172,7 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-1">الإيرادات الشهرية <SARIcon size={11} className="opacity-40" /></CardTitle>
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-1">الإيرادات الشهرية <SARIcon size={11} className="opacity-60" /></CardTitle>
           </CardHeader>
           <CardContent className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -258,7 +258,7 @@ export default function AdminAnalytics() {
                     <div key={i} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-black/60 dark:text-white/60 font-medium">{p.name}</span>
-                        <span className="font-bold text-black dark:text-white flex items-center gap-1">{p.value} طلب · {(p.revenue || 0).toLocaleString()} <SARIcon size={11} className="opacity-50" /></span>
+                        <span className="font-bold text-black dark:text-white flex items-center gap-1">{p.value} طلب · {(p.revenue || 0).toLocaleString()} <SARIcon size={11} className="opacity-70" /></span>
                       </div>
                       <div className="h-1.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: p.color }} />
@@ -297,7 +297,7 @@ export default function AdminAnalytics() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-black/30 dark:text-white/30">{c.orderCount} طلب</span>
-                          <span className="font-black text-black dark:text-white flex items-center gap-1">{(c.totalSpent || 0).toLocaleString()} <SARIcon size={12} className="opacity-50" /></span>
+                          <span className="font-black text-black dark:text-white flex items-center gap-1">{(c.totalSpent || 0).toLocaleString()} <SARIcon size={12} className="opacity-70" /></span>
                         </div>
                       </div>
                       <div className="h-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-full overflow-hidden">

@@ -653,10 +653,10 @@ export default function AdminProducts() {
                               <div className="text-right hidden sm:block">
                                 <div className="flex items-center gap-2 text-[10px] text-black/40 dark:text-white/40">
                                   <MapPin className="w-3 h-3 text-blue-400" />
-                                  <span className="flex items-center gap-0.5">{company.basePrice} <SARIcon size={9} className="opacity-40" /></span>
+                                  <span className="flex items-center gap-0.5">{company.basePrice} <SARIcon size={9} className="opacity-60" /></span>
                                   <span className="text-black/20 dark:text-white/20">|</span>
                                   <Globe className="w-3 h-3 text-amber-400" />
-                                  <span className="flex items-center gap-0.5">{company.outsideCityPrice} <SARIcon size={9} className="opacity-40" /></span>
+                                  <span className="flex items-center gap-0.5">{company.outsideCityPrice} <SARIcon size={9} className="opacity-60" /></span>
                                 </div>
                                 <p className="text-[9px] text-black/25 dark:text-white/25 flex items-center gap-1 mt-0.5 justify-end">
                                   <Clock className="w-2.5 h-2.5" />{company.estimatedDays}

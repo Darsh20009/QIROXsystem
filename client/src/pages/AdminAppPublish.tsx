@@ -1638,7 +1638,7 @@ export default function AdminAppPublish() {
                           <button
                             onClick={() => handleRedownload(pkg)}
                             disabled={redownloading === pkg.id}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.10] transition-colors shrink-0 disabled:opacity-40"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.10] transition-colors shrink-0 disabled:opacity-70"
                             title="إعادة تنزيل"
                             data-testid={`btn-redownload-${pkg.id}`}
                           >

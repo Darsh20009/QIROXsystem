@@ -908,7 +908,7 @@ export default function Inbox() {
                     <Button
                       type="submit"
                       size="icon"
-                      className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 shadow-sm flex-shrink-0 disabled:opacity-50"
+                      className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-xl hover:from-violet-700 hover:to-indigo-700 shadow-sm flex-shrink-0 disabled:opacity-70"
                       disabled={!messageText.trim() || sendMutation.isPending}
                       data-testid="button-send-message"
                     >

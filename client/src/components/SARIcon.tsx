@@ -5,13 +5,12 @@ interface SARIconProps {
 
 export default function SARIcon({ className = "", size = 14 }: SARIconProps) {
   return (
-    <img
-      src="/sar.png"
-      alt="ر.س"
-      width={size}
-      height={size}
-      className={`inline-block object-contain dark:invert ${className}`}
-      style={{ verticalAlign: "middle" }}
-    />
+    <span
+      className={`inline-flex items-center justify-center font-bold flex-shrink-0 leading-none ${className}`}
+      style={{ fontSize: size, lineHeight: 1, verticalAlign: "middle" }}
+      aria-label="ريال سعودي"
+    >
+      ﷼
+    </span>
   );
 }

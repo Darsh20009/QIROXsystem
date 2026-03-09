@@ -101,7 +101,7 @@ export default function AdminPayroll() {
           </div>
           <div>
             <h1 className="text-xl font-black text-black dark:text-white">كشف الرواتب</h1>
-            <p className="text-xs text-black/35 dark:text-white/35 flex items-center gap-1">إجمالي: {total.toLocaleString()} <SARIcon size={10} className="opacity-35" /></p>
+            <p className="text-xs text-black/35 dark:text-white/35 flex items-center gap-1">إجمالي: {total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
           </div>
         </div>
         <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 dark:text-white dark:border-white/10">
@@ -163,8 +163,8 @@ export default function AdminPayroll() {
                     <p className="text-xs text-black/40 dark:text-white/40">{MONTHS_AR[(rec.month || 1) - 1]} {rec.year} — {rec.userId?.role}</p>
                   </div>
                   <div className="text-left shrink-0">
-                    <p className="font-black text-lg text-black dark:text-white flex items-center gap-1">{rec.netSalary.toLocaleString()} <SARIcon size={13} className="opacity-45" /></p>
-                    <p className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-0.5">{rec.workHours.toFixed(1)} ساعة × {rec.hourlyRate} <SARIcon size={9} className="opacity-35" /></p>
+                    <p className="font-black text-lg text-black dark:text-white flex items-center gap-1">{rec.netSalary.toLocaleString()} <SARIcon size={13} className="opacity-60" /></p>
+                    <p className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-0.5">{rec.workHours.toFixed(1)} ساعة × {rec.hourlyRate} <SARIcon size={9} className="opacity-60" /></p>
                   </div>
                 </div>
 

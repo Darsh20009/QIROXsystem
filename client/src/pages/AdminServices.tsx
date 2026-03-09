@@ -1,6 +1,7 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import SARIcon from "@/components/SARIcon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,8 +257,8 @@ export default function AdminServices() {
                   </td>
                   <td className="p-4 text-sm text-black/60">
                     {service.priceMin && service.priceMax
-                      ? `${service.priceMin?.toLocaleString()} - ${service.priceMax?.toLocaleString()} ر.س`
-                      : service.priceMin ? `من ${service.priceMin?.toLocaleString()} ر.س` : "—"}
+                      ? <span className="flex items-center gap-1">{service.priceMin?.toLocaleString()} - {service.priceMax?.toLocaleString()} <SARIcon size={11} /></span>
+                      : service.priceMin ? <span className="flex items-center gap-1">من {service.priceMin?.toLocaleString()} <SARIcon size={11} /></span> : "—"}
                   </td>
                   <td className="p-4 text-sm text-black/60">{service.estimatedDuration || "—"}</td>
                   <td className="p-4">

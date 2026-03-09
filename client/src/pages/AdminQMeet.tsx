@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-auth";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -377,7 +378,7 @@ export default function AdminQMeet() {
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="font-bold text-black dark:text-white text-sm">{k.name}</span>
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${k.plan === "pro" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"}`}>
-                            {k.plan === "pro" ? "برو — 299 ر.س/شهر" : "أساسي — 99 ر.س/شهر"}
+                            {k.plan === "pro" ? <span className="flex items-center gap-1">برو — 299 <SARIcon size={9} />/شهر</span> : <span className="flex items-center gap-1">أساسي — 99 <SARIcon size={9} />/شهر</span>}
                           </span>
                           {!k.active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">موقوف</span>}
                         </div>

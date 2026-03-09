@@ -152,13 +152,13 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className={`text-4xl font-black tracking-tight ${isPro ? "text-white" : "text-slate-900 dark:text-white"}`}>{price.toLocaleString()}</span>
-              {lang === "ar" ? <SARIcon size={15} className={isPro ? "opacity-60" : "opacity-40"} /> : <span className={`text-sm font-medium ${isPro ? "text-white/60" : "text-slate-400"}`}>SAR</span>}
+              {lang === "ar" ? <SARIcon size={15} className={isPro ? "opacity-60" : "opacity-70"} /> : <span className={`text-sm font-medium ${isPro ? "text-white/60" : "text-slate-400"}`}>SAR</span>}
               <span className={`text-xs ${isPro ? "text-white/40" : "text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
             </div>
             {monthlyEquiv && period !== "monthly" && (
               <p className={`text-[11px] mt-1.5 flex items-center gap-1.5 flex-wrap ${isPro ? "text-white/50" : "text-slate-400"}`}>
                 {lang === "ar"
-                  ? <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} <SARIcon size={11} className="opacity-50" />/شهر</span></span>
+                  ? <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} <SARIcon size={11} className="opacity-70" />/شهر</span></span>
                   : <span>= <span className="font-semibold">{monthlyEquiv.toLocaleString()} SAR/mo</span></span>}
                 {saving > 0 && (
                   <span className={`font-bold text-emerald-${isPro ? "200" : "600"}`}>
@@ -528,7 +528,7 @@ export default function Prices() {
                 <p className="text-slate-900 dark:text-white font-black text-base mb-3">{a.sub}</p>
                 <div className="flex items-baseline gap-1.5 mb-4">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">{a.price}</span>
-                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-slate-400">SAR</span>}
+                  {lang === "ar" ? <SARIcon size={13} className="opacity-70" /> : <span className="text-sm text-slate-400">SAR</span>}
                 </div>
                 <div className="space-y-2 mb-5">
                   {a.features.map(f => (

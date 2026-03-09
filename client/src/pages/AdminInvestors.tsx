@@ -146,7 +146,7 @@ export default function AdminInvestors() {
             ].map(stat => (
               <div key={stat.label} className="bg-white/50 dark:bg-gray-900/50 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <stat.icon className={`w-4 h-4 ${stat.color} mb-1.5`} />
-                <p className="text-xl font-black text-black dark:text-white flex items-center gap-1">{stat.value}{(stat as any).hasSAR && <SARIcon size={14} className="opacity-40" />}</p>
+                <p className="text-xl font-black text-black dark:text-white flex items-center gap-1">{stat.value}{(stat as any).hasSAR && <SARIcon size={14} className="opacity-60" />}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{stat.label}</p>
               </div>
             ))}
@@ -196,7 +196,7 @@ export default function AdminInvestors() {
                     </div>
                     <div className="text-center">
                       <p className="text-base font-bold text-green-600 dark:text-green-400">{inv.totalInvested.toLocaleString("ar-SA")}</p>
-                      <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-40" /> مستثمر</p>
+                      <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-60" /> مستثمر</p>
                     </div>
                     <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditInvestor(inv); setNewStake(String(inv.stakePercentage)); setNewNotes(inv.notes || ""); }} data-testid={`btn-edit-${inv.id}`}>
                       <Edit2 className="w-3.5 h-3.5" /> تعديل

@@ -107,7 +107,7 @@ export default function AdminSystemFeatures() {
         ) : (
           <div className="space-y-2">
             {features.map((f: any) => (
-              <Card key={f.id} data-testid={`card-feature-${f.id}`} className={`border transition-opacity ${f.isActive ? "border-gray-200" : "border-gray-100 opacity-50"}`}>
+              <Card key={f.id} data-testid={`card-feature-${f.id}`} className={`border transition-opacity ${f.isActive ? "border-gray-200" : "border-gray-100 opacity-70"}`}>
                 <CardContent className="p-3.5 flex items-center gap-4">
                   <Switch checked={f.isActive} onCheckedChange={v => toggleActive.mutate({ id: f.id, isActive: v })} data-testid={`switch-feature-${f.id}`} />
                   <div className="flex-1 min-w-0">

@@ -194,7 +194,7 @@ function TemplateCard({ template, index }: { template: SectorTemplate; index: nu
               </Button>
             </a>
           ) : (
-            <Button disabled className="flex-1 h-10 rounded-xl font-bold gap-2 text-sm opacity-50">
+            <Button disabled className="flex-1 h-10 rounded-xl font-bold gap-2 text-sm opacity-70">
               <Globe className="w-4 h-4" /> {template.status === "coming_soon" ? "قريباً" : "الديمو غير متاح"}
             </Button>
           )}

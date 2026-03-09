@@ -210,7 +210,7 @@ export default function AdminCronJobs() {
           {jobs.map((j: any, idx: number) => (
             <motion.div key={j.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
               <Card
-                className={`border ${j.isActive ? "border-black/[0.06] dark:border-white/[0.07]" : "border-black/[0.03] dark:border-white/[0.04] opacity-55"} bg-white dark:bg-gray-900 shadow-none hover:shadow-sm transition-shadow`}
+                className={`border ${j.isActive ? "border-black/[0.06] dark:border-white/[0.07]" : "border-black/[0.03] dark:border-white/[0.04] opacity-75"} bg-white dark:bg-gray-900 shadow-none hover:shadow-sm transition-shadow`}
                 data-testid={`card-cron-${j.id}`}
               >
                 <CardContent className="p-3 sm:p-4">

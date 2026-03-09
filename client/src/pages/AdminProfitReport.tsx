@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, BarChart3, Search, ChevronDown, ChevronUp, Percent } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -104,7 +105,7 @@ export default function AdminProfitReport() {
                 <p className="text-[11px] text-blue-500 font-bold">إجمالي الإيرادات</p>
               </div>
               <p className="text-2xl font-black text-blue-700">{totals.revenue.toLocaleString()}</p>
-              <p className="text-[10px] text-blue-400">ر.س من {orders.length} طلب</p>
+              <p className="text-[10px] text-blue-400 flex items-center gap-1"><SARIcon size={10} /> من {orders.length} طلب</p>
             </div>
             <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -112,7 +113,7 @@ export default function AdminProfitReport() {
                 <p className="text-[11px] text-red-500 font-bold">إجمالي التكاليف</p>
               </div>
               <p className="text-2xl font-black text-red-700">{totals.expenses.toLocaleString()}</p>
-              <p className="text-[10px] text-red-400">ر.س مصروف</p>
+              <p className="text-[10px] text-red-400 flex items-center gap-1"><SARIcon size={10} /> مصروف</p>
             </div>
             <div className={`border rounded-2xl p-5 ${totals.netProfit >= 0 ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
               <div className="flex items-center gap-2 mb-2">
@@ -120,7 +121,7 @@ export default function AdminProfitReport() {
                 <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`}>صافي الربح</p>
               </div>
               <p className={`text-2xl font-black ${totals.netProfit >= 0 ? "text-green-700" : "text-orange-700"}`}>{totals.netProfit.toLocaleString()}</p>
-              <p className={`text-[10px] ${totals.netProfit >= 0 ? "text-green-500" : "text-orange-500"}`}>ر.س صافي</p>
+              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-green-500" : "text-orange-500"}`}><SARIcon size={10} /> صافي</p>
             </div>
             <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -161,7 +162,7 @@ export default function AdminProfitReport() {
                   return (
                     <div key={cat} className="bg-black/[0.02] rounded-xl p-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${color}`}>{label}</span>
-                      <p className="text-sm font-bold text-black/70 mt-1.5">{amt.toLocaleString()} ر.س</p>
+                      <p className="text-sm font-bold text-black/70 mt-1.5 flex items-center gap-1">{amt.toLocaleString()} <SARIcon size={11} /></p>
                       <p className="text-[10px] text-black/30">{pct}% من التكاليف</p>
                     </div>
                   );
@@ -250,13 +251,13 @@ export default function AdminProfitReport() {
                               <div key={i} className="flex items-center gap-3">
                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${cat.color}`}>{cat.label}</span>
                                 <p className="text-xs text-black/50 flex-1">{e.description}</p>
-                                <p className="text-xs font-bold text-red-500">{Number(e.amount).toLocaleString()} ر.س</p>
+                                <p className="text-xs font-bold text-red-500 flex items-center gap-1">{Number(e.amount).toLocaleString()} <SARIcon size={10} /></p>
                               </div>
                             );
                           })}
                           <div className="pt-1.5 mt-1.5 border-t border-black/[0.06] flex justify-between">
                             <p className="text-[10px] text-black/30">إجمالي التكاليف</p>
-                            <p className="text-xs font-black text-red-600">{order.totalExpenses.toLocaleString()} ر.س</p>
+                            <p className="text-xs font-black text-red-600 flex items-center gap-1">{order.totalExpenses.toLocaleString()} <SARIcon size={10} /></p>
                           </div>
                         </div>
                       )}

@@ -210,7 +210,7 @@ export default function AdminExtraAddons() {
         <div className="space-y-2">
           {displayed.map((a: any) => (
             <Card key={a.id} data-testid={`card-addon-${a.id}`}
-              className={`border transition-all ${a.isActive ? "border-black/[0.06]" : "border-black/[0.04] opacity-50"}`}>
+              className={`border transition-all ${a.isActive ? "border-black/[0.06]" : "border-black/[0.04] opacity-70"}`}>
               <CardContent className="p-3.5 flex items-center gap-4">
                 <Switch checked={a.isActive} onCheckedChange={v => toggleActive.mutate({ id: a.id, isActive: v })} data-testid={`switch-addon-${a.id}`} />
 

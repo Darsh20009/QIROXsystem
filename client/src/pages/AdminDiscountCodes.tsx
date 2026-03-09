@@ -165,7 +165,7 @@ export default function AdminDiscountCodes() {
         <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-black/20" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-black/30 dark:text-white/30">
-          <Tag className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <Tag className="w-10 h-10 mx-auto mb-3 opacity-70" />
           <p>لا توجد كودات — أضف أول كود خصم</p>
         </div>
       ) : (
