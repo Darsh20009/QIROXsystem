@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Calendar, Clock, CheckCircle, XCircle, Eye, Video, Phone, MapPin, Users, CalendarClock, AlertCircle, MessageSquare } from "lucide-react";
+import { Loader2, Calendar, Clock, CheckCircle, XCircle, Eye, Video, Phone, MapPin, Users, CalendarClock, AlertCircle, MessageSquare, Bell } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -45,6 +45,40 @@ export default function AdminConsultation() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [rejectNotes, setRejectNotes] = useState("");
   const [rejectBooking, setRejectBooking] = useState<any>(null);
+
+  // Switch reminder state
+  const [reminderBooking, setReminderBooking] = useState<any>(null);
+  const [reminderForm, setReminderForm] = useState({
+    currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "",
+  });
+
+  const createReminderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/admin/switch-reminders", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setReminderBooking(null);
+      setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" });
+      toast({ title: "تم جدولة التذكير بنجاح", description: "سيظهر في صفحة تذكيرات التحول" });
+    },
+    onError: (e: any) => toast({ title: e.message || "فشل إنشاء التذكير", variant: "destructive" }),
+  });
+
+  const handleCreateReminder = () => {
+    if (!reminderForm.currentProvider.trim() || !reminderForm.subscriptionEndDate) {
+      return toast({ title: "اسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبان", variant: "destructive" });
+    }
+    createReminderMutation.mutate({
+      name: reminderBooking.clientName,
+      phone: reminderBooking.clientPhone || "",
+      email: reminderBooking.clientEmail || "",
+      currentProvider: reminderForm.currentProvider,
+      serviceType: reminderForm.serviceType,
+      subscriptionEndDate: reminderForm.subscriptionEndDate,
+      notes: reminderForm.notes,
+    });
+  };
 
   const { data: bookings, isLoading: bLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/consultation/bookings"],
@@ -254,6 +288,12 @@ export default function AdminConsultation() {
                       data-testid={`button-view-${b.id || b._id}`}>
                       <Eye className="w-3 h-3" />عرض
                     </Button>
+                    <Button size="sm" variant="outline"
+                      onClick={() => { setReminderBooking(b); setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" }); }}
+                      className="rounded-xl text-xs h-8 gap-1 border-amber-200 text-amber-600 hover:bg-amber-50"
+                      data-testid={`button-reminder-${b.id || b._id}`}>
+                      <Bell className="w-3 h-3" />تذكير
+                    </Button>
                   </div>
                 </div>
               </motion.div>
@@ -378,6 +418,100 @@ export default function AdminConsultation() {
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-xl gap-1.5"
                   data-testid="button-confirm-reject">
                   {updateBookingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" />تأكيد الرفض</>}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Switch Reminder Dialog */}
+      <Dialog open={!!reminderBooking} onOpenChange={v => !v && setReminderBooking(null)}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <Bell className="w-5 h-5 text-amber-500" />
+              جدولة تذكير تحوّل للعميل
+            </DialogTitle>
+          </DialogHeader>
+          {reminderBooking && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-sm">
+                <p className="font-bold text-black dark:text-white">{reminderBooking.clientName}</p>
+                <p className="text-xs text-black/40 dark:text-white/40">{reminderBooking.clientEmail}{reminderBooking.clientPhone ? ` · ${reminderBooking.clientPhone}` : ""}</p>
+                <p className="text-[11px] text-amber-600 mt-1">سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
+                  الشركة / النظام الحالي <span className="text-red-400">*</span>
+                </label>
+                <Input
+                  value={reminderForm.currentProvider}
+                  onChange={e => setReminderForm(f => ({ ...f, currentProvider: e.target.value }))}
+                  placeholder="مثال: زد، سلة، ودّ، شركة X"
+                  className="rounded-xl border-black/10 dark:border-white/10"
+                  data-testid="input-reminder-provider"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">نوع الخدمة</label>
+                <Select value={reminderForm.serviceType || ""} onValueChange={v => setReminderForm(f => ({ ...f, serviceType: v }))}>
+                  <SelectTrigger className="rounded-xl border-black/10 dark:border-white/10">
+                    <SelectValue placeholder="اختر نوع الخدمة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">موقع إلكتروني</SelectItem>
+                    <SelectItem value="ecommerce">متجر إلكتروني</SelectItem>
+                    <SelectItem value="app">تطبيق جوال</SelectItem>
+                    <SelectItem value="erp">ERP / إدارة</SelectItem>
+                    <SelectItem value="pos">نقطة بيع</SelectItem>
+                    <SelectItem value="crm">CRM</SelectItem>
+                    <SelectItem value="design">تصميم وهوية</SelectItem>
+                    <SelectItem value="marketing">تسويق رقمي</SelectItem>
+                    <SelectItem value="hosting">استضافة</SelectItem>
+                    <SelectItem value="other">أخرى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
+                  تاريخ انتهاء اشتراكه الحالي <span className="text-red-400">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={reminderForm.subscriptionEndDate}
+                  onChange={e => setReminderForm(f => ({ ...f, subscriptionEndDate: e.target.value }))}
+                  className="rounded-xl border-black/10 dark:border-white/10"
+                  data-testid="input-reminder-end-date"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">ملاحظات (اختياري)</label>
+                <Textarea
+                  value={reminderForm.notes}
+                  onChange={e => setReminderForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="معلومات إضافية أو سبب الاستشارة..."
+                  className="rounded-xl border-black/10 dark:border-white/10 resize-none"
+                  rows={2}
+                  data-testid="input-reminder-notes"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" onClick={() => setReminderBooking(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                <Button
+                  onClick={handleCreateReminder}
+                  disabled={createReminderMutation.isPending}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl gap-2"
+                  data-testid="button-confirm-reminder"
+                >
+                  {createReminderMutation.isPending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <><Bell className="w-4 h-4" />جدولة التذكير</>}
                 </Button>
               </div>
             </div>

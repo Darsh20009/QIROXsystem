@@ -114,10 +114,8 @@ export default function EmployeeNewOrder() {
       setResult(data);
       setStep("done");
     },
-    onError: async (err: any) => {
-      let msg = "حدث خطأ أثناء الإنشاء";
-      try { const d = await err.response?.json?.(); msg = d?.error || msg; } catch {}
-      toast({ title: msg, variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: err.message || "حدث خطأ أثناء الإنشاء", variant: "destructive" });
     },
   });
 
@@ -561,10 +559,13 @@ export default function EmployeeNewOrder() {
                     }
                   </Button>
                   <Button
-                    onClick={() => mutation.mutate({
-                      fullName, email, phone, username, password,
-                      businessType, country,
-                    })}
+                    onClick={() => {
+                      if (!clientValid) {
+                        toast({ title: "أكمل الحقول المطلوبة (الاسم، البريد، المستخدم، كلمة المرور)", variant: "destructive" });
+                        return;
+                      }
+                      mutation.mutate({ fullName, email, phone, username, password, businessType, country });
+                    }}
                     disabled={mutation.isPending}
                     variant="outline"
                     className="rounded-xl h-12 px-5 text-sm font-semibold border-black/[0.10]"

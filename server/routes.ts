@@ -2228,6 +2228,37 @@ export async function registerRoutes(
     }
   });
 
+  // Admin create reminder (no rate limit — trusted admin/employee context)
+  app.post("/api/admin/switch-reminders", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","employee","sales"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { SwitchReminderModel } = await import("./models");
+    const { name, phone, email, currentProvider, serviceType, subscriptionEndDate, notes } = req.body;
+    if (!name?.trim() || !currentProvider?.trim() || !subscriptionEndDate) {
+      return res.status(400).json({ error: "الاسم واسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبة" });
+    }
+    const endDate = new Date(subscriptionEndDate);
+    if (isNaN(endDate.getTime())) {
+      return res.status(400).json({ error: "تاريخ انتهاء الاشتراك غير صالح" });
+    }
+    try {
+      const actor = req.user as any;
+      const reminder = await SwitchReminderModel.create({
+        name: name.trim(),
+        phone: (phone || "").trim(),
+        email: (email || "").trim(),
+        currentProvider: currentProvider.trim(),
+        serviceType: (serviceType || "").trim(),
+        subscriptionEndDate: endDate,
+        notes: (notes || "").trim(),
+        userId: String(actor._id || actor.id),
+        adminNotes: `أُنشئ من صفحة الاستشارات بواسطة: ${actor.fullName || actor.username}`,
+      });
+      res.status(201).json(reminder.toJSON());
+    } catch (err: any) {
+      res.status(500).json({ error: translateError(err) });
+    }
+  });
+
   // Admin list — sorted by soonest expiry
   app.get("/api/admin/switch-reminders", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
