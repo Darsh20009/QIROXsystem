@@ -15,7 +15,7 @@ import {
   Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
   Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
-  Loader2, CircleDot, RefreshCw, Key, Hash
+  Loader2, CircleDot, RefreshCw, Key, Hash, Pencil, Check
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -58,6 +58,8 @@ export default function AdminQMeet() {
 
   const [instantResult, setInstantResult] = useState<any>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", scheduledAt: "", durationMinutes: "60" });
 
   const copyInstant = (text: string, field: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -94,7 +96,41 @@ export default function AdminQMeet() {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
       toast({ title: "تم حذف الاجتماع" });
     },
+    onError: (e: any) => toast({ title: "فشل الحذف", description: e.message, variant: "destructive" }),
   });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/qmeet/meetings/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
+      toast({ title: "✅ تم تحديث الاجتماع" });
+      setEditTarget(null);
+    },
+    onError: (e: any) => toast({ title: "فشل التحديث", description: e.message, variant: "destructive" }),
+  });
+
+  const openEditDialog = (meeting: any) => {
+    setEditTarget(meeting);
+    const localDt = meeting.scheduledAt
+      ? new Date(meeting.scheduledAt).toISOString().slice(0, 16)
+      : "";
+    setEditForm({
+      title: meeting.title || "",
+      description: meeting.description || "",
+      scheduledAt: localDt,
+      durationMinutes: String(meeting.durationMinutes || 60),
+    });
+  };
+
+  const handleEdit = () => {
+    if (!editForm.title.trim()) { toast({ title: "العنوان مطلوب", variant: "destructive" }); return; }
+    editMutation.mutate({ id: editTarget._id, data: {
+      title: editForm.title,
+      description: editForm.description,
+      ...(editForm.scheduledAt && { scheduledAt: editForm.scheduledAt }),
+      durationMinutes: parseInt(editForm.durationMinutes) || 60,
+    }});
+  };
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => apiRequest("PATCH", `/api/qmeet/meetings/${id}`, { status }),
@@ -353,6 +389,9 @@ export default function AdminQMeet() {
                           </button>
                           {isManagement && (
                             <>
+                              <button onClick={() => openEditDialog(meeting)} className="p-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-black/30 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" title="تعديل الاجتماع" data-testid={`button-edit-${meeting._id}`}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
                               <button onClick={() => sendInvitesMutation.mutate(meeting._id)} className="p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-black/30 hover:text-blue-600 transition-colors" title="إعادة إرسال الدعوات" data-testid={`button-resend-${meeting._id}`}>
                                 <Send className="w-3.5 h-3.5" />
                               </button>
@@ -382,11 +421,9 @@ export default function AdminQMeet() {
                               <CheckCircle className="w-3 h-3" /> إنهاء الاجتماع
                             </Button>
                           )}
-                          {["scheduled", "cancelled"].includes(meeting.status) && (
-                            <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50 h-7 text-xs mr-auto" onClick={() => { if (confirm("هل تريد حذف هذا الاجتماع؟")) deleteMutation.mutate(meeting._id); }} data-testid={`button-delete-${meeting._id}`}>
-                              <Trash2 className="w-3 h-3" /> حذف
-                            </Button>
-                          )}
+                          <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 h-7 text-xs mr-auto" onClick={() => { if (confirm(`هل تريد حذف "${meeting.title}"؟`)) deleteMutation.mutate(meeting._id); }} data-testid={`button-delete-${meeting._id}`} disabled={deleteMutation.isPending}>
+                            {deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} حذف
+                          </Button>
                           {meeting.status === "completed" && (
                             <button onClick={() => navigate(`/admin/qmeet/${meeting._id}`)} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
                               <FileText className="w-3 h-3" /> عرض التقرير
@@ -601,6 +638,49 @@ export default function AdminQMeet() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Meeting Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={v => { if (!v) setEditTarget(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Pencil className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              تعديل الاجتماع
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="label-xs">عنوان الاجتماع *</label>
+              <Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} className="mt-1" data-testid="input-edit-title" />
+            </div>
+            <div>
+              <label className="label-xs">وصف الاجتماع</label>
+              <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="mt-1 h-16" />
+            </div>
+            {editTarget && !editTarget.instantJoin && (
+              <>
+                <div>
+                  <label className="label-xs">موعد الاجتماع</label>
+                  <Input type="datetime-local" value={editForm.scheduledAt} onChange={e => setEditForm(f => ({ ...f, scheduledAt: e.target.value }))} className="mt-1" data-testid="input-edit-date" />
+                </div>
+                <div>
+                  <label className="label-xs">المدة (بالدقيقة)</label>
+                  <Input type="number" value={editForm.durationMinutes} onChange={e => setEditForm(f => ({ ...f, durationMinutes: e.target.value }))} className="mt-1" min={15} max={480} />
+                </div>
+              </>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>إلغاء</Button>
+              <Button type="button" onClick={handleEdit} disabled={editMutation.isPending} className="gap-2 bg-amber-500 hover:bg-amber-600 text-white border-0" data-testid="button-save-edit">
+                {editMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                حفظ التعديلات
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
