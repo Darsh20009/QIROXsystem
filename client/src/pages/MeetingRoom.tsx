@@ -288,7 +288,14 @@ export default function MeetingRoom() {
     };
 
     const localId = userId || "local";
-    if (localStream) attachStream(localId, localStream);
+    if (localStream) {
+      const existing = analyserNodesRef.current.get(localId);
+      if (existing) {
+        try { existing.source.disconnect(); } catch {}
+        analyserNodesRef.current.delete(localId);
+      }
+      attachStream(localId, localStream);
+    }
 
     peers.forEach((peer, peerId) => {
       if (peer.stream) attachStream(peerId, peer.stream);
@@ -374,6 +381,8 @@ export default function MeetingRoom() {
     const pc = pcsRef.current.get(peerId);
     if (pc) { pc.close(); pcsRef.current.delete(peerId); }
     pendingCandidates.current.delete(peerId);
+    const node = analyserNodesRef.current.get(peerId);
+    if (node) { try { node.source.disconnect(); } catch {} analyserNodesRef.current.delete(peerId); }
     setPeers(prev => { const next = new Map(prev); next.delete(peerId); return next; });
   }, []);
 
@@ -682,6 +691,11 @@ export default function MeetingRoom() {
     pcsRef.current.forEach(pc => pc.close());
     pcsRef.current.clear();
     localStreamRef.current?.getTracks().forEach(t => t.stop());
+    analyserNodesRef.current.forEach(({ source }) => { try { source.disconnect(); } catch {} });
+    analyserNodesRef.current.clear();
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      audioCtxRef.current.close().catch(() => {});
+    }
     wsRef.current?.close();
     navigate("/dashboard");
   }, [sendWs, roomId, navigate]);
@@ -746,7 +760,10 @@ export default function MeetingRoom() {
 
   const stopScreenShare = useCallback(async () => {
     try {
-      const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const cam = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: cameraFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
       const camTrack = cam.getVideoTracks()[0];
       pcsRef.current.forEach(pc => {
         const sender = pc.getSenders().find(s => s.track?.kind === "video");
@@ -770,7 +787,7 @@ export default function MeetingRoom() {
     setScreenSharerPeerId(null);
     setScreenSharerName(null);
     sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
-  }, [sendWs, roomId, userName]);
+  }, [sendWs, roomId, userName, cameraFacing]);
 
   const startScreenShare = useCallback(async () => {
     try {
