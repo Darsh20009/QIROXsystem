@@ -849,39 +849,85 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
   }, [sendWs, roomId, userName, audioOn, cameraFacing]);
 
-  const startScreenShare = useCallback(async () => {
-    // getDisplayMedia MUST be called immediately — no state updates or toasts before it
-    // (mobile browsers require it to be the first async op after the user gesture)
-    if (typeof navigator?.mediaDevices?.getDisplayMedia !== "function") {
-      const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-      toast({
-        title: "مشاركة الشاشة غير مدعومة",
-        description: isIOS
-          ? "تتطلب iOS 17.4 أو أحدث مع Safari"
-          : "متصفحك لا يدعم مشاركة الشاشة — استخدم Chrome أو Edge",
-        variant: "destructive",
-      });
+  const toggleScreenShare = useCallback(async () => {
+    // ── Stop ───────────────────────────────────────────────────────────────
+    if (screenSharingRef.current) {
+      stopScreenShare();
       return;
     }
-    let screen: MediaStream;
-    try {
-      // ← First await after user gesture — must stay here
-      screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-    } catch (err: any) {
-      const n = err?.name;
-      if (n === "NotAllowedError" || n === "AbortError") return;
-      if (n === "NotSupportedError" || n === "InvalidStateError") {
-        toast({ title: "مشاركة الشاشة غير مدعومة", description: "متصفحك أو نظامك لا يدعم هذه الميزة", variant: "destructive" });
+
+    // ── Detect support ─────────────────────────────────────────────────────
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (typeof navigator?.mediaDevices?.getDisplayMedia !== "function") {
+      if (isIOS) {
+        // Detect iOS version
+        const iosMatch = ua.match(/OS (\d+)_(\d+)/);
+        const iosMajor = iosMatch ? parseInt(iosMatch[1]) : 0;
+        toast({
+          title: "مشاركة الشاشة على iOS",
+          description: iosMajor >= 17
+            ? "تأكد من استخدام Safari 17.4 أو أحدث وأن تكون على iOS 17.4+"
+            : `إصدار iOS ${iosMajor} لا يدعم مشاركة الشاشة. يلزم iOS 17.4+ مع Safari`,
+          variant: "destructive",
+        });
       } else {
-        toast({ title: "تعذّرت مشاركة الشاشة", description: "اقبل طلب الإذن عند ظهوره", variant: "destructive" });
+        toast({
+          title: "مشاركة الشاشة غير مدعومة",
+          description: "استخدم Chrome أو Edge على الكمبيوتر، أو Safari 17.4+ على iOS",
+          variant: "destructive",
+        });
       }
       return;
     }
+
+    // ── Non-host: just request approval (no getDisplayMedia yet) ───────────
+    if (!isHost && !(isStaff && !screenSharerPeerId) && !screenShareApproved) {
+      if (screenSharePending) {
+        toast({ title: "في الانتظار", description: "طلبك قيد المراجعة من المضيف" });
+        return;
+      }
+      setScreenSharePending(true);
+      sendWs({ type: "webrtc_screen_share_request", roomId, name: userName });
+      toast({ title: "تم الإرسال", description: "تم إرسال طلب مشاركة الشاشة للمضيف" });
+      return;
+    }
+
+    // ── CRITICAL: getDisplayMedia must be the FIRST await after user gesture ──
+    // Do NOT call any async function or await anything before this point.
+    // Android Chrome and iOS Safari break the gesture chain if getDisplayMedia
+    // is not called as the very first async operation.
+    let screen: MediaStream;
+    try {
+      screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    } catch (err: any) {
+      const n = err?.name;
+      if (n === "NotAllowedError" || n === "AbortError") return; // user cancelled — silent
+      if (n === "NotSupportedError" || n === "InvalidStateError" || n === "TypeError") {
+        toast({
+          title: "مشاركة الشاشة غير مدعومة",
+          description: isIOS ? "تأكد من استخدام Safari 17.4+ وتفعيل الإذن" : "متصفحك لا يدعم هذه الميزة",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "تعذّرت مشاركة الشاشة",
+          description: "اقبل طلب الإذن عند ظهوره على الشاشة",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    // After getDisplayMedia — state updates are safe now
+    setScreenShareApproved(false);
+
     if (!screen.getVideoTracks().length) {
       screen.getTracks().forEach(t => t.stop());
       toast({ title: "لم يتم اختيار شاشة", description: "اختر شاشة أو نافذة للمشاركة", variant: "destructive" });
       return;
     }
+
     const screenTrack = screen.getVideoTracks()[0];
     localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
     const audio = localStreamRef.current?.getAudioTracks()[0];
@@ -917,41 +963,7 @@ export default function MeetingRoom() {
         sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
       } catch {}
     }
-  }, [sendWs, roomId, userId, userName, audioOn, toast, stopScreenShare]);
-
-  const toggleScreenShare = useCallback(async () => {
-    if (screenSharingRef.current) {
-      await stopScreenShare();
-      return;
-    }
-    // Check support before doing anything
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-      toast({
-        title: "مشاركة الشاشة غير مدعومة",
-        description: isIOS
-          ? "تتطلب iOS 17.4 أو أحدث مع Safari"
-          : "متصفحك لا يدعم مشاركة الشاشة — جرّب Chrome أو Edge",
-        variant: "destructive",
-      });
-      return;
-    }
-    // Host OR staff with no one else sharing → share directly without approval
-    // NOTE: setScreenShareApproved(false) is called AFTER startScreenShare to avoid
-    // breaking the user gesture chain before getDisplayMedia is called on mobile.
-    if (isHost || (isStaff && !screenSharerPeerId) || screenShareApproved) {
-      await startScreenShare();
-      setScreenShareApproved(false);
-    } else {
-      if (screenSharePending) {
-        toast({ title: "في الانتظار", description: "طلبك قيد المراجعة من المضيف" });
-        return;
-      }
-      setScreenSharePending(true);
-      sendWs({ type: "webrtc_screen_share_request", roomId, name: userName });
-      toast({ title: "تم الإرسال", description: "تم إرسال طلب مشاركة الشاشة للمضيف" });
-    }
-  }, [stopScreenShare, startScreenShare, isHost, isStaff, screenSharePending, screenShareApproved, screenSharerPeerId, sendWs, roomId, userName, toast]);
+  }, [stopScreenShare, isHost, isStaff, screenSharePending, screenShareApproved, screenSharerPeerId, sendWs, roomId, userName, audioOn, userId, toast]);
 
   const approveScreenShare = useCallback((targetUserId: string) => {
     sendWs({ type: "webrtc_screen_share_approve", roomId, targetId: targetUserId });
