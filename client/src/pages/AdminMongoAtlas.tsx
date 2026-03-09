@@ -210,15 +210,21 @@ export default function AdminMongoAtlas() {
               <Label>تسمية الإعداد *</Label>
               <Input value={configForm.label} onChange={e => setConfigForm(f => ({ ...f, label: e.target.value }))} placeholder="مثال: قيروكس الرئيسي" data-testid="input-atlas-label" />
             </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+              يدعم النظام نوعين: <strong>API Key</strong> (Public/Private Key) أو <strong>Service Account</strong> (Client ID/Secret — يبدأ بـ mdb_sa_id_)
+            </div>
             <div className="grid grid-cols-1 gap-3">
               <div>
-                <Label>Public Key *</Label>
-                <Input value={configForm.publicKey} onChange={e => setConfigForm(f => ({ ...f, publicKey: e.target.value }))} placeholder="مفتاح API العام" dir="ltr" data-testid="input-atlas-public-key" />
+                <Label>Public Key / Client ID *</Label>
+                <Input value={configForm.publicKey} onChange={e => setConfigForm(f => ({ ...f, publicKey: e.target.value }))} placeholder="مفتاح API العام أو Client ID" dir="ltr" data-testid="input-atlas-public-key" />
+                {configForm.publicKey.startsWith("mdb_sa_id_") && (
+                  <p className="text-xs text-green-600 mt-1">✓ تم اكتشاف Service Account</p>
+                )}
               </div>
               <div>
-                <Label>Private Key * {editConfigId && <span className="text-xs text-gray-400">(اتركه فارغاً للاحتفاظ بالحالي)</span>}</Label>
+                <Label>Private Key / Client Secret * {editConfigId && <span className="text-xs text-gray-400">(اتركه فارغاً للاحتفاظ بالحالي)</span>}</Label>
                 <div className="relative">
-                  <Input type={showKey ? "text" : "password"} value={configForm.privateKey} onChange={e => setConfigForm(f => ({ ...f, privateKey: e.target.value }))} placeholder="مفتاح API الخاص" dir="ltr" data-testid="input-atlas-private-key" />
+                  <Input type={showKey ? "text" : "password"} value={configForm.privateKey} onChange={e => setConfigForm(f => ({ ...f, privateKey: e.target.value }))} placeholder="مفتاح API الخاص أو Client Secret" dir="ltr" data-testid="input-atlas-private-key" />
                   <Button type="button" size="sm" variant="ghost" className="absolute left-1 top-1 h-6 px-1" onClick={() => setShowKey(v => !v)}>
                     {showKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                   </Button>
