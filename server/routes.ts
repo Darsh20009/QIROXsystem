@@ -4343,6 +4343,226 @@ export async function registerRoutes(
   });
 
   // ═══════════════════════════════════════════════════════════
+  // === GROUP CHAT (Staff Only) ===
+  // ═══════════════════════════════════════════════════════════
+  const staffOnly = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    next();
+  };
+
+  // List groups for current user
+  app.get("/api/groups", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const groups = await GroupChatModel.find({ memberIds: uid, isActive: true })
+      .populate("memberIds", "fullName username role profilePhotoUrl avatarConfig")
+      .populate("adminIds", "fullName username")
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .lean();
+    res.json(groups);
+  });
+
+  // Create group
+  app.post("/api/groups", staffOnly, async (req, res) => {
+    const { GroupChatModel, NotificationModel } = await import("./models");
+    const me = req.user as any;
+    const uid = me._id || me.id;
+    const { name, description, icon, memberIds } = req.body;
+    if (!name) return res.status(400).json({ error: "اسم المجموعة مطلوب" });
+    const allMembers = [...new Set([String(uid), ...(memberIds || [])])];
+    const group = await GroupChatModel.create({
+      name, description: description || "", icon: icon || "💬",
+      createdBy: uid, adminIds: [uid], memberIds: allMembers,
+    });
+    // Notify members
+    for (const memberId of allMembers) {
+      if (String(memberId) !== String(uid)) {
+        await NotificationModel.create({
+          userId: String(memberId), type: 'message',
+          title: `تمت إضافتك لمجموعة: ${name}`,
+          body: `أضافك ${me.fullName || me.username} إلى المجموعة`,
+          link: `/groups/${group._id}`, icon: '👥',
+        }).catch(() => {});
+        const { pushToUser } = await import("./ws");
+        pushToUser(String(memberId), { type: 'group_added', groupId: String(group._id), groupName: name });
+      }
+    }
+    res.status(201).json(group);
+  });
+
+  // Get group details
+  app.get("/api/groups/:id", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const uid = String((req.user as any)._id || (req.user as any).id);
+    const group = await GroupChatModel.findById(req.params.id)
+      .populate("memberIds", "fullName username role profilePhotoUrl avatarConfig")
+      .populate("adminIds", "fullName username")
+      .populate("createdBy", "fullName username")
+      .lean();
+    if (!group) return res.sendStatus(404);
+    const isMember = (group as any).memberIds?.some((m: any) => String(m._id || m) === uid);
+    if (!isMember && (req.user as any).role !== "admin") return res.sendStatus(403);
+    res.json(group);
+  });
+
+  // Update group (admin only)
+  app.patch("/api/groups/:id", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const uid = String((req.user as any)._id || (req.user as any).id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isAdmin = (group as any).adminIds?.some((a: any) => String(a) === uid) || (req.user as any).role === "admin";
+    if (!isAdmin) return res.sendStatus(403);
+    const { name, description, icon } = req.body;
+    if (name) (group as any).name = name;
+    if (description !== undefined) (group as any).description = description;
+    if (icon) (group as any).icon = icon;
+    await group.save();
+    res.json(group);
+  });
+
+  // Add members
+  app.post("/api/groups/:id/members", staffOnly, async (req, res) => {
+    const { GroupChatModel, NotificationModel } = await import("./models");
+    const me = req.user as any;
+    const uid = String(me._id || me.id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isAdmin = (group as any).adminIds?.some((a: any) => String(a) === uid) || me.role === "admin";
+    if (!isAdmin) return res.sendStatus(403);
+    const { userIds } = req.body;
+    const newIds = (userIds || []).filter((id: string) => !(group as any).memberIds?.some((m: any) => String(m) === id));
+    (group as any).memberIds = [...((group as any).memberIds || []), ...newIds];
+    await group.save();
+    for (const memberId of newIds) {
+      await NotificationModel.create({
+        userId: String(memberId), type: 'message',
+        title: `تمت إضافتك لمجموعة: ${(group as any).name}`,
+        body: `أضافك ${me.fullName || me.username} إلى المجموعة`,
+        link: `/groups/${group._id}`, icon: '👥',
+      }).catch(() => {});
+      const { pushToUser } = await import("./ws");
+      pushToUser(String(memberId), { type: 'group_added', groupId: String(group._id), groupName: (group as any).name });
+    }
+    res.json({ success: true });
+  });
+
+  // Remove member
+  app.delete("/api/groups/:id/members/:userId", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const me = req.user as any;
+    const uid = String(me._id || me.id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isAdmin = (group as any).adminIds?.some((a: any) => String(a) === uid) || me.role === "admin";
+    const isSelf = req.params.userId === uid;
+    if (!isAdmin && !isSelf) return res.sendStatus(403);
+    (group as any).memberIds = ((group as any).memberIds || []).filter((m: any) => String(m) !== req.params.userId);
+    (group as any).adminIds = ((group as any).adminIds || []).filter((a: any) => String(a) !== req.params.userId);
+    await group.save();
+    res.json({ success: true });
+  });
+
+  // Promote/demote admin
+  app.patch("/api/groups/:id/admins/:userId", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const me = req.user as any;
+    const uid = String(me._id || me.id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isAdmin = (group as any).adminIds?.some((a: any) => String(a) === uid) || me.role === "admin";
+    if (!isAdmin) return res.sendStatus(403);
+    const { action } = req.body; // "promote" | "demote"
+    if (action === "promote") {
+      if (!(group as any).adminIds?.some((a: any) => String(a) === req.params.userId))
+        (group as any).adminIds.push(req.params.userId);
+    } else {
+      (group as any).adminIds = ((group as any).adminIds || []).filter((a: any) => String(a) !== req.params.userId);
+    }
+    await group.save();
+    res.json({ success: true });
+  });
+
+  // Delete group
+  app.delete("/api/groups/:id", staffOnly, async (req, res) => {
+    const { GroupChatModel } = await import("./models");
+    const me = req.user as any;
+    const uid = String(me._id || me.id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isAdmin = (group as any).adminIds?.some((a: any) => String(a) === uid) || me.role === "admin";
+    if (!isAdmin) return res.sendStatus(403);
+    (group as any).isActive = false;
+    await group.save();
+    res.json({ success: true });
+  });
+
+  // Get messages
+  app.get("/api/groups/:id/messages", staffOnly, async (req, res) => {
+    const { GroupChatModel, GroupMessageModel } = await import("./models");
+    const uid = String((req.user as any)._id || (req.user as any).id);
+    const group = await GroupChatModel.findById(req.params.id).lean();
+    if (!group) return res.sendStatus(404);
+    const isMember = (group as any).memberIds?.some((m: any) => String(m) === uid);
+    if (!isMember && (req.user as any).role !== "admin") return res.sendStatus(403);
+    const limit = Math.min(100, parseInt(req.query.limit as string) || 50);
+    const before = req.query.before as string;
+    const filter: any = { groupId: req.params.id, deletedBy: { $ne: uid } };
+    if (before) filter.createdAt = { $lt: new Date(before) };
+    const msgs = await GroupMessageModel.find(filter)
+      .populate("fromUserId", "fullName username role profilePhotoUrl avatarConfig")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    // Mark as read
+    await GroupMessageModel.updateMany({ groupId: req.params.id, readBy: { $ne: uid } }, { $addToSet: { readBy: uid } }).catch(() => {});
+    res.json(msgs.reverse());
+  });
+
+  // Send message
+  app.post("/api/groups/:id/messages", staffOnly, async (req, res) => {
+    const { GroupChatModel, GroupMessageModel } = await import("./models");
+    const me = req.user as any;
+    const uid = String(me._id || me.id);
+    const group = await GroupChatModel.findById(req.params.id);
+    if (!group) return res.sendStatus(404);
+    const isMember = (group as any).memberIds?.some((m: any) => String(m) === uid);
+    if (!isMember) return res.sendStatus(403);
+    const { body, attachmentUrl, attachmentType, attachmentName, attachmentSize } = req.body;
+    if (!body?.trim() && !attachmentUrl) return res.status(400).json({ error: "الرسالة فارغة" });
+    const msg = await GroupMessageModel.create({
+      groupId: req.params.id, fromUserId: uid,
+      body: body?.trim() || "",
+      attachmentUrl: attachmentUrl || "", attachmentType: attachmentType || "",
+      attachmentName: attachmentName || "", attachmentSize: attachmentSize || 0,
+      readBy: [uid],
+    });
+    const populated = await GroupMessageModel.findById(msg._id)
+      .populate("fromUserId", "fullName username role profilePhotoUrl avatarConfig")
+      .lean();
+    // Update group last message
+    (group as any).lastMessage = body?.trim() || (attachmentType === "image" ? "📷 صورة" : "📎 مرفق");
+    (group as any).lastMessageAt = new Date();
+    await group.save();
+    // Push to all members
+    const { pushToUser } = await import("./ws");
+    for (const memberId of (group as any).memberIds || []) {
+      if (String(memberId) !== uid) {
+        pushToUser(String(memberId), { type: 'group_message', message: populated, groupId: req.params.id });
+      }
+    }
+    res.status(201).json(populated);
+  });
+
+  // Delete message (soft delete for self)
+  app.delete("/api/groups/:id/messages/:msgId", staffOnly, async (req, res) => {
+    const { GroupMessageModel } = await import("./models");
+    const uid = String((req.user as any)._id || (req.user as any).id);
+    await GroupMessageModel.findByIdAndUpdate(req.params.msgId, { $addToSet: { deletedBy: uid } });
+    res.json({ success: true });
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // === INBOX MESSAGES ===
   // ═══════════════════════════════════════════════════════════
   app.get("/api/inbox", async (req, res) => {

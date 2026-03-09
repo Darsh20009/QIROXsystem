@@ -1379,3 +1379,32 @@ const switchReminderSchema = new mongoose.Schema({
 }, { timestamps: true });
 switchReminderSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const SwitchReminderModel = mongoose.models.SwitchReminder || mongoose.model("SwitchReminder", switchReminderSchema);
+
+// ── Group Chat ─────────────────────────────────────────────────────────────
+const groupChatSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  description: { type: String, default: "" },
+  icon:        { type: String, default: "💬" },
+  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  adminIds:    [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  memberIds:   [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  isActive:    { type: Boolean, default: true },
+  lastMessage: { type: String, default: "" },
+  lastMessageAt: { type: Date, default: null },
+}, { timestamps: true });
+groupChatSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const GroupChatModel = mongoose.models.GroupChat || mongoose.model("GroupChat", groupChatSchema);
+
+const groupMessageSchema = new mongoose.Schema({
+  groupId:        { type: mongoose.Schema.Types.ObjectId, ref: "GroupChat", required: true, index: true },
+  fromUserId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  body:           { type: String, default: "" },
+  attachmentUrl:  { type: String, default: "" },
+  attachmentType: { type: String, enum: ["image", "file", "voice", ""], default: "" },
+  attachmentName: { type: String, default: "" },
+  attachmentSize: { type: Number, default: 0 },
+  deletedBy:      [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  readBy:         [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+}, { timestamps: true });
+groupMessageSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const GroupMessageModel = mongoose.models.GroupMessage || mongoose.model("GroupMessage", groupMessageSchema);

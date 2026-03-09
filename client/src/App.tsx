@@ -56,6 +56,7 @@ const InternalGate = lazy(() => import("@/pages/InternalGate"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 const Inbox = lazy(() => import("@/pages/Inbox"));
+const GroupChat = lazy(() => import("@/pages/GroupChat"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const AdminActivityLog = lazy(() => import("@/pages/AdminActivityLog"));
 const AdminSupportTickets = lazy(() => import("@/pages/AdminSupportTickets"));
@@ -236,6 +237,8 @@ function AdminRouter() {
         <Route path="/payment-history" component={PaymentHistory} />
         <Route path="/cart" component={Cart} />
         <Route path="/inbox" component={Inbox} />
+        <Route path="/groups/:id" component={GroupChat} />
+        <Route path="/groups" component={GroupChat} />
         <Route path="/admin/settings">{() => { window.location.replace("/admin/qirox-settings"); return null; }}</Route>
         <Route component={NotFound} />
       </Switch>

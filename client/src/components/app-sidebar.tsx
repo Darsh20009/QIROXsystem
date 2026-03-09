@@ -106,6 +106,7 @@ export function AppSidebar() {
     { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
     // Employee — tools
+    { title: ar ? "مجموعات الفريق" : "Team Groups", icon: MessageSquare, url: "/groups", group: "employee", section: "tools" },
     { title: ar ? "أدواتي ومهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "tools" },
     { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
     // Employee — personal
