@@ -230,6 +230,7 @@ export default function MeetingRoom() {
 
   const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
   const [screenSharePending, setScreenSharePending] = useState(false);
+  const [screenShareApproved, setScreenShareApproved] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -589,12 +590,13 @@ export default function MeetingRoom() {
       }
       case "webrtc_screen_share_approved": {
         setScreenSharePending(false);
-        toast({ title: "تمت الموافقة", description: "يمكنك الآن مشاركة شاشتك" });
-        startScreenShare();
+        setScreenShareApproved(true);
+        toast({ title: "✅ تمت الموافقة!", description: "اضغط على زر مشاركة الشاشة للبدء" });
         break;
       }
       case "webrtc_screen_share_denied": {
         setScreenSharePending(false);
+        setScreenShareApproved(false);
         toast({ title: "تم الرفض", description: "لم يوافق المضيف على مشاركة الشاشة", variant: "destructive" });
         break;
       }
@@ -820,7 +822,8 @@ export default function MeetingRoom() {
       return;
     }
     // Host OR staff with no one else sharing → share directly without approval
-    if (isHost || (isStaff && !screenSharerPeerId)) {
+    if (isHost || (isStaff && !screenSharerPeerId) || screenShareApproved) {
+      setScreenShareApproved(false);
       await startScreenShare();
     } else {
       if (screenSharePending) {
@@ -831,7 +834,7 @@ export default function MeetingRoom() {
       sendWs({ type: "webrtc_screen_share_request", roomId, name: userName });
       toast({ title: "تم الإرسال", description: "تم إرسال طلب مشاركة الشاشة للمضيف" });
     }
-  }, [stopScreenShare, startScreenShare, isHost, isStaff, screenSharePending, screenSharerPeerId, sendWs, roomId, userName, toast]);
+  }, [stopScreenShare, startScreenShare, isHost, isStaff, screenSharePending, screenShareApproved, screenSharerPeerId, sendWs, roomId, userName, toast]);
 
   const approveScreenShare = useCallback((targetUserId: string) => {
     sendWs({ type: "webrtc_screen_share_approve", roomId, targetId: targetUserId });
@@ -1629,6 +1632,15 @@ export default function MeetingRoom() {
         </div>
       )}
 
+      {/* Screen share approved notification — user must click to actually start */}
+      {screenShareApproved && !screenSharing && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-green-900/90 border border-green-500/50 rounded-xl px-4 py-3 flex items-center gap-3 shadow-xl backdrop-blur animate-pulse">
+          <MonitorUp className="w-4 h-4 text-green-300" />
+          <span className="text-green-200 text-sm font-semibold">✅ تمت الموافقة! اضغط على زر مشاركة الشاشة الآن</span>
+          <button onClick={() => setScreenShareApproved(false)} className="text-green-400 hover:text-white ml-1"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
       {/* ── More menu popup (mobile) ── */}
       <AnimatePresence>
         {showMoreMenu && (
@@ -1653,10 +1665,10 @@ export default function MeetingRoom() {
             </div>
             <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
               <button onClick={() => { toggleScreenShare(); setShowMoreMenu(false); }}
-                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${screenSharing ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : screenSharePending ? "bg-yellow-500/20 text-yellow-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${screenSharing ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : screenShareApproved ? "bg-green-500/20 text-green-300 border border-green-500/30 animate-pulse" : screenSharePending ? "bg-yellow-500/20 text-yellow-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}
                 data-testid="button-screen-share-more">
-                {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-                <span>{screenSharing ? "إيقاف الشاشة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
+                {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                <span>{screenSharing ? "إيقاف الشاشة" : screenShareApproved ? "ابدأ المشاركة!" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
               </button>
               {videoOn && !screenSharing && (
                 <button onClick={() => { flipCamera(); setShowMoreMenu(false); }}
@@ -1724,10 +1736,10 @@ export default function MeetingRoom() {
           )}
           {/* Screen share — visible on ALL devices */}
           <button onClick={toggleScreenShare}
-            className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}
-            title={screenSharing ? "إيقاف مشاركة الشاشة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
+            className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : screenShareApproved ? "bg-green-500 border-green-400 text-white animate-pulse" : screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}
+            title={screenSharing ? "إيقاف مشاركة الشاشة" : screenShareApproved ? "تمت الموافقة — اضغط لبدء المشاركة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
             data-testid="button-screen-share">
-            {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+            {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
           </button>
           <button onClick={leaveMeeting} className="p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
             <PhoneOff className="w-5 h-5" />
