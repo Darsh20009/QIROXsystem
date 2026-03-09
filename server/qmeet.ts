@@ -501,6 +501,22 @@ export function registerQMeetRoutes(app: Express) {
         return res.json({ status: "approved", meetingLink: meeting.meetingLink });
       }
 
+      // Auto-approve for instant meetings (no waiting room)
+      if ((meeting as any).instantJoin) {
+        await QMeetingModel.findByIdAndUpdate(meeting._id, {
+          $addToSet: { participantIds: userId },
+          $push: { joinRequests: { userId, userName, userEmail, status: "approved", requestedAt: new Date() } }
+        });
+        // Notify guest via WebSocket so they know they're approved
+        pushToUser(userId, {
+          type: "qmeet_join_response",
+          approved: true,
+          meetingLink: meeting.meetingLink,
+          meetingTitle: meeting.title,
+        });
+        return res.json({ status: "approved", meetingLink: meeting.meetingLink });
+      }
+
       // Check existing request
       const existing = joinRequests.find((r: any) => String(r.userId) === userId);
       if (existing) {
@@ -660,6 +676,7 @@ export function registerQMeetRoutes(app: Express) {
         joinCode: generateJoinCode(),
         joinRequests: [],
         reminderSent: false,
+        instantJoin: true,
       });
 
       res.status(201).json(meeting);

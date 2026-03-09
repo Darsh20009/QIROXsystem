@@ -226,8 +226,14 @@ export default function MeetingRoom() {
   // Support both logged-in users and guests (guest info stored in sessionStorage by QMeetJoinByCode)
   const guestIdFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_id") : null;
   const guestNameFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_name") : null;
-  const userId = user?._id || user?.id || guestIdFromStorage || undefined;
-  const userName = user?.fullName || user?.username || guestNameFromStorage || "ضيف";
+
+  // For guests arriving directly (without join-by-code), allow them to set their name
+  const [directGuestName, setDirectGuestName] = useState(guestNameFromStorage || "");
+  const [directGuestId, setDirectGuestId] = useState<string | null>(guestIdFromStorage);
+  const [showGuestNameInput, setShowGuestNameInput] = useState(!user && !guestIdFromStorage);
+
+  const userId = user?._id || user?.id || directGuestId || undefined;
+  const userName = user?.fullName || user?.username || directGuestName || "ضيف";
   const isAdmin = ["admin", "manager"].includes((user as any)?.role);
   const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
 
@@ -768,6 +774,55 @@ export default function MeetingRoom() {
   const allPeers = [localPeer, ...Array.from(peers.values())];
   const totalPeers = allPeers.length;
   const gridCols = totalPeers === 1 ? "grid-cols-1" : totalPeers === 2 ? "grid-cols-2" : totalPeers <= 4 ? "grid-cols-2" : "grid-cols-3";
+
+  // Guest name entry screen for unauthenticated users without pre-set guest ID
+  if (showGuestNameInput) {
+    const handleGuestSubmit = () => {
+      const name = directGuestName.trim();
+      if (!name) return;
+      const id = "guest_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem("qmeet_guest_id", id);
+      sessionStorage.setItem("qmeet_guest_name", name);
+      setDirectGuestId(id);
+      setShowGuestNameInput(false);
+    };
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6" dir="rtl">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Video className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-white text-xl font-bold">{meeting.title}</h1>
+            <p className="text-white/40 text-sm">{meeting.hostName}</p>
+          </div>
+          <div className="bg-gray-900 rounded-2xl p-6 space-y-4">
+            <div>
+              <label className="text-white/60 text-sm font-medium block mb-1.5">اسمك في الاجتماع <span className="text-red-400">*</span></label>
+              <input
+                type="text"
+                value={directGuestName}
+                onChange={e => setDirectGuestName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && directGuestName.trim() && handleGuestSubmit()}
+                placeholder="أدخل اسمك ليظهر للمشاركين"
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                autoFocus
+                data-testid="input-guest-name-room"
+              />
+            </div>
+            <button
+              onClick={handleGuestSubmit}
+              disabled={!directGuestName.trim()}
+              className="w-full h-11 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition-colors"
+              data-testid="button-submit-guest-name"
+            >
+              متابعة للاجتماع
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!joined) {
     return (

@@ -36,6 +36,7 @@ const qMeetingSchema = new mongoose.Schema({
   reminder24hSent:{ type: Boolean, default: false },
   guestToken:     { type: String, default: null },
   joinCode:       { type: String, default: null },
+  instantJoin:    { type: Boolean, default: false },
   joinRequests:   [{
     userId:      { type: String, required: true },
     userName:    { type: String, default: "" },
