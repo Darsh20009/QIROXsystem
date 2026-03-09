@@ -7500,18 +7500,35 @@ export async function registerRoutes(
     } catch (e) { res.status(500).json({ error: "فشل الحفظ" }); }
   });
 
-  // Profile photo save (base64 string)
-  app.post("/api/profile/photo", async (req, res) => {
+  // Profile photo upload (multipart/form-data file)
+  app.post("/api/profile/photo", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    try {
-      const { UserModel } = await import("./models");
-      const uid = (req.user as any)._id || (req.user as any).id;
-      const { photoBase64 } = req.body;
-      if (!photoBase64 || typeof photoBase64 !== "string") return res.status(400).json({ error: "photoBase64 مطلوب" });
-      if (photoBase64.length > 2_000_000) return res.status(413).json({ error: "الصورة كبيرة جداً (max 1.5MB)" });
-      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl: photoBase64 } }, { new: true }).select("-password");
-      res.json({ success: true, profilePhotoUrl: updated?.profilePhotoUrl });
-    } catch (e) { res.status(500).json({ error: "فشل رفع الصورة" }); }
+    const photoUpload = multer({
+      storage: multer.diskStorage({
+        destination: (_req, _file, cb) => cb(null, uploadsDir),
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname) || ".jpg";
+          cb(null, `profile_${crypto.randomBytes(12).toString("hex")}${ext}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (/image\/(jpeg|jpg|png|webp|gif)/.test(file.mimetype)) cb(null, true);
+        else cb(new Error("يُسمح بالصور فقط (JPEG, PNG, WebP)"));
+      },
+    });
+    photoUpload.single("file")(req, res, async (err) => {
+      if (err instanceof multer.MulterError) return res.status(400).json({ error: "حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)" });
+      if (err) return res.status(400).json({ error: err.message });
+      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار صورة" });
+      try {
+        const { UserModel } = await import("./models");
+        const uid = (req.user as any)._id || (req.user as any).id;
+        const profilePhotoUrl = `/uploads/${req.file.filename}`;
+        const updated = await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl } }, { new: true }).select("-password");
+        res.json({ success: true, profilePhotoUrl: updated?.profilePhotoUrl });
+      } catch (e) { res.status(500).json({ error: "فشل رفع الصورة" }); }
+    });
   });
 
   // Remove profile photo

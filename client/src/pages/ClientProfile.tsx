@@ -119,25 +119,27 @@ export default function ClientProfile() {
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) {
-      toast({ title: "الصورة كبيرة جداً — الحد الأقصى 1.5 MB", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "الصورة كبيرة جداً — الحد الأقصى 5 MB", variant: "destructive" });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      setPhotoPreview(base64);
-      setSavingPhoto(true);
-      try {
-        await apiRequest("POST", "/api/profile/photo", { photoBase64: base64 });
-        qc.invalidateQueries({ queryKey: ["/api/profile/me"] });
-        qc.invalidateQueries({ queryKey: ["/api/user"] });
-        toast({ title: "✅ تم رفع الصورة" });
-      } catch {
-        toast({ title: "فشل رفع الصورة", variant: "destructive" });
-      } finally { setSavingPhoto(false); }
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+    setSavingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/profile/photo", { method: "POST", body: fd, credentials: "include" });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "فشل الرفع");
+      qc.invalidateQueries({ queryKey: ["/api/profile/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/user"] });
+      if (data.profilePhotoUrl) setPhotoPreview(data.profilePhotoUrl);
+      toast({ title: "✅ تم رفع الصورة" });
+    } catch (err: any) {
+      toast({ title: "فشل رفع الصورة", description: err.message, variant: "destructive" });
+      setPhotoPreview(null);
+    } finally { setSavingPhoto(false); }
   };
 
   const removePhoto = async () => {
