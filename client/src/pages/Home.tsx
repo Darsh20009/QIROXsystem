@@ -1,6 +1,7 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
+import SARIcon from "@/components/SARIcon";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
 import { useI18n } from "@/lib/i18n";
@@ -273,7 +274,7 @@ export default function Home() {
                   {currentCode.bannerTextAr || currentCode.descriptionAr || "عرض حصري لعملاء QIROX Studio"}
                 </p>
                 {currentCode.minOrderAmount > 0 && (
-                  <p className="text-white/50 text-[10px] mt-0.5">{lang === "ar" ? `عند طلب بقيمة ${currentCode.minOrderAmount} ر.س أو أكثر` : `On orders of ${currentCode.minOrderAmount} SAR or more`}</p>
+                  <p className="text-white/50 text-[10px] mt-0.5 flex items-center gap-1">{lang === "ar" ? <>عند طلب بقيمة {currentCode.minOrderAmount} <SARIcon size={9} className="opacity-60" /> أو أكثر</> : `On orders of ${currentCode.minOrderAmount} SAR or more`}</p>
                 )}
               </div>
 
@@ -715,7 +716,7 @@ export default function Home() {
                     <motion.div variants={fadeUp} custom={4} className="space-y-6">
                       <Link href="/prices">
                         <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-gray-100 font-bold gap-2" data-testid="button-mobile-app-cta">
-                          {lang === "ar" ? "يُضاف بـ 1,000 ريال فقط" : "Add for only 1,000 SAR"}
+                          {lang === "ar" ? <span className="flex items-center gap-1">يُضاف بـ 1,000 <SARIcon size={13} className="opacity-70" /> فقط</span> : "Add for only 1,000 SAR"}
                           <ArrowLeft className="w-4 h-4" />
                         </Button>
                       </Link>

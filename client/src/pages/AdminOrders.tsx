@@ -1,5 +1,6 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -420,7 +421,7 @@ export default function AdminOrders() {
                       )}
                     </td>
                     <td className="p-4 text-sm font-semibold text-black/70">
-                      {order.totalAmount ? `${Number(order.totalAmount).toLocaleString()} ر.س` : "—"}
+                      {order.totalAmount ? <span className="flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={11} className="opacity-45" /></span> : "—"}
                     </td>
                     <td className="p-4 text-xs text-black/30">
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : "—"}
@@ -474,7 +475,7 @@ export default function AdminOrders() {
                     {statusMap[selectedOrder.status]?.label || selectedOrder.status}
                   </span>
                   {selectedOrder.totalAmount && (
-                    <span className="text-[10px] text-black/40">{Number(selectedOrder.totalAmount).toLocaleString()} ر.س</span>
+                    <span className="text-[10px] text-black/40 flex items-center gap-0.5">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-40" /></span>
                   )}
                   {selectedOrder.client?.fullName && (
                     <span className="text-[10px] text-black/30">{selectedOrder.client.fullName}</span>
@@ -640,7 +641,7 @@ export default function AdminOrders() {
                         <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
                         <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
                           <div className="flex justify-between"><p className="text-xs text-black/50">طريقة الدفع</p><p className="text-xs font-bold text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</p></div>
-                          <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black">{selectedOrder.totalAmount ? `${Number(selectedOrder.totalAmount).toLocaleString()} ر.س` : "—"}</p></div>
+                          <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-50" /></> : "—"}</p></div>
                           <div className="flex justify-between"><p className="text-xs text-black/50">الدفعة الأولى</p>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                               {selectedOrder.isDepositPaid ? "مدفوعة ✓" : "لم تُدفع"}
@@ -1079,12 +1080,12 @@ export default function AdminOrders() {
                             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
                               <p className="text-[10px] text-blue-500 font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />إجمالي الإيراد</p>
                               <p className="text-xl font-black text-blue-700">{revenue.toLocaleString()}</p>
-                              <p className="text-[10px] text-blue-400">ر.س</p>
+                              <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
                             <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
                               <p className="text-[10px] text-red-500 font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />إجمالي التكاليف</p>
                               <p className="text-xl font-black text-red-700">{totalCosts.toLocaleString()}</p>
-                              <p className="text-[10px] text-red-400">ر.س</p>
+                              <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
                             <div className={`border rounded-2xl p-4 ${isProfit ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
                               <p className={`text-[10px] font-bold mb-1 flex items-center gap-1 ${isProfit ? "text-green-600" : "text-orange-600"}`}>
@@ -1210,7 +1211,7 @@ export default function AdminOrders() {
                                 <div key={exp.id} className="flex items-center gap-3 bg-white border border-black/[0.06] rounded-xl px-4 py-3 group">
                                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${cat.color}`}>{cat.label}</span>
                                   <p className="text-xs text-black/70 flex-1 truncate">{exp.description}</p>
-                                  <p className="text-xs font-bold text-red-600 flex-shrink-0">{Number(exp.amount).toLocaleString()} ر.س</p>
+                                  <p className="text-xs font-bold text-red-600 flex-shrink-0 flex items-center gap-1">{Number(exp.amount).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
                                   <button
                                     onClick={() => deleteExpenseMutation.mutate(exp.id)}
                                     disabled={deleteExpenseMutation.isPending}

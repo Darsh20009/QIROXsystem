@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser, useLogout } from "@/hooks/use-auth";
 import { Menu, X, LogOut, ArrowLeft, ArrowRight, Globe, Moon, Sun, ShoppingCart, Package, Trash2, ChevronRight } from "lucide-react";
+import SARIcon from "@/components/SARIcon";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,9 +73,9 @@ function NavCartDropdown({ onClose }: { onClose: () => void }) {
                     <p className="text-[10px] text-black/30 dark:text-white/30">{item.billingPeriod}</p>
                   )}
                 </div>
-                <p className="text-xs font-black text-black dark:text-white flex-shrink-0">
+                <p className="text-xs font-black text-black dark:text-white flex-shrink-0 flex items-center gap-0.5">
                   {item.price != null ? Number(item.price).toLocaleString() : "—"}
-                  <span className="text-black/30 dark:text-white/30 font-normal text-[9px] mr-0.5">ر.س</span>
+                  <SARIcon size={9} className="opacity-30" />
                 </p>
               </motion.div>
             ))}
@@ -84,9 +85,9 @@ function NavCartDropdown({ onClose }: { onClose: () => void }) {
           <div className="border-t border-black/[0.05] dark:border-white/[0.05] px-4 py-3 bg-black/[0.01] dark:bg-white/[0.01]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] text-black/40 dark:text-white/40 font-medium">الإجمالي</span>
-              <span className="text-base font-black text-black dark:text-white">
+              <span className="text-base font-black text-black dark:text-white flex items-center gap-1">
                 {Number(subtotal).toLocaleString()}
-                <span className="text-black/30 dark:text-white/30 font-normal text-[10px] mr-1">ر.س</span>
+                <SARIcon size={11} className="opacity-30" />
               </span>
             </div>
             <Link href="/cart" onClick={onClose}>

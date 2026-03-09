@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard, TrendingUp, Receipt, Download } from "lucide-react";
+import SARIcon from "@/components/SARIcon";
 import { exportToExcel } from "@/lib/excel";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
@@ -83,9 +84,9 @@ export default function PaymentHistory() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "إجمالي المدفوع", value: `${totalPaid.toLocaleString()} ر.س`, color: "text-green-500", icon: TrendingUp },
-          { label: "مستحق الدفع", value: `${totalPending.toLocaleString()} ر.س`, color: "text-yellow-500", icon: CreditCard },
-          { label: "عدد الطلبات", value: (data?.orders || []).length, color: "text-blue-500", icon: Receipt },
+          { label: "إجمالي المدفوع", value: totalPaid.toLocaleString(), hasSAR: true, color: "text-green-500", icon: TrendingUp },
+          { label: "مستحق الدفع", value: totalPending.toLocaleString(), hasSAR: true, color: "text-yellow-500", icon: CreditCard },
+          { label: "عدد الطلبات", value: (data?.orders || []).length, hasSAR: false, color: "text-blue-500", icon: Receipt },
         ].map((s, i) => (
           <Card key={i} className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardContent className="pt-4 pb-3">
@@ -93,7 +94,9 @@ export default function PaymentHistory() {
                 <span className="text-[11px] text-black/40 dark:text-white/40">{s.label}</span>
                 <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
-              <p className="text-lg font-black text-black dark:text-white">{s.value}</p>
+              <p className="text-lg font-black text-black dark:text-white flex items-center gap-1">
+                {s.value}{s.hasSAR && <SARIcon size={13} className="opacity-40" />}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -119,7 +122,7 @@ export default function PaymentHistory() {
                     </div>
                   </div>
                   <div className="text-left shrink-0">
-                    <p className="font-black text-black dark:text-white">{(order.totalAmount || 0).toLocaleString()} ر.س</p>
+                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(order.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
                     <p className="text-[10px] text-black/25 dark:text-white/25">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</p>
                   </div>
                 </div>
@@ -146,7 +149,7 @@ export default function PaymentHistory() {
                     </Badge>
                   </div>
                   <div className="text-left shrink-0">
-                    <p className="font-black text-black dark:text-white">{(inv.totalAmount || 0).toLocaleString()} ر.س</p>
+                    <p className="font-black text-black dark:text-white flex items-center gap-1">{(inv.totalAmount || 0).toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
                     <p className="text-[10px] text-black/25 dark:text-white/25">{new Date(inv.createdAt).toLocaleDateString("ar-SA")}</p>
                   </div>
                 </div>

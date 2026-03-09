@@ -1,6 +1,7 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export default function AdminFinance() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-black" data-testid="text-total-revenue">{totalRevenue.toLocaleString()} ر.س</div>
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-revenue">{totalRevenue.toLocaleString()} <SARIcon size={16} className="opacity-40" /></div>
             <p className="text-xs text-black/30 mt-1">من الفواتير المدفوعة فقط</p>
           </CardContent>
         </Card>
@@ -116,7 +117,7 @@ export default function AdminFinance() {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-black" data-testid="text-month-revenue">{(summary?.monthRevenue || 0).toLocaleString()} ر.س</div>
+            <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-month-revenue">{(summary?.monthRevenue || 0).toLocaleString()} <SARIcon size={16} className="opacity-40" /></div>
             <p className="text-xs text-black/30 mt-1">{summary?.activeClients || 0} عميل نشط</p>
           </CardContent>
         </Card>
@@ -127,7 +128,7 @@ export default function AdminFinance() {
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-amber-800" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} ر.س</div>
+            <div className="text-2xl font-black text-amber-800 flex items-center gap-1" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} <SARIcon size={16} className="opacity-40" /></div>
             <p className="text-xs text-amber-600/70 mt-1">فواتير غير مدفوعة بعد</p>
           </CardContent>
         </Card>
@@ -138,7 +139,7 @@ export default function AdminFinance() {
             <Ban className="h-4 w-4 text-red-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black text-red-700" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} ر.س</div>
+            <div className="text-2xl font-black text-red-700 flex items-center gap-1" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} <SARIcon size={16} className="opacity-40" /></div>
             <p className="text-xs text-red-400/70 mt-1">لا تُحتسب في الأرباح</p>
           </CardContent>
         </Card>

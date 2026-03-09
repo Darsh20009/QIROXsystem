@@ -578,10 +578,10 @@ export default function OrderFlow() {
             <div className="mt-3 flex items-center gap-2 relative z-10">
               <div className="flex items-center gap-1.5 bg-violet-500/20 border border-violet-400/30 rounded-xl px-3 py-1.5">
                 <Wallet className="w-3.5 h-3.5 text-violet-300" />
-                <span className="text-violet-300 text-xs font-bold">دُفع {submittedOrder.walletUsed.toLocaleString()} ر.س من المحفظة</span>
+                <span className="text-violet-300 text-xs font-bold flex items-center gap-1">دُفع {submittedOrder.walletUsed.toLocaleString()} <SARIcon size={10} className="opacity-60" /> من المحفظة</span>
               </div>
               {submittedOrder.walletUsed < grandTotal && (
-                <div className="text-white/40 text-xs">المتبقي: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} ر.س</div>
+                <div className="text-white/40 text-xs flex items-center gap-1">المتبقي: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-50" /></div>
               )}
             </div>
           ) : null}
@@ -609,7 +609,7 @@ export default function OrderFlow() {
             </div>
             <p className="font-black text-black dark:text-white">بيانات التحويل البنكي</p>
             {submittedOrder?.walletUsed ? (
-              <span className="mr-auto text-xs font-bold text-blue-600 dark:text-blue-400">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} ر.س</span>
+              <span className="mr-auto text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">المبلغ المطلوب: {(grandTotal - submittedOrder.walletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
             ) : null}
           </div>
           <div className="space-y-3 mb-4">
@@ -761,7 +761,7 @@ export default function OrderFlow() {
                             {planFromUrl === tier && priceFromUrl > 0 && (
                               <div className={`inline-flex items-baseline gap-1.5 mb-3 px-3 py-1.5 rounded-xl ${v.isDark ? "bg-white/10" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
                                 <span className={`text-2xl font-black ${v.isDark ? "text-white" : "text-black dark:text-white"}`}>{priceFromUrl.toLocaleString()}</span>
-                                <span className={`text-sm ${v.isDark ? "text-white/40" : "text-black/35 dark:text-white/35"}`}>ر.س</span>
+                                <SARIcon size={12} className={v.isDark ? "opacity-40" : "opacity-35"} />
                               </div>
                             )}
                             {features.length > 0 && (
@@ -831,7 +831,7 @@ export default function OrderFlow() {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="font-black text-base text-black dark:text-white">{a.price.toLocaleString()}</p>
-                              <p className="text-[10px] text-black/35 dark:text-white/35">{a.currency || "ر.س"}</p>
+                              <SARIcon size={10} className="opacity-35 mt-0.5" />
                             </div>
                           </div>
                         </motion.button>
@@ -1008,7 +1008,7 @@ export default function OrderFlow() {
                                 {hasBundles && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-700/40">{p.planBundles.length} باقة</span>}
                               </div>
                               {p.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 line-clamp-1">{p.descriptionAr}</p>}
-                              <p className="font-black text-black dark:text-white mt-1">{p.price?.toLocaleString()} <span className="text-xs font-normal text-black/40 dark:text-white/40">ر.س</span></p>
+                              <p className="font-black text-black dark:text-white mt-1 flex items-center gap-1">{p.price?.toLocaleString()} <SARIcon size={11} className="opacity-40" /></p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <button onClick={() => setDeviceQty(p.id, -1)} className="w-9 h-9 rounded-full border-2 border-black/15 dark:border-white/15 flex items-center justify-center hover:border-black dark:hover:border-white transition-all" data-testid={`btn-minus-${p.id}`}>
@@ -1046,7 +1046,7 @@ export default function OrderFlow() {
                                           <div className="flex items-center gap-2 justify-between">
                                             <p className="text-sm font-bold text-black dark:text-white truncate">{bundle.planNameAr}</p>
                                             <span className="text-xs font-black text-black dark:text-white shrink-0">
-                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : `${(bundle.customPrice || 0).toLocaleString()} ر.س`}
+                                              {bundle.isFree ? <span className="text-green-600 dark:text-green-400">مجانية</span> : <span className="flex items-center gap-0.5">{(bundle.customPrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-50" /></span>}
                                             </span>
                                           </div>
                                           {bundle.planDescAr && <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5 truncate">{bundle.planDescAr}</p>}
@@ -1208,8 +1208,8 @@ export default function OrderFlow() {
                         <div>
                           <p className="font-black text-black dark:text-white text-sm">Qirox Pay</p>
                           {walletBalance > 0 ? (
-                            <p className="text-cyan-600 dark:text-cyan-400 text-xs font-bold">
-                              {walletBalance.toLocaleString()} {lang === "ar" ? "ر.س متاح" : "SAR available"}
+                            <p className="text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1">
+                              {walletBalance.toLocaleString()} {lang === "ar" ? <><SARIcon size={10} className="opacity-70" /> متاح</> : "SAR available"}
                             </p>
                           ) : (
                             <p className="text-black/30 dark:text-white/30 text-xs">
@@ -1255,7 +1255,7 @@ export default function OrderFlow() {
                         ) : (
                           <div className="flex justify-between text-sm pt-1 border-t border-cyan-100 dark:border-cyan-800/50">
                             <span className="font-semibold text-black/60 dark:text-white/60">{lang === "ar" ? "المتبقي بالتحويل" : "Remaining via transfer"}</span>
-                            <span className="font-black text-black dark:text-white">{remainingAfterWallet.toLocaleString()} ر.س</span>
+                            <span className="font-black text-black dark:text-white flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={12} className="opacity-50" /></span>
                           </div>
                         )}
                       </div>
@@ -1280,9 +1280,9 @@ export default function OrderFlow() {
                       </div>
                       <div className="text-right">
                         <span className="text-white/50 text-xs">المبلغ المطلوب</span>
-                        <p className="text-white font-black text-xl">{remainingAfterWallet.toLocaleString()} ر.س</p>
+                        <p className="text-white font-black text-xl flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={15} className="opacity-50" /></p>
                         {effectiveWalletAmt > 0 && (
-                          <p className="text-white/40 text-xs line-through">{grandTotal.toLocaleString()} ر.س</p>
+                          <p className="text-white/40 text-xs line-through flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={10} className="opacity-40" /></p>
                         )}
                       </div>
                     </div>

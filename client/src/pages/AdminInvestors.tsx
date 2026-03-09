@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -139,13 +140,13 @@ export default function AdminInvestors() {
           <div className="relative mt-5 grid grid-cols-4 gap-3">
             {[
               { label: "المستثمرون", value: investors.length, icon: Users, color: "text-amber-500" },
-              { label: "إجمالي الاستثمارات", value: `${totalInvested.toLocaleString("ar-SA")} ر.س`, icon: Wallet, color: "text-green-500" },
+              { label: "إجمالي الاستثمارات", value: totalInvested.toLocaleString("ar-SA"), hasSAR: true, icon: Wallet, color: "text-green-500" },
               { label: "مجموع الحصص", value: `${totalStake}%`, icon: Percent, color: "text-blue-500" },
               { label: "دفعات معلقة", value: pendingPayments, icon: AlertCircle, color: "text-red-500" },
             ].map(stat => (
               <div key={stat.label} className="bg-white/50 dark:bg-gray-900/50 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <stat.icon className={`w-4 h-4 ${stat.color} mb-1.5`} />
-                <p className="text-xl font-black text-black dark:text-white">{stat.value}</p>
+                <p className="text-xl font-black text-black dark:text-white flex items-center gap-1">{stat.value}{(stat as any).hasSAR && <SARIcon size={14} className="opacity-40" />}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{stat.label}</p>
               </div>
             ))}
@@ -195,7 +196,7 @@ export default function AdminInvestors() {
                     </div>
                     <div className="text-center">
                       <p className="text-base font-bold text-green-600 dark:text-green-400">{inv.totalInvested.toLocaleString("ar-SA")}</p>
-                      <p className="text-xs text-black/30 dark:text-white/30">ر.س مستثمر</p>
+                      <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-40" /> مستثمر</p>
                     </div>
                     <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditInvestor(inv); setNewStake(String(inv.stakePercentage)); setNewNotes(inv.notes || ""); }} data-testid={`btn-edit-${inv.id}`}>
                       <Edit2 className="w-3.5 h-3.5" /> تعديل

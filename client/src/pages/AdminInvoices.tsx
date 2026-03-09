@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -225,13 +226,13 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
               <div key={i} className="flex items-center justify-between bg-black/[0.02] rounded-lg px-3 py-2 border border-black/[0.06]">
                 <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-black">{item.total.toLocaleString()} ر.س</span>
+                  <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-50" /></span>
                   <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
                 </div>
               </div>
             ))}
             <div className="text-xs font-bold text-black/70 text-left px-3">
-              المجموع: {totalFromItems.toLocaleString()} ر.س + VAT 15% = {(totalFromItems * 1.15).toLocaleString()} ر.س
+              <span className="flex items-center gap-1 flex-wrap">المجموع: {totalFromItems.toLocaleString()} <SARIcon size={10} className="opacity-50" /> + VAT 15% = {(totalFromItems * 1.15).toLocaleString()} <SARIcon size={10} className="opacity-50" /></span>
             </div>
           </div>
         )}
@@ -421,7 +422,7 @@ export default function AdminInvoices() {
                         <div className="text-[10px] text-black/35">{client?.email}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-bold text-black text-xs">{inv.totalAmount.toLocaleString()} ر.س</div>
+                        <div className="font-bold text-black text-xs flex items-center gap-1">{inv.totalAmount.toLocaleString()} <SARIcon size={9} className="opacity-50" /></div>
                         {inv.vatAmount > 0 && <div className="text-[10px] text-black/30">شامل VAT {inv.vatAmount.toLocaleString()}</div>}
                       </td>
                       <td className="px-4 py-3">

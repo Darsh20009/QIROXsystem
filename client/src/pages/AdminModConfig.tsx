@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -285,7 +286,7 @@ export default function AdminModConfig() {
                           <TableCell className="font-bold text-sm">{tp.nameAr}</TableCell>
                           <TableCell className="text-xs text-black/50 dark:text-white/40 max-w-[160px] truncate">{tp.description || "—"}</TableCell>
                           <TableCell>
-                            <span className="font-black text-green-600 dark:text-green-400">{tp.price} ر.س</span>
+                            <span className="font-black text-green-600 dark:text-green-400 flex items-center gap-1">{tp.price} <SARIcon size={11} className="opacity-60" /></span>
                           </TableCell>
                           <TableCell>
                             <Switch
@@ -351,7 +352,7 @@ export default function AdminModConfig() {
                               <p className="text-sm">{a.order?.businessName || a.order?.serviceType || "—"}</p>
                               <p className="text-xs text-black/40 dark:text-white/30">{TIER_LABELS[a.order?.planTier] || ""} — {PERIOD_LABELS[a.order?.planPeriod] || ""}</p>
                             </TableCell>
-                            <TableCell className="font-bold text-green-600">1,000 ر.س</TableCell>
+                            <TableCell className="font-bold text-green-600 flex items-center gap-1">1,000 <SARIcon size={11} className="opacity-60" /></TableCell>
                             <TableCell>
                               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusInfo.color}`}>{statusInfo.label}</span>
                             </TableCell>

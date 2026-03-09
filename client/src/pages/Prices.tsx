@@ -158,7 +158,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
             {monthlyEquiv && period !== "monthly" && (
               <p className={`text-[11px] mt-1.5 flex items-center gap-1.5 flex-wrap ${isPro ? "text-white/50" : "text-slate-400"}`}>
                 {lang === "ar"
-                  ? <span>= <span className="font-semibold">{monthlyEquiv.toLocaleString()} ر.س/شهر</span></span>
+                  ? <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} <SARIcon size={11} className="opacity-50" />/شهر</span></span>
                   : <span>= <span className="font-semibold">{monthlyEquiv.toLocaleString()} SAR/mo</span></span>}
                 {saving > 0 && (
                   <span className={`font-bold text-emerald-${isPro ? "200" : "600"}`}>
