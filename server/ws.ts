@@ -77,13 +77,13 @@ export function broadcastToUsers(userIds: string[], payload: object) {
 }
 
 // ── WebRTC Meet Room Management ───────────────────────────────────────────────
-const meetRooms = new Map<string, Map<string, { name: string; userId: string }>>();
+const meetRooms = new Map<string, Map<string, { name: string; userId: string; photoUrl?: string }>>();
 
-export function joinMeetRoom(roomId: string, userId: string, name: string): string[] {
+export function joinMeetRoom(roomId: string, userId: string, name: string, photoUrl?: string): string[] {
   if (!meetRooms.has(roomId)) meetRooms.set(roomId, new Map());
   const room = meetRooms.get(roomId)!;
   const existingPeers = [...room.keys()].filter(id => id !== userId);
-  room.set(userId, { name, userId });
+  room.set(userId, { name, userId, photoUrl });
   return existingPeers;
 }
 
@@ -99,7 +99,7 @@ export function getMeetRoomPeers(roomId: string): string[] {
   return [...(meetRooms.get(roomId)?.keys() || [])];
 }
 
-export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: string }[] {
+export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: string; photoUrl?: string }[] {
   const room = meetRooms.get(roomId);
   if (!room) return [];
   return [...room.values()];

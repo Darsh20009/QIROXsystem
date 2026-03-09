@@ -82,10 +82,11 @@ wss.on("connection", (ws) => {
           }
         }
         currentRoomId = String(msg.roomId);
-        const existingPeers = joinMeetRoom(currentRoomId, userId, msg.name || userId);
-        ws.send(JSON.stringify({ type: "webrtc_peers", peers: existingPeers, roomId: currentRoomId }));
+        const existingPeers = joinMeetRoom(currentRoomId, userId, msg.name || userId, msg.photoUrl || "");
+        const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== userId);
+        ws.send(JSON.stringify({ type: "webrtc_peers", peers: existingPeers, peerInfoList, roomId: currentRoomId }));
         for (const peerId of existingPeers) {
-          pushToUser(peerId, { type: "webrtc_peer_joined", peerId: userId, name: msg.name || userId, roomId: currentRoomId });
+          pushToUser(peerId, { type: "webrtc_peer_joined", peerId: userId, name: msg.name || userId, photoUrl: msg.photoUrl || "", roomId: currentRoomId });
         }
         return;
       }

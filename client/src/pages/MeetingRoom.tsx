@@ -55,6 +55,8 @@ interface Peer {
   stream?: MediaStream;
   audioOn: boolean;
   videoOn: boolean;
+  photoUrl?: string;
+  speaking?: boolean;
 }
 
 interface ChatMessage {
@@ -90,13 +92,15 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
   }, [peer.stream, local]);
 
   const objectFit = spotlight ? "object-contain" : "object-cover";
+  const showVideo = peer.stream && peer.videoOn;
 
   return (
-    <div className={`relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center ${spotlight ? "h-full w-full" : "aspect-video"} group`}>
+    <div className={`relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center ${spotlight ? "h-full w-full" : "aspect-video"} group transition-all duration-200 ${peer.speaking ? "ring-2 ring-green-400 ring-offset-1 ring-offset-gray-900" : ""}`}>
       {!local && peer.stream && (
         <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       )}
-      {peer.stream && peer.videoOn ? (
+
+      {showVideo ? (
         <video
           ref={videoCallbackRef}
           autoPlay
@@ -106,19 +110,38 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
           data-testid={`video-tile-${peer.id}`}
         />
       ) : (
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-white">
-            {peer.name?.charAt(0)?.toUpperCase() || "?"}
+        <div className="flex flex-col items-center gap-3">
+          <div className={`relative rounded-full overflow-hidden transition-all duration-200 ${spotlight ? "w-28 h-28" : "w-16 h-16"} ${peer.speaking ? "ring-4 ring-green-400 ring-offset-2 ring-offset-gray-900" : ""}`}>
+            {peer.photoUrl ? (
+              <img src={peer.photoUrl} alt={peer.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-bold" style={{ fontSize: spotlight ? "2.5rem" : "1.5rem" }}>
+                {peer.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            )}
           </div>
-          <span className="text-white/60 text-sm">{peer.name}</span>
+          <span className="text-white/70 text-sm font-medium">{peer.name}</span>
         </div>
       )}
-      <div className="absolute bottom-2 left-2 flex items-center gap-1">
-        <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
-          {local ? `أنت (${peer.name})` : peer.name}
-        </span>
+
+      {/* Speaking wave animation overlay */}
+      {peer.speaking && (
+        <div className="absolute inset-0 pointer-events-none rounded-2xl border-2 border-green-400 animate-pulse" />
+      )}
+
+      {/* Bottom name bar */}
+      <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all ${peer.speaking ? "bg-green-500/80" : "bg-black/60"}`}>
+          {peer.speaking && <span className="flex gap-0.5 items-end h-3">
+            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "60%", animationDelay: "0ms" }} />
+            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "100%", animationDelay: "100ms" }} />
+            <span className="w-0.5 bg-white rounded-full animate-[equalizer_0.5s_ease-in-out_infinite]" style={{ height: "40%", animationDelay: "200ms" }} />
+          </span>}
+          <span className="text-white">{local ? `أنت (${peer.name})` : peer.name}</span>
+        </div>
         {!peer.audioOn && <span className="bg-red-500/80 text-white rounded-full p-0.5"><MicOff className="w-3 h-3" /></span>}
       </div>
+
       {canKick && onKick && !local && (
         <button
           onClick={onKick}
@@ -208,6 +231,9 @@ export default function MeetingRoom() {
   const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
   const [screenSharePending, setScreenSharePending] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
+  const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set());
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserNodesRef = useRef<Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>>(new Map());
 
   const [selectedPage, setSelectedPage] = useState(SYSTEM_PAGES[0].path);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
@@ -235,6 +261,59 @@ export default function MeetingRoom() {
 
   useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
   useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
+
+  // ── Speaking detection via Web Audio API ─────────────────────────────────────
+  useEffect(() => {
+    if (!joined) return;
+
+    const getCtx = () => {
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume().catch(() => {});
+      return audioCtxRef.current;
+    };
+
+    const attachStream = (peerId: string, stream: MediaStream) => {
+      if (analyserNodesRef.current.has(peerId)) return;
+      try {
+        const ctx = getCtx();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.5;
+        const source = ctx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyserNodesRef.current.set(peerId, { analyser, source });
+      } catch {}
+    };
+
+    const localId = userId || "local";
+    if (localStream) attachStream(localId, localStream);
+
+    peers.forEach((peer, peerId) => {
+      if (peer.stream) attachStream(peerId, peer.stream);
+    });
+
+    const interval = setInterval(() => {
+      const newSpeaking = new Set<string>();
+      analyserNodesRef.current.forEach(({ analyser }, peerId) => {
+        const isLocal = peerId === (userId || "local");
+        if (isLocal && !audioOn) return;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        const avg = data.slice(0, data.length / 2).reduce((a, b) => a + b, 0) / (data.length / 2);
+        if (avg > 8) newSpeaking.add(peerId);
+      });
+      setSpeakingPeers(prev => {
+        const same = prev.size === newSpeaking.size && [...prev].every(id => newSpeaking.has(id));
+        return same ? prev : newSpeaking;
+      });
+    }, 120);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [joined, localStream, peers, audioOn, userId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -363,7 +442,17 @@ export default function MeetingRoom() {
   const handleWsMessage = useCallback(async (data: any) => {
     switch (data.type) {
       case "webrtc_peers": {
+        const infoMap: Record<string, { name: string; photoUrl?: string }> = {};
+        if (Array.isArray(data.peerInfoList)) {
+          for (const p of data.peerInfoList) infoMap[p.userId] = { name: p.name, photoUrl: p.photoUrl || "" };
+        }
         for (const peerId of data.peers) {
+          const info = infoMap[peerId] || { name: peerId, photoUrl: "" };
+          setPeers(prev => {
+            const next = new Map(prev);
+            if (!next.has(peerId)) next.set(peerId, { id: peerId, name: info.name, audioOn: true, videoOn: true, photoUrl: info.photoUrl });
+            return next;
+          });
           const pc = createPC(peerId);
           const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
@@ -374,7 +463,7 @@ export default function MeetingRoom() {
       case "webrtc_peer_joined": {
         setPeers(prev => {
           const next = new Map(prev);
-          if (!next.has(data.peerId)) next.set(data.peerId, { id: data.peerId, name: data.name || data.peerId, audioOn: true, videoOn: true });
+          if (!next.has(data.peerId)) next.set(data.peerId, { id: data.peerId, name: data.name || data.peerId, audioOn: true, videoOn: true, photoUrl: data.photoUrl || "" });
           return next;
         });
         break;
@@ -556,7 +645,8 @@ export default function MeetingRoom() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "online_users") {
-          ws.send(JSON.stringify({ type: "webrtc_join", roomId: rId, name: uName }));
+          const myPhoto = (user as any)?.profilePhotoUrl || (user as any)?.avatarUrl || "";
+          ws.send(JSON.stringify({ type: "webrtc_join", roomId: rId, name: uName, photoUrl: myPhoto }));
           setJoined(true);
         } else {
           await handleWsMessage(data);
@@ -900,8 +990,9 @@ export default function MeetingRoom() {
     );
   }
 
-  const localPeer: Peer = { id: userId || "local", name: userName, stream: localStream || undefined, audioOn, videoOn };
-  const allPeers = [localPeer, ...Array.from(peers.values())];
+  const myPhotoUrl = (user as any)?.profilePhotoUrl || (user as any)?.avatarUrl || "";
+  const localPeer: Peer = { id: userId || "local", name: userName, stream: localStream || undefined, audioOn, videoOn, photoUrl: myPhotoUrl, speaking: speakingPeers.has(userId || "local") };
+  const allPeers = [localPeer, ...Array.from(peers.values()).map(p => ({ ...p, speaking: speakingPeers.has(p.id) }))];
   const totalPeers = allPeers.length;
   const gridCols = totalPeers === 1 ? "grid-cols-1" : totalPeers === 2 ? "grid-cols-2" : totalPeers <= 4 ? "grid-cols-2" : "grid-cols-3";
 
