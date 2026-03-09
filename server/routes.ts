@@ -4226,7 +4226,13 @@ export async function registerRoutes(
   app.patch("/api/notifications/:id/read", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { NotificationModel } = await import("./models");
-    await NotificationModel.updateOne({ _id: req.params.id, userId: (req.user as any).id }, { read: true });
+    const uid = (req.user as any).id;
+    const role = (req.user as any).role;
+    const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
+    const filter = isStaff
+      ? { _id: req.params.id, $or: [{ userId: uid }, { forAdmins: true }] }
+      : { _id: req.params.id, userId: uid };
+    await NotificationModel.updateOne(filter, { read: true });
     res.json({ ok: true });
   });
 

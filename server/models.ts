@@ -455,7 +455,7 @@ const otpSchema = new mongoose.Schema({
 const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   forAdmins: { type: Boolean, default: false },
-  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system', 'info', 'success', 'error', 'warning', 'task', 'project'], default: 'system' },
+  type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system', 'info', 'success', 'error', 'warning', 'task', 'project', 'subscription'], default: 'system' },
   title: { type: String, required: true },
   body: { type: String, default: '' },
   link: String,
