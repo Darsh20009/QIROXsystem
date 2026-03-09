@@ -1,12 +1,16 @@
 // @ts-nocheck
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2, TrendingUp, TrendingDown, Users, ShoppingCart, Clock,
   BarChart3, Download, DollarSign, CheckCircle, Star, CreditCard,
-  ArrowUpRight, ArrowDownRight, Building2, Minus,
+  ArrowUpRight, ArrowDownRight, Building2, Minus, Video, Mail, Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area,
@@ -37,6 +41,10 @@ function GrowthBadge({ pct }: { pct: number }) {
 }
 
 export default function AdminAnalytics() {
+  const { toast } = useToast();
+  const [reportEmail, setReportEmail] = useState("");
+  const [showEmailInput, setShowEmailInput] = useState(false);
+
   const { data, isLoading } = useQuery<any>({
     queryKey: ["/api/admin/analytics"],
     queryFn: async () => {
@@ -45,6 +53,26 @@ export default function AdminAnalytics() {
       return r.json();
     },
     refetchInterval: 60000,
+  });
+
+  const { data: qmeet } = useQuery<any>({
+    queryKey: ["/api/admin/analytics/qmeet"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/analytics/qmeet", { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    refetchInterval: 120000,
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/analytics/send-report", { email: reportEmail || undefined }),
+    onSuccess: (d: any) => {
+      toast({ title: "تم إرسال التقرير", description: `أُرسل إلى: ${d.sentTo}` });
+      setShowEmailInput(false);
+      setReportEmail("");
+    },
+    onError: (e: any) => toast({ title: "فشل الإرسال", description: e.message, variant: "destructive" }),
   });
 
   const exportAnalytics = () => {
@@ -327,6 +355,87 @@ export default function AdminAnalytics() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ── QMeet Analytics ── */}
+      {qmeet && (
+        <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <Video className="w-4 h-4" />
+              إحصائيات QMeet
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center rounded-xl bg-black/[0.02] dark:bg-white/[0.02] p-3">
+                <p className="text-xl font-black text-black dark:text-white" data-testid="text-qmeet-total">{qmeet.totalMeetings}</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">إجمالي الاجتماعات</p>
+              </div>
+              <div className="text-center rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3">
+                <p className="text-xl font-black text-blue-600 dark:text-blue-400" data-testid="text-qmeet-month">{qmeet.thisMonthMeetings}</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">هذا الشهر</p>
+              </div>
+              <div className="text-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3">
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400" data-testid="text-qmeet-active">{qmeet.activeMeetings}</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">نشطة الآن</p>
+              </div>
+            </div>
+            {(qmeet.monthlyMeetings || []).length > 0 && (
+              <div>
+                <p className="text-xs text-black/40 dark:text-white/40 mb-2">الاجتماعات الشهرية (آخر 6 أشهر)</p>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={qmeet.monthlyMeetings} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.07)" }} />
+                    <Bar dataKey="count" name="اجتماعات" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Email Report ── */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            إرسال تقرير بالبريد الإلكتروني
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-black/50 dark:text-white/45">أرسل تقريراً شهرياً شاملاً بالإحصائيات إلى بريدك الإلكتروني.</p>
+          {showEmailInput && (
+            <Input
+              value={reportEmail}
+              onChange={e => setReportEmail(e.target.value)}
+              placeholder="email@example.com (اتركه فارغاً لإرساله إلى بريد النظام)"
+              type="email"
+              className="text-sm"
+              data-testid="input-report-email"
+            />
+          )}
+          <div className="flex gap-2">
+            {!showEmailInput && (
+              <Button variant="outline" size="sm" onClick={() => setShowEmailInput(true)} data-testid="button-show-email-input">
+                <Mail className="w-3.5 h-3.5 ml-1" />
+                إرسال تقرير
+              </Button>
+            )}
+            {showEmailInput && (
+              <>
+                <Button size="sm" onClick={() => reportMutation.mutate()} disabled={reportMutation.isPending} data-testid="button-send-report">
+                  {reportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" /> : <Send className="w-3.5 h-3.5 ml-1" />}
+                  إرسال
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setShowEmailInput(false); setReportEmail(""); }}>إلغاء</Button>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

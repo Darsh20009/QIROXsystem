@@ -8037,6 +8037,392 @@ export async function registerRoutes(
   // Initialize seed data
   await seedDatabase();
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ 2FA TOTP ════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.post("/api/totp/setup", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const speakeasy = await import("speakeasy");
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const secret = speakeasy.default.generateSecret({ name: `Qirox (${user.email || user.username})`, length: 20 });
+      await UserModel.findByIdAndUpdate(user._id || user.id, { totpSecret: secret.base32 });
+      res.json({ secret: secret.base32, otpauth_url: secret.otpauth_url });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/totp/verify-setup", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const speakeasy = await import("speakeasy");
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const { token } = req.body;
+      const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
+      if (!dbUser || !dbUser.totpSecret) return res.status(400).json({ error: "لم يتم إعداد المفتاح السري" });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), window: 2 });
+      if (!verified) return res.status(400).json({ error: "الرمز غير صحيح" });
+      await UserModel.findByIdAndUpdate(user._id || user.id, { totpEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/totp/disable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { totpEnabled: false, totpSecret: null });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/totp/verify", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const speakeasy = await import("speakeasy");
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const { token } = req.body;
+      const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
+      if (!dbUser?.totpEnabled || !dbUser.totpSecret) return res.status(400).json({ error: "2FA غير مفعّل" });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), window: 2 });
+      res.json({ valid: verified });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/totp/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled");
+      res.json({ enabled: dbUser?.totpEnabled || false });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ REFERRAL SYSTEM ═════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/referral/my-code", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel, ReferralModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      let dbUser = await UserModel.findById(uid).select("referralCode referralCreditsEarned");
+      if (!dbUser?.referralCode) {
+        const code = `QRX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        dbUser = await UserModel.findByIdAndUpdate(uid, { referralCode: code }, { new: true }).select("referralCode referralCreditsEarned");
+      }
+      const referrals = await (ReferralModel as any).find({ referrerId: uid }).sort({ createdAt: -1 }).limit(20);
+      res.json({ code: dbUser?.referralCode, creditsEarned: dbUser?.referralCreditsEarned || 0, referrals });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/referral/apply", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel, ReferralModel, WalletTransactionModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: "رمز الإحالة مطلوب" });
+      const dbUser = await UserModel.findById(uid).select("referredBy referralCode");
+      if (dbUser?.referredBy) return res.status(400).json({ error: "لقد استخدمت رمز إحالة من قبل" });
+      if (dbUser?.referralCode === code) return res.status(400).json({ error: "لا يمكنك استخدام رمزك الخاص" });
+      const referrer = await UserModel.findOne({ referralCode: code });
+      if (!referrer) return res.status(404).json({ error: "رمز الإحالة غير صحيح" });
+      const CREDIT = 50;
+      await UserModel.findByIdAndUpdate(uid, { referredBy: code });
+      await UserModel.findByIdAndUpdate(referrer._id, { $inc: { walletBalance: CREDIT, referralCreditsEarned: CREDIT } });
+      await (ReferralModel as any).create({ referrerId: referrer._id, referredId: uid, code, status: "rewarded", creditAmount: CREDIT, rewardedAt: new Date() });
+      await (WalletTransactionModel as any).create({ userId: referrer._id, type: "credit", amount: CREDIT, description: `مكافأة إحالة — مستخدم جديد انضم بكودك`, status: "completed" }).catch(() => {});
+      res.json({ ok: true, message: `تم تطبيق الإحالة! حصل مُحيلك على ${CREDIT} ريال في محفظته.` });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/referrals", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ReferralModel } = await import("./models");
+      const referrals = await (ReferralModel as any).find().sort({ createdAt: -1 }).limit(100)
+        .populate("referrerId", "fullName username email")
+        .populate("referredId", "fullName username email");
+      res.json(referrals);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ TIME TRACKING ════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/projects/:projectId/timelogs", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { TimeLogModel } = await import("./models");
+      const logs = await (TimeLogModel as any).find({ projectId: req.params.projectId })
+        .populate("userId", "fullName username profilePhotoUrl")
+        .populate("taskId", "title")
+        .sort({ createdAt: -1 });
+      res.json(logs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/projects/:projectId/timelogs", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { TimeLogModel } = await import("./models");
+      const user = req.user as any;
+      const { taskId, description, startedAt, endedAt } = req.body;
+      const start = new Date(startedAt || Date.now());
+      const end = endedAt ? new Date(endedAt) : null;
+      const durationMinutes = end ? Math.round((end.getTime() - start.getTime()) / 60000) : 0;
+      const log = await (TimeLogModel as any).create({ taskId, projectId: req.params.projectId, userId: user._id || user.id, description: description || "", startedAt: start, endedAt: end, durationMinutes });
+      res.status(201).json(log);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/projects/:projectId/timelogs/:logId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { TimeLogModel } = await import("./models");
+      const user = req.user as any;
+      const log = await (TimeLogModel as any).findById(req.params.logId);
+      if (!log) return res.status(404).json({ error: "السجل غير موجود" });
+      const staffRoles = ["admin","manager","developer","designer"];
+      if (String(log.userId) !== String(user._id || user.id) && !staffRoles.includes(user.role)) return res.sendStatus(403);
+      await log.deleteOne();
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ PROJECT COMMENTS ════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/projects/:projectId/comments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectCommentModel, ProjectModel } = await import("./models");
+      const user = req.user as any;
+      const project = await (ProjectModel as any).findById(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const isStaff = user.role !== "client";
+      const isOwner = String(project.clientId) === String(user._id || user.id);
+      if (!isStaff && !isOwner) return res.sendStatus(403);
+      const filter: any = { projectId: req.params.projectId };
+      if (!isStaff) filter.isInternal = false;
+      const comments = await (ProjectCommentModel as any).find(filter)
+        .populate("userId", "fullName username profilePhotoUrl role")
+        .sort({ createdAt: 1 });
+      res.json(comments);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/projects/:projectId/comments", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectCommentModel, ProjectModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const user = req.user as any;
+      const project = await (ProjectModel as any).findById(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const isStaff = user.role !== "client";
+      const isOwner = String(project.clientId) === String(user._id || user.id);
+      if (!isStaff && !isOwner) return res.sendStatus(403);
+      const { body, isInternal, attachmentUrl } = req.body;
+      if (!body?.trim()) return res.status(400).json({ error: "التعليق لا يمكن أن يكون فارغاً" });
+      const comment = await (ProjectCommentModel as any).create({
+        projectId: req.params.projectId, userId: user._id || user.id,
+        body: body.trim(), isInternal: isStaff ? (isInternal || false) : false,
+        attachmentUrl: attachmentUrl || "",
+      });
+      const populated = await (ProjectCommentModel as any).findById(comment._id).populate("userId", "fullName username profilePhotoUrl role");
+      if (isStaff) {
+        await NotificationModel.create({ userId: project.clientId, type: "project", title: "تعليق جديد على مشروعك", body: body.trim().substring(0, 80), link: `/projects/${req.params.projectId}` }).catch(() => {});
+        pushToUser(String(project.clientId), { type: "notification", title: "تعليق جديد", body: body.trim().substring(0, 60) });
+      }
+      res.status(201).json(populated);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/projects/:projectId/comments/:commentId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectCommentModel } = await import("./models");
+      const user = req.user as any;
+      const comment = await (ProjectCommentModel as any).findById(req.params.commentId);
+      if (!comment) return res.status(404).json({ error: "التعليق غير موجود" });
+      const isStaff = ["admin","manager"].includes(user.role);
+      const isOwner = String(comment.userId) === String(user._id || user.id);
+      if (!isStaff && !isOwner) return res.sendStatus(403);
+      await comment.deleteOne();
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ CONTRACTS ═══════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/orders/:orderId/contract", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ContractModel, OrderModel } = await import("./models");
+      const user = req.user as any;
+      const order = await (OrderModel as any).findById(req.params.orderId);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const isStaff = user.role !== "client";
+      const isOwner = String(order.userId) === String(user._id || user.id);
+      if (!isStaff && !isOwner) return res.sendStatus(403);
+      const contract = await (ContractModel as any).findOne({ orderId: req.params.orderId });
+      res.json(contract || null);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/orders/:orderId/contract", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ContractModel, OrderModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const order = await (OrderModel as any).findById(req.params.orderId);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const { terms, notes } = req.body;
+      if (!terms?.trim()) return res.status(400).json({ error: "بنود العقد مطلوبة" });
+      const existing = await (ContractModel as any).findOne({ orderId: req.params.orderId });
+      if (existing) return res.status(400).json({ error: "يوجد عقد مسبق لهذا الطلب" });
+      const contract = await (ContractModel as any).create({ orderId: req.params.orderId, clientId: order.userId, terms: terms.trim(), totalAmount: order.totalAmount || 0, notes: notes || "" });
+      await NotificationModel.create({ userId: order.userId, type: "contract", title: "عقد مشروع جديد", body: "تم إصدار عقد مشروعك — يرجى الاطلاع والتأكيد", link: `/dashboard` }).catch(() => {});
+      pushToUser(String(order.userId), { type: "notification", title: "عقد جديد", body: "تم إصدار عقد مشروعك" });
+      res.status(201).json(contract);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/orders/:orderId/contract/acknowledge", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ContractModel, OrderModel } = await import("./models");
+      const user = req.user as any;
+      const order = await (OrderModel as any).findById(req.params.orderId);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (String(order.userId) !== String(user._id || user.id)) return res.sendStatus(403);
+      const contract = await (ContractModel as any).findOneAndUpdate(
+        { orderId: req.params.orderId, status: "pending" },
+        { status: "acknowledged", acknowledgedAt: new Date() },
+        { new: true }
+      );
+      if (!contract) return res.status(404).json({ error: "لا يوجد عقد معلّق" });
+      res.json(contract);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ ANALYTICS — QMEET METRICS ═══════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/admin/analytics/qmeet", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { QMeetingModel } = await import("./models");
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        return { year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }) };
+      });
+      const monthlyMeetings = await Promise.all(months.map(async ({ year, month, label }) => {
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0, 23, 59, 59);
+        const meetings = await (QMeetingModel as any).find({ createdAt: { $gte: start, $lte: end } }).select("durationMinutes status");
+        const totalHours = meetings.reduce((a: number, m: any) => a + (m.durationMinutes || 0) / 60, 0);
+        return { label, count: meetings.length, hours: Math.round(totalHours * 10) / 10 };
+      }));
+      const [totalMeetings, thisMonthMeetings, activeMeetings] = await Promise.all([
+        (QMeetingModel as any).countDocuments(),
+        (QMeetingModel as any).countDocuments({ createdAt: { $gte: startOfMonth } }),
+        (QMeetingModel as any).countDocuments({ status: "active" }),
+      ]);
+      const topHosts = await (QMeetingModel as any).aggregate([
+        { $group: { _id: "$hostId", meetings: { $sum: 1 }, totalMinutes: { $sum: "$durationMinutes" } } },
+        { $sort: { meetings: -1 } }, { $limit: 5 },
+        { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "u" } },
+        { $addFields: { name: { $arrayElemAt: ["$u.fullName", 0] } } },
+        { $project: { u: 0 } },
+      ]).catch(() => []);
+      res.json({ totalMeetings, thisMonthMeetings, activeMeetings, monthlyMeetings, topHosts });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ ANALYTICS — EMAIL REPORT ═════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.post("/api/admin/analytics/send-report", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const nodemailer = await import("nodemailer");
+      const { OrderModel, UserModel } = await import("./models");
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const [totalOrders, thisMonthOrders, totalClients, revenueAgg] = await Promise.all([
+        (OrderModel as any).countDocuments(),
+        (OrderModel as any).countDocuments({ createdAt: { $gte: startOfMonth } }),
+        (UserModel as any).countDocuments({ role: "client" }),
+        (OrderModel as any).aggregate([{ $group: { _id: null, total: { $sum: "$totalAmount" }, thisMonth: { $sum: { $cond: [{ $gte: ["$createdAt", startOfMonth] }, "$totalAmount", 0] } } } }]),
+      ]);
+      const rev = revenueAgg[0] || { total: 0, thisMonth: 0 };
+      const { QiroxSystemSettingsModel } = await import("./models");
+      const settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
+      const smtpUser = process.env.SMTP_USER || settings?.contactEmail;
+      const smtpPass = process.env.SMTP_PASS;
+      if (!smtpUser || !smtpPass) return res.status(400).json({ error: "إعدادات SMTP غير مكتملة. يرجى تعيين SMTP_USER وSMTP_PASS في متغيرات البيئة." });
+      const transport = nodemailer.default.createTransport({ host: process.env.SMTP_HOST || "smtp.gmail.com", port: Number(process.env.SMTP_PORT || 587), auth: { user: smtpUser, pass: smtpPass } });
+      const { email } = req.body;
+      const to = email || smtpUser;
+      await transport.sendMail({
+        from: smtpUser, to,
+        subject: `تقرير Qirox الشهري — ${now.toLocaleDateString("ar-SA", { month: "long", year: "numeric" })}`,
+        html: `<div dir="rtl" style="font-family:Arial;max-width:600px;margin:auto;padding:24px"><h2 style="color:#000">تقرير النظام الشهري</h2><p>${now.toLocaleDateString("ar-SA")}</p><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px;border:1px solid #eee">إجمالي الطلبات</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${totalOrders}</td></tr><tr><td style="padding:8px;border:1px solid #eee">طلبات هذا الشهر</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${thisMonthOrders}</td></tr><tr><td style="padding:8px;border:1px solid #eee">إجمالي العملاء</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${totalClients}</td></tr><tr><td style="padding:8px;border:1px solid #eee">إيرادات هذا الشهر</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${rev.thisMonth.toLocaleString("ar-SA")} ر.س</td></tr><tr><td style="padding:8px;border:1px solid #eee">إجمالي الإيرادات</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${rev.total.toLocaleString("ar-SA")} ر.س</td></tr></table><p style="color:#666;font-size:12px;margin-top:24px">Qirox Studio — qirox.tech</p></div>`,
+      });
+      res.json({ ok: true, sentTo: to });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ KANBAN — projects board ══════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/admin/kanban", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ProjectModel, OrderModel } = await import("./models");
+      const projects = await (ProjectModel as any).find().sort({ updatedAt: -1 }).limit(200)
+        .populate("clientId", "fullName username email")
+        .populate("managerId", "fullName username");
+      const withOrders = await Promise.all(projects.map(async (p: any) => {
+        const order = await (OrderModel as any).findById(p.orderId).select("businessName sector planTier totalAmount");
+        return { ...p.toObject(), order };
+      }));
+      res.json(withOrders);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/kanban/:projectId/status", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ProjectModel } = await import("./models");
+      const { status } = req.body;
+      const allowed = ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"];
+      if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
+      const project = await (ProjectModel as any).findByIdAndUpdate(req.params.projectId, { status }, { new: true });
+      res.json(project);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   return httpServer;
 }
 

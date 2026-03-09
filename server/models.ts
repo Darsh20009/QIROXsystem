@@ -45,6 +45,13 @@ const userSchema = new mongoose.Schema({
   snapchat: { type: String, default: "" },
   tiktok: { type: String, default: "" },
   youtube: { type: String, default: "" },
+  // ── 2FA TOTP ──
+  totpSecret: { type: String, select: false },
+  totpEnabled: { type: Boolean, default: false },
+  // ── Referral ──
+  referralCode: { type: String, sparse: true, index: true },
+  referredBy: { type: String, default: null },
+  referralCreditsEarned: { type: Number, default: 0 },
 }, { timestamps: true });
 
 const serviceSchema = new mongoose.Schema({
@@ -1419,3 +1426,55 @@ const groupMessageSchema = new mongoose.Schema({
 }, { timestamps: true });
 groupMessageSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const GroupMessageModel = mongoose.models.GroupMessage || mongoose.model("GroupMessage", groupMessageSchema);
+
+// ── Time Log (تتبع وقت العمل على المهام) ───────────────────────────────────
+const timeLogSchema = new mongoose.Schema({
+  taskId:          { type: mongoose.Schema.Types.ObjectId, ref: "Task", required: true, index: true },
+  projectId:       { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  userId:          { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  description:     { type: String, default: "" },
+  startedAt:       { type: Date, required: true },
+  endedAt:         { type: Date, default: null },
+  durationMinutes: { type: Number, default: 0 },
+}, { timestamps: true });
+timeLogSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const TimeLogModel = mongoose.models.TimeLog || mongoose.model("TimeLog", timeLogSchema);
+
+// ── Project Comment (تعليقات العميل والفريق على المشروع) ────────────────────
+const projectCommentSchema = new mongoose.Schema({
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  userId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  body:         { type: String, required: true },
+  isInternal:   { type: Boolean, default: false },
+  pinned:       { type: Boolean, default: false },
+  attachmentUrl: { type: String, default: "" },
+}, { timestamps: true });
+projectCommentSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ProjectCommentModel = mongoose.models.ProjectComment || mongoose.model("ProjectComment", projectCommentSchema);
+
+// ── Contract (عقد مشروع إلكتروني) ──────────────────────────────────────────
+const contractSchema = new mongoose.Schema({
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+  clientId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  terms:        { type: String, required: true },
+  totalAmount:  { type: Number, default: 0 },
+  status:       { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
+  acknowledgedAt: { type: Date, default: null },
+  rejectedAt:   { type: Date, default: null },
+  notes:        { type: String, default: "" },
+}, { timestamps: true });
+contractSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ContractModel = mongoose.models.Contract || mongoose.model("Contract", contractSchema);
+
+// ── Referral (نظام الإحالات) ────────────────────────────────────────────────
+const referralSchema = new mongoose.Schema({
+  referrerId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  referredId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  code:         { type: String, required: true },
+  status:       { type: String, enum: ["pending", "rewarded", "expired"], default: "pending" },
+  creditAmount: { type: Number, default: 50 },
+  rewardedAt:   { type: Date, default: null },
+}, { timestamps: true });
+referralSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ReferralModel = mongoose.models.Referral || mongoose.model("Referral", referralSchema);

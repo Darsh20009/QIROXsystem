@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -84,6 +84,8 @@ export function AppSidebar() {
     // Client — tools
     { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client", section: "tools" },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "client", section: "tools" },
+    { title: ar ? "برنامج الإحالات" : "Referral Program", icon: Gift, url: "/referral", group: "client", section: "account" },
+    { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "client", section: "tools" },
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
 
@@ -112,6 +114,7 @@ export function AppSidebar() {
     { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
     // Employee — personal
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "personal" },
+    { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "employee", section: "personal" },
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", section: "personal", allowedRoles: ["investor", "admin", "manager"] },
     // Employee — monitoring
     { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "monitoring" },
@@ -129,6 +132,8 @@ export function AppSidebar() {
     { title: ar ? "تذكيرات التحويل" : "Switch Reminders", icon: Bell, url: "/admin/switch-reminders", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "مفاتيح API للعملاء" : "Client API Keys", icon: KeyRound, url: "/admin/api-keys", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
+    { title: ar ? "لوحة المشاريع" : "Project Board", icon: LayoutGrid, url: "/admin/kanban", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
+    { title: ar ? "سجل الإحالات" : "Referrals", icon: Gift, url: "/admin/referrals", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     // Admin — team

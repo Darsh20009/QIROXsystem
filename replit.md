@@ -10,7 +10,51 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 9, 2026 - Session 44)
+## Latest Changes (Mar 9, 2026 - Session 45)
+
+### ميزات جديدة متعددة — 2FA، إحالات، كانبان، تعليقات، تتبع وقت، عقود، تحليلات QMeet
+
+**الباك-إند (server/routes.ts):**
+- `POST /api/totp/setup` — توليد مفتاح TOTP 2FA (speakeasy)
+- `POST /api/totp/verify-setup` — التحقق من الرمز وتفعيل 2FA
+- `POST /api/totp/disable` — إلغاء تفعيل 2FA
+- `POST /api/totp/verify` — التحقق من رمز TOTP عند الطلب
+- `GET /api/totp/status` — حالة تفعيل 2FA للمستخدم
+- `GET /api/referral/my-code` — كود الإحالة الشخصي + السجل
+- `POST /api/referral/apply` — تطبيق كود إحالة + مكافأة 50 ريال
+- `GET /api/admin/referrals` — سجل جميع الإحالات (أدمن)
+- `GET/POST/DELETE /api/projects/:id/timelogs` — تتبع وقت العمل
+- `GET/POST/DELETE /api/projects/:id/comments` — تعليقات المشروع (داخلية/عامة)
+- `GET/POST /api/orders/:id/contract` — إنشاء عقد بالطلب
+- `PATCH /api/orders/:id/contract/acknowledge` — تأكيد العقد من العميل
+- `GET /api/admin/analytics/qmeet` — إحصائيات QMeet (شهرية + أكثر استخداماً)
+- `POST /api/admin/analytics/send-report` — إرسال تقرير شهري بالبريد الإلكتروني
+- `GET /api/admin/kanban` — جميع المشاريع مجمّعة للكانبان
+- `PATCH /api/admin/kanban/:id/status` — نقل مشروع بين مراحل الكانبان
+
+**الموديلات (server/models.ts):**
+- `TimeLogModel` — سجل وقت العمل على المهام
+- `ProjectCommentModel` — تعليقات المشروع
+- `ContractModel` — عقد إلكتروني لكل طلب
+- `ReferralModel` — سجل الإحالات
+
+**الفرونت-إند:**
+- `AdminKanban.tsx` — لوحة كانبان 8 مراحل بسحب الكروت بين الأعمدة
+- `TwoFactorSetup.tsx` — إعداد 2FA مع QR code (qrcode.react)
+- `ClientReferral.tsx` — صفحة الإحالات للعميل (كود + تطبيق + سجل)
+- `AdminReferrals.tsx` — سجل إحالات الأدمن مع الإحصائيات
+- `ProjectComments.tsx` — مكون التعليقات (داخلي/عام + إشعارات)
+- `TimeTracker.tsx` — مكون تتبع الوقت مع مؤقت حي
+- إضافة قسم QMeet Analytics في `AdminAnalytics.tsx` مع رسم بياني شهري
+- زر إرسال تقرير بالبريد الإلكتروني في `AdminAnalytics.tsx`
+
+**الـ Sidebar:**
+- لوحة المشاريع (كانبان) → أدمن، قسم العمليات
+- سجل الإحالات → أدمن، قسم العمليات
+- برنامج الإحالات → عميل، قسم الحساب
+- الأمان (2FA) → عميل وموظف، قسم الأدوات/الشخصي
+
+## Previous Changes (Mar 9, 2026 - Session 44)
 
 ### نظام إصدارات النظام + دليل الموظفين
 
