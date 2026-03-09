@@ -10,7 +10,28 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 8, 2026 - Session 43)
+## Latest Changes (Mar 9, 2026 - Session 44)
+
+### نظام إصدارات النظام + دليل الموظفين
+
+**الملفات الجديدة:**
+- `server/changelog.ts`: بيانات الـ Changelog المنظمة — سجل كامل للإصدارات من v2.0.0 إلى v3.1.0 مع وصف تفصيلي لكل ميزة، ودليل شامل لـ 8 أقسام لتأهيل الموظفين الجدد
+- `client/src/pages/EmployeeChangelog.tsx`: صفحة RTL عربية كاملة بتبويبين — "سجل الإصدارات" (آخر إصدار مفتوح وبقية الإصدارات قابلة للطي) + "دليل الموظفين" (أقسام تفاعلية قابلة للطي مع خطوات مرقمة)
+
+**التحديثات:**
+- `server/routes.ts`: مسار API جديد `GET /api/system/changelog` — محمي للموظفين فقط، يعيد version + changelog + guide
+- `client/src/App.tsx`: lazy import + route `/employee/changelog`
+- `client/src/components/app-sidebar.tsx`: عنصر "إصدارات النظام" في قسم "المراقبة" ضمن قائمة الموظفين (employee group, monitoring section)
+
+**الميزات:**
+- بادج الإصدار الحالي (v3.1.0) مع تاريخ آخر تحديث في أعلى الصفحة
+- كل إصدار يحتوي على نوع التغيير: جديد 🟢 / تحسين 🔵 / إصلاح 🟡 / أمان 🟣
+- دليل الموظف الجديد: 8 أقسام تشمل (الدخول، الحضور، الطلبات، الرسائل، المهام، اللوحة المتخصصة، الأدوات، الدعم)
+- مخصص للموظفين فقط — العملاء لا يرونه
+
+---
+
+## Previous Changes (Mar 8, 2026 - Session 43)
 
 ### مواقع التواصل + تحميل الأنظمة + إصلاحات متعددة
 

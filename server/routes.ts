@@ -7558,6 +7558,17 @@ export async function registerRoutes(
   // ══════════════ QIROX SYSTEM SETTINGS ═══════════════════════════════
   // ═══════════════════════════════════════════════════════════════════
 
+  app.get("/api/system/changelog", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    const staffRoles = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
+    if (!staffRoles.includes(user.role)) return res.sendStatus(403);
+    try {
+      const { CHANGELOG, SYSTEM_GUIDE, CURRENT_VERSION } = await import("./changelog");
+      res.json({ version: CURRENT_VERSION, changelog: CHANGELOG, guide: SYSTEM_GUIDE });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.get("/api/public/settings", async (_req, res) => {
     try {
       const { QiroxSystemSettingsModel } = await import("./models");
