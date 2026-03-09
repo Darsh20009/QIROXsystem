@@ -15,7 +15,8 @@ import {
   Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
   Copy, Radio, Search, Filter, ChevronRight, Zap, AlertCircle,
-  Loader2, CircleDot, RefreshCw, Key, Hash, Pencil, Check
+  Loader2, CircleDot, RefreshCw, Key, Hash, Pencil, Check,
+  Shield, Globe, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -61,6 +62,22 @@ export default function AdminQMeet() {
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", scheduledAt: "", durationMinutes: "60" });
 
+  // Quick meeting name dialog
+  const [openInstant, setOpenInstant] = useState(false);
+  const [instantForm, setInstantForm] = useState({ title: "", durationMinutes: "60" });
+
+  // API Keys tab
+  const [mainTab, setMainTab] = useState<"meetings" | "apikeys">("meetings");
+  const [openNewKey, setOpenNewKey] = useState(false);
+  const [newKeyForm, setNewKeyForm] = useState({ name: "", plan: "basic" });
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+
+  const { data: apiKeys = [], refetch: refetchApiKeys } = useQuery<any[]>({
+    queryKey: ["/api/qmeet/api-keys"],
+    enabled: mainTab === "apikeys",
+  });
+
   const copyInstant = (text: string, field: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
     setCopiedField(field);
@@ -79,15 +96,44 @@ export default function AdminQMeet() {
   });
 
   const instantMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/qmeet/instant", {}),
+    mutationFn: (body: { title?: string; durationMinutes?: string }) =>
+      apiRequest("POST", "/api/qmeet/instant", { title: body.title?.trim() || undefined, durationMinutes: parseInt(body.durationMinutes || "60") || 60 }),
     onSuccess: async (res: any) => {
       const data = await res.json();
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
       qc.invalidateQueries({ queryKey: ["/api/qmeet/stats"] });
       setInstantResult(data);
+      setOpenInstant(false);
+      setInstantForm({ title: "", durationMinutes: "60" });
     },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
+
+  const createKeyMutation = useMutation({
+    mutationFn: (data: { name: string; plan: string }) => apiRequest("POST", "/api/qmeet/api-keys", data),
+    onSuccess: async () => {
+      qc.invalidateQueries({ queryKey: ["/api/qmeet/api-keys"] });
+      toast({ title: "✅ تم إنشاء مفتاح API" });
+      setOpenNewKey(false); setNewKeyForm({ name: "", plan: "basic" });
+    },
+    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+  });
+
+  const toggleKeyMutation = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) => apiRequest("PATCH", `/api/qmeet/api-keys/${id}`, { active }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/qmeet/api-keys"] }),
+  });
+
+  const deleteKeyMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/qmeet/api-keys/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/qmeet/api-keys"] }); toast({ title: "تم حذف المفتاح" }); },
+  });
+
+  const copyApiKey = (keyStr: string, id: string) => {
+    navigator.clipboard.writeText(keyStr).catch(() => {});
+    setCopiedKey(id);
+    setTimeout(() => setCopiedKey(null), 2500);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/qmeet/meetings/${id}`),
@@ -233,13 +279,12 @@ export default function AdminQMeet() {
                 <Key className="w-4 h-4" /> انضمام بكود
               </Button>
               <Button
-                onClick={() => instantMutation.mutate()}
-                disabled={instantMutation.isPending}
+                onClick={() => setOpenInstant(true)}
                 variant="outline"
                 className="gap-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
                 data-testid="button-quick-meeting"
               >
-                {instantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                <Zap className="w-4 h-4" />
                 اجتماع سريع
               </Button>
               {isManagement && (
@@ -268,6 +313,136 @@ export default function AdminQMeet() {
             </div>
           )}
         </div>
+
+        {/* ── API Keys Section ── */}
+        {mainTab === "apikeys" && isManagement && (
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-black dark:text-white">مفاتيح API الخارجية</h2>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">أنشئ مفاتيح لربط تطبيقات خارجية مع QMeet · الخدمة مدفوعة</p>
+              </div>
+              <Button onClick={() => setOpenNewKey(true)} className="gap-2 bg-gradient-to-l from-purple-600 to-blue-500 text-white" data-testid="button-new-api-key">
+                <Plus className="w-4 h-4" /> مفتاح جديد
+              </Button>
+            </div>
+
+            {/* API Docs box */}
+            <div className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Code className="w-4 h-4 text-purple-500" />
+                <span className="font-bold text-sm text-black dark:text-white">توثيق API</span>
+                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-semibold">v1</span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3 text-xs">
+                {[
+                  { method: "POST", path: "/api/qmeet/v1/meetings", desc: "إنشاء اجتماع جديد" },
+                  { method: "GET",  path: "/api/qmeet/v1/meetings", desc: "قائمة الاجتماعات المنشأة" },
+                  { method: "GET",  path: "/api/qmeet/v1/meetings/:roomName", desc: "تفاصيل اجتماع محدد" },
+                  { method: "DELETE", path: "/api/qmeet/v1/meetings/:roomName", desc: "إلغاء اجتماع" },
+                ].map(e => (
+                  <div key={e.path} className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2">
+                    <span className={`font-mono font-black text-[10px] px-1.5 py-0.5 rounded-md ${e.method === "POST" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : e.method === "GET" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{e.method}</span>
+                    <code className="text-black/60 dark:text-white/60 text-[10px] flex-1 truncate">{e.path}</code>
+                    <span className="text-black/35 dark:text-white/35 text-[10px] hidden md:block">{e.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-black/[0.04] dark:bg-white/[0.04] rounded-xl p-3 font-mono text-xs text-black/60 dark:text-white/60 space-y-1 select-all">
+                <p className="text-black/40 dark:text-white/40"># أضف هذا الـ header في كل طلب</p>
+                <p><span className="text-purple-600 dark:text-purple-400">x-qmeet-api-key</span>: qmeet_xxxxxxxxxxxxxxxx</p>
+                <p className="text-black/40 dark:text-white/40 mt-2"># مثال: إنشاء اجتماع</p>
+                <p><span className="text-blue-600 dark:text-blue-400">POST</span> {window.location.origin}/api/qmeet/v1/meetings</p>
+                <p>{"{"} "title": "اجتماع العميل", "scheduledAt": "2025-06-01T10:00:00Z", "durationMinutes": 60 {"}"}</p>
+              </div>
+            </div>
+
+            {/* Keys list */}
+            {apiKeys.length === 0 ? (
+              <div className="text-center py-16 bg-black/[0.02] dark:bg-white/[0.02] rounded-3xl border border-black/[0.05] dark:border-white/[0.05]">
+                <Shield className="w-12 h-12 mx-auto mb-3 text-black/10 dark:text-white/10" />
+                <p className="font-medium text-black/30 dark:text-white/30 text-sm">لا توجد مفاتيح API — أنشئ أول مفتاح</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {apiKeys.map((k: any) => (
+                  <motion.div key={k.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                    className={`rounded-2xl border bg-white dark:bg-gray-900 p-5 ${k.active ? "border-black/[0.07] dark:border-white/[0.07]" : "border-red-200 dark:border-red-900/40 opacity-60"}`}
+                    data-testid={`card-apikey-${k.id}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${k.plan === "pro" ? "bg-purple-100 dark:bg-purple-900/30" : "bg-blue-100 dark:bg-blue-900/30"}`}>
+                        <Shield className={`w-5 h-5 ${k.plan === "pro" ? "text-purple-600 dark:text-purple-400" : "text-blue-600 dark:text-blue-400"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-bold text-black dark:text-white text-sm">{k.name}</span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${k.plan === "pro" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"}`}>
+                            {k.plan === "pro" ? "برو — 299 ر.س/شهر" : "أساسي — 99 ر.س/شهر"}
+                          </span>
+                          {!k.active && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">موقوف</span>}
+                        </div>
+                        {/* Key display */}
+                        <div className="flex items-center gap-1.5">
+                          <code className="text-xs font-mono text-black/50 dark:text-white/50 bg-black/[0.04] dark:bg-white/[0.04] px-2 py-0.5 rounded-lg truncate max-w-[260px]">
+                            {revealedKeys.has(k.id) ? k.key : k.key.slice(0, 10) + "•".repeat(20)}
+                          </code>
+                          <button onClick={() => setRevealedKeys(prev => { const s = new Set(prev); s.has(k.id) ? s.delete(k.id) : s.add(k.id); return s; })}
+                            className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
+                            title="إظهار/إخفاء">
+                            {revealedKeys.has(k.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          <button onClick={() => copyApiKey(k.key, k.id)}
+                            className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
+                            title="نسخ" data-testid={`button-copy-apikey-${k.id}`}>
+                            {copiedKey === k.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <div className="flex gap-3 mt-1.5 text-[10px] text-black/35 dark:text-white/35">
+                          <span>أُنشئ بواسطة: {k.createdByName}</span>
+                          <span>الاستخدام: {k.totalCalls}/{k.monthlyLimit} طلب/شهر</span>
+                          {k.lastUsedAt && <span>آخر استخدام: {format(new Date(k.lastUsedAt), "d MMM", { locale: ar })}</span>}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => toggleKeyMutation.mutate({ id: k.id, active: !k.active })}
+                          className={`p-2 rounded-xl transition-colors ${k.active ? "hover:bg-red-50 dark:hover:bg-red-900/20 text-green-600" : "hover:bg-green-50 dark:hover:bg-green-900/20 text-red-500"}`}
+                          title={k.active ? "إيقاف المفتاح" : "تفعيل المفتاح"} data-testid={`button-toggle-apikey-${k.id}`}>
+                          {k.active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                        </button>
+                        <button onClick={() => { if (confirm(`هل تريد حذف المفتاح "${k.name}"؟`)) deleteKeyMutation.mutate(k.id); }}
+                          className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 hover:text-red-600 transition-colors"
+                          title="حذف" data-testid={`button-delete-apikey-${k.id}`}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Tab Switch */}
+        {isManagement && (
+          <div className="flex gap-2">
+            <button onClick={() => setMainTab("meetings")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border transition-all ${mainTab === "meetings" ? "bg-black dark:bg-white text-white dark:text-black border-transparent shadow" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+              data-testid="tab-meetings">
+              <Video className="w-3.5 h-3.5" /> الاجتماعات
+            </button>
+            <button onClick={() => setMainTab("apikeys")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border transition-all ${mainTab === "apikeys" ? "bg-black dark:bg-white text-white dark:text-black border-transparent shadow" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+              data-testid="tab-apikeys">
+              <Webhook className="w-3.5 h-3.5" /> مفاتيح API
+            </button>
+          </div>
+        )}
+
+        {/* ── Meetings Section (only shown when mainTab=meetings) ── */}
+        {mainTab === "meetings" && (<>
 
         {/* Filter + Search */}
         <div className="flex flex-wrap gap-3 items-center">
@@ -438,7 +613,122 @@ export default function AdminQMeet() {
             </AnimatePresence>
           </div>
         )}
+
+        </>)}
       </div>
+
+      {/* Quick Meeting Name Dialog */}
+      <Dialog open={openInstant} onOpenChange={v => { setOpenInstant(v); if (!v) setInstantForm({ title: "", durationMinutes: "60" }); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
+              اجتماع سريع
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-1">
+            <div>
+              <label className="label-xs">اسم الاجتماع (اختياري)</label>
+              <Input
+                value={instantForm.title}
+                onChange={e => setInstantForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="مثال: اجتماع مراجعة سريع"
+                className="mt-1"
+                data-testid="input-instant-title"
+                onKeyDown={e => e.key === "Enter" && !instantMutation.isPending && instantMutation.mutate(instantForm)}
+                autoFocus
+              />
+              <p className="text-[10px] text-black/30 dark:text-white/30 mt-1">إذا تركته فارغاً يُستخدم اسمك تلقائياً</p>
+            </div>
+            <div>
+              <label className="label-xs">المدة (بالدقيقة)</label>
+              <Input
+                type="number"
+                value={instantForm.durationMinutes}
+                onChange={e => setInstantForm(f => ({ ...f, durationMinutes: e.target.value }))}
+                className="mt-1" min={15} max={480}
+                data-testid="input-instant-duration"
+              />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <Button
+                onClick={() => instantMutation.mutate(instantForm)}
+                disabled={instantMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold gap-2"
+                data-testid="button-start-instant"
+              >
+                {instantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {instantMutation.isPending ? "جارٍ الإنشاء..." : "ابدأ الاجتماع"}
+              </Button>
+              <Button variant="outline" onClick={() => setOpenInstant(false)} className="border-black/10 dark:border-white/10">إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create API Key Dialog */}
+      <Dialog open={openNewKey} onOpenChange={v => { setOpenNewKey(v); if (!v) setNewKeyForm({ name: "", plan: "basic" }); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 font-black">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              إنشاء مفتاح API جديد
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="label-xs">اسم المفتاح *</label>
+              <Input
+                value={newKeyForm.name}
+                onChange={e => setNewKeyForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="مثال: تطبيق إدارة العملاء"
+                className="mt-1"
+                data-testid="input-apikey-name"
+              />
+              <p className="text-[10px] text-black/30 dark:text-white/30 mt-1">اسم توضيحي لتمييز هذا المفتاح</p>
+            </div>
+            <div>
+              <label className="label-xs">الخطة</label>
+              <div className="grid grid-cols-2 gap-3 mt-1.5">
+                {[
+                  { key: "basic", label: "أساسي", price: "99 ر.س/شهر", limit: "100 طلب/شهر", color: "border-blue-300 bg-blue-50 dark:bg-blue-900/20" },
+                  { key: "pro", label: "برو", price: "299 ر.س/شهر", limit: "1000 طلب/شهر", color: "border-purple-300 bg-purple-50 dark:bg-purple-900/20" },
+                ].map(p => (
+                  <button key={p.key} type="button"
+                    onClick={() => setNewKeyForm(f => ({ ...f, plan: p.key }))}
+                    className={`p-4 rounded-2xl border-2 text-right transition-all ${newKeyForm.plan === p.key ? p.color + " shadow-sm" : "border-black/10 dark:border-white/10 hover:border-black/20"}`}
+                    data-testid={`option-plan-${p.key}`}>
+                    <p className="font-bold text-sm text-black dark:text-white">{p.label}</p>
+                    <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">{p.price}</p>
+                    <p className="text-[10px] text-black/35 dark:text-white/35">{p.limit}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-3">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                هذه خدمة مدفوعة — سيتم احتساب الرسوم على الحساب شهرياً
+              </p>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <Button
+                onClick={() => { if (!newKeyForm.name.trim()) { toast({ title: "اسم المفتاح مطلوب", variant: "destructive" }); return; } createKeyMutation.mutate(newKeyForm); }}
+                disabled={createKeyMutation.isPending}
+                className="flex-1 bg-gradient-to-l from-purple-600 to-blue-500 text-white gap-2"
+                data-testid="button-submit-apikey"
+              >
+                {createKeyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                {createKeyMutation.isPending ? "جارٍ الإنشاء..." : "إنشاء المفتاح"}
+              </Button>
+              <Button variant="outline" onClick={() => setOpenNewKey(false)} className="border-black/10 dark:border-white/10">إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Meeting Dialog */}
       <Dialog open={openCreate} onOpenChange={v => { setOpenCreate(v); if (!v) setForm(EMPTY_FORM); }}>

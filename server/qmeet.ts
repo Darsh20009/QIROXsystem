@@ -1,6 +1,7 @@
 import { type Express } from "express";
-import { QMeetingModel as _QM, QFeedbackModel as _QF, QReportModel as _QR } from "./qmeet-db";
+import { QMeetingModel as _QM, QFeedbackModel as _QF, QReportModel as _QR, QMeetApiKeyModel as _QMAK } from "./qmeet-db";
 import { UserModel as _UserM } from "./models";
+import crypto from "crypto";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
 
@@ -17,10 +18,15 @@ function makeModelProxy<T>(factory: () => T): T {
     },
   }) as unknown as T;
 }
-const QMeetingModel = makeModelProxy(_QM);
-const QFeedbackModel = makeModelProxy(_QF);
-const QReportModel   = makeModelProxy(_QR);
-const UserModel      = makeModelProxy(_UserM);
+const QMeetingModel    = makeModelProxy(_QM);
+const QFeedbackModel   = makeModelProxy(_QF);
+const QReportModel     = makeModelProxy(_QR);
+const QMeetApiKeyModel = makeModelProxy(_QMAK);
+const UserModel        = makeModelProxy(_UserM);
+
+function generateApiKey(): string {
+  return "qmeet_" + crypto.randomBytes(20).toString("hex");
+}
 
 const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 const fullMeetLink = (link: string) => link.startsWith("http") ? link : `${SITE_URL}${link}`;
@@ -766,6 +772,162 @@ export function registerQMeetRoutes(app: Express) {
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── QMeet API Keys (management only) ────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // GET /api/qmeet/api-keys — list all keys
+  app.get("/api/qmeet/api-keys", requireManagement, async (_req, res) => {
+    try {
+      const keys = await QMeetApiKeyModel.find().sort({ createdAt: -1 });
+      res.json(keys);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // POST /api/qmeet/api-keys — create new key
+  app.post("/api/qmeet/api-keys", requireManagement, async (req: any, res) => {
+    try {
+      const { name, plan } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "اسم المفتاح مطلوب" });
+      const planConfig: Record<string, { monthlyPrice: number; monthlyLimit: number }> = {
+        basic: { monthlyPrice: 99,  monthlyLimit: 100  },
+        pro:   { monthlyPrice: 299, monthlyLimit: 1000 },
+      };
+      const cfg = planConfig[plan] || planConfig.basic;
+      const apiKey = await QMeetApiKeyModel.create({
+        key: generateApiKey(),
+        name: name.trim(),
+        createdBy: String(req.user._id || req.user.id),
+        createdByName: req.user.fullName || req.user.username,
+        plan: plan || "basic",
+        ...cfg,
+      });
+      res.status(201).json(apiKey);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // PATCH /api/qmeet/api-keys/:id — update name or toggle active
+  app.patch("/api/qmeet/api-keys/:id", requireManagement, async (req: any, res) => {
+    try {
+      const { name, active } = req.body;
+      const update: any = {};
+      if (name !== undefined) update.name = name.trim();
+      if (active !== undefined) update.active = active;
+      const apiKey = await QMeetApiKeyModel.findByIdAndUpdate(req.params.id, update, { new: true });
+      if (!apiKey) return res.status(404).json({ message: "المفتاح غير موجود" });
+      res.json(apiKey);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // DELETE /api/qmeet/api-keys/:id — revoke key
+  app.delete("/api/qmeet/api-keys/:id", requireManagement, async (req, res) => {
+    try {
+      await QMeetApiKeyModel.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── QMeet Public REST API (authenticated by API key header) ─────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async function resolveApiKey(req: any, res: any): Promise<any | null> {
+    const header = req.headers["x-qmeet-api-key"] || req.query.api_key;
+    if (!header) { res.status(401).json({ error: "مفتاح API مطلوب في رأس x-qmeet-api-key" }); return null; }
+    const apiKey = await QMeetApiKeyModel.findOne({ key: header });
+    if (!apiKey) { res.status(401).json({ error: "مفتاح API غير صحيح" }); return null; }
+    if (!apiKey.active) { res.status(403).json({ error: "مفتاح API موقوف — تواصل مع الإدارة" }); return null; }
+    if (apiKey.totalCalls >= apiKey.monthlyLimit) { res.status(429).json({ error: "تم استنفاد الحد الشهري لطلبات API", limit: apiKey.monthlyLimit }); return null; }
+    await QMeetApiKeyModel.findByIdAndUpdate(apiKey._id, { $inc: { totalCalls: 1 }, lastUsedAt: new Date() });
+    return apiKey;
+  }
+
+  // POST /api/qmeet/v1/meetings — create meeting via API key
+  app.post("/api/qmeet/v1/meetings", async (req: any, res) => {
+    try {
+      const apiKey = await resolveApiKey(req, res); if (!apiKey) return;
+      const {
+        title, description = "", scheduledAt, durationMinutes = 60,
+        participantEmails = [], participantNames = [], notes = "",
+      } = req.body;
+      if (!title?.trim()) return res.status(400).json({ error: "عنوان الاجتماع مطلوب (title)" });
+      if (!scheduledAt) return res.status(400).json({ error: "موعد الاجتماع مطلوب (scheduledAt)" });
+      const roomName = generateRoomName();
+      const meetingLink = `/meet/${roomName}`;
+      const endsAt = new Date(new Date(scheduledAt).getTime() + durationMinutes * 60 * 1000);
+      const meeting = await QMeetingModel.create({
+        title: title.trim(), description,
+        hostId: `apikey_${apiKey._id}`,
+        hostName: apiKey.name,
+        scheduledAt: new Date(scheduledAt), endsAt, durationMinutes,
+        roomName, meetingLink,
+        status: "scheduled", type: "internal",
+        participantIds: [], participantEmails, participantNames,
+        notes, agenda: [],
+        joinCode: generateJoinCode(),
+        joinRequests: [], reminderSent: false, instantJoin: false,
+        apiKeyId: String(apiKey._id),
+      });
+      res.status(201).json({
+        id: meeting._id,
+        roomName: meeting.roomName,
+        joinCode: meeting.joinCode,
+        meetingLink: `${SITE_URL}${meeting.meetingLink}`,
+        joinUrl: `${SITE_URL}/meet/join?code=${meeting.joinCode}`,
+        title: meeting.title,
+        scheduledAt: meeting.scheduledAt,
+        durationMinutes: meeting.durationMinutes,
+        status: meeting.status,
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // GET /api/qmeet/v1/meetings — list meetings created via this API key
+  app.get("/api/qmeet/v1/meetings", async (req: any, res) => {
+    try {
+      const apiKey = await resolveApiKey(req, res); if (!apiKey) return;
+      const meetings = await QMeetingModel.find({ apiKeyId: String(apiKey._id) })
+        .sort({ scheduledAt: -1 }).limit(50)
+        .select("title status scheduledAt durationMinutes joinCode roomName meetingLink");
+      res.json(meetings.map((m: any) => ({
+        id: m._id,
+        title: m.title, status: m.status,
+        scheduledAt: m.scheduledAt, durationMinutes: m.durationMinutes,
+        joinCode: m.joinCode,
+        meetingLink: `${SITE_URL}${m.meetingLink}`,
+        joinUrl: `${SITE_URL}/meet/join?code=${m.joinCode}`,
+      })));
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // GET /api/qmeet/v1/meetings/:roomName — get meeting info via API key
+  app.get("/api/qmeet/v1/meetings/:roomName", async (req: any, res) => {
+    try {
+      const apiKey = await resolveApiKey(req, res); if (!apiKey) return;
+      const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName });
+      if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
+      res.json({
+        id: meeting._id, title: meeting.title, status: meeting.status,
+        scheduledAt: meeting.scheduledAt, durationMinutes: meeting.durationMinutes,
+        joinCode: meeting.joinCode,
+        meetingLink: `${SITE_URL}${meeting.meetingLink}`,
+        joinUrl: `${SITE_URL}/meet/join?code=${meeting.joinCode}`,
+        participantEmails: meeting.participantEmails,
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // DELETE /api/qmeet/v1/meetings/:roomName — end/cancel a meeting
+  app.delete("/api/qmeet/v1/meetings/:roomName", async (req: any, res) => {
+    try {
+      const apiKey = await resolveApiKey(req, res); if (!apiKey) return;
+      const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName, apiKeyId: String(apiKey._id) });
+      if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود أو لا ينتمي لمفتاحك" });
+      await QMeetingModel.findByIdAndUpdate(meeting._id, { status: "cancelled" });
+      res.json({ success: true, message: "تم إلغاء الاجتماع" });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   console.log("[QMeet] Routes registered (main MongoDB)");

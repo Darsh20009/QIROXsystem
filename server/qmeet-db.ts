@@ -37,6 +37,7 @@ const qMeetingSchema = new mongoose.Schema({
   guestToken:     { type: String, default: null },
   joinCode:       { type: String, default: null },
   instantJoin:    { type: Boolean, default: false },
+  apiKeyId:       { type: String, default: null },
   joinRequests:   [{
     userId:      { type: String, required: true },
     userName:    { type: String, default: "" },
@@ -73,3 +74,20 @@ qReportSchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id.toS
 export const QMeetingModel = () => getModel("QMeeting", qMeetingSchema);
 export const QFeedbackModel = () => getModel("QFeedback", qFeedbackSchema);
 export const QReportModel = () => getModel("QReport", qReportSchema);
+
+// ── QMeet API Key ─────────────────────────────────────────────────────────────
+const qMeetApiKeySchema = new mongoose.Schema({
+  key:           { type: String, required: true, unique: true },
+  name:          { type: String, required: true },
+  createdBy:     { type: String, required: true },
+  createdByName: { type: String, default: "" },
+  plan:          { type: String, enum: ["basic", "pro"], default: "basic" },
+  monthlyPrice:  { type: Number, default: 99 },
+  monthlyLimit:  { type: Number, default: 100 },
+  totalCalls:    { type: Number, default: 0 },
+  active:        { type: Boolean, default: true },
+  lastUsedAt:    { type: Date, default: null },
+}, { timestamps: true });
+qMeetApiKeySchema.set("toJSON", { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
+
+export const QMeetApiKeyModel = () => getModel("QMeetApiKey", qMeetApiKeySchema);
