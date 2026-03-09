@@ -1381,6 +1381,26 @@ export async function registerRoutes(
     } catch (e) { console.error("[Email] task assigned email error:", e); }
   });
 
+  // ── Admin: set/update usage guide for a project ──
+  app.patch("/api/admin/projects/:id/usage-guide", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (role === "client") return res.sendStatus(403);
+    const { ProjectModel } = await import("./models");
+    const { title, description, files } = req.body;
+    const guide: any = { updatedAt: new Date() };
+    if (title !== undefined) guide.title = title || "شرح استخدام النظام";
+    if (description !== undefined) guide.description = description;
+    if (Array.isArray(files)) guide.files = files;
+    const project = await ProjectModel.findByIdAndUpdate(
+      req.params.id,
+      { $set: { usageGuide: { ...guide } } },
+      { new: true }
+    ).lean();
+    if (!project) return res.sendStatus(404);
+    res.json({ success: true, usageGuide: (project as any).usageGuide });
+  });
+
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);
@@ -3811,6 +3831,15 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const specs = await storage.upsertOrderSpecs(req.params.id, req.body);
     res.json(specs);
+  });
+
+  // Get project associated with an order (for admin usage guide management)
+  app.get("/api/admin/orders/:id/project", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { ProjectModel } = await import("./models");
+    const project = await (ProjectModel as any).findOne({ orderId: req.params.id }).lean();
+    if (!project) return res.json(null);
+    res.json({ ...project, id: String((project as any)._id) });
   });
 
   // Client can view specs for their own orders

@@ -116,8 +116,16 @@ const projectSchema = new mongoose.Schema({
   progress: { type: Number, default: 0 },
   repoUrl: String,
   stagingUrl: String,
+  productionUrl: String,
+  deliveredAt: Date,
   startDate: Date,
   deadline: Date,
+  usageGuide: {
+    title: { type: String, default: "شرح استخدام النظام" },
+    description: { type: String },
+    files: [{ type: String }],
+    updatedAt: { type: Date },
+  },
 }, { timestamps: true });
 
 const taskSchema = new mongoose.Schema({

@@ -98,6 +98,7 @@ export default function AdminOrders() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
   const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
+  const [guideForm, setGuideForm] = useState({ title: "شرح استخدام النظام", description: "", files: "" });
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -115,6 +116,28 @@ export default function AdminOrders() {
       return res.json();
     },
   });
+
+  const { data: orderProject } = useQuery<any>({
+    queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'],
+    enabled: !!selectedOrder?.id,
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/orders/${selectedOrder!.id}/project`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (orderProject?.usageGuide) {
+      setGuideForm({
+        title: orderProject.usageGuide.title || "شرح استخدام النظام",
+        description: orderProject.usageGuide.description || "",
+        files: (orderProject.usageGuide.files || []).join("\n"),
+      });
+    } else {
+      setGuideForm({ title: "شرح استخدام النظام", description: "", files: "" });
+    }
+  }, [orderProject]);
 
   useEffect(() => {
     if (selectedOrderSpecs) {
@@ -229,6 +252,31 @@ export default function AdminOrders() {
     },
     onError: () => toast({ title: "فشل إنشاء المشروع", variant: "destructive" }),
   });
+
+  const saveGuideMutation = useMutation({
+    mutationFn: async ({ projectId, guide }: { projectId: string; guide: any }) => {
+      const res = await apiRequest("PATCH", `/api/admin/projects/${projectId}/usage-guide`, guide);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({ title: "✅ تم حفظ شرح الاستخدام" });
+    },
+    onError: () => toast({ title: "فشل حفظ الشرح", variant: "destructive" }),
+  });
+
+  const handleSaveGuide = () => {
+    if (!orderProject?.id) { toast({ title: "لا يوجد مشروع مرتبط بهذا الطلب", variant: "destructive" }); return; }
+    saveGuideMutation.mutate({
+      projectId: orderProject.id,
+      guide: {
+        title: guideForm.title || "شرح استخدام النظام",
+        description: guideForm.description,
+        files: guideForm.files.split("\n").map(f => f.trim()).filter(Boolean),
+      },
+    });
+  };
 
   const handleQuickStatus = (id: string, status: string) => {
     updateMutation.mutate({ id, updates: { status } });
@@ -891,6 +939,39 @@ export default function AdminOrders() {
                           {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                           حفظ المواصفات التقنية
                         </Button>
+
+                        {/* ─── Usage Guide Section ─── */}
+                        <div className="border border-blue-200 rounded-2xl p-5 bg-blue-50">
+                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <FileText className="w-3.5 h-3.5" />شرح استخدام النظام
+                          </p>
+                          {!orderProject && (
+                            <p className="text-xs text-blue-600/60 mb-3">⚠️ لا يوجد مشروع مرتبط بهذا الطلب بعد. أنشئ المشروع أولاً لتتمكن من إضافة شرح الاستخدام.</p>
+                          )}
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">عنوان الدليل</label>
+                              <Input value={guideForm.title} onChange={e => setGuideForm(f => ({ ...f, title: e.target.value }))}
+                                placeholder="شرح استخدام النظام" className="text-sm bg-white" data-testid="input-guide-title" disabled={!orderProject} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">محتوى الشرح (يظهر للعميل في لوحة التحكم)</label>
+                              <Textarea value={guideForm.description} onChange={e => setGuideForm(f => ({ ...f, description: e.target.value }))}
+                                placeholder="اكتب شرحاً مفصّلاً لكيفية استخدام النظام، خطوة بخطوة..." className="text-sm h-28 resize-none bg-white" data-testid="textarea-guide-desc" disabled={!orderProject} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">روابط ملفات مرفقة (رابط في كل سطر)</label>
+                              <Textarea value={guideForm.files} onChange={e => setGuideForm(f => ({ ...f, files: e.target.value }))}
+                                placeholder="https://docs.example.com/guide.pdf&#10;https://example.com/video.mp4" className="text-sm h-16 resize-none font-mono bg-white text-xs" data-testid="textarea-guide-files" disabled={!orderProject} dir="ltr" />
+                            </div>
+                            <Button onClick={handleSaveGuide} disabled={saveGuideMutation.isPending || !orderProject}
+                              className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-xl text-xs font-bold"
+                              data-testid="button-save-guide">
+                              {saveGuideMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                              حفظ شرح الاستخدام
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </ScrollArea>

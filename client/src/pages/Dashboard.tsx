@@ -1471,6 +1471,7 @@ export default function Dashboard() {
   const [uploadingProofOrderId, setUploadingProofOrderId] = useState<string | null>(null);
   const proofFileRef = useRef<HTMLInputElement>(null);
   const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null);
+  const [showAllSectors, setShowAllSectors] = useState(false);
 
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, file }: { orderId: string; file: File }) => {
@@ -2248,7 +2249,48 @@ export default function Dashboard() {
                                 <Globe className="w-3 h-3" /> {L ? "معاينة" : "Preview"}
                               </a>
                             )}
+                            {(project as any).productionUrl && (
+                              <a href={(project as any).productionUrl} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-50 dark:bg-green-950/30 text-[11px] text-green-700 dark:text-green-400 hover:opacity-80 transition-colors border border-green-200 dark:border-green-800">
+                                <ExternalLink className="w-3 h-3" /> {L ? "الموقع الرسمي" : "Live Site"}
+                              </a>
+                            )}
                           </div>
+
+                          {/* Usage Guide — shown when project has a guide attached */}
+                          {(project as any).usageGuide?.description && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                              className="mt-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-xl p-4"
+                              data-testid={`usage-guide-${project.id}`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <FileText className="w-3.5 h-3.5 text-white" />
+                                </div>
+                                <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                                  {(project as any).usageGuide.title || (L ? "شرح استخدام النظام" : "System Usage Guide")}
+                                </p>
+                              </div>
+                              <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed whitespace-pre-line">
+                                {(project as any).usageGuide.description}
+                              </p>
+                              {((project as any).usageGuide.files || []).length > 0 && (
+                                <div className="mt-3 space-y-1.5">
+                                  <p className="text-[9px] font-bold text-blue-600/60 dark:text-blue-400/60 uppercase tracking-widest">{L ? "ملفات مرفقة" : "Attached Files"}</p>
+                                  {((project as any).usageGuide.files as string[]).map((fileUrl, fi) => {
+                                    const fileName = fileUrl.split('/').pop() || `ملف ${fi + 1}`;
+                                    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileUrl);
+                                    return (
+                                      <a key={fi} href={fileUrl} target="_blank" rel="noopener noreferrer" data-testid={`guide-file-${project.id}-${fi}`}
+                                        className="flex items-center gap-2 text-[11px] text-blue-700 dark:text-blue-400 hover:underline">
+                                        <span className="text-sm">{isImage ? "🖼️" : "📎"}</span>
+                                        <span className="truncate max-w-xs">{decodeURIComponent(fileName)}</span>
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
 
                           {/* Actions */}
                           <div className="flex items-center gap-2 pt-3 border-t border-black/[0.04] dark:border-white/[0.05]">
@@ -2541,116 +2583,241 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Packages / Offers Section ─── */}
-        {pricingPlans && pricingPlans.filter(p => !p.isCustom).length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
-                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
-                  <CreditCard className="w-3.5 h-3.5 text-white" />
+        {pricingPlans && pricingPlans.filter(p => !p.isCustom).length > 0 && (() => {
+          // Map user businessType → plan segment
+          const BT_SEGMENT_MAP: Record<string, string> = {
+            commercial: "ecommerce", restaurant: "restaurant", education: "education",
+            medical: "healthcare", real_estate: "realestate", services: "corporate",
+            technology: "corporate", other: "",
+          };
+          const SECTOR_LABELS: Record<string, { ar: string; en: string; icon: string }> = {
+            restaurant: { ar: "مطاعم وكافيه", en: "Restaurants", icon: "🍽️" },
+            ecommerce:  { ar: "متاجر إلكترونية", en: "E-commerce", icon: "🛒" },
+            education:  { ar: "منصات تعليمية", en: "Education", icon: "🎓" },
+            corporate:  { ar: "شركات ومؤسسات", en: "Corporate", icon: "🏢" },
+            realestate: { ar: "عقارات", en: "Real Estate", icon: "🏗️" },
+            healthcare: { ar: "صحة وطب", en: "Healthcare", icon: "🏥" },
+            general:    { ar: "عام", en: "General", icon: "⚡" },
+          };
+          const userSegment = BT_SEGMENT_MAP[(user as any)?.businessType || ""] || "";
+          const isSubscribed = (user as any).subscriptionStatus === "active";
+          const regularPlans = pricingPlans.filter(p => !p.isCustom);
+          // My sector's plans first, then others
+          const myPlans = userSegment ? regularPlans.filter(p => p.segment === userSegment) : [];
+          const otherPlans = userSegment ? regularPlans.filter(p => p.segment !== userSegment) : regularPlans;
+          // All unique segments
+          const allSegments = [...new Set(regularPlans.map(p => p.segment || "general"))].filter(Boolean);
+
+          // Render a single plan card
+          const PlanCard = ({ plan, i }: { plan: any; i: number }) => {
+            const discount = plan.originalPrice && plan.price
+              ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100) : 0;
+            const billingLabel = L
+              ? (plan.billingCycle === "monthly" ? "/شهر" : plan.billingCycle === "yearly" ? "/سنة" : "")
+              : (plan.billingCycle === "monthly" ? "/mo" : plan.billingCycle === "yearly" ? "/yr" : "");
+            return (
+              <motion.div key={plan.id || plan.slug} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 + i * 0.05 }}>
+                <div className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : "border-black/[0.06] dark:border-white/[0.08]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
+                  {plan.isPopular && <div className="bg-black px-4 py-1.5 flex items-center gap-2"><Check className="w-3 h-3 text-white" /><span className="text-white text-[10px] font-bold">{L ? "الأكثر طلباً" : "Most Popular"}</span></div>}
+                  {plan.offerLabel && !plan.isPopular && <div className="bg-emerald-500 px-4 py-1.5 flex items-center gap-2"><Package className="w-3 h-3 text-white" /><span className="text-white text-[10px] font-bold">{plan.offerLabel}</span></div>}
+                  <div className="p-5">
+                    <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.name || plan.nameAr)}</h3>
+                    <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2 mb-3">{L ? plan.descriptionAr : (plan.description || plan.descriptionAr)}</p>
+                    <div className="mb-4">
+                      {plan.originalPrice && (<div className="flex items-center gap-2 mb-1"><span className="text-xs text-black/25 dark:text-white/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>{discount > 0 && <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>}</div>)}
+                      <div className="flex items-baseline gap-1"><span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span><span className="text-xs text-black/35 dark:text-white/35">ر.س {billingLabel}</span></div>
+                    </div>
+                    <div className="space-y-1.5 mb-4">
+                      {(L ? plan.featuresAr : (plan.features || plan.featuresAr))?.slice(0, 4).map((f: string, fi: number) => (
+                        <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50 dark:text-white/50"><div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0"><Check className="w-2 h-2 text-black/50 dark:text-white/50" /></div>{f}</div>
+                      ))}
+                      {(plan.featuresAr?.length || 0) > 4 && <p className="text-[10px] text-black/20 dark:text-white/20 mr-5">+{(plan.featuresAr?.length || 0) - 4} {L ? "مزايا أخرى" : "more features"}</p>}
+                    </div>
+                    <Link href="/order"><Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.1]"}`} data-testid={`button-select-plan-${plan.slug}`}>{L ? "اختر الباقة" : "Select Plan"}<ChevronLeft className="w-3.5 h-3.5 mr-1" /></Button></Link>
+                  </div>
                 </div>
-                {L ? "الباقات والعروض المتاحة" : "Available Plans & Offers"}
-              </h2>
-              <Link href="/prices">
-                <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-all-plans">
-                  {L ? "عرض الكل" : "View all"} <ArrowUpRight className="w-3 h-3" />
-                </button>
-              </Link>
-            </div>
+              </motion.div>
+            );
+          };
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {pricingPlans.filter(p => !p.isCustom).slice(0, 3).map((plan, i) => {
-                const discount = plan.originalPrice && plan.price
-                  ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
-                  : 0;
-                const billingLabel = L
-                  ? (plan.billingCycle === "monthly" ? "/شهر" : plan.billingCycle === "yearly" ? "/سنة" : "")
-                  : (plan.billingCycle === "monthly" ? "/mo" : plan.billingCycle === "yearly" ? "/yr" : "");
-                return (
-                  <motion.div key={plan.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.06 }}>
-                    <div className={`bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : "border-black/[0.06] dark:border-white/[0.08]"}`} data-testid={`dashboard-plan-${plan.slug}`}>
-                      {plan.isPopular && (
-                        <div className="bg-black px-4 py-1.5 flex items-center gap-2">
-                          <Check className="w-3 h-3 text-white" />
-                          <span className="text-white text-[10px] font-bold">{L ? "الأكثر طلباً" : "Most Popular"}</span>
-                        </div>
-                      )}
-                      {plan.offerLabel && !plan.isPopular && (
-                        <div className="bg-emerald-500 px-4 py-1.5 flex items-center gap-2">
-                          <Package className="w-3 h-3 text-white" />
-                          <span className="text-white text-[10px] font-bold">{plan.offerLabel}</span>
-                        </div>
-                      )}
-                      <div className="p-5">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.name || plan.nameAr)}</h3>
-                            <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2">{L ? plan.descriptionAr : (plan.description || plan.descriptionAr)}</p>
+          return (
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-8">
+              {/* ── Header ── */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
+                  <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center"><CreditCard className="w-3.5 h-3.5 text-white" /></div>
+                  {L ? "الباقات والعروض المتاحة" : "Available Plans & Offers"}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {!isSubscribed && (
+                    <button onClick={() => setShowAllSectors(v => !v)} data-testid="btn-toggle-all-sectors"
+                      className="text-[10px] text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 flex items-center gap-1 border border-black/[0.08] dark:border-white/[0.08] px-2.5 py-1 rounded-full transition-colors">
+                      <Globe className="w-3 h-3" />
+                      {showAllSectors ? (L ? "قطاعي فقط" : "My sector") : (L ? "كل القطاعات" : "All sectors")}
+                    </button>
+                  )}
+                  <Link href="/prices">
+                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-all-plans">
+                      {L ? "عرض الكل" : "View all"} <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* ── Subscribed State ── */}
+              {isSubscribed ? (
+                <div className="space-y-6">
+                  {/* Subscription detail card */}
+                  {(() => {
+                    const expiresAt = new Date((user as any).subscriptionExpiresAt);
+                    const startDate = (user as any).subscriptionStartDate ? new Date((user as any).subscriptionStartDate) : null;
+                    const now = new Date();
+                    const daysLeft = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / 86400000));
+                    const countdownStarted = startDate ? startDate <= now : false;
+                    const totalDays = (user as any).subscriptionPeriod === "monthly" ? 30 : (user as any).subscriptionPeriod === "6months" ? 180 : 365;
+                    const elapsed = totalDays - daysLeft;
+                    const pct = Math.max(0, Math.min(100, Math.round((daysLeft / totalDays) * 100)));
+                    const isDanger = daysLeft <= 7, isWarning = daysLeft <= 30;
+                    return (
+                      <div className={`rounded-2xl p-5 border ${isDanger ? "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800/40" : isWarning ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`} data-testid="subscription-detail-card">
+                        <div className="flex items-start gap-4">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${isDanger ? "bg-red-100 dark:bg-red-900/30" : isWarning ? "bg-amber-100 dark:bg-amber-900/30" : "bg-black"}`}>
+                            <Crown className={`w-5 h-5 ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-white"}`} />
                           </div>
-                        </div>
-
-                        <div className="mb-4">
-                          {plan.originalPrice && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-black/25 dark:text-white/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>
-                              {discount > 0 && (
-                                <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>
-                              )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              <p className={`font-black text-base ${isDanger ? "text-red-700 dark:text-red-400" : isWarning ? "text-amber-700 dark:text-amber-400" : "text-black dark:text-white"}`}>
+                                {L ? `اشتراكك في ${(user as any).subscriptionSegmentNameAr || "Qirox"}` : `Your ${(user as any).subscriptionSegmentNameEn || "QIROX"} Subscription`}
+                              </p>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDanger ? "bg-red-100 text-red-600" : isWarning ? "bg-amber-100 text-amber-600" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
+                                {L ? "نشط" : "Active"}
+                              </span>
+                              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${countdownStarted ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400" : "bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"}`}>
+                                {countdownStarted ? (L ? "⏱️ العد بدأ" : "⏱️ Countdown started") : (L ? "⏳ العد لم يبدأ بعد" : "⏳ Countdown not started")}
+                              </span>
                             </div>
-                          )}
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span>
-                            <span className="text-xs text-black/35 dark:text-white/35">ر.س {billingLabel}</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 mb-4">
-                          {(L ? plan.featuresAr : (plan.features || plan.featuresAr))?.slice(0, 4).map((f: string, fi: number) => (
-                            <div key={fi} className="flex items-center gap-2 text-[11px] text-black/50 dark:text-white/50">
-                              <div className="w-3.5 h-3.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-                                <Check className="w-2 h-2 text-black/50 dark:text-white/50" />
+                            {/* Progress bar */}
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="flex-1 h-2.5 bg-black/[0.06] dark:bg-white/[0.08] rounded-full overflow-hidden">
+                                <motion.div className={`h-full rounded-full ${isDanger ? "bg-red-500" : isWarning ? "bg-amber-500" : "bg-black dark:bg-white"}`}
+                                  initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.4, ease: "easeOut" }} />
                               </div>
-                              {f}
+                              <span className={`text-xs font-black ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{pct}%</span>
                             </div>
-                          ))}
-                          {(plan.featuresAr?.length || 0) > 4 && (
-                            <p className="text-[10px] text-black/20 dark:text-white/20 mr-5">+{(plan.featuresAr?.length || 0) - 4} {L ? "مزايا أخرى" : "more features"}</p>
-                          )}
+                            {/* Days */}
+                            <div className="flex items-center gap-4 flex-wrap">
+                              <div className="text-center">
+                                <p className={`text-3xl font-black leading-none ${isDanger ? "text-red-600" : isWarning ? "text-amber-600" : "text-black dark:text-white"}`}>{daysLeft}</p>
+                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">{L ? "يوم متبقي" : "days left"}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xl font-black leading-none text-black/40 dark:text-white/40">{elapsed}</p>
+                                <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">{L ? "يوم منقضي" : "days elapsed"}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                  {L ? "ينتهي" : "Expires"}: {expiresAt.toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                                </p>
+                                {startDate && (
+                                  <p className="text-[10px] text-black/30 dark:text-white/30 mt-0.5">
+                                    {L ? "بدأ العد" : "Started"}: {startDate.toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
+                      </div>
+                    );
+                  })()}
 
-                        <Link href="/order">
-                          <Button size="sm" className={`w-full h-9 rounded-xl text-xs font-semibold ${plan.isPopular ? "bg-black text-white hover:bg-black/80" : "bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.1] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.1]"}`} data-testid={`button-select-plan-${plan.slug}`}>
-                            {L ? "اختر الباقة" : "Select Plan"}
-                            <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-                          </Button>
-                        </Link>
+                  {/* "Continue your journey" — explore other sectors */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-violet-500" />
+                      <p className="font-bold text-sm text-black dark:text-white">{L ? "أكمل مسيرتك مع Qirox" : "Continue your journey with Qirox"}</p>
+                    </div>
+                    <p className="text-xs text-black/40 dark:text-white/40 mb-4">{L ? "اكتشف باقي القطاعات وابدأ مشروعاً جديداً في مجال آخر" : "Discover other sectors and start a new project in a different field"}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {allSegments.map(seg => {
+                        const info = SECTOR_LABELS[seg] || { ar: seg, en: seg, icon: "📁" };
+                        const count = regularPlans.filter(p => p.segment === seg).length;
+                        return (
+                          <Link key={seg} href={`/prices?sector=${seg}`}>
+                            <div className={`rounded-xl border p-3 cursor-pointer hover:shadow-md transition-all group ${seg === userSegment ? "border-black/20 dark:border-white/20 bg-black/[0.03] dark:bg-white/[0.03]" : "border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900"}`}
+                              data-testid={`explore-sector-${seg}`}>
+                              <span className="text-xl block mb-1">{info.icon}</span>
+                              <p className="text-xs font-bold text-black dark:text-white leading-tight">{L ? info.ar : info.en}</p>
+                              <p className="text-[9px] text-black/30 dark:text-white/30 mt-0.5">{count} {L ? "باقة" : "plans"}</p>
+                              {seg === userSegment && <span className="text-[9px] text-black/50 dark:text-white/50 mt-1 block">{L ? "قطاعك ✓" : "Your sector ✓"}</span>}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── Non-subscribed: smart plan cards ── */
+                <div className="space-y-6">
+                  {/* My sector plans */}
+                  {myPlans.length > 0 && !showAllSectors && (
+                    <div>
+                      {userSegment && (
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base">{SECTOR_LABELS[userSegment]?.icon || "📁"}</span>
+                          <p className="text-xs font-bold text-black/60 dark:text-white/60">
+                            {L ? `باقات ${SECTOR_LABELS[userSegment]?.ar || userSegment} — مناسبة لنشاطك` : `${SECTOR_LABELS[userSegment]?.en || userSegment} Plans — matching your business`}
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {myPlans.map((plan, i) => <PlanCard key={plan.id || plan.slug} plan={plan} i={i} />)}
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+                  )}
 
-            {(pricingPlans?.find(p => p.isCustom)) && (
-              <div className="mt-4 bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-black dark:text-white text-sm">{L ? pricingPlans.find(p => p.isCustom)?.nameAr : (pricingPlans.find(p => p.isCustom)?.name || pricingPlans.find(p => p.isCustom)?.nameAr)}</h4>
-                    <p className="text-[10px] text-black/35 dark:text-white/35">{L ? pricingPlans.find(p => p.isCustom)?.descriptionAr : (pricingPlans.find(p => p.isCustom)?.description || pricingPlans.find(p => p.isCustom)?.descriptionAr)}</p>
-                  </div>
+                  {/* All sectors mode or no matching sector */}
+                  {(showAllSectors || myPlans.length === 0) && (
+                    <div className="space-y-5">
+                      {allSegments.map(seg => {
+                        const segPlans = regularPlans.filter(p => p.segment === seg);
+                        if (segPlans.length === 0) return null;
+                        const info = SECTOR_LABELS[seg] || { ar: seg, en: seg, icon: "📁" };
+                        return (
+                          <div key={seg}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-base">{info.icon}</span>
+                              <p className="text-xs font-bold text-black/60 dark:text-white/60">{L ? info.ar : info.en}</p>
+                              {seg === userSegment && <span className="text-[9px] bg-black text-white dark:bg-white dark:text-black px-1.5 py-0.5 rounded-full">{L ? "قطاعك" : "Your sector"}</span>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                              {segPlans.map((plan, i) => <PlanCard key={plan.id || plan.slug} plan={plan} i={i} />)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Custom / enterprise */}
+                  {(pricingPlans?.find(p => p.isCustom)) && (
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0"><Building2 className="w-5 h-5 text-white" /></div>
+                        <div>
+                          <h4 className="font-bold text-black dark:text-white text-sm">{L ? pricingPlans.find(p => p.isCustom)?.nameAr : (pricingPlans.find(p => p.isCustom)?.name || pricingPlans.find(p => p.isCustom)?.nameAr)}</h4>
+                          <p className="text-[10px] text-black/35 dark:text-white/35">{L ? pricingPlans.find(p => p.isCustom)?.descriptionAr : (pricingPlans.find(p => p.isCustom)?.description || pricingPlans.find(p => p.isCustom)?.descriptionAr)}</p>
+                        </div>
+                      </div>
+                      <Link href="/contact"><Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs font-semibold whitespace-nowrap" data-testid="button-enterprise-contact"><Phone className="w-3.5 h-3.5 ml-1.5" />{L ? "تواصل للتخصيص" : "Contact for Customization"}</Button></Link>
+                    </div>
+                  )}
                 </div>
-                <Link href="/contact">
-                  <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs font-semibold whitespace-nowrap" data-testid="button-enterprise-contact">
-                    <Phone className="w-3.5 h-3.5 ml-1.5" />
-                    {L ? "تواصل للتخصيص" : "Contact for Customization"}
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </motion.div>
-        )}
+              )}
+            </motion.div>
+          );
+        })()}
 
         {/* CTA Band */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
