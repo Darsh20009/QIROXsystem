@@ -122,6 +122,7 @@ const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
 const TwoFactorSetup = lazy(() => import("@/pages/TwoFactorSetup"));
 const ClientReferral = lazy(() => import("@/pages/ClientReferral"));
 const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
+const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
 function PageLoader() {
@@ -242,6 +243,7 @@ function AdminRouter() {
         <Route path="/employee/changelog" component={EmployeeChangelog} />
         <Route path="/admin/kanban" component={AdminKanban} />
         <Route path="/admin/referrals" component={AdminReferrals} />
+        <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
         <Route path="/security/2fa" component={TwoFactorSetup} />
         <Route path="/referral" component={ClientReferral} />
         <Route path="/sales/marketing" component={SalesMarketing} />

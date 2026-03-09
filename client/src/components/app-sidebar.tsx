@@ -134,6 +134,7 @@ export function AppSidebar() {
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "لوحة المشاريع" : "Project Board", icon: LayoutGrid, url: "/admin/kanban", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "سجل الإحالات" : "Referrals", icon: Gift, url: "/admin/referrals", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "اشتراكات الإضافات" : "Addon Subscriptions", icon: Package, url: "/admin/addon-subscriptions", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     // Admin — team

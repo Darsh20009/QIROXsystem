@@ -953,12 +953,39 @@ const extraAddonSchema = new mongoose.Schema({
   category: { type: String, default: "feature" },
   isActive: { type: Boolean, default: true },
   sortOrder: { type: Number, default: 0 },
-  // Restrict visibility: empty array = show for all
   segments: { type: [String], default: [] },
   plans: { type: [String], default: [] },
+  // Billing type: one_time | monthly | annual | lifetime
+  billingType: { type: String, enum: ["one_time","monthly","annual","lifetime"], default: "one_time" },
+  // Compatible periods (empty = all): monthly | annual | lifetime
+  compatiblePeriods: { type: [String], default: [] },
+  // Quota tracking (count-based addons like SMS, email)
+  quotaCount: { type: Number, default: 0 },
+  quotaLabel: { type: String, default: "" },
+  // Plans that get this addon included for free
+  includedInPlans: { type: [String], default: [] },
+  // Free quota for included plans
+  freeQuotaForIncluded: { type: Number, default: 0 },
 }, { timestamps: true });
 
-[cronJobSchema, atlasConfigSchema, atlasDbUserSchema, appPublishConfigSchema, systemFeatureSchema, extraAddonSchema].forEach(s => {
+// ── ProjectAddonSubscription (اشتراك ميزة لمشروع) ──────────────────────────
+const projectAddonSubscriptionSchema = new mongoose.Schema({
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true, index: true },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+  clientId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  addonId:      { type: mongoose.Schema.Types.ObjectId, ref: "ExtraAddon", required: true },
+  addonNameAr:  { type: String, default: "" },
+  billingType:  { type: String, default: "one_time" },
+  status:       { type: String, enum: ["active","expired","exhausted","cancelled"], default: "active" },
+  quotaTotal:   { type: Number, default: 0 },
+  quotaUsed:    { type: Number, default: 0 },
+  expiresAt:    { type: Date, default: null },
+  startedAt:    { type: Date, default: Date.now },
+  lastNotifiedAt: { type: Date, default: null },
+  renewalRequestedAt: { type: Date, default: null },
+}, { timestamps: true });
+
+[cronJobSchema, atlasConfigSchema, atlasDbUserSchema, appPublishConfigSchema, systemFeatureSchema, extraAddonSchema, projectAddonSubscriptionSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
 });
@@ -969,6 +996,7 @@ export const AtlasDbUserModel = mongoose.models.AtlasDbUser || mongoose.model("A
 export const AppPublishConfigModel = mongoose.models.AppPublishConfig || mongoose.model("AppPublishConfig", appPublishConfigSchema);
 export const SystemFeatureModel = mongoose.models.SystemFeature || mongoose.model("SystemFeature", systemFeatureSchema);
 export const ExtraAddonModel = mongoose.models.ExtraAddon || mongoose.model("ExtraAddon", extraAddonSchema);
+export const ProjectAddonSubscriptionModel = mongoose.models.ProjectAddonSubscription || mongoose.model("ProjectAddonSubscription", projectAddonSubscriptionSchema);
 
 const projectFeatureSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },

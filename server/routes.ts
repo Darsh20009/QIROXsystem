@@ -6868,7 +6868,15 @@ export async function registerRoutes(
       { nameAr: "لوحة تحكم تحليلات المبيعات", name: "Sales Analytics Dashboard", descriptionAr: "لوحة تحليل مبيعات وتقارير يومية وأسبوعية وشهرية", category: "feature", price: 900, icon: "BarChart3", sortOrder: 82, segments: [], plans: ["pro","infinite"] },
       { nameAr: "نظام إدارة الطلاب والكورسات", name: "LMS (Student Management)", descriptionAr: "نظام إدارة الطلاب والدورات والاختبارات والشهادات", category: "feature", price: 2000, icon: "GraduationCap", sortOrder: 83, segments: ["education"], plans: [] },
       { nameAr: "نظام CRM لإدارة العملاء", name: "CRM System", descriptionAr: "نظام إدارة علاقات العملاء وتتبع المتابعات والصفقات", category: "feature", price: 1600, icon: "Users", sortOrder: 84, segments: ["corporate","realestate","healthcare"], plans: ["pro","infinite"] },
-    ];
+      // ── بوابة Paymob
+      { nameAr: "بوابة Paymob للدفع الإلكتروني", name: "Paymob Payment Gateway", descriptionAr: "ربط بوابة Paymob — تدعم مدى، فيزا، ماستر، Apple Pay، وتحويل بنكي", category: "integration", price: 100, icon: "CreditCard", sortOrder: 44, segments: [], plans: [], billingType: "one_time", includedInPlans: ["pro","infinite"], freeQuotaForIncluded: 0 },
+      // ── التوافق مع نفاذ
+      { nameAr: "التوافق مع نفاذ (Nafath)", name: "Nafath Compliance", descriptionAr: "تكامل منصة نفاذ للهوية الرقمية وتسجيل الدخول الآمن بالبطاقة الوطنية", category: "integration", price: 2000, icon: "Shield", sortOrder: 45, segments: [], plans: ["pro","infinite"], billingType: "annual", compatiblePeriods: ["annual","lifetime"] },
+      // ── الرسائل النصية
+      { nameAr: "رسائل نصية SMS (500 رسالة/شهر)", name: "SMS 500 Monthly", descriptionAr: "500 رسالة نصية شهرية — إشعارات وتنبيهات وتسويق للعملاء", category: "communication", price: 100, icon: "MessageSquare", sortOrder: 90, segments: [], plans: [], billingType: "monthly", quotaCount: 500, quotaLabel: "رسالة" },
+      // ── خدمات البريد الإلكتروني
+      { nameAr: "خدمات البريد الإلكتروني (1000 رسالة)", name: "Transactional Email 1000", descriptionAr: "إرسال 1000 بريد إلكتروني — للإشعارات والتنبيهات والتسويق. تأتي مجانًا مع الباقات برو والإنفينتي", category: "communication", price: 50, icon: "Mail", sortOrder: 91, segments: [], plans: [], billingType: "one_time", quotaCount: 1000, quotaLabel: "رسالة بريدية", includedInPlans: ["pro","infinite"], freeQuotaForIncluded: 1000 },
+    ] as any[];
     try {
       let added = 0;
       for (const d of defaults) {
@@ -8034,6 +8042,41 @@ export async function registerRoutes(
   setTimeout(() => checkSubscriptionRenewals().catch(() => {}), 5000);
   setInterval(() => checkSubscriptionRenewals().catch(() => {}), 24 * 60 * 60 * 1000);
 
+  // ─── Addon Subscription Expiry Checker ──────────────────────────────────────
+  async function checkAddonExpiry() {
+    try {
+      const { ProjectAddonSubscriptionModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const now = new Date();
+      const expiredSubs = await (ProjectAddonSubscriptionModel as any).find({
+        status: "active",
+        expiresAt: { $lte: now },
+      }).populate("addonId", "nameAr").populate("projectId", "clientId managerId");
+
+      for (const sub of expiredSubs) {
+        sub.status = "expired";
+        sub.lastNotifiedAt = now;
+        await sub.save();
+        const clientId = sub.clientId || sub.projectId?.clientId;
+        const name = sub.addonNameAr || sub.addonId?.nameAr || "الخدمة";
+        if (clientId) {
+          await NotificationModel.create({ userId: clientId, type: "warning", title: `انتهى اشتراك: ${name}`, body: "انتهت صلاحية الخدمة — يمكنك طلب التجديد من صفحة مشروعك", link: `/projects/${sub.projectId?._id || sub.projectId}` }).catch(() => {});
+          pushToUser(String(clientId), { type: "notification", title: "انتهاء خدمة", body: name });
+        }
+        // Notify managers
+        const { UserModel } = await import("./models");
+        const managers = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").limit(3);
+        for (const mgr of managers) {
+          await NotificationModel.create({ userId: mgr._id, type: "warning", title: `خدمة منتهية: ${name}`, body: `اشتراك في مشروع منتهي الصلاحية`, link: `/admin/addon-subscriptions` }).catch(() => {});
+        }
+      }
+
+      if (expiredSubs.length > 0) console.log(`[AddonExpiry] Marked ${expiredSubs.length} subscription(s) as expired`);
+    } catch (e) { console.error("[AddonExpiry] error:", e); }
+  }
+  setTimeout(() => checkAddonExpiry().catch(() => {}), 8000);
+  setInterval(() => checkAddonExpiry().catch(() => {}), 6 * 60 * 60 * 1000);
+
   // Initialize seed data
   await seedDatabase();
 
@@ -8389,6 +8432,105 @@ export async function registerRoutes(
         html: `<div dir="rtl" style="font-family:Arial;max-width:600px;margin:auto;padding:24px"><h2 style="color:#000">تقرير النظام الشهري</h2><p>${now.toLocaleDateString("ar-SA")}</p><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px;border:1px solid #eee">إجمالي الطلبات</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${totalOrders}</td></tr><tr><td style="padding:8px;border:1px solid #eee">طلبات هذا الشهر</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${thisMonthOrders}</td></tr><tr><td style="padding:8px;border:1px solid #eee">إجمالي العملاء</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${totalClients}</td></tr><tr><td style="padding:8px;border:1px solid #eee">إيرادات هذا الشهر</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${rev.thisMonth.toLocaleString("ar-SA")} ر.س</td></tr><tr><td style="padding:8px;border:1px solid #eee">إجمالي الإيرادات</td><td style="padding:8px;border:1px solid #eee;font-weight:bold">${rev.total.toLocaleString("ar-SA")} ر.س</td></tr></table><p style="color:#666;font-size:12px;margin-top:24px">Qirox Studio — qirox.tech</p></div>`,
       });
       res.json({ ok: true, sentTo: to });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ PROJECT ADDON SUBSCRIPTIONS ═══════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  app.get("/api/projects/:projectId/addon-subscriptions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectAddonSubscriptionModel, ProjectModel } = await import("./models");
+      const user = req.user as any;
+      const project = await (ProjectModel as any).findById(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const isStaff = user.role !== "client";
+      const isOwner = String(project.clientId) === String(user._id || user.id);
+      if (!isStaff && !isOwner) return res.sendStatus(403);
+      const subs = await (ProjectAddonSubscriptionModel as any).find({ projectId: req.params.projectId })
+        .populate("addonId", "nameAr name icon category billingType quotaCount quotaLabel")
+        .sort({ createdAt: -1 });
+      res.json(subs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/projects/:projectId/addon-subscriptions", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectAddonSubscriptionModel, ExtraAddonModel, ProjectModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const project = await (ProjectModel as any).findById(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "المشروع غير موجود" });
+      const { addonId, quotaTotal, expiresAt } = req.body;
+      const addon = await ExtraAddonModel.findById(addonId);
+      if (!addon) return res.status(404).json({ error: "الإضافة غير موجودة" });
+      const sub = await (ProjectAddonSubscriptionModel as any).create({
+        projectId: req.params.projectId, clientId: project.clientId,
+        addonId, addonNameAr: addon.nameAr, billingType: addon.billingType,
+        quotaTotal: quotaTotal || addon.quotaCount || 0,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+      await NotificationModel.create({ userId: project.clientId, type: "feature", title: `تم تفعيل: ${addon.nameAr}`, body: "تم إضافة خدمة جديدة لمشروعك", link: `/projects/${req.params.projectId}` }).catch(() => {});
+      pushToUser(String(project.clientId), { type: "notification", title: "خدمة جديدة", body: addon.nameAr });
+      res.status(201).json(sub);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/projects/:projectId/addon-subscriptions/:subId/use", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectAddonSubscriptionModel, NotificationModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const { amount = 1 } = req.body;
+      const sub = await (ProjectAddonSubscriptionModel as any).findById(req.params.subId);
+      if (!sub) return res.status(404).json({ error: "الاشتراك غير موجود" });
+      if (sub.status !== "active") return res.status(400).json({ error: "الاشتراك غير نشط" });
+      sub.quotaUsed = (sub.quotaUsed || 0) + Number(amount);
+      if (sub.quotaTotal > 0 && sub.quotaUsed >= sub.quotaTotal) {
+        sub.status = "exhausted";
+        await NotificationModel.create({ userId: sub.clientId, type: "warning", title: `انتهت حصة: ${sub.addonNameAr}`, body: "تم استنفاد الحصة المتاحة — يمكنك طلب تجديدها", link: `/projects/${req.params.projectId}` }).catch(() => {});
+        pushToUser(String(sub.clientId), { type: "notification", title: "انتهت الحصة", body: sub.addonNameAr });
+      }
+      await sub.save();
+      res.json(sub);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/projects/:projectId/addon-subscriptions/:subId/request-renewal", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ProjectAddonSubscriptionModel, NotificationModel, UserModel, ProjectModel } = await import("./models");
+      const { pushToUser } = await import("./ws");
+      const user = req.user as any;
+      const sub = await (ProjectAddonSubscriptionModel as any).findById(req.params.subId);
+      if (!sub) return res.status(404).json({ error: "الاشتراك غير موجود" });
+      if (String(sub.clientId) !== String(user._id || user.id)) return res.sendStatus(403);
+      sub.renewalRequestedAt = new Date();
+      await sub.save();
+      const managers = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id");
+      for (const mgr of managers) {
+        await NotificationModel.create({ userId: mgr._id, type: "request", title: `طلب تجديد: ${sub.addonNameAr}`, body: `العميل يطلب تجديد اشتراك في مشروع`, link: `/admin/projects/${req.params.projectId}` }).catch(() => {});
+        pushToUser(String(mgr._id), { type: "notification", title: "طلب تجديد إضافة", body: sub.addonNameAr });
+      }
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/addon-subscriptions", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ProjectAddonSubscriptionModel } = await import("./models");
+      const { status } = req.query;
+      const filter: any = {};
+      if (status) filter.status = status;
+      const subs = await (ProjectAddonSubscriptionModel as any).find(filter)
+        .populate("addonId", "nameAr name icon category")
+        .populate("clientId", "fullName username email")
+        .populate("projectId", "status")
+        .sort({ createdAt: -1 }).limit(200);
+      res.json(subs);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

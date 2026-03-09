@@ -18,6 +18,7 @@ import {
   ShoppingCart, BadgeCheck, Crown, Layers, Smartphone, Map,
   Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash, LayoutGrid
 } from "lucide-react";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -307,6 +308,7 @@ export default function OrderFlow() {
   const [copiedIban, setCopiedIban]       = useState(false);
   const [useWallet, setUseWallet]         = useState(false);
   const [walletAmount, setWalletAmount]   = useState(0);
+  const [usePaymob, setUsePaymob]         = useState(false);
 
   const [formData, setFormData] = useState({
     businessName: "", phone: "", sector: segmentFromUrl || "", visualStyle: "", siteLanguage: "ar",
@@ -376,7 +378,8 @@ export default function OrderFlow() {
     if (!bundle || bundle.isFree) return sum;
     return sum + (bundle.customPrice || 0);
   }, 0);
-  const grandTotal   = planPrice + addonsTotal + devicesTotal + bundlesTotal;
+  const paymobFee    = usePaymob && selectedPlan === "lite" ? 100 : 0;
+  const grandTotal   = planPrice + addonsTotal + devicesTotal + bundlesTotal + paymobFee;
 
   /* wallet */
   const walletBalance = walletData ? Math.max(0, walletData.totalCredit - walletData.totalDebit) : 0;
@@ -401,7 +404,7 @@ export default function OrderFlow() {
         const a = extraAddons.find((ad: any) => ad.id === id);
         return { id, name: a?.name||"", nameAr: a?.nameAr||"", price: a?.price||0 };
       });
-      const paymentMethod = fullyPaidByWallet ? "wallet" : effectiveWalletAmt > 0 ? "mixed" : "bank_transfer";
+      const paymentMethod = fullyPaidByWallet ? "wallet" : effectiveWalletAmt > 0 ? "mixed" : usePaymob ? "paymob" : "bank_transfer";
       const body = {
         serviceType: formData.sector || "website", planTier: selectedPlan,
         planSegment: segmentFromUrl, planPeriod: periodFromUrl, totalAmount: grandTotal,
@@ -415,6 +418,7 @@ export default function OrderFlow() {
         walletAmountUsed: effectiveWalletAmt > 0 ? effectiveWalletAmt : undefined,
         items: [
           { name: `Package ${PLAN_LABELS[selectedPlan]}`, nameAr: `باقة ${PLAN_LABELS[selectedPlan]}`, price: planPrice, qty: 1 },
+          ...(paymobFee > 0 ? [{ name: "Paymob Payment Gateway", nameAr: "بوابة Paymob للدفع", price: paymobFee, qty: 1 }] : []),
           ...orderAddons.map(a => ({ name: a.name, nameAr: a.nameAr, price: a.price, qty: 1 })),
           ...orderDevices.flatMap(d => {
             const items = [{ name: d.name, nameAr: d.nameAr, price: d.price, qty: d.quantity }];
@@ -569,7 +573,7 @@ export default function OrderFlow() {
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
           <p className="text-white/40 text-xs uppercase tracking-wider mb-1 relative z-10">إجمالي الطلب</p>
-          <p className="text-white font-black text-4xl relative z-10">{grandTotal.toLocaleString()} <span className="text-xl font-normal text-white/50">ريال</span></p>
+          <p className="text-white font-black text-4xl relative z-10 flex items-baseline gap-2">{grandTotal.toLocaleString()} <SARIcon size={20} className="opacity-50 translate-y-0.5" /></p>
           {submittedOrder?.walletUsed ? (
             <div className="mt-3 flex items-center gap-2 relative z-10">
               <div className="flex items-center gap-1.5 bg-violet-500/20 border border-violet-400/30 rounded-xl px-3 py-1.5">
@@ -841,7 +845,7 @@ export default function OrderFlow() {
                     className="bg-black dark:bg-white rounded-2xl px-5 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/55 dark:text-black/55">{selectedAddons.length} إضافة مختارة</span>
-                      <span className="font-black text-lg text-white dark:text-black">{addonsTotal.toLocaleString()} ر.س</span>
+                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{addonsTotal.toLocaleString()} <SARIcon size={14} className="opacity-55" /></span>
                     </div>
                   </motion.div>
                 )}
@@ -1074,7 +1078,7 @@ export default function OrderFlow() {
                     className="bg-black dark:bg-white rounded-2xl px-5 py-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-white/55 dark:text-black/55">{lang === "ar" ? "إجمالي الأجهزة" : "Devices Total"}</span>
-                      <span className="font-black text-lg text-white dark:text-black">{devicesTotal.toLocaleString()} ر.س</span>
+                      <span className="font-black text-lg text-white dark:text-black flex items-center gap-1.5">{devicesTotal.toLocaleString()} <SARIcon size={14} className="opacity-55" /></span>
                     </div>
                   </motion.div>
                 )}
@@ -1103,14 +1107,14 @@ export default function OrderFlow() {
                         </div>
                         <span className="text-sm font-semibold text-black dark:text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Package`}</span>
                       </div>
-                      <span className="font-bold text-sm text-black dark:text-white">{planPrice.toLocaleString()} {lang === "ar" ? "ر.س" : "SAR"}</span>
+                      <span className="font-bold text-sm text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
                     </div>
                     {selectedAddons.map(id => {
                       const a = extraAddons.find((ad: any) => ad.id === id);
                       return a ? (
                         <div key={id} className="px-6 py-3 flex justify-between items-center">
                           <span className="text-sm text-black/55 dark:text-white/55">{a.nameAr}</span>
-                          <span className="text-sm font-medium text-black dark:text-white">{a.price.toLocaleString()} ر.س</span>
+                          <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{a.price.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
                         </div>
                       ) : null;
                     })}
@@ -1122,7 +1126,7 @@ export default function OrderFlow() {
                         <div key={pid}>
                           <div className="px-6 py-3 flex justify-between items-center">
                             <span className="text-sm text-black/55 dark:text-white/55">{p.nameAr || p.name} ×{qty}</span>
-                            <span className="text-sm font-medium text-black dark:text-white">{(p.price * qty).toLocaleString()} ر.س</span>
+                            <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{(p.price * qty).toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-50" /> : "SAR"}</span>
                           </div>
                           {bundle && (
                             <div className="px-6 py-2 flex justify-between items-center bg-violet-50/50 dark:bg-violet-900/10">
@@ -1130,8 +1134,8 @@ export default function OrderFlow() {
                                 <Crown className="w-3 h-3 text-violet-500" />
                                 <span className="text-xs text-violet-700 dark:text-violet-400">{bundle.planNameAr}</span>
                               </div>
-                              <span className="text-xs font-medium text-violet-700 dark:text-violet-400">
-                                {bundle.isFree ? "مجاني" : `${(bundle.customPrice || 0).toLocaleString()} ر.س`}
+                              <span className="text-xs font-medium text-violet-700 dark:text-violet-400 flex items-center gap-1">
+                                {bundle.isFree ? "مجاني" : <>{(bundle.customPrice || 0).toLocaleString()} {lang === "ar" ? <SARIcon size={10} className="opacity-60" /> : "SAR"}</>}
                               </span>
                             </div>
                           )}
@@ -1140,11 +1144,48 @@ export default function OrderFlow() {
                     })}
                     <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-black to-gray-900">
                       <span className="text-white font-bold">{lang === "ar" ? "الإجمالي" : "Total"}</span>
-                      <div className="text-right">
+                      <div className="text-right flex items-baseline gap-1.5">
                         <span className="text-white font-black text-2xl">{grandTotal.toLocaleString()}</span>
-                        <span className="text-white/50 text-sm mr-1">{lang === "ar" ? "ر.س" : "SAR"}</span>
+                        {lang === "ar" ? <SARIcon size={14} className="opacity-50 translate-y-0.5" /> : <span className="text-white/50 text-sm">SAR</span>}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Paymob Card */}
+                <div className={`rounded-3xl border-2 transition-all overflow-hidden ${usePaymob ? "border-[#5D3FD3] shadow-lg shadow-purple-100/50 dark:shadow-purple-900/20" : "border-black/[0.07] dark:border-white/[0.07]"}`}
+                  style={usePaymob ? { background: "linear-gradient(135deg,#faf7ff,#f3eeff)" } : {}}>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md overflow-hidden bg-white border border-black/[0.07]">
+                          <img src="/paymob-logo.svg" alt="Paymob" className="w-full h-full object-contain p-1" onError={e => { (e.target as HTMLImageElement).style.display='none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style="font-size:9px;font-weight:900;color:#5D3FD3;padding:2px">PAYMOB</span>'; }} />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm text-black dark:text-white">{lang === "ar" ? "Paymob للدفع الإلكتروني" : "Paymob Gateway"}</p>
+                          <p className="text-[10px] text-black/40 dark:text-white/40">مدى · فيزا · ماستر · Apple Pay</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {["pro","infinite"].includes(selectedPlan) ? (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">مجاني</span>
+                        ) : (
+                          <span className="text-xs text-[#5D3FD3] dark:text-purple-300 font-bold flex items-center gap-0.5">+100 <SARIcon size={10} className="opacity-70" /></span>
+                        )}
+                        <button
+                          onClick={() => setUsePaymob(v => !v)}
+                          className={`w-12 h-6 rounded-full transition-all duration-200 relative ${usePaymob ? "bg-[#5D3FD3]" : "bg-black/15 dark:bg-white/15"}`}
+                          data-testid="button-toggle-paymob"
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${usePaymob ? (dir === "rtl" ? "right-6" : "left-6") : (dir === "rtl" ? "right-0.5" : "left-0.5")}`} />
+                        </button>
+                      </div>
+                    </div>
+                    {usePaymob && paymobFee > 0 && (
+                      <div className="mt-2 text-xs text-[#5D3FD3]/70 dark:text-purple-300/70 bg-purple-50 dark:bg-purple-900/20 rounded-xl px-3 py-2">
+                        تُضاف رسوم ربط بوابة Paymob (100 ر.س) لباقة لايت — تأتي مجانًا مع برو والإنفينتي.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1205,7 +1246,7 @@ export default function OrderFlow() {
                         </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-black/40 dark:text-white/40">{lang === "ar" ? "خصم من Qirox Pay" : "Qirox Pay deduction"}</span>
-                          <span className="text-cyan-600 dark:text-cyan-400 font-bold">- {effectiveWalletAmt.toLocaleString()} ر.س</span>
+                          <span className="text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1">- {effectiveWalletAmt.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
                         </div>
                         {fullyPaidByWallet ? (
                           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-2xl p-3 text-center">

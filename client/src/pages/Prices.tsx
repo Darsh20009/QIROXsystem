@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
+import SARIcon from "@/components/SARIcon";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
@@ -151,7 +152,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className={`text-4xl font-black tracking-tight ${isPro ? "text-white" : "text-slate-900 dark:text-white"}`}>{price.toLocaleString()}</span>
-              <span className={`text-sm font-medium ${isPro ? "text-white/60" : "text-slate-400"}`}>{lang === "ar" ? "ريال" : "SAR"}</span>
+              {lang === "ar" ? <SARIcon size={15} className={isPro ? "opacity-60" : "opacity-40"} /> : <span className={`text-sm font-medium ${isPro ? "text-white/60" : "text-slate-400"}`}>SAR</span>}
               <span className={`text-xs ${isPro ? "text-white/40" : "text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
             </div>
             {monthlyEquiv && period !== "monthly" && (
@@ -484,7 +485,7 @@ export default function Prices() {
               <div className="p-8 bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-7xl font-black text-emerald-600 dark:text-emerald-400 mb-1 leading-none">30</div>
-                  <div className="text-slate-500 dark:text-slate-400 font-semibold">{lang === "ar" ? "ريال فقط" : "SAR only"}</div>
+                  <div className="text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1">{lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}</div>
                   <div className="text-xs text-slate-400 dark:text-slate-500 mt-2 max-w-[160px]">{lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price upon subscription"}</div>
                 </div>
               </div>
@@ -527,7 +528,7 @@ export default function Prices() {
                 <p className="text-slate-900 dark:text-white font-black text-base mb-3">{a.sub}</p>
                 <div className="flex items-baseline gap-1.5 mb-4">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">{a.price}</span>
-                  <span className="text-sm text-slate-400">{lang === "ar" ? "ريال" : "SAR"}</span>
+                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-slate-400">SAR</span>}
                 </div>
                 <div className="space-y-2 mb-5">
                   {a.features.map(f => (
@@ -610,7 +611,7 @@ export default function Prices() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-900 dark:text-white font-black text-sm">{selectedPlan.price.toLocaleString()} {lang === "ar" ? "ريال" : "SAR"}</span>
+                      <span className="text-slate-900 dark:text-white font-black text-sm flex items-center gap-1">{selectedPlan.price.toLocaleString()} {lang === "ar" ? <SARIcon size={12} className="opacity-60" /> : "SAR"}</span>
                       <span className="text-slate-400 text-xs">/ {periodLabel}</span>
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">{cfgLabel}</span>

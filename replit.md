@@ -10,7 +10,22 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 9, 2026 - Session 45)
+## Latest Changes (Mar 9, 2026 - Session 46)
+
+### صفحة اشتراكات الإضافات + Cron انتهاء الصلاحية + أيقونة SAR
+
+**الباك-إند:**
+- Cron job لفحص اشتراكات الإضافات المنتهية (checkAddonExpiry) كل 6 ساعات — يُغيّر الحالة إلى `expired` ويرسل إشعارات للعملاء والمديرين
+- يعمل في routes.ts عبر `setTimeout` + `setInterval` دون npm schedule
+
+**الفرونت-إند:**
+- **AdminAddonSubscriptions** — صفحة جديدة `/admin/addon-subscriptions` تعرض جدول اشتراكات الإضافات مع فلترة حسب الحالة (نشط/منتهي/نفذت/الكل)، شريط تقدم الحصة، بيانات التجديد المطلوب
+- رابط جديد في الـ sidebar تحت مجموعة "operations" باستخدام Package icon
+- **SARIcon rollout**: أُضيفت أيقونة الريال السعودي في صفحة الأسعار (Prices.tsx) وصفحة الطلب (OrderFlow.tsx) — الإجمالي، ملخص الفاتورة، إجمالي الإضافات والأجهزة، رسوم Paymob، خصم المحفظة
+
+---
+
+## Previous Changes (Mar 9, 2026 - Session 45)
 
 ### ميزات جديدة متعددة — 2FA، إحالات، كانبان، تعليقات، تتبع وقت، عقود، تحليلات QMeet
 
