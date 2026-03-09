@@ -8,7 +8,6 @@ import { type User } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@/hooks/use-auth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Customers() {
-  const { user } = useUser();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
