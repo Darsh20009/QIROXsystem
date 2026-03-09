@@ -13,7 +13,8 @@ import {
   PhoneOff, MessageSquare, X, Send, Users, Copy, Check,
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
-  Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand
+  Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand,
+  MoreHorizontal, NotebookPen, ChevronUp
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -132,7 +133,7 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
   );
 }
 
-type PanelTab = 'chat' | 'participants' | 'whiteboard' | 'page' | 'actions' | 'requests';
+type PanelTab = 'chat' | 'participants' | 'whiteboard' | 'page' | 'actions' | 'requests' | 'notes';
 
 const SYSTEM_PAGES = [
   { label: "لوحة التحكم", path: "/dashboard" },
@@ -214,6 +215,9 @@ export default function MeetingRoom() {
   const [qaTicketDesc, setQaTicketDesc] = useState("");
 
   const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
+  const [meetingNotes, setMeetingNotes] = useState("");
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const guestIdFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_id") : null;
   const guestNameFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_name") : null;
@@ -225,6 +229,7 @@ export default function MeetingRoom() {
   const userId = user?._id || user?.id || directGuestId || undefined;
   const userName = user?.fullName || user?.username || directGuestName || "ضيف";
   const isAdmin = ["admin", "manager"].includes((user as any)?.role);
+  const isStaff = !!(user && !["client"].includes((user as any)?.role || ""));
   const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
 
   useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
@@ -664,7 +669,8 @@ export default function MeetingRoom() {
       await stopScreenShare();
       return;
     }
-    if (isHost) {
+    // Host OR staff with no one else sharing → share directly without approval
+    if (isHost || (isStaff && !screenSharerPeerId)) {
       await startScreenShare();
     } else {
       if (screenSharePending) {
@@ -675,7 +681,7 @@ export default function MeetingRoom() {
       sendWs({ type: "webrtc_screen_share_request", roomId, name: userName });
       toast({ title: "تم الإرسال", description: "تم إرسال طلب مشاركة الشاشة للمضيف" });
     }
-  }, [stopScreenShare, startScreenShare, isHost, screenSharePending, sendWs, roomId, userName, toast]);
+  }, [stopScreenShare, startScreenShare, isHost, isStaff, screenSharePending, screenSharerPeerId, sendWs, roomId, userName, toast]);
 
   const approveScreenShare = useCallback((targetUserId: string) => {
     sendWs({ type: "webrtc_screen_share_approve", roomId, targetId: targetUserId });
@@ -963,6 +969,7 @@ export default function MeetingRoom() {
   const PANEL_TABS: { id: PanelTab; label: string; icon: any; badge?: number }[] = [
     { id: 'chat', label: 'الدردشة', icon: MessageSquare },
     { id: 'participants', label: 'المشاركون', icon: Users },
+    { id: 'notes', label: 'ملاحظاتي', icon: NotebookPen },
     { id: 'whiteboard', label: 'السبورة', icon: Pencil },
     { id: 'page', label: 'عرض صفحة', icon: Layout },
     { id: 'actions', label: 'إجراءات', icon: Zap },
@@ -1282,6 +1289,43 @@ export default function MeetingRoom() {
               </div>
             )}
 
+            {/* ── Notes panel ── */}
+            {activePanel === 'notes' && (
+              <div className="flex flex-col flex-1 overflow-hidden p-3 gap-3">
+                <div className="flex items-center gap-2">
+                  <NotebookPen className="w-4 h-4 text-violet-400" />
+                  <p className="text-white/60 text-xs font-semibold">ملاحظاتك الشخصية — تحفظ مع الاجتماع</p>
+                </div>
+                <Textarea
+                  value={meetingNotes}
+                  onChange={e => { setMeetingNotes(e.target.value); setNotesSaved(false); }}
+                  placeholder="اكتب ملاحظاتك هنا... (تسجيل نقاط مهمة، إجراءات مطلوبة، ...)"
+                  className="flex-1 resize-none bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/25 text-sm focus:border-violet-500/50 min-h-[200px]"
+                  dir="rtl"
+                  data-testid="textarea-meeting-notes"
+                />
+                <button
+                  onClick={async () => {
+                    if (!meetingNotes.trim()) return;
+                    try {
+                      await fetch(`/api/qmeet/meetings-notes/${roomId}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ notes: meetingNotes, userName }),
+                      });
+                      setNotesSaved(true);
+                      toast({ title: "✅ تم حفظ الملاحظات" });
+                    } catch { toast({ title: "فشل الحفظ", variant: "destructive" }); }
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${notesSaved ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-violet-600 hover:bg-violet-500 text-white"}`}
+                  data-testid="button-save-notes"
+                >
+                  {notesSaved ? <><Check className="w-4 h-4" /> تم الحفظ</> : <><NotebookPen className="w-4 h-4" /> حفظ الملاحظات</>}
+                </button>
+              </div>
+            )}
+
             {/* ── Requests panel (host only) ── */}
             {activePanel === 'requests' && isHost && (
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
@@ -1434,68 +1478,109 @@ export default function MeetingRoom() {
         </div>
       )}
 
+      {/* ── More menu popup (mobile) ── */}
+      <AnimatePresence>
+        {showMoreMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.18 }}
+            className="absolute bottom-[72px] left-2 right-2 z-40 bg-gray-800/95 backdrop-blur border border-white/10 rounded-2xl p-3 shadow-2xl"
+          >
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              {PANEL_TABS.map(tab => (
+                <button key={tab.id} onClick={() => { togglePanel(tab.id); setShowMoreMenu(false); }}
+                  className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                  {tab.id === 'chat' && unreadChat > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{unreadChat > 9 ? "9+" : unreadChat}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
+              <button onClick={() => { toggleScreenShare(); setShowMoreMenu(false); }}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${screenSharing ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : screenSharePending ? "bg-yellow-500/20 text-yellow-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}
+                data-testid="button-screen-share-more">
+                {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                <span>{screenSharing ? "إيقاف الشاشة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
+              </button>
+              <button onClick={() => { toggleRaiseHand(); setShowMoreMenu(false); }}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${raisedHand ? "bg-amber-500/20 text-amber-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
+                <Hand className="w-5 h-5" />
+                <span>{raisedHand ? "إنزال اليد" : "رفع اليد"}</span>
+              </button>
+              <button onClick={() => { setShowEmojiPicker(p => !p); setShowMoreMenu(false); }}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${showEmojiPicker ? "bg-violet-500/20 text-violet-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
+                <Smile className="w-5 h-5" />
+                <span>تفاعل</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Control bar */}
-      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-1 safe-area-bottom" style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
-        <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
-          {PANEL_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => togglePanel(tab.id)}
-              className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-[11px] font-medium transition-all shrink-0 ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
-              title={tab.label}
-              data-testid={`button-panel-toggle-${tab.id}`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-              {tab.id === 'chat' && unreadChat > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
-                  {unreadChat > 9 ? "9+" : unreadChat}
-                </span>
-              )}
-            </button>
-          ))}
+      <div className="flex items-center justify-between px-3 py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-2 safe-area-bottom" style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
+
+        {/* Left: panel tabs on desktop; "..." on mobile */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Desktop panel tabs */}
+          <div className="hidden sm:flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+            {PANEL_TABS.map(tab => (
+              <button key={tab.id} onClick={() => togglePanel(tab.id)}
+                className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-[11px] font-medium transition-all shrink-0 ${activePanel === tab.id ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
+                title={tab.label} data-testid={`button-panel-toggle-${tab.id}`}>
+                <tab.icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                {tab.id === 'chat' && unreadChat > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">{unreadChat > 9 ? "9+" : unreadChat}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {/* Mobile: "..." button */}
+          <button onClick={() => setShowMoreMenu(p => !p)}
+            className={`sm:hidden flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-[10px] font-medium transition-all ${showMoreMenu ? "bg-white/20 text-white" : "text-white/40 hover:text-white hover:bg-white/10"}`}
+            data-testid="button-more-menu">
+            <MoreHorizontal className="w-5 h-5" />
+            <span>المزيد</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <button onClick={toggleAudio} className={`p-2.5 sm:p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
-            {audioOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+        {/* Center: essential media controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={toggleAudio} className={`p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
+            {audioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
           </button>
-          <button onClick={toggleVideo} className={`p-2.5 sm:p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
-            {videoOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+          <button onClick={toggleVideo} className={`p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
+            {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
           </button>
-          <button
-            onClick={toggleScreenShare}
-            className={`hidden sm:flex p-2.5 sm:p-3 rounded-full border transition-all ${
-              screenSharing ? "bg-blue-500 border-blue-400 text-white" :
-              screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" :
-              "bg-white/10 border-white/20 text-white hover:bg-white/20"
-            }`}
-            title={screenSharing ? "إيقاف مشاركة الشاشة" : isHost ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
-            data-testid="button-screen-share"
-          >
-            {screenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
+          {/* Screen share — visible on ALL devices */}
+          <button onClick={toggleScreenShare}
+            className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}
+            title={screenSharing ? "إيقاف مشاركة الشاشة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
+            data-testid="button-screen-share">
+            {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
           </button>
-          <button onClick={leaveMeeting} className="p-2.5 sm:p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
+          <button onClick={leaveMeeting} className="p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">
             <PhoneOff className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={toggleRaiseHand}
-            className={`p-2 sm:p-2.5 rounded-full border transition-all ${raisedHand ? "bg-amber-500 border-amber-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
-            title={raisedHand ? "إنزال اليد" : "رفع اليد"}
-            data-testid="button-raise-hand"
-          >
-            <Hand className="w-4 h-4" />
+        {/* Right: hand + emoji (desktop only — on mobile they're in the "..." menu) */}
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+          <button onClick={toggleRaiseHand}
+            className={`p-2.5 rounded-full border transition-all ${raisedHand ? "bg-amber-500 border-amber-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
+            title={raisedHand ? "إنزال اليد" : "رفع اليد"} data-testid="button-raise-hand">
+            <Hand className="w-5 h-5" />
           </button>
-          <button
-            onClick={() => setShowEmojiPicker(p => !p)}
-            className={`p-2 sm:p-2.5 rounded-full border transition-all ${showEmojiPicker ? "bg-violet-500 border-violet-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
-            title="تفاعل بإيموجي"
-            data-testid="button-emoji-reaction"
-          >
-            <Smile className="w-4 h-4" />
+          <button onClick={() => setShowEmojiPicker(p => !p)}
+            className={`p-2.5 rounded-full border transition-all ${showEmojiPicker ? "bg-violet-500 border-violet-400 text-white" : "bg-white/10 border-white/20 text-white/60 hover:text-white hover:bg-white/20"}`}
+            title="تفاعل بإيموجي" data-testid="button-emoji-reaction">
+            <Smile className="w-5 h-5" />
           </button>
         </div>
       </div>

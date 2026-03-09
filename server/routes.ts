@@ -605,14 +605,19 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/users/:id", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-      return res.sendStatus(403);
-    }
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const callerRole = (req.user as any).role;
+    const allowedRoles = ["admin", "manager", "employee", "accountant", "support"];
+    if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     try {
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) return res.sendStatus(404);
       if (targetUser.role === "admin") {
         return res.status(400).json({ error: "لا يمكن حذف حساب المدير" });
+      }
+      // Non-admin staff can only delete clients
+      if (callerRole !== "admin" && targetUser.role !== "client") {
+        return res.status(403).json({ error: "يُسمح فقط بحذف حسابات العملاء" });
       }
       await storage.deleteUser(req.params.id);
       res.sendStatus(204);
@@ -2235,8 +2240,9 @@ export async function registerRoutes(
       return res.status(400).json({ error: "الاسم والجوال واسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبة" });
     }
     const endDate = new Date(subscriptionEndDate);
-    if (isNaN(endDate.getTime()) || endDate < new Date()) {
-      return res.status(400).json({ error: "تاريخ انتهاء الاشتراك يجب أن يكون في المستقبل" });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (isNaN(endDate.getTime()) || endDate < today) {
+      return res.status(400).json({ error: "تاريخ انتهاء الاشتراك يجب أن يكون اليوم أو في المستقبل" });
     }
     try {
       const userId = req.isAuthenticated() ? String((req.user as any)._id || (req.user as any).id) : null;

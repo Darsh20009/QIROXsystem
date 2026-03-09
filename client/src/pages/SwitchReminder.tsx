@@ -76,10 +76,9 @@ export default function SwitchReminder() {
     },
   });
 
-  // Get min date = tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split("T")[0];
+  // Min date = today (allow today's subscription end date)
+  const today = new Date();
+  const minDate = today.toISOString().split("T")[0];
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950" dir="rtl">

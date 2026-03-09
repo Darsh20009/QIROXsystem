@@ -1,5 +1,6 @@
 import { type Express } from "express";
 import { QMeetingModel as _QM, QFeedbackModel as _QF, QReportModel as _QR } from "./qmeet-db";
+import { UserModel as _UserM } from "./models";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
 
@@ -19,6 +20,7 @@ function makeModelProxy<T>(factory: () => T): T {
 const QMeetingModel = makeModelProxy(_QM);
 const QFeedbackModel = makeModelProxy(_QF);
 const QReportModel   = makeModelProxy(_QR);
+const UserModel      = makeModelProxy(_UserM);
 
 const SITE_URL = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
 const fullMeetLink = (link: string) => link.startsWith("http") ? link : `${SITE_URL}${link}`;
@@ -201,7 +203,16 @@ export function registerQMeetRoutes(app: Express) {
     try {
       const meeting = await QMeetingModel.findById(req.params.id);
       if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
-      res.json(meeting);
+      const meetObj = meeting.toObject ? meeting.toObject() : { ...meeting };
+      // Heal hostName if it looks like a bare ObjectId
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(String(meetObj.hostName || ""));
+      if (isObjectId || !meetObj.hostName) {
+        try {
+          const host = await UserModel.findById(meetObj.hostId).select("fullName username").lean();
+          if (host) meetObj.hostName = (host as any).fullName || (host as any).username || "المضيف";
+        } catch {}
+      }
+      res.json(meetObj);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -734,6 +745,24 @@ export function registerQMeetRoutes(app: Express) {
         : { participantIds: uid, status: { $in: ["scheduled", "live"] } };
       const meetings = await QMeetingModel.find(filter).sort({ scheduledAt: 1 }).limit(5);
       res.json(meetings);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Meeting notes (per-participant, stored on meeting notes field) ──────────
+  app.post("/api/qmeet/meetings-notes/:roomName", requireAuth, async (req: any, res) => {
+    try {
+      const { notes, userName } = req.body;
+      if (!notes?.trim()) return res.status(400).json({ message: "الملاحظات فارغة" });
+      const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName });
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+      // Append note with timestamp and userName
+      const existing = meeting.notes || "";
+      const entry = `[${new Date().toLocaleString("ar-SA")} — ${userName || req.user.fullName || req.user.username}]\n${notes.trim()}`;
+      const updated = existing ? `${existing}\n\n---\n${entry}` : entry;
+      await QMeetingModel.findByIdAndUpdate(meeting._id, { notes: updated });
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
