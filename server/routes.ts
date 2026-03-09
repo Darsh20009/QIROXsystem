@@ -6784,9 +6784,18 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
-  app.get("/api/extra-addons", async (_req, res) => {
-    const addons = await ExtraAddonModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
-    res.json(addons);
+  app.get("/api/extra-addons", async (req, res) => {
+    const { segment, plan } = req.query as { segment?: string; plan?: string };
+    const query: any = { isActive: true };
+    // If segment provided, return addons with no segment restriction OR matching this segment
+    // If plan provided, return addons with no plan restriction OR matching this plan
+    const addons = await ExtraAddonModel.find(query).sort({ sortOrder: 1, createdAt: 1 });
+    const filtered = addons.filter((a: any) => {
+      const segOk = !a.segments?.length || !segment || a.segments.includes(segment);
+      const planOk = !a.plans?.length || !plan || a.plans.includes(plan);
+      return segOk && planOk;
+    });
+    res.json(filtered);
   });
 
   app.get("/api/admin/extra-addons", async (req, res) => {
@@ -6820,21 +6829,41 @@ export async function registerRoutes(
   app.post("/api/admin/extra-addons/seed-defaults", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const defaults = [
-      { nameAr: "تطبيق iOS (App Store)", name: "iOS App", descriptionAr: "تطبيق أيفون على متجر Apple", category: "app", price: 4500, currency: "SAR", icon: "Smartphone", sortOrder: 1 },
-      { nameAr: "تطبيق Android (Play Store)", name: "Android App", descriptionAr: "تطبيق أندرويد على متجر Google Play", category: "app", price: 3500, currency: "SAR", icon: "Smartphone", sortOrder: 2 },
-      { nameAr: "تطبيق iOS + Android", name: "Mobile App Bundle", descriptionAr: "تطبيق جوال كامل على المتجرين", category: "app", price: 6500, currency: "SAR", icon: "Smartphone", sortOrder: 3 },
-      { nameAr: "لوحة تحكم ويب", name: "Web Dashboard", descriptionAr: "واجهة ادارية متكاملة على المتصفح", category: "feature", price: 1500, currency: "SAR", icon: "Monitor", sortOrder: 4 },
-      { nameAr: "بوابة دفع إلكتروني", name: "Payment Gateway", descriptionAr: "تكامل مع مدى أو Apple Pay أو Stripe", category: "integration", price: 800, currency: "SAR", icon: "CreditCard", sortOrder: 5 },
-      { nameAr: "SEO متقدم", name: "Advanced SEO", descriptionAr: "تحسين محركات البحث وGoogle Analytics", category: "marketing", price: 600, currency: "SAR", icon: "TrendingUp", sortOrder: 6 },
-      { nameAr: "تكامل واتساب", name: "WhatsApp Integration", descriptionAr: "ربط الموقع بواتساب للمراسلة الفورية", category: "integration", price: 350, currency: "SAR", icon: "MessageCircle", sortOrder: 7 },
-      { nameAr: "خدمة استضافة Vercel", name: "Vercel Hosting", descriptionAr: "استضافة الموقع على Vercel بأداء عالي", category: "hosting", price: 200, currency: "SAR", icon: "Cloud", sortOrder: 8 },
-      { nameAr: "تصميم UI/UX احترافي", name: "UI/UX Design", descriptionAr: "تصميم احترافي على Figma قبل البرمجة", category: "design", price: 1200, currency: "SAR", icon: "Palette", sortOrder: 9 },
-      { nameAr: "دعم فني شهري", name: "Monthly Support", descriptionAr: "دعم فني مستمر وإصلاح أخطاء شهرياً", category: "support", price: 500, currency: "SAR", icon: "HeadphonesIcon", sortOrder: 10 },
+      // ── التطبيقات (لجميع القطاعات، باقة pro وinfinite فأعلى)
+      { nameAr: "نشر على App Store (iOS)", name: "iOS App Store Publishing", descriptionAr: "رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمراجعة", category: "app", price: 4500, icon: "Smartphone", sortOrder: 10, segments: [], plans: ["pro","infinite"] },
+      { nameAr: "نشر على Play Store (Android)", name: "Android Play Store Publishing", descriptionAr: "رفع التطبيق ونشره على متجر Google Play — يشمل الإعداد والاختبار", category: "app", price: 3500, icon: "Smartphone", sortOrder: 11, segments: [], plans: ["pro","infinite"] },
+      { nameAr: "تطبيق iOS + Android معاً", name: "iOS & Android Bundle", descriptionAr: "نشر على المتجرين معاً بسعر مخفض — وفر 1500 ر.س", category: "app", price: 6500, icon: "Smartphone", sortOrder: 12, segments: [], plans: ["pro","infinite"] },
+      // ── قواعد البيانات
+      { nameAr: "قاعدة بيانات 10 GB", name: "Database 10GB", descriptionAr: "قاعدة بيانات منفصلة بسعة 10 جيجا — مناسب للمشاريع الصغيرة", category: "hosting", price: 300, icon: "Database", sortOrder: 20, segments: [], plans: [] },
+      { nameAr: "قاعدة بيانات 50 GB", name: "Database 50GB", descriptionAr: "قاعدة بيانات 50 جيجا — مناسب للمشاريع المتوسطة ذات البيانات الكبيرة", category: "hosting", price: 700, icon: "Database", sortOrder: 21, segments: [], plans: ["pro","infinite"] },
+      { nameAr: "قاعدة بيانات 200 GB (Enterprise)", name: "Database 200GB", descriptionAr: "قاعدة بيانات 200 جيجا — للمشاريع الكبيرة والمؤسسات", category: "hosting", price: 1800, icon: "Database", sortOrder: 22, segments: [], plans: ["infinite"] },
+      // ── الاستضافة
+      { nameAr: "استضافة على سيرفر مشترك", name: "Shared Hosting", descriptionAr: "استضافة على سيرفر مشترك — مناسب للمشاريع الأولية", category: "hosting", price: 250, icon: "Cloud", sortOrder: 30, segments: [], plans: ["lite"] },
+      { nameAr: "استضافة VPS مخصص", name: "VPS Hosting", descriptionAr: "سيرفر VPS مخصص بأداء عالي وموارد مضمونة", category: "hosting", price: 900, icon: "Server", sortOrder: 31, segments: [], plans: ["pro","infinite"] },
+      { nameAr: "استضافة Cloud (AWS/GCP)", name: "Cloud Hosting", descriptionAr: "استضافة على السحابة لضمان التوسّع والأداء العالي", category: "hosting", price: 2000, icon: "Cloud", sortOrder: 32, segments: [], plans: ["infinite"] },
+      // ── التكاملات العامة
+      { nameAr: "بوابة دفع إلكتروني (مدى / Apple Pay)", name: "Payment Gateway", descriptionAr: "ربط بوابة الدفع بمدى وApple Pay وبطاقات الائتمان", category: "integration", price: 800, icon: "CreditCard", sortOrder: 40, segments: [], plans: [] },
+      { nameAr: "تكامل واتساب (WhatsApp Business)", name: "WhatsApp Integration", descriptionAr: "إرسال إشعارات وتنبيهات للعملاء عبر واتساب بيزنس", category: "integration", price: 400, icon: "MessageCircle", sortOrder: 41, segments: [], plans: [] },
+      { nameAr: "تكامل زيد للدفع", name: "Zid Integration", descriptionAr: "ربط المتجر بمنصة زيد للمبيعات والمخزون", category: "integration", price: 600, icon: "Link", sortOrder: 42, segments: ["ecommerce","store","commerce"], plans: [] },
+      { nameAr: "تكامل سلة", name: "Salla Integration", descriptionAr: "ربط المتجر بمنصة سلة للبيع الإلكتروني", category: "integration", price: 600, icon: "Link", sortOrder: 43, segments: ["ecommerce","store","commerce"], plans: [] },
+      // ── التسويق والـ SEO
+      { nameAr: "SEO متقدم + تحليلات", name: "Advanced SEO & Analytics", descriptionAr: "تهيئة SEO الشاملة وربط Google Analytics ولوحة البحث", category: "marketing", price: 700, icon: "TrendingUp", sortOrder: 50, segments: [], plans: [] },
+      { nameAr: "تسويق عبر الإيميل", name: "Email Marketing", descriptionAr: "نظام رسائل إيميل تسويقي مع قوالب احترافية", category: "marketing", price: 500, icon: "Mail", sortOrder: 51, segments: [], plans: ["pro","infinite"] },
+      // ── التصميم والدعم
+      { nameAr: "هوية بصرية كاملة", name: "Full Brand Identity", descriptionAr: "شعار + ألوان + خطوط + دليل الهوية البصرية على Figma", category: "design", price: 1800, icon: "Palette", sortOrder: 60, segments: [], plans: [] },
+      { nameAr: "دعم فني شهري", name: "Monthly Technical Support", descriptionAr: "دعم فني شهري وإصلاح الأخطاء والتحديثات الأمنية", category: "support", price: 500, icon: "Headphones", sortOrder: 70, segments: [], plans: [] },
+      { nameAr: "دعم فني سنوي", name: "Annual Technical Support", descriptionAr: "خطة دعم سنوية بخصم 20% — شاملة الصيانة والتحديثات", category: "support", price: 4800, icon: "Headphones", sortOrder: 71, segments: [], plans: ["pro","infinite"] },
+      // ── إضافات خاصة بقطاعات
+      { nameAr: "نظام حجوزات (Reservation System)", name: "Reservation System", descriptionAr: "نظام حجز طاولة أو موعد مع تأكيد تلقائي للعميل", category: "feature", price: 1200, icon: "CalendarCheck", sortOrder: 80, segments: ["restaurant","food","healthcare","beauty","fitness"], plans: [] },
+      { nameAr: "نظام توصيل وتتبع الطلبات", name: "Delivery Tracking", descriptionAr: "تتبع الطلبات لحظياً مع إشعارات للعميل والمطعم", category: "feature", price: 1500, icon: "MapPin", sortOrder: 81, segments: ["restaurant","food","ecommerce","store"], plans: ["pro","infinite"] },
+      { nameAr: "لوحة تحكم تحليلات المبيعات", name: "Sales Analytics Dashboard", descriptionAr: "لوحة تحليل مبيعات وتقارير يومية وأسبوعية وشهرية", category: "feature", price: 900, icon: "BarChart3", sortOrder: 82, segments: [], plans: ["pro","infinite"] },
+      { nameAr: "نظام إدارة الطلاب والكورسات", name: "LMS (Student Management)", descriptionAr: "نظام إدارة الطلاب والدورات والاختبارات والشهادات", category: "feature", price: 2000, icon: "GraduationCap", sortOrder: 83, segments: ["education"], plans: [] },
+      { nameAr: "نظام CRM لإدارة العملاء", name: "CRM System", descriptionAr: "نظام إدارة علاقات العملاء وتتبع المتابعات والصفقات", category: "feature", price: 1600, icon: "Users", sortOrder: 84, segments: ["corporate","realestate","healthcare"], plans: ["pro","infinite"] },
     ];
     let added = 0;
     for (const d of defaults) {
       const exists = await ExtraAddonModel.findOne({ nameAr: d.nameAr });
-      if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true }); added++; }
+      if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true, currency: "SAR" }); added++; }
     }
     res.json({ ok: true, added, skipped: defaults.length - added });
   });

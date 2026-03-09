@@ -946,6 +946,9 @@ const extraAddonSchema = new mongoose.Schema({
   category: { type: String, default: "feature" },
   isActive: { type: Boolean, default: true },
   sortOrder: { type: Number, default: 0 },
+  // Restrict visibility: empty array = show for all
+  segments: { type: [String], default: [] },
+  plans: { type: [String], default: [] },
 }, { timestamps: true });
 
 [cronJobSchema, atlasConfigSchema, atlasDbUserSchema, appPublishConfigSchema, systemFeatureSchema, extraAddonSchema].forEach(s => {

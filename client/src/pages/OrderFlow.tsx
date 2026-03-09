@@ -255,7 +255,20 @@ export default function OrderFlow() {
   const { data: user, isLoading: isUserLoading } = useUser();
 
   const { data: systemFeatures = [] } = useQuery<any[]>({ queryKey: ["/api/system-features"] });
-  const { data: extraAddons = [] }    = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
+  // extraAddons will be re-fetched reactively after state changes via the invalidation in toggleAddon
+  // Initial fetch uses URL params; after mount the query key includes state values
+  const [_addonSegment, setAddonSegment] = useState(segmentFromUrl || "");
+  const [_addonPlan, setAddonPlan]       = useState(planFromUrl || "pro");
+  const { data: extraAddons = [] } = useQuery<any[]>({
+    queryKey: ["/api/extra-addons", _addonSegment, _addonPlan],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (_addonSegment) params.set("segment", _addonSegment);
+      if (_addonPlan)    params.set("plan", _addonPlan);
+      const res = await fetch(`/api/extra-addons?${params}`, { credentials: "include" });
+      return res.json();
+    },
+  });
   const { data: products = [] }       = useQuery<any[]>({ queryKey: ["/api/products"] });
   const { data: sectorTemplates = [] } = useQuery<any[]>({ queryKey: ["/api/templates"], staleTime: 5 * 60 * 1000 });
 
@@ -328,6 +341,10 @@ export default function OrderFlow() {
     const t = setTimeout(() => setResendCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [resendCountdown]);
+
+  // Sync addon filter when sector or plan changes
+  useEffect(() => { if (formData.sector) setAddonSegment(formData.sector); }, [formData.sector]);
+  useEffect(() => { if (selectedPlan)    setAddonPlan(selectedPlan); }, [selectedPlan]);
 
   const handleOtpChange = (i: number, val: string) => {
     const digit = val.replace(/\D/g,"").slice(-1);
@@ -779,7 +796,12 @@ export default function OrderFlow() {
                 {extraAddons.length === 0 ? (
                   <div className="text-center py-16 bg-black/[0.02] dark:bg-white/[0.02] rounded-3xl border border-black/[0.05] dark:border-white/[0.05]">
                     <Package className="w-12 h-12 mx-auto mb-3 text-black/15 dark:text-white/15" />
-                    <p className="text-black/35 dark:text-white/35 text-sm">{lang === "ar" ? "لا توجد إضافات متاحة حالياً" : "No add-ons available yet"}</p>
+                    <p className="text-black/35 dark:text-white/35 text-sm font-medium">
+                      {lang === "ar" ? "لا توجد إضافات متاحة لهذه الباقة والقطاع" : "No add-ons available for this plan & sector"}
+                    </p>
+                    <p className="text-black/20 dark:text-white/20 text-xs mt-1">
+                      {lang === "ar" ? "يمكنك المتابعة بدون إضافات" : "You can continue without add-ons"}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
