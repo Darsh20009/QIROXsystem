@@ -14,7 +14,7 @@ import {
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
   Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand,
-  MoreHorizontal, NotebookPen, ChevronUp
+  MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -207,6 +207,7 @@ export default function MeetingRoom() {
 
   const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
   const [screenSharePending, setScreenSharePending] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
 
   const [selectedPage, setSelectedPage] = useState(SYSTEM_PAGES[0].path);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
@@ -477,7 +478,7 @@ export default function MeetingRoom() {
         break;
       }
       case "webrtc_screen_share_request": {
-        if (isHost) {
+        if (isHost || isStaff) {
           setPendingScreenShareRequests(prev => {
             const exists = prev.find(r => r.userId === data.from);
             if (exists) return prev;
@@ -610,6 +611,48 @@ export default function MeetingRoom() {
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
   }, [audioOn, videoOn, roomId, sendWs]);
+
+  const flipCamera = useCallback(async () => {
+    if (!videoOn || screenSharing) return;
+    const newFacing = cameraFacing === "user" ? "environment" : "user";
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: newFacing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      const camTrack = stream.getVideoTracks()[0];
+      pcsRef.current.forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) sender.replaceTrack(camTrack);
+      });
+      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      const audio = localStreamRef.current?.getAudioTracks()[0];
+      const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
+      localStreamRef.current = newStream;
+      setLocalStream(newStream);
+      setCameraFacing(newFacing);
+    } catch {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: newFacing },
+          audio: false,
+        });
+        const camTrack = stream.getVideoTracks()[0];
+        pcsRef.current.forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender) sender.replaceTrack(camTrack);
+        });
+        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+        const audio = localStreamRef.current?.getAudioTracks()[0];
+        const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
+        localStreamRef.current = newStream;
+        setLocalStream(newStream);
+        setCameraFacing(newFacing);
+      } catch {
+        toast({ title: "تعذّر قلب الكاميرا", description: "الجهاز لا يدعم هذه الميزة أو لا توجد كاميرا أمامية/خلفية", variant: "destructive" });
+      }
+    }
+  }, [videoOn, screenSharing, cameraFacing, toast]);
 
   const stopScreenShare = useCallback(async () => {
     try {
@@ -1507,6 +1550,14 @@ export default function MeetingRoom() {
                 {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
                 <span>{screenSharing ? "إيقاف الشاشة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
               </button>
+              {videoOn && !screenSharing && (
+                <button onClick={() => { flipCamera(); setShowMoreMenu(false); }}
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                  data-testid="button-flip-camera-more">
+                  <SwitchCamera className="w-5 h-5" />
+                  <span>قلب الكاميرا</span>
+                </button>
+              )}
               <button onClick={() => { toggleRaiseHand(); setShowMoreMenu(false); }}
                 className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${raisedHand ? "bg-amber-500/20 text-amber-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}>
                 <Hand className="w-5 h-5" />
@@ -1558,6 +1609,11 @@ export default function MeetingRoom() {
           <button onClick={toggleVideo} className={`p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
             {videoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
           </button>
+          {videoOn && !screenSharing && (
+            <button onClick={flipCamera} className="p-3 rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-all" title={`قلب الكاميرا (${cameraFacing === "user" ? "أمامية" : "خلفية"})`} data-testid="button-flip-camera">
+              <SwitchCamera className="w-5 h-5" />
+            </button>
+          )}
           {/* Screen share — visible on ALL devices */}
           <button onClick={toggleScreenShare}
             className={`p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`}
