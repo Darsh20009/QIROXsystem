@@ -1254,6 +1254,18 @@ export async function registerRoutes(
     try {
       const { ProjectModel } = await import("./models");
       const project = await ProjectModel.create(req.body);
+      // Notify client that their project has been created
+      try {
+        if ((project as any).clientId) {
+          const { NotificationModel } = await import("./models");
+          await NotificationModel.create({
+            userId: String((project as any).clientId), type: 'project',
+            title: 'تم إنشاء مشروعك 🚀',
+            body: `بدأ العمل على مشروع "${(project as any).name || 'مشروعك الجديد'}" — يمكنك تتبع التقدم الآن`,
+            link: `/projects/${(project as any)._id}`, icon: '🚀',
+          });
+        }
+      } catch (_) {}
       res.status(201).json(project);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -1881,6 +1893,16 @@ export async function registerRoutes(
     });
     if (type === 'credit') await atomicWalletCredit(String(userId), Number(amount));
     else if (type === 'debit') await atomicWalletDebit(String(userId), Number(amount));
+    // Notify client about wallet change
+    try {
+      const { NotificationModel } = await import("./models");
+      await NotificationModel.create({
+        userId: String(userId), type: 'payment',
+        title: type === 'credit' ? `💰 تم إضافة رصيد للمحفظة` : `📤 تم خصم رصيد من المحفظة`,
+        body: `${type === 'credit' ? '+' : '-'}${Number(amount).toLocaleString('ar-SA')} ريال — ${description}`,
+        link: '/wallet', icon: type === 'credit' ? '💰' : '📤',
+      });
+    } catch (_) {}
     res.status(201).json(tx);
   });
 
@@ -3085,6 +3107,16 @@ export async function registerRoutes(
         userId: String(user.id), title, description, projectId, orderId, priority, attachments,
         ...(modificationTypeId ? { modificationTypeId } : {}),
       });
+      // Notify admins about new modification request
+      try {
+        const { NotificationModel } = await import("./models");
+        await NotificationModel.create({
+          forAdmins: true, type: 'modification',
+          title: `طلب تعديل جديد: ${title}`,
+          body: `أرسل ${user.fullName || user.username} طلب تعديل جديد — الأولوية: ${priority || 'عادية'}`,
+          link: '/admin/mod-requests', icon: '✏️',
+        });
+      } catch (_) {}
       res.status(201).json(request);
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
@@ -3097,6 +3129,19 @@ export async function registerRoutes(
     try {
       if (user.role === "admin") {
         const updated = await storage.updateModificationRequest(req.params.id, req.body);
+        // Notify client if status changed
+        try {
+          if (req.body.status && updated) {
+            const { NotificationModel } = await import("./models");
+            const statusLabels: Record<string, string> = { approved: 'تمت الموافقة', rejected: 'مرفوض', in_progress: 'قيد التنفيذ', completed: 'مكتمل' };
+            await NotificationModel.create({
+              userId: String((updated as any).userId), type: 'modification',
+              title: `تحديث طلب التعديل`,
+              body: `طلبك "${(updated as any).title}" — ${statusLabels[req.body.status] || req.body.status}`,
+              link: '/modification-requests', icon: '✏️',
+            });
+          }
+        } catch (_) {}
         return res.json(updated);
       }
       const existing = await storage.getModificationRequests(String(user.id));
@@ -4755,6 +4800,19 @@ export async function registerRoutes(
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
     const vatAmount = (req.body.amount || 0) * 0.15;
     const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount, totalAmount: (req.body.amount || 0) + vatAmount });
+    // Notify client about their new invoice
+    try {
+      if (req.body.userId) {
+        const { NotificationModel } = await import("./models");
+        const total = (req.body.amount || 0) + vatAmount;
+        await NotificationModel.create({
+          userId: String(req.body.userId), type: 'payment',
+          title: `فاتورة جديدة — ${invNum}`,
+          body: `صدرت فاتورة بقيمة ${total.toLocaleString('ar-SA')} ريال`,
+          link: `/invoices/${(invoice as any)._id}`, icon: '🧾',
+        });
+      }
+    } catch (_) {}
     res.status(201).json(invoice);
   });
 
@@ -5119,6 +5177,22 @@ export async function registerRoutes(
       const createdOrder = await storage.createOrder(orderData);
       sendOrderConfirmationEmail(client.email, client.fullName || client.username, String(createdOrder.id), serviceNames).catch(console.error);
       sendAdminNewOrderEmail("info@qiroxstudio.online", client.fullName || client.username, client.email, String(createdOrder.id), serviceNames, totalAmount).catch(console.error);
+      // In-app notifications
+      try {
+        const { NotificationModel } = await import("./models");
+        await NotificationModel.create({
+          userId: String(client._id), type: 'order',
+          title: 'تم إنشاء طلب جديد لك 📦',
+          body: `أنشأ ${actor.fullName || actor.username} طلباً جديداً باسمك — ${projectType || 'طلب خدمة'}`,
+          link: '/dashboard', icon: '📦',
+        });
+        await NotificationModel.create({
+          forAdmins: true, type: 'order',
+          title: `طلب جديد من موظف: ${client.fullName || client.username}`,
+          body: `أنشأ ${actor.fullName || actor.username} طلباً للعميل ${client.fullName || client.username}`,
+          link: '/admin/orders', icon: '📋',
+        });
+      } catch (_) {}
       res.status(201).json({ order: createdOrder, client: { id: String(client._id), fullName: client.fullName, email: client.email } });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "حدث خطأ" });
@@ -5298,6 +5372,17 @@ export async function registerRoutes(
       subject, category: category || 'general', body, priority: priority || 'medium',
     });
     await logActivity((req.user as any)._id, 'create_ticket', 'support_ticket', ticket._id?.toString(), { subject }, req.ip);
+    // Notify admins about new ticket
+    try {
+      const { NotificationModel } = await import("./models");
+      const user = req.user as any;
+      await NotificationModel.create({
+        forAdmins: true, type: 'support',
+        title: `تذكرة دعم جديدة: ${subject}`,
+        body: `أرسل ${user.fullName || user.username} تذكرة دعم جديدة — ${category || 'عام'}`,
+        link: '/admin/support-tickets', icon: '🎫',
+      });
+    } catch (_) {}
     res.json(ticket);
   });
 
@@ -5311,6 +5396,29 @@ export async function registerRoutes(
     if (status === 'closed' || status === 'resolved') update.closedAt = new Date();
     const ticket = await (SupportTicketModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
     await logActivity((req.user as any)._id, 'update_ticket', 'support_ticket', req.params.id, { status, hasReply: !!adminReply }, req.ip);
+    // Notify client about reply or status change
+    try {
+      if (ticket) {
+        const { NotificationModel } = await import("./models");
+        const admin = req.user as any;
+        if (adminReply) {
+          await NotificationModel.create({
+            userId: String(ticket.userId), type: 'support',
+            title: 'رد على تذكرتك',
+            body: `ردّ ${admin.fullName || admin.username} على تذكرتك: "${ticket.subject}"`,
+            link: '/support-tickets', icon: '💬',
+          });
+        } else if (status) {
+          const statusLabels: Record<string, string> = { resolved: 'تم الحل', closed: 'مغلقة', in_review: 'قيد المراجعة' };
+          await NotificationModel.create({
+            userId: String(ticket.userId), type: 'support',
+            title: 'تحديث حالة التذكرة',
+            body: `تذكرتك "${ticket.subject}" — ${statusLabels[status] || status}`,
+            link: '/support-tickets', icon: '🎫',
+          });
+        }
+      }
+    } catch (_) {}
     res.json(ticket);
   });
 
