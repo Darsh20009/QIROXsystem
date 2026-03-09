@@ -1224,14 +1224,15 @@ export async function registerRoutes(
       if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
       order.paymentProofUrl = paymentProofUrl;
       await order.save();
+      // Notify admins — use forAdmins flag (userId: "admin" is invalid ObjectId)
       await NotificationModel.create({
-        userId: "admin",
+        forAdmins: true,
         type: "payment",
         title: "إيصال دفع جديد",
         body: `أرفق العميل ${user.fullName || user.username} إيصال التحويل للطلب #${req.params.id}`,
         link: `/admin/orders/${req.params.id}`,
         icon: "🧾",
-      });
+      }).catch(console.error);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: "فشل رفع الإيصال" });
@@ -5067,7 +5068,7 @@ export async function registerRoutes(
           notes: idea ? `الفكرة: ${idea}${notes ? `\n${notes}` : ""}` : (notes || ""),
           totalAmount: totalAmount || 0,
           status: "pending",
-          paymentMethod: "bank",
+          paymentMethod: "bank_transfer",
           items: services || [],
           adminNotes: `أُنشئ بواسطة الموظف: ${actor.fullName || actor.username}`,
         };
@@ -5109,7 +5110,7 @@ export async function registerRoutes(
         notes: [idea ? `الفكرة: ${idea}` : "", notes || ""].filter(Boolean).join("\n") || `طلب من قِبل ${actor.fullName || actor.username}`,
         totalAmount: totalAmount || 0,
         status: "pending",
-        paymentMethod: paymentMethod || "bank",
+        paymentMethod: paymentMethod || "bank_transfer",
         items: items || [],
         adminNotes: `أُنشئ بواسطة: ${actor.fullName || actor.username}`,
       };
