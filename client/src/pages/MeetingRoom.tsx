@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Mic, MicOff, Video, VideoOff, Monitor, MonitorOff,
+  Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MonitorUp,
   PhoneOff, MessageSquare, X, Send, Users, Copy, Check,
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
   Zap, FileText, Plus, Headphones, UserMinus,
@@ -479,7 +479,9 @@ export default function MeetingRoom() {
         break;
       }
       case "webrtc_offer": {
-        const pc = createPC(data.from);
+        // Use existing PC for renegotiation, create new one for new peers
+        const existingPc = pcsRef.current.get(data.from);
+        const pc = existingPc || createPC(data.from);
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
         await flushPendingCandidates(data.from);
         const answer = await pc.createAnswer();
@@ -778,12 +780,31 @@ export default function MeetingRoom() {
       setLocalStream(newStream);
       setVideoOn(true);
     } catch {
+      // Camera unavailable — remove video senders and renegotiate
+      const peersNeedingRenegotiation: string[] = [];
+      pcsRef.current.forEach((pc, peerId) => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) {
+          try { pc.removeTrack(sender); } catch {}
+          peersNeedingRenegotiation.push(peerId);
+        }
+      });
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
       const newStream = new MediaStream(audio ? [audio] : []);
       localStreamRef.current = newStream;
       setLocalStream(newStream);
       setVideoOn(false);
+      // Renegotiate to inform peers video is gone
+      for (const peerId of peersNeedingRenegotiation) {
+        const pc = pcsRef.current.get(peerId);
+        if (!pc) continue;
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+        } catch {}
+      }
     }
     setScreenSharing(false);
     setScreenSharerPeerId(null);
@@ -795,13 +816,22 @@ export default function MeetingRoom() {
     try {
       const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
       const screenTrack = screen.getVideoTracks()[0];
-      pcsRef.current.forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) sender.replaceTrack(screenTrack);
-      });
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
       const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
+
+      const peersNeedingRenegotiation: string[] = [];
+      pcsRef.current.forEach((pc, peerId) => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) {
+          sender.replaceTrack(screenTrack);
+        } else {
+          // Camera was off — add track and renegotiate
+          pc.addTrack(screenTrack, newStream);
+          peersNeedingRenegotiation.push(peerId);
+        }
+      });
+
       localStreamRef.current = newStream;
       setLocalStream(newStream);
       setScreenSharing(true);
@@ -809,6 +839,17 @@ export default function MeetingRoom() {
       setScreenSharerName(userName);
       sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
       screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
+
+      // Send new offers for renegotiation (for peers that had no video sender)
+      for (const peerId of peersNeedingRenegotiation) {
+        const pc = pcsRef.current.get(peerId);
+        if (!pc) continue;
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+        } catch {}
+      }
     } catch (err: any) {
       if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
         toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
