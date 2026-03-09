@@ -185,8 +185,8 @@ export function registerQMeetRoutes(app: Express) {
     }
   });
 
-  // GET /api/qmeet/room/:roomName — get meeting info by room name (for meeting room page)
-  app.get("/api/qmeet/room/:roomName", requireAuth, async (req: any, res) => {
+  // GET /api/qmeet/room/:roomName — get meeting info by room name (public, no auth required)
+  app.get("/api/qmeet/room/:roomName", async (req: any, res) => {
     try {
       const meeting = await QMeetingModel.findOne({ roomName: req.params.roomName });
       if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
@@ -450,7 +450,7 @@ export function registerQMeetRoutes(app: Express) {
 
   // ── Join by code: find meeting ──────────────────────────────────────────────
 
-  app.get("/api/qmeet/by-code/:code", requireAuth, async (req: any, res) => {
+  app.get("/api/qmeet/by-code/:code", async (req: any, res) => {
     try {
       const code = String(req.params.code).toUpperCase().trim();
       const meeting = await QMeetingModel.findOne({ joinCode: code });
@@ -475,7 +475,7 @@ export function registerQMeetRoutes(app: Express) {
 
   // ── Request to join by code ────────────────────────────────────────────────
 
-  app.post("/api/qmeet/by-code/:code/request", requireAuth, async (req: any, res) => {
+  app.post("/api/qmeet/by-code/:code/request", async (req: any, res) => {
     try {
       const code = String(req.params.code).toUpperCase().trim();
       const meeting = await QMeetingModel.findOne({ joinCode: code });
@@ -484,9 +484,15 @@ export function registerQMeetRoutes(app: Express) {
         return res.status(410).json({ message: "الاجتماع منتهٍ" });
       }
 
-      const userId = String(req.user._id || req.user.id);
-      const userName = req.user.fullName || req.user.username || "مشارك";
-      const userEmail = req.user.email || "";
+      // Support both logged-in users and guests
+      const isLoggedIn = req.isAuthenticated && req.isAuthenticated() && req.user;
+      const userId = isLoggedIn
+        ? String(req.user._id || req.user.id)
+        : (req.body.guestId ? String(req.body.guestId) : `guest_${Date.now()}`);
+      const userName = isLoggedIn
+        ? (req.user.fullName || req.user.username || "مشارك")
+        : (req.body.guestName || "ضيف");
+      const userEmail = isLoggedIn ? (req.user.email || "") : "";
 
       const joinRequests: any[] = meeting.joinRequests || [];
 

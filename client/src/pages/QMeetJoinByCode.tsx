@@ -24,6 +24,15 @@ interface MeetingInfo {
   joinCode: string;
 }
 
+function getOrCreateGuestId(): string {
+  let id = sessionStorage.getItem("qmeet_guest_id");
+  if (!id) {
+    id = "guest_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem("qmeet_guest_id", id);
+  }
+  return id;
+}
+
 export default function QMeetJoinByCode() {
   const { data: user } = useUser();
   const [, navigate] = useLocation();
@@ -34,19 +43,22 @@ export default function QMeetJoinByCode() {
   const [loading, setLoading] = useState(false);
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfo | null>(null);
   const [meetingLink, setMeetingLink] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
 
-  // WebSocket listener for approval notification
-  useEffect(() => {
-    if (step !== "pending" || !user) return;
+  // Resolve the effective user ID (logged-in or guest)
+  const effectiveUserId = user ? (user._id || user.id) : getOrCreateGuestId();
 
-    const userId = user._id || user.id;
+  // WebSocket listener for approval notification (works for both logged-in and guest)
+  useEffect(() => {
+    if (step !== "pending") return;
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "auth", userId }));
+      ws.send(JSON.stringify({ type: "auth", userId: effectiveUserId }));
     };
 
     ws.onmessage = (event) => {
@@ -67,7 +79,7 @@ export default function QMeetJoinByCode() {
     };
 
     return () => { ws.close(); };
-  }, [step, user, toast]);
+  }, [step, effectiveUserId, toast]);
 
   const handleCodeInput = (val: string) => {
     const clean = val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -81,13 +93,16 @@ export default function QMeetJoinByCode() {
     }
     setLoading(true);
     try {
-      const res = await apiRequest("GET", `/api/qmeet/by-code/${code}`);
+      const res = await fetch(`/api/qmeet/by-code/${code}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "كود غير صحيح");
+      }
       const data = await res.json();
       setMeetingInfo(data);
       setStep("meeting_info");
     } catch (err: any) {
-      const msg = err?.message || "كود غير صحيح أو الاجتماع غير متاح";
-      toast({ title: "خطأ", description: msg, variant: "destructive" });
+      toast({ title: "خطأ", description: err?.message || "كود غير صحيح أو الاجتماع غير متاح", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -95,10 +110,33 @@ export default function QMeetJoinByCode() {
 
   const requestJoin = async () => {
     if (!meetingInfo) return;
+    if (!user && !guestName.trim()) {
+      toast({ title: "مطلوب", description: "أدخل اسمك قبل الانضمام", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
-      const res = await apiRequest("POST", `/api/qmeet/by-code/${code}/request`);
+      // Save guest info for MeetingRoom to use
+      if (!user) {
+        sessionStorage.setItem("qmeet_guest_name", guestName.trim());
+        sessionStorage.setItem("qmeet_guest_id", effectiveUserId);
+      }
+
+      const body: any = {};
+      if (!user) {
+        body.guestName = guestName.trim();
+        body.guestId = effectiveUserId;
+      }
+
+      const res = await fetch(`/api/qmeet/by-code/${code}/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "حدث خطأ");
+
       if (data.status === "approved") {
         setMeetingLink(data.meetingLink);
         setStep("approved");
@@ -106,8 +144,7 @@ export default function QMeetJoinByCode() {
         setStep("pending");
       }
     } catch (err: any) {
-      const msg = err?.message || "حدث خطأ";
-      toast({ title: "خطأ", description: msg, variant: "destructive" });
+      toast({ title: "خطأ", description: err?.message || "حدث خطأ", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -212,6 +249,21 @@ export default function QMeetJoinByCode() {
                 سيتلقى المضيف إشعاراً بطلبك وسيقرر قبوله أو رفضه. انتظر الموافقة قبل الدخول.
               </p>
             </div>
+
+            {/* Guest name input - only shown when not logged in */}
+            {!user && (
+              <div>
+                <label className="text-white/60 text-xs font-medium block mb-1.5">اسمك <span className="text-red-400">*</span></label>
+                <Input
+                  value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                  placeholder="أدخل اسمك ليظهر للمضيف"
+                  className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                  data-testid="input-guest-name"
+                  autoFocus
+                />
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button

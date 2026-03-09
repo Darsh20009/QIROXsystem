@@ -223,8 +223,11 @@ export default function MeetingRoom() {
   // Join requests (host only)
   const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
 
-  const userId = user?._id || user?.id;
-  const userName = user?.fullName || user?.username || "مشارك";
+  // Support both logged-in users and guests (guest info stored in sessionStorage by QMeetJoinByCode)
+  const guestIdFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_id") : null;
+  const guestNameFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_name") : null;
+  const userId = user?._id || user?.id || guestIdFromStorage || undefined;
+  const userName = user?.fullName || user?.username || guestNameFromStorage || "ضيف";
   const isAdmin = ["admin", "manager"].includes((user as any)?.role);
   const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
 
