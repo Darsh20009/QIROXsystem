@@ -9,7 +9,7 @@ import {
   ShoppingCart, Lightbulb, DollarSign, FileText, Plus, X,
   Loader2, ArrowRight, ArrowLeft, RefreshCw, ChevronDown, ChevronUp,
   Package, Briefcase, Copy, Check, Eye, EyeOff, Search, Users,
-  Crown, Smartphone, Star, Zap, Sparkles, Tag,
+  Crown, Smartphone, Star, Zap, Sparkles, Tag, Percent, Scissors,
 } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,6 +47,17 @@ const BUSINESS_TYPES = [
 const PLAN_ICONS: Record<string, any> = { Zap, Star, Crown, Sparkles, Package };
 const BILLING_LABELS: Record<string, string> = {
   monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة",
+};
+const BILLING_PRICE_KEY: Record<string, string> = {
+  monthly: "monthlyPrice", sixmonth: "sixMonthPrice", annual: "annualPrice", lifetime: "lifetimePrice",
+};
+const TIER_LABELS: Record<string, string> = {
+  lite: "لايت", pro: "برو", infinite: "إنفينت", custom: "مخصص",
+};
+const SEGMENT_LABELS: Record<string, string> = {
+  general: "عام", restaurant: "مطاعم وكافيهات", ecommerce: "متاجر إلكترونية",
+  education: "تعليم", corporate: "شركات ومؤسسات", realestate: "عقارات",
+  healthcare: "صحة وعيادات",
 };
 
 function generatePassword(length = 10): string {
@@ -110,6 +121,8 @@ export default function EmployeeNewOrder() {
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [customItem, setCustomItem] = useState("");
   const [selectedBilling, setSelectedBilling] = useState<string>("monthly");
+  const [discountType, setDiscountType] = useState<"fixed" | "percent">("fixed");
+  const [discountValue, setDiscountValue] = useState("");
 
   /* ── API data ── */
   const { data: availableServices = [] } = useQuery<any[]>({ queryKey: ["/api/services"] });
@@ -144,9 +157,14 @@ export default function EmployeeNewOrder() {
   }
   function removeItem(id: string) { setSelectedItems(prev => prev.filter(s => s.id !== id)); }
 
+  function getPlanPrice(plan: any): number | null {
+    const key = BILLING_PRICE_KEY[selectedBilling];
+    const val = plan[key];
+    return (val !== undefined && val !== null) ? Number(val) : null;
+  }
+
   function selectPlan(plan: any) {
-    const billing = plan.pricing?.[selectedBilling];
-    const price = billing?.price || 0;
+    const price = getPlanPrice(plan) ?? 0;
     const id = `plan-${plan.id || plan._id}-${selectedBilling}`;
     if (selectedItems.find(s => s.id === id)) { removeItem(id); return; }
     setSelectedItems(prev => prev.filter(s => !s.id.startsWith("plan-")));
@@ -161,9 +179,17 @@ export default function EmployeeNewOrder() {
     setSelectedItems(prev => [...prev, { id, name: product.nameAr || product.name, nameAr: product.nameAr || product.name, price: product.price || 0, type: "product" }]);
   }
 
+  function calcDiscount(base: number): number {
+    if (!discountValue || Number(discountValue) <= 0) return 0;
+    if (discountType === "percent") return Math.round(base * Number(discountValue) / 100);
+    return Math.min(Number(discountValue), base);
+  }
+
   function handleSubmit() {
     const items = selectedItems;
-    const calculatedTotal = totalAmount ? Number(totalAmount) : items.reduce((s, i) => s + (i.price || 0), 0);
+    const base = totalAmount ? Number(totalAmount) : items.reduce((s, i) => s + (i.price || 0), 0);
+    const discount = calcDiscount(base);
+    const calculatedTotal = Math.max(0, base - discount);
 
     if (mode === "new") {
       if (!fullName || !email || !username || !password) {
@@ -467,27 +493,38 @@ export default function EmployeeNewOrder() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {pricingPlans.map((plan: any) => {
-                      const billing = plan.pricing?.[selectedBilling];
-                      const price = billing?.price;
+                      const price = getPlanPrice(plan);
                       const planId = `plan-${plan.id || plan._id}-${selectedBilling}`;
                       const selected = selectedItems.some(s => s.id === planId);
                       const IconComp = PLAN_ICONS[plan.icon] || Package;
+                      const segLabel = SEGMENT_LABELS[plan.segment] || plan.segment || "";
+                      const tierLabel = TIER_LABELS[plan.tier] || plan.tier || "";
                       return (
                         <button key={plan.id || plan._id} onClick={() => selectPlan(plan)}
                           className={`flex flex-col p-4 rounded-xl border-2 text-right transition-all ${selected ? "border-black bg-black text-white" : "border-black/[0.08] hover:border-black/25 bg-white"}`}
                           data-testid={`plan-${plan.id || plan._id}`}>
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${selected ? "bg-white/20" : "bg-black/[0.05]"}`}>
-                            <IconComp className={`w-4 h-4 ${selected ? "text-white" : "text-black/60"}`} />
+                          <div className="flex items-start justify-between mb-2">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-white/20" : "bg-black/[0.05]"}`}>
+                              <IconComp className={`w-4 h-4 ${selected ? "text-white" : "text-black/60"}`} />
+                            </div>
+                            {selected && <CheckCircle2 className="w-4 h-4 text-white" />}
                           </div>
                           <p className={`font-black text-sm ${selected ? "text-white" : "text-black"}`}>{plan.nameAr || plan.name}</p>
-                          {price != null ? (
-                            <p className={`text-xs mt-1 ${selected ? "text-white/60" : "text-black/40"}`}>
-                              {price === 0 ? "مجاني" : `${price.toLocaleString()} ر.س / ${BILLING_LABELS[selectedBilling] || selectedBilling}`}
+                          {(segLabel || tierLabel) && (
+                            <p className={`text-[10px] mt-0.5 ${selected ? "text-white/40" : "text-black/25"}`}>
+                              {[segLabel, tierLabel].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                          {price !== null ? (
+                            <p className={`text-xs mt-1.5 font-semibold ${selected ? "text-white/80" : "text-black/70"}`}>
+                              {price === 0 ? "مجاني" : `${price.toLocaleString()} ر.س`}
+                              <span className={`font-normal text-[10px] mr-1 ${selected ? "text-white/40" : "text-black/30"}`}>
+                                / {BILLING_LABELS[selectedBilling]}
+                              </span>
                             </p>
                           ) : (
-                            <p className={`text-xs mt-1 ${selected ? "text-white/60" : "text-black/30"}`}>غير متاح لهذه الفترة</p>
+                            <p className={`text-[11px] mt-1.5 ${selected ? "text-white/40" : "text-black/25"}`}>لا سعر لهذه الفترة</p>
                           )}
-                          {selected && <CheckCircle2 className="w-4 h-4 text-white mt-2" />}
                         </button>
                       );
                     })}
@@ -605,17 +642,72 @@ export default function EmployeeNewOrder() {
                   </div>
                 )}
 
-                {/* Total */}
-                <div>
-                  <label className="text-xs font-semibold text-black/50 block mb-1.5">
-                    المبلغ الإجمالي (ر.س)
-                    {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30">محسوب تلقائياً: {autoTotal.toLocaleString()} ر.س</span>}
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                    <input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder={autoTotal > 0 ? String(autoTotal) : "0"} min="0" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 font-mono" data-testid="input-total-amount" />
-                  </div>
-                </div>
+                {/* Total + Discount */}
+                {(() => {
+                  const base = totalAmount ? Number(totalAmount) : autoTotal;
+                  const discount = calcDiscount(base);
+                  const finalTotal = Math.max(0, base - discount);
+                  return (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-semibold text-black/50 block mb-1.5">
+                          المبلغ الإجمالي (ر.س)
+                          {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30">محسوب تلقائياً: {autoTotal.toLocaleString()} ر.س</span>}
+                        </label>
+                        <div className="relative">
+                          <DollarSign className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                          <input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder={autoTotal > 0 ? String(autoTotal) : "0"} min="0" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 font-mono" data-testid="input-total-amount" />
+                        </div>
+                      </div>
+
+                      {/* Discount */}
+                      <div>
+                        <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1.5">
+                          <Scissors className="w-3.5 h-3.5" /> خصم على الطلب (اختياري)
+                        </label>
+                        <div className="flex gap-2">
+                          <div className="flex bg-black/[0.04] rounded-xl p-1 shrink-0">
+                            <button
+                              onClick={() => setDiscountType("fixed")}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${discountType === "fixed" ? "bg-black text-white" : "text-black/40 hover:text-black/70"}`}
+                              data-testid="discount-type-fixed">
+                              ر.س
+                            </button>
+                            <button
+                              onClick={() => setDiscountType("percent")}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${discountType === "percent" ? "bg-black text-white" : "text-black/40 hover:text-black/70"}`}
+                              data-testid="discount-type-percent">
+                              <Percent className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="relative flex-1">
+                            <Scissors className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
+                            <input
+                              type="number" value={discountValue}
+                              onChange={e => setDiscountValue(e.target.value)}
+                              placeholder={discountType === "percent" ? "مثال: 10" : "مثال: 500"}
+                              min="0" max={discountType === "percent" ? "100" : undefined}
+                              className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 font-mono"
+                              data-testid="input-discount-value"
+                            />
+                          </div>
+                        </div>
+                        {discount > 0 && base > 0 && (
+                          <div className="mt-2 flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                            <div className="text-xs text-green-700">
+                              <span className="font-semibold">{base.toLocaleString()} ر.س</span>
+                              <span className="mx-1.5 text-green-400">−</span>
+                              <span className="font-semibold text-red-500">{discount.toLocaleString()} ر.س خصم</span>
+                            </div>
+                            <div className="text-sm font-black text-green-800">
+                              = {finalTotal.toLocaleString()} ر.س
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="text-xs font-semibold text-black/50 block mb-1.5">ملاحظات داخلية</label>
@@ -656,7 +748,7 @@ export default function EmployeeNewOrder() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                  <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
                     <Plus className="w-4 h-4" /> طلب جديد
                   </Button>
                   <Link href="/admin/orders">
