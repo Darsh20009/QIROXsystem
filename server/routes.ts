@@ -3677,6 +3677,8 @@ export async function registerRoutes(
       }
       discountAmount = Math.round(discountAmount);
       const cart = await storage.applyCoupon(userId, code.code, discountAmount);
+      // Increment usageCount atomically
+      await DiscountCodeModel.findByIdAndUpdate(code._id, { $inc: { usageCount: 1 } });
       res.json(cart);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -5166,37 +5168,105 @@ export async function registerRoutes(
     try {
       const { OrderModel, UserModel, AttendanceModel } = await import("./models");
       const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+      // Build last 6 months metadata
       const months = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
         return { year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }) };
       });
+
+      // Monthly orders + revenue + new clients
       const monthlyData = await Promise.all(months.map(async ({ year, month, label }) => {
         const start = new Date(year, month - 1, 1);
         const end = new Date(year, month, 0, 23, 59, 59);
-        const ords = await (OrderModel as any).find({ createdAt: { $gte: start, $lte: end } });
+        const [ords, newClients] = await Promise.all([
+          (OrderModel as any).find({ createdAt: { $gte: start, $lte: end } }).select('totalAmount status'),
+          (UserModel as any).countDocuments({ role: 'client', createdAt: { $gte: start, $lte: end } }),
+        ]);
         const revenue = ords.reduce((acc: number, o: any) => acc + (o.totalAmount || 0), 0);
-        return { label, orders: ords.length, revenue };
+        const completed = ords.filter((o: any) => ['completed', 'delivered'].includes(o.status)).length;
+        return { label, orders: ords.length, revenue, newClients, completed };
       }));
-      const [totalUsers, totalEmployees, totalOrders, pendingOrders] = await Promise.all([
+
+      // Aggregate counts
+      const [totalUsers, totalEmployees, totalOrders, pendingOrders, thisMonthOrders, lastMonthOrders] = await Promise.all([
         (UserModel as any).countDocuments({ role: 'client' }),
         (UserModel as any).countDocuments({ role: { $ne: 'client' } }),
         (OrderModel as any).countDocuments(),
         (OrderModel as any).countDocuments({ status: 'pending' }),
+        (OrderModel as any).countDocuments({ createdAt: { $gte: startOfMonth } }),
+        (OrderModel as any).countDocuments({ createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } }),
       ]);
-      const allOrders = await (OrderModel as any).find().select('totalAmount');
-      const totalRevenue = allOrders.reduce((acc: number, o: any) => acc + (o.totalAmount || 0), 0);
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Revenue aggregation
+      const revenueAgg = await (OrderModel as any).aggregate([
+        { $group: { _id: null, total: { $sum: '$totalAmount' }, avg: { $avg: '$totalAmount' }, pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, '$totalAmount', 0] } }, thisMonth: { $sum: { $cond: [{ $gte: ['$createdAt', startOfMonth] }, '$totalAmount', 0] } }, lastMonth: { $sum: { $cond: [{ $and: [{ $gte: ['$createdAt', startOfLastMonth] }, { $lte: ['$createdAt', endOfLastMonth] }] }, '$totalAmount', 0] } } } },
+      ]);
+      const rev = revenueAgg[0] || { total: 0, avg: 0, pending: 0, thisMonth: 0, lastMonth: 0 };
+
+      // Status distribution
+      const statusDist = await (OrderModel as any).aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
+      ]);
+
+      // Payment method distribution
+      const paymentMethodDist = await (OrderModel as any).aggregate([
+        { $group: { _id: '$paymentMethod', count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
+        { $sort: { revenue: -1 } },
+      ]);
+
+      // Top 8 clients by spending
+      const topClients = await (OrderModel as any).aggregate([
+        { $match: { totalAmount: { $gt: 0 } } },
+        { $group: { _id: '$userId', totalSpent: { $sum: '$totalAmount' }, orderCount: { $sum: 1 } } },
+        { $sort: { totalSpent: -1 } },
+        { $limit: 8 },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'u' } },
+        { $addFields: { fullName: { $arrayElemAt: ['$u.fullName', 0] }, email: { $arrayElemAt: ['$u.email', 0] }, username: { $arrayElemAt: ['$u.username', 0] } } },
+        { $project: { u: 0 } },
+      ]);
+
+      // Attendance summary
       const attendanceSummary = await (AttendanceModel as any).aggregate([
         { $match: { createdAt: { $gte: startOfMonth }, checkOut: { $ne: null } } },
         { $group: { _id: '$userId', totalHours: { $sum: '$workHours' }, days: { $sum: 1 } } },
         { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userInfo' } },
-        { $addFields: { fullName: { $arrayElemAt: ['$userInfo.fullName', 0] }, username: { $arrayElemAt: ['$userInfo.username', 0] }, role: { $arrayElemAt: ['$userInfo.role', 0] } } },
+        { $addFields: { fullName: { $arrayElemAt: ['$userInfo.fullName', 0] }, username: { $arrayElemAt: ['$userInfo.username', 0] } } },
         { $project: { userInfo: 0 } },
+        { $sort: { totalHours: -1 } },
       ]);
-      const statusDist = await (OrderModel as any).aggregate([
-        { $group: { _id: '$status', count: { $sum: 1 } } }
+
+      // Sector distribution
+      const sectorDist = await (OrderModel as any).aggregate([
+        { $match: { sector: { $exists: true, $ne: '' } } },
+        { $group: { _id: '$sector', count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
+        { $sort: { count: -1 } },
+        { $limit: 8 },
       ]);
-      res.json({ monthlyData, stats: { totalUsers, totalEmployees, totalOrders, pendingOrders, totalRevenue }, attendanceSummary, statusDist });
+
+      res.json({
+        monthlyData,
+        stats: {
+          totalUsers, totalEmployees, totalOrders, pendingOrders,
+          totalRevenue: rev.total,
+          avgOrderValue: Math.round(rev.avg || 0),
+          pendingRevenue: Math.round(rev.pending || 0),
+          thisMonthRevenue: Math.round(rev.thisMonth || 0),
+          lastMonthRevenue: Math.round(rev.lastMonth || 0),
+          thisMonthOrders,
+          lastMonthOrders,
+          revenueGrowth: rev.lastMonth > 0 ? Math.round(((rev.thisMonth - rev.lastMonth) / rev.lastMonth) * 100) : 0,
+          ordersGrowth: lastMonthOrders > 0 ? Math.round(((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100) : 0,
+        },
+        attendanceSummary,
+        statusDist,
+        paymentMethodDist,
+        topClients,
+        sectorDist,
+      });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
