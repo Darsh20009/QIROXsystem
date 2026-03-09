@@ -45,6 +45,9 @@ const RTC_CONFIG: RTCConfiguration = {
   iceCandidatePoolSize: 10,
 };
 
+const CANVAS_W = 1600;
+const CANVAS_H = 1000;
+
 interface Peer {
   id: string;
   name: string;
@@ -66,32 +69,41 @@ interface DrawStroke {
   color: string; size: number; eraser: boolean;
 }
 
-function VideoTile({ peer, local = false, onKick, canKick }: {
-  peer: Peer; local?: boolean; onKick?: () => void; canKick?: boolean;
+function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: {
+  peer: Peer; local?: boolean; spotlight?: boolean; onKick?: () => void; canKick?: boolean;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  const videoCallbackRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && peer.stream) {
+      el.srcObject = peer.stream;
+      el.play().catch(() => {});
+    }
+  }, [peer.stream]);
+
   useEffect(() => {
-    if (peer.stream) {
-      if (videoRef.current) {
-        videoRef.current.srcObject = peer.stream;
-        videoRef.current.play().catch(() => {});
-      }
-      if (audioRef.current && !local) {
-        audioRef.current.srcObject = peer.stream;
-        audioRef.current.play().catch(() => {});
-      }
+    if (audioRef.current && peer.stream && !local) {
+      audioRef.current.srcObject = peer.stream;
+      audioRef.current.play().catch(() => {});
     }
   }, [peer.stream, local]);
 
+  const objectFit = spotlight ? "object-contain" : "object-cover";
+
   return (
-    <div className="relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center aspect-video group">
+    <div className={`relative bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center ${spotlight ? "h-full w-full" : "aspect-video"} group`}>
       {!local && peer.stream && (
         <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       )}
       {peer.stream && peer.videoOn ? (
-        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" data-testid={`video-tile-${peer.id}`} />
+        <video
+          ref={videoCallbackRef}
+          autoPlay
+          playsInline
+          muted={local}
+          className={`w-full h-full ${objectFit} bg-gray-900`}
+          data-testid={`video-tile-${peer.id}`}
+        />
       ) : (
         <div className="flex flex-col items-center gap-2">
           <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-white">
@@ -158,6 +170,9 @@ export default function MeetingRoom() {
   const screenSharingRef = useRef(false);
   const activePanelRef = useRef<PanelTab | null>(null);
   const wasKickedRef = useRef(false);
+  const allStrokesRef = useRef<DrawStroke[]>([]);
+  const rafPendingRef = useRef<DrawStroke | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const [joined, setJoined] = useState(false);
   const [wasKicked, setWasKicked] = useState(false);
@@ -176,13 +191,11 @@ export default function MeetingRoom() {
   const [wsReady, setWsReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
-  // Whiteboard states
   const [drawColor, setDrawColor] = useState("#ffffff");
   const [drawSize, setDrawSize] = useState(3);
   const [drawMode, setDrawMode] = useState<"pen" | "eraser">("pen");
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Emoji reactions
   type FloatingReaction = { id: string; emoji: string; name: string; x: number; };
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -190,6 +203,42 @@ export default function MeetingRoom() {
   const [raisedHands, setRaisedHands] = useState<Set<string>>(new Set());
   const REACTION_EMOJIS = ["👍","❤️","😂","🎉","👏","🔥","🚀","😮"];
   const reactionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
+  const [screenSharePending, setScreenSharePending] = useState(false);
+
+  const [selectedPage, setSelectedPage] = useState(SYSTEM_PAGES[0].path);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+
+  const [qaTicketTitle, setQaTicketTitle] = useState("");
+  const [qaTicketDesc, setQaTicketDesc] = useState("");
+
+  const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
+
+  const guestIdFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_id") : null;
+  const guestNameFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_name") : null;
+
+  const [directGuestName, setDirectGuestName] = useState(guestNameFromStorage || "");
+  const [directGuestId, setDirectGuestId] = useState<string | null>(guestIdFromStorage);
+  const [showGuestNameInput, setShowGuestNameInput] = useState(!user && !guestIdFromStorage);
+
+  const userId = user?._id || user?.id || directGuestId || undefined;
+  const userName = user?.fullName || user?.username || directGuestName || "ضيف";
+  const isAdmin = ["admin", "manager"].includes((user as any)?.role);
+  const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
+
+  useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
+  useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const sendWs = useCallback((payload: object) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
+    }
+  }, []);
 
   const addFloating = useCallback((emoji: string, name: string) => {
     const id = Math.random().toString(36).slice(2);
@@ -211,46 +260,6 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_raise_hand", roomId, raised: newVal, name: userName, userId });
     if (newVal) addFloating("🙋", "أنت");
   };
-
-  // Page viewer states
-  const [selectedPage, setSelectedPage] = useState(SYSTEM_PAGES[0].path);
-  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
-
-  // Quick actions states
-  const [qaTicketTitle, setQaTicketTitle] = useState("");
-  const [qaTicketDesc, setQaTicketDesc] = useState("");
-
-  // Join requests (host only)
-  const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
-
-  // Support both logged-in users and guests (guest info stored in sessionStorage by QMeetJoinByCode)
-  const guestIdFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_id") : null;
-  const guestNameFromStorage = typeof window !== "undefined" ? sessionStorage.getItem("qmeet_guest_name") : null;
-
-  // For guests arriving directly (without join-by-code), allow them to set their name
-  const [directGuestName, setDirectGuestName] = useState(guestNameFromStorage || "");
-  const [directGuestId, setDirectGuestId] = useState<string | null>(guestIdFromStorage);
-  const [showGuestNameInput, setShowGuestNameInput] = useState(!user && !guestIdFromStorage);
-
-  const userId = user?._id || user?.id || directGuestId || undefined;
-  const userName = user?.fullName || user?.username || directGuestName || "ضيف";
-  const isAdmin = ["admin", "manager"].includes((user as any)?.role);
-  const isHost = meeting && (String(meeting.hostId) === String(userId) || isAdmin);
-
-  // Keep refs in sync with state (to avoid stale closures in callbacks)
-  useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
-  useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
-
-  // Auto-scroll chat to bottom on new messages
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
-
-  const sendWs = useCallback((payload: object) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(payload));
-    }
-  }, []);
 
   const createPC = useCallback((peerId: string) => {
     const pc = new RTCPeerConnection(RTC_CONFIG);
@@ -328,6 +337,23 @@ export default function MeetingRoom() {
     ctx.restore();
   }, []);
 
+  const replayStrokesOnCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    for (const stroke of allStrokesRef.current) {
+      drawStrokeOnCanvas(stroke);
+    }
+  }, [drawStrokeOnCanvas]);
+
+  useEffect(() => {
+    if (activePanel === 'whiteboard') {
+      setTimeout(() => replayStrokesOnCanvas(), 50);
+    }
+  }, [activePanel, replayStrokesOnCanvas]);
+
   const handleWsMessage = useCallback(async (data: any) => {
     switch (data.type) {
       case "webrtc_peers": {
@@ -393,14 +419,17 @@ export default function MeetingRoom() {
         break;
       }
       case "webrtc_draw": {
-        drawStrokeOnCanvas(data.stroke);
+        const stroke: DrawStroke = data.stroke;
+        allStrokesRef.current.push(stroke);
+        drawStrokeOnCanvas(stroke);
         break;
       }
       case "webrtc_whiteboard_clear": {
+        allStrokesRef.current = [];
         const canvas = canvasRef.current;
         if (canvas) {
           const ctx = canvas.getContext("2d");
-          ctx?.clearRect(0, 0, canvas.width, canvas.height);
+          ctx?.clearRect(0, 0, CANVAS_W, CANVAS_H);
         }
         break;
       }
@@ -442,8 +471,31 @@ export default function MeetingRoom() {
         });
         break;
       }
+      case "webrtc_screen_share_request": {
+        if (isHost) {
+          setPendingScreenShareRequests(prev => {
+            const exists = prev.find(r => r.userId === data.from);
+            if (exists) return prev;
+            return [...prev, { userId: data.from, name: data.name || data.from }];
+          });
+          toast({ title: "طلب مشاركة شاشة", description: `${data.name || "مشارك"} يطلب مشاركة شاشته` });
+          setActivePanel("requests");
+        }
+        break;
+      }
+      case "webrtc_screen_share_approved": {
+        setScreenSharePending(false);
+        toast({ title: "تمت الموافقة", description: "يمكنك الآن مشاركة شاشتك" });
+        startScreenShare();
+        break;
+      }
+      case "webrtc_screen_share_denied": {
+        setScreenSharePending(false);
+        toast({ title: "تم الرفض", description: "لم يوافق المضيف على مشاركة الشاشة", variant: "destructive" });
+        break;
+      }
     }
-  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating]);
+  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost]);
 
   const getMedia = useCallback(async () => {
     const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
@@ -477,6 +529,7 @@ export default function MeetingRoom() {
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       reactionTimersRef.current.forEach(clearTimeout);
       reactionTimersRef.current = [];
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, [getMedia]);
 
@@ -581,34 +634,60 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
   }, [sendWs, roomId, userName]);
 
+  const startScreenShare = useCallback(async () => {
+    try {
+      const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
+      const screenTrack = screen.getVideoTracks()[0];
+      pcsRef.current.forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) sender.replaceTrack(screenTrack);
+      });
+      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      const audio = localStreamRef.current?.getAudioTracks()[0];
+      const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
+      localStreamRef.current = newStream;
+      setLocalStream(newStream);
+      setScreenSharing(true);
+      setScreenSharerPeerId(userId || "local");
+      setScreenSharerName(userName);
+      sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
+      screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
+    } catch (err: any) {
+      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
+        toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
+      }
+    }
+  }, [sendWs, roomId, userId, userName, toast, stopScreenShare]);
+
   const toggleScreenShare = useCallback(async () => {
     if (screenSharingRef.current) {
       await stopScreenShare();
-    } else {
-      try {
-        const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
-        const screenTrack = screen.getVideoTracks()[0];
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(screenTrack);
-        });
-        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
-        const audio = localStreamRef.current?.getAudioTracks()[0];
-        const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
-        localStreamRef.current = newStream;
-        setLocalStream(newStream);
-        setScreenSharing(true);
-        setScreenSharerPeerId(userId || "local");
-        setScreenSharerName(userName);
-        sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
-        screenTrack.onended = () => { if (screenSharingRef.current) stopScreenShare(); };
-      } catch (err: any) {
-        if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
-          toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
-        }
-      }
+      return;
     }
-  }, [stopScreenShare, sendWs, roomId, userId, userName, toast]);
+    if (isHost) {
+      await startScreenShare();
+    } else {
+      if (screenSharePending) {
+        toast({ title: "في الانتظار", description: "طلبك قيد المراجعة من المضيف" });
+        return;
+      }
+      setScreenSharePending(true);
+      sendWs({ type: "webrtc_screen_share_request", roomId, name: userName });
+      toast({ title: "تم الإرسال", description: "تم إرسال طلب مشاركة الشاشة للمضيف" });
+    }
+  }, [stopScreenShare, startScreenShare, isHost, screenSharePending, sendWs, roomId, userName, toast]);
+
+  const approveScreenShare = useCallback((targetUserId: string) => {
+    sendWs({ type: "webrtc_screen_share_approve", roomId, targetId: targetUserId });
+    setPendingScreenShareRequests(prev => prev.filter(r => r.userId !== targetUserId));
+    toast({ title: "تمت الموافقة", description: "أبلغنا المشارك بالموافقة" });
+  }, [sendWs, roomId, toast]);
+
+  const denyScreenShare = useCallback((targetUserId: string) => {
+    sendWs({ type: "webrtc_screen_share_deny", roomId, targetId: targetUserId });
+    setPendingScreenShareRequests(prev => prev.filter(r => r.userId !== targetUserId));
+    toast({ title: "تم الرفض" });
+  }, [sendWs, roomId, toast]);
 
   const sendChat = useCallback(() => {
     const text = chatMsg.trim();
@@ -633,21 +712,33 @@ export default function MeetingRoom() {
     if (panel === 'chat') setUnreadChat(0);
   };
 
-  // Whiteboard draw handlers
-  const getCanvasPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCanvasPos = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = CANVAS_W / rect.width;
+    const scaleY = CANVAS_H / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
     };
   };
 
+  const sendStrokeThrottled = useCallback((stroke: DrawStroke) => {
+    rafPendingRef.current = stroke;
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      if (rafPendingRef.current) {
+        sendWs({ type: "webrtc_draw", roomId, stroke: rafPendingRef.current });
+        allStrokesRef.current.push(rafPendingRef.current);
+        rafPendingRef.current = null;
+      }
+      rafIdRef.current = null;
+    });
+  }, [sendWs, roomId]);
+
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pos = getCanvasPos(e);
+    const pos = getCanvasPos(e.clientX, e.clientY);
     if (!pos) return;
     setIsDrawing(true);
     lastPos.current = pos;
@@ -655,7 +746,7 @@ export default function MeetingRoom() {
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !lastPos.current) return;
-    const pos = getCanvasPos(e);
+    const pos = getCanvasPos(e.clientX, e.clientY);
     if (!pos) return;
     const stroke: DrawStroke = {
       x1: lastPos.current.x, y1: lastPos.current.y,
@@ -663,28 +754,16 @@ export default function MeetingRoom() {
       color: drawColor, size: drawSize, eraser: drawMode === "eraser",
     };
     drawStrokeOnCanvas(stroke);
-    sendWs({ type: "webrtc_draw", roomId, stroke });
+    sendStrokeThrottled(stroke);
     lastPos.current = pos;
   };
 
   const handleCanvasMouseUp = () => { setIsDrawing(false); lastPos.current = null; };
 
-  const getTouchCanvasPos = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: (touch.clientX - rect.left) * scaleX,
-      y: (touch.clientY - rect.top) * scaleY,
-    };
-  };
-
   const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const pos = getTouchCanvasPos(e);
+    const touch = e.touches[0];
+    const pos = getCanvasPos(touch.clientX, touch.clientY);
     if (!pos) return;
     setIsDrawing(true);
     lastPos.current = pos;
@@ -693,7 +772,8 @@ export default function MeetingRoom() {
   const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!isDrawing || !lastPos.current) return;
-    const pos = getTouchCanvasPos(e);
+    const touch = e.touches[0];
+    const pos = getCanvasPos(touch.clientX, touch.clientY);
     if (!pos) return;
     const stroke: DrawStroke = {
       x1: lastPos.current.x, y1: lastPos.current.y,
@@ -701,7 +781,7 @@ export default function MeetingRoom() {
       color: drawColor, size: drawSize, eraser: drawMode === "eraser",
     };
     drawStrokeOnCanvas(stroke);
-    sendWs({ type: "webrtc_draw", roomId, stroke });
+    sendStrokeThrottled(stroke);
     lastPos.current = pos;
   };
 
@@ -712,10 +792,11 @@ export default function MeetingRoom() {
   };
 
   const clearWhiteboard = () => {
+    allStrokesRef.current = [];
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    ctx?.clearRect(0, 0, CANVAS_W, CANVAS_H);
     sendWs({ type: "webrtc_whiteboard_clear", roomId });
   };
 
@@ -775,7 +856,8 @@ export default function MeetingRoom() {
   const totalPeers = allPeers.length;
   const gridCols = totalPeers === 1 ? "grid-cols-1" : totalPeers === 2 ? "grid-cols-2" : totalPeers <= 4 ? "grid-cols-2" : "grid-cols-3";
 
-  // Guest name entry screen for unauthenticated users without pre-set guest ID
+  const totalRequestsBadge = pendingJoinRequests.length + pendingScreenShareRequests.length;
+
   if (showGuestNameInput) {
     const handleGuestSubmit = () => {
       const name = directGuestName.trim();
@@ -838,7 +920,7 @@ export default function MeetingRoom() {
 
           <div className="bg-gray-900 rounded-2xl overflow-hidden aspect-video relative">
             {localStream && videoOn ? (
-              <video ref={(el) => { if (el && localStream) el.srcObject = localStream; }} autoPlay muted playsInline className="w-full h-full object-cover" />
+              <video ref={(el) => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); } }} autoPlay muted playsInline className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                 <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-3xl font-bold text-white">
@@ -884,7 +966,7 @@ export default function MeetingRoom() {
     { id: 'whiteboard', label: 'السبورة', icon: Pencil },
     { id: 'page', label: 'عرض صفحة', icon: Layout },
     { id: 'actions', label: 'إجراءات', icon: Zap },
-    ...(isHost ? [{ id: 'requests' as PanelTab, label: 'طلبات الانضمام', icon: Bell, badge: pendingJoinRequests.length }] : []),
+    ...(isHost ? [{ id: 'requests' as PanelTab, label: 'الطلبات', icon: Bell, badge: totalRequestsBadge }] : []),
   ];
 
   return (
@@ -911,14 +993,12 @@ export default function MeetingRoom() {
       <div className="flex flex-1 overflow-hidden">
         {/* Video area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* ── Spotlight mode: screen share active ── */}
           {screenSharerPeerId ? (() => {
             const sharerIsLocal = screenSharerPeerId === (userId || "local");
             const sharerPeer = sharerIsLocal ? localPeer : peers.get(screenSharerPeerId);
             const otherPeers = allPeers.filter(p => p.id !== screenSharerPeerId);
             return (
               <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Screen share banner */}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 border-b border-blue-500/20 shrink-0">
                   <Monitor className="w-3.5 h-3.5 text-blue-400" />
                   <span className="text-blue-300 text-xs font-medium">
@@ -928,19 +1008,18 @@ export default function MeetingRoom() {
                     <button onClick={toggleScreenShare} className="mr-auto text-blue-400 hover:text-red-400 text-xs underline transition-colors">إيقاف المشاركة</button>
                   )}
                 </div>
-                {/* Main spotlight */}
-                <div className="flex-1 p-2 overflow-hidden">
+                <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
                   {sharerPeer && (
                     <VideoTile
                       peer={sharerPeer}
                       local={sharerIsLocal}
+                      spotlight={true}
                       canKick={false}
                     />
                   )}
                 </div>
-                {/* Thumbnail strip for other participants */}
                 {otherPeers.length > 0 && (
-                  <div className="h-28 sm:h-32 shrink-0 flex gap-2 px-2 pb-2 overflow-x-auto scrollbar-none">
+                  <div className="h-28 sm:h-32 shrink-0 flex gap-2 px-2 pb-2 overflow-x-auto scrollbar-none bg-gray-950">
                     {otherPeers.map(peer => (
                       <div key={peer.id} className="shrink-0 w-44 sm:w-48">
                         <VideoTile
@@ -956,27 +1035,25 @@ export default function MeetingRoom() {
               </div>
             );
           })() : (
-          /* ── Normal grid mode ── */
           <div className="flex-1 p-2 sm:p-3 overflow-hidden">
-          <div className={`grid ${gridCols} gap-2.5 h-full max-h-[calc(100vh-140px)]`}>
-            {allPeers.map(peer => (
-              <VideoTile
-                key={peer.id}
-                peer={peer}
-                local={peer.id === (userId || "local")}
-                canKick={isAdmin}
-                onKick={() => kickPeer(peer.id)}
-              />
-            ))}
+            <div className={`grid ${gridCols} gap-2.5 h-full max-h-[calc(100vh-140px)]`}>
+              {allPeers.map(peer => (
+                <VideoTile
+                  key={peer.id}
+                  peer={peer}
+                  local={peer.id === (userId || "local")}
+                  canKick={isAdmin}
+                  onKick={() => kickPeer(peer.id)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
           )}
         </div>
 
         {/* Side panel */}
         {activePanel && (
           <div className="w-80 bg-gray-900 border-r border-white/[0.06] flex flex-col shrink-0">
-            {/* Panel tabs */}
             <div className="flex border-b border-white/[0.06] overflow-x-auto scrollbar-none shrink-0">
               {PANEL_TABS.map(tab => (
                 <button
@@ -1005,7 +1082,7 @@ export default function MeetingRoom() {
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {chatMessages.length === 0 && <p className="text-white/30 text-xs text-center py-8">لا توجد رسائل بعد</p>}
                   {chatMessages.map((msg, i) => (
-                    <div key={i} className={`flex flex-col gap-0.5 ${msg.self ? "items-end" : "items-start"}`}>
+                    <div key={`${msg.ts}-${i}`} className={`flex flex-col gap-0.5 ${msg.self ? "items-end" : "items-start"}`}>
                       <span className="text-white/40 text-[10px]">{msg.self ? "أنت" : msg.name}</span>
                       <div className={`px-3 py-1.5 rounded-xl text-sm max-w-[90%] break-words ${msg.self ? "bg-white text-black" : "bg-white/10 text-white"}`}>
                         {msg.text}
@@ -1015,8 +1092,15 @@ export default function MeetingRoom() {
                   <div ref={chatEndRef} />
                 </div>
                 <div className="p-3 border-t border-white/[0.06] flex gap-2 shrink-0">
-                  <Input value={chatMsg} onChange={e => setChatMsg(e.target.value)} onKeyDown={e => e.key === "Enter" && sendChat()} placeholder="اكتب رسالة..." className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-8" data-testid="input-chat-message" />
-                  <button onClick={sendChat} className="p-2 bg-white text-black rounded-lg hover:bg-white/90 transition-colors shrink-0" data-testid="button-send-chat">
+                  <Input
+                    value={chatMsg}
+                    onChange={e => setChatMsg(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendChat()}
+                    placeholder="اكتب رسالة..."
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-8"
+                    data-testid="input-chat-message"
+                  />
+                  <button onClick={sendChat} disabled={!chatMsg.trim()} className="p-2 bg-white text-black rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors shrink-0" data-testid="button-send-chat">
                     <Send className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -1054,7 +1138,6 @@ export default function MeetingRoom() {
             {/* ── Whiteboard panel ── */}
             {activePanel === 'whiteboard' && (
               <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Toolbar */}
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] shrink-0 flex-wrap">
                   <button onClick={() => setDrawMode("pen")} className={`p-1.5 rounded-lg transition-colors ${drawMode === "pen" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`} title="قلم">
                     <Pencil className="w-3.5 h-3.5" />
@@ -1077,12 +1160,11 @@ export default function MeetingRoom() {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                {/* Canvas */}
-                <div className="flex-1 overflow-hidden bg-gray-950 relative">
+                <div className="flex-1 overflow-auto bg-gray-950">
                   <canvas
                     ref={canvasRef}
-                    width={600}
-                    height={500}
+                    width={CANVAS_W}
+                    height={CANVAS_H}
                     onMouseDown={handleCanvasMouseDown}
                     onMouseMove={handleCanvasMouseMove}
                     onMouseUp={handleCanvasMouseUp}
@@ -1090,8 +1172,13 @@ export default function MeetingRoom() {
                     onTouchStart={handleCanvasTouchStart}
                     onTouchMove={handleCanvasTouchMove}
                     onTouchEnd={handleCanvasTouchEnd}
-                    className="w-full h-full"
-                    style={{ cursor: drawMode === "eraser" ? "cell" : "crosshair", touchAction: "none" }}
+                    style={{
+                      cursor: drawMode === "eraser" ? "cell" : "crosshair",
+                      touchAction: "none",
+                      display: "block",
+                      minWidth: "100%",
+                      backgroundColor: "#030712",
+                    }}
                     data-testid="canvas-whiteboard"
                   />
                 </div>
@@ -1139,7 +1226,6 @@ export default function MeetingRoom() {
             {/* ── Quick actions panel ── */}
             {activePanel === 'actions' && (
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                {/* Quick links */}
                 <div>
                   <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">روابط سريعة</p>
                   <div className="grid grid-cols-2 gap-2">
@@ -1161,8 +1247,6 @@ export default function MeetingRoom() {
                     ))}
                   </div>
                 </div>
-
-                {/* Quick support ticket */}
                 <div>
                   <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">رفع شكوى / دعم سريع</p>
                   <div className="space-y-2">
@@ -1198,62 +1282,97 @@ export default function MeetingRoom() {
               </div>
             )}
 
-            {/* ── Join Requests panel (host only) ── */}
+            {/* ── Requests panel (host only) ── */}
             {activePanel === 'requests' && isHost && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider">طلبات الانضمام بالكود</p>
-                {pendingJoinRequests.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-white/20">
-                    <Bell className="w-8 h-8" />
-                    <p className="text-xs">لا توجد طلبات انضمام حالياً</p>
-                  </div>
-                ) : pendingJoinRequests.map((req) => (
-                  <div key={req._tempId || req.userId} className="bg-white/[0.06] rounded-xl p-3 space-y-2.5 border border-white/[0.08]">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-400 font-bold text-sm">
-                        {(req.userName || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-bold truncate">{req.userName}</p>
-                        {req.userEmail && <p className="text-white/30 text-[10px] truncate">{req.userEmail}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.meetingId ? req.userId : req.userId}`, { action: "approve" });
-                            setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
-                            toast({ title: "تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
-                          } catch (e: any) {
-                            toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
-                          }
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                        data-testid={`button-approve-${req.userId}`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        قبول
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "reject" });
-                            setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
-                            toast({ title: "تم الرفض", description: `رفضت انضمام ${req.userName}` });
-                          } catch (e: any) {
-                            toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
-                          }
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                        data-testid={`button-reject-${req.userId}`}
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        رفض
-                      </button>
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {/* Screen share requests */}
+                {pendingScreenShareRequests.length > 0 && (
+                  <div>
+                    <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">طلبات مشاركة الشاشة</p>
+                    <div className="space-y-2">
+                      {pendingScreenShareRequests.map((req) => (
+                        <div key={req.userId} className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 space-y-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0">
+                              {req.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-xs font-bold truncate">{req.name}</p>
+                              <p className="text-blue-300/60 text-[10px]">يريد مشاركة شاشته</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => approveScreenShare(req.userId)} className="flex-1 flex items-center justify-center gap-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg py-1.5 text-xs font-bold transition-colors" data-testid={`button-approve-screen-${req.userId}`}>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              موافقة
+                            </button>
+                            <button onClick={() => denyScreenShare(req.userId)} className="flex-1 flex items-center justify-center gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-1.5 text-xs font-bold transition-colors" data-testid={`button-deny-screen-${req.userId}`}>
+                              <XCircle className="w-3.5 h-3.5" />
+                              رفض
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Join requests */}
+                <div>
+                  <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-2">طلبات الانضمام بالكود</p>
+                  {pendingJoinRequests.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-3 text-white/20">
+                      <Bell className="w-8 h-8" />
+                      <p className="text-xs">لا توجد طلبات انضمام</p>
+                    </div>
+                  ) : pendingJoinRequests.map((req) => (
+                    <div key={req._tempId || req.userId} className="bg-white/[0.06] rounded-xl p-3 space-y-2.5 border border-white/[0.08] mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-400 font-bold text-sm">
+                          {(req.userName || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-bold truncate">{req.userName}</p>
+                          {req.userEmail && <p className="text-white/30 text-[10px] truncate">{req.userEmail}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "approve" });
+                              setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                              toast({ title: "تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
+                            } catch (e: any) {
+                              toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                          data-testid={`button-approve-${req.userId}`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          قبول
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "reject" });
+                              setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                              toast({ title: "تم الرفض" });
+                            } catch (e: any) {
+                              toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                          data-testid={`button-reject-${req.userId}`}
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          رفض
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1306,9 +1425,17 @@ export default function MeetingRoom() {
         )}
       </AnimatePresence>
 
-      {/* Control bar — mobile-first */}
+      {/* Screen share pending notification */}
+      {screenSharePending && !isHost && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-blue-900/90 border border-blue-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2 shadow-xl backdrop-blur">
+          <Loader2 className="w-3.5 h-3.5 text-blue-300 animate-spin" />
+          <span className="text-blue-200 text-xs font-medium">في انتظار موافقة المضيف على مشاركة شاشتك...</span>
+          <button onClick={() => setScreenSharePending(false)} className="text-blue-400 hover:text-white ml-1"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {/* Control bar */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-gray-900/95 border-t border-white/[0.06] shrink-0 gap-1 safe-area-bottom" style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}>
-        {/* Panel toggles */}
         <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
           {PANEL_TABS.map(tab => (
             <button
@@ -1318,7 +1445,7 @@ export default function MeetingRoom() {
               title={tab.label}
               data-testid={`button-panel-toggle-${tab.id}`}
             >
-              <tab.icon className="w-4 h-4 sm:w-4 sm:h-4" />
+              <tab.icon className="w-4 h-4" />
               <span className="hidden sm:inline">{tab.label}</span>
               {tab.id === 'chat' && unreadChat > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
@@ -1329,7 +1456,6 @@ export default function MeetingRoom() {
           ))}
         </div>
 
-        {/* Media controls — center */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button onClick={toggleAudio} className={`p-2.5 sm:p-3 rounded-full border transition-all ${audioOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"} data-testid="button-toggle-audio">
             {audioOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -1337,7 +1463,16 @@ export default function MeetingRoom() {
           <button onClick={toggleVideo} className={`p-2.5 sm:p-3 rounded-full border transition-all ${videoOn ? "bg-white/10 border-white/20 text-white hover:bg-white/20" : "bg-red-500 border-red-400 text-white"}`} title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"} data-testid="button-toggle-video">
             {videoOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
-          <button onClick={toggleScreenShare} className={`hidden sm:flex p-2.5 sm:p-3 rounded-full border transition-all ${screenSharing ? "bg-blue-500 border-blue-400 text-white" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}`} title={screenSharing ? "إيقاف مشاركة الشاشة" : "مشاركة الشاشة"} data-testid="button-screen-share">
+          <button
+            onClick={toggleScreenShare}
+            className={`hidden sm:flex p-2.5 sm:p-3 rounded-full border transition-all ${
+              screenSharing ? "bg-blue-500 border-blue-400 text-white" :
+              screenSharePending ? "bg-yellow-500/30 border-yellow-500/50 text-yellow-300" :
+              "bg-white/10 border-white/20 text-white hover:bg-white/20"
+            }`}
+            title={screenSharing ? "إيقاف مشاركة الشاشة" : isHost ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
+            data-testid="button-screen-share"
+          >
             {screenSharing ? <MonitorOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
           <button onClick={leaveMeeting} className="p-2.5 sm:p-3 rounded-full bg-red-500 border border-red-400 text-white hover:bg-red-600 transition-all" title="مغادرة الاجتماع" data-testid="button-leave-meeting">

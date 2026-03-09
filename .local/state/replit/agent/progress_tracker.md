@@ -33,3 +33,4 @@
 [x] 33. Build Qirox Edit — محرر تصميم احترافي كامل (client/src/pages/QiroxEdit.tsx)
 [x] 34. Fix Render deployment (bcrypt dependency and build allowlist)
 [x] 35. Fix mobile responsiveness — horizontal scroll, zoom, elements not showing on Android/iPhone
+[x] 36. Fix QMeet bugs: local video, screen share fullsize, screen share permission system, whiteboard sync + size + lag, chat delivery

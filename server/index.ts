@@ -168,6 +168,46 @@ wss.on("connection", (ws) => {
         }
         return;
       }
+
+      if (msg.type === "webrtc_screen_share_request" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_screen_share_request", from: userId, name: msg.name || userId, roomId: msg.roomId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share_approve" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_screen_share_approved", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      if (msg.type === "webrtc_screen_share_deny" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_screen_share_denied", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      if (msg.type === "webrtc_reaction" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_reaction", from: userId, emoji: msg.emoji, name: msg.name || userId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_raise_hand" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_raise_hand", from: userId, raised: msg.raised, name: msg.name || userId, userId: msg.userId || userId });
+          }
+        }
+        return;
+      }
     } catch {}
   });
 
