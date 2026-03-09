@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Package, Tag } from "lucide-react";
+import { Plus, Trash2, Pencil, Package, Tag, Sparkles } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const CATEGORIES = [
@@ -63,6 +63,16 @@ export default function AdminExtraAddons() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] }),
   });
 
+  const seedDefaults = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/extra-addons/seed-defaults", {}),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
+      toast({ title: `تم إضافة ${data.added} إضافة افتراضية${data.skipped > 0 ? ` (${data.skipped} موجودة مسبقاً)` : ""}` });
+    },
+    onError: () => toast({ title: "خطأ في الزرع", variant: "destructive" }),
+  });
+
   function openNew() { setEditId(null); setForm({ ...empty }); setOpen(true); }
   function openEdit(a: any) {
     setEditId(a.id);
@@ -81,11 +91,16 @@ export default function AdminExtraAddons() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">المميزات الإضافية</h1>
-          <p className="text-sm text-gray-500">إضافات اختيارية بأسعار منفصلة يختارها العميل عند الطلب</p>
+          <p className="text-sm text-gray-500">إضافات اختيارية بأسعار منفصلة — تظهر للعميل في سلة الطلبات</p>
         </div>
-        <Button onClick={openNew} className="gap-2 mr-auto" data-testid="button-new-addon">
-          <Plus className="w-4 h-4" /> إضافة جديدة
-        </Button>
+        <div className="flex gap-2 mr-auto">
+          <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-2 text-sm" data-testid="button-seed-addons">
+            <Sparkles className="w-4 h-4" /> {seedDefaults.isPending ? "جاري الإضافة..." : "إضافات افتراضية"}
+          </Button>
+          <Button onClick={openNew} className="gap-2" data-testid="button-new-addon">
+            <Plus className="w-4 h-4" /> إضافة جديدة
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">

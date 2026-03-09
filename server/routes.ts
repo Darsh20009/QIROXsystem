@@ -6241,6 +6241,28 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  app.post("/api/admin/extra-addons/seed-defaults", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    const defaults = [
+      { nameAr: "تطبيق iOS (App Store)", name: "iOS App", descriptionAr: "تطبيق أيفون على متجر Apple", category: "app", price: 4500, currency: "SAR", icon: "Smartphone", sortOrder: 1 },
+      { nameAr: "تطبيق Android (Play Store)", name: "Android App", descriptionAr: "تطبيق أندرويد على متجر Google Play", category: "app", price: 3500, currency: "SAR", icon: "Smartphone", sortOrder: 2 },
+      { nameAr: "تطبيق iOS + Android", name: "Mobile App Bundle", descriptionAr: "تطبيق جوال كامل على المتجرين", category: "app", price: 6500, currency: "SAR", icon: "Smartphone", sortOrder: 3 },
+      { nameAr: "لوحة تحكم ويب", name: "Web Dashboard", descriptionAr: "واجهة ادارية متكاملة على المتصفح", category: "feature", price: 1500, currency: "SAR", icon: "Monitor", sortOrder: 4 },
+      { nameAr: "بوابة دفع إلكتروني", name: "Payment Gateway", descriptionAr: "تكامل مع مدى أو Apple Pay أو Stripe", category: "integration", price: 800, currency: "SAR", icon: "CreditCard", sortOrder: 5 },
+      { nameAr: "SEO متقدم", name: "Advanced SEO", descriptionAr: "تحسين محركات البحث وGoogle Analytics", category: "marketing", price: 600, currency: "SAR", icon: "TrendingUp", sortOrder: 6 },
+      { nameAr: "تكامل واتساب", name: "WhatsApp Integration", descriptionAr: "ربط الموقع بواتساب للمراسلة الفورية", category: "integration", price: 350, currency: "SAR", icon: "MessageCircle", sortOrder: 7 },
+      { nameAr: "خدمة استضافة Vercel", name: "Vercel Hosting", descriptionAr: "استضافة الموقع على Vercel بأداء عالي", category: "hosting", price: 200, currency: "SAR", icon: "Cloud", sortOrder: 8 },
+      { nameAr: "تصميم UI/UX احترافي", name: "UI/UX Design", descriptionAr: "تصميم احترافي على Figma قبل البرمجة", category: "design", price: 1200, currency: "SAR", icon: "Palette", sortOrder: 9 },
+      { nameAr: "دعم فني شهري", name: "Monthly Support", descriptionAr: "دعم فني مستمر وإصلاح أخطاء شهرياً", category: "support", price: 500, currency: "SAR", icon: "HeadphonesIcon", sortOrder: 10 },
+    ];
+    let added = 0;
+    for (const d of defaults) {
+      const exists = await ExtraAddonModel.findOne({ nameAr: d.nameAr });
+      if (!exists) { await ExtraAddonModel.create({ ...d, isActive: true }); added++; }
+    }
+    res.json({ ok: true, added, skipped: defaults.length - added });
+  });
+
   // ─── Cron Jobs ───────────────────────────────────────────────────────────────
   const { scheduleCronJob, stopCronJob, runJobNow, testJobConnection } = await import("./cron");
   const { CronJobModel, AtlasConfigModel, AtlasDbUserModel, AppPublishConfigModel } = await import("./models");

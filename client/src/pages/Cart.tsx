@@ -135,6 +135,8 @@ export default function Cart() {
   const BANK = { ...BANK_FALLBACK, ...(bankSettings || {}) };
 
   const { data: cart, isLoading } = useQuery<Cart>({ queryKey: ["/api/cart"] });
+  const { data: extraAddons = [] } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
+  const [extraAddonConfirm, setExtraAddonConfirm] = useState<any | null>(null);
   const { data: walletData } = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
     queryKey: ["/api/wallet"],
     enabled: !!user,
@@ -663,6 +665,32 @@ export default function Cart() {
                     </button>
                   );
                 })}
+                {extraAddons.map((ea: any) => {
+                  const catColors: Record<string, string> = {
+                    feature: "text-blue-600 bg-blue-50", hosting: "text-green-600 bg-green-50",
+                    design: "text-pink-600 bg-pink-50", support: "text-amber-600 bg-amber-50",
+                    integration: "text-purple-600 bg-purple-50", app: "text-indigo-600 bg-indigo-50",
+                    marketing: "text-orange-600 bg-orange-50",
+                  };
+                  const color = catColors[ea.category] || "text-gray-600 bg-gray-50";
+                  const already = items.some(i => i.name === ea.nameAr || i.nameAr === ea.nameAr);
+                  return (
+                    <button key={ea.id} onClick={() => !already && setExtraAddonConfirm(ea)}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all text-right bg-white ${already ? "border-green-300 bg-green-50/30 opacity-70 cursor-default" : "border-black/[0.07] hover:border-black/20 hover:shadow-sm"}`}
+                      data-testid={`button-extra-addon-${ea.id}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                        <Package className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-black">{ea.nameAr}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5">{ea.price.toLocaleString()} {ea.currency}</p>
+                      </div>
+                      {already
+                        ? <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        : <Plus className="w-3.5 h-3.5 text-black/20 mr-auto flex-shrink-0" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1139,6 +1167,46 @@ export default function Cart() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════ Extra Addon Confirm Dialog ═══════ */}
+      <Dialog open={!!extraAddonConfirm} onOpenChange={() => setExtraAddonConfirm(null)}>
+        <DialogContent className="w-[95vw] max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <Package className="w-4 h-4 text-indigo-600" />
+              </div>
+              {extraAddonConfirm?.nameAr}
+            </DialogTitle>
+          </DialogHeader>
+          {extraAddonConfirm?.descriptionAr && (
+            <p className="text-sm text-black/50 -mt-1 mb-1">{extraAddonConfirm.descriptionAr}</p>
+          )}
+          <div className="bg-black/[0.03] rounded-xl p-4 text-center my-2">
+            <p className="text-2xl font-black">{extraAddonConfirm?.price?.toLocaleString()} <span className="text-sm font-normal text-black/40">{extraAddonConfirm?.currency || "SAR"}</span></p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setExtraAddonConfirm(null)}>إلغاء</Button>
+            <Button
+              className="bg-gradient-to-l from-gray-900 to-black text-white font-black gap-2"
+              disabled={addItemMutation.isPending}
+              onClick={() => {
+                if (!extraAddonConfirm) return;
+                addItemMutation.mutate({
+                  name: extraAddonConfirm.nameAr,
+                  nameAr: extraAddonConfirm.nameAr,
+                  price: extraAddonConfirm.price,
+                  qty: 1,
+                  type: "service",
+                });
+                setExtraAddonConfirm(null);
+              }}
+              data-testid="button-confirm-extra-addon">
+              {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> إضافة للسلة</>}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
