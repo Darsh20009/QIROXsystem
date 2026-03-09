@@ -815,8 +815,24 @@ export default function MeetingRoom() {
   }, [sendWs, roomId, userName, audioOn, cameraFacing]);
 
   const startScreenShare = useCallback(async () => {
+    // Check API support
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+      toast({
+        title: "مشاركة الشاشة غير مدعومة",
+        description: isIOS
+          ? "تتطلب iOS 17.4 أو أحدث مع متصفح Safari المحدّث"
+          : "متصفحك لا يدعم مشاركة الشاشة — جرّب Chrome أو Edge",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false });
+      const screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      if (!screen.getVideoTracks().length) {
+        toast({ title: "لم يتم اختيار شاشة", description: "الرجاء اختيار شاشة أو نافذة للمشاركة", variant: "destructive" });
+        return;
+      }
       const screenTrack = screen.getVideoTracks()[0];
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
@@ -855,8 +871,12 @@ export default function MeetingRoom() {
         } catch {}
       }
     } catch (err: any) {
-      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
-        toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن", variant: "destructive" });
+      const name = err?.name;
+      if (name === "NotAllowedError" || name === "AbortError") return;
+      if (name === "NotSupportedError" || name === "TypeError") {
+        toast({ title: "مشاركة الشاشة غير مدعومة", description: "متصفحك أو جهازك لا يدعم هذه الميزة", variant: "destructive" });
+      } else {
+        toast({ title: "تعذّرت مشاركة الشاشة", description: "تأكد من منح الإذن عند ظهور طلب النظام", variant: "destructive" });
       }
     }
   }, [sendWs, roomId, userId, userName, audioOn, toast, stopScreenShare]);
@@ -865,6 +885,26 @@ export default function MeetingRoom() {
     if (screenSharingRef.current) {
       await stopScreenShare();
       return;
+    }
+    // Check support before doing anything
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+      toast({
+        title: "مشاركة الشاشة غير مدعومة",
+        description: isIOS
+          ? "تتطلب iOS 17.4 أو أحدث مع Safari"
+          : "متصفحك لا يدعم مشاركة الشاشة — جرّب Chrome أو Edge",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Android guidance toast
+    if (/Android/i.test(navigator.userAgent)) {
+      toast({
+        title: "مشاركة الشاشة",
+        description: "ستنتقل لاختيار الشاشة — اختر ما تريد مشاركته ثم ارجع للتطبيق",
+        duration: 4000,
+      });
     }
     // Host OR staff with no one else sharing → share directly without approval
     if (isHost || (isStaff && !screenSharerPeerId) || screenShareApproved) {
