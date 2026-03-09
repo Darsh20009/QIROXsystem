@@ -6,9 +6,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus, Trash2 } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus, Trash2, Package, AlertCircle, RefreshCw, CheckCheck, Clock, XCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import SARIcon from "@/components/SARIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,34 @@ export default function ProjectDetails() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id, "messages"] });
       setMessageContent("");
+    },
+  });
+
+  const { data: addonSubs = [], isLoading: isLoadingAddons } = useQuery<any[]>({
+    queryKey: ["/api/projects", project?.id, "addon-subscriptions"],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${project.id}/addon-subscriptions`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!project?.id,
+  });
+
+  const [renewingId, setRenewingId] = useState<string | null>(null);
+  const requestRenewalMutation = useMutation({
+    mutationFn: async (subId: string) => {
+      setRenewingId(subId);
+      const res = await apiRequest("POST", `/api/projects/${project.id}/addon-subscriptions/${subId}/request-renewal`, {});
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "addon-subscriptions"] });
+      toast({ title: "تم إرسال طلب التجديد", description: "سيتواصل معك الفريق قريباً" });
+      setRenewingId(null);
+    },
+    onError: () => {
+      toast({ title: "فشل إرسال الطلب", variant: "destructive" });
+      setRenewingId(null);
     },
   });
 
@@ -193,6 +222,12 @@ export default function ProjectDetails() {
           <TabsTrigger value="vault" className="data-[state=active]:bg-primary data-[state=active]:text-white">Vault المشروع</TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-white">التنبيهات</TabsTrigger>
           <TabsTrigger value="deliverables" className="data-[state=active]:bg-primary data-[state=active]:text-white">التسليمات</TabsTrigger>
+          <TabsTrigger value="addons" className="data-[state=active]:bg-primary data-[state=active]:text-white relative">
+            الإضافات
+            {addonSubs.some((s: any) => s.status === "expired" || s.status === "exhausted") && (
+              <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -527,6 +562,144 @@ export default function ProjectDetails() {
                   <Download className="w-12 h-12 mx-auto mb-4 opacity-10" />
                   <p>سيتم رفع ملفات التسليم النهائية هنا عند اكتمال المشروع</p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="addons">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" />
+                  الإضافات والمميزات المفعّلة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingAddons ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : addonSubs.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Package className="w-12 h-12 mx-auto mb-3 opacity-10 text-slate-400" />
+                    <p className="text-slate-400 text-sm">لا توجد إضافات مفعّلة لهذا المشروع بعد</p>
+                    <p className="text-slate-300 text-xs mt-1">يمكنك طلب إضافة مميزات عبر التواصل مع الفريق</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {addonSubs.map((sub: any) => {
+                      const isExpired = sub.status === "expired";
+                      const isExhausted = sub.status === "exhausted";
+                      const isActive = sub.status === "active";
+                      const needsAction = isExpired || isExhausted;
+                      const alreadyRequested = !!sub.renewalRequestedAt;
+
+                      const statusConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
+                        active: { icon: CheckCheck, label: "نشط", color: "text-green-700", bg: "bg-green-100" },
+                        expired: { icon: XCircle, label: "منتهي الصلاحية", color: "text-red-700", bg: "bg-red-100" },
+                        exhausted: { icon: AlertCircle, label: "استُنفدت الحصة", color: "text-amber-700", bg: "bg-amber-100" },
+                        cancelled: { icon: XCircle, label: "ملغي", color: "text-slate-500", bg: "bg-slate-100" },
+                      };
+                      const st = statusConfig[sub.status] || statusConfig.active;
+                      const StatusIcon = st.icon;
+
+                      const billingLabels: Record<string, string> = {
+                        one_time: "مرة واحدة",
+                        monthly: "شهري",
+                        annual: "سنوي",
+                        lifetime: "مدى الحياة",
+                      };
+
+                      const quotaPct = sub.quotaTotal > 0
+                        ? Math.min(100, Math.round((sub.quotaUsed / sub.quotaTotal) * 100))
+                        : null;
+
+                      return (
+                        <div
+                          key={sub._id || sub.id}
+                          className={`rounded-2xl border p-4 transition-all ${needsAction ? "border-red-200 bg-red-50/50" : "border-slate-100 bg-white"}`}
+                          data-testid={`addon-sub-${sub._id || sub.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-bold text-slate-800">{sub.addonNameAr || sub.addonId?.nameAr || "إضافة"}</p>
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>
+                                  <StatusIcon className="w-3 h-3" />
+                                  {st.label}
+                                </span>
+                                {sub.billingType && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                                    {billingLabels[sub.billingType] || sub.billingType}
+                                  </span>
+                                )}
+                              </div>
+
+                              {quotaPct !== null && (
+                                <div className="mt-2 mb-1">
+                                  <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                                    <span>الاستخدام: {sub.quotaUsed} / {sub.quotaTotal} {sub.quotaLabel || ""}</span>
+                                    <span>{quotaPct}%</span>
+                                  </div>
+                                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${quotaPct >= 90 ? "bg-red-400" : quotaPct >= 60 ? "bg-amber-400" : "bg-green-400"}`}
+                                      style={{ width: `${quotaPct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                {sub.startedAt && (
+                                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    بدأ: {new Date(sub.startedAt).toLocaleDateString("ar-SA")}
+                                  </span>
+                                )}
+                                {sub.expiresAt && (
+                                  <span className={`text-[10px] flex items-center gap-1 ${isExpired ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                                    <Calendar className="w-3 h-3" />
+                                    {isExpired ? "انتهى:" : "ينتهي:"} {new Date(sub.expiresAt).toLocaleDateString("ar-SA")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 text-left">
+                              {needsAction && (
+                                alreadyRequested ? (
+                                  <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                    <CheckCheck className="w-3 h-3" />
+                                    تم إرسال طلب التجديد
+                                  </div>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    className="h-8 gap-1.5 text-xs rounded-xl"
+                                    onClick={() => requestRenewalMutation.mutate(sub._id || sub.id)}
+                                    disabled={renewingId === (sub._id || sub.id)}
+                                    data-testid={`btn-renew-${sub._id || sub.id}`}
+                                  >
+                                    {renewingId === (sub._id || sub.id)
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <RefreshCw className="w-3 h-3" />}
+                                    طلب التجديد
+                                  </Button>
+                                )
+                              )}
+                              {isActive && sub.quotaTotal > 0 && (
+                                <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-1">
+                                  متبقي: {sub.quotaTotal - sub.quotaUsed} {sub.quotaLabel || ""}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -830,8 +830,15 @@ export default function OrderFlow() {
                               {a.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">{a.descriptionAr}</p>}
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-black text-base text-black dark:text-white">{a.price.toLocaleString()}</p>
-                              <SARIcon size={10} className="opacity-35 mt-0.5" />
+                              <p className="font-black text-base text-black dark:text-white flex items-center gap-1">{a.price.toLocaleString()} <SARIcon size={12} /></p>
+                              {a.billingType && a.billingType !== "one_time" && (
+                                <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5">
+                                  {a.billingType === "monthly" ? "/شهر" : a.billingType === "annual" ? "/سنة" : ""}
+                                </p>
+                              )}
+                              {a.includedInPlans?.length > 0 && (
+                                <p className="text-[10px] text-green-600 mt-0.5">مجانية للبرو+</p>
+                              )}
                             </div>
                           </div>
                         </motion.button>
