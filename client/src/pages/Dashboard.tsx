@@ -1470,6 +1470,7 @@ export default function Dashboard() {
   const [subSvcNotes, setSubSvcNotes] = useState("");
   const [uploadingProofOrderId, setUploadingProofOrderId] = useState<string | null>(null);
   const proofFileRef = useRef<HTMLInputElement>(null);
+  const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null);
 
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, file }: { orderId: string; file: File }) => {
@@ -1524,6 +1525,23 @@ export default function Dashboard() {
     queryKey: ['/api/qmeet/upcoming'],
     enabled: !!user,
     refetchInterval: 60000,
+  });
+
+  const { data: myApiKeys = [] } = useQuery<any[]>({
+    queryKey: ['/api/my-api-keys'],
+    enabled: !!(user?.role === 'client'),
+  });
+
+  const linkedApiKeys = myApiKeys.filter((k: any) => k.projectName && k.projectName.trim() !== "");
+
+  const { data: linkedProjectPreview, isLoading: isLoadingLinkedPreview } = useQuery<any>({
+    queryKey: ['/api/my-api-keys', linkedProjectKeyId, 'preview'],
+    enabled: !!linkedProjectKeyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/my-api-keys/${linkedProjectKeyId}/preview`, { credentials: 'include' });
+      if (!res.ok) throw new Error('failed');
+      return res.json();
+    },
   });
 
   const [instantMeetResult, setInstantMeetResult] = useState<any>(null);
@@ -2298,6 +2316,60 @@ export default function Dashboard() {
                 </motion.div>
               ))}
             </div>
+
+            {/* ─── Linked API Projects ─── */}
+            {user?.role === 'client' && linkedApiKeys.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
+                    <div className="w-6 h-6 bg-violet-600 rounded-lg flex items-center justify-center">
+                      <KeyRound className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    {L ? "مشاريع مربوطة بالـ API" : "API-Linked Projects"}
+                  </h2>
+                  <Link href="/api-keys">
+                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-manage-api-keys">
+                      {L ? "إدارة المفاتيح" : "Manage Keys"} <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {linkedApiKeys.map((apiKey: any, i: number) => (
+                    <motion.div key={apiKey.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 + i * 0.05 }}
+                      data-testid={`card-linked-project-${apiKey.id}`}
+                      onClick={() => setLinkedProjectKeyId(apiKey.id)}
+                      className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-2xl p-4 cursor-pointer hover:shadow-md hover:border-violet-200 dark:hover:border-violet-800/50 transition-all group">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${apiKey.isActive ? "bg-violet-100 dark:bg-violet-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                          <Server className={`w-4.5 h-4.5 ${apiKey.isActive ? "text-violet-600 dark:text-violet-400" : "text-black/20 dark:text-white/20"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="font-bold text-sm text-black dark:text-white truncate">{apiKey.projectName}</p>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${apiKey.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400"}`}>
+                              {apiKey.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-black/40 dark:text-white/40 mb-2">{apiKey.name}</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap gap-1">
+                              {(apiKey.scopes || []).slice(0, 3).map((s: string) => (
+                                <span key={s} className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded-full">{s}</span>
+                              ))}
+                              {(apiKey.scopes || []).length > 3 && <span className="text-[9px] text-black/30 dark:text-white/30">+{(apiKey.scopes || []).length - 3}</span>}
+                            </div>
+                            <span className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-1">
+                              <Activity className="w-3 h-3" />{(apiKey.requestCount || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronLeft className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-violet-500 transition-colors flex-shrink-0 mt-1" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Bank Transfer Proof Upload Banner */}
@@ -3112,6 +3184,209 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ─── Linked API Project Detail Sheet ─── */}
+      <Sheet open={!!linkedProjectKeyId} onOpenChange={v => { if (!v) setLinkedProjectKeyId(null); }}>
+        <SheetContent side="left" className="w-full sm:max-w-xl p-0" dir="rtl">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+            <SheetTitle className="text-right font-black text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+                <Server className="w-4 h-4 text-white" />
+              </div>
+              {linkedProjectPreview?.key?.projectName || (L ? "تفاصيل المشروع" : "Project Details")}
+            </SheetTitle>
+            {linkedProjectPreview?.key && (
+              <p className="text-xs text-black/40 dark:text-white/40 text-right mt-1">
+                {linkedProjectPreview.key.name} · <code className="font-mono bg-black/[0.04] dark:bg-white/[0.05] px-1.5 py-0.5 rounded">{linkedProjectPreview.key.keyPrefix}</code>
+              </p>
+            )}
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-120px)]">
+            <div className="px-6 py-5 space-y-5">
+              {isLoadingLinkedPreview ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-black/20 dark:text-white/20" />
+                </div>
+              ) : linkedProjectPreview ? (
+                <>
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: L ? "إجمالي الطلبات" : "Total Orders", value: linkedProjectPreview.stats?.totalOrders ?? 0, icon: Package, color: "text-blue-600 bg-blue-50 dark:bg-blue-950/30" },
+                      { label: L ? "مشاريع نشطة" : "Active Projects", value: linkedProjectPreview.stats?.activeProjects ?? 0, icon: Activity, color: "text-violet-600 bg-violet-50 dark:bg-violet-950/30" },
+                      { label: L ? "إجمالي الفواتير" : "Total Invoices", value: linkedProjectPreview.stats?.totalInvoices ?? 0, icon: FileText, color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30" },
+                      { label: L ? "الإيرادات المحصّلة" : "Revenue Collected", value: `${(linkedProjectPreview.stats?.totalRevenue ?? 0).toLocaleString()} ر.س`, icon: DollarSign, color: "text-green-600 bg-green-50 dark:bg-green-950/30" },
+                    ].map(({ label, value, icon: Icon, color }) => (
+                      <div key={label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-2xl p-4">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2.5 ${color}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <p className="text-lg font-black text-black dark:text-white">{value}</p>
+                        <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Recent Orders */}
+                  {linkedProjectPreview.recentOrders?.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold text-black/50 dark:text-white/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Package className="w-3.5 h-3.5" /> {L ? "آخر الطلبات" : "Recent Orders"}
+                      </h3>
+                      <div className="space-y-2">
+                        {linkedProjectPreview.recentOrders.map((order: any) => {
+                          const st = statusMap[order.status] || statusMap['pending'];
+                          return (
+                            <div key={order.id} data-testid={`linked-order-${order.id}`}
+                              className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-xl px-4 py-3 flex items-center gap-3">
+                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${st.bg} border`}>
+                                <st.icon className={`w-3.5 h-3.5 ${st.color}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-black dark:text-white truncate">
+                                  {order.businessName || order.serviceType || `طلب #${String(order.id).slice(-6)}`}
+                                </p>
+                                <p className="text-[10px] text-black/40 dark:text-white/40">{st.label} · {order.totalAmount ? `${Number(order.totalAmount).toLocaleString()} ر.س` : ''}</p>
+                              </div>
+                              <span className="text-[10px] text-black/25 dark:text-white/25 flex-shrink-0">
+                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA') : ''}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent Projects */}
+                  {linkedProjectPreview.recentProjects?.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold text-black/50 dark:text-white/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5" /> {L ? "آخر المشاريع" : "Recent Projects"}
+                      </h3>
+                      <div className="space-y-2">
+                        {linkedProjectPreview.recentProjects.map((project: any) => {
+                          const st = statusMap[project.status] || statusMap['pending'];
+                          return (
+                            <div key={project.id} data-testid={`linked-project-detail-${project.id}`}
+                              className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-xl px-4 py-3">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${st.bg} border`}>
+                                  <st.icon className={`w-3.5 h-3.5 ${st.color}`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs font-bold text-black dark:text-white">
+                                    {L ? `مشروع #${String(project.id).slice(-6)}` : `Project #${String(project.id).slice(-6)}`}
+                                  </p>
+                                  <p className="text-[10px] text-black/40 dark:text-white/40">{st.label}</p>
+                                </div>
+                                {project.deliveredAt && (
+                                  <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 px-2 py-0.5 rounded-full font-bold border border-green-200 dark:border-green-800">
+                                    {L ? "مسلَّم" : "Delivered"}
+                                  </span>
+                                )}
+                              </div>
+                              {(project.stagingUrl || project.productionUrl) && (
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {project.stagingUrl && (
+                                    <a href={project.stagingUrl} target="_blank" rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
+                                      data-testid={`link-staging-${project.id}`}>
+                                      <Globe className="w-3 h-3" /> {L ? "رابط التجربة" : "Staging"}
+                                    </a>
+                                  )}
+                                  {project.productionUrl && (
+                                    <a href={project.productionUrl} target="_blank" rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-[10px] text-green-600 dark:text-green-400 hover:underline"
+                                      data-testid={`link-production-${project.id}`}>
+                                      <ExternalLink className="w-3 h-3" /> {L ? "الرابط النهائي" : "Production"}
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent Invoices */}
+                  {linkedProjectPreview.recentInvoices?.length > 0 && (
+                    <div>
+                      <h3 className="text-xs font-bold text-black/50 dark:text-white/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5" /> {L ? "آخر الفواتير" : "Recent Invoices"}
+                      </h3>
+                      <div className="space-y-2">
+                        {linkedProjectPreview.recentInvoices.map((inv: any) => (
+                          <div key={inv.id} data-testid={`linked-invoice-${inv.id}`}
+                            className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-xl px-4 py-3 flex items-center gap-3">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border ${inv.status === 'paid' ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800'}`}>
+                              <CreditCard className={`w-3.5 h-3.5 ${inv.status === 'paid' ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-black dark:text-white truncate">
+                                {inv.description || `فاتورة #${String(inv.id).slice(-6)}`}
+                              </p>
+                              <p className="text-[10px] text-black/40 dark:text-white/40">
+                                {inv.status === 'paid' ? (L ? 'مدفوعة' : 'Paid') : (L ? 'معلّقة' : 'Pending')}
+                                {inv.total ? ` · ${Number(inv.total).toLocaleString()} ر.س` : ''}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-black/25 dark:text-white/25 flex-shrink-0">
+                              {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('ar-SA') : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scopes */}
+                  <div className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-2xl p-4">
+                    <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-3">
+                      {L ? "الصلاحيات الممنوحة" : "Granted Scopes"}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(linkedProjectPreview.key?.scopes || []).map((s: string) => {
+                        const scopeLabels: Record<string, string> = {
+                          orders: "📦 الطلبات", projects: "🗂️ المشاريع", invoices: "🧾 الفواتير",
+                          stats: "📊 الإحصائيات", wallet: "💳 المحفظة", customers: "👥 العملاء",
+                        };
+                        return (
+                          <span key={s} className="text-xs bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 px-3 py-1 rounded-full font-medium">
+                            {scopeLabels[s] || s}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Meta info */}
+                  <div className="text-[10px] text-black/30 dark:text-white/30 flex flex-wrap gap-3">
+                    {linkedProjectPreview.key?.lastUsedAt && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {L ? "آخر استخدام" : "Last used"}: {new Date(linkedProjectPreview.key.lastUsedAt).toLocaleDateString('ar-SA')}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Activity className="w-3 h-3" />
+                      {(linkedProjectPreview.key?.requestCount || 0).toLocaleString()} {L ? "طلب" : "requests"}
+                    </span>
+                    {linkedProjectPreview.key?.createdAt && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {L ? "أُنشئ" : "Created"}: {new Date(linkedProjectPreview.key.createdAt).toLocaleDateString('ar-SA')}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

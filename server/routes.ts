@@ -2426,6 +2426,72 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // ── Client: preview data for a linked API project ──
+  app.get("/api/my-api-keys/:id/preview", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const cid = me._id || me.id;
+    const { ClientApiKeyModel, OrderModel, ProjectModel, InvoiceModel } = await import("./models");
+    const key = await ClientApiKeyModel.findOne({ _id: req.params.id, clientId: cid }).lean();
+    if (!key) return res.sendStatus(404);
+    const scopes: string[] = (key as any).scopes || [];
+
+    const [recentOrders, recentProjects, recentInvoices, statsData] = await Promise.all([
+      scopes.includes("orders")
+        ? (OrderModel as any).find({ clientId: cid }).sort({ createdAt: -1 }).limit(5).lean()
+        : Promise.resolve([]),
+      scopes.includes("projects")
+        ? (ProjectModel as any).find({ clientId: cid }).sort({ createdAt: -1 }).limit(5).lean()
+        : Promise.resolve([]),
+      scopes.includes("invoices")
+        ? (InvoiceModel as any).find({ clientId: cid }).sort({ createdAt: -1 }).limit(5).lean()
+        : Promise.resolve([]),
+      (scopes.includes("stats") || scopes.includes("orders") || scopes.includes("projects"))
+        ? Promise.all([
+            (OrderModel as any).countDocuments({ clientId: cid }),
+            (ProjectModel as any).countDocuments({ clientId: cid, status: { $nin: ["completed", "cancelled"] } }),
+            (InvoiceModel as any).countDocuments({ clientId: cid }),
+            (InvoiceModel as any).find({ clientId: cid, status: "paid" }).select("total").lean(),
+          ])
+        : Promise.resolve([0, 0, 0, []]),
+    ]);
+
+    const [totalOrders, activeProjects, totalInvoices, paidInvoices] = statsData as any[];
+    const totalRevenue = Array.isArray(paidInvoices) ? (paidInvoices as any[]).reduce((s: number, i: any) => s + (i.total || 0), 0) : 0;
+
+    res.json({
+      key: {
+        id: String((key as any)._id),
+        name: (key as any).name,
+        projectName: (key as any).projectName,
+        scopes,
+        isActive: (key as any).isActive,
+        requestCount: (key as any).requestCount,
+        lastUsedAt: (key as any).lastUsedAt,
+        keyPrefix: (key as any).keyPrefix,
+        createdAt: (key as any).createdAt,
+      },
+      stats: {
+        totalOrders: totalOrders || 0,
+        activeProjects: activeProjects || 0,
+        totalInvoices: totalInvoices || 0,
+        totalRevenue: totalRevenue || 0,
+      },
+      recentOrders: (recentOrders as any[]).map((o: any) => ({
+        id: String(o._id), status: o.status, serviceType: o.serviceType,
+        businessName: o.businessName, totalAmount: o.totalAmount, createdAt: o.createdAt,
+      })),
+      recentProjects: (recentProjects as any[]).map((p: any) => ({
+        id: String(p._id), status: p.status, stagingUrl: p.stagingUrl,
+        productionUrl: p.productionUrl, createdAt: p.createdAt, deliveredAt: p.deliveredAt,
+      })),
+      recentInvoices: (recentInvoices as any[]).map((i: any) => ({
+        id: String(i._id), status: i.status, total: i.total,
+        description: i.description, createdAt: i.createdAt,
+      })),
+    });
+  });
+
   // ── Admin: all keys ──
   app.get("/api/admin/api-keys", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
