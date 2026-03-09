@@ -5090,6 +5090,54 @@ export async function registerRoutes(
     }
   });
 
+  // Create order for an EXISTING client (by employee/admin)
+  app.post("/api/employee/order-for-client", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const actor = req.user as any;
+    if (actor.role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { clientId, projectType, sector, idea, notes, totalAmount, items, paymentMethod } = req.body;
+      if (!clientId) return res.status(400).json({ error: "يجب تحديد العميل" });
+      const client = await UserModel.findById(clientId);
+      if (!client || client.role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
+      const serviceNames: string[] = (items || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+      const orderData = {
+        userId: String(client._id),
+        projectType: projectType || "طلب من موظف",
+        sector: sector || "عام",
+        notes: [idea ? `الفكرة: ${idea}` : "", notes || ""].filter(Boolean).join("\n") || `طلب من قِبل ${actor.fullName || actor.username}`,
+        totalAmount: totalAmount || 0,
+        status: "pending",
+        paymentMethod: paymentMethod || "bank",
+        items: items || [],
+        adminNotes: `أُنشئ بواسطة: ${actor.fullName || actor.username}`,
+      };
+      const createdOrder = await storage.createOrder(orderData);
+      sendOrderConfirmationEmail(client.email, client.fullName || client.username, String(createdOrder.id), serviceNames).catch(console.error);
+      sendAdminNewOrderEmail("info@qiroxstudio.online", client.fullName || client.username, client.email, String(createdOrder.id), serviceNames, totalAmount).catch(console.error);
+      res.status(201).json({ order: createdOrder, client: { id: String(client._id), fullName: client.fullName, email: client.email } });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "حدث خطأ" });
+    }
+  });
+
+  // Search existing clients (for employee order creation)
+  app.get("/api/employee/search-clients", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const actor = req.user as any;
+    if (actor.role === "client") return res.sendStatus(403);
+    const { q } = req.query as any;
+    if (!q || String(q).trim().length < 2) return res.json([]);
+    const { UserModel } = await import("./models");
+    const regex = new RegExp(String(q).trim(), "i");
+    const clients = await UserModel.find({
+      role: "client",
+      $or: [{ fullName: regex }, { email: regex }, { username: regex }, { phone: regex }],
+    }).select("_id fullName email username phone").limit(10).lean();
+    res.json(clients.map((c: any) => ({ id: String(c._id), fullName: c.fullName, email: c.email, username: c.username, phone: c.phone })));
+  });
+
   // ═══════════════════════════════════════════════════════════
   // === ACTIVITY LOG ===
   // ═══════════════════════════════════════════════════════════
