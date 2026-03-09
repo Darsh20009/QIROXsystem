@@ -401,6 +401,7 @@ export default function AdminTemplates() {
   const [planDialog, setPlanDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | undefined>(undefined);
   const [segmentFilter, setSegmentFilter] = useState<string>("");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "sixmonth" | "annual" | "lifetime">("monthly");
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/templates/${id}`); },
@@ -497,19 +498,53 @@ export default function AdminTemplates() {
               lite: "🌟 لايت", pro: "⚡ برو", infinite: "∞ إنفينتي", custom: "🏢 مخصصة",
             };
 
+            const PERIOD_OPTIONS = [
+              { key: "monthly",  labelShort: "شهري",      labelFull: "اشتراك شهري",        getPlanPrice: (p: any) => p.monthlyPrice },
+              { key: "sixmonth", labelShort: "نصف سنوي",  labelFull: "اشتراك نصف سنوي",   getPlanPrice: (p: any) => p.sixMonthPrice },
+              { key: "annual",   labelShort: "سنوي",      labelFull: "اشتراك سنوي",        getPlanPrice: (p: any) => p.annualPrice },
+              { key: "lifetime", labelShort: "مدى الحياة", labelFull: "لمرة واحدة — مدى الحياة", getPlanPrice: (p: any) => p.lifetimePrice },
+            ] as const;
+
+            const activePeriodMeta = PERIOD_OPTIONS.find(p => p.key === billingPeriod) ?? PERIOD_OPTIONS[0];
+
             return (
               <div>
-                {/* Section header */}
-                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-5 ${segMeta?.bg || "bg-black/[0.02] border-black/[0.06]"}`}>
-                  <SegIcon className={`w-5 h-5 ${segMeta?.color || "text-black/50"}`} />
-                  <div>
-                    <p className={`font-black text-sm ${segMeta?.color || "text-black dark:text-white"}`}>{segLabel}</p>
-                    <p className="text-[10px] text-black/40">{filteredPlans.length} باقة — يمكنك تعديل الأسعار والمزايا</p>
+                {/* Section header + period toggle */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+                  <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border flex-1 ${segMeta?.bg || "bg-black/[0.02] border-black/[0.06]"}`}>
+                    <SegIcon className={`w-5 h-5 ${segMeta?.color || "text-black/50"}`} />
+                    <div>
+                      <p className={`font-black text-sm ${segMeta?.color || "text-black dark:text-white"}`}>{segLabel}</p>
+                      <p className="text-[10px] text-black/40">{filteredPlans.length} باقة — عرض أسعار: {activePeriodMeta.labelFull}</p>
+                    </div>
+                  </div>
+                  {/* Period toggle */}
+                  <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.04] p-1 rounded-xl border border-black/[0.06] dark:border-white/[0.06] flex-shrink-0">
+                    {PERIOD_OPTIONS.map(p => (
+                      <button
+                        key={p.key}
+                        onClick={() => setBillingPeriod(p.key)}
+                        data-testid={`period-toggle-${p.key}`}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          billingPeriod === p.key
+                            ? "bg-black dark:bg-white text-white dark:text-black shadow-sm"
+                            : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
+                        }`}
+                      >
+                        {p.labelShort}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {filteredPlans.map((plan: any) => (
+                  {filteredPlans.map((plan: any) => {
+                    const activePrice = activePeriodMeta.getPlanPrice(plan);
+                    const monthlyRef = plan.monthlyPrice;
+                    const savePct = (billingPeriod !== "monthly" && billingPeriod !== "lifetime" && activePrice && monthlyRef)
+                      ? Math.round((1 - (activePrice / (monthlyRef * (billingPeriod === "sixmonth" ? 6 : 12)))) * 100)
+                      : 0;
+                    return (
                     <Card key={plan.id} className={`border overflow-hidden transition-all hover:shadow-md dark:bg-gray-900 dark:border-white/[0.06] ${plan.isPopular ? "border-black/20 dark:border-white/20 shadow-md" : ""}`} data-testid={`admin-plan-${plan.slug}`}>
                       <CardContent className="p-5">
                         {/* Tier + popular */}
@@ -522,27 +557,44 @@ export default function AdminTemplates() {
                               <Sparkles className="w-2.5 h-2.5" /> الأشهر
                             </Badge>
                           )}
+                          {savePct > 0 && (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] font-black">
+                              وفّر {savePct}%
+                            </Badge>
+                          )}
                         </div>
 
                         <h3 className="font-black text-black dark:text-white mb-1">{plan.nameAr}</h3>
                         <p className="text-[11px] text-black/35 line-clamp-1 mb-3">{plan.descriptionAr}</p>
 
-                        {/* 4 prices grid */}
-                        <div className="grid grid-cols-2 gap-1.5 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] mb-3">
-                          {[
-                            { label: "شهري", value: plan.monthlyPrice },
-                            { label: "نصف سنوي", value: plan.sixMonthPrice },
-                            { label: "سنوي", value: plan.annualPrice },
-                            { label: "مدى الحياة", value: plan.lifetimePrice },
-                          ].map(item => (
-                            <div key={item.label} className="text-center">
-                              <div className="text-[9px] text-black/30 dark:text-white/30 mb-0.5">{item.label}</div>
-                              <div className="text-sm font-black text-black dark:text-white">
-                                {item.value ? item.value.toLocaleString() : "—"}
-                                {item.value ? <span className="text-[9px] font-normal text-black/25"> ر.س</span> : null}
-                              </div>
-                            </div>
-                          ))}
+                        {/* Active period price — large */}
+                        <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] mb-2 text-center">
+                          <p className="text-[9px] text-black/35 dark:text-white/35 mb-1">{activePeriodMeta.labelFull}</p>
+                          {activePrice ? (
+                            <p className="text-2xl font-black text-black dark:text-white leading-none">
+                              {activePrice.toLocaleString()}
+                              <span className="text-xs font-normal text-black/30 mr-1"> ر.س</span>
+                            </p>
+                          ) : (
+                            <p className="text-lg font-black text-black/20 dark:text-white/20">—</p>
+                          )}
+                        </div>
+                        {/* All-periods mini row */}
+                        <div className="grid grid-cols-4 gap-1 mb-3">
+                          {PERIOD_OPTIONS.map(po => {
+                            const v = po.getPlanPrice(plan);
+                            const isSelected = po.key === billingPeriod;
+                            return (
+                              <button key={po.key} onClick={() => setBillingPeriod(po.key)}
+                                className={`rounded-lg py-1.5 text-center transition-all ${isSelected ? "bg-black/[0.07] dark:bg-white/[0.07]" : "hover:bg-black/[0.03]"}`}
+                              >
+                                <div className={`text-[8px] mb-0.5 ${isSelected ? "text-black/60 dark:text-white/60 font-bold" : "text-black/25 dark:text-white/25"}`}>{po.labelShort}</div>
+                                <div className={`text-[10px] font-black ${isSelected ? "text-black dark:text-white" : "text-black/35 dark:text-white/35"}`}>
+                                  {v ? v.toLocaleString() : "—"}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
 
                         {/* Features preview */}
@@ -567,7 +619,8 @@ export default function AdminTemplates() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                  );
+                  })}
 
                   {/* Add new card */}
                   <button onClick={() => openNewPlan(activeSegment)} className="border-2 border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-black/30 dark:text-white/30 hover:border-black/20 hover:text-black/50 transition-all min-h-[200px]">
