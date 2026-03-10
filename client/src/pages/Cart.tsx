@@ -1,6 +1,5 @@
 // @ts-nocheck
 import SARIcon from "@/components/SARIcon";
-import PayPalCardForm, { type PayPalCardFormHandle } from "@/components/PayPalCardForm";
 import PayPalCheckoutButton from "@/components/PayPalCheckoutButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -125,11 +124,9 @@ export default function Cart() {
   const [walletPinInput, setWalletPinInput] = useState("");
   const [showWalletPin, setShowWalletPin] = useState(false);
 
-  /* card payment states */
-  const [paymentOption, setPaymentOption] = useState<"bank" | "card" | "paypal">("bank");
+  /* payment states */
+  const [paymentOption, setPaymentOption] = useState<"bank" | "paypal">("bank");
   const [paypalPaid, setPaypalPaid] = useState(false);
-  const [cardProcessing, setCardProcessing] = useState(false);
-  const cardFormRef = useRef<PayPalCardFormHandle>(null);
 
   /* success screen states */
   const [checkoutDone, setCheckoutDone] = useState(false);
@@ -307,7 +304,7 @@ export default function Cart() {
   const checkoutMutation = useMutation({
     mutationFn: async (walletPin?: string) => {
       const walletUsed = parseFloat(effectiveWalletAmount.toFixed(2));
-      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 && paymentOption === "card" ? "mixed" : walletUsed > 0 ? "mixed" : paymentOption === "card" ? "paypal_card" : paymentOption === "paypal" ? "paypal" : "bank_transfer";
+      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 ? "mixed" : paymentOption === "paypal" ? "paypal" : "bank_transfer";
 
       const planItem = items.find(i => i.type === "plan");
       const serviceItem = items.find(i => i.type === "service");
@@ -1210,7 +1207,7 @@ export default function Cart() {
                   {!fullyPaidByWallet && (
                     <>
                       {/* Method toggle */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setPaymentOption("bank")}
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "bank" ? "border-blue-500 bg-blue-50" : "border-black/[0.07] bg-white"}`}
@@ -1219,21 +1216,14 @@ export default function Cart() {
                           <p className={`font-bold text-[10px] text-center ${paymentOption === "bank" ? "text-blue-700" : "text-black/60"}`}>تحويل بنكي</p>
                         </button>
                         <button
-                          onClick={() => setPaymentOption("card")}
-                          className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "card" ? "border-cyan-500 bg-cyan-50" : "border-black/[0.07] bg-white"}`}
-                          data-testid="button-payment-card">
-                          <CreditCard className={`w-5 h-5 ${paymentOption === "card" ? "text-cyan-600" : "text-black/30"}`} />
-                          <p className={`font-bold text-[10px] text-center ${paymentOption === "card" ? "text-cyan-700" : "text-black/60"}`}>بطاقة ائتمانية</p>
-                        </button>
-                        <button
-                          onClick={() => { setPaymentOption("paypal"); setPaypalPaid(false); }}
+                          onClick={() => setPaymentOption("paypal")}
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${paymentOption === "paypal" ? "border-yellow-400 bg-yellow-50" : "border-black/[0.07] bg-white"}`}
                           data-testid="button-payment-paypal">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={paymentOption === "paypal" ? "text-yellow-600" : "text-black/25"}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M19.554 7.324C19.64 6.738 19.64 6.119 19.554 5.533C19.202 3.219 17.288 1.5 14.934 1.5H6.854C6.306 1.5 5.842 1.895 5.758 2.436L2.862 20.547C2.806 20.9 3.077 21.22 3.434 21.22H7.498L8.546 15.013L8.518 15.188C8.602 14.647 9.066 14.252 9.614 14.252H11.692C15.564 14.252 18.606 12.712 19.526 8.162C19.554 8.023 19.568 7.884 19.554 7.324Z" fill={paymentOption === "paypal" ? "#003087" : "#999"}/>
                             <path d="M9.222 8.5C9.306 7.959 9.77 7.564 10.318 7.564H15.742C16.388 7.564 16.978 7.606 17.526 7.69C17.694 7.718 17.862 7.746 18.03 7.788C18.198 7.83 18.352 7.872 18.506 7.928C18.59 7.956 18.66 7.984 18.73 8.012C19.008 8.124 19.258 8.278 19.468 8.46C19.638 7.42 19.468 6.724 18.926 6.098C18.33 5.416 17.232 5.116 15.826 5.116H10.402C9.854 5.116 9.376 5.511 9.292 6.052L7.032 19.994C6.976 20.347 7.247 20.667 7.604 20.667H10.934L11.998 14.1L9.222 8.5Z" fill={paymentOption === "paypal" ? "#009cde" : "#bbb"}/>
                           </svg>
-                          <p className={`font-bold text-[10px] text-center ${paymentOption === "paypal" ? "text-yellow-700" : "text-black/60"}`}>PayPal</p>
+                          <p className={`font-bold text-[10px] text-center ${paymentOption === "paypal" ? "text-[#003087]" : "text-black/60"}`}>PayPal / بطاقة</p>
                         </button>
                       </div>
 
@@ -1270,33 +1260,6 @@ export default function Cart() {
                         </div>
                       )}
 
-                      {/* Card payment via PayPal */}
-                      {paymentOption === "card" && (
-                        <div className="rounded-2xl border border-cyan-200 bg-white overflow-hidden">
-                          <div className="flex items-center gap-3 p-4 border-b border-cyan-100">
-                            <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
-                              <CreditCard className="w-5 h-5 text-cyan-600" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-bold text-sm text-black">الدفع بالبطاقة</p>
-                              <p className="text-xs text-black/40 mt-0.5">Visa / Mastercard / Amex — دفع آمن وفوري</p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[9px] font-black text-black/20 bg-black/5 rounded px-1 py-0.5">VISA</span>
-                              <span className="text-[9px] font-black text-black/20 bg-black/5 rounded px-1 py-0.5">MC</span>
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <PayPalCardForm
-                              ref={cardFormRef}
-                              amount={remainingAfterWallet}
-                              currency="SAR"
-                              onPaymentSuccess={() => {}}
-                              onPaymentError={() => {}}
-                            />
-                          </div>
-                        </div>
-                      )}
 
                       {/* PayPal checkout button */}
                       {paymentOption === "paypal" && (
@@ -1370,31 +1333,15 @@ export default function Cart() {
                   {preCheckoutStep === 1 && hasPhysical ? "التالي — بيانات الشحن" : "التالي — طريقة الدفع"}
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-              ) : paymentOption === "paypal" && !fullyPaidByWallet && !paypalPaid ? (
+              ) : paymentOption === "paypal" && !fullyPaidByWallet ? (
                 <div className="flex-1 rounded-xl border-2 border-dashed border-yellow-300 bg-yellow-50 h-12 flex items-center justify-center">
-                  <span className="text-xs text-yellow-600 font-bold">اضغط زر PayPal أعلاه للدفع</span>
+                  <span className="text-xs text-[#003087] font-bold">اضغط زر PayPal أعلاه للدفع</span>
                 </div>
               ) : (
                 <Button
                   className="flex-1 bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
                   onClick={async () => {
-                    if (paymentOption === "paypal" && !fullyPaidByWallet) {
-                      return;
-                    }
-                    if (paymentOption === "card" && !fullyPaidByWallet) {
-                      if (!cardFormRef.current?.isReady) {
-                        toast({ title: "نموذج البطاقة غير جاهز بعد، يرجى الانتظار", variant: "destructive" });
-                        return;
-                      }
-                      setCardProcessing(true);
-                      try {
-                        await cardFormRef.current.submit();
-                        checkoutMutation.mutate(undefined);
-                      } catch (_) {
-                      } finally {
-                        setCardProcessing(false);
-                      }
-                    } else if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
+                    if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
                       setWalletPinInput("");
                       setShowWalletPin(false);
                       setWalletPinModal(true);
@@ -1402,12 +1349,10 @@ export default function Cart() {
                       checkoutMutation.mutate(undefined);
                     }
                   }}
-                  disabled={checkoutMutation.isPending || cardProcessing}
+                  disabled={checkoutMutation.isPending}
                   data-testid="button-confirm-checkout">
-                  {checkoutMutation.isPending || cardProcessing ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> {cardProcessing ? "جاري معالجة البطاقة..." : "جاري إرسال الطلب..."}</>
-                  ) : paymentOption === "card" && !fullyPaidByWallet ? (
-                    <><CreditCard className="w-4 h-4" /> ادفع الآن — {fmt(remainingAfterWallet)} <SARIcon size={10} /></>
+                  {checkoutMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> جاري إرسال الطلب...</>
                   ) : (
                     <><Sparkles className="w-4 h-4" /> تأكيد الطلب والحصول على بيانات الدفع</>
                   )}
