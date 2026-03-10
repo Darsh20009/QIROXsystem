@@ -22,7 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/hooks/use-auth";
 
 type PhoneRequest = {
   id: string;
@@ -40,7 +40,7 @@ type PhoneRequest = {
 
 export default function Customers() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { data: user } = useUser();
   const isAdmin = user && ["admin", "manager"].includes((user as any).role);
 
   const [search, setSearch] = useState("");
