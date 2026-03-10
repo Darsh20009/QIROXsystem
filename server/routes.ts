@@ -1138,6 +1138,14 @@ export async function registerRoutes(
     for (const key of ALLOWED_ORDER_FIELDS) {
       if (key in req.body) safeBody[key] = req.body[key];
     }
+
+    // Auto-mark deposit as paid for instant payment methods (PayPal captured, wallet, mixed wallet+paypal)
+    const instantPayMethods = ["paypal", "wallet", "mixed"];
+    if (instantPayMethods.includes(safeBody.paymentMethod as string)) {
+      safeBody.isDepositPaid = true;
+      safeBody.paidAt = new Date();
+    }
+
     const order = await storage.createOrder({ ...safeBody, userId: String(user.id), status: "pending" } as any);
 
     // Deduct wallet atomically after order creation
