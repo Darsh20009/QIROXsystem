@@ -62,7 +62,7 @@ const PayPalCardForm = forwardRef<PayPalCardFormHandle, PayPalCardFormProps>(
               if (existing) { resolve(); return; }
               const s = document.createElement("script");
               s.id = scriptId;
-              s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=card-fields&currency=${sdkCurrency}`;
+              s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=card-fields,buttons&currency=${sdkCurrency}`;
               s.async = true;
               s.onload = () => resolve();
               s.onerror = () => reject(new Error("فشل تحميل PayPal"));
