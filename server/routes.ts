@@ -8638,6 +8638,61 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  /* ══ Phone Correction Requests ══════════════════════════════════════════ */
+
+  app.post("/api/phone-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { PhoneRequestModel, UserModel } = await import("./models");
+      const { clientId, notes } = req.body;
+      if (!clientId) return res.status(400).json({ error: "clientId مطلوب" });
+      const client = await (UserModel as any).findById(clientId);
+      const me = req.user as any;
+      const doc = await (PhoneRequestModel as any).create({
+        clientId,
+        clientName:      client?.fullName || client?.username || "—",
+        clientPhone:     client?.phone || "",
+        requestedBy:     me._id || me.id,
+        requestedByName: me.fullName || me.username,
+        notes: notes || "",
+        status: "pending",
+      });
+      res.status(201).json(doc);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/phone-requests", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PhoneRequestModel } = await import("./models");
+      const status = (req.query.status as string) || "pending";
+      const docs = await (PhoneRequestModel as any).find(status !== "all" ? { status } : {}).sort({ createdAt: -1 }).limit(100);
+      res.json(docs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/phone-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PhoneRequestModel, UserModel } = await import("./models");
+      const { status, newPhone } = req.body;
+      const me = req.user as any;
+      const doc = await (PhoneRequestModel as any).findById(req.params.id);
+      if (!doc) return res.status(404).json({ error: "الطلب غير موجود" });
+      (doc as any).status       = status || "resolved";
+      (doc as any).resolvedBy   = me._id || me.id;
+      (doc as any).resolvedByName = me.fullName || me.username;
+      (doc as any).resolvedAt   = new Date();
+      if (newPhone) {
+        (doc as any).newPhone = newPhone;
+        await (UserModel as any).findByIdAndUpdate((doc as any).clientId, { phone: newPhone });
+      }
+      await doc.save();
+      res.json(doc);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   return httpServer;
 }
 

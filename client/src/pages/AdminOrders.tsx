@@ -8,7 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3 } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send } from "lucide-react";
+import { SiWhatsapp, SiTelegram } from "react-icons/si";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -100,6 +102,8 @@ export default function AdminOrders() {
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
   const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
   const [guideForm, setGuideForm] = useState({ title: "شرح استخدام النظام", description: "", files: "" });
+  const [phoneReqOpen, setPhoneReqOpen] = useState(false);
+  const [phoneReqNotes, setPhoneReqNotes] = useState("");
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -252,6 +256,17 @@ export default function AdminOrders() {
       setSelectedOrder(null);
     },
     onError: () => toast({ title: "فشل إنشاء المشروع", variant: "destructive" }),
+  });
+
+  const phoneReqMutation = useMutation({
+    mutationFn: (data: { clientId: string; notes: string }) =>
+      apiRequest("POST", "/api/phone-requests", data),
+    onSuccess: () => {
+      toast({ title: "تم رفع طلب تصحيح الرقم", description: "سيتم مراجعته من المسؤول قريباً" });
+      setPhoneReqOpen(false);
+      setPhoneReqNotes("");
+    },
+    onError: (err: any) => toast({ title: "فشل رفع الطلب", description: err.message, variant: "destructive" }),
   });
 
   const saveGuideMutation = useMutation({
@@ -583,7 +598,40 @@ export default function AdminOrders() {
                               <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-black/30 flex-shrink-0" /><p className="text-xs text-black/60">{selectedOrder.client.email}</p></div>
                             )}
                             {selectedOrder.client.phone && (
-                              <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-black/30 flex-shrink-0" /><p className="text-xs text-black/60">{selectedOrder.client.phone}</p></div>
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-3.5 h-3.5 text-black/30 flex-shrink-0" />
+                                  <p className="text-xs text-black/60 font-mono">{selectedOrder.client.phone}</p>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap mr-5">
+                                  <a
+                                    href={`https://wa.me/${selectedOrder.client.phone.replace(/\D/g, "")}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                                    data-testid="link-whatsapp-order-client"
+                                  >
+                                    <SiWhatsapp className="w-3 h-3" />
+                                    واتساب
+                                  </a>
+                                  <a
+                                    href={`https://t.me/${selectedOrder.client.phone.replace(/\D/g, "")}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                    data-testid="link-telegram-order-client"
+                                  >
+                                    <SiTelegram className="w-3 h-3" />
+                                    تيليغرام
+                                  </a>
+                                  <button
+                                    onClick={() => setPhoneReqOpen(true)}
+                                    className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-rose-500 hover:bg-rose-50 transition-colors"
+                                    data-testid="button-wrong-phone-order"
+                                  >
+                                    <PhoneOff className="w-3 h-3" />
+                                    الرقم خطأ؟
+                                  </button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1234,6 +1282,49 @@ export default function AdminOrders() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* ── Phone correction request dialog ── */}
+      <Dialog open={phoneReqOpen} onOpenChange={open => { setPhoneReqOpen(open); if (!open) setPhoneReqNotes(""); }}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PhoneOff className="w-4 h-4 text-rose-500" />
+              رفع طلب تصحيح الرقم
+            </DialogTitle>
+            <DialogDescription>
+              العميل: <span className="font-semibold text-foreground">{selectedOrder?.client?.fullName || selectedOrder?.client?.username}</span>
+              {selectedOrder?.client?.phone && (
+                <span className="mr-2 text-foreground/50 font-mono text-xs">{selectedOrder.client.phone}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">سبب الطلب أو الملاحظات</label>
+              <Textarea
+                value={phoneReqNotes}
+                onChange={e => setPhoneReqNotes(e.target.value)}
+                placeholder="مثال: العميل أفاد أن الرقم لا يعمل، أو تم تغيير الرقم..."
+                className="resize-none text-sm"
+                rows={3}
+                data-testid="textarea-phone-request-notes-order"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPhoneReqOpen(false)}>إلغاء</Button>
+              <Button
+                className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
+                onClick={() => selectedOrder?.userId && phoneReqMutation.mutate({ clientId: selectedOrder.userId, notes: phoneReqNotes })}
+                disabled={phoneReqMutation.isPending || !selectedOrder?.userId}
+                data-testid="button-submit-phone-request-order"
+              >
+                {phoneReqMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                رفع الطلب
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

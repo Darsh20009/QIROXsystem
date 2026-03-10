@@ -1508,3 +1508,19 @@ const referralSchema = new mongoose.Schema({
 }, { timestamps: true });
 referralSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const ReferralModel = mongoose.models.Referral || mongoose.model("Referral", referralSchema);
+
+const phoneRequestSchema = new mongoose.Schema({
+  clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  clientName:      { type: String },
+  clientPhone:     { type: String },
+  requestedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  requestedByName: { type: String },
+  notes:           { type: String },
+  status:          { type: String, enum: ["pending", "resolved", "cancelled"], default: "pending" },
+  resolvedBy:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  resolvedByName:  { type: String },
+  newPhone:        { type: String },
+  resolvedAt:      { type: Date },
+}, { timestamps: true });
+phoneRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const PhoneRequestModel = mongoose.models.PhoneRequest || mongoose.model("PhoneRequest", phoneRequestSchema);
