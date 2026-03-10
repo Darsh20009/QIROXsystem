@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock, Image as ImageIcon } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { ImageUpload } from "@/components/ImageUpload";
+import SARIcon from "@/components/SARIcon";
 
 const CATEGORIES = [
   { value: "feature",     label: "ميزة إضافية",    color: "bg-blue-100 text-blue-700" },
