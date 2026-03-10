@@ -56,10 +56,16 @@ function DeliveryDashboard() {
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
               <Truck className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-black font-heading">لوحة التوصيل والتسليم</h1>
               <p className="text-white/40 text-sm">إدارة طلبات الاستلام والتسليم</p>
             </div>
+            <Link href="/employee/new-order">
+              <button className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors" data-testid="btn-delivery-new-order">
+                <Package className="w-3.5 h-3.5" />
+                طلب جديد
+              </button>
+            </Link>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
@@ -476,6 +482,25 @@ function SalesDashboard() {
                   <div>
                     <p className="font-bold text-black">متابعة الطلبات</p>
                     <p className="text-xs text-black/40 mt-0.5">حالة الطلبات والمراحل</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div {...fade(0.3)}>
+          <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">
+            <CardContent className="p-5">
+              <Link href="/employee/subscriptions">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-violet-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Calendar className="w-6 h-6 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-black">اشتراكات العملاء</p>
+                    <p className="text-xs text-black/40 mt-0.5">تفعيل وإدارة اشتراكات العملاء</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>

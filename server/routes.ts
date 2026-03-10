@@ -5864,6 +5864,79 @@ export async function registerRoutes(
   });
 
   // ═══════════════════════════════════════════════════════════
+  // === EMPLOYEE SUBSCRIPTION MANAGEMENT ===
+  // ═══════════════════════════════════════════════════════════
+
+  app.get("/api/employee/clients-subscriptions", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { UserModel } = await import("./models");
+    const { q } = req.query as any;
+    const filter: any = { role: "client" };
+    if (q && String(q).trim().length >= 2) {
+      const regex = new RegExp(String(q).trim(), "i");
+      filter.$or = [{ fullName: regex }, { email: regex }, { username: regex }, { phone: regex }];
+    }
+    const clients = await UserModel.find(filter)
+      .select("_id fullName email username phone subscriptionStatus subscriptionPeriod subscriptionStartDate subscriptionExpiresAt planTier")
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    res.json(clients.map((c: any) => ({
+      id: String(c._id),
+      fullName: c.fullName,
+      email: c.email,
+      username: c.username,
+      phone: c.phone,
+      subscriptionStatus: c.subscriptionStatus || "none",
+      subscriptionPeriod: c.subscriptionPeriod,
+      subscriptionStartDate: c.subscriptionStartDate,
+      subscriptionExpiresAt: c.subscriptionExpiresAt,
+      planTier: c.planTier,
+    })));
+  });
+
+  app.post("/api/employee/activate-subscription", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { clientId, period, startDate } = req.body;
+    if (!clientId || !period) return res.status(400).json({ error: "بيانات ناقصة" });
+    if (!["monthly", "6months", "annual", "renewal"].includes(period)) return res.status(400).json({ error: "فترة الاشتراك غير صالحة" });
+
+    const { UserModel, NotificationModel } = await import("./models");
+    const client = await UserModel.findById(clientId).lean();
+    if (!client || (client as any).role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
+
+    const start = startDate ? new Date(startDate) : new Date();
+    const durationDays = period === "annual" ? 365 : period === "6months" ? 180 : 30;
+    const expires = new Date(start.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+    await UserModel.findByIdAndUpdate(clientId, {
+      $set: { subscriptionStatus: "active", subscriptionPeriod: period, subscriptionStartDate: start, subscriptionExpiresAt: expires },
+    });
+
+    try {
+      const periodLabel = period === "annual" ? "سنوي" : period === "6months" ? "نصف سنوي" : "شهري";
+      await (NotificationModel as any).create({
+        userId: clientId, forAdmins: false, type: "subscription",
+        title: "تم تفعيل اشتراكك",
+        body: `تم تفعيل اشتراكك ${periodLabel} — ينتهي في ${expires.toLocaleDateString("ar-SA")}`,
+        link: "/dashboard", icon: "🎉",
+      });
+    } catch (_) {}
+
+    res.json({ success: true, expiresAt: expires.toISOString() });
+  });
+
+  app.patch("/api/employee/subscription/:clientId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { status } = req.body;
+    if (!["active", "expired", "none", "suspended"].includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
+    const { UserModel } = await import("./models");
+    const client = await UserModel.findByIdAndUpdate(req.params.clientId, { $set: { subscriptionStatus: status } }, { new: true });
+    if (!client) return res.status(404).json({ error: "العميل غير موجود" });
+    res.json({ success: true });
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // === GLOBAL SEARCH ===
   // ═══════════════════════════════════════════════════════════
   app.get("/api/search", async (req, res) => {

@@ -124,6 +124,7 @@ const TwoFactorSetup = lazy(() => import("@/pages/TwoFactorSetup"));
 const ClientReferral = lazy(() => import("@/pages/ClientReferral"));
 const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
 const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
+const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
 function PageLoader() {
@@ -239,6 +240,7 @@ function AdminRouter() {
         <Route path="/employee/profile" component={EmployeeProfile} />
         <Route path="/profile" component={ClientProfile} />
         <Route path="/employee/new-order" component={EmployeeNewOrder} />
+        <Route path="/employee/subscriptions" component={EmployeeSubscriptions} />
         <Route path="/employee/checklist" component={DevChecklist} />
         <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
         <Route path="/employee/changelog" component={EmployeeChangelog} />
@@ -274,6 +276,7 @@ const ALL_PAGES = [
   { title: "الباقات", titleEn: "Pricing", url: "/prices", group: "public" },
   { title: "الطلبات", titleEn: "Orders", url: "/admin/orders", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
+  { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
   { title: "المالية", titleEn: "Finance", url: "/admin/finance", group: "employee" },
   { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
