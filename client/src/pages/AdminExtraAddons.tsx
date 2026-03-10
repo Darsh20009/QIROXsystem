@@ -153,24 +153,24 @@ export default function AdminExtraAddons() {
   const totalActive = addons.filter((a: any) => a.isActive).length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto" dir="rtl">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto relative overflow-hidden" dir="rtl">
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
           <Tag className="w-5 h-5 text-blue-700" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">المميزات الإضافية</h1>
-          <p className="text-sm text-black/40">إضافات اختيارية بأسعار منفصلة — يمكن تقييدها بقطاع أو باقة معينة</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">المميزات الإضافية</h1>
+          <p className="text-xs sm:text-sm text-black/40">إضافات اختيارية بأسعار منفصلة — يمكن تقييدها بقطاع أو باقة معينة</p>
         </div>
-        <div className="flex gap-2 mr-auto">
-          <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-2 text-sm" data-testid="button-seed-addons">
-            <Sparkles className="w-4 h-4" /> {seedDefaults.isPending ? "جاري الإضافة..." : "إضافات افتراضية"}
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-seed-addons">
+            <Sparkles className="w-3.5 h-3.5" /> {seedDefaults.isPending ? "جاري الإضافة..." : "إضافات افتراضية"}
           </Button>
-          <Button onClick={openNew} className="gap-2" data-testid="button-new-addon">
-            <Plus className="w-4 h-4" /> إضافة جديدة
+          <Button onClick={openNew} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-new-addon">
+            <Plus className="w-3.5 h-3.5" /> إضافة جديدة
           </Button>
         </div>
       </div>
@@ -215,64 +215,74 @@ export default function AdminExtraAddons() {
           {displayed.map((a: any) => (
             <Card key={a.id} data-testid={`card-addon-${a.id}`}
               className={`border transition-all ${a.isActive ? "border-black/[0.06]" : "border-black/[0.04] opacity-70"}`}>
-              <CardContent className="p-3.5 flex items-center gap-4">
-                <Switch checked={a.isActive} onCheckedChange={v => toggleActive.mutate({ id: a.id, isActive: v })} data-testid={`switch-addon-${a.id}`} />
+              <CardContent className="p-3 sm:p-3.5">
+                {/* Top row: switch + image + name + price + actions */}
+                <div className="flex items-start gap-2.5 sm:gap-4">
+                  <Switch checked={a.isActive} onCheckedChange={v => toggleActive.mutate({ id: a.id, isActive: v })} data-testid={`switch-addon-${a.id}`} className="mt-0.5 shrink-0" />
 
-                {/* Addon thumbnail */}
-                <div className="w-10 h-10 rounded-xl border border-black/[0.06] overflow-hidden bg-black/[0.03] flex items-center justify-center shrink-0">
-                  {a.imageUrl ? (
-                    <img src={a.imageUrl} alt={a.nameAr} className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4 text-black/20" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="font-bold text-sm">{a.nameAr}</span>
-                    {a.name && <span className="text-[11px] text-black/30">{a.name}</span>}
-                    <Badge className={`text-[10px] ${catColor[a.category] || "bg-gray-100 text-gray-600"}`}>
-                      {catLabel[a.category] || a.category}
-                    </Badge>
-                  </div>
-                  {a.descriptionAr && <p className="text-xs text-black/35 mb-1">{a.descriptionAr}</p>}
-                  {/* Restrictions */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {(!a.segments?.length && !a.plans?.length) ? (
-                      <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                        <Globe className="w-2.5 h-2.5" /> لجميع القطاعات والباقات
-                      </span>
+                  {/* Addon thumbnail */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-black/[0.06] overflow-hidden bg-black/[0.03] flex items-center justify-center shrink-0">
+                    {a.imageUrl ? (
+                      <img src={a.imageUrl} alt={a.nameAr} className="w-full h-full object-cover" />
                     ) : (
-                      <>
-                        {a.segments?.length > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                            <Lock className="w-2.5 h-2.5" />
-                            {a.segments.map((s: string) => ALL_SEGMENTS.find(x => x.value === s)?.label || s).join(" · ")}
-                          </span>
-                        )}
-                        {a.plans?.length > 0 && (
-                          <span className="flex items-center gap-1 text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-                            <Lock className="w-2.5 h-2.5" />
-                            {a.plans.map((p: string) => ALL_PLANS.find(x => x.value === p)?.label || p).join(" · ")}
-                          </span>
-                        )}
-                      </>
+                      <ImageIcon className="w-4 h-4 text-black/20" />
                     )}
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="text-right">
-                    <p className="font-black text-base">{(a.price || 0).toLocaleString()}</p>
-                    <p className="text-[10px] text-black/30">{a.currency} شامل ضريبة</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(a)} data-testid={`button-edit-addon-${a.id}`}>
-                      <Pencil className="w-3 h-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500" onClick={() => del.mutate(a.id)} data-testid={`button-delete-addon-${a.id}`}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                  {/* Main content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                          <span className="font-bold text-sm">{a.nameAr}</span>
+                          <Badge className={`text-[10px] ${catColor[a.category] || "bg-gray-100 text-gray-600"}`}>
+                            {catLabel[a.category] || a.category}
+                          </Badge>
+                        </div>
+                        {a.name && <span className="text-[11px] text-black/30 block">{a.name}</span>}
+                      </div>
+                      {/* Price + actions on same row */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <p className="font-black text-sm sm:text-base leading-tight">{(a.price || 0).toLocaleString()}</p>
+                          <p className="text-[9px] sm:text-[10px] text-black/30">{a.currency}</p>
+                        </div>
+                        <div className="flex gap-0.5">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(a)} data-testid={`button-edit-addon-${a.id}`}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => del.mutate(a.id)} data-testid={`button-delete-addon-${a.id}`}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {a.descriptionAr && <p className="text-xs text-black/35 mt-0.5 mb-1">{a.descriptionAr}</p>}
+
+                    {/* Restrictions */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      {(!a.segments?.length && !a.plans?.length) ? (
+                        <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                          <Globe className="w-2.5 h-2.5" /> لجميع القطاعات والباقات
+                        </span>
+                      ) : (
+                        <>
+                          {a.segments?.length > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                              <Lock className="w-2.5 h-2.5" />
+                              {a.segments.map((s: string) => ALL_SEGMENTS.find(x => x.value === s)?.label || s).join(" · ")}
+                            </span>
+                          )}
+                          {a.plans?.length > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                              <Lock className="w-2.5 h-2.5" />
+                              {a.plans.map((p: string) => ALL_PLANS.find(x => x.value === p)?.label || p).join(" · ")}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -283,12 +293,12 @@ export default function AdminExtraAddons() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full" dir="rtl">
           <DialogHeader>
             <DialogTitle>{editId ? "تعديل الإضافة" : "إضافة جديدة"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>الاسم بالعربي *</Label>
                 <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))}
