@@ -83,18 +83,18 @@ const TIER_CONFIG: Record<string, {
 }> = {
   lite: {
     labelAr: "لايت", labelEn: "Lite", icon: Zap,
-    cardBg: "bg-white dark:bg-[#0f172a]",
-    headerGrad: "from-slate-50 via-white to-slate-50 dark:from-[#0f172a] dark:via-[#131e2e] dark:to-[#0f172a]",
-    borderColor: "border-slate-200 dark:border-slate-700/60",
-    accentColor: "text-slate-700 dark:text-slate-200",
+    cardBg: "bg-[#0f172a]",
+    headerGrad: "from-[#0f172a] via-[#131e2e] to-[#0f172a]",
+    borderColor: "border-slate-700/60",
+    accentColor: "text-slate-200",
     accentGlow: "",
-    priceColor: "text-slate-900 dark:text-white",
-    featureColor: "text-slate-600 dark:text-slate-300",
-    badgeBg: "bg-slate-100 dark:bg-slate-800/80",
-    badgeText: "text-slate-600 dark:text-slate-300",
-    ctaBg: "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900",
+    priceColor: "text-white",
+    featureColor: "text-slate-300",
+    badgeBg: "bg-slate-800/80",
+    badgeText: "text-slate-300",
+    ctaBg: "bg-slate-200 hover:bg-white text-slate-900",
     ctaText: "",
-    patternColor: "opacity-[0.03] dark:opacity-[0.06]",
+    patternColor: "opacity-[0.06]",
     taglinePrimary: "انطلق بثقة",
     taglineSecondary: "Launch with confidence",
     tierNum: "01",
@@ -221,7 +221,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       {/* ─── Header ─── */}
       <div className={`relative px-6 pt-6 pb-5 bg-gradient-to-br ${cfg.headerGrad}`}>
         {/* Tier number badge */}
-        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-slate-300 dark:text-slate-600"}`}>
+        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-slate-600"}`}>
           {cfg.tierNum}
         </div>
 
@@ -238,27 +238,27 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
         {/* Icon + Name */}
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.badgeBg}`}>
-            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-600 dark:text-slate-300"}`} />
+            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-300"}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-slate-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-slate-500"}`}>QIROX SYSTEMS</p>
             <p className={`font-black text-base leading-tight truncate ${cfg.accentColor}`}>
               {lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}
             </p>
           </div>
-          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-slate-200 dark:border-slate-600"}`}>
+          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-slate-600"}`}>
             {lang === "ar" ? cfg.labelAr : cfg.labelEn}
           </span>
         </div>
 
         {/* Tagline */}
-        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-slate-300 dark:text-slate-600"}`}>
+        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-slate-500"}`}>
           — {lang === "ar" ? cfg.taglinePrimary : cfg.taglineSecondary}
         </p>
       </div>
 
       {/* ─── Price ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-slate-800/60 bg-[#0f172a]"}`}>
         <AnimatePresence mode="wait">
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
             <div className="flex items-baseline gap-2 flex-wrap">
@@ -284,8 +284,8 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       </div>
 
       {/* ─── Features ─── */}
-      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-slate-400 dark:text-slate-600"}`}>
+      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-[#0f172a]"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-slate-500"}`}>
           {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
         </p>
         <div className="space-y-2.5">
@@ -293,8 +293,8 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
             const FIcon = featureIcon(f);
             return (
               <div key={i} className="flex items-start gap-2.5">
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-slate-100 dark:bg-slate-800"}`}>
-                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-500 dark:text-slate-400"}`} />
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-slate-800"}`}>
+                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-400"}`} />
                 </div>
                 <span className={`text-xs leading-snug ${cfg.featureColor}`}>{f}</span>
               </div>
@@ -309,7 +309,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       </div>
 
       {/* ─── CTA ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-slate-800/60 bg-[#0f172a]"}`}>
         <Button
           onClick={e => { e.stopPropagation(); onSelect(plan, price, period); }}
           className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
@@ -404,7 +404,7 @@ export default function Prices() {
   ) ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#080810]" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-[#080810]" dir={dir}>
       <Navigation />
 
       {/* ─── HERO ─── */}
