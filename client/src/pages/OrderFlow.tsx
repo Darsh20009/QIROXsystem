@@ -344,6 +344,16 @@ export default function OrderFlow() {
     return () => clearTimeout(t);
   }, [resendCountdown]);
 
+  // Auto-fill form from user profile when data loads
+  useEffect(() => {
+    if (!user) return;
+    setFormData(f => ({
+      ...f,
+      businessName: f.businessName || (user as any).username || (user as any).fullName || "",
+      phone:        f.phone        || (user as any).phone    || "",
+    }));
+  }, [user]);
+
   // Sync addon filter when sector or plan changes
   useEffect(() => { if (formData.sector) setAddonSegment(formData.sector); }, [formData.sector]);
   useEffect(() => { if (selectedPlan)    setAddonPlan(selectedPlan); }, [selectedPlan]);
