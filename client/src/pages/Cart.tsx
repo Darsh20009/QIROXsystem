@@ -1,5 +1,6 @@
 // @ts-nocheck
 import SARIcon from "@/components/SARIcon";
+import PayPalCardForm, { type PayPalCardFormHandle } from "@/components/PayPalCardForm";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +123,11 @@ export default function Cart() {
   const [walletPinInput, setWalletPinInput] = useState("");
   const [showWalletPin, setShowWalletPin] = useState(false);
 
+  /* card payment states */
+  const [paymentOption, setPaymentOption] = useState<"bank" | "card">("bank");
+  const [cardProcessing, setCardProcessing] = useState(false);
+  const cardFormRef = useRef<PayPalCardFormHandle>(null);
+
   /* success screen states */
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [savedItems, setSavedItems] = useState<CartItem[]>([]);
@@ -218,7 +224,7 @@ export default function Cart() {
         walletUsed > 0 ? `دفع بالمحفظة: ${walletUsed.toLocaleString()} ر.س` : "",
       ].filter(Boolean).join(" | ") || `طلب من السلة — ${items.length} عنصر`;
 
-      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 ? "mixed" : "bank_transfer";
+      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 && paymentOption === "card" ? "mixed" : walletUsed > 0 ? "mixed" : paymentOption === "card" ? "paypal" : "bank_transfer";
 
       const r = await apiRequest("POST", "/api/orders", {
         projectType: items.find(i => i.type === "service")?.name || "خدمة رقمية",
@@ -1081,40 +1087,96 @@ export default function Cart() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Bank transfer section — only if not fully paid by wallet */}
+                  {/* Payment method selector — only if not fully paid by wallet */}
                   {!fullyPaidByWallet && (
-                    <div className="rounded-2xl border border-black/[0.07] bg-white overflow-hidden">
-                      <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                          <BanknoteIcon className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm text-black">التحويل البنكي</p>
-                          <p className="text-xs text-black/40 mt-0.5">حوّل المبلغ وارفع الإيصال بعد تأكيد الطلب</p>
-                        </div>
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="w-4 h-4 text-white" />
-                        </div>
+                    <>
+                      {/* Method toggle */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setPaymentOption("bank")}
+                          className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${paymentOption === "bank" ? "border-blue-500 bg-blue-50" : "border-black/[0.07] bg-white"}`}
+                          data-testid="button-payment-bank">
+                          <BanknoteIcon className={`w-4 h-4 shrink-0 ${paymentOption === "bank" ? "text-blue-600" : "text-black/30"}`} />
+                          <div className="text-right flex-1">
+                            <p className={`font-bold text-xs ${paymentOption === "bank" ? "text-blue-700" : "text-black/60"}`}>تحويل بنكي</p>
+                            <p className="text-[10px] text-black/30 mt-0.5">إيصال يدوي</p>
+                          </div>
+                          {paymentOption === "bank" && <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shrink-0"><CheckCircle2 className="w-2.5 h-2.5 text-white" /></div>}
+                        </button>
+                        <button
+                          onClick={() => setPaymentOption("card")}
+                          className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${paymentOption === "card" ? "border-cyan-500 bg-cyan-50" : "border-black/[0.07] bg-white"}`}
+                          data-testid="button-payment-card">
+                          <CreditCard className={`w-4 h-4 shrink-0 ${paymentOption === "card" ? "text-cyan-600" : "text-black/30"}`} />
+                          <div className="text-right flex-1">
+                            <p className={`font-bold text-xs ${paymentOption === "card" ? "text-cyan-700" : "text-black/60"}`}>بطاقة ائتمانية</p>
+                            <p className="text-[10px] text-black/30 mt-0.5">دفع فوري</p>
+                          </div>
+                          {paymentOption === "card" && <div className="w-4 h-4 rounded-full bg-cyan-500 flex items-center justify-center shrink-0"><CheckCircle2 className="w-2.5 h-2.5 text-white" /></div>}
+                        </button>
                       </div>
-                      <div className="p-4 space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-black/40 text-xs">البنك</span>
-                          <span className="font-bold text-xs text-black">{BANK.bankName}</span>
+
+                      {/* Bank transfer details */}
+                      {paymentOption === "bank" && (
+                        <div className="rounded-2xl border border-black/[0.07] bg-white overflow-hidden">
+                          <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                              <BanknoteIcon className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-bold text-sm text-black">بيانات التحويل البنكي</p>
+                              <p className="text-xs text-black/40 mt-0.5">حوّل المبلغ وارفع الإيصال بعد تأكيد الطلب</p>
+                            </div>
+                          </div>
+                          <div className="p-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-black/40 text-xs">البنك</span>
+                              <span className="font-bold text-xs text-black">{BANK.bankName}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-black/40 text-xs">IBAN</span>
+                              <span className="font-mono font-bold text-xs text-black tracking-wider">{BANK.iban}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-black/40 text-xs">اسم المستفيد</span>
+                              <span className="font-bold text-xs text-black">{BANK.beneficiaryName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-black/40 text-xs">المبلغ المطلوب</span>
+                              <span className="font-black text-sm text-blue-700 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={10} className="opacity-60" /></span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-black/40 text-xs">IBAN</span>
-                          <span className="font-mono font-bold text-xs text-black tracking-wider">{BANK.iban}</span>
+                      )}
+
+                      {/* Card payment via PayPal */}
+                      {paymentOption === "card" && (
+                        <div className="rounded-2xl border border-cyan-200 bg-white overflow-hidden">
+                          <div className="flex items-center gap-3 p-4 border-b border-cyan-100">
+                            <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
+                              <CreditCard className="w-5 h-5 text-cyan-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-bold text-sm text-black">الدفع بالبطاقة</p>
+                              <p className="text-xs text-black/40 mt-0.5">Visa / Mastercard / Amex — دفع آمن وفوري</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-black text-black/20 bg-black/5 rounded px-1 py-0.5">VISA</span>
+                              <span className="text-[9px] font-black text-black/20 bg-black/5 rounded px-1 py-0.5">MC</span>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <PayPalCardForm
+                              ref={cardFormRef}
+                              amount={remainingAfterWallet}
+                              currency="USD"
+                              onPaymentSuccess={() => {}}
+                              onPaymentError={() => {}}
+                            />
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-black/40 text-xs">اسم المستفيد</span>
-                          <span className="font-bold text-xs text-black">{BANK.beneficiaryName}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-black/40 text-xs">المبلغ المطلوب</span>
-                          <span className="font-black text-sm text-blue-700 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={10} className="opacity-60" /></span>
-                        </div>
-                      </div>
-                    </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -1148,8 +1210,21 @@ export default function Cart() {
               ) : (
                 <Button
                   className="flex-1 bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-12 rounded-xl gap-2 shadow-lg shadow-cyan-600/20 transition-all"
-                  onClick={() => {
-                    if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
+                  onClick={async () => {
+                    if (paymentOption === "card" && !fullyPaidByWallet) {
+                      if (!cardFormRef.current?.isReady) {
+                        toast({ title: "نموذج البطاقة غير جاهز بعد، يرجى الانتظار", variant: "destructive" });
+                        return;
+                      }
+                      setCardProcessing(true);
+                      try {
+                        await cardFormRef.current.submit();
+                        checkoutMutation.mutate(undefined);
+                      } catch (_) {
+                      } finally {
+                        setCardProcessing(false);
+                      }
+                    } else if (effectiveWalletAmount > 0 && walletCardData?.hasPin) {
                       setWalletPinInput("");
                       setShowWalletPin(false);
                       setWalletPinModal(true);
@@ -1157,10 +1232,12 @@ export default function Cart() {
                       checkoutMutation.mutate(undefined);
                     }
                   }}
-                  disabled={checkoutMutation.isPending}
+                  disabled={checkoutMutation.isPending || cardProcessing}
                   data-testid="button-confirm-checkout">
-                  {checkoutMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> جاري إرسال الطلب...</>
+                  {checkoutMutation.isPending || cardProcessing ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {cardProcessing ? "جاري معالجة البطاقة..." : "جاري إرسال الطلب..."}</>
+                  ) : paymentOption === "card" && !fullyPaidByWallet ? (
+                    <><CreditCard className="w-4 h-4" /> ادفع الآن — {fmt(remainingAfterWallet)} <SARIcon size={10} /></>
                   ) : (
                     <><Sparkles className="w-4 h-4" /> تأكيد الطلب والحصول على بيانات الدفع</>
                   )}
