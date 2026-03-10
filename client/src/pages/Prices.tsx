@@ -11,8 +11,9 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield, Headphones,
   Clock, Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
-  Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight, Dumbbell, Store,
-  CheckCircle2, Sparkles, ShoppingCart
+  Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
+  Dumbbell, Store, CheckCircle2, Sparkles, ShoppingCart, Cpu, Code2, Server, Database, LayoutDashboard,
+  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
 import { useMutation } from "@tanstack/react-query";
@@ -29,53 +30,109 @@ const PERIODS: { key: BillingPeriod; labelAr: string; labelEn: string; sublabelA
   { key: "lifetime", labelAr: "مدى الحياة", labelEn: "Lifetime",  sublabelAr: "دفعة واحدة",     sublabelEn: "One-time",       icon: InfinityIcon,  badgeAr: "دائم",     badgeEn: "Forever" },
 ];
 
-const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string }> = {
-  restaurant:    { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-600" },
-  ecommerce:     { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-600" },
-  store:         { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "text-blue-600" },
-  education:     { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "text-violet-600" },
-  corporate:     { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-600" },
-  other:         { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-600" },
-  realestate:    { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "text-teal-600" },
-  healthcare:    { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "text-rose-600" },
-  health:        { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "text-rose-600" },
-  fitness:       { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "text-green-600" },
-  beauty:        { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "text-pink-600" },
-  tech:          { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "text-blue-700" },
-  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-600" },
-  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-600" },
-  institutional: { labelAr: "مؤسسات وجمعيات",  labelEn: "Institutions",  icon: Building2,       color: "text-slate-600" },
-  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "text-purple-600" },
-  general:       { labelAr: "عام",              labelEn: "General",       icon: Globe,           color: "text-slate-600" },
+const SEGMENT_LOOKUP: Record<string, { labelAr: string; labelEn: string; icon: any; color: string; bg: string }> = {
+  restaurant:    { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-400", bg: "bg-orange-500/10" },
+  ecommerce:     { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-400",   bg: "bg-blue-500/10" },
+  store:         { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: Store,           color: "text-blue-400",   bg: "bg-blue-500/10" },
+  education:     { labelAr: "منصات تعليمية",   labelEn: "Education",     icon: GraduationCap,   color: "text-violet-400", bg: "bg-violet-500/10" },
+  corporate:     { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
+  other:         { labelAr: "شركات ومؤسسات",   labelEn: "Corporate",     icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
+  realestate:    { labelAr: "عقارات",           labelEn: "Real Estate",   icon: Home,            color: "text-teal-400",   bg: "bg-teal-500/10" },
+  healthcare:    { labelAr: "صحة وعيادات",      labelEn: "Healthcare",    icon: Heart,           color: "text-rose-400",   bg: "bg-rose-500/10" },
+  health:        { labelAr: "صحة ولياقة",       labelEn: "Health",        icon: Heart,           color: "text-rose-400",   bg: "bg-rose-500/10" },
+  fitness:       { labelAr: "لياقة وجيم",       labelEn: "Fitness",       icon: Dumbbell,        color: "text-green-400",  bg: "bg-green-500/10" },
+  beauty:        { labelAr: "تجميل وصالونات",  labelEn: "Beauty",        icon: Sparkles,        color: "text-pink-400",   bg: "bg-pink-500/10" },
+  tech:          { labelAr: "تقنية وبرمجة",    labelEn: "Technology",    icon: Globe,           color: "text-cyan-400",   bg: "bg-cyan-500/10" },
+  food:          { labelAr: "مطاعم ومقاهي",    labelEn: "Restaurants",   icon: UtensilsCrossed, color: "text-orange-400", bg: "bg-orange-500/10" },
+  commerce:      { labelAr: "متاجر إلكترونية", labelEn: "E-Commerce",    icon: ShoppingBag,     color: "text-blue-400",   bg: "bg-blue-500/10" },
+  institutional: { labelAr: "مؤسسات وجمعيات",  labelEn: "Institutions",  icon: Building2,       color: "text-slate-400",  bg: "bg-slate-500/10" },
+  personal:      { labelAr: "خدمات شخصية",     labelEn: "Personal",      icon: Globe,           color: "text-purple-400", bg: "bg-purple-500/10" },
+  general:       { labelAr: "عام",              labelEn: "General",       icon: Globe,           color: "text-slate-400",  bg: "bg-slate-500/10" },
 };
 
-const TIER_META: Record<string, {
+// Map feature keywords to icons for visual display
+function featureIcon(text: string): any {
+  const t = text.toLowerCase();
+  if (t.includes("تطبيق") || t.includes("جوال") || t.includes("app")) return Smartphone;
+  if (t.includes("دفع") || t.includes("payment") || t.includes("بنك")) return Shield;
+  if (t.includes("تقرير") || t.includes("إحصاء") || t.includes("report")) return BarChart3;
+  if (t.includes("مستخدم") || t.includes("عميل") || t.includes("user")) return Users;
+  if (t.includes("إشعار") || t.includes("notif")) return Bell;
+  if (t.includes("قاعدة") || t.includes("database") || t.includes("بيانات")) return Database;
+  if (t.includes("سيرفر") || t.includes("server") || t.includes("استضافة")) return Server;
+  if (t.includes("لوحة") || t.includes("dashboard") || t.includes("واجهة")) return LayoutDashboard;
+  if (t.includes("دومين") || t.includes("domain") || t.includes("نطاق")) return Globe;
+  if (t.includes("برمجة") || t.includes("كود") || t.includes("code")) return Code2;
+  if (t.includes("أمان") || t.includes("حماية") || t.includes("security")) return Lock;
+  if (t.includes("seo") || t.includes("تسويق") || t.includes("marketing")) return TrendingUp;
+  if (t.includes("تصميم") || t.includes("هوية") || t.includes("design")) return Palette;
+  if (t.includes("طبقة") || t.includes("layer") || t.includes("module")) return Layers;
+  return CheckCircle2;
+}
+
+const TIER_CONFIG: Record<string, {
   labelAr: string; labelEn: string; icon: any;
-  headerBg: string; accentText: string; badgeStyle: string; checkColor: string; ctaBg: string;
+  cardBg: string; headerGrad: string; borderColor: string;
+  accentColor: string; accentGlow: string;
+  priceColor: string; featureColor: string;
+  badgeBg: string; badgeText: string;
+  ctaBg: string; ctaText: string;
+  patternColor: string; taglinePrimary: string; taglineSecondary: string;
+  tierNum: string;
 }> = {
   lite: {
     labelAr: "لايت", labelEn: "Lite", icon: Zap,
-    headerBg: "bg-slate-50 dark:bg-slate-800/60",
-    accentText: "text-slate-800 dark:text-slate-100",
-    badgeStyle: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600",
-    checkColor: "text-slate-600 dark:text-slate-300",
-    ctaBg: "bg-slate-800 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white",
+    cardBg: "bg-white dark:bg-[#0f172a]",
+    headerGrad: "from-slate-50 via-white to-slate-50 dark:from-[#0f172a] dark:via-[#131e2e] dark:to-[#0f172a]",
+    borderColor: "border-slate-200 dark:border-slate-700/60",
+    accentColor: "text-slate-700 dark:text-slate-200",
+    accentGlow: "",
+    priceColor: "text-slate-900 dark:text-white",
+    featureColor: "text-slate-600 dark:text-slate-300",
+    badgeBg: "bg-slate-100 dark:bg-slate-800/80",
+    badgeText: "text-slate-600 dark:text-slate-300",
+    ctaBg: "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900",
+    ctaText: "",
+    patternColor: "opacity-[0.03] dark:opacity-[0.06]",
+    taglinePrimary: "انطلق بثقة",
+    taglineSecondary: "Launch with confidence",
+    tierNum: "01",
   },
   pro: {
     labelAr: "برو", labelEn: "Pro", icon: Star,
-    headerBg: "bg-blue-600",
-    accentText: "text-white",
-    badgeStyle: "bg-white/20 text-white border border-white/30",
-    checkColor: "text-blue-100",
-    ctaBg: "bg-white text-blue-600 hover:bg-blue-50",
+    cardBg: "bg-[#1a3a6e]",
+    headerGrad: "from-[#1e40af] via-[#1a3a6e] to-[#1e3a8a]",
+    borderColor: "border-blue-500/50",
+    accentColor: "text-white",
+    accentGlow: "shadow-[0_0_40px_rgba(59,130,246,0.25)]",
+    priceColor: "text-white",
+    featureColor: "text-blue-100/80",
+    badgeBg: "bg-white/10",
+    badgeText: "text-white",
+    ctaBg: "bg-white hover:bg-blue-50 text-blue-700",
+    ctaText: "",
+    patternColor: "opacity-[0.08]",
+    taglinePrimary: "النظام الأذكى",
+    taglineSecondary: "The smart system",
+    tierNum: "02",
   },
   infinite: {
     labelAr: "إنفينتي", labelEn: "Infinite", icon: InfinityIcon,
-    headerBg: "bg-slate-900 dark:bg-slate-950",
-    accentText: "text-white",
-    badgeStyle: "bg-amber-400/20 text-amber-300 border border-amber-400/30",
-    checkColor: "text-amber-400",
+    cardBg: "bg-[#09090f]",
+    headerGrad: "from-[#0f0f18] via-[#0d0d16] to-[#09090f]",
+    borderColor: "border-amber-500/30",
+    accentColor: "text-amber-300",
+    accentGlow: "shadow-[0_0_50px_rgba(245,158,11,0.15)]",
+    priceColor: "text-white",
+    featureColor: "text-slate-300/80",
+    badgeBg: "bg-amber-400/10",
+    badgeText: "text-amber-300",
     ctaBg: "bg-amber-400 hover:bg-amber-500 text-slate-900",
+    ctaText: "",
+    patternColor: "opacity-[0.07]",
+    taglinePrimary: "بلا حدود",
+    taglineSecondary: "No limits",
+    tierNum: "03",
   },
 };
 
@@ -98,114 +155,174 @@ function getPeriodSuffix(period: BillingPeriod, lang: string): string {
   return "";
 }
 
+/* ─── Decorative SVG grid pattern ────────────────────────────────────── */
+function GridPattern({ className = "" }: { className?: string }) {
+  return (
+    <svg className={`absolute inset-0 w-full h-full ${className}`} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid-sm" width="20" height="20" patternUnits="userSpaceOnUse">
+          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid-sm)" />
+    </svg>
+  );
+}
+
+/* ─── Tier Card ───────────────────────────────────────────────────────── */
 function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
   plan: any; period: BillingPeriod; idx: number; isPopularOverride?: boolean;
   onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string;
 }) {
-  const cfg = TIER_META[plan.tier] || TIER_META.lite;
-  const cfgLabel = lang === "ar" ? cfg.labelAr : cfg.labelEn;
+  const cfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.lite;
   const price = getPeriodPrice(plan, period);
   const isPopular = plan.isPopular || isPopularOverride;
+  const isPro = plan.tier === "pro";
+  const isInfinite = plan.tier === "infinite";
   const monthlyBase = plan.monthlyPrice ?? 0;
   const monthlyEquiv = period === "monthly" ? price
     : period === "sixmonth" ? Math.round(price / 6)
     : period === "annual"   ? Math.round(price / 12) : null;
   const saving = monthlyEquiv && monthlyBase ? Math.round(((monthlyBase - monthlyEquiv) / monthlyBase) * 100) : 0;
-  const isPro = plan.tier === "pro";
+  const features = (lang === "ar" ? plan.featuresAr : (plan.featuresEn || plan.featuresAr)) ?? [];
+  const TierIcon = cfg.icon;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: idx * 0.1 }}
-      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-shadow duration-300 hover:shadow-xl ${
-        isPro
-          ? "border-blue-600 shadow-lg shadow-blue-600/15 dark:shadow-blue-700/20"
-          : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-      }`}
+      initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-500
+        hover:-translate-y-1 hover:shadow-2xl cursor-pointer group
+        ${cfg.cardBg} ${cfg.borderColor} ${cfg.accentGlow}`}
+      onClick={() => onSelect(plan, price, period)}
       data-testid={`card-tier-${plan.tier}`}
     >
+      {/* Popular glow line */}
       {isPopular && (
-        <div className="absolute -top-px inset-x-0 h-1 bg-blue-600" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
       )}
 
-      {/* Card Header */}
-      <div className={`p-6 ${cfg.headerBg}`}>
-        {isPopular && (
-          <span className="inline-flex items-center gap-1.5 bg-white/20 text-white text-[11px] font-bold px-3 py-1 rounded-full mb-3 border border-white/30">
-            <Crown className="w-3 h-3" /> {lang === "ar" ? "الأكثر طلباً" : "Most Popular"}
-          </span>
-        )}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <cfg.icon className={`w-5 h-5 ${cfg.accentText} opacity-80`} />
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5 ${isPro ? "text-white/60" : "text-slate-400 dark:text-slate-500"}`}>QIROX</p>
-              <p className={`text-sm font-black ${cfg.accentText}`}>{lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}</p>
-            </div>
-          </div>
-          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${cfg.badgeStyle}`}>{cfgLabel}</span>
+      {/* Decorative background */}
+      <div className={`absolute inset-0 text-slate-400 ${cfg.patternColor} pointer-events-none`}>
+        <GridPattern />
+      </div>
+
+      {/* Amber constellation dots for Infinite */}
+      {isInfinite && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[[15,20],[85,35],[45,60],[70,15],[30,75],[90,65],[10,85],[55,40]].map(([x,y],i) => (
+            <div key={i} className="absolute w-0.5 h-0.5 rounded-full bg-amber-400/40"
+              style={{ left:`${x}%`, top:`${y}%` }} />
+          ))}
         </div>
-        <p className={`text-xs leading-relaxed min-h-8 ${isPro ? "text-white/65" : "text-slate-500 dark:text-slate-400"}`}>
-          {lang === "ar" ? plan.descriptionAr : (plan.descriptionEn || plan.descriptionAr)}
+      )}
+
+      {/* ─── Header ─── */}
+      <div className={`relative px-6 pt-6 pb-5 bg-gradient-to-br ${cfg.headerGrad}`}>
+        {/* Tier number badge */}
+        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-slate-300 dark:text-slate-600"}`}>
+          {cfg.tierNum}
+        </div>
+
+        {/* Popular badge */}
+        {isPopular && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.1 + 0.3 }}
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full mb-3 shadow-lg shadow-blue-500/30"
+          >
+            <Crown className="w-3 h-3" /> {lang === "ar" ? "الأكثر طلباً" : "Most Popular"}
+          </motion.div>
+        )}
+
+        {/* Icon + Name */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.badgeBg}`}>
+            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-600 dark:text-slate-300"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-slate-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
+            <p className={`font-black text-base leading-tight truncate ${cfg.accentColor}`}>
+              {lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}
+            </p>
+          </div>
+          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-slate-200 dark:border-slate-600"}`}>
+            {lang === "ar" ? cfg.labelAr : cfg.labelEn}
+          </span>
+        </div>
+
+        {/* Tagline */}
+        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-slate-300 dark:text-slate-600"}`}>
+          — {lang === "ar" ? cfg.taglinePrimary : cfg.taglineSecondary}
         </p>
       </div>
 
-      {/* Price Section */}
-      <div className={`px-6 py-5 border-b ${isPro ? "bg-blue-600/95 border-white/10" : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"}`}>
+      {/* ─── Price ─── */}
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#0f172a]"}`}>
         <AnimatePresence mode="wait">
-          <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}>
-            <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className={`text-4xl font-black tracking-tight ${isPro ? "text-white" : "text-slate-900 dark:text-white"}`}>{price.toLocaleString()}</span>
-              {lang === "ar" ? <SARIcon size={15} className={isPro ? "opacity-60" : "opacity-70"} /> : <span className={`text-sm font-medium ${isPro ? "text-white/60" : "text-slate-400"}`}>SAR</span>}
-              <span className={`text-xs ${isPro ? "text-white/40" : "text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
+          <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className={`text-4xl font-black tracking-tight ${cfg.priceColor}`}>{price.toLocaleString()}</span>
+              {lang === "ar"
+                ? <SARIcon size={16} className={`${isPro || isInfinite ? "opacity-40" : "opacity-60"}`} />
+                : <span className={`text-sm font-medium ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>SAR</span>}
+              <span className={`text-xs ${isPro || isInfinite ? "text-white/30" : "text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
             </div>
             {monthlyEquiv && period !== "monthly" && (
-              <p className={`text-[11px] mt-1.5 flex items-center gap-1.5 flex-wrap ${isPro ? "text-white/50" : "text-slate-400"}`}>
-                {lang === "ar"
-                  ? <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} <SARIcon size={11} className="opacity-70" />/شهر</span></span>
-                  : <span>= <span className="font-semibold">{monthlyEquiv.toLocaleString()} SAR/mo</span></span>}
-                {saving > 0 && (
-                  <span className={`font-bold text-emerald-${isPro ? "200" : "600"}`}>
-                    {lang === "ar" ? `— وفّر ${saving}%` : `— Save ${saving}%`}
-                  </span>
-                )}
-              </p>
+              <div className={`mt-2 flex items-center gap-2 flex-wrap text-[11px] ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>
+                <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} {lang === "ar" ? <SARIcon size={10} className="opacity-70" /> : "SAR"}/شهر</span></span>
+                {saving > 0 && <span className={`font-black text-emerald-${isPro ? "300" : "500"}`}>{lang === "ar" ? `— وفّر ${saving}%` : `— Save ${saving}%`}</span>}
+              </div>
             )}
             {period === "lifetime" && (
-              <p className={`text-[11px] mt-1.5 flex items-center gap-1 ${isPro ? "text-white/50" : "text-slate-400"}`}>
-                <Globe className="w-3 h-3" /> {lang === "ar" ? "دومين مجاني 3 سنوات" : "Free domain for 3 years"}
+              <p className={`text-[11px] mt-2 flex items-center gap-1 ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>
+                <Globe className="w-3 h-3" /> {lang === "ar" ? "دومين مجاني 3 سنوات" : "Free domain 3 years"}
               </p>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Features */}
-      <div className={`flex-1 px-6 py-5 ${isPro ? "bg-blue-600/90" : "bg-white dark:bg-slate-900"}`}>
-        <div className="space-y-3">
-          {(lang === "ar" ? plan.featuresAr : (plan.featuresEn || plan.featuresAr))?.map((f: string, i: number) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${cfg.checkColor}`} />
-              <span className={`text-xs leading-relaxed ${isPro ? "text-white/75" : "text-slate-600 dark:text-slate-300"}`}>{f}</span>
+      {/* ─── Features ─── */}
+      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-slate-400 dark:text-slate-600"}`}>
+          {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
+        </p>
+        <div className="space-y-2.5">
+          {features.slice(0, 6).map((f: string, i: number) => {
+            const FIcon = featureIcon(f);
+            return (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-slate-100 dark:bg-slate-800"}`}>
+                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-500 dark:text-slate-400"}`} />
+                </div>
+                <span className={`text-xs leading-snug ${cfg.featureColor}`}>{f}</span>
+              </div>
+            );
+          })}
+          {features.length > 6 && (
+            <div className={`text-[10px] font-bold ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/30" : "text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
+              {lang === "ar" ? `+ ${features.length - 6} ميزة أخرى` : `+ ${features.length - 6} more`}
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* CTA */}
-      <div className={`px-6 py-5 ${isPro ? "bg-blue-600/90" : "bg-white dark:bg-slate-900"} border-t ${isPro ? "border-white/10" : "border-slate-100 dark:border-slate-800"}`}>
+      {/* ─── CTA ─── */}
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#0f172a]"}`}>
         <Button
-          onClick={() => onSelect(plan, price, period)}
-          className={`w-full h-11 rounded-xl font-bold text-sm gap-2 transition-all ${cfg.ctaBg}`}
+          onClick={e => { e.stopPropagation(); onSelect(plan, price, period); }}
+          className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
           data-testid={`button-select-${plan.tier}`}
         >
-          {lang === "ar" ? `اختر ${cfgLabel}` : `Choose ${cfgLabel}`} <ArrowLeft className="w-4 h-4" />
+          {lang === "ar" ? `ابدأ بـ ${cfg.labelAr}` : `Start with ${cfg.labelEn}`}
+          <ArrowLeft className="w-4 h-4" />
         </Button>
       </div>
     </motion.div>
   );
 }
 
+/* ─── Main Page ───────────────────────────────────────────────────────── */
 export default function Prices() {
   const { data: plans, isLoading } = usePricingPlans();
   const { lang, dir } = useI18n();
@@ -218,7 +335,7 @@ export default function Prices() {
       const k: string = p.segment;
       if (!k || k === "general" || seen.has(k)) continue;
       seen.add(k);
-      const meta = SEGMENT_LOOKUP[k] ?? { labelAr: k, labelEn: k, icon: Globe, color: "text-slate-600" };
+      const meta = SEGMENT_LOOKUP[k] ?? { labelAr: k, labelEn: k, icon: Globe, color: "text-slate-400", bg: "bg-slate-500/10" };
       result.push({ key: k, ...meta });
     }
     return result.length > 0 ? result : Object.entries(SEGMENT_LOOKUP).slice(0, 6).map(([k, v]) => ({ key: k, ...v }));
@@ -240,7 +357,7 @@ export default function Prices() {
       if (!selectedPlan) return;
       const periodLabelAr = PERIODS.find(p => p.key === selectedPlan.period)?.labelAr ?? selectedPlan.period;
       const periodLabelEn = PERIODS.find(p => p.key === selectedPlan.period)?.labelEn ?? selectedPlan.period;
-      const tierLabelAr = TIER_META[selectedPlan.plan.tier]?.labelAr ?? selectedPlan.plan.tier;
+      const tierLabelAr = TIER_CONFIG[selectedPlan.plan.tier]?.labelAr ?? selectedPlan.plan.tier;
       const segInfo = SEGMENT_LOOKUP[selectedPlan.plan.segment];
       const r = await apiRequest("POST", "/api/cart/items", {
         type: "plan",
@@ -277,7 +394,7 @@ export default function Prices() {
     if (!segment && segments.length > 0) setSegment(segments[0].key);
   }, [segments, segment]);
 
-  const activeSeg = segments.find(s => s.key === segment) ?? segments[0] ?? { key: "general", labelAr: "عام", labelEn: "General", icon: Globe, color: "text-slate-600" };
+  const activeSeg = segments.find(s => s.key === segment) ?? segments[0] ?? { key: "general", labelAr: "عام", labelEn: "General", icon: Globe, color: "text-slate-400", bg: "bg-slate-500/10" };
   const tierPlans = plans?.filter((p: any) =>
     p.segment === segment && ["lite","pro","infinite"].includes(p.tier ?? "")
   ).sort((a: any, b: any) =>
@@ -285,43 +402,70 @@ export default function Prices() {
   ) ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[#080810]" dir={dir}>
       <Navigation />
 
       {/* ─── HERO ─── */}
-      <section className="pt-24 pb-16 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div className="flex items-center gap-2 mb-5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Tag className="w-4 h-4 text-white" />
+      <section className="relative pt-24 pb-20 overflow-hidden bg-[#080810]">
+        {/* Background grid */}
+        <div className="absolute inset-0 text-slate-300/[0.04] pointer-events-none">
+          <GridPattern />
+        </div>
+        {/* Radial glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/10 blur-[80px] rounded-full" />
+        </div>
+
+        <div className="relative container mx-auto px-4 max-w-5xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            {/* Eyebrow */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-6 h-6 rounded-md bg-blue-500/20 flex items-center justify-center">
+                <Boxes className="w-3.5 h-3.5 text-blue-400" />
               </div>
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                {lang === "ar" ? "الأسعار والباقات" : "Pricing & Plans"}
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-400/70">
+                {lang === "ar" ? "مصنع الأنظمة الرقمية" : "DIGITAL SYSTEMS FACTORY"}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
               <div>
-                <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 leading-tight tracking-tight">
-                  {lang === "ar" ? <>باقات واضحة،<br />بدون مفاجآت</> : <>Clear pricing,<br />no surprises</>}
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed max-w-md">
+                <h1 className="text-5xl md:text-6xl font-black text-white mb-5 leading-[1.05] tracking-tight">
                   {lang === "ar"
-                    ? "كل قطاع له نظامه الخاص — اختر قطاعك ثم المستوى الذي يناسب حجم نشاطك."
-                    : "Every sector has its own system — choose your sector then the level that fits your business size."}
+                    ? <><span className="text-white">باقات</span><br /><span className="bg-gradient-to-l from-cyan-400 to-blue-400 bg-clip-text text-transparent">مبنية</span><br /><span className="text-white/60">لقطاعك</span></>
+                    : <><span className="text-white">Plans</span><br /><span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">built</span><br /><span className="text-white/60">for your sector</span></>}
+                </h1>
+                <p className="text-slate-400 text-base leading-relaxed max-w-sm mb-8">
+                  {lang === "ar"
+                    ? "كل قطاع له نظامه الخاص المبرمج من الصفر — ليس قالبًا جاهزًا، بل مصنع مخصص لك."
+                    : "Every sector has its own system built from scratch — not a template, a factory built for you."}
                 </p>
+                {/* Stats row */}
+                <div className="flex items-center gap-6">
+                  {[
+                    { val: "100+", label: lang === "ar" ? "نظام مُسلَّم" : "Delivered" },
+                    { val: "3",    label: lang === "ar" ? "مستويات" : "Tiers" },
+                    { val: "7",    label: lang === "ar" ? "قطاعات" : "Sectors" },
+                  ].map(s => (
+                    <div key={s.val}>
+                      <p className="text-2xl font-black text-white">{s.val}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Feature pills grid */}
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { icon: Shield,     label: lang === "ar" ? "ضمان الجودة"    : "Quality Guarantee" },
-                  { icon: Headphones, label: lang === "ar" ? "دعم 24/7"        : "24/7 Support" },
-                  { icon: Clock,      label: lang === "ar" ? "تسليم في الموعد" : "On-time Delivery" },
-                  { icon: Globe,      label: lang === "ar" ? "نطاق مجاني"      : "Free Domain" },
-                ].map(({ icon: Ic, label }) => (
-                  <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                    <Ic className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{label}</span>
+                  { icon: Shield,     label: lang === "ar" ? "ضمان الجودة"    : "Quality Guarantee", color: "text-cyan-400", bg: "bg-cyan-400/5 border-cyan-400/15" },
+                  { icon: Headphones, label: lang === "ar" ? "دعم 24/7"        : "24/7 Support",       color: "text-blue-400", bg: "bg-blue-400/5 border-blue-400/15" },
+                  { icon: Clock,      label: lang === "ar" ? "تسليم في الموعد" : "On-time Delivery",   color: "text-violet-400", bg: "bg-violet-400/5 border-violet-400/15" },
+                  { icon: Globe,      label: lang === "ar" ? "نطاق مجاني"      : "Free Domain",        color: "text-emerald-400", bg: "bg-emerald-400/5 border-emerald-400/15" },
+                ].map(({ icon: Ic, label, color, bg }) => (
+                  <div key={label} className={`flex items-center gap-2.5 p-3.5 rounded-xl border ${bg}`}>
+                    <Ic className={`w-4 h-4 ${color} shrink-0`} />
+                    <span className="text-xs font-semibold text-slate-300">{label}</span>
                   </div>
                 ))}
               </div>
@@ -331,29 +475,29 @@ export default function Prices() {
       </section>
 
       {/* ─── SEGMENT SELECTOR ─── */}
-      <section className="py-8 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+      <section className="py-6 border-b border-slate-800/80 bg-[#0a0a14] sticky top-0 z-20 backdrop-blur-sm">
         <div className="container mx-auto px-4 max-w-5xl">
-          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">
-            {lang === "ar" ? "نوع المشروع" : "Project Type"}
-          </p>
-          <div className="flex flex-wrap gap-2" data-testid="segment-selector">
+          <div className="flex flex-wrap items-center gap-2" data-testid="segment-selector">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 ml-2">
+              {lang === "ar" ? "القطاع :" : "SECTOR :"}
+            </span>
             {segments.map(seg => {
               const Icon = seg.icon;
               const isActive = segment === seg.key;
               return (
-                <button
-                  key={seg.key}
-                  onClick={() => setSegment(seg.key)}
+                <motion.button
+                  key={seg.key} onClick={() => setSegment(seg.key)}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   data-testid={`btn-segment-${seg.key}`}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all duration-150 ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-xs font-bold transition-all duration-150 ${
                     isActive
-                      ? "bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-slate-900"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      ? "bg-white text-slate-900 border-white"
+                      : "border-slate-700/60 text-slate-500 hover:border-slate-600 hover:text-slate-300 bg-transparent"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? (lang === "ar" ? "text-white dark:text-slate-900" : "text-white dark:text-slate-900") : seg.color}`} />
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-slate-700" : seg.color}`} />
                   {lang === "ar" ? seg.labelAr : seg.labelEn}
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -361,32 +505,28 @@ export default function Prices() {
       </section>
 
       {/* ─── BILLING PERIOD TABS ─── */}
-      <section className="py-6 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+      <section className="py-5 bg-[#0a0a14] border-b border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex flex-wrap items-center gap-2" data-testid="billing-period-selector">
-            <span className="text-xs font-medium text-slate-400 dark:text-slate-500 ml-1">
-              {lang === "ar" ? "دورة الفوترة:" : "Billing:"}
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 ml-2">
+              {lang === "ar" ? "الفترة :" : "PERIOD :"}
             </span>
-            {PERIODS.map(({ key, labelAr, labelEn, badgeAr, badgeEn }) => {
-              const pLabel  = lang === "ar" ? labelAr : labelEn;
-              const pBadge  = lang === "ar" ? badgeAr : badgeEn;
+            {PERIODS.map(({ key, labelAr, labelEn, icon: PIcon, badgeAr, badgeEn }) => {
+              const pLabel = lang === "ar" ? labelAr : labelEn;
+              const pBadge = lang === "ar" ? badgeAr : badgeEn;
               const isActive = period === key;
               return (
-                <button
-                  key={key}
-                  onClick={() => setPeriod(key)}
-                  data-testid={`tab-period-${key}`}
-                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all border ${
+                <button key={key} onClick={() => setPeriod(key)} data-testid={`tab-period-${key}`}
+                  className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
                     isActive
-                      ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/25"
+                      : "border-slate-700/60 text-slate-500 hover:text-slate-300 hover:border-slate-600"
                   }`}
                 >
+                  <PIcon className="w-3 h-3" />
                   {pLabel}
                   {pBadge && !isActive && (
-                    <span className="text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
-                      {pBadge}
-                    </span>
+                    <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">{pBadge}</span>
                   )}
                 </button>
               );
@@ -396,129 +536,141 @@ export default function Prices() {
       </section>
 
       {/* ─── TIER CARDS ─── */}
-      <section className="py-12 container mx-auto px-4 max-w-5xl">
-        {/* Active context breadcrumb */}
-        <div className="flex items-center gap-2 mb-8 text-sm text-slate-500 dark:text-slate-400">
-          <activeSeg.icon className={`w-4 h-4 ${activeSeg.color}`} />
-          <span className="font-medium text-slate-700 dark:text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
-          <span>{lang === "ar" ? PERIODS.find(p => p.key === period)?.labelAr : PERIODS.find(p => p.key === period)?.labelEn}</span>
-        </div>
+      <section className="py-14 bg-[#0a0a14]">
+        <div className="container mx-auto px-4 max-w-5xl">
+          {/* Context breadcrumb */}
+          <div className="flex items-center gap-2 mb-10">
+            <div className={`w-6 h-6 rounded-md ${activeSeg.bg} flex items-center justify-center`}>
+              <activeSeg.icon className={`w-3.5 h-3.5 ${activeSeg.color}`} />
+            </div>
+            <span className="text-sm font-black text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
+            <span className="text-xs text-slate-500">{lang === "ar" ? PERIODS.find(p => p.key === period)?.labelAr : PERIODS.find(p => p.key === period)?.labelEn}</span>
+          </div>
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-            <p className="text-sm text-slate-400">{lang === "ar" ? "جاري التحميل..." : "Loading..."}</p>
-          </div>
-        ) : tierPlans.length === 0 ? (
-          <div className="text-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-            <Gift className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">
-              {lang === "ar" ? "لا توجد باقات لهذا القطاع بعد" : "No plans for this sector yet"}
-            </p>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${segment}-${period}`}
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              {tierPlans.map((plan: any, idx: number) => (
-                <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} />
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        )}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
+                <Loader2 className="w-12 h-12 animate-spin text-blue-500/60" />
+              </div>
+              <p className="text-xs text-slate-600 uppercase tracking-wider">{lang === "ar" ? "جاري تحميل الأنظمة..." : "Loading systems..."}</p>
+            </div>
+          ) : tierPlans.length === 0 ? (
+            <div className="text-center py-24 border border-dashed border-slate-800 rounded-2xl">
+              <Gift className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">{lang === "ar" ? "لا توجد باقات لهذا القطاع بعد" : "No plans for this sector yet"}</p>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${segment}-${period}`}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
+                className="grid grid-cols-1 md:grid-cols-3 gap-5"
+              >
+                {tierPlans.map((plan: any, idx: number) => (
+                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} />
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
       </section>
 
       {/* ─── COMPARISON TABLE ─── */}
       {tierPlans.length === 3 && (
-        <section className="pb-16 container mx-auto px-4 max-w-5xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
-            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest px-4">
-              {lang === "ar" ? "مقارنة الباقات" : "Plan Comparison"}
-            </h2>
-            <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
-          </div>
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
-            <div className="min-w-[480px]">
-              <div className="grid grid-cols-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                <div className="p-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  {lang === "ar" ? "الميزة" : "Feature"}
+        <section className="pb-16 bg-[#0a0a14]">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 h-px bg-slate-800" />
+              <h2 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] px-4">
+                {lang === "ar" ? "مقارنة الباقات" : "PLAN COMPARISON"}
+              </h2>
+              <div className="flex-1 h-px bg-slate-800" />
+            </div>
+            <div className="rounded-xl border border-slate-800 overflow-x-auto">
+              <div className="min-w-[480px]">
+                <div className="grid grid-cols-4 bg-slate-900/50 border-b border-slate-800">
+                  <div className="p-4 text-[9px] font-black text-slate-600 uppercase tracking-wider">
+                    {lang === "ar" ? "الميزة" : "Feature"}
+                  </div>
+                  {tierPlans.map((p: any) => {
+                    const cfg = TIER_CONFIG[p.tier] || TIER_CONFIG.lite;
+                    return (
+                      <div key={p.id} className="p-4 text-center">
+                        <span className="text-xs font-black text-slate-300">
+                          {lang === "ar" ? cfg.labelAr : cfg.labelEn}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                {tierPlans.map((p: any) => {
-                  const cfg = TIER_META[p.tier] || TIER_META.lite;
-                  return (
-                    <div key={p.id} className="p-4 text-center">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                        {lang === "ar" ? cfg.labelAr : cfg.labelEn}
-                      </span>
-                    </div>
-                  );
-                })}
+                {[
+                  { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1 text-slate-200">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
+                  { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
+                  { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
+                  { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },
+                  { label: lang === "ar" ? "دومين مجاني"       : "Free Domain",    values: lang === "ar" ? [false, "سنة واحدة", "3 سنوات"] : [false, "1 year", "3 years"] },
+                  { label: lang === "ar" ? "دعم متعدد القنوات" : "Multi-channel",  values: [false, true, true] },
+                ].map((row, i) => (
+                  <div key={i} className={`grid grid-cols-4 border-b border-slate-800 last:border-0 ${i % 2 !== 0 ? "bg-slate-900/20" : ""}`}>
+                    <div className="p-3.5 text-xs text-slate-500 font-medium">{row.label}</div>
+                    {row.values.map((val: any, vi) => (
+                      <div key={vi} className="p-3.5 text-center">
+                        {typeof val === "boolean"
+                          ? val
+                            ? <Check className="w-4 h-4 text-emerald-400 mx-auto" />
+                            : <X className="w-4 h-4 text-slate-700 mx-auto" />
+                          : <span className="text-xs font-semibold text-slate-300">{val}</span>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-              {[
-                { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
-                { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
-                { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
-                { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },
-                { label: lang === "ar" ? "دومين مجاني"       : "Free Domain",    values: lang === "ar" ? [false, "سنة واحدة", "3 سنوات"] : [false, "1 year", "3 years"] },
-                { label: lang === "ar" ? "دعم متعدد القنوات" : "Multi-channel",  values: [false, true, true] },
-              ].map((row, i) => (
-                <div key={i} className={`grid grid-cols-4 border-b border-slate-100 dark:border-slate-800 last:border-0 ${i % 2 !== 0 ? "bg-slate-50/50 dark:bg-slate-900/30" : ""}`}>
-                  <div className="p-3.5 text-xs text-slate-600 dark:text-slate-400 font-medium">{row.label}</div>
-                  {row.values.map((val: any, vi) => (
-                    <div key={vi} className="p-3.5 text-center">
-                      {typeof val === "boolean"
-                        ? val
-                          ? <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                          : <X className="w-4 h-4 text-slate-200 dark:text-slate-700 mx-auto" />
-                        : <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{val}</span>}
-                    </div>
-                  ))}
-                </div>
-              ))}
             </div>
           </div>
         </section>
       )}
 
       {/* ─── DEMO TRIAL ─── */}
-      <section className="py-12 bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
+      <section className="py-14 bg-[#050508] border-y border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/50 bg-white dark:bg-slate-950 overflow-hidden" data-testid="card-demo-plan">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="p-8 border-b md:border-b-0 md:border-l md:border-r-0 rtl:md:border-r rtl:md:border-l-0 border-emerald-100 dark:border-emerald-800/30">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full mb-5">
-                  {lang === "ar" ? "جرّب قبل أن تشتري" : "Try before you buy"}
+          <div className="relative rounded-2xl border border-emerald-500/20 overflow-hidden" data-testid="card-demo-plan">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/30 to-transparent pointer-events-none" />
+            <div className="relative grid grid-cols-1 md:grid-cols-2">
+              <div className="p-8">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-emerald-500/20 mb-5 uppercase tracking-widest">
+                  <Rocket className="w-3 h-3" /> {lang === "ar" ? "جرّب قبل أن تشتري" : "Try before you buy"}
                 </span>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-5">
+                <h3 className="text-2xl font-black text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed mb-6">
                   {lang === "ar" ? "جرّب نظامك الحقيقي لمدة 7 أيام — بدون تعهد بالشراء" : "Try your real system for 7 days — no purchase commitment"}
                 </p>
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-2 mb-7">
                   {(lang === "ar"
                     ? ["7 أيام كاملة","نظام حقيقي","دعم فني","بدون تعهد","تُحسم من الباقة"]
-                    : ["7 full days","Real system","Technical support","No commitment","Deducted from plan"]
+                    : ["7 full days","Real system","Support","No commitment","Deducted from plan"]
                   ).map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-400/8 text-emerald-400 border border-emerald-500/15">
                       <Check className="w-3 h-3" />{f}
                     </span>
                   ))}
                 </div>
                 <Link href="/contact">
-                  <Button className="h-11 px-7 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-2" data-testid="button-demo-trial">
+                  <Button className="h-11 px-7 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
                     {lang === "ar" ? "ابدأ تجربتك المجانية" : "Start Free Trial"} <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </Link>
               </div>
-              <div className="p-8 bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center">
+              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-emerald-500/10">
                 <div className="text-center">
-                  <div className="text-7xl font-black text-emerald-600 dark:text-emerald-400 mb-1 leading-none">30</div>
-                  <div className="text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1">{lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}</div>
-                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-2 max-w-[160px]">{lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price upon subscription"}</div>
+                  <div className="text-8xl font-black text-emerald-400 mb-1 leading-none tabular-nums">30</div>
+                  <div className="text-slate-400 font-bold text-sm flex items-center justify-center gap-1">
+                    {lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}
+                  </div>
+                  <div className="text-xs text-slate-600 mt-3 max-w-[160px]">
+                    {lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price on subscribe"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -527,50 +679,50 @@ export default function Prices() {
       </section>
 
       {/* ─── ADDONS ─── */}
-      <section className="py-16 bg-white dark:bg-slate-950">
+      <section className="py-16 bg-[#080810]">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-white dark:text-slate-900" />
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+              <Plus className="w-4 h-4 text-slate-300" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">{lang === "ar" ? "الإضافات" : "Add-ons"}</h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
+              <h2 className="text-xl font-black text-white">{lang === "ar" ? "الإضافات" : "Add-ons"}</h2>
+              <p className="text-xs text-slate-600">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(lang === "ar" ? [
-              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], accent: "border-slate-300 dark:border-slate-600" },
-              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       accent: "border-violet-200 dark:border-violet-800/50" },
-              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            accent: "border-amber-200 dark:border-amber-800/50" },
+              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-slate-300", border: "border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-300", border: "border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-300", border: "border-amber-700/30", glow: "" },
             ] : [
-              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",               price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], accent: "border-slate-300 dark:border-slate-600" },
-              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search engine optimization",   price: "500+",   features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"],       accent: "border-violet-200 dark:border-violet-800/50" },
-              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity",         price: "800+",   features: ["Logo design","Brand guide","Colors & fonts","All formats"],                  accent: "border-amber-200 dark:border-amber-800/50" },
+              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-slate-300", border: "border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-300", border: "border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-300", border: "border-amber-700/30", glow: "" },
             ]).map((a, ai) => (
               <motion.div
                 key={a.label}
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: ai * 0.08 }}
-                className={`rounded-xl border-2 ${a.accent} bg-white dark:bg-slate-900 p-6 hover:shadow-lg transition-shadow duration-300`}
+                className={`relative rounded-xl border ${a.border} bg-white/[0.025] p-6 hover:bg-white/[0.04] transition-colors`}
               >
-                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                  <a.icon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-5">
+                  <a.icon className={`w-5 h-5 ${a.color}`} />
                 </div>
-                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{a.label}</p>
-                <p className="text-slate-900 dark:text-white font-black text-base mb-3">{a.sub}</p>
-                <div className="flex items-baseline gap-1.5 mb-4">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">{a.price}</span>
-                  {lang === "ar" ? <SARIcon size={13} className="opacity-70" /> : <span className="text-sm text-slate-400">SAR</span>}
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
+                <p className="text-white font-black text-base mb-4">{a.sub}</p>
+                <div className="flex items-baseline gap-1.5 mb-5">
+                  <span className="text-3xl font-black text-white">{a.price}</span>
+                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-slate-600">SAR</span>}
                 </div>
                 <div className="space-y-2 mb-5">
                   {a.features.map(f => (
-                    <div key={f} className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />{f}
+                    <div key={f} className="flex items-center gap-2 text-xs text-slate-500">
+                      <Check className="w-3 h-3 text-emerald-500 shrink-0" />{f}
                     </div>
                   ))}
                 </div>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full h-9 rounded-lg font-bold text-xs border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                  <Button variant="outline" className="w-full h-9 rounded-lg font-bold text-xs border-slate-700 text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:border-slate-600">
                     {lang === "ar" ? "أضف للطلب" : "Add to order"}
                   </Button>
                 </Link>
@@ -581,20 +733,20 @@ export default function Prices() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="py-16 bg-slate-900 dark:bg-slate-950">
+      <section className="py-16 bg-[#050508] border-t border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
-                {lang === "ar" ? "باقة مخصصة" : "Custom Plan"}
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">
+                {lang === "ar" ? "باقة مخصصة" : "CUSTOM PLAN"}
               </p>
               <h2 className="text-3xl font-black text-white mb-3">
                 {lang === "ar" ? "تحتاج عرضاً خاصاً؟" : "Need a custom quote?"}
               </h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
+              <p className="text-slate-500 text-sm leading-relaxed">
                 {lang === "ar"
                   ? "تواصل معنا وسنعدّ لك عرضاً يناسب احتياجاتك وميزانيتك تماماً."
-                  : "Contact us and we'll prepare a quote tailored exactly to your needs and budget."}
+                  : "Contact us and we'll prepare a quote tailored exactly to your needs."}
               </p>
             </div>
             <div className="flex md:justify-end">
@@ -610,94 +762,181 @@ export default function Prices() {
 
       <Footer />
 
-      {/* ── Plan Order Dialog ── */}
+      {/* ══════════════════════════════════════════════════════════
+          PLAN DETAILS DIALOG — مصنع الأنظمة
+      ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!selectedPlan} onOpenChange={v => !v && setSelectedPlan(null)}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl bg-white dark:bg-slate-900" dir={dir}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border-0 shadow-2xl bg-[#08080f]" dir={dir}>
           {selectedPlan && (() => {
-            const cfg = TIER_META[selectedPlan.plan.tier] || TIER_META.lite;
-            const cfgLabel = lang === "ar" ? cfg.labelAr : cfg.labelEn;
+            const tierCfg = TIER_CONFIG[selectedPlan.plan.tier] || TIER_CONFIG.lite;
+            const isInf = selectedPlan.plan.tier === "infinite";
+            const isPro = selectedPlan.plan.tier === "pro";
             const segInfo = segments.find(s => s.key === selectedPlan.plan.segment) ?? (SEGMENT_LOOKUP[selectedPlan.plan.segment] ? { key: selectedPlan.plan.segment, ...SEGMENT_LOOKUP[selectedPlan.plan.segment] } : null);
-            const periodLabel = lang === "ar" ? PERIODS.find(p => p.key === selectedPlan.period)?.labelAr : PERIODS.find(p => p.key === selectedPlan.period)?.labelEn;
-            const planName = lang === "ar" ? (selectedPlan.plan.nameAr || cfgLabel) : (selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || cfgLabel);
-            const planFeatures = lang === "ar" ? selectedPlan.plan.featuresAr : (selectedPlan.plan.featuresEn || selectedPlan.plan.featuresAr);
+            const periodInfo = PERIODS.find(p => p.key === selectedPlan.period);
+            const periodLabel = lang === "ar" ? periodInfo?.labelAr : periodInfo?.labelEn;
+            const planName = lang === "ar" ? (selectedPlan.plan.nameAr || tierCfg.labelAr) : (selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || tierCfg.labelEn);
+            const planDesc = lang === "ar" ? selectedPlan.plan.descriptionAr : (selectedPlan.plan.descriptionEn || selectedPlan.plan.descriptionAr);
+            const features = (lang === "ar" ? selectedPlan.plan.featuresAr : (selectedPlan.plan.featuresEn || selectedPlan.plan.featuresAr)) ?? [];
+            const TierIcon = tierCfg.icon;
+
+            // Colors based on tier
+            const headerGrad = isInf
+              ? "from-[#0d0c15] via-[#100f1a] to-[#0d0c15]"
+              : isPro
+              ? "from-[#0c1a3a] via-[#0e2048] to-[#0c1a3a]"
+              : "from-[#0f1117] via-[#111318] to-[#0f1117]";
+            const accentColor = isInf ? "#f59e0b" : isPro ? "#60a5fa" : "#94a3b8";
+            const glowClass = isInf ? "bg-amber-500/8" : isPro ? "bg-blue-600/10" : "bg-slate-500/5";
+
             return (
-              <div className="flex flex-col">
-                {/* Header */}
-                <div className="px-6 pt-6 pb-5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                        <QiroxIcon className="w-6 h-6 object-contain" />
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{lang === "ar" ? "الباقة المختارة" : "Selected Plan"}</p>
-                        <p className="font-black text-lg text-slate-900 dark:text-white leading-tight">{planName}</p>
-                      </div>
+              <div className="flex flex-col max-h-[90vh] overflow-y-auto">
+
+                {/* ─ Header ─ */}
+                <div className={`relative bg-gradient-to-br ${headerGrad} px-6 pt-6 pb-7 overflow-hidden`}>
+                  {/* Background decorations */}
+                  <div className="absolute inset-0 text-slate-300/[0.04] pointer-events-none"><GridPattern /></div>
+                  <div className={`absolute inset-0 ${glowClass} pointer-events-none`} />
+                  {isInf && (
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                      {[[20,30],[80,20],[60,70],[10,80],[90,50]].map(([x,y],i) => (
+                        <div key={i} className="absolute w-1 h-1 rounded-full bg-amber-400/25" style={{ left:`${x}%`, top:`${y}%` }} />
+                      ))}
                     </div>
-                    <button
-                      onClick={() => setSelectedPlan(null)}
-                      className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <X className="w-4 h-4 text-slate-500" />
-                    </button>
+                  )}
+
+                  {/* Close button */}
+                  <button onClick={() => setSelectedPlan(null)}
+                    className="absolute top-4 left-4 rtl:left-auto rtl:right-4 w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center hover:bg-white/10 transition-colors">
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+
+                  {/* Brand */}
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="w-7 h-7 rounded-lg bg-white/8 flex items-center justify-center">
+                      <QiroxIcon className="w-4 h-4 opacity-80" />
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">QIROX SYSTEMS FACTORY</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <span className="text-slate-900 dark:text-white font-black text-sm flex items-center gap-1">{selectedPlan.price.toLocaleString()} {lang === "ar" ? <SARIcon size={12} className="opacity-60" /> : "SAR"}</span>
-                      <span className="text-slate-400 text-xs">/ {periodLabel}</span>
+
+                  {/* Plan name + tier */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] mb-1.5" style={{ color: accentColor + "80" }}>
+                        {lang === "ar" ? "النظام المختار" : "SELECTED SYSTEM"}
+                      </p>
+                      <h2 className="text-2xl font-black text-white leading-tight">{planName}</h2>
+                      {planDesc && (
+                        <p className="text-xs text-slate-400 mt-2 leading-relaxed max-w-xs">{planDesc}</p>
+                      )}
                     </div>
-                    <span className="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">{cfgLabel}</span>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isInf ? "bg-amber-400/10 border border-amber-400/20" : isPro ? "bg-blue-400/10 border border-blue-400/20" : "bg-slate-400/10 border border-slate-400/20"}`}>
+                      <TierIcon className="w-6 h-6" style={{ color: accentColor }} />
+                    </div>
+                  </div>
+
+                  {/* Tags row */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Tier tag */}
+                    <span className="flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-lg border" style={{ color: accentColor, borderColor: accentColor + "30", backgroundColor: accentColor + "12" }}>
+                      <TierIcon className="w-3 h-3" />
+                      {lang === "ar" ? tierCfg.labelAr : tierCfg.labelEn}
+                    </span>
+                    {/* Segment tag */}
                     {segInfo && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <segInfo.icon className={`w-3.5 h-3.5 ${segInfo.color}`} />
-                        <span className="text-slate-600 dark:text-slate-300 text-xs font-medium">{lang === "ar" ? segInfo.labelAr : segInfo.labelEn}</span>
-                      </div>
+                      <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${segInfo.bg} ${segInfo.color} border-current/20`}>
+                        <segInfo.icon className="w-3 h-3" />
+                        {lang === "ar" ? segInfo.labelAr : segInfo.labelEn}
+                      </span>
                     )}
+                    {/* Period tag */}
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-700/60 text-slate-400 bg-slate-800/40">
+                      <Calendar className="w-3 h-3" />
+                      {periodLabel}
+                    </span>
                   </div>
                 </div>
 
-                {/* Body */}
-                <div className="p-6">
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-5 leading-relaxed">
-                    {lang === "ar"
-                      ? <>اخترت <strong className="text-slate-900 dark:text-white">{planName}</strong>. ستنتقل الآن لإتمام بيانات مشروعك.</>
-                      : <>You selected <strong className="text-slate-900 dark:text-white">{planName}</strong>. You'll now complete your project details.</>}
-                  </p>
-                  <div className="space-y-2.5 mb-6">
-                    {planFeatures?.slice(0, 5).map((f: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
-                        {f}
-                      </div>
-                    ))}
-                    {(planFeatures?.length ?? 0) > 5 && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mr-6 rtl:mr-0 rtl:ml-6">
-                        {lang === "ar" ? `+ ${planFeatures.length - 5} ميزة أخرى` : `+ ${planFeatures.length - 5} more features`}
+                {/* ─ Price breakdown ─ */}
+                <div className="px-6 py-5 border-b border-slate-800/60 bg-white/[0.015]">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600 mb-1">
+                        {lang === "ar" ? "إجمالي الاشتراك" : "SUBSCRIPTION TOTAL"}
                       </p>
-                    )}
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-white">{selectedPlan.price.toLocaleString()}</span>
+                        {lang === "ar" ? <SARIcon size={15} className="opacity-50" /> : <span className="text-slate-500 font-medium">SAR</span>}
+                        <span className="text-xs text-slate-500">/ {periodLabel}</span>
+                      </div>
+                    </div>
+                    {/* System architecture mini visual */}
+                    <div className="flex items-center gap-1.5 opacity-40">
+                      {[Cpu, Code2, Server, LayoutDashboard].map((Ic, i) => (
+                        <div key={i} className="flex items-center gap-1">
+                          <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center">
+                            <Ic className="w-3.5 h-3.5 text-slate-400" />
+                          </div>
+                          {i < 3 && <div className="w-3 h-px bg-slate-700" />}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                </div>
+
+                {/* ─ Features grid ─ */}
+                <div className="px-6 py-5">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600 mb-4">
+                    {lang === "ar" ? `مكونات النظام — ${features.length} عنصر` : `SYSTEM COMPONENTS — ${features.length} items`}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {features.map((f: string, i: number) => {
+                      const FIcon = featureIcon(f);
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: lang === "ar" ? 10 : -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04, duration: 0.25 }}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-slate-800/60 hover:border-slate-700/60 hover:bg-white/[0.05] transition-all"
+                        >
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInf ? "bg-amber-400/10" : isPro ? "bg-blue-500/10" : "bg-slate-700/40"}`}>
+                            <FIcon className="w-3.5 h-3.5" style={{ color: i === 0 ? accentColor : accentColor + "90" }} />
+                          </div>
+                          <span className="text-xs text-slate-300 leading-snug flex-1">{f}</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 shrink-0" />
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ─ CTA ─ */}
+                <div className="px-6 pb-6 pt-4 border-t border-slate-800/60">
                   <div className="flex gap-3">
                     {user ? (
                       <Button
                         onClick={() => addToCartMutation.mutate()}
                         disabled={addToCartMutation.isPending}
-                        className="flex-1 h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        className="flex-1 h-12 rounded-xl font-black gap-2 text-sm shadow-lg"
+                        style={{ backgroundColor: accentColor === "#94a3b8" ? "#1e293b" : accentColor, color: isInf ? "#0f0f0f" : "white" }}
                         data-testid="button-confirm-plan"
                       >
                         {addToCartMutation.isPending
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <ShoppingCart className="w-4 h-4" />}
-                        {lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+                        {lang === "ar" ? "أضف للسلة وأكمل الطلب" : "Add to Cart & Continue"}
                       </Button>
                     ) : (
                       <Link href="/login" className="flex-1">
-                        <Button className="w-full h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2" data-testid="button-confirm-plan">
+                        <Button className="w-full h-12 rounded-xl font-black gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-confirm-plan">
                           <ShoppingCart className="w-4 h-4" />
                           {lang === "ar" ? "سجّل دخولك للشراء" : "Login to Purchase"}
                         </Button>
                       </Link>
                     )}
-                    <Button variant="outline" onClick={() => setSelectedPlan(null)} className="h-11 px-4 rounded-xl border-slate-200 dark:border-slate-700" data-testid="button-cancel-plan">
+                    <Button variant="ghost" onClick={() => setSelectedPlan(null)}
+                      className="h-12 px-4 rounded-xl border border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 hover:border-slate-700"
+                      data-testid="button-cancel-plan">
                       {lang === "ar" ? "إلغاء" : "Cancel"}
                     </Button>
                   </div>
