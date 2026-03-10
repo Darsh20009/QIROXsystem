@@ -404,7 +404,7 @@ export default function OrderFlow() {
         const a = extraAddons.find((ad: any) => ad.id === id);
         return { id, name: a?.name||"", nameAr: a?.nameAr||"", price: a?.price||0 };
       });
-      const paymentMethod = fullyPaidByWallet ? "wallet" : effectiveWalletAmt > 0 ? "mixed" : usePaymob ? "paymob" : "bank_transfer";
+      const paymentMethod = fullyPaidByWallet ? "wallet" : effectiveWalletAmt > 0 ? "mixed" : "bank_transfer";
       const body = {
         serviceType: formData.sector || "website", planTier: selectedPlan,
         planSegment: segmentFromUrl, planPeriod: periodFromUrl, totalAmount: grandTotal,
@@ -1168,7 +1168,11 @@ export default function OrderFlow() {
                   </div>
                 </div>
 
-                {/* Paymob Card */}
+                {/* Paymob — website service add-on */}
+                <div>
+                  <p className="text-[11px] font-black text-black/30 dark:text-white/30 uppercase tracking-[2px] mb-3 px-1">
+                    {lang === "ar" ? "خدمة إضافية للموقع" : "Website Add-on Service"}
+                  </p>
                 <div className={`rounded-3xl border-2 transition-all overflow-hidden ${usePaymob ? "border-[#5D3FD3] shadow-lg shadow-purple-100/50 dark:shadow-purple-900/20" : "border-black/[0.07] dark:border-white/[0.07]"}`}
                   style={usePaymob ? { background: "linear-gradient(135deg,#faf7ff,#f3eeff)" } : {}}>
                   <div className="p-5">
@@ -1204,6 +1208,12 @@ export default function OrderFlow() {
                     )}
                   </div>
                 </div>
+                </div>
+
+                {/* Payment method label */}
+                <p className="text-[11px] font-black text-black/30 dark:text-white/30 uppercase tracking-[2px] px-1 mt-2 mb-3">
+                  {lang === "ar" ? "طريقة دفع الطلب" : "Order Payment Method"}
+                </p>
 
                 {/* Qirox Pay Card — always visible */}
                 <div className={`rounded-3xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-cyan-400 shadow-lg shadow-cyan-100/50" : walletBalance === 0 ? "border-black/[0.06] dark:border-white/[0.06] opacity-80" : "border-black/[0.07] dark:border-white/[0.07]"}`}
