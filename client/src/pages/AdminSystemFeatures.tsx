@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Star, CheckCircle2, XCircle, Settings2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Star, CheckCircle2, XCircle, Settings2, Info, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const CATEGORIES = [
@@ -82,6 +83,23 @@ export default function AdminSystemFeatures() {
         <Button onClick={openNew} className="gap-2 mr-auto" data-testid="button-new-feature">
           <Plus className="w-4 h-4" /> إضافة ميزة
         </Button>
+      </div>
+
+      {/* Info Banner */}
+      <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/40 p-4 flex gap-3 items-start">
+        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">هذه الصفحة للمميزات الوصفية فقط</p>
+          <p className="text-xs text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+            المميزات هنا تظهر كنقاط توضيحية داخل كاردات اختيار الباقة (لايت/برو/إنفينتي) — <strong>لا تُضاف للطلب ولا تؤثر على المبلغ الإجمالي.</strong>
+            <br />إذا أردت إضافة خدمة مدفوعة تظهر في الطلب وتؤثر على السعر، استخدم:
+          </p>
+          <Link href="/admin/extra-addons">
+            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 underline underline-offset-2 cursor-pointer hover:text-amber-900">
+              <ExternalLink className="w-3.5 h-3.5" /> الإضافات الخارجية (Extra Addons)
+            </span>
+          </Link>
+        </div>
       </div>
 
       {/* Summary */}
