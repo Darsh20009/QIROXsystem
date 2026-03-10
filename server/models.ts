@@ -386,7 +386,7 @@ const qiroxProductSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const cartItemSchema = new mongoose.Schema({
-  type: { type: String, enum: ['service', 'product', 'domain', 'email', 'hosting', 'gift'], required: true },
+  type: { type: String, enum: ['service', 'product', 'domain', 'email', 'hosting', 'gift', 'plan'], required: true },
   refId: String,
   name: { type: String, required: true },
   nameAr: String,
