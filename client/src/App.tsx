@@ -545,10 +545,10 @@ function ClientQuickNav() {
   );
 }
 
-class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
+class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean; errorMsg: string }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, retried: false };
+    this.state = { hasError: false, retried: false, errorMsg: "" };
   }
 
   static getDerivedStateFromError() {
@@ -567,7 +567,7 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
         window.location.reload();
       });
     } else if (!isChunkError) {
-      this.setState({ retried: true });
+      this.setState({ retried: true, errorMsg: `${error?.name}: ${error?.message}` });
     }
   }
 
@@ -589,6 +589,11 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
           }}
         >
           <p style={{ fontSize: "1.1rem", color: "#555" }}>حدث خطأ في تحميل الصفحة</p>
+          {this.state.errorMsg && (
+            <p style={{ fontSize: "0.75rem", color: "#e55", background: "#fff0f0", padding: "0.5rem 1rem", borderRadius: "6px", maxWidth: "600px", wordBreak: "break-word", direction: "ltr", textAlign: "left" }}>
+              {this.state.errorMsg}
+            </p>
+          )}
           <button
             onClick={() => window.location.reload()}
             style={{
