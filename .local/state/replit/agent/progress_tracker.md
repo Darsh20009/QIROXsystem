@@ -34,3 +34,4 @@
 [x] 34. Fix Render deployment (bcrypt dependency and build allowlist)
 [x] 35. Fix mobile responsiveness — horizontal scroll, zoom, elements not showing on Android/iPhone
 [x] 36. Fix QMeet bugs: local video, screen share fullsize, screen share permission system, whiteboard sync + size + lag, chat delivery
+[x] 37. Full PayPal integration — card payment via PayPal CardFields (PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET set, SAR→USD auto-conversion at 3.75 fixed peg, USD equivalent shown to user in card form)

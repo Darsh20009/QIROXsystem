@@ -94,14 +94,22 @@ export async function createPaypalOrder(req: Request, res: Response) {
       return res.status(400).json({ error: "Intent is required." });
     }
 
+    // PayPal does not support SAR — convert to USD at the fixed peg rate (1 USD = 3.75 SAR since 1986)
+    const SAR_TO_USD_RATE = 3.75;
+    const paypalCurrency = currency === "SAR" ? "USD" : currency;
+    const rawAmount = parseFloat(amount);
+    const paypalAmount = currency === "SAR"
+      ? (rawAmount / SAR_TO_USD_RATE).toFixed(2)
+      : rawAmount.toFixed(2);
+
     const collect = {
       body: {
         intent: intent,
         purchaseUnits: [
           {
             amount: {
-              currencyCode: currency,
-              value: amount,
+              currencyCode: paypalCurrency,
+              value: paypalAmount,
             },
           },
         ],

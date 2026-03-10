@@ -1,0 +1,76 @@
+QIROX STUDIO
+Note that not all features are available for live transactions. Features available for live transactions are listed in your account eligibility.
+API credentials
+Important: Keep your app secure! Rotate client secrets regularly, store credentials safely, and never share client IDs or secrets publicly.
+Display App Name
+QIROX STUDIO
+
+Client ID
+AXjzQSCwpCaGAYv6sM7ZNbIUgf4rHZQV_WIDt4cpzYcePKX7cXt6lQbrN_NWIfBkAT8PGZQ-8jN6ld5N
+
+Secret key 1
+EAMgxuwMDMxoLbmOeazA32q4PmwnqtkVQjkMIT2Ieg2549ihiWAgeBH91bbXQOBnahaCSLVHHeNWsj7a
+
+
++ Add Second Key
+Live PayPal account
+Business Account Settings
+Primary Email
+info@qiroxstudio.online
+Features
+
+Payment capabilities
+
+Save payment methods
+Use the Vault API to save your customer's payment methods to speed up checkout.
+
+
+Subscriptions
+Set up recurring payments for customers.
+
+
+Invoicing
+Send and manage customer invoices.
+
+
+Payment links and buttons
+Add payment link, payment button, shopping cart button capabilities.
+
+
+Payouts
+Send payments to multiple PayPal accounts at once.
+
+
+Add-on services
+
+Customer disputes
+View, provide evidence, and appeal disputes.
+
+
+Log in with PayPal
+Let customers log in with their PayPal logins.
+
+Manage
+
+Transaction search
+View your PayPal transaction history.
+
+
+PayPal SDKs
+
+JavaScript SDK v6
+Add support for PayPal, card payments & other APMs for your website
+JavaScript SDK v6
+
+
+Mobile SDKs
+Add support for PayPal, credit, or debit card payments to your mobile apps
+Mobile SDKs
+
+Save Changes
+Live Webhooks
+Maximum of 10 webhooks allowed
+Configure webhooks to notify your app when certain events occur. To configure a webhook, define your webhook listener URL and a list of events for which to listen. You can configure up to ten webhooks. Each webhook can subscribe to either specific events or all events. To learn more about webhooks, see webhooks notifications.
+Webhook	Webhook ID	Events Tracked	
+You do not have any events for the selected application
+Add Webhook

@@ -1169,7 +1169,7 @@ export default function Cart() {
                             <PayPalCardForm
                               ref={cardFormRef}
                               amount={remainingAfterWallet}
-                              currency="USD"
+                              currency="SAR"
                               onPaymentSuccess={() => {}}
                               onPaymentError={() => {}}
                             />

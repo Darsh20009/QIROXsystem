@@ -55,6 +55,8 @@ SMTP2GO_API_KEY = "api-5CC7EFCFDA564ABAA365F3C7660DD332"
 MONGODB_URI = "mongodb+srv://Vercel-Admin-QIROXSYSTEM:ASDqwe123@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM"
 GOOGLE_CLIENT_ID = "982269596237-69s9ue2hfnsvah1em2t76sovaj5htkrf.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
+PAYPAL_CLIENT_ID = "AXjzQSCwpCaGAYv6sM7ZNbIUgf4rHZQV_WIDt4cpzYcePKX7cXt6lQbrN_NWIfBkAT8PGZQ-8jN6ld5N"
+PAYPAL_CLIENT_SECRET = "EAMgxuwMDMxoLbmOeazA32q4PmwnqtkVQjkMIT2Ieg2549ihiWAgeBH91bbXQOBnahaCSLVHHeNWsj7a"
 
 [agent]
 expertMode = true

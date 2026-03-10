@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
-import { Loader2, CreditCard, AlertCircle, CheckCircle, Lock } from "lucide-react";
+import { Loader2, CreditCard, AlertCircle, CheckCircle, Lock, Info } from "lucide-react";
+
+const SAR_TO_USD = 3.75;
 
 interface PayPalCardFormProps {
   amount: number;
@@ -52,13 +54,15 @@ const PayPalCardForm = forwardRef<PayPalCardFormHandle, PayPalCardFormProps>(
           if (!clientId) { setStatus("unavailable"); return; }
 
           const scriptId = "paypal-sdk-card-fields";
+          // PayPal JS SDK does not support SAR — always load with USD (server converts SAR→USD)
+          const sdkCurrency = currency === "SAR" ? "USD" : currency;
           const loadScript = (): Promise<void> =>
             new Promise((resolve, reject) => {
               const existing = document.getElementById(scriptId);
               if (existing) { resolve(); return; }
               const s = document.createElement("script");
               s.id = scriptId;
-              s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=card-fields&currency=${currency}`;
+              s.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=card-fields&currency=${sdkCurrency}`;
               s.async = true;
               s.onload = () => resolve();
               s.onerror = () => reject(new Error("فشل تحميل PayPal"));
@@ -161,8 +165,18 @@ const PayPalCardForm = forwardRef<PayPalCardFormHandle, PayPalCardFormProps>(
       );
     }
 
+    const usdEquiv = currency === "SAR" ? (amount / SAR_TO_USD).toFixed(2) : null;
+
     return (
       <div className="space-y-3" data-testid="paypal-card-form">
+        {usdEquiv && (
+          <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2" data-testid="paypal-currency-note">
+            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <p className="text-[11px] text-amber-700 leading-snug">
+              سيتم الخصم بالدولار الأمريكي: <span className="font-black">${usdEquiv}</span> (ما يعادل {amount.toLocaleString()} ر.س بسعر الصرف الثابت)
+            </p>
+          </div>
+        )}
         {status === "loading" && (
           <div className="flex items-center justify-center gap-2 py-4">
             <Loader2 className="w-4 h-4 animate-spin text-black/30" />
