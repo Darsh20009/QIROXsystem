@@ -82,7 +82,7 @@ export async function createPaypalOrder(req: Request, res: Response) {
     await initPayPal();
     if (!ordersController) return res.status(503).json({ error: "PayPal not configured" });
 
-    const { amount, currency, intent } = req.body;
+    const { amount, currency, intent, return_url, cancel_url } = req.body;
 
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       return res.status(400).json({ error: "Invalid amount." });
@@ -102,23 +102,47 @@ export async function createPaypalOrder(req: Request, res: Response) {
       ? (rawAmount / SAR_TO_USD_RATE).toFixed(2)
       : rawAmount.toFixed(2);
 
-    const collect = {
-      body: {
-        intent: intent,
-        purchaseUnits: [
-          {
-            amount: {
-              currencyCode: paypalCurrency,
-              value: paypalAmount,
-            },
+    const orderBody: any = {
+      intent: intent,
+      purchaseUnits: [
+        {
+          amount: {
+            currencyCode: paypalCurrency,
+            value: paypalAmount,
           },
-        ],
-      },
+          description: "QIROX Studio — طلب خدمة",
+        },
+      ],
+    };
+
+    // Add redirect URLs if provided (redirect flow instead of hosted buttons)
+    if (return_url && cancel_url) {
+      orderBody.applicationContext = {
+        brandName: "QIROX Studio",
+        locale: "ar-SA",
+        landingPage: "BILLING",
+        userAction: "PAY_NOW",
+        returnUrl: return_url,
+        cancelUrl: cancel_url,
+      };
+    }
+
+    const collect = {
+      body: orderBody,
       prefer: "return=minimal",
     };
 
     const { body, ...httpResponse } = await ordersController.createOrder(collect);
     const jsonResponse = typeof body === "string" ? JSON.parse(body) : body;
+
+    // Extract the approve URL from links array for redirect flow
+    if (jsonResponse.links && Array.isArray(jsonResponse.links)) {
+      const approveLink = jsonResponse.links.find((l: any) => l.rel === "approve" || l.rel === "payer-action");
+      if (approveLink) {
+        jsonResponse.approveUrl = approveLink.href;
+      }
+    }
+
     res.status(httpResponse.statusCode).json(jsonResponse);
   } catch (error) {
     console.error("Failed to create order:", error);

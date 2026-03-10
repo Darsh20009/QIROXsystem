@@ -217,25 +217,126 @@ export default function Cart() {
     }
   }, [total, walletBalance, useWallet]);
 
+  // Handle PayPal redirect return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isReturn = params.get("paypal_return") === "1";
+    const isCancel = params.get("paypal_cancel") === "1";
+    const paypalToken = params.get("token");
+
+    if (isReturn && paypalToken) {
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+
+      const pending = sessionStorage.getItem("paypal_pending_checkout");
+      sessionStorage.removeItem("paypal_pending_checkout");
+      const pendingData = pending ? JSON.parse(pending) : {};
+
+      const doCapture = async () => {
+        try {
+          // Capture payment
+          const captureRes = await fetch(`/paypal/order/${paypalToken}/capture`, { method: "POST", credentials: "include" });
+          if (!captureRes.ok) {
+            const err = await captureRes.json().catch(() => ({}));
+            throw new Error(err.error || "فشل تأكيد الدفع من PayPal");
+          }
+
+          // Build items from pending data or current cart
+          const cartItems = (pendingData.items || []).length > 0 ? pendingData.items : items.map(i => ({
+            id: (i as any)._id || (i as any).id, type: i.type, name: i.name, nameAr: i.nameAr,
+            price: i.price, qty: i.qty, config: i.config, imageUrl: i.imageUrl,
+          }));
+
+          const planItem2 = cartItems.find((i: any) => i.type === "plan");
+          const serviceItem2 = cartItems.find((i: any) => i.type === "service");
+          const derivedType = planItem2 ? (planItem2.nameAr || planItem2.name) : serviceItem2 ? (serviceItem2.nameAr || serviceItem2.name) : cartItems[0] ? (cartItems[0].nameAr || cartItems[0].name) : "طلب من السلة";
+
+          const pNotes = pendingData.projectNotes || "";
+          const pShipping = pendingData.shipping || {};
+          const pDocs = pendingData.docsFiles || [];
+          const pWalletUsed = parseFloat((pendingData.walletUsed || 0).toFixed(2));
+          const paymentMethod = pWalletUsed > 0 ? "mixed" : "paypal";
+
+          const fullNotes = [
+            pNotes ? `الفكرة: ${pNotes}` : "",
+            pShipping.name ? `الشحن: ${pShipping.name} — ${pShipping.phone} — ${pShipping.city} — ${pShipping.address}` : "",
+            pWalletUsed > 0 ? `دفع بالمحفظة: ${pWalletUsed.toLocaleString()} ر.س` : "",
+          ].filter(Boolean).join(" | ") || `طلب من السلة — ${cartItems.length} عنصر`;
+
+          const orderRes = await apiRequest("POST", "/api/orders", {
+            projectType: derivedType,
+            sector: "general",
+            businessName: (user as any)?.businessName || (user as any)?.fullName || "",
+            phone: pShipping.phone || (user as any)?.phone || "",
+            totalAmount: parseFloat((pendingData.total || total).toFixed(2)),
+            items: cartItems,
+            paymentMethod,
+            notes: fullNotes,
+            files: pDocs.length ? { documents: pDocs.map((f: any) => f.url) } : undefined,
+            shippingAddress: pShipping.name ? pShipping : undefined,
+            walletAmountUsed: pWalletUsed > 0 ? pWalletUsed : undefined,
+          });
+          const orderData = await orderRes.json();
+
+          setSavedItems(items.length > 0 ? items : cartItems);
+          setSavedTotal(pendingData.total || total);
+          setSavedOrderId(orderData.id || orderData._id || "");
+          setSavedWalletUsed(pWalletUsed);
+          setCheckoutDone(true);
+          try {
+            await apiRequest("DELETE", "/api/cart");
+            queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+          } catch (_) {}
+        } catch (e: any) {
+          toast({ title: e.message || "فشل إتمام الطلب بعد PayPal", variant: "destructive" });
+        }
+      };
+
+      doCapture();
+    } else if (isCancel) {
+      window.history.replaceState({}, "", window.location.pathname);
+      toast({ title: "تم إلغاء الدفع عبر PayPal", variant: "destructive" });
+      setPreCheckoutOpen(true);
+      setPreCheckoutStep(3);
+      setPaymentOption("paypal");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const checkoutMutation = useMutation({
     mutationFn: async (walletPin?: string) => {
-      const itemNames = items.map(i => i.nameAr || i.name);
       const walletUsed = parseFloat(effectiveWalletAmount.toFixed(2));
-      const notes = [
+      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 && paymentOption === "card" ? "mixed" : walletUsed > 0 ? "mixed" : paymentOption === "card" ? "paypal_card" : paymentOption === "paypal" ? "paypal" : "bank_transfer";
+
+      const planItem = items.find(i => i.type === "plan");
+      const serviceItem = items.find(i => i.type === "service");
+      const derivedProjectType = planItem ? (planItem.nameAr || planItem.name) : serviceItem ? (serviceItem.nameAr || serviceItem.name) : items[0] ? (items[0].nameAr || items[0].name) : "طلب من السلة";
+
+      const fullNotes = [
         projectNotes ? `الفكرة: ${projectNotes}` : "",
         hasPhysical && shipping.name ? `الشحن: ${shipping.name} — ${shipping.phone} — ${shipping.city} — ${shipping.address}` : "",
         walletUsed > 0 ? `دفع بالمحفظة: ${walletUsed.toLocaleString()} ر.س` : "",
       ].filter(Boolean).join(" | ") || `طلب من السلة — ${items.length} عنصر`;
 
-      const paymentMethod = fullyPaidByWallet ? "wallet" : walletUsed > 0 && paymentOption === "card" ? "mixed" : walletUsed > 0 ? "mixed" : paymentOption === "card" ? "paypal_card" : paymentOption === "paypal" ? "paypal" : "bank_transfer";
-
       const r = await apiRequest("POST", "/api/orders", {
-        projectType: items.find(i => i.type === "service")?.name || "خدمة رقمية",
+        projectType: derivedProjectType,
         sector: "general",
+        businessName: (user as any)?.businessName || (user as any)?.fullName || "",
+        phone: shipping.phone || (user as any)?.phone || "",
         totalAmount: parseFloat(total.toFixed(2)),
-        items: itemNames,
+        items: items.map(i => ({
+          id: i._id || i.id,
+          type: i.type,
+          name: i.name,
+          nameAr: i.nameAr,
+          price: i.price,
+          qty: i.qty,
+          config: i.config,
+          imageUrl: i.imageUrl,
+        })),
         paymentMethod,
-        notes,
+        notes: fullNotes,
         files: docsFiles.length ? { documents: docsFiles.map(f => f.url) } : undefined,
         shippingAddress: hasPhysical && shipping.name ? shipping : undefined,
         walletAmountUsed: walletUsed > 0 ? walletUsed : undefined,
@@ -1213,24 +1314,28 @@ export default function Cart() {
                             </div>
                           </div>
                           <div className="p-4">
-                            {paypalPaid ? (
-                              <div className="flex items-center justify-center gap-2 py-3 text-emerald-600 bg-emerald-50 rounded-xl">
-                                <CheckCircle2 className="w-5 h-5" />
-                                <span className="font-bold text-sm">تمّ الدفع بنجاح — اضغط "تأكيد الطلب"</span>
-                              </div>
-                            ) : (
-                              <PayPalCheckoutButton
-                                amount={remainingAfterWallet}
-                                currency="SAR"
-                                onPaymentSuccess={() => {
-                                  setPaypalPaid(true);
-                                  checkoutMutation.mutate(undefined);
-                                }}
-                                onPaymentError={() => {
-                                  toast({ title: "فشل الدفع عبر PayPal، حاول مجدداً", variant: "destructive" });
-                                }}
-                              />
-                            )}
+                            <PayPalCheckoutButton
+                              amount={remainingAfterWallet}
+                              currency="SAR"
+                              onRedirecting={() => {
+                                toast({ title: "جاري التحويل إلى PayPal..." });
+                              }}
+                              onError={(msg) => {
+                                toast({ title: msg || "فشل الدفع عبر PayPal، حاول مجدداً", variant: "destructive" });
+                              }}
+                              pendingData={{
+                                projectNotes,
+                                docsFiles,
+                                shipping,
+                                useWallet,
+                                walletUsed: effectiveWalletAmount,
+                                total,
+                                items: items.map(i => ({
+                                  id: (i as any)._id || (i as any).id, type: i.type, name: i.name, nameAr: i.nameAr,
+                                  price: i.price, qty: i.qty, config: i.config, imageUrl: i.imageUrl,
+                                })),
+                              }}
+                            />
                           </div>
                         </div>
                       )}
