@@ -219,10 +219,16 @@ export default function Navigation() {
   return (
     <>
       <FloatingBrandPulse />
+      {/* Status bar background — covers the notch/camera area on mobile */}
+      <div
+        className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-950 z-[52] pointer-events-none"
+        style={{ height: "env(safe-area-inset-top, 0px)" }}
+      />
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled ? "py-2" : "py-4"
         }`}
@@ -345,7 +351,10 @@ export default function Navigation() {
             transition={{ duration: 0.3 }}
             className="md:hidden fixed inset-0 z-[60] bg-white dark:bg-gray-950"
           >
-            <div className="flex flex-col h-full pt-20 px-6 overflow-y-auto">
+            <div
+              className="flex flex-col h-full px-6 overflow-y-auto"
+              style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 5rem)" }}
+            >
               <div className="space-y-1 flex-1">
                 {allLinks.map((link, i) => (
                   <motion.div
