@@ -611,33 +611,57 @@ export default function Devices() {
     mutationFn: async ({ product, shipping, notes, selectedBundle }: { product: QiroxProduct; shipping?: typeof emptyShipping | null; notes?: string; selectedBundle?: any }) => {
       const isPhysical = PHYSICAL_CATS.includes(product.category);
       const type = product.category === "domain" ? "domain" : product.category === "email" ? "email" : product.category === "hosting" ? "hosting" : product.category === "gift" ? "gift" : "product";
-      const bundlePrice = selectedBundle ? (selectedBundle.isFree ? 0 : (selectedBundle.customPrice || 0)) : 0;
-      const totalPrice = product.price + bundlePrice;
       const res = await apiRequest("POST", "/api/cart/items", {
         type,
         refId: product.id,
         name: product.name,
         nameAr: product.nameAr,
-        price: totalPrice,
+        price: product.price,
         qty: 1,
         imageUrl: product.images?.[0],
         config: {
           ...product.specs,
           ...(isPhysical && shipping ? { shipping } : {}),
           ...(notes ? { notes } : {}),
-          ...(selectedBundle ? {
-            planBundle: {
-              planNameAr: selectedBundle.planNameAr,
-              planTier: selectedBundle.planTier,
-              planSegment: selectedBundle.planSegment || "",
-              customPrice: bundlePrice,
-              isFree: selectedBundle.isFree,
-              features: selectedBundle.features || [],
-            },
-          } : {}),
         },
       });
-      return res.json();
+      const productItem = await res.json();
+      if (selectedBundle && !selectedBundle.isFree && (selectedBundle.customPrice || 0) > 0) {
+        await apiRequest("POST", "/api/cart/items", {
+          type: "plan",
+          refId: selectedBundle.planId || "",
+          name: selectedBundle.planNameAr || selectedBundle.planTier,
+          nameAr: selectedBundle.planNameAr || selectedBundle.planTier,
+          price: selectedBundle.customPrice || 0,
+          qty: 1,
+          config: {
+            tier: selectedBundle.planTier || "",
+            tierLabel: selectedBundle.planNameAr || selectedBundle.planTier,
+            segment: selectedBundle.planSegment || "",
+            segmentLabel: selectedBundle.planSegment || "",
+            periodLabel: "مع الجهاز",
+            bundledWith: product.nameAr || product.name,
+          },
+        });
+      } else if (selectedBundle && selectedBundle.isFree) {
+        await apiRequest("POST", "/api/cart/items", {
+          type: "plan",
+          refId: selectedBundle.planId || "",
+          name: selectedBundle.planNameAr || selectedBundle.planTier,
+          nameAr: selectedBundle.planNameAr || selectedBundle.planTier,
+          price: 0,
+          qty: 1,
+          config: {
+            tier: selectedBundle.planTier || "",
+            tierLabel: selectedBundle.planNameAr || selectedBundle.planTier,
+            segment: selectedBundle.planSegment || "",
+            segmentLabel: selectedBundle.planSegment || "",
+            periodLabel: "مجاني مع الجهاز",
+            bundledWith: product.nameAr || product.name,
+          },
+        });
+      }
+      return productItem;
     },
     onSuccess: (_, { product }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });

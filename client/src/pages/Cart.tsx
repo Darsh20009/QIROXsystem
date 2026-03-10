@@ -36,10 +36,10 @@ const BANK_FALLBACK = {
 
 /* ─── Type meta ─────────────────────────────────────────────────── */
 const typeIcons: Record<string, any> = {
-  service: Code2, product: Cpu, domain: Globe, email: Mail, hosting: Server, gift: Gift,
+  service: Code2, product: Cpu, domain: Globe, email: Mail, hosting: Server, gift: Gift, plan: Sparkles,
 };
 const typeLabels: Record<string, string> = {
-  service: "خدمة برمجية", product: "منتج", domain: "دومين", email: "بريد أعمال", hosting: "استضافة", gift: "هدية",
+  service: "خدمة برمجية", product: "منتج", domain: "دومين", email: "بريد أعمال", hosting: "استضافة", gift: "هدية", plan: "باقة نظام",
 };
 const typeColors: Record<string, string> = {
   service: "bg-violet-50 text-violet-600 border-violet-200",
@@ -48,6 +48,7 @@ const typeColors: Record<string, string> = {
   email: "bg-amber-50 text-amber-600 border-amber-200",
   hosting: "bg-indigo-50 text-indigo-600 border-indigo-200",
   gift: "bg-pink-50 text-pink-600 border-pink-200",
+  plan: "bg-cyan-50 text-cyan-600 border-cyan-200",
 };
 
 const PHYSICAL_TYPES = ["product", "gift", "device"];
@@ -590,18 +591,33 @@ export default function Cart() {
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm text-black leading-tight">{item.nameAr || item.name}</p>
                         <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 ${colorCls}`}>{typeLabels[item.type] || item.type}</span>
-                        {item.config && Object.keys(item.config).length > 0 && (
+                        {item.type === 'plan' && item.config && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.config.segmentLabel && (
+                              <span className="text-[9px] bg-cyan-50 border border-cyan-100 px-1.5 py-0.5 rounded text-cyan-600 font-medium">{item.config.segmentLabel}</span>
+                            )}
+                            {item.config.periodLabel && (
+                              <span className="text-[9px] bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded text-blue-600 font-medium">{item.config.periodLabel}</span>
+                            )}
+                            {item.config.tierLabel && (
+                              <span className="text-[9px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 font-medium">{item.config.tierLabel}</span>
+                            )}
+                          </div>
+                        )}
+                        {item.type !== 'plan' && item.config && Object.keys(item.config).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {Object.entries(item.config).slice(0, 3).map(([k, v]) => (
-                              <span key={k} className="text-[9px] bg-black/[0.03] border border-black/[0.05] px-1.5 py-0.5 rounded text-black/40 font-mono">
-                                {String(v)}
-                              </span>
+                              typeof v === 'string' || typeof v === 'number' ? (
+                                <span key={k} className="text-[9px] bg-black/[0.03] border border-black/[0.05] px-1.5 py-0.5 rounded text-black/40 font-mono">
+                                  {String(v)}
+                                </span>
+                              ) : null
                             ))}
                           </div>
                         )}
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        {!isService && (
+                        {!isService && item.type !== 'plan' && (
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => item.id && item.qty > 1 && updateQtyMutation.mutate({ itemId: item.id, qty: item.qty - 1 })}

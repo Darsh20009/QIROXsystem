@@ -393,7 +393,7 @@ export interface InsertQiroxProduct {
 // --- Client Cart (MongoDB) ---
 export interface CartItem {
   id?: string;
-  type: 'service' | 'product' | 'domain' | 'email' | 'hosting' | 'gift';
+  type: 'service' | 'product' | 'domain' | 'email' | 'hosting' | 'gift' | 'plan';
   refId?: string;
   name: string;
   nameAr?: string;

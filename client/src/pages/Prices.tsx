@@ -12,9 +12,13 @@ import {
   Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield, Headphones,
   Clock, Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
   Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight, Dumbbell, Store,
-  CheckCircle2, Sparkles
+  CheckCircle2, Sparkles, ShoppingCart
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useUser } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
@@ -224,22 +228,50 @@ export default function Prices() {
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const [selectedPlan, setSelectedPlan] = useState<{ plan: any; price: number; period: BillingPeriod } | null>(null);
   const [, navigate] = useLocation();
+  const { data: user } = useUser();
+  const { toast } = useToast();
 
   function handlePlanSelect(plan: any, price: number, p: BillingPeriod) {
     setSelectedPlan({ plan, price, period: p });
   }
 
-  function handleGoToOrder() {
-    if (!selectedPlan) return;
-    const q = new URLSearchParams({
-      plan: selectedPlan.plan.tier,
-      segment: selectedPlan.plan.segment,
-      period: selectedPlan.period,
-      price: String(selectedPlan.price),
-    });
-    setSelectedPlan(null);
-    navigate(`/order?${q.toString()}`);
-  }
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPlan) return;
+      const periodLabelAr = PERIODS.find(p => p.key === selectedPlan.period)?.labelAr ?? selectedPlan.period;
+      const periodLabelEn = PERIODS.find(p => p.key === selectedPlan.period)?.labelEn ?? selectedPlan.period;
+      const tierLabelAr = TIER_META[selectedPlan.plan.tier]?.labelAr ?? selectedPlan.plan.tier;
+      const segInfo = SEGMENT_LOOKUP[selectedPlan.plan.segment];
+      const r = await apiRequest("POST", "/api/cart/items", {
+        type: "plan",
+        refId: selectedPlan.plan._id || selectedPlan.plan.id || "",
+        name: selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || tierLabelAr,
+        nameAr: selectedPlan.plan.nameAr || tierLabelAr,
+        price: selectedPlan.price,
+        qty: 1,
+        config: {
+          tier: selectedPlan.plan.tier,
+          tierLabel: tierLabelAr,
+          segment: selectedPlan.plan.segment,
+          segmentLabel: segInfo?.labelAr || selectedPlan.plan.segment,
+          period: selectedPlan.period,
+          periodLabel: periodLabelAr,
+          periodLabelEn,
+        },
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      setSelectedPlan(null);
+      toast({ title: "✓ تمت إضافة الباقة للسلة" });
+      navigate("/cart");
+    },
+    onError: () => {
+      toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" });
+      navigate("/login");
+    },
+  });
 
   useEffect(() => {
     if (!segment && segments.length > 0) setSegment(segments[0].key);
@@ -645,9 +677,26 @@ export default function Prices() {
                     )}
                   </div>
                   <div className="flex gap-3">
-                    <Button onClick={handleGoToOrder} className="flex-1 h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2" data-testid="button-confirm-plan">
-                      {lang === "ar" ? "متابعة الطلب" : "Continue to Order"} <ArrowLeft className="w-4 h-4" />
-                    </Button>
+                    {user ? (
+                      <Button
+                        onClick={() => addToCartMutation.mutate()}
+                        disabled={addToCartMutation.isPending}
+                        className="flex-1 h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        data-testid="button-confirm-plan"
+                      >
+                        {addToCartMutation.isPending
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <ShoppingCart className="w-4 h-4" />}
+                        {lang === "ar" ? "أضف للسلة" : "Add to Cart"}
+                      </Button>
+                    ) : (
+                      <Link href="/login" className="flex-1">
+                        <Button className="w-full h-11 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white gap-2" data-testid="button-confirm-plan">
+                          <ShoppingCart className="w-4 h-4" />
+                          {lang === "ar" ? "سجّل دخولك للشراء" : "Login to Purchase"}
+                        </Button>
+                      </Link>
+                    )}
                     <Button variant="outline" onClick={() => setSelectedPlan(null)} className="h-11 px-4 rounded-xl border-slate-200 dark:border-slate-700" data-testid="button-cancel-plan">
                       {lang === "ar" ? "إلغاء" : "Cancel"}
                     </Button>
