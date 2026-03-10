@@ -20,6 +20,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import PlanOrderWizard, { type ProjectBrief } from "@/components/PlanOrderWizard";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
@@ -353,7 +354,7 @@ export default function Prices() {
   }
 
   const addToCartMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (brief: ProjectBrief) => {
       if (!selectedPlan) return;
       const periodLabelAr = PERIODS.find(p => p.key === selectedPlan.period)?.labelAr ?? selectedPlan.period;
       const periodLabelEn = PERIODS.find(p => p.key === selectedPlan.period)?.labelEn ?? selectedPlan.period;
@@ -374,6 +375,7 @@ export default function Prices() {
           period: selectedPlan.period,
           periodLabel: periodLabelAr,
           periodLabelEn,
+          brief,
         },
       });
       return r.json();
@@ -763,185 +765,31 @@ export default function Prices() {
       <Footer />
 
       {/* ══════════════════════════════════════════════════════════
-          PLAN DETAILS DIALOG — مصنع الأنظمة
+          PLAN ORDER WIZARD — مصنع الأنظمة
       ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!selectedPlan} onOpenChange={v => !v && setSelectedPlan(null)}>
-        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border-0 shadow-2xl bg-[#08080f]" dir={dir}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-slate-800/60 shadow-2xl bg-[#08080f]" dir={dir}>
           {selectedPlan && (() => {
             const tierCfg = TIER_CONFIG[selectedPlan.plan.tier] || TIER_CONFIG.lite;
-            const isInf = selectedPlan.plan.tier === "infinite";
-            const isPro = selectedPlan.plan.tier === "pro";
             const segInfo = segments.find(s => s.key === selectedPlan.plan.segment) ?? (SEGMENT_LOOKUP[selectedPlan.plan.segment] ? { key: selectedPlan.plan.segment, ...SEGMENT_LOOKUP[selectedPlan.plan.segment] } : null);
             const periodInfo = PERIODS.find(p => p.key === selectedPlan.period);
-            const periodLabel = lang === "ar" ? periodInfo?.labelAr : periodInfo?.labelEn;
-            const planName = lang === "ar" ? (selectedPlan.plan.nameAr || tierCfg.labelAr) : (selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || tierCfg.labelEn);
-            const planDesc = lang === "ar" ? selectedPlan.plan.descriptionAr : (selectedPlan.plan.descriptionEn || selectedPlan.plan.descriptionAr);
-            const features = (lang === "ar" ? selectedPlan.plan.featuresAr : (selectedPlan.plan.featuresEn || selectedPlan.plan.featuresAr)) ?? [];
-            const TierIcon = tierCfg.icon;
-
-            // Colors based on tier
-            const headerGrad = isInf
-              ? "from-[#0d0c15] via-[#100f1a] to-[#0d0c15]"
-              : isPro
-              ? "from-[#0c1a3a] via-[#0e2048] to-[#0c1a3a]"
-              : "from-[#0f1117] via-[#111318] to-[#0f1117]";
-            const accentColor = isInf ? "#f59e0b" : isPro ? "#60a5fa" : "#94a3b8";
-            const glowClass = isInf ? "bg-amber-500/8" : isPro ? "bg-blue-600/10" : "bg-slate-500/5";
-
+            const periodLabel = (lang === "ar" ? periodInfo?.labelAr : periodInfo?.labelEn) ?? selectedPlan.period;
+            const tierLabel = lang === "ar" ? tierCfg.labelAr : tierCfg.labelEn;
+            const segLabel = segInfo ? (lang === "ar" ? segInfo.labelAr : segInfo.labelEn) : "";
             return (
-              <div className="flex flex-col max-h-[90vh] overflow-y-auto">
-
-                {/* ─ Header ─ */}
-                <div className={`relative bg-gradient-to-br ${headerGrad} px-6 pt-6 pb-7 overflow-hidden`}>
-                  {/* Background decorations */}
-                  <div className="absolute inset-0 text-slate-300/[0.04] pointer-events-none"><GridPattern /></div>
-                  <div className={`absolute inset-0 ${glowClass} pointer-events-none`} />
-                  {isInf && (
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                      {[[20,30],[80,20],[60,70],[10,80],[90,50]].map(([x,y],i) => (
-                        <div key={i} className="absolute w-1 h-1 rounded-full bg-amber-400/25" style={{ left:`${x}%`, top:`${y}%` }} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Close button */}
-                  <button onClick={() => setSelectedPlan(null)}
-                    className="absolute top-4 left-4 rtl:left-auto rtl:right-4 w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center hover:bg-white/10 transition-colors">
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
-
-                  {/* Brand */}
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="w-7 h-7 rounded-lg bg-white/8 flex items-center justify-center">
-                      <QiroxIcon className="w-4 h-4 opacity-80" />
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">QIROX SYSTEMS FACTORY</span>
-                  </div>
-
-                  {/* Plan name + tier */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.18em] mb-1.5" style={{ color: accentColor + "80" }}>
-                        {lang === "ar" ? "النظام المختار" : "SELECTED SYSTEM"}
-                      </p>
-                      <h2 className="text-2xl font-black text-white leading-tight">{planName}</h2>
-                      {planDesc && (
-                        <p className="text-xs text-slate-400 mt-2 leading-relaxed max-w-xs">{planDesc}</p>
-                      )}
-                    </div>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isInf ? "bg-amber-400/10 border border-amber-400/20" : isPro ? "bg-blue-400/10 border border-blue-400/20" : "bg-slate-400/10 border border-slate-400/20"}`}>
-                      <TierIcon className="w-6 h-6" style={{ color: accentColor }} />
-                    </div>
-                  </div>
-
-                  {/* Tags row */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Tier tag */}
-                    <span className="flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1.5 rounded-lg border" style={{ color: accentColor, borderColor: accentColor + "30", backgroundColor: accentColor + "12" }}>
-                      <TierIcon className="w-3 h-3" />
-                      {lang === "ar" ? tierCfg.labelAr : tierCfg.labelEn}
-                    </span>
-                    {/* Segment tag */}
-                    {segInfo && (
-                      <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${segInfo.bg} ${segInfo.color} border-current/20`}>
-                        <segInfo.icon className="w-3 h-3" />
-                        {lang === "ar" ? segInfo.labelAr : segInfo.labelEn}
-                      </span>
-                    )}
-                    {/* Period tag */}
-                    <span className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-700/60 text-slate-400 bg-slate-800/40">
-                      <Calendar className="w-3 h-3" />
-                      {periodLabel}
-                    </span>
-                  </div>
-                </div>
-
-                {/* ─ Price breakdown ─ */}
-                <div className="px-6 py-5 border-b border-slate-800/60 bg-white/[0.015]">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600 mb-1">
-                        {lang === "ar" ? "إجمالي الاشتراك" : "SUBSCRIPTION TOTAL"}
-                      </p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-white">{selectedPlan.price.toLocaleString()}</span>
-                        {lang === "ar" ? <SARIcon size={15} className="opacity-50" /> : <span className="text-slate-500 font-medium">SAR</span>}
-                        <span className="text-xs text-slate-500">/ {periodLabel}</span>
-                      </div>
-                    </div>
-                    {/* System architecture mini visual */}
-                    <div className="flex items-center gap-1.5 opacity-40">
-                      {[Cpu, Code2, Server, LayoutDashboard].map((Ic, i) => (
-                        <div key={i} className="flex items-center gap-1">
-                          <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center">
-                            <Ic className="w-3.5 h-3.5 text-slate-400" />
-                          </div>
-                          {i < 3 && <div className="w-3 h-px bg-slate-700" />}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* ─ Features grid ─ */}
-                <div className="px-6 py-5">
-                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600 mb-4">
-                    {lang === "ar" ? `مكونات النظام — ${features.length} عنصر` : `SYSTEM COMPONENTS — ${features.length} items`}
-                  </p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {features.map((f: string, i: number) => {
-                      const FIcon = featureIcon(f);
-                      return (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: lang === "ar" ? 10 : -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.04, duration: 0.25 }}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-slate-800/60 hover:border-slate-700/60 hover:bg-white/[0.05] transition-all"
-                        >
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInf ? "bg-amber-400/10" : isPro ? "bg-blue-500/10" : "bg-slate-700/40"}`}>
-                            <FIcon className="w-3.5 h-3.5" style={{ color: i === 0 ? accentColor : accentColor + "90" }} />
-                          </div>
-                          <span className="text-xs text-slate-300 leading-snug flex-1">{f}</span>
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 shrink-0" />
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* ─ CTA ─ */}
-                <div className="px-6 pb-6 pt-4 border-t border-slate-800/60">
-                  <div className="flex gap-3">
-                    {user ? (
-                      <Button
-                        onClick={() => addToCartMutation.mutate()}
-                        disabled={addToCartMutation.isPending}
-                        className="flex-1 h-12 rounded-xl font-black gap-2 text-sm shadow-lg"
-                        style={{ backgroundColor: accentColor === "#94a3b8" ? "#1e293b" : accentColor, color: isInf ? "#0f0f0f" : "white" }}
-                        data-testid="button-confirm-plan"
-                      >
-                        {addToCartMutation.isPending
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <ShoppingCart className="w-4 h-4" />}
-                        {lang === "ar" ? "أضف للسلة وأكمل الطلب" : "Add to Cart & Continue"}
-                      </Button>
-                    ) : (
-                      <Link href="/login" className="flex-1">
-                        <Button className="w-full h-12 rounded-xl font-black gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-confirm-plan">
-                          <ShoppingCart className="w-4 h-4" />
-                          {lang === "ar" ? "سجّل دخولك للشراء" : "Login to Purchase"}
-                        </Button>
-                      </Link>
-                    )}
-                    <Button variant="ghost" onClick={() => setSelectedPlan(null)}
-                      className="h-12 px-4 rounded-xl border border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 hover:border-slate-700"
-                      data-testid="button-cancel-plan">
-                      {lang === "ar" ? "إلغاء" : "Cancel"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <PlanOrderWizard
+                plan={selectedPlan.plan}
+                price={selectedPlan.price}
+                periodLabel={periodLabel}
+                tierLabel={tierLabel}
+                segLabel={segLabel}
+                tierCfg={tierCfg}
+                lang={lang}
+                user={user}
+                isPending={addToCartMutation.isPending}
+                onClose={() => setSelectedPlan(null)}
+                onConfirm={(brief) => addToCartMutation.mutate(brief)}
+              />
             );
           })()}
         </DialogContent>
