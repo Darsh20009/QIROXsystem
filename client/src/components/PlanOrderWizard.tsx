@@ -53,22 +53,22 @@ interface WizardProps {
 
 /* ─── Extra add-on modules ──────────────────────────── */
 const EXTRA_MODULES = [
-  { id: "mobile_app",    icon: Smartphone,     labelAr: "تطبيق جوال",             labelEn: "Mobile App" },
-  { id: "ai",            icon: BotMessageSquare, labelAr: "ذكاء اصطناعي",          labelEn: "AI Features" },
-  { id: "multi_lang",    icon: Languages,      labelAr: "تعدد اللغات",            labelEn: "Multi-language" },
-  { id: "seo",           icon: TrendingUp,     labelAr: "SEO وتحسين البحث",        labelEn: "SEO Boost" },
-  { id: "loyalty",       icon: Star,           labelAr: "نقاط الولاء",            labelEn: "Loyalty Points" },
-  { id: "whatsapp",      icon: Send,           labelAr: "تكامل واتساب",           labelEn: "WhatsApp" },
-  { id: "chat",          icon: MessageSquare,  labelAr: "دردشة مدمجة",            labelEn: "Live Chat" },
-  { id: "crm",           icon: Users,          labelAr: "إدارة العلاقات (CRM)",   labelEn: "CRM System" },
-  { id: "accounting",    icon: Database,       labelAr: "محاسبة وفواتير",         labelEn: "Accounting" },
-  { id: "qr_menu",       icon: Hash,           labelAr: "قائمة QR",              labelEn: "QR Menu" },
-  { id: "delivery",      icon: Truck,          labelAr: "نظام التوصيل",           labelEn: "Delivery System" },
-  { id: "blog",          icon: BookOpen,       labelAr: "مدونة / محتوى",         labelEn: "Blog / CMS" },
-  { id: "api",           icon: Code2,          labelAr: "API تكامل خارجي",        labelEn: "External API" },
-  { id: "advanced_reports", icon: BarChart3,   labelAr: "تقارير متقدمة",          labelEn: "Advanced Reports" },
-  { id: "security",      icon: Lock,           labelAr: "حماية متقدمة",           labelEn: "Advanced Security" },
-  { id: "brand_identity",icon: Palette,        labelAr: "هوية بصرية",            labelEn: "Brand Identity" },
+  { id: "mobile_app",       icon: Smartphone,       labelAr: "تطبيق جوال",           labelEn: "Mobile App",         price: 1000 },
+  { id: "ai",               icon: BotMessageSquare, labelAr: "ذكاء اصطناعي",         labelEn: "AI Features",        price: 800  },
+  { id: "multi_lang",       icon: Languages,        labelAr: "تعدد اللغات",          labelEn: "Multi-language",     price: 300  },
+  { id: "seo",              icon: TrendingUp,       labelAr: "SEO وتحسين البحث",      labelEn: "SEO Boost",          price: 500  },
+  { id: "loyalty",          icon: Star,             labelAr: "نقاط الولاء",          labelEn: "Loyalty Points",     price: 350  },
+  { id: "whatsapp",         icon: Send,             labelAr: "تكامل واتساب",         labelEn: "WhatsApp",           price: 250  },
+  { id: "chat",             icon: MessageSquare,    labelAr: "دردشة مدمجة",          labelEn: "Live Chat",          price: 300  },
+  { id: "crm",              icon: Users,            labelAr: "إدارة العلاقات (CRM)", labelEn: "CRM System",         price: 600  },
+  { id: "accounting",       icon: Database,         labelAr: "محاسبة وفواتير",       labelEn: "Accounting",         price: 500  },
+  { id: "qr_menu",          icon: Hash,             labelAr: "قائمة QR",             labelEn: "QR Menu",            price: 150  },
+  { id: "delivery",         icon: Truck,            labelAr: "نظام التوصيل",         labelEn: "Delivery System",    price: 400  },
+  { id: "blog",             icon: BookOpen,         labelAr: "مدونة / محتوى",        labelEn: "Blog / CMS",         price: 250  },
+  { id: "api",              icon: Code2,            labelAr: "API تكامل خارجي",      labelEn: "External API",       price: 700  },
+  { id: "advanced_reports", icon: BarChart3,        labelAr: "تقارير متقدمة",        labelEn: "Advanced Reports",   price: 350  },
+  { id: "security",         icon: Lock,             labelAr: "حماية متقدمة",         labelEn: "Advanced Security",  price: 400  },
+  { id: "brand_identity",   icon: Palette,          labelAr: "هوية بصرية",           labelEn: "Brand Identity",     price: 800  },
 ];
 
 const STEPS = ["project", "features", "infra", "review"] as const;
@@ -355,30 +355,55 @@ export default function PlanOrderWizard({
                         <motion.button key={mod.id} type="button" onClick={() => toggleExtra(mod.id)}
                           whileTap={{ scale: 0.96 }}
                           data-testid={`module-${mod.id}`}
-                          className={`relative flex items-center gap-2.5 p-3 rounded-xl border text-start transition-all duration-150 ${
+                          className={`relative flex flex-col gap-2 p-3 rounded-xl border text-start transition-all duration-150 ${
                             selected
                               ? isInf ? "bg-amber-400/10 border-amber-400/40" : isPro ? "bg-blue-500/15 border-blue-500/40" : "bg-slate-700/50 border-slate-500/50"
                               : "bg-white/[0.02] border-slate-800/80 hover:border-slate-700/80 hover:bg-white/[0.04]"
                           }`}>
-                          <ModIcon className="w-4 h-4 shrink-0" style={selected ? { color: accentHex } : { color: "#475569" }} />
-                          <span className={`text-xs font-bold leading-snug ${selected ? "text-white" : "text-slate-500"}`}>
+                          <div className="flex items-center justify-between w-full">
+                            <ModIcon className="w-4 h-4 shrink-0" style={selected ? { color: accentHex } : { color: "#475569" }} />
+                            {selected && (
+                              <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                                style={{ background: accentHex + "25" }}>
+                                <Check className="w-2.5 h-2.5" style={{ color: accentHex }} />
+                              </div>
+                            )}
+                          </div>
+                          <span className={`text-[11px] font-bold leading-snug ${selected ? "text-white" : "text-slate-400"}`}>
                             {lang === "ar" ? mod.labelAr : mod.labelEn}
                           </span>
-                          {selected && (
-                            <div className="mr-auto rtl:mr-0 rtl:ml-auto w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                              style={{ background: accentHex + "25" }}>
-                              <Check className="w-2.5 h-2.5" style={{ color: accentHex }} />
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs font-black ${selected ? "text-white" : "text-slate-400"}`}>
+                              {mod.price.toLocaleString()}
+                            </span>
+                            <span className={`text-[9px] font-bold ${selected ? "text-slate-300" : "text-slate-600"}`}>
+                              {lang === "ar" ? "ر.س+" : "SAR+"}
+                            </span>
+                          </div>
                         </motion.button>
                       );
                     })}
                   </div>
-                  {brief.extraModules.length > 0 && (
-                    <p className="text-center text-[10px] font-bold mt-3" style={{ color: accentHex }}>
-                      {lang === "ar" ? `${brief.extraModules.length} إضافة محددة` : `${brief.extraModules.length} add-on(s) selected`}
-                    </p>
-                  )}
+
+                  {/* Addons total */}
+                  {brief.extraModules.length > 0 && (() => {
+                    const addonsTotal = brief.extraModules.reduce((sum, id) => {
+                      const mod = EXTRA_MODULES.find(m => m.id === id);
+                      return sum + (mod?.price ?? 0);
+                    }, 0);
+                    return (
+                      <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-xl border border-dashed"
+                        style={{ borderColor: accentHex + "40", background: accentHex + "08" }}>
+                        <span className="text-xs font-bold text-slate-400">
+                          {lang === "ar" ? `${brief.extraModules.length} إضافة محددة — الإجمالي التقريبي:` : `${brief.extraModules.length} add-on(s) — estimated total:`}
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base font-black" style={{ color: accentHex }}>{addonsTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-bold text-slate-500">{lang === "ar" ? "ر.س+" : "SAR+"}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -546,23 +571,44 @@ export default function PlanOrderWizard({
                 )}
 
                 {/* Extra modules */}
-                {brief.extraModules.length > 0 && (
-                  <div className="p-3.5 rounded-xl bg-white/[0.02] border border-slate-800/60">
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 mb-2.5">{lang === "ar" ? `إضافات إضافية — ${brief.extraModules.length}` : `ADD-ONS — ${brief.extraModules.length}`}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {brief.extraModules.map(id => {
-                        const mod = EXTRA_MODULES.find(m => m.id === id);
-                        if (!mod) return null;
-                        const MI = mod.icon;
-                        return (
-                          <span key={id} className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-slate-700/60 text-slate-300">
-                            <MI className="w-3 h-3 text-slate-500" />{lang === "ar" ? mod.labelAr : mod.labelEn}
-                          </span>
-                        );
-                      })}
+                {brief.extraModules.length > 0 && (() => {
+                  const addonsTotal = brief.extraModules.reduce((sum, id) => {
+                    const mod = EXTRA_MODULES.find(m => m.id === id);
+                    return sum + (mod?.price ?? 0);
+                  }, 0);
+                  return (
+                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-slate-800/60">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+                          {lang === "ar" ? `إضافات إضافية — ${brief.extraModules.length}` : `ADD-ONS — ${brief.extraModules.length}`}
+                        </p>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xs font-black" style={{ color: accentHex }}>{addonsTotal.toLocaleString()}</span>
+                          <span className="text-[9px] text-slate-500">{lang === "ar" ? "ر.س+" : "SAR+"}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        {brief.extraModules.map(id => {
+                          const mod = EXTRA_MODULES.find(m => m.id === id);
+                          if (!mod) return null;
+                          const MI = mod.icon;
+                          return (
+                            <div key={id} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-slate-800/60">
+                              <div className="flex items-center gap-2">
+                                <MI className="w-3 h-3 text-slate-500" />
+                                <span className="text-[10px] font-bold text-slate-300">{lang === "ar" ? mod.labelAr : mod.labelEn}</span>
+                              </div>
+                              <div className="flex items-baseline gap-0.5">
+                                <span className="text-[10px] font-black text-slate-300">{mod.price.toLocaleString()}</span>
+                                <span className="text-[8px] text-slate-600">{lang === "ar" ? "ر.س" : "SAR"}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Infrastructure */}
                 <div className="p-3.5 rounded-xl bg-white/[0.02] border border-slate-800/60">
