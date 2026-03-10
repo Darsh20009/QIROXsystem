@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { useState, useRef, useEffect } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -379,7 +380,7 @@ export default function InvestorPortal() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">المبلغ (ر.س)</label>
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1 flex items-center gap-1">المبلغ (<SARIcon size={9} className="opacity-60" />)</label>
                 <Input type="number" min={1} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="text-xl font-bold h-12" data-testid="input-amount" />
               </div>
               <div>

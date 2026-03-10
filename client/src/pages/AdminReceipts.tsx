@@ -154,7 +154,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
             <SelectContent>
               <SelectItem value="none">بدون فاتورة</SelectItem>
               {(invoices || []).map((inv: Invoice) => (
-                <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — {inv.totalAmount?.toLocaleString()} ر.س</SelectItem>
+                <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — {inv.totalAmount?.toLocaleString()} <SARIcon size={9} className="opacity-60 inline" /></SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -162,7 +162,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">المبلغ المستلم (ر.س) *</Label>
+        <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">المبلغ المستلم (<SARIcon size={9} className="opacity-60" />) *</Label>
         <Input
           type="number"
           placeholder="1000"

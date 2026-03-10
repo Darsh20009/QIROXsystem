@@ -695,15 +695,15 @@ export default function AdminQMeet() {
               <label className="label-xs">الخطة</label>
               <div className="grid grid-cols-2 gap-3 mt-1.5">
                 {[
-                  { key: "basic", label: "أساسي", price: "99 ر.س/شهر", limit: "100 طلب/شهر", color: "border-blue-300 bg-blue-50 dark:bg-blue-900/20" },
-                  { key: "pro", label: "برو", price: "299 ر.س/شهر", limit: "1000 طلب/شهر", color: "border-purple-300 bg-purple-50 dark:bg-purple-900/20" },
+                  { key: "basic", label: "أساسي", priceNum: "99", period: "شهر", limit: "100 طلب/شهر", color: "border-blue-300 bg-blue-50 dark:bg-blue-900/20" },
+                  { key: "pro", label: "برو", priceNum: "299", period: "شهر", limit: "1000 طلب/شهر", color: "border-purple-300 bg-purple-50 dark:bg-purple-900/20" },
                 ].map(p => (
                   <button key={p.key} type="button"
                     onClick={() => setNewKeyForm(f => ({ ...f, plan: p.key }))}
                     className={`p-4 rounded-2xl border-2 text-right transition-all ${newKeyForm.plan === p.key ? p.color + " shadow-sm" : "border-black/10 dark:border-white/10 hover:border-black/20"}`}
                     data-testid={`option-plan-${p.key}`}>
                     <p className="font-bold text-sm text-black dark:text-white">{p.label}</p>
-                    <p className="text-xs text-black/50 dark:text-white/50 mt-0.5">{p.price}</p>
+                    <p className="text-xs text-black/50 dark:text-white/50 mt-0.5 flex items-center gap-0.5">{p.priceNum} <SARIcon size={9} className="opacity-60" />/{p.period}</p>
                     <p className="text-[10px] text-black/35 dark:text-white/35">{p.limit}</p>
                   </button>
                 ))}

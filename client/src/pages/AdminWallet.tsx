@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowUpRight, ArrowDownLeft,
@@ -236,7 +237,7 @@ export default function AdminWallet() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <p className="text-sm font-bold text-black dark:text-white">{fmt(req.amount)} ر.س</p>
+                              <p className="text-sm font-bold text-black dark:text-white flex items-center gap-1">{fmt(req.amount)} <SARIcon size={11} className="opacity-70" /></p>
                               <Badge className={`text-[10px] border-0 flex-shrink-0 ${req.status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : req.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                 {req.status === 'approved' ? 'مُعتمد' : req.status === 'rejected' ? 'مرفوض' : 'معلّق'}
                               </Badge>
@@ -296,14 +297,14 @@ export default function AdminWallet() {
                       <TrendingDown className="w-4 h-4 text-rose-500" />
                     </div>
                     <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">إجمالي المستحق</p>
-                    <p className="text-lg font-black text-black dark:text-white">{fmt(walletData?.totalDebit || 0)} <span className="text-xs font-medium text-black/40">ر.س</span></p>
+                    <p className="text-lg font-black text-black dark:text-white flex items-center justify-center gap-1">{fmt(walletData?.totalDebit || 0)} <SARIcon size={12} className="opacity-40" /></p>
                   </div>
                   <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-4 text-center">
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-2">
                       <TrendingUp className="w-4 h-4 text-emerald-500" />
                     </div>
                     <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">إجمالي المدفوع</p>
-                    <p className="text-lg font-black text-black dark:text-white">{fmt(walletData?.totalCredit || 0)} <span className="text-xs font-medium text-black/40">ر.س</span></p>
+                    <p className="text-lg font-black text-black dark:text-white flex items-center justify-center gap-1">{fmt(walletData?.totalCredit || 0)} <SARIcon size={12} className="opacity-40" /></p>
                   </div>
                   <div className={`rounded-2xl border p-4 text-center ${(walletData?.outstanding || 0) > 0 ? "bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30" : "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30"}`}>
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2 ${(walletData?.outstanding || 0) > 0 ? "bg-amber-100 dark:bg-amber-900/30" : "bg-emerald-100 dark:bg-emerald-900/30"}`}>
@@ -311,7 +312,7 @@ export default function AdminWallet() {
                     </div>
                     <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">الرصيد المتبقي</p>
                     <p className={`text-lg font-black ${(walletData?.outstanding || 0) > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                      {fmt(Math.abs(walletData?.outstanding || 0))} <span className="text-xs font-medium opacity-60">ر.س</span>
+                      <span className="flex items-center justify-center gap-1">{fmt(Math.abs(walletData?.outstanding || 0))} <SARIcon size={12} className="opacity-60" /></span>
                     </p>
                     {(walletData?.outstanding || 0) === 0 && <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">مسدد بالكامل</p>}
                     {(walletData?.outstanding || 0) < 0 && <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">رصيد دائن</p>}
@@ -355,7 +356,7 @@ export default function AdminWallet() {
                               <p className={`text-base font-black ${tx.type === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {tx.type === 'credit' ? '+' : '-'}{fmt(tx.amount)}
                               </p>
-                              <p className="text-[10px] text-black/30 dark:text-white/30 text-left">ر.س</p>
+                              <SARIcon size={9} className="opacity-30 mt-0.5" />
                             </div>
                             <Badge className={`text-[10px] px-2 py-0.5 border-0 flex-shrink-0 ${tx.type === 'credit' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'}`}>
                               {tx.type === 'credit' ? 'دفعة' : 'مستحق'}
@@ -408,7 +409,7 @@ export default function AdminWallet() {
               : "⚠️ سيُسجَّل مبلغ مستحق على العميل (فاتورة/التزام مالي)"}
           </p>
           <div>
-            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">المبلغ (ر.س) <span className="text-red-400">*</span></Label>
+            <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-red-400">*</span></Label>
             <Input type="number" min="0" step="0.01" placeholder="0.00" value={form.amount}
               onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-tx-amount"
               className={form.type === "credit" ? "border-emerald-300 focus:border-emerald-500" : "border-rose-300 focus:border-rose-500"} dir="ltr" />

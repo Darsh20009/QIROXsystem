@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Gift, Copy, Check, Loader2, Users, Star, Info } from "lucide-react";
@@ -118,7 +119,7 @@ export default function ClientReferral() {
                 <p className="text-[10px] text-black/30 dark:text-white/30">{new Date(r.createdAt).toLocaleDateString("ar-SA")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{r.creditAmount} ر.س</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">{r.creditAmount} <SARIcon size={9} className="opacity-70" /></span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusColor[r.status] || ""}`}>{statusLabel[r.status] || r.status}</span>
               </div>
             </div>

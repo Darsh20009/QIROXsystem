@@ -176,7 +176,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
             {(orders || []).map((o: Order) => (
               <SelectItem key={o.id} value={o.id}>
                 {o.projectType || o.sector || o.id.slice(-6)}
-                {o.totalAmount ? ` — ${Number(o.totalAmount).toLocaleString()} ر.س` : ""}
+                {o.totalAmount ? <> — {Number(o.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-60 inline" /></> : ""}
               </SelectItem>
             ))}
           </SelectContent>
@@ -198,7 +198,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">المبلغ (ر.س) {form.orderId ? "— مُعبّأ من الطلب" : ""}</Label>
+          <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">المبلغ (<SARIcon size={9} className="opacity-60" />) {form.orderId ? "— مُعبّأ من الطلب" : ""}</Label>
           <Input
             type="number"
             placeholder="1000"

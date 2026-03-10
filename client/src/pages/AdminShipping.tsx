@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -262,7 +263,7 @@ export default function AdminShipping() {
                       <MapPin className="w-3 h-3 text-blue-500" />
                       <span className="text-[10px] text-black/40 dark:text-white/40">الرياض</span>
                     </div>
-                    <p className="text-base font-black text-black dark:text-white">{c.basePrice} <span className="text-[10px] font-normal text-black/40 dark:text-white/40">ر.س</span></p>
+                    <p className="text-base font-black text-black dark:text-white flex items-center gap-1">{c.basePrice} <SARIcon size={11} className="opacity-40" /></p>
                     <p className="text-[9px] text-black/30 dark:text-white/30 flex items-center justify-center gap-0.5 mt-0.5">
                       <Clock className="w-2.5 h-2.5" />{c.estimatedDays}
                     </p>
@@ -272,7 +273,7 @@ export default function AdminShipping() {
                       <Globe className="w-3 h-3 text-amber-500" />
                       <span className="text-[10px] text-amber-700 dark:text-amber-400">خارج الرياض</span>
                     </div>
-                    <p className="text-base font-black text-amber-700 dark:text-amber-400">{c.outsideCityPrice} <span className="text-[10px] font-normal text-amber-500">ر.س</span></p>
+                    <p className="text-base font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">{c.outsideCityPrice} <SARIcon size={11} className="opacity-60" /></p>
                     <p className="text-[9px] text-amber-600/60 dark:text-amber-500/60 flex items-center justify-center gap-0.5 mt-0.5">
                       <Clock className="w-2.5 h-2.5" />{c.outsideCityDays}
                     </p>
@@ -367,13 +368,13 @@ export default function AdminShipping() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1 block">
-                    <MapPin className="w-3 h-3" /> داخل الرياض (ر.س)
+                    <MapPin className="w-3 h-3" /> داخل الرياض (<SARIcon size={10} className="opacity-60" />)
                   </label>
                   <Input type="number" value={form.basePrice} onChange={e => setForm(f => ({ ...f, basePrice: e.target.value }))} placeholder="25" data-testid="input-base-price" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1 block">
-                    <Globe className="w-3 h-3" /> خارج الرياض (ر.س)
+                    <Globe className="w-3 h-3" /> خارج الرياض (<SARIcon size={10} className="opacity-60" />)
                   </label>
                   <Input type="number" value={form.outsideCityPrice} onChange={e => setForm(f => ({ ...f, outsideCityPrice: e.target.value }))} placeholder="40" data-testid="input-outside-price" />
                 </div>

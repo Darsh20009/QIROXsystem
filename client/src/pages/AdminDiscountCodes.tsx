@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -195,12 +196,12 @@ export default function AdminDiscountCodes() {
                 <div className="flex items-center gap-3 text-xs text-black/50 dark:text-white/50 flex-wrap">
                   <span className="flex items-center gap-1 font-semibold text-black dark:text-white">
                     {code.type === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
-                    {code.value}{code.type === "percentage" ? "%" : ` ${code.currency || "SAR"}`} خصم
+                    {code.value}{code.type === "percentage" ? "%" : <> <SARIcon size={10} className="opacity-60 mx-0.5" /></>} خصم
                   </span>
                   {code.descriptionAr && <span>{code.descriptionAr}</span>}
                   {code.usageLimit && <span>الاستخدام: {code.usageCount || 0}/{code.usageLimit}</span>}
                   {code.expiresAt && <span>ينتهي: {new Date(code.expiresAt).toLocaleDateString('ar-SA')}</span>}
-                  {code.minOrderAmount > 0 && <span>الحد الأدنى: {code.minOrderAmount} SAR</span>}
+                  {code.minOrderAmount > 0 && <span className="flex items-center gap-0.5">الحد الأدنى: {code.minOrderAmount} <SARIcon size={9} className="opacity-50" /></span>}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -256,7 +257,7 @@ export default function AdminDiscountCodes() {
                 <Input type="number" min="0" value={form.minOrderAmount} onChange={e => setForm(f => ({ ...f, minOrderAmount: e.target.value }))} data-testid="input-min-order" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">أقصى خصم (SAR)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1">أقصى خصم (<SARIcon size={10} className="opacity-60" />)</label>
                 <Input type="number" min="0" value={form.maxDiscountAmount} onChange={e => setForm(f => ({ ...f, maxDiscountAmount: e.target.value }))} placeholder="اختياري" data-testid="input-max-discount" />
               </div>
             </div>

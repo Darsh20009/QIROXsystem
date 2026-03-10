@@ -428,7 +428,7 @@ export default function Prices() {
                 })}
               </div>
               {[
-                { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => `${getPeriodPrice(p,period).toLocaleString()} ${lang === "ar" ? "ر.س" : "SAR"}`) },
+                { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
                 { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
                 { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
                 { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },

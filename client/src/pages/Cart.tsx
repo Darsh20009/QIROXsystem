@@ -1,4 +1,5 @@
 // @ts-nocheck
+import SARIcon from "@/components/SARIcon";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -340,7 +341,7 @@ export default function Cart() {
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
           <p className="text-white/40 text-xs uppercase tracking-wider mb-1 relative z-10">إجمالي الطلب</p>
           <p className="text-white font-black text-4xl relative z-10">
-            {fmt(savedTotal)} <span className="text-xl font-normal text-white/50">ر.س</span>
+            {fmt(savedTotal)} <SARIcon size={18} className="opacity-50" />
           </p>
           <p className="text-white/30 text-xs mt-1 relative z-10">شامل ضريبة القيمة المضافة 15%</p>
         </motion.div>
@@ -356,8 +357,8 @@ export default function Cart() {
               {savedItems.map((item, i) => (
                 <div key={i} className="px-5 py-3 flex justify-between items-center">
                   <span className="text-sm text-black/60 truncate max-w-[60%]">{item.nameAr || item.name}</span>
-                  <span className="font-bold text-sm text-black flex-shrink-0">
-                    {item.price === 0 ? "مجاني" : `${(item.price * item.qty).toLocaleString()} ر.س`}
+                  <span className="font-bold text-sm text-black flex-shrink-0 flex items-center gap-1">
+                    {item.price === 0 ? "مجاني" : <>{(item.price * item.qty).toLocaleString()} <SARIcon size={10} className="opacity-60" /></>}
                   </span>
                 </div>
               ))}
@@ -376,7 +377,7 @@ export default function Cart() {
               <div>
                 <p className="font-black text-emerald-800 text-sm">تم الدفع من المحفظة الإلكترونية</p>
                 <p className="text-emerald-600 text-xs mt-0.5">
-                  مبلغ <span className="font-black">{savedWalletUsed.toLocaleString()} ر.س</span> تم خصمه من رصيدك
+                  مبلغ <span className="font-black inline-flex items-center gap-0.5">{savedWalletUsed.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span> تم خصمه من رصيدك
                   {savedWalletUsed >= savedTotal - 0.01 ? " — تم سداد الطلب بالكامل ✓" : ""}
                 </p>
               </div>
@@ -402,7 +403,7 @@ export default function Cart() {
                 {savedWalletUsed > 0 && (
                   <div className="bg-white/15 rounded-xl px-3 py-1.5 text-right">
                     <p className="text-white/60 text-[10px]">المتبقي للتحويل</p>
-                    <p className="text-white font-black text-sm">{(savedTotal - savedWalletUsed).toLocaleString()} ر.س</p>
+                    <p className="text-white font-black text-sm flex items-center gap-1">{(savedTotal - savedWalletUsed).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
                   </div>
                 )}
               </div>
@@ -614,8 +615,8 @@ export default function Cart() {
                           </div>
                         )}
                         <div className="text-right min-w-[80px]">
-                          <p className="font-black text-sm text-black">
-                            {item.price === 0 ? "مجاني" : `${(item.price * item.qty).toLocaleString()} ر.س`}
+                          <p className="font-black text-sm text-black flex items-center gap-1 justify-end">
+                            {item.price === 0 ? "مجاني" : <>{(item.price * item.qty).toLocaleString()} <SARIcon size={10} className="opacity-60" /></>}
                           </p>
                           {item.price > 0 && item.qty > 1 && (
                             <p className="text-[10px] text-black/35">{item.price.toLocaleString()} × {item.qty}</p>
@@ -646,8 +647,8 @@ export default function Cart() {
                 {[
                   { key: 'db',     icon: Database, label: "MongoDB Atlas",  sub: "من $0/شهر",     color: "text-green-600 bg-green-50" },
                   { key: 'aws',    icon: Cloud,    label: "Amazon EC2",     sub: "من $8/شهر",     color: "text-orange-500 bg-orange-50" },
-                  { key: 'domain', icon: Globe,    label: "تسجيل دومين",   sub: "من 45 ر.س/سنة", color: "text-blue-600 bg-blue-50" },
-                  { key: 'email',  icon: Mail,     label: "بريد أعمال",    sub: "من 35 ر.س/شهر", color: "text-violet-600 bg-violet-50" },
+                  { key: 'domain', icon: Globe,    label: "تسجيل دومين",   sub: "من 45/سنة",     sarSub: true, color: "text-blue-600 bg-blue-50" },
+                  { key: 'email',  icon: Mail,     label: "بريد أعمال",    sub: "من 35/شهر",     sarSub: true, color: "text-violet-600 bg-violet-50" },
                 ].map(a => {
                   const Icon = a.icon;
                   return (
@@ -659,7 +660,7 @@ export default function Cart() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-black">{a.label}</p>
-                        <p className="text-[10px] text-black/40 mt-0.5">{a.sub}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5 flex items-center gap-0.5">{a.sub}{a.sarSub && <SARIcon size={7} className="opacity-50" />}</p>
                       </div>
                       <Plus className="w-3.5 h-3.5 text-black/20 mr-auto flex-shrink-0" />
                     </button>
@@ -721,7 +722,7 @@ export default function Cart() {
                 <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl" />
                 <div className="relative z-10">
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">ملخص الطلب</p>
-                  <p className="text-3xl font-black text-white">{fmt(total)} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+                  <p className="text-3xl font-black text-white flex items-center gap-1">{fmt(total)} <SARIcon size={18} className="opacity-40" /></p>
                   <p className="text-[10px] text-white/25 mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
                 </div>
               </div>
@@ -731,8 +732,8 @@ export default function Cart() {
                   {items.map((item, i) => (
                     <div key={i} className="flex justify-between text-xs">
                       <span className="text-black/50 truncate max-w-[160px]">{item.nameAr || item.name}</span>
-                      <span className="font-bold text-black flex-shrink-0 mr-2">
-                        {item.price === 0 ? "مجاني" : `${(item.price * item.qty).toLocaleString()} ر.س`}
+                      <span className="font-bold text-black flex-shrink-0 mr-2 flex items-center gap-1">
+                        {item.price === 0 ? "مجاني" : <>{(item.price * item.qty).toLocaleString()} <SARIcon size={9} className="opacity-60" /></>}
                       </span>
                     </div>
                   ))}
@@ -743,22 +744,22 @@ export default function Cart() {
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between text-black/40">
                     <span>المجموع الجزئي</span>
-                    <span>{subtotal.toLocaleString()} ر.س</span>
+                    <span className="flex items-center gap-1">{subtotal.toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600 font-medium">
                       <span>خصم الكوبون</span>
-                      <span>- {discount.toLocaleString()} ر.س</span>
+                      <span className="flex items-center gap-1">- {discount.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span>
                     </div>
                   )}
                   <div className="flex justify-between text-black/40">
                     <span>ضريبة القيمة المضافة (15%)</span>
-                    <span>{fmt(vat)} ر.س</span>
+                    <span className="flex items-center gap-1">{fmt(vat)} <SARIcon size={9} className="opacity-50" /></span>
                   </div>
                   <div className="h-px bg-black/[0.05]" />
                   <div className="flex justify-between font-black text-black text-sm pt-0.5">
                     <span>الإجمالي</span>
-                    <span>{fmt(total)} ر.س</span>
+                    <span className="flex items-center gap-1">{fmt(total)} <SARIcon size={10} className="opacity-70" /></span>
                   </div>
                 </div>
 
@@ -779,7 +780,7 @@ export default function Cart() {
                 ) : (
                   <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl border border-green-200">
                     <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                    كوبون «{cart.couponCode}» مطبّق — خصم {discount.toLocaleString()} ر.س
+                    كوبون «{cart.couponCode}» مطبّق — خصم {discount.toLocaleString()} <SARIcon size={9} className="opacity-70 inline" />
                   </div>
                 )}
 
@@ -815,7 +816,7 @@ export default function Cart() {
           <div className="bg-gradient-to-l from-gray-900 to-black text-white rounded-2xl p-3 flex items-center gap-3 shadow-2xl shadow-black/40 pointer-events-auto border border-white/10">
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-white/40 uppercase tracking-wider">الإجمالي</p>
-              <p className="text-lg font-black leading-tight">{fmt(total)} <span className="text-xs font-normal text-white/40">ر.س</span></p>
+              <p className="text-lg font-black leading-tight flex items-center gap-1">{fmt(total)} <SARIcon size={11} className="opacity-40" /></p>
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
@@ -997,18 +998,18 @@ export default function Cart() {
                   {/* Total summary */}
                   <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-4 text-white">
                     <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">إجمالي الطلب</p>
-                    <p className="text-2xl font-black">{fmt(total)} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+                    <p className="text-2xl font-black flex items-center gap-1">{fmt(total)} <SARIcon size={16} className="opacity-40" /></p>
                     <p className="text-white/30 text-[11px] mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
                     {effectiveWalletAmount > 0 && (
                       <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                         <span className="text-emerald-400">من المحفظة</span>
-                        <span className="font-black text-emerald-300">- {fmt(effectiveWalletAmount)} ر.س</span>
+                        <span className="font-black text-emerald-300 flex items-center gap-0.5">- {fmt(effectiveWalletAmount)} <SARIcon size={9} className="opacity-70" /></span>
                       </div>
                     )}
                     {effectiveWalletAmount > 0 && !fullyPaidByWallet && (
                       <div className="flex items-center justify-between text-xs mt-1">
                         <span className="text-amber-300">يتبقى بنكي</span>
-                        <span className="font-black text-amber-200">{fmt(remainingAfterWallet)} ر.س</span>
+                        <span className="font-black text-amber-200 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={9} className="opacity-70" /></span>
                       </div>
                     )}
                     {fullyPaidByWallet && (
@@ -1043,7 +1044,7 @@ export default function Cart() {
                         <p className="font-bold text-sm text-black">الدفع بـ Qirox Pay</p>
                         {walletBalance > 0 ? (
                           <p className={`text-xs mt-0.5 ${useWallet ? "text-cyan-600" : "text-black/40"}`}>
-                            رصيدك المتاح: <span className="font-black text-cyan-700">{walletBalance.toLocaleString()} ر.س</span>
+                            رصيدك المتاح: <span className="font-black text-cyan-700 inline-flex items-center gap-0.5">{walletBalance.toLocaleString()} <SARIcon size={9} className="opacity-80" /></span>
                           </p>
                         ) : (
                           <p className="text-xs mt-0.5 text-black/30">رصيدك صفر —{" "}
@@ -1068,7 +1069,7 @@ export default function Cart() {
                                   onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
                                   className="flex-1 h-10 rounded-xl border border-cyan-200 bg-white px-3 text-sm font-mono text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300"
                                   data-testid="input-wallet-amount" />
-                                <span className="text-sm text-cyan-700 font-bold shrink-0">ر.س</span>
+                                <SARIcon size={12} className="opacity-70 shrink-0" />
                                 <button onClick={() => setWalletAmount(maxWalletUsable)}
                                   className="text-xs font-bold text-cyan-600 bg-cyan-100 hover:bg-cyan-200 px-3 py-2 rounded-xl transition-all shrink-0"
                                   data-testid="button-use-all-wallet">كل الرصيد</button>
@@ -1110,7 +1111,7 @@ export default function Cart() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-black/40 text-xs">المبلغ المطلوب</span>
-                          <span className="font-black text-sm text-blue-700">{fmt(remainingAfterWallet)} ر.س</span>
+                          <span className="font-black text-sm text-blue-700 flex items-center gap-0.5">{fmt(remainingAfterWallet)} <SARIcon size={10} className="opacity-60" /></span>
                         </div>
                       </div>
                     </div>
@@ -1308,14 +1309,14 @@ export default function Cart() {
               <Select value={domainExt} onValueChange={setDomainExt}>
                 <SelectTrigger className="w-28" data-testid="select-domain-ext"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {domainExtensions.map(d => <SelectItem key={d.ext} value={d.ext}>{d.ext} — {d.price} ر.س</SelectItem>)}
+                  {domainExtensions.map(d => <SelectItem key={d.ext} value={d.ext}>{d.ext} — {d.price} <SARIcon size={8} className="opacity-60 inline" /></SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             {domainName && (
               <div className="bg-black rounded-xl px-4 py-3 text-center">
                 <p className="font-mono text-white font-bold">{domainName}{domainExt}</p>
-                <p className="text-[10px] text-white/40 mt-1">{domainExtensions.find(d => d.ext === domainExt)?.price || 45} ر.س / سنة</p>
+                <p className="text-[10px] text-white/40 mt-1 flex items-center justify-center gap-0.5">{domainExtensions.find(d => d.ext === domainExt)?.price || 45} <SARIcon size={7} className="opacity-50" /> / سنة</p>
               </div>
             )}
             <div className="grid grid-cols-3 gap-2">
@@ -1324,7 +1325,7 @@ export default function Cart() {
                   className={`p-2.5 rounded-xl border text-center transition-all ${domainExt === d.ext ? 'border-black bg-black text-white' : 'border-black/[0.08] hover:border-black/20'}`}
                   data-testid={`domain-ext-${d.ext.replace('.', '')}`}>
                   <p className={`font-bold text-sm ${domainExt === d.ext ? 'text-white' : 'text-black'}`}>{d.ext}</p>
-                  <p className={`text-[9px] ${domainExt === d.ext ? 'text-white/50' : 'text-black/35'}`}>{d.price} ر.س</p>
+                  <p className={`text-[9px] flex items-center justify-center gap-0.5 ${domainExt === d.ext ? 'text-white/50' : 'text-black/35'}`}>{d.price} <SARIcon size={7} className="opacity-50" /></p>
                 </button>
               ))}
             </div>
@@ -1356,12 +1357,12 @@ export default function Cart() {
                   <p className={`font-bold text-sm ${selectedEmail?.id === p.id ? 'text-white' : 'text-black'}`}>{p.name}</p>
                   <p className={`text-[11px] mt-0.5 ${selectedEmail?.id === p.id ? 'text-white/60' : 'text-black/40'}`}>{p.users} مستخدم · {p.storage}</p>
                 </div>
-                <p className={`font-black text-sm flex-shrink-0 mr-4 ${selectedEmail?.id === p.id ? 'text-white' : 'text-black'}`}>{p.price} ر.س/شهر</p>
+                <p className={`font-black text-sm flex-shrink-0 mr-4 flex items-center gap-0.5 ${selectedEmail?.id === p.id ? 'text-white' : 'text-black'}`}>{p.price} <SARIcon size={9} className="opacity-60" />/شهر</p>
               </button>
             ))}
             <Button className="w-full bg-black text-white h-11 font-bold rounded-xl" onClick={() => { if (!selectedEmail) return; addItemMutation.mutate({ type: 'email', name: `Business Email ${selectedEmail.name}`, nameAr: `بريد أعمال ${selectedEmail.name}`, price: selectedEmail.price, qty: 1, config: { emailPlan: selectedEmail.id, users: selectedEmail.users, storage: selectedEmail.storage } }); }} disabled={!selectedEmail || addItemMutation.isPending} data-testid="button-add-email">
               {addItemMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
-              {selectedEmail ? `إضافة ${selectedEmail.name} — ${selectedEmail.price} ر.س/شهر` : "اختر خطة أولاً"}
+              {selectedEmail ? <span className="flex items-center gap-1">إضافة {selectedEmail.name} — {selectedEmail.price} <SARIcon size={9} />/شهر</span> : "اختر خطة أولاً"}
             </Button>
           </div>
         </DialogContent>
@@ -1413,7 +1414,7 @@ export default function Cart() {
                   </div>
                   <div className="text-left">
                     <p className="text-white/40 text-[8px] uppercase tracking-wider mb-0.5">Amount</p>
-                    <p className="text-cyan-400 font-black text-sm">{effectiveWalletAmount.toLocaleString()} <span className="text-[9px] font-normal text-white/40">ر.س</span></p>
+                    <p className="text-cyan-400 font-black text-sm flex items-center gap-0.5">{effectiveWalletAmount.toLocaleString()} <SARIcon size={9} className="opacity-40" /></p>
                   </div>
                 </div>
               </div>
@@ -1421,7 +1422,7 @@ export default function Cart() {
 
             <div className="bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30 p-3">
               <p className="text-xs text-cyan-700 dark:text-cyan-300 text-center">
-                سيتم خصم <span className="font-black">{effectiveWalletAmount.toLocaleString()} ر.س</span> من رصيد Qirox Pay
+                سيتم خصم <span className="font-black inline-flex items-center gap-0.5">{effectiveWalletAmount.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span> من رصيد Qirox Pay
               </p>
             </div>
 

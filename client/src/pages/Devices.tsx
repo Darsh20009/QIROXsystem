@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -375,7 +376,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                           ) : (
                             <div>
                               <span className="text-sm font-black text-black dark:text-white">+{bPrice.toLocaleString()}</span>
-                              <span className="text-[10px] text-black/35 dark:text-white/35 block">ر.س</span>
+                              <SARIcon size={8} className="opacity-35 block" />
                             </div>
                           )}
                           <div className={`mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center mx-auto ${isSelected ? "border-violet-500 bg-violet-500" : "border-black/20 dark:border-white/20"}`}>
@@ -393,12 +394,12 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                 <div className="mt-3 p-3 bg-black/[0.03] dark:bg-white/[0.04] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
                   <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
                     <span>سعر المنتج</span>
-                    <span>{p.price.toLocaleString()} ر.س</span>
+                    <span className="flex items-center gap-0.5">{p.price.toLocaleString()} <SARIcon size={8} className="opacity-50" /></span>
                   </div>
                   {bundlePrice > 0 && (
                     <div className="flex items-center justify-between text-xs text-black/50 dark:text-white/50 mb-1">
                       <span>الباقة: {selectedBundle.planNameAr}</span>
-                      <span>+{bundlePrice.toLocaleString()} ر.س</span>
+                      <span className="flex items-center gap-0.5">+{bundlePrice.toLocaleString()} <SARIcon size={8} className="opacity-50" /></span>
                     </div>
                   )}
                   {selectedBundle.isFree && (
@@ -409,7 +410,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
                   )}
                   <div className="flex items-center justify-between font-black text-sm text-black dark:text-white border-t border-black/[0.06] dark:border-white/[0.06] pt-1.5 mt-1">
                     <span>الإجمالي</span>
-                    <span>{totalPrice.toLocaleString()} ر.س</span>
+                    <span className="flex items-center gap-1">{totalPrice.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
                   </div>
                 </div>
               )}
@@ -453,7 +454,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           >
             {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
             {hasBundles && totalPrice !== p.price
-              ? `أضف للسلة — ${totalPrice.toLocaleString()} ر.س`
+              ? <span className="flex items-center gap-1">أضف للسلة — {totalPrice.toLocaleString()} <SARIcon size={10} /></span>
               : "أضف للسلة"
             }
           </Button>

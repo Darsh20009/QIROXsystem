@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -260,11 +261,11 @@ function AccountantDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/5 rounded-2xl p-4">
               <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-green-400" />إجمالي الإيرادات</p>
-              <p className="text-2xl font-black text-green-400">{totalRevenue.toLocaleString("ar-SA")} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+              <p className="text-2xl font-black text-green-400 flex items-center gap-1">{totalRevenue.toLocaleString("ar-SA")} <SARIcon size={14} className="opacity-40" /></p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
               <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-red-400" />مستحقات غير محصّلة</p>
-              <p className="text-2xl font-black text-red-400">{totalPending.toLocaleString("ar-SA")} <span className="text-sm font-normal text-white/40">ر.س</span></p>
+              <p className="text-2xl font-black text-red-400 flex items-center gap-1">{totalPending.toLocaleString("ar-SA")} <SARIcon size={14} className="opacity-40" /></p>
             </div>
           </div>
         </div>
@@ -275,15 +276,15 @@ function AccountantDashboard() {
           { icon: FileText, label: "فواتير مسددة", val: paidInvoices, color: "text-green-500", bg: "bg-green-50" },
           { icon: AlertCircle, label: "فواتير معلّقة", val: unpaidInvoices, color: "text-red-500", bg: "bg-red-50" },
           { icon: Receipt, label: "إجمالي الوصولات", val: receipts?.length || 0, color: "text-blue-500", bg: "bg-blue-50" },
-          { icon: Wallet, label: "رصيد الخزينة", val: `${(totalRevenue - totalPending).toLocaleString("ar-SA")} ر.س`, color: "text-purple-500", bg: "bg-purple-50" },
-        ].map(({ icon: Icon, label, val, color, bg }, i) => (
+          { icon: Wallet, label: "رصيد الخزينة", val: (totalRevenue - totalPending).toLocaleString("ar-SA"), sarVal: true, color: "text-purple-500", bg: "bg-purple-50" },
+        ].map(({ icon: Icon, label, val, sarVal, color, bg }, i) => (
           <motion.div key={i} {...fade(0.1 + i * 0.05)}>
             <Card className="border border-black/[0.06] shadow-none">
               <CardContent className="p-4">
                 <div className={`w-9 h-9 ${bg} rounded-xl flex items-center justify-center mb-3`}>
                   <Icon className={`w-4.5 h-4.5 ${color}`} />
                 </div>
-                <p className="text-xl font-black text-black">{val}</p>
+                <p className="text-xl font-black text-black flex items-center gap-1">{val}{sarVal && <SARIcon size={12} className="opacity-50" />}</p>
                 <p className="text-xs text-black/40 mt-0.5">{label}</p>
               </CardContent>
             </Card>
@@ -307,7 +308,7 @@ function AccountantDashboard() {
                     <p className="text-sm font-medium text-black">{inv.clientName || "عميل"}</p>
                     <p className="text-[11px] text-black/30">فاتورة #{inv.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-red-600">{Number(inv.totalAmount || 0).toLocaleString("ar-SA")} ر.س</span>
+                  <span className="text-sm font-bold text-red-600 flex items-center gap-0.5">{Number(inv.totalAmount || 0).toLocaleString("ar-SA")} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!invoices || invoices.filter((i: any) => i.status === "pending").length === 0) && (
@@ -337,7 +338,7 @@ function AccountantDashboard() {
                     <p className="text-sm font-medium text-black">{rec.clientName || "عميل"}</p>
                     <p className="text-[11px] text-black/30">وصل #{rec.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-green-600">+{Number(rec.amount || 0).toLocaleString("ar-SA")} ر.س</span>
+                  <span className="text-sm font-bold text-green-600 flex items-center gap-0.5">+{Number(rec.amount || 0).toLocaleString("ar-SA")} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!receipts || receipts.length === 0) && (

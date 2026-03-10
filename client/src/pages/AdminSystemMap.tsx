@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import SARIcon from "@/components/SARIcon";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/use-auth";
@@ -229,7 +230,7 @@ export default function AdminSystemMap() {
           <p className="text-[9px] font-black text-black/25 dark:text-white/25 uppercase tracking-[0.2em] mb-3">المستوى الأول — الأرقام الرئيسية</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              { label: "إجمالي الإيرادات", value: `${((ov.totalRevenue || 0) / 1000).toFixed(0)}K ر.س`, icon: DollarSign, color: "text-emerald-600 bg-emerald-50", sub: "من الطلبات المكتملة" },
+              { label: "إجمالي الإيرادات", value: `${((ov.totalRevenue || 0) / 1000).toFixed(0)}K`, unit: "SAR_ICON", icon: DollarSign, color: "text-emerald-600 bg-emerald-50", sub: "من الطلبات المكتملة" },
               { label: "إجمالي الطلبات", value: ov.totalOrders || 0, icon: ShoppingBag, color: "text-blue-600 bg-blue-50", sub: `${ov.pendingOrders || 0} بانتظار` },
               { label: "العملاء", value: ov.totalClients || 0, icon: Users, color: "text-violet-600 bg-violet-50", sub: "عميل مسجّل" },
               { label: "الموظفون", value: ov.totalEmployees || 0, icon: UserCog, color: "text-slate-600 bg-slate-50", sub: `${ov.totalAttendanceToday || 0} حضروا اليوم` },
@@ -241,7 +242,7 @@ export default function AdminSystemMap() {
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${s.color.split(" ")[1]}`}>
                     <s.icon className={`w-4.5 h-4.5 ${s.color.split(" ")[0]}`} style={{ width: 18, height: 18 }} />
                   </div>
-                  <p className="text-xl font-black text-black dark:text-white leading-none">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</p>
+                  <p className="text-xl font-black text-black dark:text-white leading-none flex items-center gap-1">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}{s.unit === "SAR_ICON" && <SARIcon size={13} className="opacity-60" />}</p>
                   <p className="text-[10px] font-bold text-black/50 dark:text-white/50 mt-1">{s.label}</p>
                   {s.sub && <p className="text-[9px] text-black/25 dark:text-white/25 mt-0.5">{s.sub}</p>}
                 </div>
@@ -487,7 +488,7 @@ export default function AdminSystemMap() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${st.color}`}>{st.label}</span>
-                          <span className="text-[10px] text-black/40 dark:text-white/40 font-mono">{(order.totalAmount || 0).toLocaleString()} ر.س</span>
+                          <span className="text-[10px] text-black/40 dark:text-white/40 font-mono flex items-center gap-0.5">{(order.totalAmount || 0).toLocaleString()} <SARIcon size={8} className="opacity-50" /></span>
                         </div>
                       </div>
                     </Link>

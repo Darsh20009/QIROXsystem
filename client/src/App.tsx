@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation, Link } from "wouter";
+import SARIcon from "@/components/SARIcon";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -506,7 +507,7 @@ function ClientQuickNav() {
           <Wallet className={`w-3.5 h-3.5 transition-colors ${outstanding > 0 ? "text-amber-500" : "text-black/40 dark:text-white/40 group-hover:text-black/70 dark:group-hover:text-white/70"}`} />
           {outstanding !== null && (
             <span className={`text-[10px] font-bold hidden sm:inline transition-colors ${outstanding > 0 ? "text-amber-600 dark:text-amber-400" : "text-black/60 dark:text-white/60 group-hover:text-black/90 dark:group-hover:text-white/90"}`}>
-              {Number(outstanding).toLocaleString('ar-SA')} ر.س
+              {Number(outstanding).toLocaleString('ar-SA')} <SARIcon size={10} className="opacity-70" />
             </span>
           )}
           {outstanding > 0 && (

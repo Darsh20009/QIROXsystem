@@ -308,7 +308,7 @@ export default function AdminExtraAddons() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>السعر (ر.س) *</Label>
+                <Label className="flex items-center gap-1">السعر (<SARIcon size={10} className="opacity-60" />) *</Label>
                 <Input type="number" value={form.price}
                   onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
                   min={0} step={50} data-testid="input-addon-price" />

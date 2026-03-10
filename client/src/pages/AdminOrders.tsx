@@ -723,13 +723,13 @@ export default function AdminOrders() {
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-specs-email" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">الميزانية الكلية (ر.س)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">الميزانية الكلية (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.totalBudget}
                                 onChange={e => setSpecsForm(f => ({ ...f, totalBudget: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-budget" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">المدفوع حالياً (ر.س)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">المدفوع حالياً (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.paidAmount}
                                 onChange={e => setSpecsForm(f => ({ ...f, paidAmount: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-paid" />
@@ -997,7 +997,7 @@ export default function AdminOrders() {
                           </Select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-black/50 mb-1.5">المبلغ (ر.س)</label>
+                          <label className="flex items-center gap-1 text-xs font-medium text-black/50 mb-1.5">المبلغ (<SARIcon size={9} className="opacity-60" />)</label>
                           <Input type="number" value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
                             className="h-10" data-testid="input-order-amount" />
@@ -1148,7 +1148,7 @@ export default function AdminOrders() {
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-[10px] text-black/40 mb-1 block">المبلغ (ر.س)</Label>
+                            <Label className="text-[10px] text-black/40 mb-1 flex items-center gap-1">المبلغ (<SARIcon size={8} className="opacity-50" />)</Label>
                             <Input
                               type="number"
                               placeholder="0"

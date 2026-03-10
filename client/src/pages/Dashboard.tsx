@@ -1,6 +1,7 @@
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { useOrders } from "@/hooks/use-orders";
+import SARIcon from "@/components/SARIcon";
 import { useProjects } from "@/hooks/use-projects";
 import { useAttendanceStatus, useCheckIn, useCheckOut } from "@/hooks/use-attendance";
 import { usePricingPlans } from "@/hooks/use-templates";
@@ -344,7 +345,7 @@ function AdminDashboard({ user }: { user: any }) {
   const statItems = [
     { label: "الطلبات", value: stats?.totalOrders ?? 0, icon: ShoppingBag, color: "text-blue-600 bg-blue-50" },
     { label: "المشاريع", value: stats?.activeProjects ?? 0, icon: Activity, color: "text-indigo-600 bg-indigo-50" },
-    { label: "الإيرادات", value: `${(stats?.totalRevenue ?? 0).toLocaleString()} ر.س`, icon: DollarSign, color: "text-green-600 bg-green-50" },
+    { label: "الإيرادات", value: (stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-green-600 bg-green-50" },
     { label: "العملاء", value: stats?.totalClients ?? 0, icon: Users, color: "text-violet-600 bg-violet-50" },
     { label: "الموظفون", value: stats?.totalEmployees ?? 0, icon: UserCog, color: "text-slate-600 bg-slate-50" },
   ];
@@ -381,7 +382,7 @@ function AdminDashboard({ user }: { user: any }) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] text-black/35 dark:text-white/35 font-medium truncate">{s.label}</p>
-                  <p className="text-lg font-bold text-black dark:text-white leading-tight">{s.value}</p>
+                  <p className="text-lg font-bold text-black dark:text-white leading-tight flex items-center gap-1">{s.value}{(s as any).unit === "SAR_ICON" && <SARIcon size={12} className="opacity-50" />}</p>
                 </div>
               </div>
             </motion.div>
@@ -454,7 +455,7 @@ function AdminDashboard({ user }: { user: any }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <p className="text-xs font-semibold text-black/50 dark:text-white/50">{Number(order.totalAmount || 0).toLocaleString()} ر.س</p>
+                          <p className="text-xs font-semibold text-black/50 dark:text-white/50 flex items-center gap-1">{Number(order.totalAmount || 0).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
                           <Badge className={`text-[9px] h-5 px-2 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                         </div>
                       </div>
@@ -802,7 +803,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {order.totalAmount > 0 && (
-                          <p className="text-xs font-semibold text-black/40 dark:text-white/40 hidden md:block">{Number(order.totalAmount).toLocaleString()} ر.س</p>
+                          <p className="text-xs font-semibold text-black/40 dark:text-white/40 hidden md:block flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-50" /></p>
                         )}
                         <span className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${st.bg} ${st.text}`}>{st.label}</span>
                         <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-black/50 dark:group-hover:text-white/50 transition-colors" />
@@ -833,7 +834,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                         {(orderStatusColors[selectedOrder.status] || orderStatusColors['pending']).label}
                       </span>
                       {selectedOrder.totalAmount > 0 && (
-                        <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">{Number(selectedOrder.totalAmount).toLocaleString()} ر.س</span>
+                        <span className="text-[10px] text-black/40 dark:text-white/40 font-medium flex items-center gap-1">{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>
                       )}
                       {selectedOrder.createdAt && (
                         <span className="text-[10px] text-black/30 dark:text-white/30">
@@ -969,7 +970,7 @@ function EmployeeDashboard({ user }: { user: any }) {
                           </div>
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-black/50 dark:text-white/50">الإجمالي</p>
-                            <p className="text-xs font-bold text-black dark:text-white">{selectedOrder.totalAmount ? `${Number(selectedOrder.totalAmount).toLocaleString()} ر.س` : "—"}</p>
+                            <p className="text-xs font-bold text-black dark:text-white flex items-center gap-1">{selectedOrder.totalAmount ? <><span>{Number(selectedOrder.totalAmount).toLocaleString()}</span> <SARIcon size={10} className="opacity-60" /></> : "—"}</p>
                           </div>
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-black/50 dark:text-white/50">حالة الدفعة الأولى</p>
@@ -1014,13 +1015,13 @@ function EmployeeDashboard({ user }: { user: any }) {
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-client-email" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">الميزانية الكلية (ر.س)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">الميزانية الكلية (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" placeholder="5000" value={specsForm.totalBudget}
                                 onChange={e => setSpecsForm(f => ({ ...f, totalBudget: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-total-budget" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">المدفوع حالياً (ر.س)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">المدفوع حالياً (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" placeholder="2500" value={specsForm.paidAmount}
                                 onChange={e => setSpecsForm(f => ({ ...f, paidAmount: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-paid-amount" />
@@ -1816,7 +1817,7 @@ export default function Dashboard() {
                 <p className="text-white/40 text-[11px] font-medium mb-1">{L ? "محفظتي" : "My Wallet"}</p>
                 <p className="text-white text-4xl font-black tracking-tight">
                   {walletData?.outstanding != null ? Number(walletData.outstanding).toLocaleString(L ? 'ar-SA' : 'en-US') : "—"}
-                  <span className="text-white/30 text-sm font-normal mr-1">{L ? "ر.س" : "SAR"}</span>
+                  {L ? <SARIcon size={14} className="opacity-30 mr-1" /> : <span className="text-white/30 text-sm font-normal mr-1">SAR</span>}
                 </p>
                 <p className="text-white/35 text-[10px] mt-1">
                   {walletData?.outstanding > 0 ? (L ? "رصيد مستحق" : "Amount Due") : walletData?.outstanding === 0 ? (L ? "لا توجد مستحقات ✓" : "No outstanding amount ✓") : (L ? "جارٍ التحميل..." : "Loading...")}
@@ -1834,7 +1835,7 @@ export default function Dashboard() {
                   <p className="text-white/40 text-[10px]">{L ? "مدين" : "Debit"}</p>
                 </div>
                 <p className="text-white font-black text-lg">{walletData?.totalDebit != null ? Number(walletData.totalDebit).toLocaleString() : "—"}</p>
-                <p className="text-white/25 text-[9px]">{L ? "ر.س" : "SAR"}</p>
+                {L ? <SARIcon size={9} className="opacity-25 mt-0.5" /> : <p className="text-white/25 text-[9px]">SAR</p>}
               </div>
               <div className="bg-white/[0.06] rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -1842,7 +1843,7 @@ export default function Dashboard() {
                   <p className="text-white/40 text-[10px]">{L ? "دائن" : "Credit"}</p>
                 </div>
                 <p className="text-white font-black text-lg">{walletData?.totalCredit != null ? Number(walletData.totalCredit).toLocaleString() : "—"}</p>
-                <p className="text-white/25 text-[9px]">{L ? "ر.س" : "SAR"}</p>
+                {L ? <SARIcon size={9} className="opacity-25 mt-0.5" /> : <p className="text-white/25 text-[9px]">SAR</p>}
               </div>
             </div>
 
@@ -1908,7 +1909,7 @@ export default function Dashboard() {
                         <p className="text-xs font-medium text-black dark:text-white truncate">{item.serviceName || item.name || (L ? "خدمة" : "Service")}</p>
                       </div>
                       <p className="text-xs font-black text-black dark:text-white flex-shrink-0">
-                        {item.price != null ? Number(item.price).toLocaleString() : "—"} <span className="text-black/30 dark:text-white/30 font-normal text-[9px]">ر.س</span>
+                        <span className="flex items-center gap-1">{item.price != null ? Number(item.price).toLocaleString() : "—"} <SARIcon size={9} className="opacity-30" /></span>
                       </p>
                     </div>
                   ))}
@@ -1922,7 +1923,7 @@ export default function Dashboard() {
                     <p className="text-[10px] text-black/35 dark:text-white/35">{L ? "الإجمالي" : "Total"}</p>
                     <p className="text-lg font-black text-black dark:text-white">
                       {cartData?.subtotal != null ? Number(cartData.subtotal).toLocaleString() : (cartData?.items ?? []).reduce((s: number, it: any) => s + Number(it.price ?? 0), 0).toLocaleString()}
-                      <span className="text-black/30 dark:text-white/30 text-xs font-normal mr-1">ر.س</span>
+                      <SARIcon size={10} className="opacity-30 mr-1" />
                     </p>
                   </div>
                   <Link href="/cart">
@@ -2012,7 +2013,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-white/45 text-xs mb-0.5">{L ? "إجمالي استثمارك في Qirox" : "Your total investment in Qirox"}</p>
-                  <p className="text-3xl font-black text-white">{totalSpent.toLocaleString()} <span className="text-white/40 text-base font-normal">{L ? "ر.س" : "SAR"}</span></p>
+                  <p className="text-3xl font-black text-white flex items-center gap-2">{totalSpent.toLocaleString()} {L ? <SARIcon size={16} className="opacity-40" /> : <span className="text-white/40 text-base font-normal">SAR</span>}</p>
                 </div>
               </div>
               <div className="flex items-center gap-6 text-center">
@@ -2437,7 +2438,7 @@ export default function Dashboard() {
                     <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-amber-100 dark:border-amber-800/30">
                       <div>
                         <p className="text-xs font-bold text-black dark:text-white">طلب #{String(o.id)?.slice(-6)}</p>
-                        <p className="text-[10px] text-black/40 dark:text-white/40">{o.totalAmount ? `${Number(o.totalAmount).toLocaleString()} ر.س` : ''} · تحويل بنكي</p>
+                        <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">{o.totalAmount ? <><span>{Number(o.totalAmount).toLocaleString()}</span> <SARIcon size={8} className="opacity-50" /></> : ''} <span>· تحويل بنكي</span></p>
                       </div>
                       <div className="flex items-center gap-2">
                         {uploadProofMutation.isPending && uploadingProofOrderId === String(o.id)
@@ -2506,9 +2507,9 @@ export default function Dashboard() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-black dark:text-white">{L ? "طلب" : "Order"} #{String(order.id)?.slice(-6) || order.id}</p>
-                              <p className="text-[10px] text-black/30 dark:text-white/30">
+                              <p className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-1">
                                 {order.createdAt ? new Date(order.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' }) : ''}
-                                {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString()} ${L ? "ر.س" : "SAR"}` : ''}
+                                {order.totalAmount ? <> · {Number(order.totalAmount).toLocaleString()} {L ? <SARIcon size={8} className="opacity-50" /> : "SAR"}</> : ''}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -2624,8 +2625,8 @@ export default function Dashboard() {
                     <h3 className="font-bold text-black dark:text-white text-sm mb-0.5">{L ? plan.nameAr : (plan.name || plan.nameAr)}</h3>
                     <p className="text-[10px] text-black/35 dark:text-white/35 leading-relaxed line-clamp-2 mb-3">{L ? plan.descriptionAr : (plan.description || plan.descriptionAr)}</p>
                     <div className="mb-4">
-                      {plan.originalPrice && (<div className="flex items-center gap-2 mb-1"><span className="text-xs text-black/25 dark:text-white/25 line-through">{plan.originalPrice.toLocaleString()} ر.س</span>{discount > 0 && <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>}</div>)}
-                      <div className="flex items-baseline gap-1"><span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span><span className="text-xs text-black/35 dark:text-white/35">ر.س {billingLabel}</span></div>
+                      {plan.originalPrice && (<div className="flex items-center gap-2 mb-1"><span className="text-xs text-black/25 dark:text-white/25 line-through flex items-center gap-0.5">{plan.originalPrice.toLocaleString()} <SARIcon size={9} className="opacity-50" /></span>{discount > 0 && <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">-{discount}%</span>}</div>)}
+                      <div className="flex items-baseline gap-1"><span className="text-2xl font-black text-black dark:text-white">{plan.price.toLocaleString()}</span><span className="text-xs text-black/35 dark:text-white/35 flex items-center gap-0.5"><SARIcon size={10} className="opacity-50" /> {billingLabel}</span></div>
                     </div>
                     <div className="space-y-1.5 mb-4">
                       {(L ? plan.featuresAr : (plan.features || plan.featuresAr))?.slice(0, 4).map((f: string, fi: number) => (
@@ -3153,13 +3154,13 @@ export default function Dashboard() {
                         {clientOrderSpecs.totalBudget && (
                           <div className="bg-white/10 rounded-xl p-3">
                             <p className="text-[9px] text-white/40 mb-1">الميزانية الكلية</p>
-                            <p className="text-xs font-bold text-white">{Number(clientOrderSpecs.totalBudget).toLocaleString()} ر.س</p>
+                            <p className="text-xs font-bold text-white flex items-center gap-1">{Number(clientOrderSpecs.totalBudget).toLocaleString()} <SARIcon size={10} className="opacity-60" /></p>
                           </div>
                         )}
                         {clientOrderSpecs.paidAmount && (
                           <div className="bg-white/10 rounded-xl p-3">
                             <p className="text-[9px] text-white/40 mb-1">المدفوع حالياً</p>
-                            <p className="text-xs font-bold text-green-400">{Number(clientOrderSpecs.paidAmount).toLocaleString()} ر.س</p>
+                            <p className="text-xs font-bold text-green-400 flex items-center gap-1">{Number(clientOrderSpecs.paidAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p>
                           </div>
                         )}
                         {clientOrderSpecs.startDate && (
@@ -3382,13 +3383,13 @@ export default function Dashboard() {
                       { label: L ? "إجمالي الطلبات" : "Total Orders", value: linkedProjectPreview.stats?.totalOrders ?? 0, icon: Package, color: "text-blue-600 bg-blue-50 dark:bg-blue-950/30" },
                       { label: L ? "مشاريع نشطة" : "Active Projects", value: linkedProjectPreview.stats?.activeProjects ?? 0, icon: Activity, color: "text-violet-600 bg-violet-50 dark:bg-violet-950/30" },
                       { label: L ? "إجمالي الفواتير" : "Total Invoices", value: linkedProjectPreview.stats?.totalInvoices ?? 0, icon: FileText, color: "text-amber-600 bg-amber-50 dark:bg-amber-950/30" },
-                      { label: L ? "الإيرادات المحصّلة" : "Revenue Collected", value: `${(linkedProjectPreview.stats?.totalRevenue ?? 0).toLocaleString()} ر.س`, icon: DollarSign, color: "text-green-600 bg-green-50 dark:bg-green-950/30" },
-                    ].map(({ label, value, icon: Icon, color }) => (
+                      { label: L ? "الإيرادات المحصّلة" : "Revenue Collected", value: (linkedProjectPreview.stats?.totalRevenue ?? 0).toLocaleString(), unit: "SAR_ICON", icon: DollarSign, color: "text-green-600 bg-green-50 dark:bg-green-950/30" },
+                    ].map(({ label, value, icon: Icon, color, unit }: any) => (
                       <div key={label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-2xl p-4">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-2.5 ${color}`}>
                           <Icon className="w-4 h-4" />
                         </div>
-                        <p className="text-lg font-black text-black dark:text-white">{value}</p>
+                        <p className="text-lg font-black text-black dark:text-white flex items-center gap-1">{value}{unit === "SAR_ICON" && <SARIcon size={12} className="opacity-50" />}</p>
                         <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">{label}</p>
                       </div>
                     ))}
@@ -3413,7 +3414,7 @@ export default function Dashboard() {
                                 <p className="text-xs font-bold text-black dark:text-white truncate">
                                   {order.businessName || order.serviceType || `طلب #${String(order.id).slice(-6)}`}
                                 </p>
-                                <p className="text-[10px] text-black/40 dark:text-white/40">{st.label} · {order.totalAmount ? `${Number(order.totalAmount).toLocaleString()} ر.س` : ''}</p>
+                                <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">{st.label} · {order.totalAmount ? <><span>{Number(order.totalAmount).toLocaleString()}</span> <SARIcon size={8} className="opacity-50" /></> : ''}</p>
                               </div>
                               <span className="text-[10px] text-black/25 dark:text-white/25 flex-shrink-0">
                                 {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA') : ''}
@@ -3497,7 +3498,7 @@ export default function Dashboard() {
                               </p>
                               <p className="text-[10px] text-black/40 dark:text-white/40">
                                 {inv.status === 'paid' ? (L ? 'مدفوعة' : 'Paid') : (L ? 'معلّقة' : 'Pending')}
-                                {inv.total ? ` · ${Number(inv.total).toLocaleString()} ر.س` : ''}
+                                {inv.total ? <> · {Number(inv.total).toLocaleString()} <SARIcon size={8} className="opacity-50" /></> : ''}
                               </p>
                             </div>
                             <span className="text-[10px] text-black/25 dark:text-white/25 flex-shrink-0">

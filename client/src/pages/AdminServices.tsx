@@ -340,7 +340,7 @@ export default function AdminServices() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">السعر الأدنى (ر.س)</label>
+                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">السعر الأدنى (<SARIcon size={10} className="opacity-60" />)</label>
                 <Input
                   type="number"
                   value={formData.priceMin}
@@ -350,7 +350,7 @@ export default function AdminServices() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">السعر الأقصى (ر.س)</label>
+                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">السعر الأقصى (<SARIcon size={10} className="opacity-60" />)</label>
                 <Input
                   type="number"
                   value={formData.priceMax}

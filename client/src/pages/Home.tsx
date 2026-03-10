@@ -234,7 +234,7 @@ export default function Home() {
                       <Tag className="w-2.5 h-2.5 text-white/40" />
                       <span className="font-black tracking-widest text-white">{c.code}</span>
                       <span>—</span>
-                      <span>{c.bannerTextAr || c.descriptionAr || `خصم ${c.value}${c.type === "percentage" ? "%" : " ر.س"}`}</span>
+                      <span className="flex items-center gap-0.5">{c.bannerTextAr || c.descriptionAr || <><span>خصم {c.value}</span>{c.type === "percentage" ? "%" : <SARIcon size={9} className="opacity-70" />}</>}</span>
                     </span>
                   ))}
                 </motion.div>
@@ -257,7 +257,7 @@ export default function Home() {
               <div className="flex-shrink-0">
                 <div className="relative">
                   <span className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-none">
-                    {currentCode.value}{currentCode.type === "percentage" ? "%" : " ر.س"}
+                    {currentCode.value}{currentCode.type === "percentage" ? "%" : <SARIcon size={18} className="opacity-90 mr-0.5" />}
                   </span>
                   <span className="block text-[9px] font-bold text-white/60 uppercase tracking-widest mt-0.5">
                     {lang === "ar" ? (currentCode.type === "percentage" ? "خصم" : "توفير") : (currentCode.type === "percentage" ? "OFF" : "SAVE")}

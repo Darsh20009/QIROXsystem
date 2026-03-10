@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -413,7 +414,7 @@ export default function DevPortal() {
                     ))}
                   </ul>
                   <div className="flex items-center justify-between border-t border-white/[0.05] pt-4">
-                    <span className="text-xs font-mono text-white/25">من {svc.price} ر.س</span>
+                    <span className="text-xs font-mono text-white/25 flex items-center gap-0.5">من {svc.price} <SARIcon size={8} className="opacity-40" /></span>
                     <Link href="/order">
                       <button className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white font-semibold transition-colors">
                         اطلب الخدمة <ArrowLeft className="w-3.5 h-3.5" />
@@ -553,7 +554,7 @@ export default function DevPortal() {
                     {pkg.price ? (
                       <div className="flex items-baseline gap-1.5">
                         <span className={`text-3xl font-black ${pkg.highlight ? "text-black" : "text-white"}`}>{pkg.price.toLocaleString()}</span>
-                        <span className={`text-xs ${pkg.highlight ? "text-black/40" : "text-white/25"}`}>ر.س / {pkg.period}</span>
+                        <span className={`text-xs flex items-center gap-0.5 ${pkg.highlight ? "text-black/40" : "text-white/25"}`}><SARIcon size={9} className="opacity-60" /> / {pkg.period}</span>
                       </div>
                     ) : (
                       <p className={`text-xl font-black ${pkg.highlight ? "text-black" : "text-white"}`}>حسب المشروع</p>

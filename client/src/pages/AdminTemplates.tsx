@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useState } from "react";
 import { useTemplates, usePricingPlans } from "@/hooks/use-templates";
@@ -573,7 +574,7 @@ export default function AdminTemplates() {
                           {activePrice ? (
                             <p className="text-2xl font-black text-black dark:text-white leading-none">
                               {activePrice.toLocaleString()}
-                              <span className="text-xs font-normal text-black/30 mr-1"> ر.س</span>
+                              <SARIcon size={10} className="opacity-30 mr-1" />
                             </p>
                           ) : (
                             <p className="text-lg font-black text-black/20 dark:text-white/20">—</p>

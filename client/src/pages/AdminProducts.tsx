@@ -461,7 +461,7 @@ export default function AdminProducts() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">السعر (ر.س) *</label>
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 flex items-center gap-1">السعر (<SARIcon size={9} className="opacity-60" />) *</label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" data-testid="input-product-price" />
                 </div>
                 <div>
@@ -572,7 +572,7 @@ export default function AdminProducts() {
 
                           {!bundle.isFree && (
                             <div>
-                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">سعر الباقة (ر.س) *</label>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 flex items-center gap-1">سعر الباقة (<SARIcon size={8} className="opacity-60" />) *</label>
                               <Input type="number" value={bundle.customPrice} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, customPrice: e.target.value === "" ? "" : Number(e.target.value) } : b) }))}
                                 placeholder="0" className="h-9 text-sm" data-testid={`input-bundle-price-${idx}`} />
                             </div>
@@ -679,7 +679,7 @@ export default function AdminProducts() {
                             >
                               <div>
                                 <label className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1 block">
-                                  <MapPin className="w-2.5 h-2.5" /> سعر مخصص داخل الرياض (ر.س)
+                                  <MapPin className="w-2.5 h-2.5" /> سعر مخصص داخل الرياض (<SARIcon size={8} className="opacity-60" />)
                                 </label>
                                 <Input
                                   type="number"
@@ -692,7 +692,7 @@ export default function AdminProducts() {
                               </div>
                               <div>
                                 <label className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1 block">
-                                  <Globe className="w-2.5 h-2.5" /> سعر مخصص خارج الرياض (ر.س)
+                                  <Globe className="w-2.5 h-2.5" /> سعر مخصص خارج الرياض (<SARIcon size={8} className="opacity-60" />)
                                 </label>
                                 <Input
                                   type="number"

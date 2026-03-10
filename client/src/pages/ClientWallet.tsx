@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowUpRight, ArrowDownLeft,
@@ -133,7 +134,7 @@ function QiroxPayCard({ card, showNumber, onToggle }: {
           </div>
           <div className="text-right">
             <p className="text-white/40 text-[9px] uppercase tracking-wider mb-0.5">Balance</p>
-            <p className="text-cyan-400 font-black text-base">{fmt(card.balance)} <span className="text-[10px] font-normal text-white/40">ر.س</span></p>
+            <p className="text-cyan-400 font-black text-base flex items-center gap-1">{fmt(card.balance)} <SARIcon size={11} className="opacity-40" /></p>
           </div>
         </div>
       </div>
@@ -428,7 +429,7 @@ export default function ClientWallet() {
                     <Icon className={`w-4 h-4 text-${color}-500`} />
                   </div>
                   <p className="text-[10px] text-black/40 dark:text-white/40 mb-1">{label}</p>
-                  <p className="text-sm font-black text-black dark:text-white">{fmt(value)} <span className="text-[10px] font-medium text-black/40">ر.س</span></p>
+                  <p className="text-sm font-black text-black dark:text-white flex items-center gap-1">{fmt(value)} <SARIcon size={11} className="opacity-40" /></p>
                 </div>
               ))}
             </div>
@@ -471,7 +472,7 @@ export default function ClientWallet() {
                           <p className={`text-base font-black ${tx.type === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                             {tx.type === 'credit' ? '+' : '-'}{fmt(tx.amount)}
                           </p>
-                          <p className="text-[10px] text-black/30 dark:text-white/30 text-left">ر.س</p>
+                          <SARIcon size={9} className="opacity-30 mt-0.5" />
                         </div>
                       </div>
                     ))}
@@ -517,7 +518,7 @@ export default function ClientWallet() {
                               : <RefreshCw className="w-4 h-4 text-amber-500" />}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-bold text-black dark:text-white">{fmt(req.amount)} ر.س</p>
+                          <p className="text-sm font-bold text-black dark:text-white flex items-center gap-1">{fmt(req.amount)} <SARIcon size={11} className="opacity-70" /></p>
                           <p className="text-xs text-black/40 dark:text-white/40">{req.bankName || "تحويل بنكي"} · {req.bankRef || "—"}</p>
                         </div>
                         <Badge className={`text-[10px] border-0 ${req.status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : req.status === 'rejected' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
@@ -629,7 +630,7 @@ export default function ClientWallet() {
               </div>
             </div>
             <div>
-              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">المبلغ (ر.س) <span className="text-red-400">*</span></Label>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-red-400">*</span></Label>
               <Input type="number" min="1" placeholder="مثال: 500" value={topupForm.amount}
                 onChange={e => setTopupForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-topup-amount" />
             </div>
@@ -681,7 +682,7 @@ export default function ClientWallet() {
                   onChange={e => setShareForm(f => ({ ...f, cardNumber: e.target.value }))} data-testid="input-share-card-number" />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 block">المبلغ (ر.س)</Label>
+                <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">المبلغ (<SARIcon size={10} className="opacity-60" />)</Label>
                 <Input type="number" min="1" placeholder="المبلغ المطلوب" value={shareForm.amount}
                   onChange={e => setShareForm(f => ({ ...f, amount: e.target.value }))} data-testid="input-share-amount" />
               </div>

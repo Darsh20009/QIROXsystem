@@ -1,4 +1,5 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import SARIcon from "@/components/SARIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -329,13 +330,13 @@ export default function AdminEmployees() {
                   </div>
                   {form.salaryType === "hourly" && (
                     <div>
-                      <Label className="text-[11px] text-black/40 mb-1.5 block">سعر الساعة (ر.س)</Label>
+                      <Label className="text-[11px] text-black/40 mb-1.5 flex items-center gap-1">سعر الساعة (<SARIcon size={9} className="opacity-60" />)</Label>
                       <Input type="number" value={form.hourlyRate} onChange={e => setForm({ ...form, hourlyRate: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-hourly-rate" />
                     </div>
                   )}
                   {form.salaryType === "fixed" && (
                     <div>
-                      <Label className="text-[11px] text-black/40 mb-1.5 block">الراتب الشهري الثابت (ر.س)</Label>
+                      <Label className="text-[11px] text-black/40 mb-1.5 flex items-center gap-1">الراتب الشهري الثابت (<SARIcon size={9} className="opacity-60" />)</Label>
                       <Input type="number" value={form.fixedSalary} onChange={e => setForm({ ...form, fixedSalary: e.target.value })} placeholder="0" className="h-9 text-xs border-black/[0.08]" data-testid="input-emp-fixed-salary" />
                     </div>
                   )}

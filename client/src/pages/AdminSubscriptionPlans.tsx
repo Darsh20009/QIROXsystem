@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import SARIcon from "@/components/SARIcon";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -351,7 +352,7 @@ export default function AdminSubscriptionPlans() {
                           <div key={label} className={`rounded-xl p-3 text-center ${accent ? "bg-black" : "bg-black/[0.03]"}`}>
                             <p className={`text-[10px] mb-1 ${accent ? "text-white/50" : "text-black/40"}`}>{label}</p>
                             <p className={`text-lg font-black ${accent ? "text-white" : "text-black"}`}>{value.toLocaleString()}</p>
-                            <p className={`text-[9px] ${accent ? "text-white/40" : "text-black/30"}`}>ر.س شامل الضريبة</p>
+                            <p className={`text-[9px] ${accent ? "text-white/40" : "text-black/30"} flex items-center justify-center gap-0.5`}><SARIcon size={8} className="opacity-60" /> شامل الضريبة</p>
                           </div>
                         ))}
                       </div>
@@ -652,13 +653,13 @@ export default function AdminSubscriptionPlans() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "شهري (ر.س)", key: "monthlyPrice" as keyof SegmentPricing },
-                  { label: "6 أشهر (ر.س)", key: "sixMonthPrice" as keyof SegmentPricing },
-                  { label: "سنوي (ر.س)", key: "annualPrice" as keyof SegmentPricing },
-                  { label: "تجديد سنوي (ر.س)", key: "renewalPrice" as keyof SegmentPricing },
-                ].map(({ label, key }) => (
+                  { labelText: "شهري", key: "monthlyPrice" as keyof SegmentPricing },
+                  { labelText: "6 أشهر", key: "sixMonthPrice" as keyof SegmentPricing },
+                  { labelText: "سنوي", key: "annualPrice" as keyof SegmentPricing },
+                  { labelText: "تجديد سنوي", key: "renewalPrice" as keyof SegmentPricing },
+                ].map(({ labelText, key }) => (
                   <div key={key}>
-                    <label className="text-[11px] font-bold text-black/50 mb-1 block">{label}</label>
+                    <label className="text-[11px] font-bold text-black/50 mb-1 flex items-center gap-1">{labelText} (<SARIcon size={9} className="opacity-60" />)</label>
                     <Input
                       type="number"
                       value={(editingSegment as any)[key] || ""}

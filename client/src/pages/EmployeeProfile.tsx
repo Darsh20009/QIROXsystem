@@ -1,3 +1,4 @@
+import SARIcon from "@/components/SARIcon";
 import { useState, useEffect, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -354,7 +355,7 @@ export default function EmployeeProfile() {
               {(payroll || []).slice(0, 6).map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between text-sm border-b border-black/[0.04] dark:border-white/[0.04] pb-2 last:border-0">
                   <span className="text-black/50 dark:text-white/50">{MONTHS_AR[(r.month || 1) - 1]} {r.year}</span>
-                  <span className="font-bold text-black dark:text-white">{r.netSalary.toLocaleString()} ر.س</span>
+                  <span className="font-bold text-black dark:text-white flex items-center gap-0.5">{r.netSalary.toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                   <Badge className={r.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
                     {r.status === "paid" ? "مدفوع" : "معلق"}
                   </Badge>
