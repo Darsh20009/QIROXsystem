@@ -8436,11 +8436,36 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  app.post("/api/2fa/email-otp/enable", async (req, res) => {
+  app.post("/api/2fa/email-otp/setup", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { UserModel } = await import("./models");
+      const { UserModel, OtpModel } = await import("./models");
       const user = req.user as any;
+      const dbUser = await UserModel.findById(user._id || user.id);
+      if (!dbUser?.email) return res.status(400).json({ error: "لا يوجد بريد إلكتروني مسجّل لحسابك" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await OtpModel.updateMany({ email: dbUser.email, used: false, type: "2fa_email" }, { used: true });
+      await OtpModel.create({ email: dbUser.email, code, expiresAt, type: "2fa_email" });
+      sendLoginOtpEmail(dbUser.email, dbUser.fullName || dbUser.username, code, req.headers["user-agent"] as string).catch(console.error);
+      res.json({ ok: true, email: dbUser.email });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/email-otp/verify", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { code } = req.body;
+      if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل الرمز المكون من 6 أرقام" });
+      const { UserModel, OtpModel } = await import("./models");
+      const user = req.user as any;
+      const dbUser = await UserModel.findById(user._id || user.id);
+      if (!dbUser?.email) return res.status(400).json({ error: "لا يوجد بريد إلكتروني" });
+      const latestOtp = await OtpModel.findOne({ email: dbUser.email, type: "2fa_email", used: false }).sort({ createdAt: -1 });
+      if (!latestOtp) return res.status(400).json({ error: "لم يتم إرسال رمز تحقق" });
+      if (latestOtp.expiresAt < new Date()) return res.status(400).json({ error: "انتهت صلاحية الرمز" });
+      if (latestOtp.code !== String(code).trim()) return res.status(400).json({ error: "الرمز غير صحيح" });
+      await OtpModel.updateOne({ _id: latestOtp._id }, { used: true });
       await UserModel.findByIdAndUpdate(user._id || user.id, { emailOtpEnabled: true });
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }

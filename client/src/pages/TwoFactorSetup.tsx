@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,10 @@ export default function TwoFactorSetup() {
   const [totpStep, setTotpStep] = useState<"idle" | "setup" | "verify">("idle");
   const [setupData, setSetupData] = useState<{ secret: string; otpauth_url: string } | null>(null);
   const [totpToken, setTotpToken] = useState("");
+
+  const [emailStep, setEmailStep] = useState<"idle" | "verify">("idle");
+  const [emailCode, setEmailCode] = useState("");
+  const [emailTarget, setEmailTarget] = useState("");
 
   const [passphraseStep, setPassphraseStep] = useState<"idle" | "setup">("idle");
   const [passphrase, setPassphrase] = useState("");
@@ -39,7 +43,7 @@ export default function TwoFactorSetup() {
 
   const totpVerifyMutation = useMutation({
     mutationFn: async (t: string) => { const res = await apiRequest("POST", "/api/totp/verify-setup", { token: t }); return await res.json(); },
-    onSuccess: () => { setTotpStep("idle"); invalidate(); toast({ title: "تم تفعيل تطبيق المصادقة بنجاح" }); },
+    onSuccess: () => { setTotpStep("idle"); setTotpToken(""); invalidate(); toast({ title: "تم تفعيل تطبيق المصادقة بنجاح" }); },
     onError: (e: any) => toast({ title: "الرمز غير صحيح", description: e.message, variant: "destructive" }),
   });
 
@@ -49,9 +53,21 @@ export default function TwoFactorSetup() {
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
-  const emailEnableMutation = useMutation({
-    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/email-otp/enable"); return await res.json(); },
-    onSuccess: () => { invalidate(); toast({ title: "تم تفعيل التحقق عبر البريد" }); },
+  const emailSetupMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/email-otp/setup"); return await res.json(); },
+    onSuccess: (data: any) => { setEmailStep("verify"); setEmailTarget(data.email || ""); setEmailCode(""); toast({ title: "تم إرسال رمز التحقق لبريدك" }); },
+    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+  });
+
+  const emailVerifyMutation = useMutation({
+    mutationFn: async (code: string) => { const res = await apiRequest("POST", "/api/2fa/email-otp/verify", { code }); return await res.json(); },
+    onSuccess: () => { setEmailStep("idle"); setEmailCode(""); invalidate(); toast({ title: "تم تفعيل التحقق عبر البريد بنجاح" }); },
+    onError: (e: any) => toast({ title: "الرمز غير صحيح", description: e.message, variant: "destructive" }),
+  });
+
+  const emailResendMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/email-otp/setup"); return await res.json(); },
+    onSuccess: () => { setEmailCode(""); toast({ title: "تم إعادة إرسال الرمز" }); },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
@@ -130,19 +146,19 @@ export default function TwoFactorSetup() {
                 </div>
                 <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{m.desc}</p>
               </div>
-              {!m.enabled && disabling !== m.id && (
+              {!m.enabled && disabling !== m.id && emailStep === "idle" && (
                 <Button
                   size="sm"
                   onClick={() => {
                     if (m.id === "totp") totpSetupMutation.mutate();
-                    else if (m.id === "email") emailEnableMutation.mutate();
+                    else if (m.id === "email") emailSetupMutation.mutate();
                     else setPassphraseStep("setup");
                   }}
-                  disabled={totpSetupMutation.isPending || emailEnableMutation.isPending}
+                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending}
                   className="shrink-0 text-xs"
                   data-testid={`button-enable-${m.id}`}
                 >
-                  {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailEnableMutation.isPending) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "تفعيل"}
+                  {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "تفعيل"}
                 </Button>
               )}
               {m.enabled && disabling !== m.id && (
@@ -228,6 +244,52 @@ export default function TwoFactorSetup() {
                       {totpVerifyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <KeyRound className="w-4 h-4 ml-2" />}
                       تحقق وفعّل
                     </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {m.id === "email" && emailStep === "verify" && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <div className="mt-4 pt-4 border-t border-black/[0.07] dark:border-white/[0.07] space-y-3">
+                    <p className="text-sm text-black/60 dark:text-white/55">
+                      أرسلنا رمز تحقق مكون من 6 أرقام إلى{" "}
+                      <span className="font-bold text-black dark:text-white" dir="ltr">{emailTarget}</span>
+                    </p>
+                    <Input
+                      value={emailCode}
+                      onChange={e => setEmailCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="000000"
+                      className="text-center text-2xl tracking-widest font-mono"
+                      maxLength={6}
+                      inputMode="numeric"
+                      data-testid="input-email-otp-code"
+                    />
+                    <Button
+                      onClick={() => emailVerifyMutation.mutate(emailCode)}
+                      disabled={emailCode.length !== 6 || emailVerifyMutation.isPending}
+                      className="w-full"
+                      data-testid="button-verify-email-otp"
+                    >
+                      {emailVerifyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <KeyRound className="w-4 h-4 ml-2" />}
+                      تحقق وفعّل
+                    </Button>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => emailResendMutation.mutate()}
+                        disabled={emailResendMutation.isPending}
+                        className="text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors flex items-center gap-1"
+                        data-testid="button-resend-email-otp"
+                      >
+                        {emailResendMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        إعادة إرسال الرمز
+                      </button>
+                      <button
+                        onClick={() => { setEmailStep("idle"); setEmailCode(""); }}
+                        className="text-xs text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}
