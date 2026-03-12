@@ -44,9 +44,7 @@ Examples of requests that should trigger this skill:
    });
    ```
 
-5. The system will show the user a card with a link to create the new project. Wait for their response.
-6. If the user accepts: Acknowledge that their new project is being set up and let them know you're still available if they need help with this project.
-7. If the user dismisses: Ask if they'd like to continue working on their existing application. Do not re-suggest unless the user brings it up again.
+5. If the user dismisses the suggestion: Ask if they'd like to continue working on their existing application. Do not re-suggest unless the user brings it up again.
 
 ## If the User Insists
 
