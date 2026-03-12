@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Mail, MapPin, Send, MessageCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
@@ -24,6 +26,10 @@ export default function Contact() {
   const { toast } = useToast();
   const { lang, dir } = useI18n();
   const { data: user } = useUser();
+  const { data: publicSettings } = useQuery<{ whatsapp?: string }>({
+    queryKey: ["/api/public/settings"],
+    staleTime: 10 * 60 * 1000,
+  });
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -59,6 +65,8 @@ export default function Contact() {
     successDesc: lang === "ar" ? "شكراً لتواصلك معنا. سيرد عليك فريقنا خلال 24 ساعة على البريد الإلكتروني المُدخل." : "Thank you for contacting us. Our team will reply within 24 hours to the email you provided.",
     sendAnother: lang === "ar" ? "إرسال رسالة أخرى" : "Send Another Message",
     emailLabel: lang === "ar" ? "البريد الإلكتروني" : "Email",
+    whatsappLabel: lang === "ar" ? "واتساب" : "WhatsApp",
+    whatsappChat: lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp",
     locations: lang === "ar" ? "المواقع" : "Locations",
     saudi: lang === "ar" ? "المملكة العربية السعودية" : "Saudi Arabia",
     egypt: lang === "ar" ? "مصر" : "Egypt",
@@ -205,6 +213,21 @@ export default function Contact() {
               <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.emailLabel}</h3>
               <p className="text-sm text-black/40 dark:text-white/40">info@qiroxstudio.online</p>
             </div>
+            {publicSettings?.whatsapp && publicSettings.whatsapp.replace(/\D/g, "").length > 0 && (
+              <a
+                href={`https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm hover:border-[#25D366]/30 transition-colors group"
+                data-testid="link-whatsapp-contact"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 flex items-center justify-center mb-5">
+                  <SiWhatsapp className="w-5 h-5 text-[#25D366]" />
+                </div>
+                <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.whatsappLabel}</h3>
+                <p className="text-sm text-[#25D366] group-hover:underline">{T.whatsappChat}</p>
+              </a>
+            )}
             <div className="bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-7 shadow-sm">
               <div className="w-12 h-12 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-5">
                 <MapPin className="w-5 h-5 text-black/40 dark:text-white/40" />
