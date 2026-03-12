@@ -678,13 +678,17 @@ export default function Login() {
                   const data = await r.json().catch(() => ({}));
                   if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
                   setTwoFA(null);
-                  queryClient.setQueryData(["/api/user"], data);
-                  queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-                  if (data.role === "client") {
-                    const returnUrl = sessionStorage.getItem("returnAfterLogin");
-                    if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
-                    else setLocation("/dashboard");
-                  } else { setLocation("/admin"); }
+                  if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {
+                    setVerifyStep({ email: data.email, name: data.fullName || data.username || "" });
+                  } else {
+                    queryClient.setQueryData(["/api/user"], data);
+                    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                    if (data.role === "client") {
+                      const returnUrl = sessionStorage.getItem("returnAfterLogin");
+                      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+                      else setLocation("/dashboard");
+                    } else { setLocation("/admin"); }
+                  }
                 } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                 setIs2FAVerifying(false);
               }}
