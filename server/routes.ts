@@ -676,14 +676,6 @@ export async function registerRoutes(
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
             pending2FA.set(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
-            if (methods.includes("email") && dbUser!.email) {
-              const { OtpModel } = await import("./models");
-              const code = Math.floor(100000 + Math.random() * 900000).toString();
-              const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-              await OtpModel.updateMany({ email: dbUser!.email, used: false, type: "2fa_email" }, { used: true });
-              await OtpModel.create({ email: dbUser!.email, code, expiresAt, type: "2fa_email" });
-              sendLoginOtpEmail(dbUser!.email, dbUser!.fullName || dbUser!.username, code, req.headers["user-agent"] as string).catch(console.error);
-            }
             return res.status(200).json({ requires2FA: true, methods, tempToken });
           }
           req.login(user, (loginErr: any) => {
@@ -751,6 +743,7 @@ export async function registerRoutes(
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
       const session = pending2FA.get(tempToken);
       if (!session || !session.methods.includes("email")) return res.status(400).json({ error: "الجلسة غير صالحة" });
+      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" }); }
       const { UserModel, OtpModel } = await import("./models");
       const user = await UserModel.findById(session.userId);
       if (!user?.email) return res.status(400).json({ error: "البريد غير متوفر" });

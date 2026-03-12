@@ -148,6 +148,8 @@ export default function Login() {
   const [is2FAVerifying, setIs2FAVerifying] = useState(false);
   const [twoFAError, setTwoFAError] = useState("");
   const [is2FAResending, setIs2FAResending] = useState(false);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
 
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
@@ -338,6 +340,7 @@ export default function Login() {
             setTwoFACode("");
             setTwoFAPassphrase("");
             setTwoFAError("");
+            setEmailOtpSent(false);
             return;
           }
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
@@ -585,7 +588,7 @@ export default function Login() {
                 {twoFA.methods.map(m => (
                   <button
                     key={m}
-                    onClick={() => { setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); }}
+                    onClick={() => { setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); if (m !== "email") setEmailOtpSent(false); }}
                     className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
                     data-testid={`tab-2fa-${m}`}
                   >
@@ -611,7 +614,35 @@ export default function Login() {
               </div>
             )}
 
-            {twoFAMethod === "email" && (
+            {twoFAMethod === "email" && !emailOtpSent && (
+              <div className="space-y-4 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-black/[0.05] mx-auto">
+                  <Mail className="w-6 h-6 text-black/50" />
+                </div>
+                <p className="text-sm text-black/60">سيتم إرسال رمز التحقق إلى بريدك الإلكتروني المسجّل</p>
+                <Button
+                  onClick={async () => {
+                    setIsSendingEmailOtp(true);
+                    setTwoFAError("");
+                    try {
+                      const r = await fetch("/api/auth/resend-2fa-email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                      if (r.ok) { setEmailOtpSent(true); toast({ title: "تم إرسال الرمز", description: "تحقق من صندوق الوارد أو مجلد الإسبام" }); }
+                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إرسال الرمز"); }
+                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                    setIsSendingEmailOtp(false);
+                  }}
+                  disabled={isSendingEmailOtp}
+                  className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
+                  data-testid="button-send-2fa-email"
+                >
+                  {isSendingEmailOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                    <><Mail className="w-4 h-4 ml-2" />إرسال رمز التحقق</>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {twoFAMethod === "email" && emailOtpSent && (
               <div className="space-y-3">
                 <p className="text-sm text-black/60">أدخل الرمز المرسل إلى بريدك الإلكتروني:</p>
                 <Input
@@ -692,7 +723,7 @@ export default function Login() {
                 } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
                 setIs2FAVerifying(false);
               }}
-              disabled={is2FAVerifying || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+              disabled={is2FAVerifying || (twoFAMethod === "email" && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
               className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
               data-testid="button-verify-2fa"
             >
@@ -702,7 +733,7 @@ export default function Login() {
             </Button>
 
             <div className="text-center mt-4">
-              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
                 العودة لتسجيل الدخول
               </button>
             </div>
