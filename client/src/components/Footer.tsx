@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { SiGoogleplay, SiApple, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
+import { SiGoogleplay, SiApple, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp, SiLinktree } from "react-icons/si";
 import { AppWindow } from "lucide-react";
 
 type AppDownloads = {
@@ -22,6 +22,7 @@ type PublicSettings = {
   youtube?: string;
   tiktok?: string;
   whatsapp?: string;
+  linktree?: string;
   contactPhone?: string;
   contactEmail?: string;
 };
@@ -48,6 +49,7 @@ export default function Footer() {
     { key: "snapchat",   icon: <SiSnapchat className="w-4 h-4" />,   url: publicSettings?.snapchat,   label: "Snapchat" },
     { key: "youtube",    icon: <SiYoutube className="w-4 h-4" />,    url: publicSettings?.youtube,    label: "YouTube" },
     { key: "whatsapp",   icon: <SiWhatsapp className="w-4 h-4" />,   url: publicSettings?.whatsapp ? `https://wa.me/${publicSettings.whatsapp.replace(/\D/g, "")}` : undefined, label: "WhatsApp" },
+    { key: "linktree",   icon: <SiLinktree className="w-4 h-4" />,   url: publicSettings?.linktree,   label: "Linktree" },
   ].filter(s => !!s.url);
 
   const STORES = [
