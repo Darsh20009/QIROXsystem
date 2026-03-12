@@ -225,6 +225,7 @@ export default function Contact() {
                   <SiWhatsapp className="w-5 h-5 text-[#25D366]" />
                 </div>
                 <h3 className="font-bold text-black dark:text-white text-sm mb-2">{T.whatsappLabel}</h3>
+                <p className="text-sm text-black/40 dark:text-white/40 mb-1" dir="ltr">{publicSettings.whatsapp}</p>
                 <p className="text-sm text-[#25D366] group-hover:underline">{T.whatsappChat}</p>
               </a>
             )}
