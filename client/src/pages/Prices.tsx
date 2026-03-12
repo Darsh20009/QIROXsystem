@@ -9,8 +9,8 @@ import { Link, useLocation } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { useState, useMemo, useEffect } from "react";
 import {
-  Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield, Headphones,
-  Clock, Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
+  Loader2, Check, ArrowLeft, X, Globe, Tag, Gift, Plus, Shield,
+  Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
   Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
   Dumbbell, Store, CheckCircle2, Sparkles, ShoppingCart, Cpu, Code2, Server, Database, LayoutDashboard,
   Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes
@@ -457,20 +457,6 @@ export default function Prices() {
                 </div>
               </div>
 
-              {/* Feature pills grid */}
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  { icon: Shield,     label: lang === "ar" ? "ضمان الجودة"    : "Quality Guarantee", color: "text-cyan-400", bg: "bg-cyan-400/5 border-cyan-400/15" },
-                  { icon: Headphones, label: lang === "ar" ? "دعم 24/7"        : "24/7 Support",       color: "text-blue-400", bg: "bg-blue-400/5 border-blue-400/15" },
-                  { icon: Clock,      label: lang === "ar" ? "تسليم في الموعد" : "On-time Delivery",   color: "text-violet-400", bg: "bg-violet-400/5 border-violet-400/15" },
-                  { icon: Globe,      label: lang === "ar" ? "نطاق مجاني"      : "Free Domain",        color: "text-emerald-400", bg: "bg-emerald-400/5 border-emerald-400/15" },
-                ].map(({ icon: Ic, label, color, bg }) => (
-                  <div key={label} className={`flex items-center gap-2.5 p-3.5 rounded-xl border ${bg}`}>
-                    <Ic className={`w-4 h-4 ${color} shrink-0`} />
-                    <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{label}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </motion.div>
         </div>
