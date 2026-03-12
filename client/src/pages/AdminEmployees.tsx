@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2 } from "lucide-react";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
@@ -64,9 +64,10 @@ interface EmployeeForm {
   snapchat: string;
   tiktok: string;
   youtube: string;
+  linktree: string;
 }
 
-const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "", salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "", jobTitle: "", bio: "", instagram: "", twitter: "", linkedin: "", snapchat: "", tiktok: "", youtube: "" };
+const emptyForm: EmployeeForm = { username: "", password: "", email: "", fullName: "", role: "developer", phone: "", salaryType: "hourly", fixedSalary: "", hourlyRate: "", commissionRate: "", jobTitle: "", bio: "", instagram: "", twitter: "", linkedin: "", snapchat: "", tiktok: "", youtube: "", linktree: "" };
 
 interface CredentialResult {
   username: string;
@@ -218,6 +219,7 @@ export default function AdminEmployees() {
       instagram: (emp as any).instagram || "", twitter: (emp as any).twitter || "",
       linkedin: (emp as any).linkedin || "", snapchat: (emp as any).snapchat || "",
       tiktok: (emp as any).tiktok || "", youtube: (emp as any).youtube || "",
+      linktree: (emp as any).linktree || "",
     });
     setShowForm(true);
   };
@@ -366,6 +368,7 @@ export default function AdminEmployees() {
                       { key: "snapchat", icon: SiSnapchat, color: "text-yellow-400", placeholder: "https://snapchat.com/add/username", label: "Snapchat" },
                       { key: "tiktok", icon: SiTiktok, color: "text-black dark:text-white", placeholder: "https://tiktok.com/@username", label: "TikTok" },
                       { key: "youtube", icon: SiYoutube, color: "text-red-500", placeholder: "https://youtube.com/@channel", label: "YouTube" },
+                      { key: "linktree", icon: Link2, color: "text-green-500", placeholder: "https://linktr.ee/username", label: "Linktree" },
                     ].map(({ key, icon: Icon, color, placeholder, label }) => (
                       <div key={key} className="relative">
                         <div className={`absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${color}`}>

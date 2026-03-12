@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema({
   snapchat: { type: String, default: "" },
   tiktok: { type: String, default: "" },
   youtube: { type: String, default: "" },
+  linktree: { type: String, default: "" },
   // ── 2FA TOTP ──
   totpSecret: { type: String, select: false },
   totpEnabled: { type: Boolean, default: false },
@@ -1196,6 +1197,7 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   snapchat:           { type: String, default: "" },
   youtube:            { type: String, default: "" },
   tiktok:             { type: String, default: "" },
+  linktree:           { type: String, default: "" },
   // Business
   taxNumber:          { type: String, default: "" },
   commercialReg:      { type: String, default: "" },

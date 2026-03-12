@@ -553,7 +553,7 @@ export async function registerRoutes(
   });
 
   const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "client"];
-  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "jobTitle", "bio"];
+  const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "bio"];
 
   app.post("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
@@ -1224,7 +1224,7 @@ export async function registerRoutes(
     try {
       const { UserModel } = await import("./models");
       const team = await UserModel.find({ role: { $nin: ["client", "customer"] } })
-        .select("fullName role jobTitle avatarUrl instagram twitter linkedin snapchat tiktok youtube bio")
+        .select("fullName role jobTitle avatarUrl instagram twitter linkedin snapchat tiktok youtube linktree bio")
         .lean();
       res.json(team);
     } catch { res.status(500).json([]); }
@@ -8054,7 +8054,7 @@ export async function registerRoutes(
     try {
       const { UserModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
-      const allowed = ["fullName", "bio", "jobTitle", "phone", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube"];
+      const allowed = ["fullName", "bio", "jobTitle", "phone", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree"];
       const update: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) update[key] = req.body[key];

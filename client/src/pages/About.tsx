@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Code2, Layers, Globe, Cpu, GitBranch, TrendingUp,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users
+  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users, Link2
 } from "lucide-react";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 
@@ -45,6 +45,7 @@ const socialLinks = [
   { key: "snapchat", icon: SiSnapchat, color: "hover:text-yellow-400" },
   { key: "tiktok", icon: SiTiktok, color: "hover:text-black dark:hover:text-white" },
   { key: "youtube", icon: SiYoutube, color: "hover:text-red-500" },
+  { key: "linktree", icon: Link2, color: "hover:text-green-500" },
 ];
 
 export default function About() {
