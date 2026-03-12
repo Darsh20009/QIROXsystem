@@ -21,13 +21,19 @@ export default function TwoFactorSetup() {
   });
 
   const setupMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/totp/setup"),
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/totp/setup");
+      return await res.json();
+    },
     onSuccess: (data: any) => { setSetupData(data); setStep("setup"); },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
   const verifyMutation = useMutation({
-    mutationFn: (t: string) => apiRequest("POST", "/api/totp/verify-setup", { token: t }),
+    mutationFn: async (t: string) => {
+      const res = await apiRequest("POST", "/api/totp/verify-setup", { token: t });
+      return await res.json();
+    },
     onSuccess: () => {
       setStep("done");
       qc.invalidateQueries({ queryKey: ["/api/totp/status"] });
@@ -37,7 +43,10 @@ export default function TwoFactorSetup() {
   });
 
   const disableMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/totp/disable"),
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/totp/disable");
+      return await res.json();
+    },
     onSuccess: () => {
       setDisableConfirm(false);
       setStep("idle");
