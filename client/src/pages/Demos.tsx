@@ -10,7 +10,7 @@ import {
   Play, ChevronDown, ArrowRight, Star,
   Clock, Zap, Search, Filter, Globe, CheckCircle2,
   ShoppingBag, UtensilsCrossed, GraduationCap, Building2, Home, Heart,
-  Loader2, Sparkles, ListChecks, Package, FileText, Video, Link2, ExternalLink, Users,
+  Loader2, Sparkles, ListChecks, Package,
 } from "lucide-react";
 
 const CATEGORY_META: Record<string, { labelAr: string; icon: any; color: string; bg: string; border: string }> = {
@@ -203,34 +203,12 @@ function TemplateCard({ template, index }: { template: SectorTemplate; index: nu
   );
 }
 
-interface EmployeePortfolioItem {
-  _id: string;
-  title: string;
-  type: "template" | "file" | "video";
-  url: string;
-  description: string;
-  employeeName: string;
-  employeeJobTitle: string;
-  employeeAvatarUrl: string;
-}
-
-const PORTFOLIO_TYPE_CONFIG = {
-  template: { label: "نموذج",  icon: FileText, color: "text-blue-500",   bg: "bg-blue-50 dark:bg-blue-900/20",   border: "border-blue-200 dark:border-blue-700",   badge: "bg-blue-100 text-blue-700" },
-  file:     { label: "ملف",    icon: Link2,    color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-200 dark:border-purple-700", badge: "bg-purple-100 text-purple-700" },
-  video:    { label: "فيديو",  icon: Video,    color: "text-red-500",    bg: "bg-red-50 dark:bg-red-900/20",     border: "border-red-200 dark:border-red-700",     badge: "bg-red-100 text-red-700" },
-};
-
 export default function Demos() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
 
   const { data: templates = [], isLoading } = useQuery<SectorTemplate[]>({
     queryKey: ["/api/templates"],
-  });
-
-  const { data: employeeItems = [] } = useQuery<EmployeePortfolioItem[]>({
-    queryKey: ["/api/public/employee-portfolio"],
-    staleTime: 5 * 60 * 1000,
   });
 
   const activeTemplates = templates.filter(t => t.status !== "archived" && !!t.demoUrl);
@@ -339,82 +317,6 @@ export default function Demos() {
           </>
         )}
       </div>
-
-      {/* Employee Portfolio Section */}
-      {employeeItems.length > 0 && (
-        <div className="max-w-6xl mx-auto px-6 pb-12">
-          <div className="border-t border-black/[0.06] dark:border-white/[0.06] pt-12">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-black dark:bg-white rounded-2xl flex items-center justify-center">
-                <Users className="w-5 h-5 text-white dark:text-black" />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-black dark:text-white">أعمال فريقنا</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">نماذج وملفات وفيديوهات أضافها أعضاء الفريق</p>
-              </div>
-              <span className="mr-auto text-xs text-black/30 dark:text-white/30 bg-black/[0.04] dark:bg-white/[0.04] px-3 py-1 rounded-full">
-                {employeeItems.length} عنصر
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {employeeItems.map((item, i) => {
-                const cfg = PORTFOLIO_TYPE_CONFIG[item.type] || PORTFOLIO_TYPE_CONFIG.template;
-                const Icon = cfg.icon;
-                return (
-                  <motion.a
-                    key={item._id}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className={`group relative flex flex-col rounded-2xl border p-4 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900 ${cfg.border}`}
-                    data-testid={`emp-portfolio-${item._id}`}
-                  >
-                    {/* Type badge */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
-                        {cfg.label}
-                      </span>
-                      <ExternalLink className="w-3.5 h-3.5 text-black/20 dark:text-white/20 group-hover:text-black/60 dark:group-hover:text-white/60 transition-colors" />
-                    </div>
-
-                    {/* Icon */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${cfg.bg}`}>
-                      <Icon className={`w-5 h-5 ${cfg.color}`} />
-                    </div>
-
-                    {/* Title + desc */}
-                    <p className="font-bold text-sm text-black dark:text-white mb-1 leading-tight line-clamp-2">{item.title}</p>
-                    {item.description && (
-                      <p className="text-xs text-black/40 dark:text-white/40 mb-3 line-clamp-2">{item.description}</p>
-                    )}
-
-                    {/* Employee */}
-                    <div className="mt-auto pt-3 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center gap-2">
-                      {item.employeeAvatarUrl ? (
-                        <img src={item.employeeAvatarUrl} alt={item.employeeName}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center flex-shrink-0 text-[10px] font-black text-black/40 dark:text-white/40">
-                          {item.employeeName.charAt(0)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-bold text-black/60 dark:text-white/60 truncate">{item.employeeName}</p>
-                        {item.employeeJobTitle && (
-                          <p className="text-[10px] text-black/30 dark:text-white/30 truncate">{item.employeeJobTitle}</p>
-                        )}
-                      </div>
-                    </div>
-                  </motion.a>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CTA */}
       <div className="bg-black py-20 px-6">
