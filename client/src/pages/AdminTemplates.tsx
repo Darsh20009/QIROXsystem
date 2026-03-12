@@ -18,9 +18,9 @@ import {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe, Star, BadgePercent,
   Sparkles, Tag, Check, UtensilsCrossed, ShoppingBag, Building2, Home, Infinity, Zap,
-  X, ExternalLink, Link2, ListChecks
+  X, ExternalLink, Link2, ListChecks, Video, FileText, BookOpenCheck
 } from "lucide-react";
-import type { SectorTemplate, PricingPlan, FeatureDetail } from "@shared/schema";
+import type { SectorTemplate, PricingPlan, FeatureDetail, TemplateFile } from "@shared/schema";
 
 const SEGMENT_META: Record<string, { labelAr: string; icon: any; color: string; bg: string }> = {
   restaurant:    { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
@@ -66,14 +66,23 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
     features: template?.features?.join(", ") || "",
     featuresAr: template?.featuresAr?.join("، ") || "",
     tags: template?.tags?.join(", ") || "",
+    howToUseAr: template?.howToUseAr || "",
+    howToUseVideoUrl: template?.howToUseVideoUrl || "",
   });
   const [featuresDetails, setFeaturesDetails] = useState<FeatureDetail[]>(
     template?.featuresDetails?.length ? template.featuresDetails : []
+  );
+  const [templateFiles, setTemplateFiles] = useState<TemplateFile[]>(
+    template?.templateFiles?.length ? template.templateFiles : []
   );
   const addFeatureDetail = () => setFeaturesDetails(f => [...f, { titleAr: "", title: "", descAr: "", icon: "✨" }]);
   const removeFeatureDetail = (i: number) => setFeaturesDetails(f => f.filter((_, idx) => idx !== i));
   const updateFeatureDetail = (i: number, key: keyof FeatureDetail, val: string) =>
     setFeaturesDetails(f => f.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
+  const addTemplateFile = () => setTemplateFiles(f => [...f, { nameAr: "", url: "" }]);
+  const removeTemplateFile = (i: number) => setTemplateFiles(f => f.filter((_, idx) => idx !== i));
+  const updateTemplateFile = (i: number, key: keyof TemplateFile, val: string) =>
+    setTemplateFiles(f => f.map((item, idx) => idx === i ? { ...item, [key]: val } : item));
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => { const res = await apiRequest("POST", "/api/admin/templates", data); return res.json(); },
@@ -95,6 +104,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       featuresAr: formData.featuresAr.split("،").map(s => s.trim()).filter(Boolean),
       tags: formData.tags.split(",").map(s => s.trim()).filter(Boolean),
       featuresDetails,
+      templateFiles: templateFiles.filter(f => f.nameAr && f.url),
     };
     template ? updateMutation.mutate(payload) : createMutation.mutate(payload);
   };
@@ -142,6 +152,42 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       <div>
         <label className="text-xs font-medium text-black/50 block mb-1 flex items-center gap-1.5"><Link2 className="w-3 h-3" /> رابط الديمو</label>
         <Input value={formData.demoUrl} onChange={e => setFormData(f => ({...f, demoUrl: e.target.value}))} placeholder="https://demo.example.com" dir="ltr" data-testid="input-demo-url" />
+      </div>
+
+      {/* Usage Guide Section */}
+      <div className="border border-black/[0.08] dark:border-white/[0.08] rounded-xl p-4 space-y-3 bg-violet-50/40 dark:bg-violet-900/10">
+        <p className="text-xs font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5"><BookOpenCheck className="w-3.5 h-3.5" /> شرح وطريقة الاستخدام</p>
+        <div>
+          <label className="text-xs font-medium text-black/50 block mb-1 flex items-center gap-1.5"><Video className="w-3 h-3" /> رابط فيديو الشرح (YouTube)</label>
+          <Input value={formData.howToUseVideoUrl} onChange={e => setFormData(f => ({...f, howToUseVideoUrl: e.target.value}))} placeholder="https://youtube.com/watch?v=..." dir="ltr" data-testid="input-how-to-use-video" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-black/50 block mb-1">طريقة الاستخدام (نص عربي)</label>
+          <Textarea rows={4} value={formData.howToUseAr} onChange={e => setFormData(f => ({...f, howToUseAr: e.target.value}))} placeholder="اشرح هنا كيفية استخدام النظام خطوة بخطوة..." data-testid="input-how-to-use-ar" />
+        </div>
+        {/* Template Files */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-medium text-black/50 flex items-center gap-1.5"><FileText className="w-3 h-3" /> ملفات الشرح والمميزات</label>
+            <Button type="button" size="sm" variant="outline" onClick={addTemplateFile} className="h-6 px-2 text-[10px] rounded-lg gap-1" data-testid="btn-add-template-file">
+              <Plus className="w-3 h-3" /> إضافة ملف
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {templateFiles.map((tf, i) => (
+              <div key={i} className="flex items-center gap-2" data-testid={`template-file-${i}`}>
+                <Input value={tf.nameAr} onChange={e => updateTemplateFile(i, "nameAr", e.target.value)} placeholder="اسم الملف (مثل: دليل الاستخدام)" className="h-8 text-xs flex-1" />
+                <Input value={tf.url} onChange={e => updateTemplateFile(i, "url", e.target.value)} placeholder="https://..." dir="ltr" className="h-8 text-xs flex-1" />
+                <button type="button" onClick={() => removeTemplateFile(i)} className="w-7 h-7 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center shrink-0">
+                  <X className="w-3 h-3 text-red-600" />
+                </button>
+              </div>
+            ))}
+            {templateFiles.length === 0 && (
+              <p className="text-center text-[11px] text-black/30 py-2">لا توجد ملفات بعد</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Feature Details (usage guide per feature) */}

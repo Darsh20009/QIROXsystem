@@ -145,6 +145,8 @@ const projectSchema = new mongoose.Schema({
     files: [{ type: String }],
     updatedAt: { type: Date },
   },
+  deliveryVideoUrl: String,
+  deliveryFiles: [{ nameAr: String, url: String, icon: String }],
 }, { timestamps: true });
 
 const taskSchema = new mongoose.Schema({
@@ -269,6 +271,9 @@ const sectorTemplateSchema = new mongoose.Schema({
   sortOrder: { type: Number, default: 0 },
   demoUrl: String,
   heroColor: String,
+  howToUseAr: String,
+  howToUseVideoUrl: String,
+  templateFiles: [{ nameAr: String, url: String }],
 }, { timestamps: true });
 
 const pricingPlanSchema = new mongoose.Schema({

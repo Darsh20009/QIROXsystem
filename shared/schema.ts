@@ -215,6 +215,11 @@ export interface FeatureDetail {
   icon: string;
 }
 
+export interface TemplateFile {
+  nameAr: string;
+  url: string;
+}
+
 export interface SectorTemplate {
   id: string;
   name: string;
@@ -236,6 +241,9 @@ export interface SectorTemplate {
   sortOrder: number;
   demoUrl?: string;
   heroColor?: string;
+  howToUseAr?: string;
+  howToUseVideoUrl?: string;
+  templateFiles?: TemplateFile[];
   createdAt?: Date;
 }
 
@@ -259,6 +267,9 @@ export interface InsertSectorTemplate {
   sortOrder?: number;
   demoUrl?: string;
   heroColor?: string;
+  howToUseAr?: string;
+  howToUseVideoUrl?: string;
+  templateFiles?: TemplateFile[];
 }
 
 export interface PricingPlan {

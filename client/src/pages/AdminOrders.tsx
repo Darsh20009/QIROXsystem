@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send, Package } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -102,6 +102,7 @@ export default function AdminOrders() {
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
   const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
   const [guideForm, setGuideForm] = useState({ title: "شرح استخدام النظام", description: "", files: "" });
+  const [deliveryForm, setDeliveryForm] = useState({ videoUrl: "", files: "" });
   const [phoneReqOpen, setPhoneReqOpen] = useState(false);
   const [phoneReqNotes, setPhoneReqNotes] = useState("");
 
@@ -142,6 +143,12 @@ export default function AdminOrders() {
     } else {
       setGuideForm({ title: "شرح استخدام النظام", description: "", files: "" });
     }
+    setDeliveryForm({
+      videoUrl: orderProject?.deliveryVideoUrl || "",
+      files: Array.isArray(orderProject?.deliveryFiles)
+        ? orderProject.deliveryFiles.map((f: any) => `${f.nameAr || ""}|${f.url || ""}|${f.icon || ""}`).join("\n")
+        : "",
+    });
   }, [orderProject]);
 
   useEffect(() => {
@@ -282,6 +289,19 @@ export default function AdminOrders() {
     onError: () => toast({ title: "فشل حفظ الشرح", variant: "destructive" }),
   });
 
+  const saveDeliveryMutation = useMutation({
+    mutationFn: async ({ projectId, data }: { projectId: string; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/admin/projects/${projectId}/delivery`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({ title: "✅ تم حفظ بيانات التسليم" });
+    },
+    onError: () => toast({ title: "فشل حفظ بيانات التسليم", variant: "destructive" }),
+  });
+
   const handleSaveGuide = () => {
     if (!orderProject?.id) { toast({ title: "لا يوجد مشروع مرتبط بهذا الطلب", variant: "destructive" }); return; }
     saveGuideMutation.mutate({
@@ -291,6 +311,23 @@ export default function AdminOrders() {
         description: guideForm.description,
         files: guideForm.files.split("\n").map(f => f.trim()).filter(Boolean),
       },
+    });
+  };
+
+  const handleSaveDelivery = () => {
+    if (!orderProject?.id) { toast({ title: "لا يوجد مشروع مرتبط بهذا الطلب", variant: "destructive" }); return; }
+    const parsedFiles = deliveryForm.files
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const parts = line.split("|");
+        return { nameAr: parts[0]?.trim() || "", url: parts[1]?.trim() || "", icon: parts[2]?.trim() || "📄" };
+      })
+      .filter(f => f.nameAr && f.url);
+    saveDeliveryMutation.mutate({
+      projectId: orderProject.id,
+      data: { deliveryVideoUrl: deliveryForm.videoUrl, deliveryFiles: parsedFiles },
     });
   };
 
@@ -1018,6 +1055,36 @@ export default function AdminOrders() {
                               data-testid="button-save-guide">
                               {saveGuideMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
                               حفظ شرح الاستخدام
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* ─── Delivery Data Section ─── */}
+                        <div className="border border-green-200 rounded-2xl p-5 bg-green-50">
+                          <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Package className="w-3.5 h-3.5" />تسليم المشروع — فيديو وملفات
+                          </p>
+                          {!orderProject && (
+                            <p className="text-xs text-green-600/60 mb-3">⚠️ لا يوجد مشروع مرتبط. أنشئ المشروع أولاً.</p>
+                          )}
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-green-700 mb-1 block">رابط فيديو التسليم / الشرح (YouTube أو أي رابط)</label>
+                              <Input value={deliveryForm.videoUrl} onChange={e => setDeliveryForm(f => ({ ...f, videoUrl: e.target.value }))}
+                                placeholder="https://youtube.com/watch?v=..." className="text-sm bg-white font-mono" dir="ltr" disabled={!orderProject} data-testid="input-delivery-video" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-green-700 mb-1 block">ملفات التسليم (سطر لكل ملف: اسم|رابط|إيموجي)</label>
+                              <Textarea value={deliveryForm.files} onChange={e => setDeliveryForm(f => ({ ...f, files: e.target.value }))}
+                                placeholder={"دليل الاستخدام|https://drive.google.com/...|📄\nشرح الكود المصدري|https://github.com/...|💻"}
+                                className="text-sm h-24 resize-none font-mono bg-white text-xs" data-testid="textarea-delivery-files" disabled={!orderProject} dir="ltr" />
+                              <p className="text-[10px] text-green-600/60 mt-1">صيغة كل سطر: اسم الملف | رابط التحميل | إيموجي (اختياري)</p>
+                            </div>
+                            <Button onClick={handleSaveDelivery} disabled={saveDeliveryMutation.isPending || !orderProject}
+                              className="w-full h-9 bg-green-600 hover:bg-green-700 text-white gap-2 rounded-xl text-xs font-bold"
+                              data-testid="button-save-delivery">
+                              {saveDeliveryMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+                              حفظ بيانات التسليم
                             </Button>
                           </div>
                         </div>

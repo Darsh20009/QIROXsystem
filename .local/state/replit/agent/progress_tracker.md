@@ -35,3 +35,6 @@
 [x] 35. Fix mobile responsiveness — horizontal scroll, zoom, elements not showing on Android/iPhone
 [x] 36. Fix QMeet bugs: local video, screen share fullsize, screen share permission system, whiteboard sync + size + lag, chat delivery
 [x] 37. Full PayPal integration — card payment via PayPal CardFields (PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET set, SAR→USD auto-conversion at 3.75 fixed peg, USD equivalent shown to user in card form)
+[x] 38. Business templates: add howToUseAr, howToUseVideoUrl, templateFiles fields + AdminTemplates form UI
+[x] 39. Project delivery: add deliveryVideoUrl, deliveryFiles to project model + admin UI in AdminOrders + rich client view in ProjectDetails deliverables tab
+[x] 40. Fix favicon — use favicon.ico as primary icon for browser tab display

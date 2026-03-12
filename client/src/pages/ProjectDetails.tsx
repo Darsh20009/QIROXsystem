@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus, Trash2, Package, AlertCircle, RefreshCw, CheckCheck, Clock, XCircle } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, CheckCircle2, FileText, Download, ShieldCheck, Link2, Receipt, CreditCard, FileSignature, Bell, Database, Globe, Key, Share2, StickyNote, Mic, Send, Plus, Trash2, Package, AlertCircle, RefreshCw, CheckCheck, Clock, XCircle, Video, BookOpen, ExternalLink, PlayCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import SARIcon from "@/components/SARIcon";
@@ -16,6 +16,11 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+
+function extractYouTubeId(url: string): string {
+  const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
+  return match ? match[1] : "";
+}
 
 export default function ProjectDetails() {
   const [, params] = useRoute("/project/:section");
@@ -555,15 +560,102 @@ export default function ProjectDetails() {
           </TabsContent>
 
           <TabsContent value="deliverables">
-            <Card>
-              <CardHeader><CardTitle className="font-heading">ملفات التسليم النهائية</CardTitle></CardHeader>
-              <CardContent>
-                <div className="p-12 text-center text-slate-400">
-                  <Download className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                  <p>سيتم رفع ملفات التسليم النهائية هنا عند اكتمال المشروع</p>
+            <div className="space-y-5">
+              {/* Delivery Video */}
+              {(project as any).deliveryVideoUrl ? (
+                <div className="rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-white">
+                  <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+                    <PlayCircle className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-slate-800">فيديو شرح التسليم</h3>
+                  </div>
+                  <div className="p-4">
+                    {(project as any).deliveryVideoUrl.includes("youtube.com") || (project as any).deliveryVideoUrl.includes("youtu.be") ? (
+                      <div className="relative w-full rounded-xl overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+                        <iframe
+                          className="absolute inset-0 w-full h-full"
+                          src={`https://www.youtube.com/embed/${extractYouTubeId((project as any).deliveryVideoUrl)}`}
+                          title="فيديو التسليم"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        />
+                      </div>
+                    ) : (
+                      <a href={(project as any).deliveryVideoUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors group">
+                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                          <Video className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="font-medium text-slate-700 group-hover:text-primary transition-colors">مشاهدة فيديو الشرح</span>
+                        <ExternalLink className="w-4 h-4 text-slate-400 mr-auto" />
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              ) : null}
+
+              {/* Delivery Files */}
+              {Array.isArray((project as any).deliveryFiles) && (project as any).deliveryFiles.length > 0 ? (
+                <div className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+                    <Download className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-slate-800">ملفات التسليم</h3>
+                    <Badge className="mr-auto text-[10px] h-5">{(project as any).deliveryFiles.length}</Badge>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(project as any).deliveryFiles.map((file: any, idx: number) => (
+                      <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" data-testid={`delivery-file-${idx}`}
+                        className="flex items-center gap-3 p-3.5 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl transition-all group">
+                        <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0 text-lg">
+                          {file.icon || "📄"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-slate-800 truncate">{file.nameAr || "ملف"}</p>
+                          <p className="text-[10px] text-slate-400 truncate" dir="ltr">{file.url}</p>
+                        </div>
+                        <Download className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Usage Guide */}
+              {(project as any).usageGuide?.description ? (
+                <div className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-violet-600" />
+                    <h3 className="font-bold text-slate-800">{(project as any).usageGuide?.title || "دليل الاستخدام"}</h3>
+                  </div>
+                  <div className="p-5">
+                    <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{(project as any).usageGuide.description}</div>
+                    {Array.isArray((project as any).usageGuide?.files) && (project as any).usageGuide.files.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">ملفات الدليل</p>
+                        {(project as any).usageGuide.files.map((f: string, i: number) => (
+                          <a key={i} href={f} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2.5 bg-violet-50 hover:bg-violet-100 border border-violet-100 rounded-lg text-sm text-violet-700 transition-colors">
+                            <FileText className="w-4 h-4" />
+                            <span className="truncate" dir="ltr">{f.split("/").pop() || f}</span>
+                            <ExternalLink className="w-3 h-3 mr-auto shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Empty state */}
+              {!(project as any).deliveryVideoUrl && !(Array.isArray((project as any).deliveryFiles) && (project as any).deliveryFiles.length > 0) && !(project as any).usageGuide?.description && (
+                <Card>
+                  <CardContent className="p-12 text-center text-slate-400">
+                    <Download className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                    <p className="font-medium mb-1">لم يتم رفع ملفات التسليم بعد</p>
+                    <p className="text-xs text-slate-300">سيتم رفع ملفات التسليم والشرح هنا عند اكتمال المشروع</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="addons">

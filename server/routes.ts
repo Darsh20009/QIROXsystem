@@ -1581,6 +1581,28 @@ export async function registerRoutes(
     res.json({ success: true, usageGuide: (project as any).usageGuide });
   });
 
+  // ── Admin: set/update delivery data (video + files) for a project ──
+  app.patch("/api/admin/projects/:id/delivery", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (role === "client") return res.sendStatus(403);
+    const { ProjectModel } = await import("./models");
+    const { deliveryVideoUrl, deliveryFiles, usageGuide } = req.body;
+    const update: any = {};
+    if (deliveryVideoUrl !== undefined) update.deliveryVideoUrl = deliveryVideoUrl;
+    if (Array.isArray(deliveryFiles)) update.deliveryFiles = deliveryFiles;
+    if (usageGuide !== undefined) {
+      update.usageGuide = { ...usageGuide, updatedAt: new Date() };
+    }
+    const project = await ProjectModel.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true }
+    ).lean();
+    if (!project) return res.sendStatus(404);
+    res.json({ success: true, project });
+  });
+
   app.patch(api.tasks.update.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const input = api.tasks.update.input.parse(req.body);
