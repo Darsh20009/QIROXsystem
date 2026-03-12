@@ -83,18 +83,18 @@ const TIER_CONFIG: Record<string, {
 }> = {
   lite: {
     labelAr: "لايت", labelEn: "Lite", icon: Zap,
-    cardBg: "bg-[#0f172a]",
-    headerGrad: "from-[#0f172a] via-[#131e2e] to-[#0f172a]",
-    borderColor: "border-slate-700/60",
-    accentColor: "text-slate-200",
+    cardBg: "bg-white dark:bg-[#0f172a]",
+    headerGrad: "from-gray-50 via-white to-gray-50 dark:from-[#0f172a] dark:via-[#131e2e] dark:to-[#0f172a]",
+    borderColor: "border-gray-200 dark:border-slate-700/60",
+    accentColor: "text-gray-900 dark:text-slate-200",
     accentGlow: "",
-    priceColor: "text-white",
-    featureColor: "text-slate-300",
-    badgeBg: "bg-slate-800/80",
-    badgeText: "text-slate-300",
-    ctaBg: "bg-slate-200 hover:bg-white text-slate-900",
+    priceColor: "text-gray-900 dark:text-white",
+    featureColor: "text-gray-600 dark:text-slate-300",
+    badgeBg: "bg-gray-100 dark:bg-slate-800/80",
+    badgeText: "text-gray-600 dark:text-slate-300",
+    ctaBg: "bg-gray-900 hover:bg-black text-white dark:bg-slate-200 dark:hover:bg-white dark:text-slate-900",
     ctaText: "",
-    patternColor: "opacity-[0.06]",
+    patternColor: "opacity-[0.03] dark:opacity-[0.06]",
     taglinePrimary: "انطلق بثقة",
     taglineSecondary: "Launch with confidence",
     tierNum: "01",
@@ -204,7 +204,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       )}
 
       {/* Decorative background */}
-      <div className={`absolute inset-0 text-slate-400 ${cfg.patternColor} pointer-events-none`}>
+      <div className={`absolute inset-0 text-gray-300 dark:text-slate-400 ${cfg.patternColor} pointer-events-none`}>
         <GridPattern />
       </div>
 
@@ -221,7 +221,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       {/* ─── Header ─── */}
       <div className={`relative px-6 pt-6 pb-5 bg-gradient-to-br ${cfg.headerGrad}`}>
         {/* Tier number badge */}
-        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-slate-600"}`}>
+        <div className={`absolute top-4 ${lang === "ar" ? "left-4" : "right-4"} text-[11px] font-black tracking-[0.2em] ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/20" : "text-gray-300 dark:text-slate-600"}`}>
           {cfg.tierNum}
         </div>
 
@@ -238,44 +238,44 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
         {/* Icon + Name */}
         <div className="flex items-center gap-3 mb-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.badgeBg}`}>
-            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-300"}`} />
+            <TierIcon className={`w-5 h-5 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-300"}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-slate-500"}`}>QIROX SYSTEMS</p>
+            <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 ${isPro ? "text-white/40" : isInfinite ? "text-amber-400/50" : "text-gray-400 dark:text-slate-500"}`}>QIROX SYSTEMS</p>
             <p className={`font-black text-base leading-tight truncate ${cfg.accentColor}`}>
               {lang === "ar" ? plan.nameAr : (plan.nameEn || plan.nameAr)}
             </p>
           </div>
-          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-slate-600"}`}>
+          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border shrink-0 ${cfg.badgeBg} ${cfg.badgeText} ${isInfinite ? "border-amber-400/20" : isPro ? "border-white/15" : "border-gray-300 dark:border-slate-600"}`}>
             {lang === "ar" ? cfg.labelAr : cfg.labelEn}
           </span>
         </div>
 
         {/* Tagline */}
-        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-slate-500"}`}>
+        <p className={`text-xs font-bold tracking-wider ${isInfinite ? "text-amber-400/60" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-500"}`}>
           — {lang === "ar" ? cfg.taglinePrimary : cfg.taglineSecondary}
         </p>
       </div>
 
       {/* ─── Price ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-slate-800/60 bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-white/[0.02]" : isPro ? "border-white/10 bg-white/[0.05]" : "border-gray-100 bg-gray-50 dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <AnimatePresence mode="wait">
           <motion.div key={`${plan.tier}-${period}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className={`text-4xl font-black tracking-tight ${cfg.priceColor}`}>{price.toLocaleString()}</span>
               {lang === "ar"
                 ? <SARIcon size={16} className={`${isPro || isInfinite ? "opacity-40" : "opacity-60"}`} />
-                : <span className={`text-sm font-medium ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>SAR</span>}
-              <span className={`text-xs ${isPro || isInfinite ? "text-white/30" : "text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
+                : <span className={`text-sm font-medium ${isPro || isInfinite ? "text-white/40" : "text-gray-400 dark:text-slate-400"}`}>SAR</span>}
+              <span className={`text-xs ${isPro || isInfinite ? "text-white/30" : "text-gray-400 dark:text-slate-400"}`}>{getPeriodSuffix(period, lang)}</span>
             </div>
             {monthlyEquiv && period !== "monthly" && (
-              <div className={`mt-2 flex items-center gap-2 flex-wrap text-[11px] ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>
+              <div className={`mt-2 flex items-center gap-2 flex-wrap text-[11px] ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
                 <span className="flex items-center gap-1">= <span className="font-semibold flex items-center gap-0.5">{monthlyEquiv.toLocaleString()} {lang === "ar" ? <SARIcon size={10} className="opacity-70" /> : "SAR"}/شهر</span></span>
                 {saving > 0 && <span className={`font-black text-emerald-${isPro ? "300" : "500"}`}>{lang === "ar" ? `— وفّر ${saving}%` : `— Save ${saving}%`}</span>}
               </div>
             )}
             {period === "lifetime" && (
-              <p className={`text-[11px] mt-2 flex items-center gap-1 ${isPro || isInfinite ? "text-white/40" : "text-slate-400"}`}>
+              <p className={`text-[11px] mt-2 flex items-center gap-1 ${isPro || isInfinite ? "text-white/40" : "text-gray-500 dark:text-slate-400"}`}>
                 <Globe className="w-3 h-3" /> {lang === "ar" ? "دومين مجاني 3 سنوات" : "Free domain 3 years"}
               </p>
             )}
@@ -284,8 +284,8 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       </div>
 
       {/* ─── Features ─── */}
-      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-[#0f172a]"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-slate-500"}`}>
+      <div className={`relative flex-1 px-6 py-5 ${isInfinite ? "bg-[#09090f]" : isPro ? "bg-[#1a3a6e]" : "bg-white dark:bg-[#0f172a]"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-gray-400 dark:text-slate-500"}`}>
           {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
         </p>
         <div className="space-y-2.5">
@@ -293,15 +293,15 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
             const FIcon = featureIcon(f);
             return (
               <div key={i} className="flex items-start gap-2.5">
-                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-slate-800"}`}>
-                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-slate-400"}`} />
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${isInfinite ? "bg-amber-400/10" : isPro ? "bg-white/10" : "bg-gray-100 dark:bg-slate-800"}`}>
+                  <FIcon className={`w-3 h-3 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-gray-500 dark:text-slate-400"}`} />
                 </div>
                 <span className={`text-xs leading-snug ${cfg.featureColor}`}>{f}</span>
               </div>
             );
           })}
           {features.length > 6 && (
-            <div className={`text-[10px] font-bold ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/30" : "text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
+            <div className={`text-[10px] font-bold ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
               {lang === "ar" ? `+ ${features.length - 6} ميزة أخرى` : `+ ${features.length - 6} more`}
             </div>
           )}
@@ -309,7 +309,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       </div>
 
       {/* ─── CTA ─── */}
-      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-slate-800/60 bg-[#0f172a]"}`}>
+      <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <Button
           onClick={e => { e.stopPropagation(); onSelect(plan, price, period); }}
           className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
@@ -404,18 +404,18 @@ export default function Prices() {
   ) ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080810]" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[#080810]" dir={dir}>
       <Navigation />
 
       {/* ─── HERO ─── */}
-      <section className="relative pt-24 pb-20 overflow-hidden bg-[#080810]">
+      <section className="relative pt-24 pb-20 overflow-hidden bg-gray-50 dark:bg-[#080810]">
         {/* Background grid */}
-        <div className="absolute inset-0 text-slate-300/[0.04] pointer-events-none">
+        <div className="absolute inset-0 text-gray-300/[0.06] dark:text-slate-300/[0.04] pointer-events-none">
           <GridPattern />
         </div>
         {/* Radial glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/10 blur-[80px] rounded-full" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-400/10 dark:bg-blue-600/10 blur-[80px] rounded-full" />
         </div>
 
         <div className="relative container mx-auto px-4 max-w-5xl">
@@ -423,21 +423,21 @@ export default function Prices() {
             {/* Eyebrow */}
             <div className="flex items-center gap-2 mb-6">
               <div className="w-6 h-6 rounded-md bg-blue-500/20 flex items-center justify-center">
-                <Boxes className="w-3.5 h-3.5 text-blue-400" />
+                <Boxes className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
               </div>
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-400/70">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600/70 dark:text-blue-400/70">
                 {lang === "ar" ? "مصنع الأنظمة الرقمية" : "DIGITAL SYSTEMS FACTORY"}
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
               <div>
-                <h1 className="text-5xl md:text-6xl font-black text-white mb-5 leading-[1.05] tracking-tight">
+                <h1 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-5 leading-[1.05] tracking-tight">
                   {lang === "ar"
-                    ? <><span className="text-white">باقات</span><br /><span className="bg-gradient-to-l from-cyan-400 to-blue-400 bg-clip-text text-transparent">مبنية</span><br /><span className="text-white/60">لقطاعك</span></>
-                    : <><span className="text-white">Plans</span><br /><span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">built</span><br /><span className="text-white/60">for your sector</span></>}
+                    ? <><span className="text-gray-900 dark:text-white">باقات</span><br /><span className="bg-gradient-to-l from-cyan-500 to-blue-500 dark:from-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">مبنية</span><br /><span className="text-gray-400 dark:text-white/60">لقطاعك</span></>
+                    : <><span className="text-gray-900 dark:text-white">Plans</span><br /><span className="bg-gradient-to-r from-cyan-500 to-blue-500 dark:from-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">built</span><br /><span className="text-gray-400 dark:text-white/60">for your sector</span></>}
                 </h1>
-                <p className="text-slate-400 text-base leading-relaxed max-w-sm mb-8">
+                <p className="text-gray-500 dark:text-slate-400 text-base leading-relaxed max-w-sm mb-8">
                   {lang === "ar"
                     ? "كل قطاع له نظامه الخاص المبرمج من الصفر — ليس قالبًا جاهزًا، بل مصنع مخصص لك."
                     : "Every sector has its own system built from scratch — not a template, a factory built for you."}
@@ -450,8 +450,8 @@ export default function Prices() {
                     { val: "7",    label: lang === "ar" ? "قطاعات" : "Sectors" },
                   ].map(s => (
                     <div key={s.val}>
-                      <p className="text-2xl font-black text-white">{s.val}</p>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">{s.label}</p>
+                      <p className="text-2xl font-black text-gray-900 dark:text-white">{s.val}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-slate-500 uppercase tracking-wider">{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -467,7 +467,7 @@ export default function Prices() {
                 ].map(({ icon: Ic, label, color, bg }) => (
                   <div key={label} className={`flex items-center gap-2.5 p-3.5 rounded-xl border ${bg}`}>
                     <Ic className={`w-4 h-4 ${color} shrink-0`} />
-                    <span className="text-xs font-semibold text-slate-300">{label}</span>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{label}</span>
                   </div>
                 ))}
               </div>
@@ -477,10 +477,10 @@ export default function Prices() {
       </section>
 
       {/* ─── SEGMENT SELECTOR ─── */}
-      <section className="py-6 border-b border-slate-800/80 bg-[#0a0a14] sticky top-0 z-20 backdrop-blur-sm">
+      <section className="py-6 border-b border-gray-200 dark:border-slate-800/80 bg-gray-50/80 dark:bg-[#0a0a14] sticky top-0 z-20 backdrop-blur-sm">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex flex-wrap items-center gap-2" data-testid="segment-selector">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 ml-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-slate-600 ml-2">
               {lang === "ar" ? "القطاع :" : "SECTOR :"}
             </span>
             {segments.map(seg => {
@@ -493,11 +493,11 @@ export default function Prices() {
                   data-testid={`btn-segment-${seg.key}`}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg border text-xs font-bold transition-all duration-150 ${
                     isActive
-                      ? "bg-white text-slate-900 border-white"
-                      : "border-slate-700/60 text-slate-500 hover:border-slate-600 hover:text-slate-300 bg-transparent"
+                      ? "bg-gray-900 text-white dark:bg-white dark:text-slate-900 border-gray-900 dark:border-white"
+                      : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-700 dark:hover:text-slate-300 bg-transparent"
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-slate-700" : seg.color}`} />
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white dark:text-slate-700" : seg.color}`} />
                   {lang === "ar" ? seg.labelAr : seg.labelEn}
                 </motion.button>
               );
@@ -507,10 +507,10 @@ export default function Prices() {
       </section>
 
       {/* ─── BILLING PERIOD TABS ─── */}
-      <section className="py-5 bg-[#0a0a14] border-b border-slate-800/60">
+      <section className="py-5 bg-white dark:bg-[#0a0a14] border-b border-gray-200 dark:border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex flex-wrap items-center gap-2" data-testid="billing-period-selector">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 ml-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-slate-600 ml-2">
               {lang === "ar" ? "الفترة :" : "PERIOD :"}
             </span>
             {PERIODS.map(({ key, labelAr, labelEn, icon: PIcon, badgeAr, badgeEn }) => {
@@ -522,7 +522,7 @@ export default function Prices() {
                   className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all border ${
                     isActive
                       ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/25"
-                      : "border-slate-700/60 text-slate-500 hover:text-slate-300 hover:border-slate-600"
+                      : "border-gray-300 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:border-gray-400 dark:hover:border-slate-600"
                   }`}
                 >
                   <PIcon className="w-3 h-3" />
@@ -538,16 +538,16 @@ export default function Prices() {
       </section>
 
       {/* ─── TIER CARDS ─── */}
-      <section className="py-14 bg-[#0a0a14]">
+      <section className="py-14 bg-gray-100 dark:bg-[#0a0a14]">
         <div className="container mx-auto px-4 max-w-5xl">
           {/* Context breadcrumb */}
           <div className="flex items-center gap-2 mb-10">
             <div className={`w-6 h-6 rounded-md ${activeSeg.bg} flex items-center justify-center`}>
               <activeSeg.icon className={`w-3.5 h-3.5 ${activeSeg.color}`} />
             </div>
-            <span className="text-sm font-black text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
-            <span className="text-xs text-slate-500">{lang === "ar" ? PERIODS.find(p => p.key === period)?.labelAr : PERIODS.find(p => p.key === period)?.labelEn}</span>
+            <span className="text-sm font-black text-gray-800 dark:text-slate-200">{lang === "ar" ? activeSeg.labelAr : activeSeg.labelEn}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-slate-700" />
+            <span className="text-xs text-gray-500 dark:text-slate-500">{lang === "ar" ? PERIODS.find(p => p.key === period)?.labelAr : PERIODS.find(p => p.key === period)?.labelEn}</span>
           </div>
 
           {isLoading ? (
@@ -556,12 +556,12 @@ export default function Prices() {
                 <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />
                 <Loader2 className="w-12 h-12 animate-spin text-blue-500/60" />
               </div>
-              <p className="text-xs text-slate-600 uppercase tracking-wider">{lang === "ar" ? "جاري تحميل الأنظمة..." : "Loading systems..."}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-600 uppercase tracking-wider">{lang === "ar" ? "جاري تحميل الأنظمة..." : "Loading systems..."}</p>
             </div>
           ) : tierPlans.length === 0 ? (
-            <div className="text-center py-24 border border-dashed border-slate-800 rounded-2xl">
-              <Gift className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">{lang === "ar" ? "لا توجد باقات لهذا القطاع بعد" : "No plans for this sector yet"}</p>
+            <div className="text-center py-24 border border-dashed border-gray-300 dark:border-slate-800 rounded-2xl">
+              <Gift className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-slate-500 text-sm">{lang === "ar" ? "لا توجد باقات لهذا القطاع بعد" : "No plans for this sector yet"}</p>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -581,26 +581,26 @@ export default function Prices() {
 
       {/* ─── COMPARISON TABLE ─── */}
       {tierPlans.length === 3 && (
-        <section className="pb-16 bg-[#0a0a14]">
+        <section className="pb-16 bg-gray-100 dark:bg-[#0a0a14]">
           <div className="container mx-auto px-4 max-w-5xl">
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-slate-800" />
-              <h2 className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] px-4">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-800" />
+              <h2 className="text-[10px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.2em] px-4">
                 {lang === "ar" ? "مقارنة الباقات" : "PLAN COMPARISON"}
               </h2>
-              <div className="flex-1 h-px bg-slate-800" />
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-800" />
             </div>
-            <div className="rounded-xl border border-slate-800 overflow-x-auto">
+            <div className="rounded-xl border border-gray-200 dark:border-slate-800 overflow-x-auto bg-white dark:bg-transparent">
               <div className="min-w-[480px]">
-                <div className="grid grid-cols-4 bg-slate-900/50 border-b border-slate-800">
-                  <div className="p-4 text-[9px] font-black text-slate-600 uppercase tracking-wider">
+                <div className="grid grid-cols-4 bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-800">
+                  <div className="p-4 text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-wider">
                     {lang === "ar" ? "الميزة" : "Feature"}
                   </div>
                   {tierPlans.map((p: any) => {
                     const cfg = TIER_CONFIG[p.tier] || TIER_CONFIG.lite;
                     return (
                       <div key={p.id} className="p-4 text-center">
-                        <span className="text-xs font-black text-slate-300">
+                        <span className="text-xs font-black text-gray-700 dark:text-slate-300">
                           {lang === "ar" ? cfg.labelAr : cfg.labelEn}
                         </span>
                       </div>
@@ -608,22 +608,22 @@ export default function Prices() {
                   })}
                 </div>
                 {[
-                  { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1 text-slate-200">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
+                  { label: lang === "ar" ? `السعر (${PERIODS.find(p=>p.key===period)?.labelAr})` : `Price (${PERIODS.find(p=>p.key===period)?.labelEn})`, values: tierPlans.map((p: any) => lang === "ar" ? <span className="flex items-center justify-center gap-1 text-gray-800 dark:text-slate-200">{getPeriodPrice(p,period).toLocaleString()} <SARIcon size={10} className="opacity-70" /></span> : `${getPeriodPrice(p,period).toLocaleString()} SAR`) },
                   { label: lang === "ar" ? "عدد الميزات" : "Features", values: tierPlans.map((p: any) => lang === "ar" ? `${p.featuresAr?.length ?? 0} ميزة` : `${p.featuresAr?.length ?? 0} features`) },
                   { label: lang === "ar" ? "دعم فني"           : "Support",        values: lang === "ar" ? ["شهر واحد", "6 أشهر", "24/7 أولوية"] : ["1 month", "6 months", "24/7 Priority"] },
                   { label: lang === "ar" ? "تطبيق جوال"        : "Mobile App",     values: [false, false, true] },
                   { label: lang === "ar" ? "دومين مجاني"       : "Free Domain",    values: lang === "ar" ? [false, "سنة واحدة", "3 سنوات"] : [false, "1 year", "3 years"] },
                   { label: lang === "ar" ? "دعم متعدد القنوات" : "Multi-channel",  values: [false, true, true] },
                 ].map((row, i) => (
-                  <div key={i} className={`grid grid-cols-4 border-b border-slate-800 last:border-0 ${i % 2 !== 0 ? "bg-slate-900/20" : ""}`}>
-                    <div className="p-3.5 text-xs text-slate-500 font-medium">{row.label}</div>
+                  <div key={i} className={`grid grid-cols-4 border-b border-gray-100 dark:border-slate-800 last:border-0 ${i % 2 !== 0 ? "bg-gray-50/50 dark:bg-slate-900/20" : ""}`}>
+                    <div className="p-3.5 text-xs text-gray-500 dark:text-slate-500 font-medium">{row.label}</div>
                     {row.values.map((val: any, vi) => (
                       <div key={vi} className="p-3.5 text-center">
                         {typeof val === "boolean"
                           ? val
-                            ? <Check className="w-4 h-4 text-emerald-400 mx-auto" />
-                            : <X className="w-4 h-4 text-slate-700 mx-auto" />
-                          : <span className="text-xs font-semibold text-slate-300">{val}</span>}
+                            ? <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 mx-auto" />
+                            : <X className="w-4 h-4 text-gray-300 dark:text-slate-700 mx-auto" />
+                          : <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{val}</span>}
                       </div>
                     ))}
                   </div>
@@ -635,17 +635,17 @@ export default function Prices() {
       )}
 
       {/* ─── DEMO TRIAL ─── */}
-      <section className="py-14 bg-[#050508] border-y border-slate-800/60">
+      <section className="py-14 bg-white dark:bg-[#050508] border-y border-gray-200 dark:border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="relative rounded-2xl border border-emerald-500/20 overflow-hidden" data-testid="card-demo-plan">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/30 to-transparent pointer-events-none" />
+          <div className="relative rounded-2xl border border-emerald-200 dark:border-emerald-500/20 overflow-hidden bg-emerald-50/50 dark:bg-transparent" data-testid="card-demo-plan">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/50 dark:from-emerald-950/30 to-transparent pointer-events-none" />
             <div className="relative grid grid-cols-1 md:grid-cols-2">
               <div className="p-8">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-emerald-500/20 mb-5 uppercase tracking-widest">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/20 mb-5 uppercase tracking-widest">
                   <Rocket className="w-3 h-3" /> {lang === "ar" ? "جرّب قبل أن تشتري" : "Try before you buy"}
                 </span>
-                <h3 className="text-2xl font-black text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{lang === "ar" ? "النسخة التجريبية" : "Free Trial"}</h3>
+                <p className="text-gray-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
                   {lang === "ar" ? "جرّب نظامك الحقيقي لمدة 7 أيام — بدون تعهد بالشراء" : "Try your real system for 7 days — no purchase commitment"}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-7">
@@ -653,24 +653,24 @@ export default function Prices() {
                     ? ["7 أيام كاملة","نظام حقيقي","دعم فني","بدون تعهد","تُحسم من الباقة"]
                     : ["7 full days","Real system","Support","No commitment","Deducted from plan"]
                   ).map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-400/8 text-emerald-400 border border-emerald-500/15">
+                    <span key={f} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-400/8 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/15">
                       <Check className="w-3 h-3" />{f}
                     </span>
                   ))}
                 </div>
                 <Link href="/contact">
-                  <Button className="h-11 px-7 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
+                  <Button className="h-11 px-7 rounded-xl font-black bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-900 gap-2 shadow-lg shadow-emerald-500/20" data-testid="button-demo-trial">
                     {lang === "ar" ? "ابدأ تجربتك المجانية" : "Start Free Trial"} <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </Link>
               </div>
-              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-emerald-500/10">
+              <div className="p-8 flex items-center justify-center border-t md:border-t-0 border-emerald-200 dark:border-emerald-500/10">
                 <div className="text-center">
-                  <div className="text-8xl font-black text-emerald-400 mb-1 leading-none tabular-nums">30</div>
-                  <div className="text-slate-400 font-bold text-sm flex items-center justify-center gap-1">
+                  <div className="text-8xl font-black text-emerald-500 dark:text-emerald-400 mb-1 leading-none tabular-nums">30</div>
+                  <div className="text-gray-500 dark:text-slate-400 font-bold text-sm flex items-center justify-center gap-1">
                     {lang === "ar" ? <><SARIcon size={13} /> فقط</> : "SAR only"}
                   </div>
-                  <div className="text-xs text-slate-600 mt-3 max-w-[160px]">
+                  <div className="text-xs text-gray-400 dark:text-slate-600 mt-3 max-w-[160px]">
                     {lang === "ar" ? "تُحسم من قيمة الباقة عند الاشتراك" : "Deducted from plan price on subscribe"}
                   </div>
                 </div>
@@ -681,50 +681,50 @@ export default function Prices() {
       </section>
 
       {/* ─── ADDONS ─── */}
-      <section className="py-16 bg-[#080810]">
+      <section className="py-16 bg-gray-50 dark:bg-[#080810]">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-slate-300" />
+            <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center">
+              <Plus className="w-4 h-4 text-gray-600 dark:text-slate-300" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">{lang === "ar" ? "الإضافات" : "Add-ons"}</h2>
-              <p className="text-xs text-slate-600">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">{lang === "ar" ? "الإضافات" : "Add-ons"}</h2>
+              <p className="text-xs text-gray-400 dark:text-slate-600">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(lang === "ar" ? [
-              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-slate-300", border: "border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-300", border: "border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-300", border: "border-amber-700/30", glow: "" },
+              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
             ] : [
-              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-slate-300", border: "border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-300", border: "border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-300", border: "border-amber-700/30", glow: "" },
+              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
             ]).map((a, ai) => (
               <motion.div
                 key={a.label}
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: ai * 0.08 }}
-                className={`relative rounded-xl border ${a.border} bg-white/[0.025] p-6 hover:bg-white/[0.04] transition-colors`}
+                className={`relative rounded-xl border ${a.border} bg-white dark:bg-white/[0.025] p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors`}
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-5">
                   <a.icon className={`w-5 h-5 ${a.color}`} />
                 </div>
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
-                <p className="text-white font-black text-base mb-4">{a.sub}</p>
+                <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
+                <p className="text-gray-900 dark:text-white font-black text-base mb-4">{a.sub}</p>
                 <div className="flex items-baseline gap-1.5 mb-5">
-                  <span className="text-3xl font-black text-white">{a.price}</span>
-                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-slate-600">SAR</span>}
+                  <span className="text-3xl font-black text-gray-900 dark:text-white">{a.price}</span>
+                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
                 </div>
                 <div className="space-y-2 mb-5">
                   {a.features.map(f => (
-                    <div key={f} className="flex items-center gap-2 text-xs text-slate-500">
+                    <div key={f} className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-500">
                       <Check className="w-3 h-3 text-emerald-500 shrink-0" />{f}
                     </div>
                   ))}
                 </div>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full h-9 rounded-lg font-bold text-xs border-slate-700 text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:border-slate-600">
+                  <Button variant="outline" className="w-full h-9 rounded-lg font-bold text-xs border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-400 dark:hover:border-slate-600">
                     {lang === "ar" ? "أضف للطلب" : "Add to order"}
                   </Button>
                 </Link>
@@ -735,17 +735,17 @@ export default function Prices() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="py-16 bg-[#050508] border-t border-slate-800/60">
+      <section className="py-16 bg-white dark:bg-[#050508] border-t border-gray-200 dark:border-slate-800/60">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">
+              <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.2em] mb-4">
                 {lang === "ar" ? "باقة مخصصة" : "CUSTOM PLAN"}
               </p>
-              <h2 className="text-3xl font-black text-white mb-3">
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
                 {lang === "ar" ? "تحتاج عرضاً خاصاً؟" : "Need a custom quote?"}
               </h2>
-              <p className="text-slate-500 text-sm leading-relaxed">
+              <p className="text-gray-500 dark:text-slate-500 text-sm leading-relaxed">
                 {lang === "ar"
                   ? "تواصل معنا وسنعدّ لك عرضاً يناسب احتياجاتك وميزانيتك تماماً."
                   : "Contact us and we'll prepare a quote tailored exactly to your needs."}
@@ -753,7 +753,7 @@ export default function Prices() {
             </div>
             <div className="flex md:justify-end">
               <Link href="/contact">
-                <Button size="lg" className="bg-white text-slate-900 h-12 px-8 rounded-xl font-black hover:bg-slate-100 gap-2" data-testid="button-custom-pricing">
+                <Button size="lg" className="bg-gray-900 dark:bg-white text-white dark:text-slate-900 h-12 px-8 rounded-xl font-black hover:bg-black dark:hover:bg-slate-100 gap-2" data-testid="button-custom-pricing">
                   {lang === "ar" ? "تواصل معنا الآن" : "Contact Us Now"} <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
@@ -768,7 +768,7 @@ export default function Prices() {
           PLAN ORDER WIZARD — مصنع الأنظمة
       ══════════════════════════════════════════════════════════ */}
       <Dialog open={!!selectedPlan} onOpenChange={v => !v && setSelectedPlan(null)}>
-        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-slate-800/60 shadow-2xl bg-[#08080f]" dir={dir}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-800/60 shadow-2xl bg-white dark:bg-[#08080f]" dir={dir}>
           {selectedPlan && (() => {
             const tierCfg = TIER_CONFIG[selectedPlan.plan.tier] || TIER_CONFIG.lite;
             const segInfo = segments.find(s => s.key === selectedPlan.plan.segment) ?? (SEGMENT_LOOKUP[selectedPlan.plan.segment] ? { key: selectedPlan.plan.segment, ...SEGMENT_LOOKUP[selectedPlan.plan.segment] } : null);
