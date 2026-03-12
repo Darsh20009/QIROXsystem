@@ -115,9 +115,18 @@ export default function AdminExtraAddons() {
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const del = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/extra-addons/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
+      setConfirmDeleteId(null);
+      toast({ title: "تم حذف الإضافة بنجاح" });
+    },
+    onError: (e: any) => {
+      setConfirmDeleteId(null);
+      toast({ title: "فشل حذف الإضافة", description: e.message, variant: "destructive" });
+    },
   });
 
   const toggleActive = useMutation({
@@ -251,7 +260,7 @@ export default function AdminExtraAddons() {
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(a)} data-testid={`button-edit-addon-${a.id}`}>
                             <Pencil className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => del.mutate(a.id)} data-testid={`button-delete-addon-${a.id}`}>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => setConfirmDeleteId(a.id)} data-testid={`button-delete-addon-${a.id}`}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
@@ -386,6 +395,28 @@ export default function AdminExtraAddons() {
               data-testid="button-save-addon"
             >
               {save.isPending ? "جاري الحفظ..." : editId ? "تحديث" : "إضافة"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmDeleteId} onOpenChange={(v) => { if (!v) setConfirmDeleteId(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-black/50 dark:text-white/50">
+            هل أنت متأكد من حذف هذه الإضافة؟ لا يمكن التراجع عن هذا الإجراء.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)} data-testid="button-cancel-delete">إلغاء</Button>
+            <Button
+              variant="destructive"
+              onClick={() => confirmDeleteId && del.mutate(confirmDeleteId)}
+              disabled={del.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {del.isPending ? "جاري الحذف..." : "حذف"}
             </Button>
           </DialogFooter>
         </DialogContent>

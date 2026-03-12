@@ -6966,9 +6966,17 @@ export async function registerRoutes(
   app.delete("/api/admin/extra-addons/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      await ExtraAddonModel.findByIdAndDelete(req.params.id);
+      const deleted = await ExtraAddonModel.findByIdAndDelete(req.params.id);
+      if (!deleted) {
+        console.warn(`[ExtraAddon] Delete failed — document not found: ${req.params.id}`);
+        return res.status(404).json({ error: "الإضافة غير موجودة أو تم حذفها مسبقاً" });
+      }
+      console.log(`[ExtraAddon] Deleted: ${deleted.nameAr} (${req.params.id})`);
       res.json({ ok: true });
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) {
+      console.error(`[ExtraAddon] Delete error for ${req.params.id}:`, err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.post("/api/admin/extra-addons/seed-defaults", async (req, res) => {
