@@ -37,6 +37,7 @@ interface ProfileData {
   snapchat?: string;
   tiktok?: string;
   youtube?: string;
+  linktree?: string;
   createdAt?: string;
 }
 
@@ -420,6 +421,7 @@ export default function ClientProfile() {
                     { key: "tiktok", placeholder: "@username", icon: <SiTiktok className="w-4 h-4 text-gray-900 dark:text-white" />, label: "TikTok" },
                     { key: "youtube", placeholder: "@channel", icon: <Youtube className="w-4 h-4 text-red-500" />, label: "YouTube" },
                     { key: "linkedin", placeholder: "linkedin.com/in/...", icon: <Link2 className="w-4 h-4 text-blue-600" />, label: "LinkedIn" },
+                    { key: "linktree", placeholder: "https://linktr.ee/username", icon: <Link2 className="w-4 h-4 text-green-500" />, label: "Linktree" },
                   ].map(s => (
                     <div key={s.key} className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/5 flex items-center justify-center flex-shrink-0">{s.icon}</div>
@@ -482,7 +484,14 @@ export default function ClientProfile() {
                   <Youtube className="w-3.5 h-3.5" /> {profile.youtube}
                 </a>
               )}
-              {!profile?.instagram && !profile?.twitter && !profile?.snapchat && !profile?.tiktok && !profile?.youtube && (
+              {profile?.linktree && (
+                <a href={profile.linktree} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 hover:scale-105 transition-transform"
+                  data-testid="link-linktree">
+                  <Link2 className="w-3.5 h-3.5" /> Linktree
+                </a>
+              )}
+              {!profile?.instagram && !profile?.twitter && !profile?.snapchat && !profile?.tiktok && !profile?.youtube && !profile?.linktree && (
                 <p className="text-xs text-black/30 dark:text-white/30">لا توجد روابط — اضغط تعديل لإضافتها</p>
               )}
             </div>

@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2
 } from "lucide-react";
 import { SiWhatsapp, SiGoogleplay, SiApple } from "react-icons/si";
 
@@ -22,7 +22,7 @@ type Settings = {
   contactEmail: string; contactPhone: string; whatsapp: string;
   address: string; city: string; country: string;
   instagram: string; twitter: string; linkedin: string;
-  snapchat: string; youtube: string; tiktok: string;
+  snapchat: string; youtube: string; tiktok: string; linktree: string;
   taxNumber: string; commercialReg: string;
   foundedYear: number; teamSize: number;
   systemValuation: number; currency: string;
@@ -35,7 +35,7 @@ const EMPTY: Settings = {
   description: "", logoUrl: "", faviconUrl: "",
   contactEmail: "info@qiroxstudio.online", contactPhone: "", whatsapp: "",
   address: "", city: "", country: "المملكة العربية السعودية",
-  instagram: "", twitter: "", linkedin: "", snapchat: "", youtube: "", tiktok: "",
+  instagram: "", twitter: "", linkedin: "", snapchat: "", youtube: "", tiktok: "", linktree: "",
   taxNumber: "", commercialReg: "", foundedYear: 2024, teamSize: 1,
   systemValuation: 0, currency: "SAR",
   profitDistribution: [],
@@ -228,6 +228,7 @@ export default function AdminQiroxSettings() {
                   { k: "snapchat", label: "Snapchat", icon: Globe, color: "text-yellow-500" },
                   { k: "tiktok", label: "TikTok", icon: Globe, color: "text-black dark:text-white" },
                   { k: "whatsapp", label: "WhatsApp", icon: SiWhatsapp, color: "text-[#25D366]" },
+                  { k: "linktree", label: "Linktree", icon: Link2, color: "text-green-500" },
                 ].map(({ k, label, icon: Icon, color }) => (
                   <div key={k}>
                     <label className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40 mb-1"><Icon className={`w-3.5 h-3.5 ${color}`} />{label}</label>

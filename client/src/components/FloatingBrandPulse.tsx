@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { Headphones } from "lucide-react";
+import { Headphones, Link2 } from "lucide-react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ interface PublicSettings {
   tiktok?: string;
   youtube?: string;
   whatsapp?: string;
+  linktree?: string;
 }
 
 interface SocialSlide {
@@ -71,6 +72,13 @@ function buildSlides(s: PublicSettings): SocialSlide[] {
       url: s.linkedin,
       bg: "linear-gradient(135deg,#0077B5 0%,#00a0dc 100%)",
       ring: "rgba(0,119,181,0.5)", iconColor: "#fff", textColor: "#fff",
+    } : null,
+    s.linktree ? {
+      key: "linktree", label: "روابطنا على لينك تري",
+      icon: Link2,
+      url: s.linktree,
+      bg: "linear-gradient(135deg,#25a244 0%,#43e97b 100%)",
+      ring: "rgba(67,233,123,0.4)", iconColor: "#fff", textColor: "#fff",
     } : null,
     s.youtube ? {
       key: "youtube", label: "قناتنا على يوتيوب",

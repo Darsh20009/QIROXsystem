@@ -7916,8 +7916,8 @@ export async function registerRoutes(
       const { QiroxSystemSettingsModel } = await import("./models");
       let settings = await QiroxSystemSettingsModel.findOne({ key: "main" });
       if (!settings) settings = await QiroxSystemSettingsModel.create({ key: "main" });
-      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, contactPhone, contactEmail, companyName, companyNameAr } = settings;
-      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, contactPhone, contactEmail, companyName, companyNameAr });
+      const { instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr } = settings;
+      res.json({ instagram, twitter, linkedin, snapchat, youtube, tiktok, whatsapp, linktree, contactPhone, contactEmail, companyName, companyNameAr });
     } catch { res.json({}); }
   });
 
