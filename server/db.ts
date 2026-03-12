@@ -6,6 +6,8 @@ export async function connectToDatabase() {
     throw new Error("MONGODB_URI must be set. MongoDB is now the primary database.");
   }
 
+  process.env.MONGODB_URI = process.env.MONGODB_URI.replace(/\s+/g, "");
+
   await connManager.initFromEnv();
 
   const saved = await loadSystemSettings();

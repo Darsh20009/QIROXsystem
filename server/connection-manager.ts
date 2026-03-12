@@ -37,7 +37,8 @@ class ConnectionManager {
   };
 
   async initFromEnv() {
-    const uri = process.env.MONGODB_URI!;
+    const rawUri = process.env.MONGODB_URI!;
+    const uri = rawUri.replace(/\s+/g, "");
     this._primaryUri = uri;
     await mongoose.connect(uri);
     console.log("[ConnManager] Primary DB connected (env)");
