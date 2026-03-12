@@ -91,12 +91,7 @@ export function setupAuth(app: Express) {
 
   const sessionMiddleware = session(sessionSettings);
 
-  app.use((req: any, res: any, next: any) => {
-    if (isPublicRoute(req.path) && !req.headers.cookie?.includes("connect.sid")) {
-      return next();
-    }
-    sessionMiddleware(req, res, next);
-  });
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
 
