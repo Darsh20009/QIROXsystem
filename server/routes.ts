@@ -1230,6 +1230,34 @@ export async function registerRoutes(
     } catch { res.status(500).json([]); }
   });
 
+  app.get("/api/public/employee-portfolio", async (_req, res) => {
+    try {
+      const { EmployeeProfileModel, UserModel } = await import("./models");
+      const profiles = await (EmployeeProfileModel as any)
+        .find({ "portfolioItems.0": { $exists: true } })
+        .populate("userId", "fullName jobTitle avatarUrl role")
+        .lean();
+      const items: any[] = [];
+      for (const p of profiles) {
+        const employee = p.userId as any;
+        if (!employee) continue;
+        for (const item of (p.portfolioItems || [])) {
+          items.push({
+            _id: item._id,
+            title: item.title,
+            type: item.type,
+            url: item.url,
+            description: item.description || "",
+            employeeName: employee.fullName || "",
+            employeeJobTitle: employee.jobTitle || "",
+            employeeAvatarUrl: employee.avatarUrl || "",
+          });
+        }
+      }
+      res.json(items);
+    } catch (e) { res.status(500).json([]); }
+  });
+
   // === ORDERS API ===
   app.get("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
