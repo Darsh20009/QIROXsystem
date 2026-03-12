@@ -6019,6 +6019,33 @@ export async function registerRoutes(
     res.json(profile);
   });
 
+  // Portfolio items for employees
+  app.post("/api/employee/portfolio", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const { title, type, url, description } = req.body;
+    if (!title || !url) return res.status(400).json({ error: "العنوان والرابط مطلوبان" });
+    const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
+      { userId: uid },
+      { $push: { portfolioItems: { title, type: type || 'template', url, description: description || '' } } },
+      { new: true, upsert: true }
+    );
+    res.json(profile);
+  });
+
+  app.delete("/api/employee/portfolio/:itemId", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { EmployeeProfileModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
+      { userId: uid },
+      { $pull: { portfolioItems: { _id: req.params.itemId } } },
+      { new: true }
+    );
+    res.json(profile);
+  });
+
   app.get("/api/admin/employee-profiles", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { EmployeeProfileModel } = await import("./models");

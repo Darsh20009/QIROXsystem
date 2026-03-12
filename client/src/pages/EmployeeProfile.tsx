@@ -8,13 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile } from "lucide-react";
+import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink } from "lucide-react";
 import { BiometricManager } from "@/components/BiometricManager";
 import { UserAvatar } from "@/components/UserAvatar";
 import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-auth";
+
+interface PortfolioItem {
+  _id: string;
+  title: string;
+  type: "template" | "file" | "video";
+  url: string;
+  description?: string;
+}
 
 interface Profile {
   id: string;
@@ -31,6 +39,7 @@ interface Profile {
   jobTitle?: string;
   profilePhotoUrl?: string;
   avatarConfig?: string;
+  portfolioItems?: PortfolioItem[];
 }
 
 type PhotoTab = "photo" | "avatar";
@@ -47,6 +56,8 @@ export default function EmployeeProfile() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [newItem, setNewItem] = useState({ title: "", type: "template" as PortfolioItem["type"], url: "", description: "" });
+  const [addingItem, setAddingItem] = useState(false);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["/api/employee/profile"],
@@ -130,6 +141,32 @@ export default function EmployeeProfile() {
 
   const removeSkill = (skill: string) => {
     setForm(p => ({ ...p, skills: (p.skills || []).filter(s => s !== skill) }));
+  };
+
+  const addItemMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/employee/portfolio", newItem).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      setNewItem({ title: "", type: "template", url: "", description: "" });
+      setAddingItem(false);
+      toast({ title: "✅ تم إضافة العنصر" });
+    },
+    onError: () => toast({ title: "فشل الإضافة", variant: "destructive" }),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: (itemId: string) => apiRequest("DELETE", `/api/employee/portfolio/${itemId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      toast({ title: "✅ تم الحذف" });
+    },
+    onError: () => toast({ title: "فشل الحذف", variant: "destructive" }),
+  });
+
+  const ITEM_TYPE_CONFIG = {
+    template: { label: "نموذج", icon: FileText, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-700" },
+    file:     { label: "ملف",   icon: Link2,    color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-200 dark:border-purple-700" },
+    video:    { label: "فيديو", icon: Video,    color: "text-red-500", bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-700" },
   };
 
   const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
@@ -294,6 +331,134 @@ export default function EmployeeProfile() {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Portfolio Items */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" /> نماذجي وملفاتي
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setAddingItem(v => !v)}
+              className="gap-1.5 text-xs dark:border-white/10 dark:text-white" data-testid="btn-add-portfolio-item">
+              <Plus className="w-3.5 h-3.5" /> إضافة
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add new item form */}
+          <AnimatePresence>
+            {addingItem && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="border border-dashed border-black/15 dark:border-white/15 rounded-xl p-4 space-y-3 bg-black/[0.02] dark:bg-white/[0.02]">
+                  <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-2">إضافة عنصر جديد</p>
+
+                  {/* Type selector */}
+                  <div className="flex gap-2">
+                    {(Object.entries(ITEM_TYPE_CONFIG) as [PortfolioItem["type"], typeof ITEM_TYPE_CONFIG.template][]).map(([key, cfg]) => {
+                      const Icon = cfg.icon;
+                      return (
+                        <button key={key} onClick={() => setNewItem(p => ({ ...p, type: key }))}
+                          data-testid={`btn-item-type-${key}`}
+                          className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-medium border transition-all ${
+                            newItem.type === key
+                              ? `${cfg.bg} ${cfg.border} ${cfg.color}`
+                              : "bg-black/[0.03] dark:bg-white/[0.03] border-transparent text-black/40 dark:text-white/40"
+                          }`}>
+                          <Icon className="w-4 h-4" />
+                          {cfg.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <Input
+                    value={newItem.title}
+                    onChange={e => setNewItem(p => ({ ...p, title: e.target.value }))}
+                    placeholder={newItem.type === "video" ? "عنوان الفيديو" : newItem.type === "file" ? "اسم الملف" : "عنوان النموذج"}
+                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white text-sm"
+                    data-testid="input-portfolio-title"
+                  />
+                  <Input
+                    value={newItem.url}
+                    onChange={e => setNewItem(p => ({ ...p, url: e.target.value }))}
+                    placeholder="https://..."
+                    dir="ltr"
+                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white text-sm"
+                    data-testid="input-portfolio-url"
+                  />
+                  <Input
+                    value={newItem.description}
+                    onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
+                    placeholder="وصف مختصر (اختياري)"
+                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white text-sm"
+                    data-testid="input-portfolio-desc"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => addItemMutation.mutate()}
+                      disabled={!newItem.title.trim() || !newItem.url.trim() || addItemMutation.isPending}
+                      className="gap-1.5 bg-black dark:bg-white text-white dark:text-black flex-1"
+                      data-testid="btn-save-portfolio-item">
+                      {addItemMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      حفظ
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setAddingItem(false)}
+                      className="dark:border-white/10 dark:text-white">
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Existing items */}
+          {(profile?.portfolioItems || []).length === 0 && !addingItem ? (
+            <p className="text-xs text-black/30 dark:text-white/30 text-center py-4">
+              لا توجد نماذج بعد — اضغط "إضافة" لإضافة أول نموذج أو ملف
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {(profile?.portfolioItems || []).map(item => {
+                const cfg = ITEM_TYPE_CONFIG[item.type] || ITEM_TYPE_CONFIG.template;
+                const Icon = cfg.icon;
+                return (
+                  <div key={item._id}
+                    className={`flex items-center gap-3 rounded-xl border p-3 ${cfg.bg} ${cfg.border}`}
+                    data-testid={`portfolio-item-${item._id}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-white dark:bg-gray-900 shadow-sm`}>
+                      <Icon className={`w-4 h-4 ${cfg.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-black dark:text-white truncate">{item.title}</p>
+                      {item.description && <p className="text-xs text-black/40 dark:text-white/40 truncate">{item.description}</p>}
+                      <p className="text-[10px] text-black/30 dark:text-white/30 truncate dir-ltr">{item.url}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <a href={item.url} target="_blank" rel="noopener noreferrer"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                        data-testid={`btn-open-${item._id}`}>
+                        <ExternalLink className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                      </a>
+                      <button onClick={() => deleteItemMutation.mutate(item._id)}
+                        disabled={deleteItemMutation.isPending}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors text-black/30 dark:text-white/30"
+                        data-testid={`btn-delete-${item._id}`}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

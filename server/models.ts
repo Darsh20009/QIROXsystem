@@ -588,6 +588,13 @@ const employeeProfileSchema = new mongoose.Schema({
   nationalId: String,
   hireDate: Date,
   jobTitle: String,
+  portfolioItems: [{
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+    title: { type: String, required: true },
+    type: { type: String, enum: ['template', 'file', 'video'], default: 'template' },
+    url: { type: String, required: true },
+    description: { type: String, default: '' },
+  }],
 }, { timestamps: true });
 
 const payrollRecordSchema = new mongoose.Schema({
