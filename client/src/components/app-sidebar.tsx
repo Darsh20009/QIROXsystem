@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
-import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp } from "react-icons/si";
+import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp, SiLinktree } from "react-icons/si";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];
 const STAFF_ROLES = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"];
@@ -188,6 +188,7 @@ export function AppSidebar() {
     { key: "tiktok",     Icon: SiTiktok,     color: "#010101", darkColor: "#ffffff", label: "TikTok" },
     { key: "youtube",    Icon: SiYoutube,    color: "#FF0000", darkColor: "#FF0000", label: "YouTube" },
     { key: "whatsapp",   Icon: SiWhatsapp,   color: "#25D366", darkColor: "#25D366", label: "WhatsApp" },
+    { key: "linktree",   Icon: SiLinktree,   color: "#25a244", darkColor: "#43e97b", label: "Linktree" },
   ].filter(s => publicSettings?.[s.key]);
 
   const { data: badges } = useQuery<{ messages: number; tickets: number; orders: number; total: number }>({
