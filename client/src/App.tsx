@@ -67,6 +67,7 @@ const AdminAttendance = lazy(() => import("@/pages/AdminAttendance"));
 const AdminProfitReport = lazy(() => import("@/pages/AdminProfitReport"));
 const SupportTickets = lazy(() => import("@/pages/SupportTickets"));
 const EmployeeProfile = lazy(() => import("@/pages/EmployeeProfile"));
+const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
 const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
 const DevChecklist = lazy(() => import("@/pages/DevChecklist"));
 const PaymentHistory = lazy(() => import("@/pages/PaymentHistory"));
@@ -241,6 +242,7 @@ function AdminRouter() {
         <Route path="/investor/portal" component={InvestorPortal} />
         <Route path="/support" component={SupportTickets} />
         <Route path="/employee/profile" component={EmployeeProfile} />
+        <Route path="/employee/demos" component={EmployeeDemos} />
         <Route path="/profile" component={ClientProfile} />
         <Route path="/employee/new-order" component={EmployeeNewOrder} />
         <Route path="/employee/subscriptions" component={EmployeeSubscriptions} />

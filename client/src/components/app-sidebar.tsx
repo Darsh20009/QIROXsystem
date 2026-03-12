@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -96,6 +96,7 @@ export function AppSidebar() {
     // Employee — Qirox services
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "services" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "services" },
+    { title: ar ? "إدارة الديموز" : "Demos Management", icon: Monitor, url: "/employee/demos", group: "employee", section: "services" },
     { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "services" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "services" },
     // Employee — finance

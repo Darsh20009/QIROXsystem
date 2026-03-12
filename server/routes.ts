@@ -2939,6 +2939,69 @@ export async function registerRoutes(
     res.sendStatus(204);
   });
 
+  // ─── EMPLOYEE DEMO MANAGEMENT ───────────────────────────────────────────────
+  // Employees can create/edit/delete only the templates they personally created
+
+  app.get("/api/employee/demos", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { SectorTemplateModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const items = await (SectorTemplateModel as any).find({ createdBy: uid }).sort({ createdAt: -1 }).lean();
+    res.json(items);
+  });
+
+  app.post("/api/employee/demos", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { SectorTemplateModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const { nameAr, name, descriptionAr, description, category, demoUrl, heroColor, featuresAr, features, estimatedDuration, howToUseAr, howToUseVideoUrl, templateFiles, status } = req.body;
+    if (!nameAr || !category) return res.status(400).json({ error: "الاسم والفئة مطلوبان" });
+    const slug = `${nameAr.replace(/\s+/g, "-").replace(/[^\w\u0600-\u06FF-]/g, "")}-${Date.now()}`;
+    const doc = await (SectorTemplateModel as any).create({
+      name: name || nameAr,
+      nameAr,
+      slug,
+      description: description || descriptionAr || "",
+      descriptionAr: descriptionAr || "",
+      category,
+      demoUrl: demoUrl || "",
+      heroColor: heroColor || "#0f172a",
+      featuresAr: featuresAr || [],
+      features: features || [],
+      estimatedDuration: estimatedDuration || "",
+      howToUseAr: howToUseAr || "",
+      howToUseVideoUrl: howToUseVideoUrl || "",
+      templateFiles: templateFiles || [],
+      status: status || "active",
+      createdBy: uid,
+    });
+    res.status(201).json(doc);
+  });
+
+  app.patch("/api/employee/demos/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { SectorTemplateModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const doc = await (SectorTemplateModel as any).findOne({ _id: req.params.id, createdBy: uid });
+    if (!doc) return res.status(404).json({ error: "لا يوجد أو ليس لديك صلاحية" });
+    const allowed = ["nameAr","name","descriptionAr","description","category","demoUrl","heroColor","featuresAr","features","estimatedDuration","howToUseAr","howToUseVideoUrl","templateFiles","status"];
+    const update: any = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const updated = await (SectorTemplateModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+    res.json(updated);
+  });
+
+  app.delete("/api/employee/demos/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { SectorTemplateModel } = await import("./models");
+    const uid = (req.user as any)._id || (req.user as any).id;
+    const doc = await (SectorTemplateModel as any).findOne({ _id: req.params.id, createdBy: uid });
+    if (!doc) return res.status(404).json({ error: "لا يوجد أو ليس لديك صلاحية" });
+    await (SectorTemplateModel as any).findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  });
+  // ────────────────────────────────────────────────────────────────────────────
+
   // === PRICING PLANS API ===
   app.get("/api/pricing", async (req, res) => {
     try {

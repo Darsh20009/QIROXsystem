@@ -275,6 +275,7 @@ const sectorTemplateSchema = new mongoose.Schema({
   howToUseAr: String,
   howToUseVideoUrl: String,
   templateFiles: [{ nameAr: String, url: String }],
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 const pricingPlanSchema = new mongoose.Schema({
