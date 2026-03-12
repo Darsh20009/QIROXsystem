@@ -48,6 +48,9 @@ const userSchema = new mongoose.Schema({
   // ── 2FA TOTP ──
   totpSecret: { type: String, select: false },
   totpEnabled: { type: Boolean, default: false },
+  emailOtpEnabled: { type: Boolean, default: false },
+  recoveryPassphrase: { type: String, select: false },
+  recoveryPassphraseEnabled: { type: Boolean, default: false },
   // ── Referral ──
   referralCode: { type: String, sparse: true, index: true },
   referredBy: { type: String, default: null },
@@ -468,7 +471,7 @@ const otpSchema = new mongoose.Schema({
   code: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
-  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp"], default: "forgot_password" },
+  type: { type: String, enum: ["email_verify", "forgot_password", "login_otp", "2fa_email"], default: "forgot_password" },
 }, { timestamps: true });
 
 const notificationSchema = new mongoose.Schema({

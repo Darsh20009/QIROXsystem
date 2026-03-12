@@ -10,7 +10,31 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 9, 2026 - Session 46)
+## Latest Changes (Mar 12, 2026 - Session 47)
+
+### Enhanced Two-Factor Authentication with Login Enforcement & Multiple Methods
+
+**Backend (server/routes.ts):**
+- Modified `POST /api/auth/login` — now checks if user has any 2FA method enabled; if so, returns `{ requires2FA: true, methods: [...], tempToken }` instead of completing login
+- `POST /api/auth/verify-2fa` — verifies 2FA code (TOTP/email/passphrase) using temp token, then completes login
+- `POST /api/auth/resend-2fa-email` — resends email OTP for 2FA verification
+- `POST /api/2fa/email-otp/enable` / `disable` — toggle email OTP 2FA method
+- `POST /api/2fa/passphrase/setup` — set recovery passphrase (bcrypt hashed)
+- `POST /api/2fa/passphrase/disable` — disable recovery passphrase
+- `GET /api/totp/status` — now returns all 3 method statuses: `{ enabled, totp, emailOtp, passphrase }`
+- In-memory `pending2FA` map stores temp sessions (10min TTL, auto-cleanup)
+
+**Models (server/models.ts):**
+- Added `emailOtpEnabled: Boolean`, `recoveryPassphrase: String (select:false)`, `recoveryPassphraseEnabled: Boolean` to UserSchema
+
+**Frontend:**
+- `Login.tsx` — new 2FA verification step with method tabs (TOTP/email/passphrase), auto-sends email OTP at login
+- `TwoFactorSetup.tsx` — redesigned with 3 method cards: TOTP (QR+verify), Email OTP (one-click toggle), Recovery Passphrase (set+confirm)
+- `use-auth.ts` — `useLogin` hook now handles `requires2FA` response without navigation
+
+---
+
+## Previous Changes (Mar 9, 2026 - Session 46)
 
 ### صفحة اشتراكات الإضافات + Cron انتهاء الصلاحية + أيقونة SAR
 

@@ -52,9 +52,8 @@ export function useLogin() {
       return await res.json();
     },
     onSuccess: (user) => {
-      // If device verification needed — Login.tsx handles OTP step
+      if (user.requires2FA) return;
       if (user.needsDeviceVerification) return;
-      // If legacy email verification needed — Login.tsx handles OTP step
       if (user.needsVerification) return;
 
       queryClient.setQueryData([api.auth.user.path], user);

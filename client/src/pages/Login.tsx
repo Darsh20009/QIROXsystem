@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -133,7 +133,6 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [isRegister]);
 
-  // Verification step state (email = تفعيل الحساب عند التسجيل فقط)
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
   const verifyMode = "email" as const;
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
@@ -141,6 +140,14 @@ export default function Login() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [verifyError, setVerifyError] = useState("");
+
+  const [twoFA, setTwoFA] = useState<{ tempToken: string; methods: string[] } | null>(null);
+  const [twoFAMethod, setTwoFAMethod] = useState<string>("");
+  const [twoFACode, setTwoFACode] = useState("");
+  const [twoFAPassphrase, setTwoFAPassphrase] = useState("");
+  const [is2FAVerifying, setIs2FAVerifying] = useState(false);
+  const [twoFAError, setTwoFAError] = useState("");
+  const [is2FAResending, setIs2FAResending] = useState(false);
 
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
@@ -325,7 +332,14 @@ export default function Login() {
     } else {
       login(data, {
         onSuccess: (user: any) => {
-          // Only show email verification if client hasn't verified yet (after registration)
+          if (user.requires2FA) {
+            setTwoFA({ tempToken: user.tempToken, methods: user.methods });
+            setTwoFAMethod(user.methods[0]);
+            setTwoFACode("");
+            setTwoFAPassphrase("");
+            setTwoFAError("");
+            return;
+          }
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
             setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
           }
@@ -548,6 +562,146 @@ export default function Login() {
                 <span>جارٍ الانتقال للوحة التحكم...</span>
               </motion.div>
             </motion.div>
+          </motion.div>
+        ) : twoFA ? (
+          <motion.div
+            key="2fa-step"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-black font-heading text-black mb-2">المصادقة الثنائية</h1>
+              <p className="text-black/40 text-sm leading-relaxed">اختر طريقة التحقق لإكمال تسجيل الدخول</p>
+            </div>
+
+            {twoFA.methods.length > 1 && (
+              <div className="flex gap-2 mb-5 p-1 bg-black/[0.03] rounded-xl">
+                {twoFA.methods.map(m => (
+                  <button
+                    key={m}
+                    onClick={() => { setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); }}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
+                    data-testid={`tab-2fa-${m}`}
+                  >
+                    {m === "totp" ? "تطبيق المصادقة" : m === "email" ? "البريد الإلكتروني" : "كلمة الاسترداد"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {twoFAMethod === "totp" && (
+              <div className="space-y-3">
+                <p className="text-sm text-black/60">أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة:</p>
+                <Input
+                  value={twoFACode}
+                  onChange={e => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoFocus
+                  data-testid="input-2fa-totp"
+                />
+              </div>
+            )}
+
+            {twoFAMethod === "email" && (
+              <div className="space-y-3">
+                <p className="text-sm text-black/60">أدخل الرمز المرسل إلى بريدك الإلكتروني:</p>
+                <Input
+                  value={twoFACode}
+                  onChange={e => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-widest font-mono h-14 rounded-xl border-2 border-black/[0.1] focus:border-black"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoFocus
+                  data-testid="input-2fa-email"
+                />
+                <button
+                  onClick={async () => {
+                    setIs2FAResending(true);
+                    try {
+                      const r = await fetch("/api/auth/resend-2fa-email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken }) });
+                      if (r.ok) { toast({ title: "تم إعادة إرسال الرمز" }); setTwoFACode(""); }
+                      else { const d = await r.json().catch(() => ({})); setTwoFAError(d.error || "فشل إعادة الإرسال"); }
+                    } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                    setIs2FAResending(false);
+                  }}
+                  disabled={is2FAResending}
+                  className="text-xs text-black/40 hover:text-black/70 transition-colors underline"
+                  data-testid="button-resend-2fa-email"
+                >
+                  {is2FAResending ? "جارٍ الإرسال..." : "إعادة إرسال الرمز"}
+                </button>
+              </div>
+            )}
+
+            {twoFAMethod === "passphrase" && (
+              <div className="space-y-3">
+                <p className="text-sm text-black/60">أدخل كلمة الاسترداد الخاصة بك:</p>
+                <Input
+                  type="password"
+                  value={twoFAPassphrase}
+                  onChange={e => setTwoFAPassphrase(e.target.value)}
+                  placeholder="كلمة الاسترداد"
+                  className="h-14 rounded-xl border-2 border-black/[0.1] focus:border-black text-lg"
+                  autoFocus
+                  data-testid="input-2fa-passphrase"
+                />
+              </div>
+            )}
+
+            {twoFAError && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
+                <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">{twoFAError}</AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            <Button
+              onClick={async () => {
+                const codeVal = twoFAMethod === "passphrase" ? twoFAPassphrase : twoFACode;
+                if (!codeVal) { setTwoFAError(twoFAMethod === "passphrase" ? "أدخل كلمة الاسترداد" : "أدخل رمز التحقق"); return; }
+                if (twoFAMethod !== "passphrase" && codeVal.length !== 6) { setTwoFAError("أدخل الرمز المكون من 6 أرقام"); return; }
+                setIs2FAVerifying(true); setTwoFAError("");
+                try {
+                  const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
+                  const data = await r.json().catch(() => ({}));
+                  if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
+                  setTwoFA(null);
+                  queryClient.setQueryData(["/api/user"], data);
+                  queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                  if (data.role === "client") {
+                    const returnUrl = sessionStorage.getItem("returnAfterLogin");
+                    if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+                    else setLocation("/dashboard");
+                  } else { setLocation("/admin"); }
+                } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                setIs2FAVerifying(false);
+              }}
+              disabled={is2FAVerifying || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+              className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
+              data-testid="button-verify-2fa"
+            >
+              {is2FAVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <><ShieldCheck className="w-4 h-4 ml-2" />تحقق وادخل</>
+              )}
+            </Button>
+
+            <div className="text-center mt-4">
+              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+                العودة لتسجيل الدخول
+              </button>
+            </div>
           </motion.div>
         ) : verifyStep ? (
           <motion.div

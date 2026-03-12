@@ -42,6 +42,12 @@ import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOt
 import { pushNotification, broadcastNotification } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 
+const pending2FA = new Map<string, { userId: string; methods: string[]; expiresAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of pending2FA) { if (v.expiresAt < now) pending2FA.delete(k); }
+}, 60_000);
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -657,16 +663,104 @@ export async function registerRoutes(
 
   app.post(api.auth.login.path, loginLimiter, (req, res, next) => {
     import("passport").then((passport) => {
-      passport.default.authenticate("local", (err: any, user: any) => {
+      passport.default.authenticate("local", async (err: any, user: any) => {
         if (err) return next(err);
         if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
-        // Log user in directly — no device OTP required
-        req.login(user, (loginErr: any) => {
-          if (loginErr) return next(loginErr);
-          res.status(200).json(sanitizeUser(user));
-        });
+        try {
+          const { UserModel } = await import("./models");
+          const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled email fullName username");
+          const methods: string[] = [];
+          if (dbUser?.totpEnabled) methods.push("totp");
+          if (dbUser?.emailOtpEnabled) methods.push("email");
+          if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
+          if (methods.length > 0) {
+            const tempToken = crypto.randomBytes(32).toString("hex");
+            pending2FA.set(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
+            if (methods.includes("email") && dbUser!.email) {
+              const { OtpModel } = await import("./models");
+              const code = Math.floor(100000 + Math.random() * 900000).toString();
+              const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+              await OtpModel.updateMany({ email: dbUser!.email, used: false, type: "2fa_email" }, { used: true });
+              await OtpModel.create({ email: dbUser!.email, code, expiresAt, type: "2fa_email" });
+              sendLoginOtpEmail(dbUser!.email, dbUser!.fullName || dbUser!.username, code, req.headers["user-agent"] as string).catch(console.error);
+            }
+            return res.status(200).json({ requires2FA: true, methods, tempToken });
+          }
+          req.login(user, (loginErr: any) => {
+            if (loginErr) return next(loginErr);
+            res.status(200).json(sanitizeUser(user));
+          });
+        } catch (e: any) {
+          console.error("[2FA-check] Error during 2FA check:", e.message);
+          return res.status(500).json({ error: "حدث خطأ أثناء التحقق من المصادقة الثنائية" });
+        }
       })(req, res, next);
     });
+  });
+
+  app.post("/api/auth/verify-2fa", loginLimiter, async (req, res, next) => {
+    try {
+      const { tempToken, method, code } = req.body;
+      if (!tempToken || !method) return res.status(400).json({ error: "بيانات ناقصة" });
+      const session = pending2FA.get(tempToken);
+      if (!session) return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" });
+      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" }); }
+      if (!session.methods.includes(method)) return res.status(400).json({ error: "طريقة التحقق غير متوفرة" });
+
+      const { UserModel, OtpModel } = await import("./models");
+      const dbUser = await UserModel.findById(session.userId).select("+totpSecret +recoveryPassphrase");
+      if (!dbUser) return res.status(400).json({ error: "المستخدم غير موجود" });
+
+      let verified = false;
+
+      if (method === "totp") {
+        if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
+        const speakeasy = await import("speakeasy");
+        verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), window: 2 });
+      } else if (method === "email") {
+        if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
+        const latestOtp = await OtpModel.findOne({ email: dbUser.email, type: "2fa_email", used: false }).sort({ createdAt: -1 });
+        if (!latestOtp) return res.status(400).json({ error: "لم يتم إرسال رمز، أعد تسجيل الدخول" });
+        if (latestOtp.expiresAt < new Date()) return res.status(400).json({ error: "انتهت صلاحية الرمز" });
+        if (latestOtp.code !== String(code).trim()) return res.status(400).json({ error: "الرمز غير صحيح" });
+        await OtpModel.updateOne({ _id: latestOtp._id }, { used: true });
+        verified = true;
+      } else if (method === "passphrase") {
+        if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
+        const bcrypt = await import("bcrypt");
+        verified = await bcrypt.default.compare(String(code).trim(), dbUser.recoveryPassphrase || "");
+      }
+
+      if (!verified) return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+
+      pending2FA.delete(tempToken);
+      const safeUser = await UserModel.findById(session.userId);
+      if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
+      req.login(safeUser, (loginErr: any) => {
+        if (loginErr) return next(loginErr);
+        res.status(200).json(sanitizeUser(safeUser));
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/auth/resend-2fa-email", otpLimiter, async (req, res) => {
+    try {
+      const { tempToken } = req.body;
+      if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const session = pending2FA.get(tempToken);
+      if (!session || !session.methods.includes("email")) return res.status(400).json({ error: "الجلسة غير صالحة" });
+      const { UserModel, OtpModel } = await import("./models");
+      const user = await UserModel.findById(session.userId);
+      if (!user?.email) return res.status(400).json({ error: "البريد غير متوفر" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await OtpModel.updateMany({ email: user.email, used: false, type: "2fa_email" }, { used: true });
+      await OtpModel.create({ email: user.email, code, expiresAt, type: "2fa_email" });
+      sendLoginOtpEmail(user.email, user.fullName || user.username, code, req.headers["user-agent"] as string).catch(console.error);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.post(api.auth.logout.path, (req, res, next) => {
@@ -8329,8 +8423,60 @@ export async function registerRoutes(
     try {
       const { UserModel } = await import("./models");
       const user = req.user as any;
-      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled");
-      res.json({ enabled: dbUser?.totpEnabled || false });
+      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled emailOtpEnabled recoveryPassphraseEnabled");
+      const totp = dbUser?.totpEnabled || false;
+      const emailOtp = dbUser?.emailOtpEnabled || false;
+      const passphrase = dbUser?.recoveryPassphraseEnabled || false;
+      res.json({
+        enabled: totp || emailOtp || passphrase,
+        totp,
+        emailOtp,
+        passphrase,
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/email-otp/enable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { emailOtpEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/email-otp/disable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { emailOtpEnabled: false });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/passphrase/setup", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { passphrase } = req.body;
+      if (!passphrase || String(passphrase).trim().length < 6) return res.status(400).json({ error: "كلمة الاسترداد يجب أن تكون 6 أحرف على الأقل" });
+      const bcrypt = await import("bcrypt");
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const hashed = await bcrypt.default.hash(String(passphrase).trim(), 10);
+      await UserModel.findByIdAndUpdate(user._id || user.id, { recoveryPassphrase: hashed, recoveryPassphraseEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/2fa/passphrase/disable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { recoveryPassphrase: null, recoveryPassphraseEnabled: false });
+      res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
