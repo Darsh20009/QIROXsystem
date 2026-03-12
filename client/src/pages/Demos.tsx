@@ -211,7 +211,7 @@ export default function Demos() {
     queryKey: ["/api/templates"],
   });
 
-  const activeTemplates = templates.filter(t => t.status !== "archived" && !!t.demoUrl);
+  const activeTemplates = templates.filter(t => t.status !== "archived");
 
   const categories = ["all", ...Array.from(new Set(activeTemplates.map(t => t.category)))];
 
