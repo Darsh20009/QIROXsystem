@@ -6029,11 +6029,18 @@ export async function registerRoutes(
   // ═══════════════════════════════════════════════════════════
   app.get("/api/employee/profile", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const { EmployeeProfileModel } = await import("./models");
+    const { EmployeeProfileModel, UserModel } = await import("./models");
     const uid = (req.user as any)._id || (req.user as any).id;
     let profile = await (EmployeeProfileModel as any).findOne({ userId: uid });
     if (!profile) profile = await (EmployeeProfileModel as any).create({ userId: uid });
-    res.json(profile);
+    const userDoc = await (UserModel as any).findById(uid).select("profilePhotoUrl avatarConfig fullName email").lean();
+    res.json({
+      ...profile.toObject(),
+      profilePhotoUrl: userDoc?.profilePhotoUrl || "",
+      avatarConfig: userDoc?.avatarConfig || "",
+      fullName: userDoc?.fullName || "",
+      email: userDoc?.email || "",
+    });
   });
 
   app.patch("/api/employee/profile", async (req, res) => {

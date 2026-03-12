@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, User, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink } from "lucide-react";
 import { BiometricManager } from "@/components/BiometricManager";
 import { UserAvatar } from "@/components/UserAvatar";
 import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
@@ -39,6 +39,8 @@ interface Profile {
   jobTitle?: string;
   profilePhotoUrl?: string;
   avatarConfig?: string;
+  fullName?: string;
+  email?: string;
   portfolioItems?: PortfolioItem[];
 }
 
@@ -182,12 +184,17 @@ export default function EmployeeProfile() {
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center">
-            <User className="w-5 h-5 text-white dark:text-black" />
-          </div>
+          <UserAvatar
+            profilePhotoUrl={profile?.profilePhotoUrl}
+            avatarConfig={profile?.avatarConfig}
+            name={user?.fullName}
+            role={user?.role}
+            size="lg"
+            showRing
+          />
           <div>
-            <h1 className="text-xl font-black text-black dark:text-white">ملفي الشخصي</h1>
-            <p className="text-xs text-black/35 dark:text-white/35">معلوماتي المهنية والبنكية</p>
+            <h1 className="text-xl font-black text-black dark:text-white">{user?.fullName || "ملفي الشخصي"}</h1>
+            <p className="text-xs text-black/35 dark:text-white/35">{form.jobTitle || "معلوماتي المهنية والبنكية"}</p>
           </div>
         </div>
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
@@ -250,7 +257,7 @@ export default function EmployeeProfile() {
                   {savingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                   {photoPreview || profile?.profilePhotoUrl ? "تغيير الصورة" : "رفع صورة"}
                 </Button>
-                <p className="text-xs text-black/30 dark:text-white/30">JPG أو PNG، الحد الأقصى 1.5MB</p>
+                <p className="text-xs text-black/30 dark:text-white/30">JPG أو PNG، الحد الأقصى 5MB</p>
               </motion.div>
             ) : (
               <motion.div key="avatar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
