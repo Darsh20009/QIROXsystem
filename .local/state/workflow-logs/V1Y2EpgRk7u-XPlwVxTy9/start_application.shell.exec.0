@@ -1,0 +1,96 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+3:24:35 AM [express] serving on port 5000
+Initialized 9 cron jobs
+3:24:39 AM [express] GET /api/user 401 in 2ms
+3:24:40 AM [express] GET /api/partners 304 in 38ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+3:24:40 AM [express] GET /api/public/settings 304 in 38ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:24:40 AM [express] GET /api/app-downloads 304 in 46ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:24:40 AM [express] GET /api/templates 304 in 68ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empowe…
+3:24:40 AM [express] GET /api/discount-codes/public 304 in 37ms :: []
+3:24:49 AM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+3:24:49 AM [express] GET /api/auth/google/status 304 in 0ms :: {"enabled":true}
+3:24:51 AM [express] POST /api/login 200 in 120ms :: {"renewalReminderSentAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","emailOtpEnabled":false,"recoveryPassphraseEnabled":false,"referredBy":…
+3:24:52 AM [express] GET /api/notifications/unread-count 304 in 37ms :: {"count":0}
+3:24:52 AM [express] GET /api/attendance/status 304 in 38ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a1880…
+3:24:52 AM [express] GET /api/notifications 304 in 37ms :: []
+3:24:52 AM [express] GET /api/badges 304 in 41ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:24:53 AM [express] GET /api/admin/system-overview 304 in 470ms :: {"overview":{"totalClients":31,"totalEmployees":6,"totalRevenue":250,"totalOrders":21,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalIn…
+3:24:56 AM [express] GET /api/push/vapid-key 304 in 1ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+3:24:58 AM [express] GET /api/bank-settings 200 in 50ms :: {"key":"main","bankName":"بنك الراجحي","beneficiaryName":"Mohammed Bin Ali ALdbani","iban":"SA74 8000 0336 6080 1608 1379","accountNumber":"","swiftCode":"","curr…
+3:25:12 AM [express] GET /api/notifications 304 in 36ms :: []
+3:25:22 AM [express] GET /api/notifications/unread-count 304 in 38ms :: {"count":0}
+3:25:22 AM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:25:31 AM [express] GET /api/admin/contact-messages 304 in 36ms :: []
+3:25:32 AM [express] GET /api/support-tickets 304 in 71ms :: [{"userId":{"username":"lionlake689@burnerboxes.com","email":"lionlake689@burnerboxes.com","fullName":"lionlake689@burnerboxes.com","id":"69a3b29ca18808005bdf2e…
+3:25:32 AM [express] GET /api/notifications 304 in 42ms :: []
+3:25:33 AM [express] GET /api/admin/all-users 200 in 47ms :: {"users":[{"emailOtpEnabled":false,"recoveryPassphraseEnabled":false,"username":"jackjackzimmer19b98","email":"jackjackzimmer1@gmail.com","googleId":"1178739019…
+3:25:35 AM [express] GET /api/admin/users 200 in 81ms :: [{"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"walletCardActive":false,"walletBalance":0,"jobTitle":"","bio":"","additionalRo…
+3:25:37 AM [express] GET /api/admin/shipments 200 in 35ms :: []
+3:25:38 AM [express] GET /api/admin/products 304 in 131ms :: [{"discount":0,"warrantyMonths":0,"name":"Handheld PDA Android POS Terminal Receipt Printer Barcode Printer, Data Collector, Portable Barcode Scanner Pos Machin…
+3:25:42 AM [express] GET /api/groups 200 in 76ms :: [{"_id":"69ae4d532c3c5953037cb1b0","name":"قروب كيروكس","description":"","icon":"🤝","createdBy":"69a487f0a18808005bdf3247","adminIds":[{"_id":"69a487f0a18808005bdf3247"…
+3:25:42 AM [express] GET /api/checklist/assigned-by-me 304 in 54ms :: []
+3:25:42 AM [express] GET /api/employees 304 in 76ms :: [{"id":"698a441902c00da9923744f7","fullName":"System Admin","username":"qadmin","role":"admin"},{"id":"69920f66cd5abe741330f115","fullName":"Qirox Manager","username"…
+3:25:42 AM [express] GET /api/checklist 304 in 80ms :: [{"userId":"69a487f0a18808005bdf3247","title":"QIROX","description":"ابدا اعمل التوافق الكامل للنظام بي باي بال و لاكن لما يظهر عند العميل عشان يدفع شئ يكون خيار الدف…
+3:25:43 AM [express] GET /api/totp/status 304 in 45ms :: {"enabled":false,"totp":false,"emailOtp":false,"passphrase":false}
+3:25:45 AM [express] POST /api/totp/setup 200 in 66ms :: {"secret":"OJLHAXJMHIQTS6SPLNZHKVB2IATFGMBJ","otpauth_url":"otpauth://totp/Qirox%20(youssefd.business%40gmail.com)?secret=OJLHAXJMHIQTS6SPLNZHKVB2IATFGMBJ"}
+3:25:52 AM [express] GET /api/notifications/unread-count 304 in 37ms :: {"count":0}
+3:25:52 AM [express] GET /api/badges 304 in 42ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:25:53 AM [express] GET /api/notifications 304 in 44ms :: []
+3:26:08 AM [express] POST /api/totp/verify-setup 200 in 96ms :: {"ok":true}
+3:26:08 AM [express] GET /api/totp/status 200 in 37ms :: {"enabled":true,"totp":true,"emailOtp":false,"passphrase":false}
+3:26:13 AM [express] GET /api/notifications 304 in 42ms :: []
+3:26:13 AM [express] POST /api/2fa/email-otp/enable 200 in 57ms :: {"ok":true}
+3:26:14 AM [express] GET /api/totp/status 200 in 37ms :: {"enabled":true,"totp":true,"emailOtp":true,"passphrase":false}
+3:26:22 AM [express] POST /api/2fa/passphrase/setup 200 in 121ms :: {"ok":true}
+3:26:22 AM [express] GET /api/totp/status 200 in 42ms :: {"enabled":true,"totp":true,"emailOtp":true,"passphrase":true}
+3:26:22 AM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:26:22 AM [express] GET /api/notifications/unread-count 304 in 36ms :: {"count":0}
+3:26:25 AM [express] POST /api/logout 200 in 2ms
+3:26:27 AM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+3:26:27 AM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+3:26:29 AM [express] POST /api/login 200 in 250ms :: {"requires2FA":true,"methods":["totp","email","passphrase"],"tempToken":"a3518203ade71fbd68c6fbe599541e05bbe14a1c9e4dcb8daa0ce65046635193"}
+3:26:39 AM [express] POST /api/auth/verify-2fa 200 in 92ms :: {"renewalReminderSentAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","referredBy":null,"referralCreditsEarned":0,"username":"darwis…
+3:26:39 AM [express] GET /api/user 200 in 1ms :: {"renewalReminderSentAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","referredBy":null,"referralCreditsEarned":0,"username":"darwish2001","email…
+3:26:43 AM [express] GET /api/push/vapid-key 304 in 1ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+3:26:59 AM [express] GET /api/notifications 304 in 37ms :: []
+3:27:09 AM [express] GET /api/notifications/unread-count 304 in 35ms :: {"count":0}
+3:27:09 AM [express] GET /api/badges 304 in 42ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:27:20 AM [express] GET /api/notifications 304 in 43ms :: []
+3:27:40 AM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:27:40 AM [express] GET /api/notifications/unread-count 304 in 42ms :: {"count":0}
+3:27:40 AM [express] GET /api/admin/system-overview 304 in 515ms :: {"overview":{"totalClients":31,"totalEmployees":6,"totalRevenue":250,"totalOrders":21,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalIn…
+3:27:40 AM [express] GET /api/notifications 304 in 45ms :: []
+3:28:00 AM [express] GET /api/notifications 304 in 37ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:28:03 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TwoFactorSetup.tsx, /src/index.css[22m

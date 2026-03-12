@@ -1,0 +1,15 @@
+VERDICT: REJECTED
+The changes add login enforcement, 2FA verification endpoint, email OTP sending on login, new user fields, and UI for multi-method selection. However, a core requirement is missing: the task explicitly calls for setup/verify/disable fVERDICT: REJECTED
+lows per method, and the current implementation only provides enable/disable for email OTP and setup/disable for recovery passphrase with no verification step when enabling (no /api/2fa/email-otp/verify or passphrase verification flow, and the UI only toggles email OTP without verifying). This is a functional gap relative to the task’s “toggle + verify” and “setup, verify, disable” requirements.
+
+Security: none observed.
+
+Next actions:
+1) Add verification flows for email OTP enablement (send code, verify endpoint, and UI step).
+2) Add a verification step for recovery passphrase setup if required by spec (or clarify requirements).The changes add login enforcement, 2FA verification endpoint, email OTP sending on login, new user fields, and UI for multi-method selection. However, a core requirement is missing: the task explicitly calls for setup/verify/disable flows per method, and the current implementation only provides enable/disable for email OTP and setup/disable for recovery passphrase with no verification step when enabling (no /api/2fa/email-otp/verify or passphrase verification flow, and the UI only toggles email OTP without verifying). This is a functional gap relative to the task’s “toggle + verify” and “setup, verify, disable” requirements.
+
+Security: none observed.
+
+Next actions:
+1) Add verification flows for email OTP enablement (send code, verify endpoint, and UI step).
+2) Add a verification step for recovery passphrase setup if required by spec (or clarify requirements).

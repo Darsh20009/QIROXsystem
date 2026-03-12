@@ -1,0 +1,13 @@
+VERDICT: APPROVED
+
+The backend DELETE now checks `findByIdAndDelete`, returns 404 when missing, and logs success/failure, which ensures deletions persist and are observable. The frontend adds a confirmation dialog, success/error toasts, and invalidatesVERDICT: APPROVED
+ the addons query after deletion; this matches the requirements and
+ should prevent deleted items from reappearing after refresh.
+
+Security: none observed.
+
+Next actions: none required; ready to merge.The backend DELETE now checks `findByIdAndDelete`, returns 404 when missing, and logs success/failure, which ensures deletions persist and are observable. The frontend adds a confirmation dialog, success/error toasts, and invalidates the addons query after deletion; this matches the requirements and should prevent deleted items from reappearing after refresh.
+
+Security: none observed.
+
+Next actions: none required; ready to merge.

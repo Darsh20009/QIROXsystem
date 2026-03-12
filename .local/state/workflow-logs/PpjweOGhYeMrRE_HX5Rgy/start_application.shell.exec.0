@@ -1,0 +1,32 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+3:19:08 AM [express] serving on port 5000
+Initialized 9 cron jobs
+3:19:13 AM [express] GET /api/user 401 in 2ms
+3:19:14 AM [express] GET /api/app-downloads 304 in 37ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:19:14 AM [express] GET /api/public/settings 304 in 34ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:19:14 AM [express] GET /api/discount-codes/public 304 in 35ms :: []
+3:19:15 AM [express] GET /api/partners 304 in 164ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+3:19:15 AM [express] GET /api/templates 304 in 217ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empow…
+3:19:33 AM [express] GET /api/user 401 in 1ms
+3:19:38 AM [express] GET /api/user 401 in 0ms
+3:19:45 AM [express] GET /api/totp/status 401 in 1ms
+3:19:50 AM [express] POST /api/auth/verify-2fa 400 in 2ms :: {"error":"انتهت صلاحية الجلسة، أعد تسجيل الدخول"}
+3:21:48 AM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+3:21:48 AM [express] GET /api/auth/github/status 304 in 0ms :: {"enabled":false}
+3:21:50 AM [express] POST /api/login 200 in 129ms :: {"renewalReminderSentAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","emailOtpEnabled":false,"recoveryPassphraseEnabled":false,"referredBy":…
+3:21:51 AM [express] GET /api/badges 304 in 37ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+3:21:51 AM [express] GET /api/notifications/unread-count 304 in 42ms :: {"count":0}
+3:21:51 AM [express] GET /api/attendance/status 304 in 45ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a1880…
+3:21:51 AM [express] GET /api/notifications 304 in 45ms :: []
+3:21:52 AM [express] GET /api/admin/system-overview 304 in 555ms :: {"overview":{"totalClients":31,"totalEmployees":6,"totalRevenue":250,"totalOrders":21,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalIn…
+3:21:55 AM [express] GET /api/push/vapid-key 304 in 2ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+3:21:59 AM [express] GET /api/totp/status 200 in 46ms :: {"enabled":false,"totp":false,"emailOtp":false,"passphrase":false}

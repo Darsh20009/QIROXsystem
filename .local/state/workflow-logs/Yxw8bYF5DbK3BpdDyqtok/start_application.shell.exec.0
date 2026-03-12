@@ -1,0 +1,168 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+3:28:12 AM [express] serving on port 5000
+3:28:17 AM [express] GET /api/user 401 in 2ms
+3:28:18 AM [express] GET /api/partners 304 in 48ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+3:28:18 AM [express] GET /api/app-downloads 304 in 42ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:28:18 AM [express] GET /api/public/settings 304 in 47ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:28:18 AM [express] GET /api/templates 304 in 74ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empowe…
+3:28:18 AM [express] GET /api/discount-codes/public 304 in 37ms :: []
+Initialized 9 cron jobs
+3:28:31 AM [express] GET /api/pricing 304 in 39ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime…
+3:30:24 AM [express] GET /api/user 401 in 1ms
+3:30:25 AM [express] GET /api/partners 304 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+3:30:25 AM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:30:25 AM [express] GET /api/discount-codes/public 304 in 38ms :: []
+3:30:25 AM [express] GET /api/public/settings 304 in 58ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:30:25 AM [express] GET /api/templates 304 in 212ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empow…
+3:30:37 AM [express] GET /api/pricing 304 in 1ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime"…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:34:01 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Prices.tsx, /src/index.css[22m
+3:36:08 AM [express] GET /api/user 401 in 1ms
+3:36:09 AM [express] GET /api/user 401 in 1ms
+3:36:09 AM [express] GET /api/public/settings 304 in 60ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:36:09 AM [express] GET /api/admin/contact-messages 403 in 1ms
+3:36:10 AM [express] GET /api/partners 200 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+3:36:10 AM [express] GET /api/public/settings 304 in 35ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:36:10 AM [express] GET /api/app-downloads 304 in 47ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:36:10 AM [express] GET /api/templates 304 in 64ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empowe…
+3:36:10 AM [express] GET /api/discount-codes/public 304 in 46ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:39:33 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/AdminContactMessages.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:39:33 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Contact.tsx, /src/index.css[22m
+3:39:35 AM [express] GET /api/admin/contact-messages 403 in 0ms
+3:39:58 AM [express] GET /api/user 401 in 1ms
+3:39:59 AM [express] GET /api/partners 304 in 0ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+3:39:59 AM [express] GET /api/app-downloads 304 in 37ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:39:59 AM [express] GET /api/public/settings 304 in 37ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:39:59 AM [express] GET /api/discount-codes/public 304 in 42ms :: []
+3:39:59 AM [express] GET /api/templates 304 in 70ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empowe…
+3:42:53 AM [express] GET /api/user 401 in 1ms
+3:42:54 AM [express] GET /api/partners 304 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+3:42:54 AM [express] GET /api/public/settings 304 in 35ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:42:54 AM [express] GET /api/app-downloads 304 in 36ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"","enabled":false},"hua…
+3:42:54 AM [express] GET /api/discount-codes/public 304 in 35ms :: []
+3:42:54 AM [express] GET /api/templates 304 in 218ms :: [{"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness Centers\nWe empow…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:43:28 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:48:19 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m

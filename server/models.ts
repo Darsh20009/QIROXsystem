@@ -68,6 +68,13 @@ const serviceSchema = new mongoose.Schema({
   icon: String,
   portfolioImages: [String],
   portfolioUrl: String,
+  platformUrl: String,
+  usageInstructions: String,
+  portfolioFiles: [{
+    url: { type: String, required: true },
+    name: { type: String, required: true },
+    type: { type: String, enum: ["pdf", "video", "document", "other"], default: "other" },
+  }],
 });
 
 const orderSchema = new mongoose.Schema({

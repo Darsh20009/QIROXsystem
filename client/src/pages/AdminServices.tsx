@@ -6,11 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Edit2, Trash2, Briefcase, Search, X } from "lucide-react";
+import { Loader2, Plus, Edit2, Trash2, Briefcase, Search, X, Upload, FileText, Video, File, ExternalLink } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Service } from "@shared/schema";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 
 const categories = [
@@ -24,6 +24,12 @@ const categories = [
   { value: "commerce", label: "تجارة إلكترونية" },
 ];
 
+interface PortfolioFile {
+  url: string;
+  name: string;
+  type: "pdf" | "video" | "document" | "other";
+}
+
 interface FormData {
   title: string;
   description: string;
@@ -35,6 +41,9 @@ interface FormData {
   features: string;
   portfolioImages: string;
   portfolioUrl: string;
+  platformUrl: string;
+  usageInstructions: string;
+  portfolioFiles: PortfolioFile[];
 }
 
 const emptyForm: FormData = {
@@ -48,7 +57,25 @@ const emptyForm: FormData = {
   features: "",
   portfolioImages: "",
   portfolioUrl: "",
+  platformUrl: "",
+  usageInstructions: "",
+  portfolioFiles: [],
 };
+
+function getFileType(filename: string): PortfolioFile["type"] {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  if (["pdf"].includes(ext)) return "pdf";
+  if (["mp4", "mov", "avi", "webm", "mkv"].includes(ext)) return "video";
+  if (["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) return "document";
+  return "other";
+}
+
+function getFileIcon(type: string) {
+  if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
+  if (type === "video") return <Video className="w-4 h-4 text-blue-500" />;
+  if (type === "document") return <FileText className="w-4 h-4 text-green-500" />;
+  return <File className="w-4 h-4 text-black/40" />;
+}
 
 export default function AdminServices() {
   const { toast } = useToast();
@@ -57,6 +84,8 @@ export default function AdminServices() {
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: services, isLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"]
@@ -84,6 +113,9 @@ export default function AdminServices() {
     features: data.features ? data.features.split(",").map((f: string) => f.trim()).filter(Boolean) : [],
     portfolioImages: data.portfolioImages ? data.portfolioImages.split(",").map((f: string) => f.trim()).filter(Boolean) : [],
     portfolioUrl: data.portfolioUrl || undefined,
+    platformUrl: data.platformUrl || undefined,
+    usageInstructions: data.usageInstructions || undefined,
+    portfolioFiles: data.portfolioFiles.length > 0 ? data.portfolioFiles : undefined,
   });
 
   const createMutation = useMutation({
@@ -146,6 +178,7 @@ export default function AdminServices() {
   };
 
   const handleEdit = (service: Service) => {
+    const s = service as any;
     setEditingId(String(service.id));
     setFormData({
       title: service.title,
@@ -156,8 +189,11 @@ export default function AdminServices() {
       estimatedDuration: service.estimatedDuration || "",
       icon: service.icon || "",
       features: Array.isArray(service.features) ? service.features.join(", ") : "",
-      portfolioImages: Array.isArray((service as any).portfolioImages) ? (service as any).portfolioImages.join(", ") : "",
-      portfolioUrl: (service as any).portfolioUrl || "",
+      portfolioImages: Array.isArray(s.portfolioImages) ? s.portfolioImages.join(", ") : "",
+      portfolioUrl: s.portfolioUrl || "",
+      platformUrl: s.platformUrl || "",
+      usageInstructions: s.usageInstructions || "",
+      portfolioFiles: Array.isArray(s.portfolioFiles) ? s.portfolioFiles : [],
     });
     setOpen(true);
   };
@@ -166,6 +202,47 @@ export default function AdminServices() {
     setEditingId(null);
     setFormData(emptyForm);
     setOpen(true);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload/large", {
+          method: "POST",
+          credentials: "include",
+          body: fd,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          toast({ title: `خطأ في رفع ${file.name}`, description: data.error || "فشل الرفع", variant: "destructive" });
+          continue;
+        }
+        const data = await res.json();
+        const newFile: PortfolioFile = {
+          url: data.url,
+          name: data.filename || file.name,
+          type: getFileType(file.name),
+        };
+        setFormData(f => ({ ...f, portfolioFiles: [...f.portfolioFiles, newFile] }));
+      }
+      toast({ title: "تم رفع الملفات بنجاح" });
+    } catch {
+      toast({ title: "خطأ في رفع الملفات", variant: "destructive" });
+    }
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (idx: number) => {
+    setFormData(f => ({
+      ...f,
+      portfolioFiles: f.portfolioFiles.filter((_, i) => i !== idx),
+    }));
   };
 
   if (isLoading) {
@@ -194,7 +271,6 @@ export default function AdminServices() {
         </Button>
       </div>
 
-      {/* Search & Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
@@ -238,57 +314,69 @@ export default function AdminServices() {
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الفئة</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">السعر</th>
                 <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المدة</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الملفات</th>
                 <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {filteredServices.map((service) => (
-                <tr key={service.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-service-${service.id}`}>
-                  <td className="p-4">
-                    <div>
-                      <p className="font-semibold text-black text-sm">{service.title}</p>
-                      <p className="text-xs text-black/40 mt-0.5 line-clamp-1">{service.description}</p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-black/[0.06] text-black/60 border border-black/[0.08]">
-                      {categories.find(c => c.value === service.category)?.label || service.category}
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-black/60">
-                    {service.priceMin && service.priceMax
-                      ? <span className="flex items-center gap-1">{service.priceMin?.toLocaleString()} - {service.priceMax?.toLocaleString()} <SARIcon size={11} /></span>
-                      : service.priceMin ? <span className="flex items-center gap-1">من {service.priceMin?.toLocaleString()} <SARIcon size={11} /></span> : "—"}
-                  </td>
-                  <td className="p-4 text-sm text-black/60">{service.estimatedDuration || "—"}</td>
-                  <td className="p-4">
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-black/60"
-                        onClick={() => handleEdit(service)}
-                        data-testid={`button-edit-${service.id}`}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-red-500"
-                        onClick={() => deleteMutation.mutate(String(service.id))}
-                        disabled={deleteMutation.isPending}
-                        data-testid={`button-delete-${service.id}`}
-                      >
-                        {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredServices.map((service) => {
+                const s = service as any;
+                const filesCount = Array.isArray(s.portfolioFiles) ? s.portfolioFiles.length : 0;
+                return (
+                  <tr key={service.id} className="border-b border-black/[0.03] hover:bg-black/[0.02] transition-colors" data-testid={`row-service-${service.id}`}>
+                    <td className="p-4">
+                      <div>
+                        <p className="font-semibold text-black text-sm">{service.title}</p>
+                        <p className="text-xs text-black/40 mt-0.5 line-clamp-1">{service.description}</p>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-black/[0.06] text-black/60 border border-black/[0.08]">
+                        {categories.find(c => c.value === service.category)?.label || service.category}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-black/60">
+                      {service.priceMin && service.priceMax
+                        ? <span className="flex items-center gap-1">{service.priceMin?.toLocaleString()} - {service.priceMax?.toLocaleString()} <SARIcon size={11} /></span>
+                        : service.priceMin ? <span className="flex items-center gap-1">من {service.priceMin?.toLocaleString()} <SARIcon size={11} /></span> : "—"}
+                    </td>
+                    <td className="p-4 text-sm text-black/60">{service.estimatedDuration || "—"}</td>
+                    <td className="p-4 text-sm text-black/60">
+                      {filesCount > 0 ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                          {filesCount} ملف
+                        </span>
+                      ) : "—"}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-black/60"
+                          onClick={() => handleEdit(service)}
+                          data-testid={`button-edit-${service.id}`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-red-500"
+                          onClick={() => deleteMutation.mutate(String(service.id))}
+                          disabled={deleteMutation.isPending}
+                          data-testid={`button-delete-${service.id}`}
+                        >
+                          {deleteMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredServices.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-black/30">
+                  <td colSpan={6} className="p-8 text-center text-black/30">
                     {services?.length ? "لا توجد نتائج مطابقة للبحث" : "لا توجد خدمات بعد"}
                   </td>
                 </tr>
@@ -389,6 +477,85 @@ export default function AdminServices() {
                 data-testid="input-features"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط المنصة</label>
+              <Input
+                value={formData.platformUrl}
+                onChange={(e) => setFormData(f => ({ ...f, platformUrl: e.target.value }))}
+                placeholder="https://platform.example.com"
+                dir="ltr"
+                data-testid="input-platform-url"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">طريقة الاستخدام</label>
+              <Textarea
+                value={formData.usageInstructions}
+                onChange={(e) => setFormData(f => ({ ...f, usageInstructions: e.target.value }))}
+                className="min-h-[100px]"
+                placeholder={"1. افتح لوحة التحكم\n2. اضغط على إضافة منتج\n3. أدخل البيانات واحفظ"}
+                data-testid="input-usage-instructions"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">ملفات الشرح (PDF / فيديو)</label>
+              <div className="border-2 border-dashed border-black/[0.1] rounded-xl p-4 text-center hover:border-black/[0.2] transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.mp4,.mov,.avi,.webm,.mkv,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="input-portfolio-files"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="gap-2"
+                  data-testid="button-upload-files"
+                >
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {isUploading ? "جاري الرفع..." : "اختر ملفات"}
+                </Button>
+                <p className="text-xs text-black/30 mt-2">PDF, فيديو, مستندات — بدون حد للحجم (حتى 500MB)</p>
+              </div>
+
+              {formData.portfolioFiles.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {formData.portfolioFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2.5 rounded-xl bg-black/[0.02] border border-black/[0.06]">
+                      {getFileIcon(file.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-black truncate">{file.name}</p>
+                        <p className="text-xs text-black/40">{file.type === "pdf" ? "PDF" : file.type === "video" ? "فيديو" : file.type === "document" ? "مستند" : "ملف"}</p>
+                      </div>
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-black/[0.05] transition-colors" data-testid={`link-preview-file-${idx}`}>
+                        <ExternalLink className="w-3.5 h-3.5 text-black/40" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(idx)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        data-testid={`button-remove-file-${idx}`}
+                      >
+                        <X className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
               <ImageUpload
                 label="صور المحفظة"

@@ -106,6 +106,26 @@ const upload = multer({
   },
 });
 
+const uploadLarge = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const name = crypto.randomBytes(16).toString("hex");
+      cb(null, `${name}${ext}`);
+    },
+  }),
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|mp4|mov|avi|webm|mkv|mp3|wav|ogg|m4a|jpg|jpeg|png|gif|webp)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error("نوع الملف غير مسموح به"));
+    }
+  },
+});
+
 // ── Atomic Wallet Helpers ────────────────────────────────────────────────────
 // Uses MongoDB document-level atomicity ($inc with condition) — safe without Replica Set
 
@@ -395,6 +415,21 @@ export async function registerRoutes(
         size: f.size,
       }));
       res.json(results);
+    });
+  });
+
+  app.post("/api/upload/large", (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (!["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    uploadLarge.single("file")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "حجم الملف كبير جداً (الحد الأقصى 500 ميغابايت)" });
+        return res.status(400).json({ error: translateError(err) });
+      }
+      if (err) return res.status(400).json({ error: translateError(err) });
+      if (!req.file) return res.status(400).json({ error: "لم يتم اختيار أي ملف" });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url, filename: req.file.originalname, size: req.file.size });
     });
   });
 
