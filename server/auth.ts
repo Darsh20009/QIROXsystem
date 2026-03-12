@@ -2,13 +2,53 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import MongoStore from "connect-mongo";
+import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
+
+const PUBLIC_ROUTE_PREFIXES = [
+  "/api/public/",
+  "/api/pricing",
+  "/api/news",
+  "/api/jobs",
+  "/api/partners",
+  "/api/products",
+  "/api/services",
+  "/api/sectors",
+];
+
+function isPublicRoute(path: string): boolean {
+  return PUBLIC_ROUTE_PREFIXES.some(prefix => path.startsWith(prefix));
+}
+
+const userCache = new Map<string, { user: User; expiresAt: number }>();
+const USER_CACHE_TTL = 5 * 60_000;
+
+function getCachedUser(id: string): User | undefined {
+  const entry = userCache.get(id);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    userCache.delete(id);
+    return undefined;
+  }
+  return entry.user;
+}
+
+function setCachedUser(id: string, user: User): void {
+  userCache.set(id, { user, expiresAt: Date.now() + USER_CACHE_TTL });
+}
+
+export function invalidateUserCache(id?: string): void {
+  if (id) {
+    userCache.delete(id);
+  } else {
+    userCache.clear();
+  }
+}
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -26,13 +66,12 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const SESSION_DAYS = 14;
   const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
-  const SESSION_SEC = SESSION_DAYS * 24 * 60 * 60;
+
+  const MemoryStore = createMemoryStore(session);
 
   const sessionSettings: session.SessionOptions = {
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      collectionName: 'sessions',
-      ttl: SESSION_SEC,
+    store: new MemoryStore({
+      checkPeriod: 86400000,
     }),
     secret: process.env.SESSION_SECRET || "qirox_super_secret_key",
     resave: false,
@@ -50,7 +89,14 @@ export function setupAuth(app: Express) {
     app.set("trust proxy", 1);
   }
 
-  app.use(session(sessionSettings));
+  const sessionMiddleware = session(sessionSettings);
+
+  app.use((req: any, res: any, next: any) => {
+    if (isPublicRoute(req.path) && !req.headers.cookie?.includes("connect.sid")) {
+      return next();
+    }
+    sessionMiddleware(req, res, next);
+  });
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -61,6 +107,7 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         } else {
+          setCachedUser(user.id, user);
           return done(null, user);
         }
       } catch (err) {
@@ -73,9 +120,14 @@ export function setupAuth(app: Express) {
     const id = (user as User).id;
     done(null, id ? id.toString() : null);
   });
-  passport.deserializeUser(async (id, done) => {
+
+  passport.deserializeUser(async (id: string, done) => {
     try {
-      const user = await storage.getUser(id as string);
+      const cached = getCachedUser(id);
+      if (cached) return done(null, cached);
+
+      const user = await storage.getUser(id);
+      if (user) setCachedUser(id, user);
       done(null, user);
     } catch (err) {
       done(err);

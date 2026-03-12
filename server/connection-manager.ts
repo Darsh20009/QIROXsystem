@@ -44,9 +44,10 @@ class ConnectionManager {
       maxPoolSize: 20,
       minPoolSize: 5,
       serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 45000,
+      socketTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       heartbeatFrequencyMS: 10000,
+      maxIdleTimeMS: 50000,
       retryWrites: true,
       w: "majority",
       readPreference: "nearest",
@@ -60,9 +61,10 @@ class ConnectionManager {
       maxPoolSize: 10,
       minPoolSize: 2,
       serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 45000,
+      socketTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       heartbeatFrequencyMS: 10000,
+      maxIdleTimeMS: 50000,
     });
     this._qmeetConn.on("connected", () => console.log("[ConnManager] QMeet DB connected (env)"));
     this._qmeetConn.on("error", (e) => console.error("[ConnManager] QMeet error:", e.message));

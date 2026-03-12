@@ -2,7 +2,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import type { AuthenticatorTransportFuture } from "@simplewebauthn/types";
-import { setupAuth, hashPassword } from "./auth";
+import { setupAuth, hashPassword, invalidateUserCache } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import fs from "fs";
 import express from "express";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
+import { cache, CACHE_TTL } from "./cache";
 
 // ── Rate limiters ────────────────────────────────────────────────
 const loginLimiter = rateLimit({
@@ -581,6 +582,7 @@ export async function registerRoutes(
       }
       const user = await storage.updateUser(req.params.id, sanitized);
       if (!user) return res.sendStatus(404);
+      invalidateUserCache(req.params.id);
       res.json(sanitizeUser(user));
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
@@ -635,6 +637,7 @@ export async function registerRoutes(
       const rawPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase() + "@Q";
       const hashed = await hashPassword(rawPassword);
       await storage.updateUser(req.params.id, { password: hashed });
+      invalidateUserCache(req.params.id);
       sendWelcomeWithCredentialsEmail(targetUser.email, targetUser.fullName, targetUser.username, rawPassword).catch(e => console.error("[RESET] email failed:", e));
       res.json({ ok: true, username: targetUser.username, rawPassword, email: targetUser.email });
     } catch (err: any) {
@@ -2719,8 +2722,12 @@ export async function registerRoutes(
 
   // === PRICING PLANS API ===
   app.get("/api/pricing", async (req, res) => {
-    const plans = await storage.getPricingPlans();
-    res.json(plans);
+    try {
+      const plans = await cache.getOrFetch("public:pricing", () => storage.getPricingPlans(), CACHE_TTL.PUBLIC);
+      res.json(plans);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load pricing" });
+    }
   });
 
   app.post("/api/admin/pricing", async (req, res) => {
@@ -2728,6 +2735,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const plan = await storage.createPricingPlan(req.body);
+    cache.invalidate("public:pricing");
     res.status(201).json(plan);
   });
 
@@ -2738,6 +2746,7 @@ export async function registerRoutes(
     try {
       const plan = await storage.updatePricingPlan(req.params.id, req.body);
       if (!plan) return res.status(404).json({ error: "الباقة غير موجودة" });
+      cache.invalidate("public:pricing");
       res.json(plan);
     } catch (err: any) {
       if (err.code === 11000) return res.status(400).json({ error: "الـ slug موجود مسبقاً، اختر اسماً مختلفاً" });
@@ -2750,19 +2759,25 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     await storage.deletePricingPlan(req.params.id);
+    cache.invalidate("public:pricing");
     res.sendStatus(204);
   });
 
   // === NEWS API ===
   app.get("/api/news", async (req, res) => {
-    const news = await storage.getNews();
-    res.json(news);
+    try {
+      const news = await cache.getOrFetch("public:news", () => storage.getNews(), CACHE_TTL.PUBLIC);
+      res.json(news);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load news" });
+    }
   });
 
   app.post("/api/admin/news", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const news = await storage.createNews({ ...req.body, authorId: (req.user as any).id });
+      cache.invalidate("public:news");
       res.status(201).json(news);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -2771,6 +2786,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const news = await storage.updateNews(req.params.id, req.body);
+      cache.invalidate("public:news");
       res.json(news);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -2779,6 +2795,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       await storage.deleteNews(req.params.id);
+      cache.invalidate("public:news");
       res.sendStatus(204);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
   });
@@ -2947,8 +2964,12 @@ export async function registerRoutes(
 
   // === PARTNERS API ===
   app.get("/api/partners", async (req, res) => {
-    const partners = await storage.getPartners();
-    res.json(partners);
+    try {
+      const partners = await cache.getOrFetch("public:partners", () => storage.getPartners(), CACHE_TTL.PUBLIC);
+      res.json(partners);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load partners" });
+    }
   });
 
   app.get("/api/admin/partners", async (req, res) => {
@@ -2964,6 +2985,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const partner = await storage.createPartner(req.body);
+    cache.invalidate("public:partners");
     res.status(201).json(partner);
   });
 
@@ -2972,6 +2994,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     const partner = await storage.updatePartner(req.params.id, req.body);
+    cache.invalidate("public:partners");
     res.json(partner);
   });
 
@@ -2980,6 +3003,7 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     await storage.deletePartner(req.params.id);
+    cache.invalidate("public:partners");
     res.sendStatus(204);
   });
 
@@ -2989,43 +3013,39 @@ export async function registerRoutes(
       return res.sendStatus(403);
     }
     try {
-      const [allOrders, allProjects, allUsers, allServices, allModRequests] = await Promise.all([
-        storage.getOrders(),
-        storage.getProjects(),
-        storage.getUsers(),
-        storage.getServices(),
-        storage.getModificationRequests(),
-      ]);
+      const result = await cache.getOrFetch("admin:stats", async () => {
+        const [allOrders, allProjects, allUsers, allServices, allModRequests] = await Promise.all([
+          storage.getOrders(),
+          storage.getProjects(),
+          storage.getUsers(),
+          storage.getServices(),
+          storage.getModificationRequests(),
+        ]);
 
-      const totalOrders = allOrders.length;
-      const pendingOrders = allOrders.filter(o => o.status === "pending").length;
-      const activeProjects = allProjects.filter(p => p.status !== "closed" && p.status !== "delivery").length;
-      const totalRevenue = allOrders.reduce((sum, o) => {
-        if (o.status === "completed" || o.status === "approved" || o.status === "in_progress") {
-          return sum + Number(o.totalAmount || 0);
-        }
-        return sum;
-      }, 0);
-      const totalClients = allUsers.filter(u => u.role === "client").length;
-      const totalEmployees = allUsers.filter(u => u.role !== "client" && u.role !== "admin").length;
-      const totalServices = allServices.length;
+        const totalOrders = allOrders.length;
+        const pendingOrders = allOrders.filter(o => o.status === "pending").length;
+        const activeProjects = allProjects.filter(p => p.status !== "closed" && p.status !== "delivery").length;
+        const totalRevenue = allOrders.reduce((sum, o) => {
+          if (o.status === "completed" || o.status === "approved" || o.status === "in_progress") {
+            return sum + Number(o.totalAmount || 0);
+          }
+          return sum;
+        }, 0);
+        const totalClients = allUsers.filter(u => u.role === "client").length;
+        const totalEmployees = allUsers.filter(u => u.role !== "client" && u.role !== "admin").length;
+        const totalServices = allServices.length;
 
-      const recentOrders = allOrders
-        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5);
-      const recentModRequests = allModRequests.slice(0, 5);
+        const recentOrders = allOrders
+          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5);
+        const recentModRequests = allModRequests.slice(0, 5);
 
-      res.json({
-        totalOrders,
-        pendingOrders,
-        activeProjects,
-        totalRevenue,
-        totalClients,
-        totalEmployees,
-        totalServices,
-        recentOrders,
-        recentModRequests,
-      });
+        return {
+          totalOrders, pendingOrders, activeProjects, totalRevenue,
+          totalClients, totalEmployees, totalServices, recentOrders, recentModRequests,
+        };
+      }, CACHE_TTL.MEDIUM);
+      res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
     }
@@ -3035,99 +3055,26 @@ export async function registerRoutes(
   app.get("/api/admin/system-overview", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const {
-        OrderModel, UserModel, InvoiceModel, ReceiptVoucherModel, WalletTransactionModel,
-        SupportTicketModel, InboxMessageModel, InstallmentApplicationModel,
-        InstallmentOfferModel, InvestorProfileModel, PayrollRecordModel, ModificationRequestModel,
-        AttendanceModel, NewsModel, JobModel, DiscountCodeModel, DeviceShipmentModel,
-        ConsultationBookingModel, NotificationModel,
-      } = await import("./models");
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const result = await cache.getOrFetch("admin:system-overview", async () => {
+        const {
+          OrderModel, UserModel, InvoiceModel, ReceiptVoucherModel, WalletTransactionModel,
+          SupportTicketModel, InboxMessageModel, InstallmentApplicationModel,
+          InstallmentOfferModel, InvestorProfileModel, PayrollRecordModel, ModificationRequestModel,
+          AttendanceModel, NewsModel, JobModel, DiscountCodeModel, DeviceShipmentModel,
+          ConsultationBookingModel, NotificationModel,
+        } = await import("./models");
+        const now = new Date();
 
-      const [
-        totalClients, totalEmployees,
-        totalOrders, pendingOrders, inProgressOrders, completedOrders,
-        totalInvoices, unpaidInvoices,
-        totalReceipts,
-        totalTransactions,
-        totalSupportTickets, openSupportTickets,
-        totalMessages, unreadMessages,
-        totalInstallApps, pendingInstallApps,
-        totalInstallOffers,
-        totalInvestors,
-        totalPayroll, thisMonthPayroll,
-        totalModRequests, pendingModRequests,
-        totalAttendanceToday,
-        totalNews, publishedNews,
-        totalJobs, activeJobs,
-        totalDiscountCodes,
-        totalShipments, pendingShipments,
-        totalConsultations,
-        pendingNotifications,
-      ] = await Promise.all([
-        (UserModel as any).countDocuments({ role: "client" }),
-        (UserModel as any).countDocuments({ role: { $nin: ["client", "customer", "investor"] } }),
-        (OrderModel as any).countDocuments(),
-        (OrderModel as any).countDocuments({ status: "pending" }),
-        (OrderModel as any).countDocuments({ status: "in_progress" }),
-        (OrderModel as any).countDocuments({ status: "completed" }),
-        (InvoiceModel as any).countDocuments(),
-        (InvoiceModel as any).countDocuments({ status: { $in: ["draft", "sent"] } }),
-        (ReceiptVoucherModel as any).countDocuments(),
-        (WalletTransactionModel as any).countDocuments(),
-        (SupportTicketModel as any).countDocuments(),
-        (SupportTicketModel as any).countDocuments({ status: { $in: ["open", "pending"] } }),
-        (InboxMessageModel as any).countDocuments(),
-        (InboxMessageModel as any).countDocuments({ read: false }),
-        (InstallmentApplicationModel as any).countDocuments(),
-        (InstallmentApplicationModel as any).countDocuments({ status: "pending" }),
-        (InstallmentOfferModel as any).countDocuments(),
-        (InvestorProfileModel as any).countDocuments(),
-        (PayrollRecordModel as any).countDocuments(),
-        (PayrollRecordModel as any).countDocuments({ month: now.getMonth() + 1, year: now.getFullYear() }),
-        (ModificationRequestModel as any).countDocuments(),
-        (ModificationRequestModel as any).countDocuments({ status: "pending" }),
-        (AttendanceModel as any).countDocuments({ createdAt: { $gte: new Date(now.toDateString()) } }),
-        (NewsModel as any).countDocuments(),
-        (NewsModel as any).countDocuments({ published: true }),
-        (JobModel as any).countDocuments(),
-        (JobModel as any).countDocuments({ isActive: true }),
-        (DiscountCodeModel as any).countDocuments(),
-        (DeviceShipmentModel as any).countDocuments(),
-        (DeviceShipmentModel as any).countDocuments({ status: { $in: ["pending", "processing"] } }),
-        (ConsultationBookingModel as any).countDocuments(),
-        (NotificationModel as any).countDocuments({ read: false }),
-      ]);
-
-      // Revenue from completed/active orders
-      const revenueAgg = await (OrderModel as any).aggregate([
-        { $match: { status: { $in: ["completed", "approved", "in_progress"] } } },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-      ]);
-      const totalRevenue = revenueAgg[0]?.total || 0;
-
-      // Recent activity: last 8 orders
-      const recentOrders = await (OrderModel as any).find()
-        .sort({ createdAt: -1 }).limit(8)
-        .populate("userId", "fullName email username").lean();
-      // Map userId → clientId for frontend compatibility
-      const mappedOrders = recentOrders.map((o: any) => ({ ...o, clientId: o.userId }));
-
-      // Recent 5 support tickets
-      const recentTickets = await (SupportTicketModel as any).find()
-        .sort({ createdAt: -1 }).limit(5)
-        .populate("userId", "fullName").lean();
-
-      res.json({
-        overview: {
-          totalClients, totalEmployees, totalRevenue,
+        const [
+          totalClients, totalEmployees,
           totalOrders, pendingOrders, inProgressOrders, completedOrders,
           totalInvoices, unpaidInvoices,
-          totalReceipts, totalTransactions,
+          totalReceipts,
+          totalTransactions,
           totalSupportTickets, openSupportTickets,
           totalMessages, unreadMessages,
-          totalInstallApps, pendingInstallApps, totalInstallOffers,
+          totalInstallApps, pendingInstallApps,
+          totalInstallOffers,
           totalInvestors,
           totalPayroll, thisMonthPayroll,
           totalModRequests, pendingModRequests,
@@ -3138,10 +3085,81 @@ export async function registerRoutes(
           totalShipments, pendingShipments,
           totalConsultations,
           pendingNotifications,
-        },
-        recentOrders: mappedOrders,
-        recentTickets,
-      });
+        ] = await Promise.all([
+          (UserModel as any).countDocuments({ role: "client" }),
+          (UserModel as any).countDocuments({ role: { $nin: ["client", "customer", "investor"] } }),
+          (OrderModel as any).countDocuments(),
+          (OrderModel as any).countDocuments({ status: "pending" }),
+          (OrderModel as any).countDocuments({ status: "in_progress" }),
+          (OrderModel as any).countDocuments({ status: "completed" }),
+          (InvoiceModel as any).countDocuments(),
+          (InvoiceModel as any).countDocuments({ status: { $in: ["draft", "sent"] } }),
+          (ReceiptVoucherModel as any).countDocuments(),
+          (WalletTransactionModel as any).countDocuments(),
+          (SupportTicketModel as any).countDocuments(),
+          (SupportTicketModel as any).countDocuments({ status: { $in: ["open", "pending"] } }),
+          (InboxMessageModel as any).countDocuments(),
+          (InboxMessageModel as any).countDocuments({ read: false }),
+          (InstallmentApplicationModel as any).countDocuments(),
+          (InstallmentApplicationModel as any).countDocuments({ status: "pending" }),
+          (InstallmentOfferModel as any).countDocuments(),
+          (InvestorProfileModel as any).countDocuments(),
+          (PayrollRecordModel as any).countDocuments(),
+          (PayrollRecordModel as any).countDocuments({ month: now.getMonth() + 1, year: now.getFullYear() }),
+          (ModificationRequestModel as any).countDocuments(),
+          (ModificationRequestModel as any).countDocuments({ status: "pending" }),
+          (AttendanceModel as any).countDocuments({ createdAt: { $gte: new Date(now.toDateString()) } }),
+          (NewsModel as any).countDocuments(),
+          (NewsModel as any).countDocuments({ published: true }),
+          (JobModel as any).countDocuments(),
+          (JobModel as any).countDocuments({ isActive: true }),
+          (DiscountCodeModel as any).countDocuments(),
+          (DeviceShipmentModel as any).countDocuments(),
+          (DeviceShipmentModel as any).countDocuments({ status: { $in: ["pending", "processing"] } }),
+          (ConsultationBookingModel as any).countDocuments(),
+          (NotificationModel as any).countDocuments({ read: false }),
+        ]);
+
+        const revenueAgg = await (OrderModel as any).aggregate([
+          { $match: { status: { $in: ["completed", "approved", "in_progress"] } } },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+        ]);
+        const totalRevenue = revenueAgg[0]?.total || 0;
+
+        const recentOrders = await (OrderModel as any).find()
+          .sort({ createdAt: -1 }).limit(8)
+          .populate("userId", "fullName email username").lean();
+        const mappedOrders = recentOrders.map((o: any) => ({ ...o, clientId: o.userId }));
+
+        const recentTickets = await (SupportTicketModel as any).find()
+          .sort({ createdAt: -1 }).limit(5)
+          .populate("userId", "fullName").lean();
+
+        return {
+          overview: {
+            totalClients, totalEmployees, totalRevenue,
+            totalOrders, pendingOrders, inProgressOrders, completedOrders,
+            totalInvoices, unpaidInvoices,
+            totalReceipts, totalTransactions,
+            totalSupportTickets, openSupportTickets,
+            totalMessages, unreadMessages,
+            totalInstallApps, pendingInstallApps, totalInstallOffers,
+            totalInvestors,
+            totalPayroll, thisMonthPayroll,
+            totalModRequests, pendingModRequests,
+            totalAttendanceToday,
+            totalNews, publishedNews,
+            totalJobs, activeJobs,
+            totalDiscountCodes,
+            totalShipments, pendingShipments,
+            totalConsultations,
+            pendingNotifications,
+          },
+          recentOrders: mappedOrders,
+          recentTickets,
+        };
+      }, CACHE_TTL.MEDIUM);
+      res.json(result);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -3576,8 +3594,13 @@ export async function registerRoutes(
   // === QIROX PRODUCTS / DEVICES ===
   app.get("/api/products", async (req, res) => {
     const { category, serviceSlug } = req.query as any;
-    const products = await storage.getQiroxProducts({ category, serviceSlug, active: true });
-    res.json(products);
+    const cacheKey = `public:products:${category || "all"}:${serviceSlug || "all"}`;
+    try {
+      const products = await cache.getOrFetch(cacheKey, () => storage.getQiroxProducts({ category, serviceSlug, active: true }), CACHE_TTL.PUBLIC);
+      res.json(products);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load products" });
+    }
   });
 
   app.get("/api/admin/products", async (req, res) => {
@@ -3590,18 +3613,21 @@ export async function registerRoutes(
   app.post("/api/admin/products", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const product = await storage.createQiroxProduct(req.body);
+    cache.invalidatePattern("^public:products:");
     res.status(201).json(product);
   });
 
   app.patch("/api/admin/products/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const product = await storage.updateQiroxProduct(req.params.id, req.body);
+    cache.invalidatePattern("^public:products:");
     res.json(product);
   });
 
   app.delete("/api/admin/products/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     await storage.deleteQiroxProduct(req.params.id);
+    cache.invalidatePattern("^public:products:");
     res.sendStatus(204);
   });
 
@@ -4676,17 +4702,24 @@ export async function registerRoutes(
   // ═══════════════════════════════════════════════════════════
   app.get("/api/inbox", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { InboxMessageModel } = await import("./models");
     const uid = String((req.user as any).id);
-    const msgs = await InboxMessageModel.find({
-      $or: [{ fromUserId: uid }, { toUserId: uid }],
-      deletedBy: { $ne: uid },
-    })
-      .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
-      .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig")
-      .sort({ createdAt: -1 })
-      .limit(100);
-    res.json(msgs);
+    const cacheKey = `inbox:${uid}`;
+    try {
+      const msgs = await cache.getOrFetch(cacheKey, async () => {
+        const { InboxMessageModel } = await import("./models");
+        return InboxMessageModel.find({
+          $or: [{ fromUserId: uid }, { toUserId: uid }],
+          deletedBy: { $ne: uid },
+        })
+          .populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig")
+          .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig")
+          .sort({ createdAt: -1 })
+          .limit(100);
+      }, CACHE_TTL.INBOX);
+      res.json(msgs);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load inbox" });
+    }
   });
 
   app.delete("/api/inbox/:messageId", async (req, res) => {
@@ -4703,33 +4736,48 @@ export async function registerRoutes(
       (msg as any).deletedBy.push(uid);
       await msg.save();
     }
+    cache.invalidate(`inbox:${uid}`);
+    cache.invalidate(`inbox:unread:${uid}`);
+    cache.invalidate(`badges:${uid}`);
     res.json({ ok: true });
   });
 
   app.get("/api/inbox/unread-count", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const { InboxMessageModel } = await import("./models");
-    const count = await InboxMessageModel.countDocuments({ toUserId: (req.user as any).id, read: false });
-    res.json({ count });
+    const uid = String((req.user as any).id);
+    const cacheKey = `inbox:unread:${uid}`;
+    try {
+      const result = await cache.getOrFetch(cacheKey, async () => {
+        const { InboxMessageModel } = await import("./models");
+        const count = await InboxMessageModel.countDocuments({ toUserId: uid, read: false });
+        return { count };
+      }, CACHE_TTL.BADGES);
+      res.json(result);
+    } catch (err) {
+      res.json({ count: 0 });
+    }
   });
 
-  // Unified badge counts for sidebar/dashboard
   app.get("/api/badges", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const me = req.user as any;
+    const cacheKey = `badges:${me.id}`;
     try {
-      const { InboxMessageModel, SupportTicketModel, OrderModel } = await import("./models");
-      const isEmployee = me.role !== "client";
-      const [messages, tickets, orders] = await Promise.all([
-        InboxMessageModel.countDocuments({ toUserId: me.id, read: false }),
-        isEmployee
-          ? SupportTicketModel.countDocuments({ status: { $in: ["open", "in_progress"] } })
-          : SupportTicketModel.countDocuments({ userId: me.id, status: { $in: ["open", "in_progress"] } }),
-        isEmployee
-          ? OrderModel.countDocuments({ status: "pending" })
-          : OrderModel.countDocuments({ userId: me.id, status: "pending" }),
-      ]);
-      res.json({ messages, tickets, orders, total: messages + tickets + orders });
+      const result = await cache.getOrFetch(cacheKey, async () => {
+        const { InboxMessageModel, SupportTicketModel, OrderModel } = await import("./models");
+        const isEmployee = me.role !== "client";
+        const [messages, tickets, orders] = await Promise.all([
+          InboxMessageModel.countDocuments({ toUserId: me.id, read: false }),
+          isEmployee
+            ? SupportTicketModel.countDocuments({ status: { $in: ["open", "in_progress"] } })
+            : SupportTicketModel.countDocuments({ userId: me.id, status: { $in: ["open", "in_progress"] } }),
+          isEmployee
+            ? OrderModel.countDocuments({ status: "pending" })
+            : OrderModel.countDocuments({ userId: me.id, status: "pending" }),
+        ]);
+        return { messages, tickets, orders, total: messages + tickets + orders };
+      }, CACHE_TTL.BADGES);
+      res.json(result);
     } catch {
       res.json({ messages: 0, tickets: 0, orders: 0, total: 0 });
     }
@@ -4745,6 +4793,8 @@ export async function registerRoutes(
       deletedBy: { $ne: me },
     }).populate("fromUserId", "username fullName role profilePhotoUrl avatarConfig").sort({ createdAt: 1 }).limit(200);
     await InboxMessageModel.updateMany({ fromUserId: other, toUserId: me, read: false }, { read: true });
+    cache.invalidate(`inbox:unread:${me}`);
+    cache.invalidate(`badges:${me}`);
     res.json(msgs);
   });
 
@@ -4780,6 +4830,11 @@ export async function registerRoutes(
       .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig");
     // Push via WebSocket for real-time delivery
     pushToUser(String(toUserId), { type: "new_message", message: populated });
+    cache.invalidate(`inbox:${me.id}`);
+    cache.invalidate(`inbox:${toUserId}`);
+    cache.invalidate(`inbox:unread:${toUserId}`);
+    cache.invalidate(`badges:${me.id}`);
+    cache.invalidate(`badges:${toUserId}`);
     res.status(201).json(populated);
   });
 
@@ -7871,6 +7926,7 @@ export async function registerRoutes(
       }
       const oldRole = target.role;
       await UserModel.findByIdAndUpdate(req.params.id, { $set: { role: newRole } });
+      invalidateUserCache(req.params.id);
       await PromotionLogModel.create({
         targetUserId: req.params.id, promotedById: promoter._id || promoter.id,
         fromRole: oldRole, toRole: newRole, reason: reason || "",

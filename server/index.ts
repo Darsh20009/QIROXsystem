@@ -7,6 +7,9 @@ import { WebSocketServer } from "ws";
 import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
+import mongoose from "mongoose";
+import { cache } from "./cache";
+import { connManager } from "./connection-manager";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -27,6 +30,35 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+let reconnecting = false;
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState === 1) return next();
+
+  if (req.method === "GET" && req.path.startsWith("/api/")) {
+    if (!reconnecting) {
+      reconnecting = true;
+      console.warn("[MongoDB] Disconnected — attempting reconnection...");
+      try {
+        const uri = connManager.primaryUri || process.env.MONGODB_URI;
+        if (uri) {
+          await mongoose.connect(uri.replace(/\s+/g, ""), {
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 10000,
+            connectTimeoutMS: 5000,
+          });
+          console.log("[MongoDB] Reconnected successfully");
+        }
+      } catch (err: any) {
+        console.error("[MongoDB] Reconnection failed:", err.message);
+      } finally {
+        reconnecting = false;
+      }
+    }
+  }
+
+  next();
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -297,4 +329,26 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     initCronJobs().catch(err => console.error("Cron init error:", err));
   });
+
+  function gracefulShutdown(signal: string) {
+    console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
+    httpServer.close(() => {
+      console.log("[Shutdown] HTTP server closed");
+      mongoose.connection.close().then(() => {
+        console.log("[Shutdown] MongoDB connections closed");
+        cache.destroy();
+        process.exit(0);
+      }).catch(() => {
+        process.exit(1);
+      });
+    });
+
+    setTimeout(() => {
+      console.error("[Shutdown] Forced shutdown after timeout");
+      process.exit(1);
+    }, 10000);
+  }
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 })();
