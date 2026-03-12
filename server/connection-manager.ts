@@ -40,12 +40,28 @@ class ConnectionManager {
     const rawUri = process.env.MONGODB_URI!;
     const uri = rawUri.replace(/\s+/g, "");
     this._primaryUri = uri;
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      maxPoolSize: 20,
+      minPoolSize: 5,
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      heartbeatFrequencyMS: 10000,
+      retryWrites: true,
+      w: "majority",
+    });
     console.log("[ConnManager] Primary DB connected (env)");
 
     const qmeetUri = process.env.QMEET_MONGODB_URI || uri.replace(/\/([^/?]+)(\?|$)/, "/qmeet_db$2");
     this._qmeetUri = qmeetUri;
-    this._qmeetConn = mongoose.createConnection(qmeetUri);
+    this._qmeetConn = mongoose.createConnection(qmeetUri, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      heartbeatFrequencyMS: 10000,
+    });
     this._qmeetConn.on("connected", () => console.log("[ConnManager] QMeet DB connected (env)"));
     this._qmeetConn.on("error", (e) => console.error("[ConnManager] QMeet error:", e.message));
 

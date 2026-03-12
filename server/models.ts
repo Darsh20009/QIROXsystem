@@ -68,9 +68,9 @@ const serviceSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
-  status: { type: String, default: "pending", required: true },
+  status: { type: String, default: "pending", required: true, index: true },
   // Plan info (from order flow)
   serviceType: String,
   planTier: { type: String, enum: ['lite', 'pro', 'infinite', 'lifetime'] },
@@ -114,6 +114,8 @@ const orderSchema = new mongoose.Schema({
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   adminNotes: String,
 }, { timestamps: true });
+orderSchema.index({ userId: 1, status: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
 
 const projectSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
@@ -168,7 +170,7 @@ const projectVaultSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const attendanceSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   checkIn: { type: Date, required: true },
   checkOut: Date,
   ipAddress: String,
@@ -181,6 +183,8 @@ const attendanceSchema = new mongoose.Schema({
   activeMinutes: { type: Number, default: 0 },
   lastActivityAt: Date,
 }, { timestamps: true });
+attendanceSchema.index({ userId: 1, checkIn: -1 });
+attendanceSchema.index({ userId: 1, checkOut: 1 });
 
 const transform = (doc: any, ret: any) => {
   ret.id = ret._id ? ret._id.toString() : ret.id;
@@ -469,22 +473,25 @@ const otpSchema = new mongoose.Schema({
 
 const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
-  forAdmins: { type: Boolean, default: false },
+  forAdmins: { type: Boolean, default: false, index: true },
   type: { type: String, enum: ['order', 'message', 'status', 'payment', 'system', 'info', 'success', 'error', 'warning', 'task', 'project', 'subscription'], default: 'system' },
   title: { type: String, required: true },
   body: { type: String, default: '' },
   link: String,
-  read: { type: Boolean, default: false },
+  read: { type: Boolean, default: false, index: true },
   icon: String,
 }, { timestamps: true });
+notificationSchema.index({ userId: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, read: 1 });
+notificationSchema.index({ forAdmins: 1, read: 1 });
 
 const inboxMessageSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
   csSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'CsSession', index: true },
-  fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  toUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   body: { type: String, default: "" },
-  read: { type: Boolean, default: false },
+  read: { type: Boolean, default: false, index: true },
   attachmentUrl: String,
   attachmentType: { type: String, enum: ["image", "file", "voice", null] },
   attachmentName: String,
@@ -493,6 +500,8 @@ const inboxMessageSchema = new mongoose.Schema({
   autoSender: { type: String, default: "" },
   deletedBy: [{ type: String }],
 }, { timestamps: true });
+inboxMessageSchema.index({ toUserId: 1, read: 1 });
+inboxMessageSchema.index({ fromUserId: 1, toUserId: 1, createdAt: 1 });
 
 const csSessionSchema = new mongoose.Schema({
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -533,7 +542,7 @@ const activityLogSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const supportTicketSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   subject: { type: String, required: true },
   category: { type: String, enum: ['technical', 'billing', 'general', 'complaint'], default: 'general' },
   body: { type: String, required: true },
@@ -543,6 +552,8 @@ const supportTicketSchema = new mongoose.Schema({
   repliedAt: Date,
   closedAt: Date,
 }, { timestamps: true });
+supportTicketSchema.index({ status: 1 });
+supportTicketSchema.index({ userId: 1, status: 1 });
 
 const employeeProfileSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },

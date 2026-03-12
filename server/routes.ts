@@ -4388,8 +4388,8 @@ export async function registerRoutes(
     const role = (req.user as any).role;
     const isStaff = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(role);
     const query = isStaff ? { $or: [{ userId: uid }, { forAdmins: true }] } : { userId: uid };
-    const notifs = await NotificationModel.find(query).sort({ createdAt: -1 }).limit(50);
-    res.json(notifs);
+    const notifs = await NotificationModel.find(query).sort({ createdAt: -1 }).limit(50).lean();
+    res.json(notifs.map((n: any) => ({ ...n, id: n._id?.toString() })));
   });
 
   app.get("/api/notifications/unread-count", async (req, res) => {
