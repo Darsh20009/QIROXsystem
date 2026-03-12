@@ -1,4 +1,3 @@
-import SARIcon from "@/components/SARIcon";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { SectorTemplate, FeatureDetail } from "@shared/schema";
 import {
   Play, ChevronDown, ArrowRight, Star,
-  Clock, Tag, Zap, Search, Filter, Globe, CheckCircle2,
+  Clock, Zap, Search, Filter, Globe, CheckCircle2,
   ShoppingBag, UtensilsCrossed, GraduationCap, Building2, Home, Heart,
   Loader2, Sparkles, ListChecks, Package, FileText, Video, Link2, ExternalLink, Users,
 } from "lucide-react";
@@ -126,12 +125,6 @@ function TemplateCard({ template, index }: { template: SectorTemplate; index: nu
               <Clock className="w-3 h-3" />{template.estimatedDuration}
             </span>
           )}
-          {template.priceMin && template.priceMax ? (
-            <span className="flex items-center gap-1.5 text-[11px] text-black/50 dark:text-white/50 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1 rounded-full">
-              <Tag className="w-3 h-3" />
-              {template.priceMin.toLocaleString("ar")} - {template.priceMax.toLocaleString("ar")} <SARIcon size={9} className="opacity-60" />
-            </span>
-          ) : null}
           {template.featuresAr && template.featuresAr.length > 0 && (
             <span className="flex items-center gap-1.5 text-[11px] text-black/50 dark:text-white/50 bg-black/[0.03] dark:bg-white/[0.03] px-2.5 py-1 rounded-full">
               <Zap className="w-3 h-3" />{template.featuresAr.length} ميزة
