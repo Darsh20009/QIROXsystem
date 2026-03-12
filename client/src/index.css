@@ -1098,3 +1098,13 @@
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-5px); opacity: 1; }
 }
+
+/* FloatingBrandPulse — fixed above mobile bottom nav with safe area support */
+.floating-brand-pulse {
+  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .floating-brand-pulse {
+    bottom: 2rem;
+  }
+}

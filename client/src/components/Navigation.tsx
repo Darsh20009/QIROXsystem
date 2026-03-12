@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
-import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { useQuery } from "@tanstack/react-query";
 
 function NavCartDropdown({ onClose }: { onClose: () => void }) {
@@ -218,7 +217,6 @@ export default function Navigation() {
 
   return (
     <>
-      <FloatingBrandPulse />
       {/* Status bar background — covers the notch/camera area on mobile */}
       <div
         className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-950 z-[52] pointer-events-none"

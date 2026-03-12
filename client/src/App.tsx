@@ -17,6 +17,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingClientChat } from "@/components/FloatingClientChat";
+import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
 import { PageHintCard } from "@/components/PageHintCard";
 
@@ -753,6 +754,7 @@ function AppInner() {
                 </div>
               )}
             </main>
+            <FloatingBrandPulse />
             <MobileBottomNav />
             <FloatingClientChat />
             <PageHintCard />
