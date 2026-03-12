@@ -227,6 +227,7 @@ export default function AdminQiroxSettings() {
                   { k: "youtube", label: "YouTube", icon: Youtube, color: "text-red-600" },
                   { k: "snapchat", label: "Snapchat", icon: Globe, color: "text-yellow-500" },
                   { k: "tiktok", label: "TikTok", icon: Globe, color: "text-black dark:text-white" },
+                  { k: "whatsapp", label: "WhatsApp", icon: Phone, color: "text-[#25D366]" },
                 ].map(({ k, label, icon: Icon, color }) => (
                   <div key={k}>
                     <label className="flex items-center gap-1.5 text-xs text-black/40 dark:text-white/40 mb-1"><Icon className={`w-3.5 h-3.5 ${color}`} />{label}</label>
