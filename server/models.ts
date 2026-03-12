@@ -1520,6 +1520,20 @@ const referralSchema = new mongoose.Schema({
 referralSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const ReferralModel = mongoose.models.Referral || mongoose.model("Referral", referralSchema);
 
+// ── Contact Messages (رسائل التواصل) ────────────────────────────────────────
+const contactMessageSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  email:       { type: String, required: true },
+  subject:     { type: String, default: "" },
+  message:     { type: String, required: true },
+  read:        { type: Boolean, default: false },
+  adminReply:  { type: String, default: "" },
+  repliedAt:   { type: Date, default: null },
+  status:      { type: String, enum: ["new", "read", "replied", "archived"], default: "new" },
+}, { timestamps: true });
+contactMessageSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ContactMessageModel = mongoose.models.ContactMessage || mongoose.model("ContactMessage", contactMessageSchema);
+
 const phoneRequestSchema = new mongoose.Schema({
   clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   clientName:      { type: String },

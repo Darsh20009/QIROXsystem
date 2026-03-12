@@ -125,6 +125,8 @@ const ClientReferral = lazy(() => import("@/pages/ClientReferral"));
 const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
 const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
 const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
+const AdminContactMessages = lazy(() => import("@/pages/AdminContactMessages"));
+const ClientHelp = lazy(() => import("@/pages/ClientHelp"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
 function PageLoader() {
@@ -247,6 +249,8 @@ function AdminRouter() {
         <Route path="/admin/kanban" component={AdminKanban} />
         <Route path="/admin/referrals" component={AdminReferrals} />
         <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
+        <Route path="/admin/contact-messages" component={AdminContactMessages} />
+        <Route path="/help" component={ClientHelp} />
         <Route path="/security/2fa" component={TwoFactorSetup} />
         <Route path="/referral" component={ClientReferral} />
         <Route path="/sales/marketing" component={SalesMarketing} />
@@ -285,6 +289,8 @@ const ALL_PAGES = [
   { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
   { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
   { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
+  { title: "رسائل التواصل", titleEn: "Contact Messages", url: "/admin/contact-messages", group: "employee" },
+  { title: "مركز المساعدة", titleEn: "Help Center", url: "/help", group: "client" },
 ];
 
 function GlobalSearch() {

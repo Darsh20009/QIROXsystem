@@ -853,6 +853,8 @@ export async function registerRoutes(
       const safeEmail = escapeHtml(String(email).trim().slice(0, 200));
       const safeSubject = escapeHtml(String(subject || "").trim().slice(0, 300));
       const safeMessage = escapeHtml(String(message).trim().slice(0, 5000));
+      const { ContactMessageModel } = await import("./models");
+      await ContactMessageModel.create({ name: safeName, email: safeEmail, subject: safeSubject, message: safeMessage });
       await sendDirectEmail("info@qiroxstudio.online", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
@@ -883,6 +885,49 @@ export async function registerRoutes(
       `).catch(console.error);
       res.json({ success: true });
     } catch (err: any) { res.status(500).json({ error: "فشل إرسال الرسالة، يرجى المحاولة مرة أخرى" }); }
+  });
+
+  // === ADMIN CONTACT MESSAGES ===
+  app.get("/api/admin/contact-messages", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { ContactMessageModel } = await import("./models");
+      const msgs = await ContactMessageModel.find().sort({ createdAt: -1 }).limit(500).lean();
+      res.json(msgs.map((m: any) => ({ ...m, id: m._id?.toString() })));
+    } catch (err) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  app.patch("/api/admin/contact-messages/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) return res.status(400).json({ error: "معرّف غير صالح" });
+      const { ContactMessageModel } = await import("./models");
+      const allowedStatuses = ["new", "read", "replied", "archived"];
+      const update: any = {};
+      if (req.body.read !== undefined) { update.read = !!req.body.read; if (req.body.read) update.status = "read"; }
+      if (req.body.status) {
+        if (!allowedStatuses.includes(req.body.status)) return res.status(400).json({ error: "حالة غير صالحة" });
+        update.status = req.body.status;
+      }
+      if (req.body.adminReply && typeof req.body.adminReply === "string") {
+        update.adminReply = String(req.body.adminReply).trim().slice(0, 5000);
+        update.repliedAt = new Date();
+        update.status = "replied";
+      }
+      const doc = await ContactMessageModel.findByIdAndUpdate(req.params.id, update, { new: true });
+      if (!doc) return res.status(404).json({ error: "الرسالة غير موجودة" });
+      res.json(doc);
+    } catch (err) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  app.delete("/api/admin/contact-messages/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) return res.status(400).json({ error: "معرّف غير صالح" });
+      const { ContactMessageModel } = await import("./models");
+      await ContactMessageModel.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: translateError(err) }); }
   });
 
   // === ADMIN ORDERS API ===

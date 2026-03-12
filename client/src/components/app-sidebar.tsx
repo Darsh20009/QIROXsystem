@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -74,6 +74,7 @@ export function AppSidebar() {
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client", section: "services" },
     { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client", section: "services" },
     { title: ar ? "تذكيرني قبل انتهاء اشتراكي" : "Renewal Reminder", icon: Bell, url: "/switch-reminder", group: "client", section: "services" },
+    { title: ar ? "مركز المساعدة" : "Help Center", icon: HelpCircle, url: "/help", group: "client", section: "services" },
     { title: ar ? "مفاتيح API" : "API Keys", icon: KeyRound, url: "/my-api-keys", group: "client", section: "tools" },
     // Client — account
     { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client", section: "account" },
@@ -141,6 +142,7 @@ export function AppSidebar() {
     { title: ar ? "الموظفون" : "Employees", icon: Users, url: "/admin/employees", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     // Admin — finance
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
