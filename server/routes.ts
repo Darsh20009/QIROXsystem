@@ -941,20 +941,22 @@ export async function registerRoutes(
   // === CONTACT FORM ===
   app.post("/api/contact", contactLimiter, async (req, res) => {
     try {
-      const { name, email, subject, message } = req.body;
-      if (!name || !email || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
+      const { name, email, phone, subject, message } = req.body;
+      if (!name || !email || !phone || !message) return res.status(400).json({ error: "يرجى تعبئة جميع الحقول المطلوبة" });
       const safeName = escapeHtml(String(name).trim().slice(0, 200));
       const safeEmail = escapeHtml(String(email).trim().slice(0, 200));
+      const safePhone = escapeHtml(String(phone).trim().slice(0, 20));
       const safeSubject = escapeHtml(String(subject || "").trim().slice(0, 300));
       const safeMessage = escapeHtml(String(message).trim().slice(0, 5000));
       const { ContactMessageModel } = await import("./models");
-      await ContactMessageModel.create({ name: safeName, email: safeEmail, subject: safeSubject, message: safeMessage });
+      await ContactMessageModel.create({ name: safeName, email: safeEmail, phone: safePhone, subject: safeSubject, message: safeMessage });
       await sendDirectEmail("info@qiroxstudio.online", "QIROX", safeSubject || "رسالة جديدة من نموذج التواصل", `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;border-bottom:2px solid #eee;padding-bottom:12px;">رسالة جديدة من نموذج التواصل</h2>
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${safeName}</td></tr>
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${safeEmail}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الجوال:</td><td style="padding:8px 0;color:#111;" dir="ltr">${safePhone}</td></tr>
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${safeSubject || '—'}</td></tr>
           </table>
           <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;border:1px solid #eee;">
@@ -969,6 +971,7 @@ export async function registerRoutes(
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الاسم:</td><td style="padding:8px 0;color:#111;">${safeName}</td></tr>
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">البريد:</td><td style="padding:8px 0;color:#111;">${safeEmail}</td></tr>
+            <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الجوال:</td><td style="padding:8px 0;color:#111;" dir="ltr">${safePhone}</td></tr>
             <tr><td style="padding:8px 0;color:#666;font-weight:bold;">الموضوع:</td><td style="padding:8px 0;color:#111;">${safeSubject || '—'}</td></tr>
           </table>
           <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px;border:1px solid #eee;">

@@ -15,6 +15,7 @@ interface ContactMessage {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   subject: string;
   message: string;
   read: boolean;
@@ -90,6 +91,7 @@ export default function AdminContactMessages() {
         التاريخ: new Date(m.createdAt).toLocaleString("ar-SA"),
         الاسم: m.name,
         البريد: m.email,
+        الجوال: m.phone || "—",
         الموضوع: m.subject || "—",
         الرسالة: m.message,
         الحالة: STATUS_LABELS[m.status] || m.status,
@@ -182,6 +184,7 @@ export default function AdminContactMessages() {
                         <Badge className={`text-[10px] px-2 py-0 ${STATUS_COLORS[msg.status]}`}>{STATUS_LABELS[msg.status] || msg.status}</Badge>
                       </div>
                       <p className="text-xs text-black/40 dark:text-white/40">{msg.email}</p>
+                      {msg.phone && <p className="text-xs text-black/40 dark:text-white/40" dir="ltr">{msg.phone}</p>}
                       {msg.subject && <p className="text-xs text-black/50 dark:text-white/50 font-semibold mt-0.5">{msg.subject}</p>}
                     </div>
                   </div>

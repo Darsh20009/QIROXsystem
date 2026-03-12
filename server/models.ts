@@ -1527,6 +1527,7 @@ export const ReferralModel = mongoose.models.Referral || mongoose.model("Referra
 const contactMessageSchema = new mongoose.Schema({
   name:        { type: String, required: true },
   email:       { type: String, required: true },
+  phone:       { type: String, required: true },
   subject:     { type: String, default: "" },
   message:     { type: String, required: true },
   read:        { type: Boolean, default: false },

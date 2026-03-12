@@ -30,7 +30,7 @@ export default function Contact() {
     queryKey: ["/api/public/settings"],
     staleTime: 10 * 60 * 1000,
   });
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -53,6 +53,8 @@ export default function Contact() {
     name: lang === "ar" ? "الاسم" : "Name",
     namePh: lang === "ar" ? "اسمك الكامل" : "Your full name",
     email: lang === "ar" ? "البريد الإلكتروني" : "Email",
+    phone: lang === "ar" ? "رقم الجوال" : "Phone Number",
+    phonePh: lang === "ar" ? "05xxxxxxxx" : "05xxxxxxxx",
     subject: lang === "ar" ? "الموضوع" : "Subject",
     subjectPh: lang === "ar" ? "عنوان الرسالة" : "Message subject",
     message: lang === "ar" ? "الرسالة" : "Message",
@@ -78,7 +80,7 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) {
+    if (!form.name || !form.email || !form.phone || !form.message) {
       toast({ title: T.required, variant: "destructive" });
       return;
     }
@@ -134,7 +136,7 @@ export default function Contact() {
                   <Button
                     variant="outline"
                     className="mt-6 rounded-xl"
-                    onClick={() => { setSent(false); setForm({ name: "", email: "", subject: "", message: "" }); }}
+                    onClick={() => { setSent(false); setForm({ name: "", email: "", phone: "", subject: "", message: "" }); }}
                     data-testid="button-send-another"
                   >
                     {T.sendAnother}
@@ -165,6 +167,19 @@ export default function Contact() {
                         placeholder="email@example.com"
                         className="bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] focus:border-black/20 dark:focus:border-white/20 text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 h-12 rounded-xl"
                         data-testid="input-contact-email"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-2">{T.phone} <span className="text-red-400">*</span></label>
+                      <Input
+                        name="phone"
+                        type="tel"
+                        value={form.phone}
+                        onChange={handleChange}
+                        placeholder={T.phonePh}
+                        className="bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] focus:border-black/20 dark:focus:border-white/20 text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 h-12 rounded-xl"
+                        dir="ltr"
+                        data-testid="input-contact-phone"
                       />
                     </div>
                     <div>
