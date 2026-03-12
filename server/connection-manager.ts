@@ -49,6 +49,8 @@ class ConnectionManager {
       heartbeatFrequencyMS: 10000,
       retryWrites: true,
       w: "majority",
+      readPreference: "nearest",
+      compressors: ["zlib"],
     });
     console.log("[ConnManager] Primary DB connected (env)");
 

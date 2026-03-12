@@ -65,11 +65,11 @@ function MobileSplash({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 100),
-      setTimeout(() => setPhase(2), 500),
-      setTimeout(() => setPhase(3), 1200),
-      setTimeout(() => setPhase(4), 2000),
-      setTimeout(onComplete, 3000),
+      setTimeout(() => setPhase(1), 80),
+      setTimeout(() => setPhase(2), 350),
+      setTimeout(() => setPhase(3), 700),
+      setTimeout(() => setPhase(4), 1200),
+      setTimeout(onComplete, 1800),
     ];
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);
@@ -175,13 +175,13 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 100),
-      setTimeout(() => setPhase(2), 600),
-      setTimeout(() => setPhase(3), 1300),
-      setTimeout(() => setPhase(4), 2000),
-      setTimeout(() => setPhase(5), 2900),
-      setTimeout(() => setPhase(6), 3700),
-      setTimeout(onComplete, 4400),
+      setTimeout(() => setPhase(1), 80),
+      setTimeout(() => setPhase(2), 350),
+      setTimeout(() => setPhase(3), 700),
+      setTimeout(() => setPhase(4), 1100),
+      setTimeout(() => setPhase(5), 1600),
+      setTimeout(() => setPhase(6), 2000),
+      setTimeout(onComplete, 2400),
     ];
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);
