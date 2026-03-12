@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Inbox
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -97,6 +97,7 @@ export function AppSidebar() {
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "services" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "services" },
     { title: ar ? "إدارة الديموز" : "Demos Management", icon: Monitor, url: "/employee/demos", group: "employee", section: "services" },
+    { title: ar ? "صناديق البريد" : "My Mailboxes", icon: Inbox, url: "/employee/mailboxes", group: "employee", section: "services" },
     { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "services" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "services" },
     // Employee — finance
@@ -144,6 +145,7 @@ export function AppSidebar() {
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "صناديق البريد" : "Email Mailboxes", icon: Inbox, url: "/admin/mailboxes", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     // Admin — finance
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },

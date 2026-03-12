@@ -8083,6 +8083,229 @@ export async function registerRoutes(
   });
 
   // ═══════════════════════════════════════════════════════════════════
+  // ══════════════ MAILBOX MANAGEMENT (Mailcow Integration) ════════════
+  // ═══════════════════════════════════════════════════════════════════
+
+  // Helper: get Mailcow settings from DB
+  async function getMailcowSettings() {
+    const { QiroxSystemSettingsModel } = await import("./models");
+    const s = await QiroxSystemSettingsModel.findOne({ key: "main" });
+    return { url: (s?.mailcowUrl || "").replace(/\/$/, ""), apiKey: s?.mailcowApiKey || "" };
+  }
+
+  // Helper: call Mailcow API
+  async function mailcowRequest(method: string, path: string, body?: any): Promise<{ ok: boolean; data: any }> {
+    const { url, apiKey } = await getMailcowSettings();
+    if (!url || !apiKey) return { ok: false, data: { error: "Mailcow not configured" } };
+    try {
+      const resp = await fetch(`${url}/api/v1${path}`, {
+        method,
+        headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await resp.json().catch(() => ({}));
+      return { ok: resp.ok, data };
+    } catch (e: any) {
+      return { ok: false, data: { error: e.message } };
+    }
+  }
+
+  // Admin: list all mailboxes
+  app.get("/api/admin/mailboxes", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const boxes = await EmployeeMailboxModel.find({ status: { $ne: "deleted" } }).sort({ createdAt: -1 });
+      res.json(boxes);
+    } catch (e) { res.status(500).json({ error: "فشل تحميل الصناديق" }); }
+  });
+
+  // Admin: create mailbox for any employee
+  app.post("/api/admin/mailboxes", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { EmployeeMailboxModel, UserModel } = await import("./models");
+      const bcrypt = await import("bcryptjs");
+      const { ownerUserId, emailLocalPart, displayName, password, quota, notes } = req.body;
+      if (!ownerUserId || !emailLocalPart || !password) return res.status(400).json({ error: "بيانات ناقصة" });
+      const domain = "qiroxstudio.online";
+      const emailAddress = `${emailLocalPart.toLowerCase().trim()}@${domain}`;
+      const exists = await EmployeeMailboxModel.findOne({ emailAddress });
+      if (exists) return res.status(409).json({ error: "البريد موجود مسبقاً" });
+      const owner = await UserModel.findById(ownerUserId);
+      const passwordHash = await bcrypt.default.hash(password, 10);
+      // Create on Mailcow
+      const { ok: mcOk, data: mcData } = await mailcowRequest("POST", "/add/mailbox", {
+        local_part: emailLocalPart.toLowerCase().trim(),
+        domain,
+        name: displayName || owner?.name || "",
+        password,
+        password2: password,
+        quota: quota || 3072,
+        active: "1",
+      });
+      const box = await EmployeeMailboxModel.create({
+        ownerUserId,
+        ownerName: owner?.name || "",
+        emailAddress,
+        displayName: displayName || owner?.name || "",
+        passwordHash,
+        quota: quota || 3072,
+        notes: notes || "",
+        mailcowSynced: mcOk,
+        mailcowError: mcOk ? "" : JSON.stringify(mcData),
+      });
+      res.status(201).json(box);
+    } catch (e) { res.status(500).json({ error: "فشل إنشاء الصندوق" }); }
+  });
+
+  // Admin: update mailbox status
+  app.patch("/api/admin/mailboxes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const box = await EmployeeMailboxModel.findById(req.params.id);
+      if (!box) return res.status(404).json({ error: "غير موجود" });
+      const { status, notes } = req.body;
+      if (status) {
+        box.status = status;
+        // Sync to Mailcow
+        const active = status === "active" ? "1" : "0";
+        await mailcowRequest("POST", "/edit/mailbox", [{ items: [box.emailAddress], attr: { active } }]);
+      }
+      if (notes !== undefined) box.notes = notes;
+      await box.save();
+      res.json(box);
+    } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
+  });
+
+  // Admin: delete mailbox
+  app.delete("/api/admin/mailboxes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const box = await EmployeeMailboxModel.findById(req.params.id);
+      if (!box) return res.status(404).json({ error: "غير موجود" });
+      // Delete from Mailcow
+      await mailcowRequest("DELETE", "/delete/mailbox", [box.emailAddress]);
+      box.status = "deleted";
+      box.mailcowSynced = false;
+      await box.save();
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: "فشل الحذف" }); }
+  });
+
+  // Admin: get mailbox count per user
+  app.get("/api/admin/mailboxes/counts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager"].includes(user.role)) return res.sendStatus(403);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const agg = await EmployeeMailboxModel.aggregate([
+        { $match: { status: { $ne: "deleted" } } },
+        { $group: { _id: "$ownerUserId", count: { $sum: 1 } } },
+      ]);
+      res.json(agg);
+    } catch (e) { res.status(500).json({ error: "فشل" }); }
+  });
+
+  // Employee: list own mailboxes
+  app.get("/api/employee/mailboxes", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const boxes = await EmployeeMailboxModel.find({ ownerUserId: uid, status: { $ne: "deleted" } }).sort({ createdAt: 1 });
+      res.json(boxes);
+    } catch (e) { res.status(500).json({ error: "فشل تحميل الصناديق" }); }
+  });
+
+  // Employee: create own mailbox (max 3, admin/manager unlimited)
+  app.post("/api/employee/mailboxes", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { EmployeeMailboxModel, QiroxSystemSettingsModel } = await import("./models");
+      const bcrypt = await import("bcryptjs");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const isUnlimited = ["admin", "manager"].includes(user.role);
+      if (!isUnlimited) {
+        const count = await EmployeeMailboxModel.countDocuments({ ownerUserId: uid, status: { $ne: "deleted" } });
+        if (count >= 3) return res.status(403).json({ error: "وصلت للحد الأقصى (3 بريدات)" });
+      }
+      const { emailLocalPart, displayName, password } = req.body;
+      if (!emailLocalPart || !password) return res.status(400).json({ error: "بيانات ناقصة" });
+      const domain = "qiroxstudio.online";
+      const emailAddress = `${emailLocalPart.toLowerCase().trim()}@${domain}`;
+      const exists = await EmployeeMailboxModel.findOne({ emailAddress });
+      if (exists) return res.status(409).json({ error: "البريد موجود مسبقاً" });
+      const passwordHash = await bcrypt.default.hash(password, 10);
+      const { ok: mcOk, data: mcData } = await mailcowRequest("POST", "/add/mailbox", {
+        local_part: emailLocalPart.toLowerCase().trim(),
+        domain,
+        name: displayName || user.name || "",
+        password,
+        password2: password,
+        quota: 3072,
+        active: "1",
+      });
+      const box = await EmployeeMailboxModel.create({
+        ownerUserId: uid,
+        ownerName: user.name || "",
+        emailAddress,
+        displayName: displayName || user.name || "",
+        passwordHash,
+        quota: 3072,
+        mailcowSynced: mcOk,
+        mailcowError: mcOk ? "" : JSON.stringify(mcData),
+      });
+      res.status(201).json(box);
+    } catch (e) { res.status(500).json({ error: "فشل إنشاء الصندوق" }); }
+  });
+
+  // Employee: delete own mailbox
+  app.delete("/api/employee/mailboxes/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { EmployeeMailboxModel } = await import("./models");
+      const user = req.user as any;
+      const uid = user._id || user.id;
+      const box = await EmployeeMailboxModel.findById(req.params.id);
+      if (!box) return res.status(404).json({ error: "غير موجود" });
+      if (box.ownerUserId.toString() !== uid.toString() && !["admin", "manager"].includes(user.role)) {
+        return res.sendStatus(403);
+      }
+      await mailcowRequest("DELETE", "/delete/mailbox", [box.emailAddress]);
+      box.status = "deleted";
+      box.mailcowSynced = false;
+      await box.save();
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: "فشل الحذف" }); }
+  });
+
+  // Employee: get mailcow webmail URL (for iframe)
+  app.get("/api/employee/mailboxes/webmail-url", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      const s = await QiroxSystemSettingsModel.findOne({ key: "main" });
+      const baseUrl = (s?.mailcowUrl || "").replace(/\/$/, "");
+      if (!baseUrl) return res.json({ url: "" });
+      res.json({ url: `${baseUrl}/SOGo` });
+    } catch (e) { res.status(500).json({ error: "فشل" }); }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
   // ══════════════ USER PROFILE ENHANCEMENT ════════════════════════════
   // ═══════════════════════════════════════════════════════════════════
 
