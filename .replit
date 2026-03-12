@@ -61,3 +61,7 @@ PAYPAL_CLIENT_SECRET = "EAMgxuwMDMxoLbmOeazA32q4PmwnqtkVQjkMIT2Ieg2549ihiWAgeBH9
 [agent]
 expertMode = true
 integrations = ["google-sheet:1.0.0"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
