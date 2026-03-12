@@ -754,7 +754,7 @@ export async function registerRoutes(
         verified = true;
       } else if (method === "passphrase") {
         if (!code) return res.status(400).json({ error: "أدخل كلمة الاسترداد" });
-        const bcrypt = await import("bcrypt");
+        const bcrypt = await import("bcryptjs");
         verified = await bcrypt.default.compare(String(code).trim(), dbUser.recoveryPassphrase || "");
       }
 
@@ -1276,7 +1276,7 @@ export async function registerRoutes(
     }
 
     if (walletAmountUsed > 0) {
-      const bcrypt = await import("bcrypt");
+      const bcrypt = await import("bcryptjs");
       // PIN validation: if card has a PIN set, it must be provided and correct
       const dbUser = await UserModel.findById(String(user.id)).select("+walletPin");
       if (dbUser?.walletPin) {
@@ -2217,7 +2217,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     const { UserModel } = await import("./models");
-    const bcrypt = await import("bcrypt");
+    const bcrypt = await import("bcryptjs");
     const { pin, currentPin } = req.body;
     if (!pin || String(pin).length < 4 || String(pin).length > 32) {
       return res.status(400).json({ error: "كلمة المرور يجب أن تكون بين 4 و 32 حرفاً" });
@@ -2239,7 +2239,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
     const { UserModel, WalletTransactionModel } = await import("./models");
-    const bcrypt = await import("bcrypt");
+    const bcrypt = await import("bcryptjs");
     const { amount, description, pin, orderId } = req.body;
     if (!pin || !amount || Number(amount) <= 0) return res.status(400).json({ error: "بيانات ناقصة" });
     const dbUser = await UserModel.findById(String(user.id)).select("+walletPin +walletCardNumber +walletCardActive");
@@ -4549,7 +4549,7 @@ export async function registerRoutes(
     if (!pin || String(pin).length < 4 || String(pin).length > 8 || !/^\d+$/.test(String(pin))) {
       return res.status(400).json({ error: "الرمز يجب أن يكون بين 4 و8 أرقام" });
     }
-    const bcrypt = await import("bcrypt");
+    const bcrypt = await import("bcryptjs");
     const hashed = await bcrypt.hash(String(pin), 10);
     const { UserModel } = await import("./models");
     await UserModel.updateOne({ _id: (req.user as any)._id }, { quickPin: hashed, quickPinSetAt: new Date() });
@@ -4582,7 +4582,7 @@ export async function registerRoutes(
       if (!user || !user.quickPin) {
         return res.status(401).json({ error: "الرمز السريع غير مفعّل لهذا الحساب" });
       }
-      const bcrypt = await import("bcrypt");
+      const bcrypt = await import("bcryptjs");
       const valid = await bcrypt.compare(String(pin), user.quickPin);
       if (!valid) return res.status(401).json({ error: "الرمز السريع غير صحيح" });
 
@@ -8539,7 +8539,7 @@ export async function registerRoutes(
     try {
       const { passphrase } = req.body;
       if (!passphrase || String(passphrase).trim().length < 6) return res.status(400).json({ error: "كلمة الاسترداد يجب أن تكون 6 أحرف على الأقل" });
-      const bcrypt = await import("bcrypt");
+      const bcrypt = await import("bcryptjs");
       const { UserModel } = await import("./models");
       const user = req.user as any;
       const hashed = await bcrypt.default.hash(String(passphrase).trim(), 10);
@@ -9757,7 +9757,7 @@ export async function registerInstallmentRoutes(app: Express) {
     const dbUser = await UserModel.findById(String(user._id)).select("+walletPin");
     if (dbUser?.walletPin) {
       if (!walletPin) return res.status(400).json({ error: "يجب إدخال رقم PIN المحفظة" });
-      const bcrypt = await import("bcrypt");
+      const bcrypt = await import("bcryptjs");
       const valid = await bcrypt.compare(String(walletPin), dbUser.walletPin);
       if (!valid) return res.status(400).json({ error: "رقم PIN غير صحيح" });
     }
