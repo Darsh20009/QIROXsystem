@@ -1498,11 +1498,10 @@ function InvoiceGenPanel() {
   const [inv, setInv] = useState({ client: "", company: "", number: `INV-${Date.now().toString().slice(-6)}`, date: new Date().toISOString().split("T")[0] });
   const [items, setItems] = useState([{desc:"",qty:1,price:0}]);
   const total = items.reduce((s,i) => s + i.qty * i.price, 0);
-  const vat = total * 0.15;
   const addItem = () => setItems(i => [...i, {desc:"",qty:1,price:0}]);
   const remItem = (idx: number) => setItems(i => i.filter((_,j) => j!==idx));
   const print = () => {
-    const html = `<html dir="rtl"><head><meta charset="UTF-8"><title>فاتورة ${inv.number}</title><style>body{font-family:Arial,sans-serif;padding:40px;direction:rtl}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f5f5f5}.total{font-size:1.2em;font-weight:bold}</style></head><body><h1>فاتورة ضريبية</h1><p>رقم الفاتورة: ${inv.number} | التاريخ: ${inv.date}</p><p>من: ${inv.company} | إلى: ${inv.client}</p><table><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>${items.map(i=>`<tr><td>${i.desc}</td><td>${i.qty}</td><td>${i.price} ر.س</td><td>${(i.qty*i.price).toFixed(2)} ر.س</td></tr>`).join("")}<tr><td colspan="3">المجموع قبل الضريبة</td><td>${total.toFixed(2)} ر.س</td></tr><tr><td colspan="3">ضريبة القيمة المضافة (15%)</td><td>${vat.toFixed(2)} ر.س</td></tr><tr class="total"><td colspan="3">الإجمالي النهائي</td><td>${(total+vat).toFixed(2)} ر.س</td></tr></table><script>window.onload=()=>window.print()<\/script></body></html>`;
+    const html = `<html dir="rtl"><head><meta charset="UTF-8"><title>فاتورة ${inv.number}</title><style>body{font-family:Arial,sans-serif;padding:40px;direction:rtl}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f5f5f5}.total{font-size:1.2em;font-weight:bold}</style></head><body><h1>فاتورة</h1><p>رقم الفاتورة: ${inv.number} | التاريخ: ${inv.date}</p><p>من: ${inv.company} | إلى: ${inv.client}</p><table><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>${items.map(i=>`<tr><td>${i.desc}</td><td>${i.qty}</td><td>${i.price} ر.س</td><td>${(i.qty*i.price).toFixed(2)} ر.س</td></tr>`).join("")}<tr class="total"><td colspan="3">الإجمالي</td><td>${total.toFixed(2)} ر.س</td></tr></table><script>window.onload=()=>window.print()<\/script></body></html>`;
     const w = window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
   };
   return (
@@ -1524,8 +1523,7 @@ function InvoiceGenPanel() {
       </div>
       <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] text-sm space-y-1">
         <div className="flex justify-between text-black/60 dark:text-white/60"><span>المجموع</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={11} className="opacity-70" /></span></div>
-        <div className="flex justify-between text-black/60 dark:text-white/60"><span>ضريبة 15%</span><span className="flex items-center gap-1">{vat.toFixed(2)} <SARIcon size={11} className="opacity-70" /></span></div>
-        <div className="flex justify-between font-bold text-black dark:text-white text-base pt-1 border-t border-black/[0.07] dark:border-white/[0.07]"><span>الإجمالي</span><span className="flex items-center gap-1">{(total+vat).toFixed(2)} <SARIcon size={13} className="opacity-60" /></span></div>
+        <div className="flex justify-between font-bold text-black dark:text-white text-base pt-1 border-t border-black/[0.07] dark:border-white/[0.07]"><span>الإجمالي</span><span className="flex items-center gap-1">{total.toFixed(2)} <SARIcon size={13} className="opacity-60" /></span></div>
       </div>
       <Button onClick={print} className="w-full gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white" data-testid="btn-print-invoice"><Printer className="w-4 h-4"/>طباعة / حفظ PDF</Button>
     </div>

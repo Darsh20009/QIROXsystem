@@ -1081,14 +1081,13 @@ export async function registerRoutes(
 
     // ── Server-side totalAmount validation from cart ─────────────
     const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
-    const VAT_RATE = 0.15;
     const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
     let serverTotal: number | null = null;
     if (cart && Array.isArray(cart.items) && cart.items.length > 0) {
       const subtotal = cart.items.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (Number(i.qty) || 1), 0);
       const discount = Number(cart.discountAmount) || 0;
       const afterDiscount = Math.max(0, subtotal - discount);
-      serverTotal = parseFloat((afterDiscount * (1 + VAT_RATE)).toFixed(2));
+      serverTotal = parseFloat(afterDiscount.toFixed(2));
       const clientTotal = parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
       if (Math.abs(clientTotal - serverTotal) > 1.5) {
         return res.status(400).json({ error: `إجمالي الطلب غير مطابق. المتوقع: ${serverTotal.toLocaleString()} ر.س` });
@@ -5182,13 +5181,12 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
     const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
-    const vatAmount = (req.body.amount || 0) * 0.15;
-    const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount, totalAmount: (req.body.amount || 0) + vatAmount });
-    // Notify client about their new invoice
+    const totalAmount = req.body.amount || 0;
+    const invoice = await InvoiceModel.create({ ...req.body, invoiceNumber: invNum, vatAmount: 0, totalAmount });
     try {
       if (req.body.userId) {
         const { NotificationModel } = await import("./models");
-        const total = (req.body.amount || 0) + vatAmount;
+        const total = totalAmount;
         await NotificationModel.create({
           userId: String(req.body.userId), type: 'payment',
           title: `فاتورة جديدة — ${invNum}`,
@@ -5237,7 +5235,7 @@ export async function registerRoutes(
       await sendInvoiceEmail(user.email, user.fullName || user.username, {
         invoiceNumber: (invoice as any).invoiceNumber,
         amount: (invoice as any).amount,
-        vatAmount: (invoice as any).vatAmount,
+        vatAmount: 0,
         totalAmount: (invoice as any).totalAmount,
         status: (invoice as any).status,
         dueDate: (invoice as any).dueDate,

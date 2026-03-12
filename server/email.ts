@@ -585,7 +585,7 @@ export async function sendWelcomeWithCredentialsEmail(to: string, name: string, 
 }
 
 export async function sendInvoiceEmail(to: string, clientName: string, invoice: {
-  invoiceNumber: string; amount: number; vatAmount: number; totalAmount: number;
+  invoiceNumber: string; amount: number; vatAmount?: number; totalAmount: number;
   status: string; dueDate?: string; notes?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
   orderId?: string; createdAt?: string;
 }): Promise<boolean> {
@@ -615,7 +615,6 @@ export async function sendInvoiceEmail(to: string, clientName: string, invoice: 
   if (invoice.dueDate) invoiceRows.push(["تاريخ الاستحقاق", new Date(invoice.dueDate).toLocaleDateString('ar-SA')]);
   invoiceRows.push(["الحالة", statusBadge]);
   const totalsRows: [string, string][] = [["المبلغ", `${invoice.amount.toLocaleString()} ر.س`]];
-  if (invoice.vatAmount > 0) totalsRows.push(["ضريبة القيمة المضافة (15%)", `${invoice.vatAmount.toLocaleString()} ر.س`]);
   totalsRows.push(["الاجمالي", `<strong style="font-size:16px;">${invoice.totalAmount.toLocaleString()} ر.س</strong>`]);
   const html = baseTemplate(
     tag("فاتورة") +

@@ -80,8 +80,6 @@ const emailPlans = [
   { id: "enterprise", name: "مؤسسي",   price: 249, users: 25, storage: "250 GB" },
 ];
 
-const VAT_RATE = 0.15;
-
 /* ─── Uploaded file type ─────────────────────────────────────────── */
 interface UpFile { url: string; filename: string; size: number; }
 
@@ -159,8 +157,7 @@ export default function Cart() {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = cart?.discountAmount || 0;
   const afterDiscount = subtotal - discount;
-  const vat = afterDiscount * VAT_RATE;
-  const total = afterDiscount + vat;
+  const total = afterDiscount;
   const fmt = (n: number) => n.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   /* wallet balance = available credit balance (totalCredit - totalDebit, if positive) */
@@ -450,7 +447,6 @@ export default function Cart() {
           <p className="text-white font-black text-4xl relative z-10">
             {fmt(savedTotal)} <SARIcon size={18} className="opacity-50" />
           </p>
-          <p className="text-white/30 text-xs mt-1 relative z-10">شامل ضريبة القيمة المضافة 15%</p>
         </motion.div>
 
         {/* Order summary */}
@@ -845,7 +841,6 @@ export default function Cart() {
                 <div className="relative z-10">
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">ملخص الطلب</p>
                   <p className="text-3xl font-black text-white flex items-center gap-1">{fmt(total)} <SARIcon size={18} className="opacity-40" /></p>
-                  <p className="text-[10px] text-white/25 mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
                 </div>
               </div>
 
@@ -874,10 +869,6 @@ export default function Cart() {
                       <span className="flex items-center gap-1">- {discount.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span>
                     </div>
                   )}
-                  <div className="flex justify-between text-black/40">
-                    <span>ضريبة القيمة المضافة (15%)</span>
-                    <span className="flex items-center gap-1">{fmt(vat)} <SARIcon size={9} className="opacity-50" /></span>
-                  </div>
                   <div className="h-px bg-black/[0.05]" />
                   <div className="flex justify-between font-black text-black text-sm pt-0.5">
                     <span>الإجمالي</span>
@@ -1121,7 +1112,6 @@ export default function Cart() {
                   <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-4 text-white">
                     <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">إجمالي الطلب</p>
                     <p className="text-2xl font-black flex items-center gap-1">{fmt(total)} <SARIcon size={16} className="opacity-40" /></p>
-                    <p className="text-white/30 text-[11px] mt-0.5">شامل ضريبة القيمة المضافة 15%</p>
                     {effectiveWalletAmount > 0 && (
                       <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                         <span className="text-emerald-400">من المحفظة</span>

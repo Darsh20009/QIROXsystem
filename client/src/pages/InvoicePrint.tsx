@@ -183,15 +183,9 @@ export default function InvoicePrint() {
             <div className="flex justify-end mb-8">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm text-black/50 pb-2 border-b border-black/[0.08]">
-                  <span>المبلغ قبل الضريبة</span>
+                  <span>المبلغ</span>
                   <span className="font-medium text-black">{invoice.amount?.toLocaleString()} ر.س</span>
                 </div>
-                {invoice.vatAmount > 0 && (
-                  <div className="flex justify-between text-sm text-black/50 pb-2 border-b border-black/[0.08]">
-                    <span>ضريبة القيمة المضافة (15%)</span>
-                    <span className="font-medium text-black">{invoice.vatAmount?.toLocaleString()} ر.س</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-base font-black text-black bg-black/[0.04] px-4 py-3 rounded-xl">
                   <span>الإجمالي</span>
                   <span>{invoice.totalAmount?.toLocaleString()} ر.س</span>

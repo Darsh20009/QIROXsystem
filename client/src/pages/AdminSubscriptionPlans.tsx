@@ -352,7 +352,7 @@ export default function AdminSubscriptionPlans() {
                           <div key={label} className={`rounded-xl p-3 text-center ${accent ? "bg-black" : "bg-black/[0.03]"}`}>
                             <p className={`text-[10px] mb-1 ${accent ? "text-white/50" : "text-black/40"}`}>{label}</p>
                             <p className={`text-lg font-black ${accent ? "text-white" : "text-black"}`}>{value.toLocaleString()}</p>
-                            <p className={`text-[9px] ${accent ? "text-white/40" : "text-black/30"} flex items-center justify-center gap-0.5`}><SARIcon size={8} className="opacity-60" /> شامل الضريبة</p>
+                            <p className={`text-[9px] ${accent ? "text-white/40" : "text-black/30"} flex items-center justify-center gap-0.5`}><SARIcon size={8} className="opacity-60" /> ريال</p>
                           </div>
                         ))}
                       </div>
@@ -649,7 +649,7 @@ export default function AdminSubscriptionPlans() {
 
             <div className="bg-black/[0.02] rounded-2xl p-4 space-y-3">
               <p className="text-xs font-black text-black/50 mb-3 flex items-center gap-2">
-                <CreditCard className="w-3.5 h-3.5" /> أسعار الاشتراك (شامل الضريبة)
+                <CreditCard className="w-3.5 h-3.5" /> أسعار الاشتراك
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
