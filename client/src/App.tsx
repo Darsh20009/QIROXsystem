@@ -128,8 +128,6 @@ const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
 const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
 const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
 const AdminContactMessages = lazy(() => import("@/pages/AdminContactMessages"));
-const AdminMailboxes = lazy(() => import("@/pages/AdminMailboxes"));
-const EmployeeMailboxes = lazy(() => import("@/pages/EmployeeMailboxes"));
 const ClientHelp = lazy(() => import("@/pages/ClientHelp"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
@@ -255,8 +253,6 @@ function AdminRouter() {
         <Route path="/admin/referrals" component={AdminReferrals} />
         <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
         <Route path="/admin/contact-messages" component={AdminContactMessages} />
-        <Route path="/admin/mailboxes" component={AdminMailboxes} />
-        <Route path="/employee/mailboxes" component={EmployeeMailboxes} />
         <Route path="/help" component={ClientHelp} />
         <Route path="/security/2fa" component={TwoFactorSetup} />
         <Route path="/referral" component={ClientReferral} />

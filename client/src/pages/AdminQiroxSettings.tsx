@@ -11,8 +11,7 @@ import { motion } from "framer-motion";
 import {
   Building2, Globe, Phone, Mail, MapPin, Instagram, Youtube,
   Loader2, Save, DollarSign, BarChart3, Users, Settings2,
-  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2,
-  Server, Key, Info
+  Linkedin, Twitter, Plus, Trash2, CheckCircle2, AlertCircle, Smartphone, AppWindow, Link2
 } from "lucide-react";
 import { SiWhatsapp, SiGoogleplay, SiApple, SiLinktree } from "react-icons/si";
 
@@ -28,7 +27,6 @@ type Settings = {
   foundedYear: number; teamSize: number;
   systemValuation: number; currency: string;
   profitDistribution: { roleType: string; percentage: number; label: string }[];
-  mailcowUrl: string; mailcowApiKey: string;
 };
 
 const EMPTY: Settings = {
@@ -41,7 +39,6 @@ const EMPTY: Settings = {
   taxNumber: "", commercialReg: "", foundedYear: 2024, teamSize: 1,
   systemValuation: 0, currency: "SAR",
   profitDistribution: [],
-  mailcowUrl: "", mailcowApiKey: "",
 };
 
 type StoreConfig = {
@@ -56,7 +53,7 @@ const EMPTY_STORE: StoreConfig = {
   msStoreUrl: "",   msStoreEnabled: false,
 };
 
-type Section = "company" | "contact" | "social" | "financial" | "distribution" | "appdownload" | "mailcow";
+type Section = "company" | "contact" | "social" | "financial" | "distribution" | "appdownload";
 
 export default function AdminQiroxSettings() {
   const { toast } = useToast();
@@ -131,7 +128,6 @@ export default function AdminQiroxSettings() {
     { id: "financial", label: "التقييم المالي", icon: DollarSign, color: "text-amber-500" },
     { id: "distribution", label: "توزيع الأرباح", icon: BarChart3, color: "text-cyan-500" },
     { id: "appdownload", label: "تحميل التطبيق", icon: Smartphone, color: "text-violet-500" },
-    { id: "mailcow", label: "إعدادات Mailcow", icon: Server, color: "text-orange-500" },
   ];
 
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
@@ -429,72 +425,6 @@ export default function AdminQiroxSettings() {
             </div>
           )}
         </motion.div>
-
-        {/* Mailcow Integration Section */}
-        {section === "mailcow" && (
-          <div className="space-y-6">
-            <div className="p-5 rounded-2xl border border-orange-200 dark:border-orange-800/40 bg-orange-50/60 dark:bg-orange-900/10 flex gap-3 items-start">
-              <Info className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-orange-700 dark:text-orange-300 space-y-1">
-                <p className="font-semibold">كيفية إعداد Mailcow على VPS الخاص بك:</p>
-                <ol className="list-decimal list-inside space-y-1 text-orange-600 dark:text-orange-400">
-                  <li>قم بتثبيت Mailcow على Ubuntu/Debian: <code className="bg-orange-100 dark:bg-orange-900/40 px-1 rounded text-xs">curl -s https://get.mailcow.email | bash</code></li>
-                  <li>افتح ملف <code className="bg-orange-100 dark:bg-orange-900/40 px-1 rounded text-xs">mailcow.conf</code> وعيّن <code className="bg-orange-100 dark:bg-orange-900/40 px-1 rounded text-xs">MAILCOW_HOSTNAME=mail.qiroxstudio.online</code></li>
-                  <li>شغّل: <code className="bg-orange-100 dark:bg-orange-900/40 px-1 rounded text-xs">docker compose pull && docker compose up -d</code></li>
-                  <li>من لوحة Mailcow: <strong>API → Generate API Key</strong> وانسخه هنا</li>
-                  <li>أضف سجلات DNS: <strong>MX, SPF, DKIM, DMARC, A لـ mail.</strong></li>
-                </ol>
-              </div>
-            </div>
-            <div className="grid gap-4">
-              <div className="p-5 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                    <Server className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-black dark:text-white text-sm">رابط Mailcow</p>
-                    <p className="text-xs text-black/40 dark:text-white/40">مثال: https://mail.qiroxstudio.online</p>
-                  </div>
-                </div>
-                <Input
-                  value={form.mailcowUrl}
-                  onChange={e => set("mailcowUrl", e.target.value)}
-                  placeholder="https://mail.qiroxstudio.online"
-                  dir="ltr"
-                  data-testid="input-mailcow-url"
-                  className="rounded-xl font-mono text-sm"
-                />
-              </div>
-              <div className="p-5 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <Key className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-black dark:text-white text-sm">مفتاح Mailcow API</p>
-                    <p className="text-xs text-black/40 dark:text-white/40">من لوحة Mailcow: Configuration → API → API Key</p>
-                  </div>
-                </div>
-                <Input
-                  type="password"
-                  value={form.mailcowApiKey}
-                  onChange={e => set("mailcowApiKey", e.target.value)}
-                  placeholder="API Key..."
-                  dir="ltr"
-                  data-testid="input-mailcow-apikey"
-                  className="rounded-xl font-mono text-sm"
-                />
-              </div>
-            </div>
-            {form.mailcowUrl && form.mailcowApiKey && (
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/40 rounded-xl px-4 py-3">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>تم إدخال بيانات Mailcow — لا تنسَ الحفظ</span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Save Button — only for non-appdownload sections */}
         {section !== "appdownload" && (

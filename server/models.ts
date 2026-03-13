@@ -1215,30 +1215,11 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   systemValuation:    { type: Number, default: 0 },   // Total company value in SAR
   currency:           { type: String, default: "SAR" },
   profitDistribution: { type: [{ roleType: String, percentage: Number, label: String }], default: [] },
-  // Mailcow Integration
-  mailcowUrl:         { type: String, default: "" },
-  mailcowApiKey:      { type: String, default: "" },
   // Modification Tracking
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
 qiroxSystemSettingsSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QiroxSystemSettingsModel = mongoose.models.QiroxSystemSettings || mongoose.model("QiroxSystemSettings", qiroxSystemSettingsSchema);
-
-// ── Employee Mailbox ─────────────────────────────────────────────────────────
-const employeeMailboxSchema = new mongoose.Schema({
-  ownerUserId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-  ownerName:      { type: String, default: "" },
-  emailAddress:   { type: String, required: true, unique: true, lowercase: true, trim: true },
-  displayName:    { type: String, default: "" },
-  passwordHash:   { type: String, required: true },
-  quota:          { type: Number, default: 3072 },
-  status:         { type: String, enum: ["active", "suspended", "deleted"], default: "active" },
-  mailcowSynced:  { type: Boolean, default: false },
-  mailcowError:   { type: String, default: "" },
-  notes:          { type: String, default: "" },
-}, { timestamps: true });
-employeeMailboxSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.passwordHash; return ret; } });
-export const EmployeeMailboxModel = mongoose.models.EmployeeMailbox || mongoose.model("EmployeeMailbox", employeeMailboxSchema);
 
 // ── Investor Profile ─────────────────────────────────────────────────────────
 const investorProfileSchema = new mongoose.Schema({
