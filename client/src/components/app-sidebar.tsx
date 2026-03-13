@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -39,7 +39,7 @@ interface NavItem {
   title: string;
   icon: any;
   url: string;
-  group: "public" | "client" | "employee" | "admin";
+  group: "public" | "client" | "employee" | "admin" | "supplier";
   allowedRoles?: string[];
   section?: string;
 }
@@ -86,6 +86,8 @@ export function AppSidebar() {
     { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client", section: "tools" },
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "client", section: "tools" },
     { title: ar ? "برنامج الإحالات" : "Referral Program", icon: Gift, url: "/referral", group: "client", section: "account" },
+    { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/client/loyalty", group: "client", section: "account" },
+    { title: ar ? "عقودي" : "My Contracts", icon: FileText, url: "/client/contracts", group: "client", section: "account" },
     { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "client", section: "tools" },
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
@@ -118,6 +120,10 @@ export function AppSidebar() {
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "personal" },
     { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "employee", section: "personal" },
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", section: "personal", allowedRoles: ["investor", "admin", "manager"] },
+    // Supplier group
+    { title: ar ? "لوحة المورد" : "Supplier Dashboard", icon: Package, url: "/supplier/dashboard", group: "supplier", section: "main" },
+    { title: ar ? "عروضي" : "My Offers", icon: Briefcase, url: "/supplier/dashboard", group: "supplier", section: "main" },
+    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "supplier", section: "account" },
     // Employee — monitoring
     { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "monitoring" },
 
@@ -144,6 +150,12 @@ export function AppSidebar() {
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "التقييمات والمراجعات" : "Reviews & Ratings", icon: Star, url: "/admin/reviews", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "العقود الإلكترونية" : "Digital Contracts", icon: FileText, url: "/admin/contracts", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "تتبع SLA" : "SLA Tracking", icon: Timer, url: "/admin/sla", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/admin/loyalty", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الموردون والشركاء" : "Suppliers & Partners", icon: Truck, url: "/admin/suppliers", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "إشعارات Push" : "Push Notifications", icon: Megaphone, url: "/admin/push-notifications", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     // Admin — finance
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
@@ -241,6 +253,12 @@ export function AppSidebar() {
   const menuItems = items.filter((item) => {
     if (!user) return item.group === "public";
 
+    if (user.role === "supplier") {
+      if (item.group !== "supplier") return false;
+      if (item.allowedRoles) return hasRole(item.allowedRoles);
+      return true;
+    }
+
     if (user.role === "client") {
       if (item.group !== "public" && item.group !== "client") return false;
       // Respect allowedRoles even for client-group items
@@ -250,7 +268,7 @@ export function AppSidebar() {
 
     // For non-client (employee/admin) users:
     // Skip public and client groups
-    if (item.group === "public" || item.group === "client") return false;
+    if (item.group === "public" || item.group === "client" || item.group === "supplier") return false;
 
     // Check allowedRoles if specified (also check additionalRoles)
     if (item.allowedRoles) {
@@ -269,6 +287,7 @@ export function AppSidebar() {
   const employeeItems = menuItems.filter(i => i.group === "employee");
   const adminItems = menuItems.filter(i => i.group === "admin");
   const clientItems = menuItems.filter(i => i.group === "client" || i.group === "public");
+  const supplierItems = menuItems.filter(i => i.group === "supplier");
 
   const SECTION_LABELS: Record<string, { ar: string; en: string; accent: string }> = {
     main:          { ar: "",               en: "",                    accent: "" },
@@ -359,6 +378,21 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {/* Supplier menu */}
+        {supplierItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="px-4 pt-4 text-[9px] font-black text-black/20 dark:text-white/20 uppercase tracking-[3px] flex items-center gap-2">
+              <span>{ar ? "بوابة المورد" : "Supplier Portal"}</span>
+              <div className="flex-1 h-px bg-black/[0.05] dark:bg-white/[0.05]" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {renderSectionedItems(supplierItems)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Client / Public menu */}
         {(clientItems.length > 0 && !isEmployee) && (
           <SidebarGroup>

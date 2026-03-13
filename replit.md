@@ -10,6 +10,49 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 13, 2026 - Session 48)
+
+### 6 Major New Platform Features
+
+**New Models (server/models.ts):**
+- `ReviewModel` — order reviews (orderId, clientId, rating 1-5, comment, isPublic, serviceTitle, adminReply)
+- `LoyaltyAccountModel` — client loyalty balance (points, totalEarned, totalRedeemed)
+- `LoyaltyTransactionModel` — loyalty transactions (type: earned/redeemed/adjusted/expired, points, reason)
+- `LoyaltyConfigModel` — loyalty program settings (pointsPerSAR, sarPerPoint, minRedeemPoints)
+- `SlaConfigModel` — SLA configuration (responseHours, resolutionHours, priority, isDefault)
+- `SupplierOfferModel` — supplier offers (supplierId, title, description, price, status, adminNote)
+- Updated `ContractModel` — added signatureData and signatureText fields for e-signatures
+
+**New Roles (shared/schema.ts):**
+- Added "supplier" to the roles array
+
+**New API Routes (server/routes.ts):**
+- Reviews: `POST /api/orders/:orderId/review`, `GET /api/reviews/my`, `GET /api/reviews/public`, `GET /api/admin/reviews`, `PATCH /api/admin/reviews/:id/reply`, `DELETE /api/admin/reviews/:id`
+- Contracts: `GET /api/admin/contracts`, `POST /api/admin/contracts`, `PATCH /api/admin/contracts/:id`, `DELETE /api/admin/contracts/:id`, `GET /api/client/contracts`, `PATCH /api/client/contracts/:id/sign`
+- SLA: `GET /api/admin/sla/config`, `POST/PATCH/DELETE /api/admin/sla/config/:id`, `GET /api/admin/sla/dashboard`
+- Loyalty: `GET/PATCH /api/admin/loyalty/config`, `GET /api/admin/loyalty/accounts`, `POST /api/admin/loyalty/adjust`, `GET /api/loyalty/my`, `POST /api/loyalty/redeem`
+- Suppliers: `GET /api/admin/suppliers`, `POST /api/admin/suppliers/invite`, `GET /api/admin/supplier-offers`, `PATCH /api/admin/supplier-offers/:id`, `GET/POST/DELETE /api/supplier/offers`
+- Push Notifications: `POST /api/admin/push/broadcast`, `GET /api/admin/push/subscribers`
+
+**New Pages:**
+- `AdminReviews.tsx` — `/admin/reviews`: view all reviews, reply, toggle visibility, delete, charts
+- `AdminContracts.tsx` — `/admin/contracts`: create contracts with templates, view signed contracts
+- `ClientContracts.tsx` — `/client/contracts`: view/sign contracts with canvas drawing or typed name
+- `AdminSLA.tsx` — `/admin/sla`: SLA dashboard (overdue, at-risk, on-track), config management
+- `AdminLoyalty.tsx` — `/admin/loyalty`: manage loyalty accounts, adjust points, config settings
+- `ClientLoyalty.tsx` — `/client/loyalty`: view balance, redeem points, transaction history
+- `AdminSuppliers.tsx` — `/admin/suppliers`: invite suppliers, view/accept/reject offers
+- `SupplierDashboard.tsx` — `/supplier/dashboard`: submit offers, track status
+- `AdminPushNotifications.tsx` — `/admin/push-notifications`: broadcast push notifications
+
+**Sidebar (app-sidebar.tsx):**
+- Added "supplier" group support with dedicated sidebar rendering
+- Admin: Reviews & Ratings, Digital Contracts, SLA Tracking, Loyalty Points, Suppliers & Partners, Push Notifications
+- Client: My Contracts, Loyalty Points
+- Supplier: Dashboard, My Offers, Profile
+
+---
+
 ## Latest Changes (Mar 12, 2026 - Session 47)
 
 ### Enhanced Two-Factor Authentication with Login Enforcement & Multiple Methods

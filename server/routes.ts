@@ -9165,6 +9165,428 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ─── T002: Reviews & Ratings ──────────────────────────────────────────────────
+  app.post("/api/orders/:orderId/review", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ReviewModel, OrderModel } = await import("./models");
+      const me = req.user as any;
+      const order = await (OrderModel as any).findById(req.params.orderId);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (order.userId?.toString() !== (me._id || me.id)?.toString()) return res.status(403).json({ error: "غير مصرح" });
+      if (!["completed", "delivered", "closed"].includes(order.status)) return res.status(400).json({ error: "يمكن التقييم فقط بعد اكتمال الطلب" });
+      const existing = await (ReviewModel as any).findOne({ orderId: req.params.orderId });
+      if (existing) return res.status(400).json({ error: "تم تقييم هذا الطلب مسبقاً" });
+      const { rating, comment, isPublic } = req.body;
+      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
+      const review = await (ReviewModel as any).create({ orderId: req.params.orderId, clientId: me._id || me.id, rating, comment: comment || "", isPublic: isPublic !== false, serviceTitle: order.serviceTitle || order.title || "" });
+      res.status(201).json(review);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/reviews/my", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ReviewModel } = await import("./models");
+      const me = req.user as any;
+      const reviews = await (ReviewModel as any).find({ clientId: me._id || me.id }).sort({ createdAt: -1 });
+      res.json(reviews);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/reviews/public", async (req, res) => {
+    try {
+      const { ReviewModel, UserModel } = await import("./models");
+      const reviews = await (ReviewModel as any).find({ isPublic: true }).sort({ createdAt: -1 }).limit(50);
+      const enriched = await Promise.all(reviews.map(async (r: any) => {
+        const client = await (UserModel as any).findById(r.clientId).select("fullName logoUrl avatarUrl businessType");
+        return { ...r.toJSON(), client };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/reviews", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ReviewModel, UserModel } = await import("./models");
+      const reviews = await (ReviewModel as any).find().sort({ createdAt: -1 }).lean();
+      const enriched = await Promise.all(reviews.map(async (r: any) => {
+        const client = await (UserModel as any).findById(r.clientId).select("fullName email username logoUrl");
+        return { ...r, id: r._id?.toString(), client };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/reviews/:id/reply", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ReviewModel } = await import("./models");
+      const { adminReply, isPublic } = req.body;
+      const review = await (ReviewModel as any).findByIdAndUpdate(req.params.id, { adminReply: adminReply || "", isPublic: isPublic !== false, repliedAt: adminReply ? new Date() : null }, { new: true });
+      if (!review) return res.status(404).json({ error: "غير موجود" });
+      res.json(review);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/reviews/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ReviewModel } = await import("./models");
+      await (ReviewModel as any).findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ─── T003: Enhanced Digital Contracts ────────────────────────────────────────
+  app.get("/api/admin/contracts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel, UserModel, OrderModel } = await import("./models");
+      const contracts = await (ContractModel as any).find().sort({ createdAt: -1 }).lean();
+      const enriched = await Promise.all(contracts.map(async (c: any) => {
+        const client = await (UserModel as any).findById(c.clientId).select("fullName email username");
+        const order = await (OrderModel as any).findById(c.orderId).select("serviceTitle title totalAmount");
+        return { ...c, id: c._id?.toString(), client, order };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/contracts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel } = await import("./models");
+      const { orderId, clientId, terms, totalAmount, notes } = req.body;
+      if (!orderId || !clientId || !terms) return res.status(400).json({ error: "حقول مطلوبة ناقصة" });
+      const contract = await (ContractModel as any).create({ orderId, clientId, terms, totalAmount: totalAmount || 0, notes: notes || "", status: "pending" });
+      res.status(201).json(contract);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/contracts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel } = await import("./models");
+      const contract = await (ContractModel as any).findByIdAndUpdate(req.params.id, req.body, { new: true });
+      if (!contract) return res.status(404).json({ error: "غير موجود" });
+      res.json(contract);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/contracts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel } = await import("./models");
+      await (ContractModel as any).findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/client/contracts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ContractModel, OrderModel } = await import("./models");
+      const me = req.user as any;
+      const contracts = await (ContractModel as any).find({ clientId: me._id || me.id }).sort({ createdAt: -1 }).lean();
+      const enriched = await Promise.all(contracts.map(async (c: any) => {
+        const order = await (OrderModel as any).findById(c.orderId).select("serviceTitle title totalAmount");
+        return { ...c, id: c._id?.toString(), order };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/client/contracts/:id/sign", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ContractModel } = await import("./models");
+      const me = req.user as any;
+      const contract = await (ContractModel as any).findById(req.params.id);
+      if (!contract) return res.status(404).json({ error: "العقد غير موجود" });
+      if (contract.clientId?.toString() !== (me._id || me.id)?.toString()) return res.status(403).json({ error: "غير مصرح" });
+      if (contract.status !== "pending") return res.status(400).json({ error: "لا يمكن التوقيع على هذا العقد" });
+      const { signatureData, signatureText, action } = req.body;
+      if (action === "reject") {
+        contract.status = "rejected"; contract.rejectedAt = new Date();
+      } else {
+        if (!signatureData && !signatureText) return res.status(400).json({ error: "التوقيع مطلوب" });
+        (contract as any).signatureData = signatureData || "";
+        (contract as any).signatureText = signatureText || "";
+        contract.status = "acknowledged"; contract.acknowledgedAt = new Date();
+      }
+      await contract.save();
+      res.json(contract);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ─── T004: SLA & Response Time Tracking ──────────────────────────────────────
+  app.get("/api/admin/sla/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SlaConfigModel } = await import("./models");
+      const configs = await (SlaConfigModel as any).find().sort({ createdAt: -1 });
+      res.json(configs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/sla/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SlaConfigModel } = await import("./models");
+      const config = await (SlaConfigModel as any).create(req.body);
+      res.status(201).json(config);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/sla/config/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SlaConfigModel } = await import("./models");
+      const config = await (SlaConfigModel as any).findByIdAndUpdate(req.params.id, req.body, { new: true });
+      if (!config) return res.status(404).json({ error: "غير موجود" });
+      res.json(config);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/admin/sla/config/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SlaConfigModel } = await import("./models");
+      await (SlaConfigModel as any).findByIdAndDelete(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/sla/dashboard", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { OrderModel, UserModel } = await import("./models");
+      const now = new Date();
+      const orders = await (OrderModel as any).find({ status: { $nin: ["completed", "delivered", "closed", "rejected"] }, createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }).sort({ createdAt: 1 }).lean();
+      const enriched = await Promise.all(orders.map(async (o: any) => {
+        const client = await (UserModel as any).findById(o.userId).select("fullName email username");
+        const createdAt = new Date(o.createdAt);
+        const hoursElapsed = Math.round((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
+        const slaHours = 48;
+        const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
+        const isOverdue = now > slaDeadline;
+        const hoursRemaining = Math.round((slaDeadline.getTime() - now.getTime()) / (1000 * 60 * 60));
+        return { ...o, id: o._id?.toString(), client, hoursElapsed, slaDeadline, isOverdue, hoursRemaining };
+      }));
+      const overdue = enriched.filter(o => o.isOverdue);
+      const atRisk = enriched.filter(o => !o.isOverdue && o.hoursRemaining <= 12);
+      const onTrack = enriched.filter(o => !o.isOverdue && o.hoursRemaining > 12);
+      res.json({ orders: enriched, overdue, atRisk, onTrack, stats: { total: enriched.length, overdueCount: overdue.length, atRiskCount: atRisk.length, onTrackCount: onTrack.length } });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ─── T005: Loyalty Points System ─────────────────────────────────────────────
+  app.get("/api/admin/loyalty/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { LoyaltyConfigModel } = await import("./models");
+      let config = await (LoyaltyConfigModel as any).findOne();
+      if (!config) config = await (LoyaltyConfigModel as any).create({ pointsPerSAR: 1, minRedeemPoints: 100, sarPerPoint: 0.1, isEnabled: true, expiryDays: 365 });
+      res.json(config);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/loyalty/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { LoyaltyConfigModel } = await import("./models");
+      let config = await (LoyaltyConfigModel as any).findOne();
+      if (!config) config = await (LoyaltyConfigModel as any).create(req.body);
+      else { Object.assign(config, req.body); await config.save(); }
+      res.json(config);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/loyalty/accounts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { LoyaltyAccountModel, LoyaltyTransactionModel, UserModel } = await import("./models");
+      const accounts = await (LoyaltyAccountModel as any).find().sort({ points: -1 }).lean();
+      const enriched = await Promise.all(accounts.map(async (a: any) => {
+        const client = await (UserModel as any).findById(a.clientId).select("fullName email username logoUrl");
+        const txCount = await (LoyaltyTransactionModel as any).countDocuments({ clientId: a.clientId });
+        return { ...a, id: a._id?.toString(), client, txCount };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/loyalty/adjust", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { LoyaltyAccountModel, LoyaltyTransactionModel } = await import("./models");
+      const { clientId, points, reason, type } = req.body;
+      if (!clientId || !points || !type) return res.status(400).json({ error: "بيانات ناقصة" });
+      let account = await (LoyaltyAccountModel as any).findOne({ clientId });
+      if (!account) account = await (LoyaltyAccountModel as any).create({ clientId, points: 0, totalEarned: 0, totalRedeemed: 0 });
+      const adjustment = parseInt(points);
+      account.points = Math.max(0, account.points + adjustment);
+      if (adjustment > 0) account.totalEarned += adjustment;
+      else account.totalRedeemed += Math.abs(adjustment);
+      await account.save();
+      await (LoyaltyTransactionModel as any).create({ clientId, type: type || "adjusted", points: adjustment, reason: reason || "تعديل يدوي من الإدارة" });
+      res.json(account);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/loyalty/my", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { LoyaltyAccountModel, LoyaltyTransactionModel, LoyaltyConfigModel } = await import("./models");
+      const me = req.user as any;
+      let account = await (LoyaltyAccountModel as any).findOne({ clientId: me._id || me.id });
+      if (!account) account = { points: 0, totalEarned: 0, totalRedeemed: 0 };
+      const transactions = await (LoyaltyTransactionModel as any).find({ clientId: me._id || me.id }).sort({ createdAt: -1 }).limit(20);
+      let config = await (LoyaltyConfigModel as any).findOne();
+      if (!config) config = { pointsPerSAR: 1, minRedeemPoints: 100, sarPerPoint: 0.1, isEnabled: true };
+      res.json({ account, transactions, config });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/loyalty/redeem", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { LoyaltyAccountModel, LoyaltyTransactionModel, LoyaltyConfigModel } = await import("./models");
+      const me = req.user as any;
+      const { points } = req.body;
+      if (!points || points < 1) return res.status(400).json({ error: "نقاط غير صحيحة" });
+      const config = await (LoyaltyConfigModel as any).findOne() || { minRedeemPoints: 100, sarPerPoint: 0.1 };
+      if (points < config.minRedeemPoints) return res.status(400).json({ error: `الحد الأدنى للاسترداد ${config.minRedeemPoints} نقطة` });
+      let account = await (LoyaltyAccountModel as any).findOne({ clientId: me._id || me.id });
+      if (!account || account.points < points) return res.status(400).json({ error: "نقاط غير كافية" });
+      account.points -= points;
+      account.totalRedeemed += points;
+      await account.save();
+      const discount = Math.round(points * config.sarPerPoint * 100) / 100;
+      await (LoyaltyTransactionModel as any).create({ clientId: me._id || me.id, type: "redeemed", points: -points, reason: `استرداد نقاط بقيمة ${discount} ريال` });
+      res.json({ ok: true, discount, account });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ─── T006: Supplier/Partner Portal ───────────────────────────────────────────
+  app.get("/api/admin/suppliers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const suppliers = await (UserModel as any).find({ role: "supplier" }).select("-password").sort({ createdAt: -1 });
+      res.json(suppliers);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/suppliers/invite", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { fullName, email, username, phone } = req.body;
+      if (!fullName || !email || !username) return res.status(400).json({ error: "البيانات الأساسية مطلوبة" });
+      const existing = await (UserModel as any).findOne({ $or: [{ email }, { username }] });
+      if (existing) return res.status(400).json({ error: "البريد أو اسم المستخدم مستخدم مسبقاً" });
+      const { scrypt, randomBytes } = await import("crypto");
+      const { promisify } = await import("util");
+      const scryptAsync = promisify(scrypt);
+      const tempPassword = randomBytes(4).toString("hex");
+      const salt = randomBytes(16).toString("hex");
+      const derivedKey = await scryptAsync(tempPassword, salt, 64) as Buffer;
+      const hashedPassword = `${derivedKey.toString("hex")}.${salt}`;
+      const supplier = await (UserModel as any).create({ fullName, email, username, phone: phone || "", role: "supplier", password: hashedPassword, emailVerified: true });
+      res.status(201).json({ ...supplier.toJSON(), tempPassword });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/supplier-offers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SupplierOfferModel, UserModel } = await import("./models");
+      const offers = await (SupplierOfferModel as any).find().sort({ createdAt: -1 }).lean();
+      const enriched = await Promise.all(offers.map(async (o: any) => {
+        const supplier = await (UserModel as any).findById(o.supplierId).select("fullName email username");
+        return { ...o, id: o._id?.toString(), supplier };
+      }));
+      res.json(enriched);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/admin/supplier-offers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { SupplierOfferModel } = await import("./models");
+      const { status, adminNote } = req.body;
+      const offer = await (SupplierOfferModel as any).findByIdAndUpdate(req.params.id, { status, adminNote, respondedAt: new Date() }, { new: true });
+      if (!offer) return res.status(404).json({ error: "غير موجود" });
+      res.json(offer);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/supplier/offers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "supplier") return res.sendStatus(403);
+    try {
+      const { SupplierOfferModel } = await import("./models");
+      const me = req.user as any;
+      const offers = await (SupplierOfferModel as any).find({ supplierId: me._id || me.id }).sort({ createdAt: -1 });
+      res.json(offers);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/supplier/offers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "supplier") return res.sendStatus(403);
+    try {
+      const { SupplierOfferModel } = await import("./models");
+      const me = req.user as any;
+      const { title, description, price, category, attachmentUrl } = req.body;
+      if (!title || !price) return res.status(400).json({ error: "العنوان والسعر مطلوبان" });
+      const offer = await (SupplierOfferModel as any).create({ supplierId: me._id || me.id, supplierName: (me as any).fullName || (me as any).username, title, description: description || "", price, category: category || "", attachmentUrl: attachmentUrl || "" });
+      res.status(201).json(offer);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/supplier/offers/:id", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "supplier") return res.sendStatus(403);
+    try {
+      const { SupplierOfferModel } = await import("./models");
+      const me = req.user as any;
+      const offer = await (SupplierOfferModel as any).findOne({ _id: req.params.id, supplierId: me._id || me.id });
+      if (!offer) return res.status(404).json({ error: "غير موجود" });
+      if (offer.status !== "pending") return res.status(400).json({ error: "لا يمكن حذف عرض قيد المراجعة" });
+      await offer.deleteOne();
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ─── T007: Push Notification Broadcast ───────────────────────────────────────
+  app.post("/api/admin/push/broadcast", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { PushSubscriptionModel } = await import("./models");
+      const { sendWebPush } = await import("./push");
+      const { title, body, url, targetRole } = req.body;
+      if (!title || !body) return res.status(400).json({ error: "العنوان والرسالة مطلوبان" });
+      const subs = await (PushSubscriptionModel as any).find().lean();
+      let sent = 0; let failed = 0;
+      for (const sub of subs) {
+        if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) { failed++; continue; }
+        const ok = await sendWebPush({ endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }, { title, body, data: { url: url || "/" } });
+        if (ok) sent++; else { await (PushSubscriptionModel as any).findByIdAndDelete(sub._id); failed++; }
+      }
+      res.json({ ok: true, sent, failed, total: subs.length });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/admin/push/subscribers", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { PushSubscriptionModel } = await import("./models");
+      const count = await (PushSubscriptionModel as any).countDocuments();
+      res.json({ count });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   return httpServer;
 }
 

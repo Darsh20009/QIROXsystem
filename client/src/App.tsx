@@ -129,6 +129,15 @@ const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptio
 const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
 const AdminContactMessages = lazy(() => import("@/pages/AdminContactMessages"));
 const ClientHelp = lazy(() => import("@/pages/ClientHelp"));
+const AdminReviews = lazy(() => import("@/pages/AdminReviews"));
+const AdminContracts = lazy(() => import("@/pages/AdminContracts"));
+const ClientContracts = lazy(() => import("@/pages/ClientContracts"));
+const AdminSLA = lazy(() => import("@/pages/AdminSLA"));
+const AdminLoyalty = lazy(() => import("@/pages/AdminLoyalty"));
+const ClientLoyalty = lazy(() => import("@/pages/ClientLoyalty"));
+const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
+const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
+const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
 
 function PageLoader() {
@@ -254,6 +263,15 @@ function AdminRouter() {
         <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
         <Route path="/admin/contact-messages" component={AdminContactMessages} />
         <Route path="/help" component={ClientHelp} />
+        <Route path="/admin/reviews" component={AdminReviews} />
+        <Route path="/admin/contracts" component={AdminContracts} />
+        <Route path="/admin/sla" component={AdminSLA} />
+        <Route path="/admin/loyalty" component={AdminLoyalty} />
+        <Route path="/admin/suppliers" component={AdminSuppliers} />
+        <Route path="/admin/push-notifications" component={AdminPushNotifications} />
+        <Route path="/client/contracts" component={ClientContracts} />
+        <Route path="/client/loyalty" component={ClientLoyalty} />
+        <Route path="/supplier/dashboard" component={SupplierDashboard} />
         <Route path="/security/2fa" component={TwoFactorSetup} />
         <Route path="/referral" component={ClientReferral} />
         <Route path="/sales/marketing" component={SalesMarketing} />

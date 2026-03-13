@@ -1520,15 +1520,17 @@ export const ProjectCommentModel = mongoose.models.ProjectComment || mongoose.mo
 
 // ── Contract (عقد مشروع إلكتروني) ──────────────────────────────────────────
 const contractSchema = new mongoose.Schema({
-  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
-  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
-  clientId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  terms:        { type: String, required: true },
-  totalAmount:  { type: Number, default: 0 },
-  status:       { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
-  acknowledgedAt: { type: Date, default: null },
-  rejectedAt:   { type: Date, default: null },
-  notes:        { type: String, default: "" },
+  orderId:       { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+  projectId:     { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  terms:         { type: String, required: true },
+  totalAmount:   { type: Number, default: 0 },
+  status:        { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
+  acknowledgedAt:{ type: Date, default: null },
+  rejectedAt:    { type: Date, default: null },
+  notes:         { type: String, default: "" },
+  signatureData: { type: String, default: "" },
+  signatureText: { type: String, default: "" },
 }, { timestamps: true });
 contractSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const ContractModel = mongoose.models.Contract || mongoose.model("Contract", contractSchema);
@@ -1575,3 +1577,79 @@ const phoneRequestSchema = new mongoose.Schema({
 }, { timestamps: true });
 phoneRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const PhoneRequestModel = mongoose.models.PhoneRequest || mongoose.model("PhoneRequest", phoneRequestSchema);
+
+// ── Review (تقييمات العملاء) ─────────────────────────────────────────────────
+const reviewSchema = new mongoose.Schema({
+  orderId:    { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, index: true },
+  clientId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  rating:     { type: Number, min: 1, max: 5, required: true },
+  comment:    { type: String, default: "" },
+  isPublic:   { type: Boolean, default: true },
+  serviceTitle: { type: String, default: "" },
+  adminReply: { type: String, default: "" },
+  repliedAt:  { type: Date, default: null },
+}, { timestamps: true });
+reviewSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const ReviewModel = mongoose.models.Review || mongoose.model("Review", reviewSchema);
+
+// ── Loyalty Account (حساب نقاط الولاء) ────────────────────────────────────────
+const loyaltyAccountSchema = new mongoose.Schema({
+  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+  points:        { type: Number, default: 0 },
+  totalEarned:   { type: Number, default: 0 },
+  totalRedeemed: { type: Number, default: 0 },
+}, { timestamps: true });
+loyaltyAccountSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyAccountModel = mongoose.models.LoyaltyAccount || mongoose.model("LoyaltyAccount", loyaltyAccountSchema);
+
+// ── Loyalty Transaction (معاملات نقاط الولاء) ─────────────────────────────────
+const loyaltyTransactionSchema = new mongoose.Schema({
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  type:     { type: String, enum: ["earned", "redeemed", "adjusted", "expired"], required: true },
+  points:   { type: Number, required: true },
+  reason:   { type: String, default: "" },
+  orderId:  { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+}, { timestamps: true });
+loyaltyTransactionSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyTransactionModel = mongoose.models.LoyaltyTransaction || mongoose.model("LoyaltyTransaction", loyaltyTransactionSchema);
+
+// ── SLA Config (إعدادات اتفاقيات مستوى الخدمة) ───────────────────────────────
+const slaConfigSchema = new mongoose.Schema({
+  name:         { type: String, required: true },
+  responseHours:{ type: Number, default: 24 },
+  resolutionHours:{ type: Number, default: 72 },
+  isDefault:    { type: Boolean, default: false },
+  priority:     { type: String, enum: ["low", "medium", "high", "critical"], default: "medium" },
+}, { timestamps: true });
+slaConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SlaConfigModel = mongoose.models.SlaConfig || mongoose.model("SlaConfig", slaConfigSchema);
+
+// ── Supplier Offer (عروض الموردين) ────────────────────────────────────────────
+const supplierOfferSchema = new mongoose.Schema({
+  supplierId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  supplierName: { type: String, default: "" },
+  title:        { type: String, required: true },
+  description:  { type: String, default: "" },
+  price:        { type: Number, default: 0 },
+  currency:     { type: String, default: "SAR" },
+  orderId:      { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+  projectId:    { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
+  category:     { type: String, default: "" },
+  attachmentUrl:{ type: String, default: "" },
+  status:       { type: String, enum: ["pending", "reviewing", "accepted", "rejected"], default: "pending" },
+  adminNote:    { type: String, default: "" },
+  respondedAt:  { type: Date, default: null },
+}, { timestamps: true });
+supplierOfferSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const SupplierOfferModel = mongoose.models.SupplierOffer || mongoose.model("SupplierOffer", supplierOfferSchema);
+
+// ── Loyalty Config (إعدادات نظام الولاء) ──────────────────────────────────────
+const loyaltyConfigSchema = new mongoose.Schema({
+  pointsPerSAR:      { type: Number, default: 1 },
+  minRedeemPoints:   { type: Number, default: 100 },
+  sarPerPoint:       { type: Number, default: 0.1 },
+  isEnabled:         { type: Boolean, default: true },
+  expiryDays:        { type: Number, default: 365 },
+}, { timestamps: true });
+loyaltyConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const LoyaltyConfigModel = mongoose.models.LoyaltyConfig || mongoose.model("LoyaltyConfig", loyaltyConfigSchema);
