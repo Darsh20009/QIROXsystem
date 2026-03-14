@@ -1114,6 +1114,7 @@ export async function registerRoutes(
         const notifTitle = `تحديث طلبك: ${statusLabels[req.body.status] || req.body.status}`;
         await NotificationModel.create({ userId: (order as any).userId, type: 'status', title: notifTitle, body: `تم تحديث حالة طلبك`, link: '/dashboard', icon: '📋' });
         pushNotification(String((order as any).userId), { title: notifTitle, body: 'تم تحديث حالة طلبك', icon: '📋', link: '/dashboard' });
+        sendPushToUser(String((order as any).userId), { title: notifTitle, body: 'اضغط لعرض تفاصيل طلبك', icon: '/icon-192.png', badge: '/favicon-32.png', tag: `order-${order.id}`, data: { url: '/dashboard' } }).catch(() => {});
         const { ActivityLogModel } = await import("./models");
         ActivityLogModel.create({ userId: (req.user as any)?.id, action: 'update_order_status', entity: 'order', entityId: String(order.id), details: { status: req.body.status }, ip: req.ip }).catch(() => {});
       } catch (e) { console.error("[OrderStatus]", e); }
@@ -1378,6 +1379,24 @@ export async function registerRoutes(
     sendAdminNewOrderEmail("info@qiroxstudio.online", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
     sendAdminNewOrderEmail("qiroxsystem@gmail.com", _clientName, _clientEmail, String(order.id), items, req.body.totalAmount).catch(console.error);
 
+    // Push device notification to all admins/managers for new order
+    (async () => {
+      try {
+        const { UserModel } = await import("./models");
+        const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
+        const orderItems = items.slice(0, 2).join("، ") + (items.length > 2 ? ` +${items.length - 2}` : "");
+        for (const admin of admins) {
+          sendPushToUser(String(admin._id), {
+            title: `🛒 طلب جديد من ${_clientName}`,
+            body: orderItems || "طلب جديد يحتاج للمراجعة",
+            icon: "/icon-192.png", badge: "/favicon-32.png",
+            tag: `new-order-${String(order.id)}`,
+            data: { url: "/admin/orders" },
+          }).catch(() => {});
+        }
+      } catch {}
+    })();
+
     // Auto-create shipment for each physical product item
     try {
       const { DeviceShipmentModel, NotificationModel } = await import("./models");
@@ -1516,6 +1535,13 @@ export async function registerRoutes(
         const notifMsg = statusChanged ? `تم تغيير حالة المشروع` : `تحديث تقدم المشروع: ${(project as any).progress || 0}%`;
         await NotificationModel.create({ userId: (project as any).clientId, type: 'project', title: notifMsg, body: (project as any).name || "مشروعك", link: `/projects/${req.params.id}`, icon: '🚀' }).catch(() => {});
         pushNotification(String((project as any).clientId), { title: notifMsg, body: (project as any).name || "مشروعك", icon: '🚀', link: `/projects/${req.params.id}` });
+        sendPushToUser(String((project as any).clientId), {
+          title: `🚀 ${notifMsg}`,
+          body: (project as any).name || "مشروعك",
+          icon: "/icon-192.png", badge: "/favicon-32.png",
+          tag: `project-${req.params.id}`,
+          data: { url: `/projects/${req.params.id}` },
+        }).catch(() => {});
       }
     } catch (e) { console.error("[Email] project update email error:", e); }
 
@@ -5030,11 +5056,21 @@ export async function registerRoutes(
     (group as any).lastMessage = body?.trim() || (attachmentType === "image" ? "📷 صورة" : "📎 مرفق");
     (group as any).lastMessageAt = new Date();
     await group.save();
-    // Push to all members
+    // Push to all members (WebSocket + device push)
     const { pushToUser } = await import("./ws");
+    const senderName = (populated as any)?.fromUserId?.fullName || (populated as any)?.fromUserId?.username || "أحد الأعضاء";
+    const groupName = (group as any).name || "المجموعة";
+    const msgPreview = (body?.trim() || (attachmentType === "image" ? "📷 صورة" : attachmentType === "voice" ? "🎙️ رسالة صوتية" : "📎 مرفق")).slice(0, 100);
     for (const memberId of (group as any).memberIds || []) {
       if (String(memberId) !== uid) {
         pushToUser(String(memberId), { type: 'group_message', message: populated, groupId: req.params.id });
+        sendPushToUser(String(memberId), {
+          title: `💬 ${groupName}: ${senderName}`,
+          body: msgPreview,
+          icon: "/icon-192.png", badge: "/favicon-32.png",
+          tag: `group-${req.params.id}`,
+          data: { url: "/groups" },
+        }).catch(() => {});
       }
     }
     res.status(201).json(populated);
@@ -5181,6 +5217,14 @@ export async function registerRoutes(
       .populate("toUserId", "username fullName role profilePhotoUrl avatarConfig");
     // Push via WebSocket for real-time delivery
     pushToUser(String(toUserId), { type: "new_message", message: populated });
+    // Push device notification (works when app is closed)
+    sendPushToUser(String(toUserId), {
+      title: `💬 رسالة من ${me.fullName || me.username}`,
+      body: notifBody.slice(0, 120),
+      icon: "/icon-192.png", badge: "/favicon-32.png",
+      tag: `msg-${me.id}`,
+      data: { url: "/inbox" },
+    }).catch(() => {});
     cache.invalidate(`inbox:${me.id}`);
     cache.invalidate(`inbox:${toUserId}`);
     cache.invalidate(`inbox:unread:${toUserId}`);
@@ -5386,6 +5430,13 @@ export async function registerRoutes(
       if (toUserId) {
         pushToUser(toUserId, { type: 'new_message', message: populated, csSessionId: String(session._id) });
         await NotificationModel.create({ userId: toUserId, type: 'message', title: `رسالة من ${me.fullName || me.username}`, body: notifBody.slice(0, 100), link: '/cs-chat', icon: '💬' });
+        sendPushToUser(toUserId, {
+          title: `💬 رسالة من ${me.fullName || me.username}`,
+          body: notifBody.slice(0, 120),
+          icon: "/icon-192.png", badge: "/favicon-32.png",
+          tag: `cs-${String(session._id)}`,
+          data: { url: "/cs-chat" },
+        }).catch(() => {});
       }
       pushToUser(String(me.id), { type: 'cs_session_update', action: 'message', sessionId: String(session._id) });
       res.status(201).json(populated);

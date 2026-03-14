@@ -4,6 +4,7 @@ import { UserModel as _UserM } from "./models";
 import crypto from "crypto";
 import { sendQMeetReminderEmail, sendQMeetInviteEmail } from "./email";
 import { pushToUser, broadcastToUsers } from "./ws";
+import { sendPushToUser } from "./push";
 
 function makeModelProxy<T>(factory: () => T): T {
   return new Proxy(function () {} as any, {
@@ -112,7 +113,7 @@ export function startQMeetScheduler() {
             hostName: m.hostName,
           });
         }
-        // Push WebSocket reminder
+        // Push WebSocket + device reminder
         const ids: string[] = (m.participantIds || []);
         if (ids.length) {
           broadcastToUsers(ids, {
@@ -122,6 +123,15 @@ export function startQMeetScheduler() {
             meetingLink: m.meetingLink,
             message: `اجتماع "${m.title}" يبدأ بعد دقيقتين!`,
           });
+          for (const uid of ids) {
+            sendPushToUser(uid, {
+              title: `⏰ تذكير: ${m.title}`,
+              body: `الاجتماع يبدأ بعد دقيقتين — الكود: ${m.joinCode}`,
+              icon: "/icon-192.png", badge: "/favicon-32.png",
+              tag: `meet-reminder-${String(m._id)}`,
+              data: { url: `/meet/${m.meetingLink || String(m._id)}` },
+            }).catch(() => {});
+          }
         }
         await QMeetingModel.findByIdAndUpdate(m._id, { reminderSent: true });
         console.log(`[QMeet] Sent 2-min reminders for: ${m.title}`);
@@ -271,7 +281,7 @@ export function registerQMeetRoutes(app: Express) {
         })
       )).catch(e => console.error("[QMeet] Email error:", e));
 
-      // Notify participants via WebSocket
+      // Notify participants via WebSocket + device push
       const ids: string[] = participantIds || [];
       if (ids.length) {
         broadcastToUsers(ids, {
@@ -282,6 +292,15 @@ export function registerQMeetRoutes(app: Express) {
           meetingLink,
           message: `دعوة اجتماع: ${title}`,
         });
+        for (const uid of ids) {
+          sendPushToUser(uid, {
+            title: `📅 دعوة اجتماع: ${title}`,
+            body: `في ${new Date(startTime).toLocaleString("ar-SA")} — الكود: ${meeting.joinCode}`,
+            icon: "/icon-192.png", badge: "/favicon-32.png",
+            tag: `meet-invite-${String(meeting._id)}`,
+            data: { url: `/meet/join?code=${meeting.joinCode}` },
+          }).catch(() => {});
+        }
       }
 
       res.status(201).json(meeting);
@@ -315,13 +334,35 @@ export function registerQMeetRoutes(app: Express) {
       // Notify if status changed to live or completed
       if (update.status === "live") {
         const ids: string[] = (meeting.participantIds || []);
-        if (ids.length) broadcastToUsers(ids, { type: "qmeet_started", meetingId: req.params.id, title: meeting.title, meetingLink: meeting.meetingLink, message: `بدأ الاجتماع: ${meeting.title}` });
+        if (ids.length) {
+          broadcastToUsers(ids, { type: "qmeet_started", meetingId: req.params.id, title: meeting.title, meetingLink: meeting.meetingLink, message: `بدأ الاجتماع: ${meeting.title}` });
+          for (const uid of ids) {
+            sendPushToUser(uid, {
+              title: `🎥 بدأ الاجتماع: ${meeting.title}`,
+              body: `انضم الآن! الكود: ${meeting.joinCode}`,
+              icon: "/icon-192.png", badge: "/favicon-32.png",
+              tag: `meet-live-${req.params.id}`,
+              data: { url: `/meet/${meeting.meetingLink || req.params.id}` },
+            }).catch(() => {});
+          }
+        }
       } else if (update.status === "completed") {
         const ids: string[] = (meeting.participantIds || []);
         if (ids.length) broadcastToUsers(ids, { type: "qmeet_ended", meetingId: req.params.id, title: meeting.title, message: `انتهى الاجتماع: ${meeting.title}` });
       } else if (update.status === "cancelled") {
         const ids: string[] = (meeting.participantIds || []);
-        if (ids.length) broadcastToUsers(ids, { type: "qmeet_cancelled", meetingId: req.params.id, title: meeting.title, message: `تم إلغاء الاجتماع: ${meeting.title}` });
+        if (ids.length) {
+          broadcastToUsers(ids, { type: "qmeet_cancelled", meetingId: req.params.id, title: meeting.title, message: `تم إلغاء الاجتماع: ${meeting.title}` });
+          for (const uid of ids) {
+            sendPushToUser(uid, {
+              title: `❌ تم إلغاء الاجتماع`,
+              body: meeting.title,
+              icon: "/icon-192.png", badge: "/favicon-32.png",
+              tag: `meet-cancel-${req.params.id}`,
+              data: { url: "/qmeet" },
+            }).catch(() => {});
+          }
+        }
       }
 
       res.json(meeting);
@@ -547,7 +588,7 @@ export function registerQMeetRoutes(app: Express) {
         $push: { joinRequests: { userId, userName, userEmail, status: "pending", requestedAt: new Date() } }
       });
 
-      // Notify host via WebSocket
+      // Notify host via WebSocket + device push
       pushToUser(meeting.hostId, {
         type: "qmeet_join_request",
         meetingId: String(meeting._id),
@@ -557,6 +598,13 @@ export function registerQMeetRoutes(app: Express) {
         userEmail,
         message: `${userName} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
       });
+      sendPushToUser(String(meeting.hostId), {
+        title: `🔔 طلب انضمام للاجتماع`,
+        body: `${userName} يطلب الانضمام إلى: ${meeting.title}`,
+        icon: "/icon-192.png", badge: "/favicon-32.png",
+        tag: `join-req-${String(meeting._id)}`,
+        data: { url: `/meet/${meeting.meetingLink || String(meeting._id)}` },
+      }).catch(() => {});
 
       res.json({ status: "pending" });
     } catch (err: any) {
@@ -698,7 +746,7 @@ export function registerQMeetRoutes(app: Express) {
         )).catch(e => console.error("[QMeet] Invite email error:", e));
       }
 
-      // Notify internal users via WebSocket
+      // Notify internal users via WebSocket + device push
       if (userIds.length) {
         await QMeetingModel.findByIdAndUpdate(meeting._id, {
           $addToSet: { participantIds: { $each: userIds } },
@@ -712,6 +760,15 @@ export function registerQMeetRoutes(app: Express) {
           joinCode: meeting.joinCode,
           message: `دعوة اجتماع: ${meeting.title}`,
         });
+        for (const uid of userIds) {
+          sendPushToUser(uid, {
+            title: `📅 دعوة اجتماع: ${meeting.title}`,
+            body: `الكود: ${meeting.joinCode} — انضم الآن أو في الوقت المحدد`,
+            icon: "/icon-192.png", badge: "/favicon-32.png",
+            tag: `meet-invite-${String(meeting._id)}`,
+            data: { url: `/meet/join?code=${meeting.joinCode}` },
+          }).catch(() => {});
+        }
       }
 
       res.json({ success: true, emailCount: emailsToAdd.length, userCount: userIds.length });

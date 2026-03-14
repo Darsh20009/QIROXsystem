@@ -19,6 +19,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingClientChat } from "@/components/FloatingClientChat";
 import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
+import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
 
 const Home = lazy(() => import("@/pages/Home"));
@@ -652,7 +653,7 @@ function AppInner() {
       return true;
     }
   });
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const isFullBleed = location === "/cs-chat" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
@@ -660,16 +661,28 @@ function AppInner() {
 
   useWebSocket(user?.id);
   const { status: pushStatus, subscribe: pushSubscribe } = usePushNotifications();
+
+  // Auto-subscribe silently if permission was already granted (e.g. on re-install)
   useEffect(() => {
     if (!user) return;
     if (pushStatus !== "default") return;
-    const t = setTimeout(() => {
-      if (Notification.permission === "default" || Notification.permission === "granted") {
-        pushSubscribe().catch(() => {});
-      }
-    }, 4000);
-    return () => clearTimeout(t);
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    pushSubscribe().catch(() => {});
   }, [user, pushStatus]);
+
+  // Handle navigation triggered by push notification click (from service worker)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "NAVIGATE" && event.data?.url) {
+        navigate(event.data.url);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
 
   if (showSplash) {
     return (
@@ -778,6 +791,7 @@ function AppInner() {
             <MobileBottomNav />
             <FloatingClientChat />
             <PageHintCard />
+            <PushPermissionBanner show={!!user} />
             <Toaster />
           </div>
         </div>
