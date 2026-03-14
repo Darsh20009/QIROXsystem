@@ -16,7 +16,7 @@ import {
   Wallet, Building2, Loader2, Tag, X, Check, ChevronDown,
   Copy, Phone, User, Navigation as NavIcon, Clock, Calendar,
   AlertCircle, Upload, FileText, Lock, Eye, EyeOff, Sparkles,
-  Package, ShoppingBag
+  Package, ShoppingBag, Truck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -140,10 +140,13 @@ export default function Checkout() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPayMethod, setOrderPayMethod] = useState<PayMethod>("bank");
 
+  const [selectedShippingCompanyId, setSelectedShippingCompanyId] = useState<string>("");
+
   const { data: cart } = useQuery<any>({ queryKey: ["/api/cart"] });
   const { data: walletData } = useQuery<any>({ queryKey: ["/api/wallet"], enabled: !!user });
   const { data: cardData } = useQuery<any>({ queryKey: ["/api/wallet/card"], enabled: !!user });
   const { data: bankSettings } = useQuery<any>({ queryKey: ["/api/bank-settings"] });
+  const { data: shippingCompanies } = useQuery<any[]>({ queryKey: ["/api/shipping-companies"] });
 
   const wizardData = (() => { try { const s = sessionStorage.getItem("qiroxWizardData"); return s ? JSON.parse(s) : null; } catch { return null; } })();
 
@@ -155,7 +158,15 @@ export default function Checkout() {
     : cartItems;
   const discount = cart?.discountAmount || 0;
   const subtotal = hasWizardData ? (wizardData.grandTotal || 0) : items.reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
-  const total = Math.max(0, subtotal - (hasWizardData ? 0 : discount));
+
+  const hasPhysicalItems = !hasWizardData && items.some((i: any) => i.type === "product" || i.type === "gift");
+  const activeShippingCos: any[] = shippingCompanies || [];
+  const selectedShippingCo = activeShippingCos.find(c => (c._id || c.id) === selectedShippingCompanyId) || null;
+  const shippingFee = hasPhysicalItems && selectedShippingCo
+    ? (selectedShippingCo.basePrice || 0)
+    : 0;
+
+  const total = Math.max(0, subtotal - (hasWizardData ? 0 : discount) + shippingFee);
 
   const BANK = bankSettings || { bankName: "بنك الراجحي", beneficiaryName: "QIROX Studio", iban: "SA0380205098017222121010" };
 
@@ -239,6 +250,11 @@ export default function Checkout() {
         notes,
         files: hasWizardData ? wizardData.uploadedFiles : undefined,
         shippingAddress: { name: addr.recipientName, phone: addr.recipientPhone, city: addr.city, address: `${addr.district} ${addr.street}`.trim(), nationalAddressId: addr.nationalAddressId },
+        ...(hasPhysicalItems && selectedShippingCo ? {
+          shippingCompanyId: selectedShippingCompanyId,
+          shippingCompanyName: selectedShippingCo.nameAr || selectedShippingCo.name,
+          shippingFee: parseFloat(shippingFee.toFixed(2)),
+        } : {}),
         walletAmountUsed: effWallet > 0 ? parseFloat(effWallet.toFixed(2)) : undefined,
         walletPayPin: (payMethod === "wallet" || payMethod === "card") && walletPin ? walletPin : cardPin || undefined,
       });
@@ -269,7 +285,8 @@ export default function Checkout() {
     onError: () => toast({ title: "فشل رفع الإيصال", variant: "destructive" }),
   });
 
-  const canProceedStep1 = !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city);
+  const canProceedStep1 = !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city)
+    && (!hasPhysicalItems || !!selectedShippingCompanyId);
   const canProceedStep2 = (payMethod === "bank") || (payMethod === "paypal" && paypalDone) ||
     (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
 
@@ -392,6 +409,62 @@ export default function Checkout() {
                   )}
                 </div>
 
+                {/* ── Shipping Company Selector ── */}
+                {hasPhysicalItems && (
+                  <div className="bg-white rounded-3xl border border-black/[0.06] overflow-hidden">
+                    <div className="px-5 py-4 bg-gray-50 border-b border-black/[0.05] flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-black/40" />
+                      <span className="text-xs font-black text-black/40 uppercase tracking-wider">طريقة التوصيل</span>
+                      {!selectedShippingCompanyId && (
+                        <span className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">مطلوب</span>
+                      )}
+                    </div>
+                    {activeShippingCos.length === 0 ? (
+                      <div className="px-5 py-6 text-center">
+                        <Truck className="w-8 h-8 mx-auto text-black/15 mb-2" />
+                        <p className="text-sm text-black/40">لا توجد شركات شحن متاحة حالياً</p>
+                        <p className="text-xs text-black/25 mt-1">يرجى التواصل مع الدعم لترتيب التوصيل</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-black/[0.04]">
+                        {activeShippingCos.map(co => {
+                          const coId = co._id || co.id;
+                          const isSelected = selectedShippingCompanyId === coId;
+                          return (
+                            <button key={coId} onClick={() => setSelectedShippingCompanyId(coId)}
+                              data-testid={`shipping-company-${coId}`}
+                              className={`w-full text-right px-5 py-4 flex items-center gap-3 transition-all ${
+                                isSelected
+                                  ? "bg-blue-50 border-r-4 border-blue-500"
+                                  : "hover:bg-gray-50"
+                              }`}>
+                              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 border ${isSelected ? "border-blue-200 bg-blue-100" : "border-black/[0.06] bg-gray-50"}`}>
+                                {co.logo || "🚚"}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-bold text-sm ${isSelected ? "text-blue-700" : "text-black"}`}>{co.nameAr || co.name}</p>
+                                <p className="text-[11px] text-black/40 mt-0.5 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />{co.estimatedDays || "2-4 أيام عمل"}
+                                </p>
+                              </div>
+                              <div className="text-left shrink-0">
+                                {(co.basePrice || 0) === 0 ? (
+                                  <p className="font-black text-emerald-600 text-sm">مجاني</p>
+                                ) : (
+                                  <p className={`font-black text-sm flex items-center gap-1 ${isSelected ? "text-blue-700" : "text-black"}`}>
+                                    {(co.basePrice || 0).toLocaleString()} <SARIcon size={10} className="opacity-60" />
+                                  </p>
+                                )}
+                                {isSelected && <Check className="w-4 h-4 text-blue-500 mr-auto mt-0.5" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!canProceedStep1}
@@ -434,6 +507,20 @@ export default function Checkout() {
                         <span className="text-sm text-green-600 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> كوبون خصم</span>
                         <span className="text-sm font-bold text-green-600 flex items-center gap-1">
                           -{discount.toLocaleString()} <SARIcon size={10} />
+                        </span>
+                      </div>
+                    )}
+                    {hasPhysicalItems && selectedShippingCo && (
+                      <div className="px-5 py-3 flex justify-between items-center">
+                        <span className="text-sm text-black/60 flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5" />
+                          رسوم الشحن — {selectedShippingCo.nameAr || selectedShippingCo.name}
+                        </span>
+                        <span className="text-sm font-bold text-black flex items-center gap-1">
+                          {shippingFee === 0
+                            ? <span className="text-emerald-600">مجاني</span>
+                            : <>{shippingFee.toLocaleString()} <SARIcon size={10} /></>
+                          }
                         </span>
                       </div>
                     )}
