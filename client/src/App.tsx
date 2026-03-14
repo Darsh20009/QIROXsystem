@@ -121,6 +121,7 @@ const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
 const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
 const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
 const Demos = lazy(() => import("@/pages/Demos"));
+const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
 const EmployeeChangelog = lazy(() => import("@/pages/EmployeeChangelog"));
 const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
@@ -180,6 +181,7 @@ function PublicRouter() {
         <Route path="/clients-group" component={ClientsGroup} />
         <Route path="/barcode-studio" component={BarcodeStudio} />
         <Route path="/demos" component={Demos} />
+        <Route path="/templates/:slug" component={TemplateDetail} />
         <Route path="/switch-reminder" component={SwitchReminder} />
         <Route component={NotFound} />
       </Switch>

@@ -3069,6 +3069,12 @@ export async function registerRoutes(
     res.json(template);
   });
 
+  app.get("/api/templates/slug/:slug", async (req, res) => {
+    const template = await storage.getSectorTemplateBySlug(req.params.slug);
+    if (!template) return res.sendStatus(404);
+    res.json(template);
+  });
+
   app.post("/api/admin/templates", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) {
       return res.sendStatus(403);

@@ -244,6 +244,7 @@ export interface SectorTemplate {
   howToUseAr?: string;
   howToUseVideoUrl?: string;
   templateFiles?: TemplateFile[];
+  tier?: "lite" | "pro" | "infinite" | "custom";
   createdAt?: Date;
 }
 

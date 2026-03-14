@@ -10,6 +10,36 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 14, 2026 - Session 50)
+
+### Template Detail Page + Clickable Demo Cards
+
+**New Page: `client/src/pages/TemplateDetail.tsx`** at `/templates/:slug`:
+- Hero banner with template color, breadcrumb navigation, name, description, status badge, and action buttons
+- **Demo Video section**: embeds YouTube/Vimeo via iframe, or native `<video>` for direct MP4 links (uses `howToUseVideoUrl` field)
+- **How to Use section**: displays `howToUseAr` text (Arabic usage guide)
+- **Package Tier section**: shows which plan level (Lite/Pro/Infinite/Custom) this template represents, with link to pricing page
+- **Demo Website section**: shows `demoUrl` with live embedded preview + open button
+- **Files section**: downloadable list from `templateFiles` array
+- **Features List + Feature Details**: full features from DB
+- All sections are conditional (only rendered when data exists in DB)
+
+**Updated `client/src/pages/Demos.tsx`:**
+- Template cards are now fully clickable (`Link` to `/templates/:slug`)
+- Simplified cards: removed expandable features details accordion from card
+- Added tier badge, demo/video badges on card
+- Hover animation: card lifts + animated arrow appears
+- Subtitle text: "اضغط على البطاقة لعرض تفاصيل النموذج"
+
+**Backend (`server/routes.ts`):**
+- Added `GET /api/templates/slug/:slug` endpoint for slug-based template lookup
+
+**Schema (`shared/schema.ts`):**
+- Added `tier?: "lite" | "pro" | "infinite" | "custom"` to `SectorTemplate` interface
+
+**AdminTemplates (`client/src/pages/AdminTemplates.tsx`):**
+- Added `tier` field to template form with button group selector (غير محدد / لايت / برو / إنفينيت / مخصص)
+
 ## Latest Changes (Mar 14, 2026 - Session 49)
 
 ### Checkout & Bank Transfer Rejection Notification System

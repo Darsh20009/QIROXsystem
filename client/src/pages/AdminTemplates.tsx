@@ -62,6 +62,7 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
     estimatedDuration: template?.estimatedDuration || "",
     heroColor: template?.heroColor || "#0f172a",
     demoUrl: template?.demoUrl || "",
+    tier: (template as any)?.tier || "" as string,
     status: (template?.status || "active") as "active" | "coming_soon" | "archived",
     features: template?.features?.join(", ") || "",
     featuresAr: template?.featuresAr?.join("، ") || "",
@@ -147,6 +148,24 @@ function TemplateForm({ template, onClose }: { template?: SectorTemplate; onClos
       <div><label className="text-xs font-medium text-black/50 block mb-1">لون الهيرو</label><div className="flex gap-2"><input type="color" value={formData.heroColor} onChange={e => setFormData(f => ({...f, heroColor: e.target.value}))} className="w-10 h-10 rounded cursor-pointer border border-black/[0.08]" /><Input value={formData.heroColor} onChange={e => setFormData(f => ({...f, heroColor: e.target.value}))} className="flex-1" /></div></div>
       <div><label className="text-xs font-medium text-black/50 block mb-1">الميزات (عربي، مفصولة بـ ،)</label><Textarea rows={2} value={formData.featuresAr} onChange={e => setFormData(f => ({...f, featuresAr: e.target.value}))} placeholder="ميزة 1، ميزة 2، ميزة 3" /></div>
       <div><label className="text-xs font-medium text-black/50 block mb-1">Features (EN, comma separated)</label><Textarea rows={2} value={formData.features} onChange={e => setFormData(f => ({...f, features: e.target.value}))} placeholder="Feature 1, Feature 2" /></div>
+
+      {/* Tier / Package Level */}
+      <div>
+        <label className="text-xs font-medium text-black/50 block mb-2">مستوى الباقة الذي يمثله هذا النموذج</label>
+        <div className="flex gap-2 flex-wrap">
+          {[{ value: "", label: "غير محدد" }, { value: "lite", label: "لايت" }, { value: "pro", label: "برو" }, { value: "infinite", label: "إنفينيت" }, { value: "custom", label: "مخصص" }].map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setFormData(f => ({ ...f, tier: opt.value }))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${formData.tier === opt.value ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white" : "border-black/[0.1] dark:border-white/[0.1] text-black/50 dark:text-white/50 hover:border-black/20"}`}
+              data-testid={`tier-option-${opt.value || "none"}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Demo URL */}
       <div>
