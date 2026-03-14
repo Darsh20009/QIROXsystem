@@ -5,7 +5,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -20,7 +19,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import {
   Search, ShoppingCart, Star, Package, Cpu, Globe, Mail, Server,
   Gift, Code2, Truck, MapPin, ExternalLink,
-  X, Phone, User, Home, MessageSquare, ChevronLeft, ChevronRight,
+  X, MessageSquare, ChevronLeft, ChevronRight,
   Zap, Shield, Sparkles, Check, Monitor,
   Tag, Info
 } from "lucide-react";
@@ -38,11 +37,6 @@ const categoryConfig: Record<string, { label: string; icon: any; color: string; 
 
 const PHYSICAL_CATS = ["device", "gift"];
 
-const SAUDI_CITIES = [
-  "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام", "الخبر", "الظهران",
-  "الطائف", "أبها", "تبوك", "بريدة", "القصيم", "حائل", "نجران", "جازان",
-  "ينبع", "الجبيل", "الخفجي", "الأحساء", "القطيف", "عرعر", "سكاكا",
-];
 
 const emptyShipping = { recipientName: "", phone: "", city: "", district: "", address: "", notes: "" };
 
@@ -111,66 +105,6 @@ function ImageCarousel({ images, productName, height = 320 }: { images: string[]
   );
 }
 
-function ShippingForm({ user, form, setForm }: {
-  user: any;
-  form: typeof emptyShipping;
-  setForm: (f: typeof emptyShipping | ((prev: typeof emptyShipping) => typeof emptyShipping)) => void;
-}) {
-  return (
-    <div className="space-y-3" dir="rtl">
-      <div>
-        <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-          <User className="w-3 h-3" /> اسم المستلم <span className="text-red-500">*</span>
-        </Label>
-        <Input value={form.recipientName} onChange={e => setForm(f => ({ ...f, recipientName: e.target.value }))}
-          placeholder="الاسم الكامل" className="h-11 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm" data-testid="input-recipient-name" />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-            <Phone className="w-3 h-3" /> رقم الجوال <span className="text-red-500">*</span>
-          </Label>
-          <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-            placeholder="05xxxxxxxx" className="h-11 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm" dir="ltr" data-testid="input-shipping-phone" />
-        </div>
-        <div>
-          <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-            <MapPin className="w-3 h-3" /> المدينة <span className="text-red-500">*</span>
-          </Label>
-          <Select value={form.city} onValueChange={v => setForm(f => ({ ...f, city: v }))}>
-            <SelectTrigger className="h-11 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm" data-testid="select-shipping-city">
-              <SelectValue placeholder="اختر المدينة" />
-            </SelectTrigger>
-            <SelectContent>
-              {SAUDI_CITIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-          <Home className="w-3 h-3" /> الحي (اختياري)
-        </Label>
-        <Input value={form.district} onChange={e => setForm(f => ({ ...f, district: e.target.value }))}
-          placeholder="اسم الحي..." className="h-11 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm" data-testid="input-shipping-district" />
-      </div>
-      <div>
-        <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-          <Home className="w-3 h-3" /> العنوان التفصيلي <span className="text-red-500">*</span>
-        </Label>
-        <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-          placeholder="الشارع، رقم المبنى..." className="h-11 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm" data-testid="input-shipping-address" />
-      </div>
-      <div>
-        <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1.5">
-          <MessageSquare className="w-3 h-3" /> ملاحظات إضافية (اختياري)
-        </Label>
-        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-          placeholder="أي تعليمات خاصة للتوصيل..." className="rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm resize-none h-14" data-testid="input-shipping-notes" />
-      </div>
-    </div>
-  );
-}
 
 const TIER_META_SIMPLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
   lite:     { label: "لايت",    color: "text-teal-700 dark:text-teal-300",    bg: "bg-teal-50 dark:bg-teal-900/20",    border: "border-teal-200 dark:border-teal-700/40" },
@@ -192,16 +126,8 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
   const planBundles: any[] = (p as any).planBundles || [];
   const hasBundles = planBundles.length > 0;
   const [selectedBundleIdx, setSelectedBundleIdx] = useState<number | null>(hasBundles ? 0 : null);
-  const [shippingForm, setShippingForm] = useState<typeof emptyShipping>({
-    recipientName: user?.fullName || "",
-    phone: user?.phone || "",
-    city: "",
-    district: "",
-    address: "",
-    notes: "",
-  });
-  const [digitalNotes, setDigitalNotes] = useState("");
-  const [shippingError, setShippingError] = useState("");
+  const [notes, setNotes] = useState("");
+  const [bundleError, setBundleError] = useState("");
 
   const selectedBundle = selectedBundleIdx !== null ? planBundles[selectedBundleIdx] : null;
   const bundlePrice = selectedBundle ? (selectedBundle.isFree ? 0 : (selectedBundle.customPrice || 0)) : 0;
@@ -209,19 +135,11 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
 
   function handleBuy() {
     if (hasBundles && selectedBundleIdx === null) {
-      setShippingError("يرجى اختيار باقة من القائمة");
+      setBundleError("يرجى اختيار باقة من القائمة");
       return;
     }
-    if (isPhysical) {
-      if (!shippingForm.recipientName.trim()) { setShippingError("يرجى إدخال اسم المستلم"); return; }
-      if (!shippingForm.phone.trim()) { setShippingError("يرجى إدخال رقم الجوال"); return; }
-      if (!shippingForm.city) { setShippingError("يرجى اختيار المدينة"); return; }
-      if (!shippingForm.address.trim()) { setShippingError("يرجى إدخال العنوان التفصيلي"); return; }
-      setShippingError("");
-      onAddToCart(shippingForm, digitalNotes, selectedBundle);
-    } else {
-      onAddToCart(null, digitalNotes, selectedBundle);
-    }
+    setBundleError("");
+    onAddToCart(null, notes, selectedBundle);
   }
 
   const imgs = (p.images || []).filter(Boolean);
@@ -418,27 +336,15 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
           )}
 
           <div className="border-t border-black/[0.05] dark:border-white/[0.05] pt-4">
-            {isPhysical ? (
-              <div>
-                <h3 className="font-black text-sm text-black dark:text-white mb-3 flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-black/40 dark:text-white/40" />
-                  بيانات التوصيل
-                  {user && <span className="text-[10px] font-normal bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">تم تعبئة البيانات تلقائياً</span>}
-                </h3>
-                <ShippingForm user={user} form={shippingForm} setForm={setShippingForm} />
-                {shippingError && <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{shippingError}</p>}
-              </div>
-            ) : (
-              <div>
-                <h3 className="font-black text-sm text-black dark:text-white mb-3 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-black/40 dark:text-white/40" />
-                  ملاحظات (اختياري)
-                </h3>
-                <Textarea value={digitalNotes} onChange={e => setDigitalNotes(e.target.value)}
-                  placeholder="أي تفاصيل إضافية..." className="rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm resize-none h-20" data-testid="input-product-notes" />
-                {shippingError && <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{shippingError}</p>}
-              </div>
-            )}
+            <div>
+              <h3 className="font-black text-sm text-black dark:text-white mb-3 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-black/40 dark:text-white/40" />
+                ملاحظات (اختياري)
+              </h3>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="أي تفاصيل إضافية..." className="rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm resize-none h-20" data-testid="input-product-notes" />
+              {bundleError && <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><X className="w-3 h-3" />{bundleError}</p>}
+            </div>
           </div>
         </div>
       </div>
