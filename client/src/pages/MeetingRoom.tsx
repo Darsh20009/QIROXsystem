@@ -240,6 +240,12 @@ export default function MeetingRoom() {
   const rafPendingRef = useRef<DrawStroke | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
+  // Platform detection (computed once — UA doesn't change during session)
+  const _ua = navigator.userAgent;
+  const isIOSDevice = /iPad|iPhone|iPod/.test(_ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isAndroidDevice = /Android/.test(_ua);
+  const isAndroidWebViewDevice = isAndroidDevice && /; wv\)/.test(_ua);
+
   const [joined, setJoined] = useState(false);
   const [wasKicked, setWasKicked] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -856,32 +862,65 @@ export default function MeetingRoom() {
       return;
     }
 
-    // ── Detect support ─────────────────────────────────────────────────────
+    // ── Platform detection ─────────────────────────────────────────────────
     const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    if (typeof navigator?.mediaDevices?.getDisplayMedia !== "function") {
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(ua);
+    // Detect Android WebView: native app wrapper (has "; wv)" marker in UA)
+    // TWA (Trusted Web Activity) opens real Chrome — does NOT have "; wv)"
+    const isAndroidWebView = isAndroid && /; wv\)/.test(ua);
+    // iOS Safari (not Chrome/CriOS/Firefox on iOS)
+    const isSafariIOS = isIOS && /WebKit/.test(ua) && !/CriOS\//.test(ua) && !/FxiOS\//.test(ua) && !/EdgiOS\//.test(ua);
+    const iosMatch = ua.match(/OS (\d+)[_.](\d+)/);
+    const iosMajor = iosMatch ? parseInt(iosMatch[1]) : 0;
+
+    // ── Support check ──────────────────────────────────────────────────────
+    const hasDisplayMedia = typeof navigator?.mediaDevices?.getDisplayMedia === "function";
+    if (!hasDisplayMedia) {
       if (isIOS) {
-        // Detect iOS version
-        const iosMatch = ua.match(/OS (\d+)_(\d+)/);
-        const iosMajor = iosMatch ? parseInt(iosMatch[1]) : 0;
+        if (!isSafariIOS) {
+          toast({
+            title: "استخدم Safari",
+            description: "مشاركة الشاشة على iPhone/iPad تعمل فقط مع Safari iOS 18+ — ليس Chrome أو أي متصفح آخر",
+            variant: "destructive",
+          });
+        } else if (iosMajor < 18) {
+          toast({
+            title: `يلزم iOS 18 أو أحدث`,
+            description: `إصدارك الحالي iOS ${iosMajor}. حدّث جهازك من الإعدادات ثم أعد المحاولة`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "مشاركة الشاشة غير متاحة",
+            description: "أغلق Safari وأعد فتحه، ثم حاول مرة أخرى",
+            variant: "destructive",
+          });
+        }
+      } else if (isAndroidWebView) {
         toast({
-          title: "مشاركة الشاشة على iOS",
-          description: iosMajor >= 17
-            ? "تأكد من استخدام Safari 17.4 أو أحدث وأن تكون على iOS 17.4+"
-            : `إصدار iOS ${iosMajor} لا يدعم مشاركة الشاشة. يلزم iOS 17.4+ مع Safari`,
+          title: "افتح في Chrome مباشرة",
+          description: "مشاركة الشاشة لا تعمل داخل التطبيق. انسخ الرابط وافتحه في تطبيق Chrome الرسمي",
+          variant: "destructive",
+        });
+      } else if (isAndroid) {
+        toast({
+          title: "غير مدعوم",
+          description: "تأكد من استخدام Chrome آخر إصدار على الأندرويد، وأن الموقع يعمل عبر HTTPS",
           variant: "destructive",
         });
       } else {
         toast({
-          title: "مشاركة الشاشة غير مدعومة",
-          description: "استخدم Chrome أو Edge على الكمبيوتر، أو Safari 17.4+ على iOS",
+          title: "غير مدعوم",
+          description: "استخدم Chrome أو Edge على الكمبيوتر، أو Safari iOS 18+ على الجوال",
           variant: "destructive",
         });
       }
       return;
     }
 
-    // ── Non-host: just request approval (no getDisplayMedia yet) ───────────
+    // ── Non-host: request approval first (no getDisplayMedia yet) ──────────
     if (!isHost && !(isStaff && !screenSharerPeerId) && !screenShareApproved) {
       if (screenSharePending) {
         toast({ title: "في الانتظار", description: "طلبك قيد المراجعة من المضيف" });
@@ -893,28 +932,63 @@ export default function MeetingRoom() {
       return;
     }
 
-    // ── CRITICAL: getDisplayMedia must be the FIRST await after user gesture ──
-    // Do NOT call any async function or await anything before this point.
-    // Android Chrome and iOS Safari break the gesture chain if getDisplayMedia
-    // is not called as the very first async operation.
-    let screen: MediaStream;
-    try {
-      screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-    } catch (err: any) {
-      const n = err?.name;
-      if (n === "NotAllowedError" || n === "AbortError") return; // user cancelled — silent
-      if (n === "NotSupportedError" || n === "InvalidStateError" || n === "TypeError") {
-        toast({
-          title: "مشاركة الشاشة غير مدعومة",
-          description: isIOS ? "تأكد من استخدام Safari 17.4+ وتفعيل الإذن" : "متصفحك لا يدعم هذه الميزة",
-          variant: "destructive",
-        });
+    // ── CRITICAL: getDisplayMedia MUST be the first await after user gesture ─
+    // On Android Chrome and iOS Safari, any async call before this breaks the
+    // security gesture check and causes NotAllowedError silently.
+    //
+    // Constraint strategy:
+    //  • iOS Safari 18+: displaySurface:"browser" captures current tab (only option on iOS)
+    //  • Android Chrome: standard video:true works; audio not requestable on Android
+    //  • Desktop: full resolution preferred
+    let screen: MediaStream | null = null;
+    let captureError: any = null;
+
+    // Build ordered constraint list — try best first, fallback second
+    const constraintList: DisplayMediaStreamOptions[] = isIOS
+      ? [
+          { video: { displaySurface: "browser" } as MediaTrackConstraints, audio: false },
+          { video: true, audio: false },
+        ]
+      : isAndroid
+      ? [
+          { video: true, audio: false },
+        ]
+      : [
+          { video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+          { video: true, audio: false },
+        ];
+
+    for (const constraints of constraintList) {
+      try {
+        screen = await navigator.mediaDevices.getDisplayMedia(constraints);
+        captureError = null;
+        break;
+      } catch (err: any) {
+        captureError = err;
+        // NotAllowedError / AbortError = user cancelled — stop immediately, no retry
+        if (err?.name === "NotAllowedError" || err?.name === "AbortError") {
+          return;
+        }
+        // Otherwise try next constraint set
+      }
+    }
+
+    if (!screen || captureError) {
+      const n = captureError?.name;
+      if (isIOS) {
+        if (!isSafariIOS) {
+          toast({ title: "استخدم Safari", description: "مشاركة الشاشة على iOS تعمل فقط مع Safari، ليس Chrome", variant: "destructive" });
+        } else if (n === "NotSupportedError" || n === "InvalidStateError") {
+          toast({ title: "غير مدعوم على هذا الإصدار", description: `تأكد من iOS 18+ وأن Safari مُحدَّث — إصدارك ${iosMajor}`, variant: "destructive" });
+        } else {
+          toast({ title: "تعذّرت مشاركة الشاشة", description: "اقبل طلب إذن مشاركة التبويب عند ظهوره في Safari", variant: "destructive" });
+        }
+      } else if (isAndroidWebView) {
+        toast({ title: "افتح في Chrome", description: "انسخ رابط الاجتماع وافتحه في تطبيق Chrome الرسمي", variant: "destructive" });
+      } else if (isAndroid) {
+        toast({ title: "تعذّرت مشاركة الشاشة", description: "اقبل إذن مشاركة الشاشة عند ظهور نافذة النظام", variant: "destructive" });
       } else {
-        toast({
-          title: "تعذّرت مشاركة الشاشة",
-          description: "اقبل طلب الإذن عند ظهوره على الشاشة",
-          variant: "destructive",
-        });
+        toast({ title: "تعذّرت مشاركة الشاشة", description: "اقبل طلب الإذن عند ظهوره على الشاشة", variant: "destructive" });
       }
       return;
     }
@@ -1819,6 +1893,19 @@ export default function MeetingRoom() {
           <Loader2 className="w-3.5 h-3.5 text-blue-300 animate-spin shrink-0" />
           <span className="text-blue-200 text-xs font-medium">في انتظار موافقة المضيف على مشاركة شاشتك...</span>
           <button onClick={() => setScreenSharePending(false)} className="text-blue-400/60 hover:text-blue-200 transition-colors"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {/* Android WebView: screen share not supported — show copy-link banner */}
+      {isAndroidWebViewDevice && (
+        <div className="absolute top-14 left-2 right-2 z-40 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl" style={{ background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.3)" }}>
+          <Monitor className="w-4 h-4 text-yellow-300 shrink-0" />
+          <span className="text-yellow-200 text-xs leading-snug flex-1">مشاركة الشاشة تتطلب فتح الاجتماع في Chrome مباشرة</span>
+          <button
+            onClick={() => { navigator.clipboard?.writeText(window.location.href).then(() => toast({ title: "تم النسخ!", description: "افتح Chrome والصق الرابط" })); }}
+            className="shrink-0 text-yellow-300 hover:text-yellow-100 underline text-xs font-semibold transition-colors"
+            data-testid="button-copy-link-webview"
+          >نسخ الرابط</button>
         </div>
       )}
 
