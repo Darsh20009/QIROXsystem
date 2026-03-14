@@ -12,9 +12,10 @@ import {
   Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MonitorUp,
   PhoneOff, MessageSquare, X, Send, Users, Copy, Check,
   Loader2, AlertCircle, Pencil, Eraser, Trash2, Globe,
-  Zap, FileText, Plus, Headphones, UserMinus,
+  Zap, FileText, Plus, Headphones, UserMinus, UserPlus,
   Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand,
-  MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera, Clock
+  MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera, Clock,
+  Lock, LockOpen, Mail, AtSign, Search
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -280,6 +281,16 @@ export default function MeetingRoom() {
   const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
   const [screenSharePending, setScreenSharePending] = useState(false);
   const [screenShareApproved, setScreenShareApproved] = useState(false);
+  const [lobbyEnabled, setLobbyEnabled] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteTab, setInviteTab] = useState<"internal" | "external">("internal");
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [inviteSearchResults, setInviteSearchResults] = useState<any[]>([]);
+  const [inviteSelected, setInviteSelected] = useState<any[]>([]);
+  const [extEmail, setExtEmail] = useState("");
+  const [extName, setExtName] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [lobbyToggling, setLobbyToggling] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [speakingPeers, setSpeakingPeers] = useState<Set<string>>(new Set());
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -311,6 +322,22 @@ export default function MeetingRoom() {
 
   useEffect(() => { screenSharingRef.current = screenSharing; }, [screenSharing]);
   useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
+  // Sync lobbyEnabled from meeting data
+  useEffect(() => { if (meeting) setLobbyEnabled(!!(meeting as any).lobbyEnabled); }, [meeting]);
+
+  // Invite search: debounced fetch
+  useEffect(() => {
+    if (!showInviteModal || inviteTab !== "internal") return;
+    const term = inviteSearch.trim();
+    if (!term) { setInviteSearchResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/admin/users?page=1&limit=20&search=${encodeURIComponent(term)}`);
+        if (r.ok) { const d = await r.json(); setInviteSearchResults(d.data || []); }
+      } catch {}
+    }, 320);
+    return () => clearTimeout(t);
+  }, [inviteSearch, inviteTab, showInviteModal]);
 
   // ── Speaking detection via Web Audio API ─────────────────────────────────────
   useEffect(() => {
@@ -612,6 +639,14 @@ export default function MeetingRoom() {
         });
         toast({ title: "طلب انضمام جديد", description: `${data.userName} يطلب الدخول للاجتماع` });
         setActivePanel("requests");
+        break;
+      }
+      case "qmeet_lobby_changed": {
+        setLobbyEnabled(data.lobbyEnabled);
+        toast({
+          title: data.lobbyEnabled ? "🔒 تم تفعيل صالة الانتظار" : "🔓 تم فتح الاجتماع",
+          description: data.lobbyEnabled ? "سيحتاج القادمون الجدد لموافقتك" : "يمكن للجميع الانضمام مباشرة",
+        });
         break;
       }
       case "webrtc_reaction": {
@@ -1389,6 +1424,11 @@ export default function MeetingRoom() {
             <span className="text-green-300 text-[10px] font-semibold">مباشر</span>
           </div>
           <span className="text-white font-semibold text-sm truncate max-w-48">{meeting.title}</span>
+          {lobbyEnabled && (
+            <span className="hidden sm:flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full shrink-0">
+              <Lock className="w-2.5 h-2.5" />محمي
+            </span>
+          )}
           {!wsReady && (
             <span className="text-[10px] text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-500/20">إعادة الاتصال...</span>
           )}
@@ -1532,29 +1572,63 @@ export default function MeetingRoom() {
 
             {/* ── Participants panel ── */}
             {activePanel === 'participants' && (
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {allPeers.map(peer => {
-                  const isLocal = peer.id === (userId || "local");
-                  return (
-                    <div key={peer.id} className="flex items-center gap-2.5 bg-white/[0.05] rounded-xl px-3 py-2.5" data-testid={`participant-${peer.id}`}>
-                      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-white shrink-0">
-                        {peer.name?.charAt(0)?.toUpperCase() || "?"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate">{peer.name}{isLocal ? " (أنت)" : ""}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {peer.audioOn ? <Mic className="w-3 h-3 text-green-400" /> : <MicOff className="w-3 h-3 text-red-400" />}
-                          {peer.videoOn ? <Video className="w-3 h-3 text-green-400" /> : <VideoOff className="w-3 h-3 text-red-400" />}
+              <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Host controls row */}
+                {isHost && (
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] shrink-0">
+                    <button
+                      onClick={async () => {
+                        if (!meeting) return;
+                        setLobbyToggling(true);
+                        try {
+                          const r = await fetch(`/api/qmeet/meetings/${meeting._id || meeting.id}/toggle-lobby`, { method: "PATCH", credentials: "include" });
+                          if (r.ok) { const d = await r.json(); setLobbyEnabled(d.lobbyEnabled); }
+                        } catch {} finally { setLobbyToggling(false); }
+                      }}
+                      disabled={lobbyToggling}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${lobbyEnabled ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-white/[0.06] text-white/50 hover:bg-white/10 hover:text-white/80"}`}
+                      data-testid="button-toggle-lobby"
+                      title={lobbyEnabled ? "إيقاف صالة الانتظار" : "تفعيل صالة الانتظار"}
+                    >
+                      {lobbyEnabled ? <Lock className="w-3 h-3" /> : <LockOpen className="w-3 h-3" />}
+                      {lobbyEnabled ? "مقفل" : "مفتوح"}
+                    </button>
+                    <button
+                      onClick={() => { setShowInviteModal(true); setInviteTab("internal"); setInviteSearch(""); setInviteSelected([]); setExtEmail(""); setExtName(""); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 transition-colors mr-auto"
+                      data-testid="button-open-invite"
+                      title="دعوة مشاركين"
+                    >
+                      <UserPlus className="w-3 h-3" />
+                      دعوة
+                    </button>
+                  </div>
+                )}
+                {/* Participants list */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {allPeers.map(peer => {
+                    const isLocal = peer.id === (userId || "local");
+                    return (
+                      <div key={peer.id} className="flex items-center gap-2.5 bg-white/[0.05] rounded-xl px-3 py-2.5" data-testid={`participant-${peer.id}`}>
+                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                          {peer.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-medium truncate">{peer.name}{isLocal ? " (أنت)" : ""}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {peer.audioOn ? <Mic className="w-3 h-3 text-green-400" /> : <MicOff className="w-3 h-3 text-red-400" />}
+                            {peer.videoOn ? <Video className="w-3 h-3 text-green-400" /> : <VideoOff className="w-3 h-3 text-red-400" />}
+                          </div>
+                        </div>
+                        {isAdmin && !isLocal && (
+                          <button onClick={() => kickPeer(peer.id)} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors" title="طرد" data-testid={`button-kick-panel-${peer.id}`}>
+                            <UserMinus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
-                      {isAdmin && !isLocal && (
-                        <button onClick={() => kickPeer(peer.id)} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-colors" title="طرد" data-testid={`button-kick-panel-${peer.id}`}>
-                          <UserMinus className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1893,6 +1967,135 @@ export default function MeetingRoom() {
           <Loader2 className="w-3.5 h-3.5 text-blue-300 animate-spin shrink-0" />
           <span className="text-blue-200 text-xs font-medium">في انتظار موافقة المضيف على مشاركة شاشتك...</span>
           <button onClick={() => setScreenSharePending(false)} className="text-blue-400/60 hover:text-blue-200 transition-colors"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
+      {/* ── Invite Participants Modal ── */}
+      {showInviteModal && (
+        <div className="absolute inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl" style={{ background: "rgba(12,18,32,0.98)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.07]">
+              <UserPlus className="w-5 h-5 text-blue-400" />
+              <span className="text-white font-bold text-base">دعوة مشاركين</span>
+              <button onClick={() => setShowInviteModal(false)} className="mr-auto text-white/40 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-white/[0.07]">
+              {([["internal", "من النظام", Users], ["external", "بريد خارجي", Mail]] as const).map(([t, label, Icon]) => (
+                <button key={t} onClick={() => { setInviteTab(t); setInviteSearch(""); setInviteSearchResults([]); }}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-semibold transition-colors ${inviteTab === t ? "text-blue-300 border-b-2 border-blue-400" : "text-white/40 hover:text-white/70"}`}>
+                  <Icon className="w-3.5 h-3.5" />{label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5 space-y-4">
+              {inviteTab === "internal" ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <Input value={inviteSearch} onChange={e => setInviteSearch(e.target.value)}
+                      placeholder="ابحث باسم المستخدم أو البريد..."
+                      className="pr-9 text-sm placeholder:text-white/30"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
+                      data-testid="input-invite-search" autoFocus />
+                  </div>
+
+                  {/* Search results */}
+                  {inviteSearchResults.length > 0 && (
+                    <div className="rounded-xl overflow-hidden max-h-44 overflow-y-auto" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+                      {inviteSearchResults.map((u: any) => {
+                        const sel = inviteSelected.some((s: any) => s.id === u.id);
+                        return (
+                          <button key={u.id} onClick={() => setInviteSelected(prev => sel ? prev.filter((s: any) => s.id !== u.id) : [...prev, u])}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-right transition-colors ${sel ? "bg-blue-500/20" : "hover:bg-white/[0.04]"}`}
+                            data-testid={`invite-user-${u.id}`}>
+                            <div className="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                              {(u.fullName || u.username || "?").charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                              <p className="text-white text-xs font-medium truncate">{u.fullName || u.username}</p>
+                              <p className="text-white/40 text-[10px] truncate">{u.email}</p>
+                            </div>
+                            {sel && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Selected chips */}
+                  {inviteSelected.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {inviteSelected.map((u: any) => (
+                        <span key={u.id} className="flex items-center gap-1 bg-blue-500/20 text-blue-300 text-xs px-2 py-1 rounded-full border border-blue-500/30">
+                          {u.fullName || u.username}
+                          <button onClick={() => setInviteSelected(prev => prev.filter((s: any) => s.id !== u.id))}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {inviteSearch && inviteSearchResults.length === 0 && (
+                    <p className="text-white/30 text-xs text-center py-2">لا توجد نتائج</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-white/60 text-xs font-medium block mb-1.5">البريد الإلكتروني <span className="text-red-400">*</span></label>
+                    <Input value={extEmail} onChange={e => setExtEmail(e.target.value)}
+                      placeholder="example@email.com"
+                      type="email"
+                      className="text-sm placeholder:text-white/30 text-left"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", direction: "ltr" }}
+                      data-testid="input-invite-email" />
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-xs font-medium block mb-1.5">الاسم (اختياري)</label>
+                    <Input value={extName} onChange={e => setExtName(e.target.value)}
+                      placeholder="اسم المدعو"
+                      className="text-sm placeholder:text-white/30"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
+                      data-testid="input-invite-name" />
+                  </div>
+                </>
+              )}
+
+              <button
+                disabled={inviteLoading || (inviteTab === "internal" ? inviteSelected.length === 0 : !extEmail.trim())}
+                onClick={async () => {
+                  if (!meeting) return;
+                  setInviteLoading(true);
+                  try {
+                    const body = inviteTab === "internal"
+                      ? { userIds: inviteSelected.map((u: any) => u.id || u._id), names: inviteSelected.map((u: any) => u.fullName || u.username) }
+                      : { emails: [extEmail.trim()], names: [extName.trim() || "مشارك"] };
+                    const r = await fetch(`/api/qmeet/meetings/${meeting._id || meeting.id}/invite`, {
+                      method: "POST", credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(body),
+                    });
+                    if (r.ok) {
+                      toast({ title: "تم الإرسال!", description: inviteTab === "internal" ? `تمت دعوة ${inviteSelected.length} مستخدم` : `تم إرسال الدعوة لـ ${extEmail}` });
+                      setShowInviteModal(false);
+                    } else {
+                      const d = await r.json().catch(() => ({}));
+                      toast({ title: "خطأ", description: d.message || "فشل الإرسال", variant: "destructive" });
+                    }
+                  } catch { toast({ title: "خطأ في الاتصال", variant: "destructive" }); }
+                  finally { setInviteLoading(false); }
+                }}
+                className="w-full h-11 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}
+                data-testid="button-send-invite"
+              >
+                {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" />{inviteTab === "internal" ? "إرسال الدعوة للمختارين" : "إرسال الدعوة بالبريد"}</>}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

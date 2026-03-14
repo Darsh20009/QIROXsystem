@@ -1289,6 +1289,7 @@ const qMeetingSchema = new mongoose.Schema({
   notes:          { type: String, default: "" },
   agenda:         { type: [String], default: [] },
   recordingUrl:   { type: String, default: "" },
+  lobbyEnabled:   { type: Boolean, default: false },
 }, { timestamps: true });
 qMeetingSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id.toString(); return ret; } });
 export const QMeetingModel = mongoose.models.QMeeting || mongoose.model("QMeeting", qMeetingSchema);

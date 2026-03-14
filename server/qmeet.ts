@@ -519,13 +519,12 @@ export function registerQMeetRoutes(app: Express) {
         return res.json({ status: "approved", meetingLink: meeting.meetingLink });
       }
 
-      // Auto-approve for instant meetings (no waiting room)
-      if ((meeting as any).instantJoin) {
+      // Auto-approve when lobby is disabled (open meeting)
+      if (!(meeting as any).lobbyEnabled) {
         await QMeetingModel.findByIdAndUpdate(meeting._id, {
           $addToSet: { participantIds: userId },
           $push: { joinRequests: { userId, userName, userEmail, status: "approved", requestedAt: new Date() } }
         });
-        // Notify guest via WebSocket so they know they're approved
         pushToUser(userId, {
           type: "qmeet_join_response",
           approved: true,
@@ -627,6 +626,95 @@ export function registerQMeetRoutes(app: Express) {
       const isAdmin = ["admin", "manager"].includes(req.user?.role);
       if (callerId !== meeting.hostId && !isAdmin) return res.status(403).json({ message: "للمضيف فقط" });
       res.json(meeting.joinRequests || []);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Toggle lobby (waiting room) for a meeting ─────────────────────────────
+  app.patch("/api/qmeet/meetings/:id/toggle-lobby", requireAuth, async (req: any, res) => {
+    try {
+      const meeting = await QMeetingModel.findById(req.params.id);
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+      const callerId = String(req.user._id || req.user.id);
+      const isAdmin = ["admin", "manager"].includes(req.user?.role);
+      if (callerId !== meeting.hostId && !isAdmin) return res.status(403).json({ message: "للمضيف فقط" });
+
+      const newValue = !(meeting as any).lobbyEnabled;
+      await QMeetingModel.findByIdAndUpdate(meeting._id, { $set: { lobbyEnabled: newValue } });
+
+      // Notify all participants in the meeting room via WebSocket
+      const ids: string[] = meeting.participantIds || [];
+      broadcastToUsers([...ids, meeting.hostId], {
+        type: "qmeet_lobby_changed",
+        meetingId: String(meeting._id),
+        lobbyEnabled: newValue,
+      });
+
+      res.json({ lobbyEnabled: newValue });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Invite participants to a meeting (host/admin) ──────────────────────────
+  app.post("/api/qmeet/meetings/:id/invite", requireAuth, async (req: any, res) => {
+    try {
+      const meeting = await QMeetingModel.findById(req.params.id);
+      if (!meeting) return res.status(404).json({ message: "الاجتماع غير موجود" });
+      const callerId = String(req.user._id || req.user.id);
+      const isAdmin = ["admin", "manager"].includes(req.user?.role);
+      if (callerId !== meeting.hostId && !isAdmin) return res.status(403).json({ message: "للمضيف فقط" });
+
+      const { emails = [], names = [], userIds = [] } = req.body as {
+        emails?: string[];
+        names?: string[];
+        userIds?: string[];
+      };
+
+      if (!emails.length && !userIds.length) {
+        return res.status(400).json({ message: "يجب إدخال بريد إلكتروني أو اختيار مستخدم واحد على الأقل" });
+      }
+
+      const fullLink = `${req.protocol}://${req.get("host")}/join?code=${meeting.joinCode}`;
+      const hostName = req.user.fullName || req.user.username;
+      const inviteData = {
+        title: meeting.title,
+        scheduledAt: meeting.scheduledAt,
+        meetingLink: fullLink,
+        hostName,
+        durationMinutes: meeting.durationMinutes,
+      };
+
+      // Add to participantEmails
+      const emailsToAdd = emails.filter((e: string) => e && e.includes("@"));
+      if (emailsToAdd.length) {
+        await QMeetingModel.findByIdAndUpdate(meeting._id, {
+          $addToSet: { participantEmails: { $each: emailsToAdd } },
+        });
+        // Send invite emails (non-blocking)
+        Promise.all(emailsToAdd.map((email: string, i: number) =>
+          sendQMeetInviteEmail(email, names[i] || "مشارك", inviteData)
+        )).catch(e => console.error("[QMeet] Invite email error:", e));
+      }
+
+      // Notify internal users via WebSocket
+      if (userIds.length) {
+        await QMeetingModel.findByIdAndUpdate(meeting._id, {
+          $addToSet: { participantIds: { $each: userIds } },
+        });
+        broadcastToUsers(userIds, {
+          type: "qmeet_invited",
+          meetingId: String(meeting._id),
+          title: meeting.title,
+          scheduledAt: meeting.scheduledAt,
+          meetingLink: meeting.meetingLink,
+          joinCode: meeting.joinCode,
+          message: `دعوة اجتماع: ${meeting.title}`,
+        });
+      }
+
+      res.json({ success: true, emailCount: emailsToAdd.length, userCount: userIds.length });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
