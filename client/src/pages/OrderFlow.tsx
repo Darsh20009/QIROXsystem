@@ -18,7 +18,7 @@ import {
   ShoppingCart, BadgeCheck, Crown, Layers, Smartphone, Map,
   Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash, LayoutGrid,
   Users, Calendar, Palette, ChevronDown, ChevronUp, MessageCircle,
-  MonitorSmartphone, BookOpen, Brush
+  MonitorSmartphone, BookOpen, Brush, Clock
 } from "lucide-react";
 import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
@@ -301,6 +301,8 @@ export default function OrderFlow() {
   });
 
   const [step, setStep] = useState(1);
+  const [meetingSlots, setMeetingSlots] = useState<string[]>([]);
+  const [meetingDays, setMeetingDays] = useState<string[]>([]);
   const [selectedPlan, setSelectedPlan]   = useState<string>(planFromUrl || "pro");
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [deviceCart, setDeviceCart]       = useState<Record<string, number>>({});
@@ -1449,252 +1451,80 @@ export default function OrderFlow() {
             {step === 5 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
-                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة الأخيرة" : "Final Step"}</p>
-                  <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "الدفع وإرسال الطلب" : "Payment & Submit"}</h2>
-                  <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "راجع طلبك وحوّل المبلغ" : "Review your order and complete payment"}</p>
+                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 5 من 5" : "Step 5 of 5"}</p>
+                  <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "تحديد موعد الاجتماع" : "Schedule Your Meeting"}</h2>
+                  <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "اختر 3 أوقات و 3 أيام مناسبة لك" : "Choose 3 preferred time slots and days"}</p>
                 </div>
 
-                {/* Order Summary Card */}
-                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden shadow-sm">
-                  <div className="px-6 py-4 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.05] dark:border-white/[0.05]">
-                    <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-[2px]">{lang === "ar" ? "ملخص الطلب" : "Order Summary"}</p>
-                  </div>
-                  <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                    <div className="px-6 py-4 flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-gray-400 to-gray-600"}`}>
-                          <Crown className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-sm font-semibold text-black dark:text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Package`}</span>
-                      </div>
-                      <span className="font-bold text-sm text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
-                    </div>
-                    {selectedAddons.map(id => {
-                      const a = extraAddons.find((ad: any) => ad.id === id);
-                      return a ? (
-                        <div key={id} className="px-6 py-3 flex justify-between items-center">
-                          <span className="text-sm text-black/55 dark:text-white/55">{a.nameAr}</span>
-                          <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{a.price.toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
-                        </div>
-                      ) : null;
-                    })}
-                    {Object.entries(deviceCart).map(([pid, qty]) => {
-                      const p = products.find((pr: any) => pr.id === pid);
-                      const bundleIdx = deviceBundles[pid];
-                      const bundle = typeof bundleIdx === "number" ? p?.planBundles?.[bundleIdx] : null;
-                      return p ? (
-                        <div key={pid}>
-                          <div className="px-6 py-3 flex justify-between items-center">
-                            <span className="text-sm text-black/55 dark:text-white/55">{p.nameAr || p.name} ×{qty}</span>
-                            <span className="text-sm font-medium text-black dark:text-white flex items-center gap-1">{(p.price * qty).toLocaleString()} {lang === "ar" ? <SARIcon size={11} className="opacity-70" /> : "SAR"}</span>
-                          </div>
-                          {bundle && (
-                            <div className="px-6 py-2 flex justify-between items-center bg-violet-50/50 dark:bg-violet-900/10">
-                              <div className="flex items-center gap-1.5">
-                                <Crown className="w-3 h-3 text-violet-500" />
-                                <span className="text-xs text-violet-700 dark:text-violet-400">{bundle.planNameAr}</span>
-                              </div>
-                              <span className="text-xs font-medium text-violet-700 dark:text-violet-400 flex items-center gap-1">
-                                {bundle.isFree ? "مجاني" : <>{(bundle.customPrice || 0).toLocaleString()} {lang === "ar" ? <SARIcon size={10} className="opacity-60" /> : "SAR"}</>}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : null;
-                    })}
-                    <div className="px-6 py-5 flex justify-between items-center bg-gradient-to-r from-black to-gray-900">
-                      <span className="text-white font-bold">{lang === "ar" ? "الإجمالي" : "Total"}</span>
-                      <div className="text-right flex items-baseline gap-1.5">
-                        <span className="text-white font-black text-2xl">{grandTotal.toLocaleString()}</span>
-                        {lang === "ar" ? <SARIcon size={14} className="opacity-50 translate-y-0.5" /> : <span className="text-white/50 text-sm">SAR</span>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Paymob — website service add-on */}
-                <div>
-                  <p className="text-[11px] font-black text-black/30 dark:text-white/30 uppercase tracking-[2px] mb-3 px-1">
-                    {lang === "ar" ? "خدمة إضافية للموقع" : "Website Add-on Service"}
-                  </p>
-                <div className={`rounded-3xl border-2 transition-all overflow-hidden ${usePaymob ? "border-[#5D3FD3] shadow-lg shadow-purple-100/50 dark:shadow-purple-900/20" : "border-black/[0.07] dark:border-white/[0.07]"}`}
-                  style={usePaymob ? { background: "linear-gradient(135deg,#faf7ff,#f3eeff)" } : {}}>
-                  <div className="p-5">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md overflow-hidden bg-white border border-black/[0.07]">
-                          <img src="/paymob-logo.svg" alt="Paymob" className="w-full h-full object-contain p-1" onError={e => { (e.target as HTMLImageElement).style.display='none'; (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style="font-size:9px;font-weight:900;color:#5D3FD3;padding:2px">PAYMOB</span>'; }} />
-                        </div>
-                        <div>
-                          <p className="font-black text-sm text-black dark:text-white">{lang === "ar" ? "Paymob للدفع الإلكتروني" : "Paymob Gateway"}</p>
-                          <p className="text-[10px] text-black/40 dark:text-white/40">مدى · فيزا · ماستر · Apple Pay</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {["pro","infinite"].includes(selectedPlan) ? (
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">مجاني</span>
-                        ) : (
-                          <span className="text-xs text-[#5D3FD3] dark:text-purple-300 font-bold flex items-center gap-0.5">+100 <SARIcon size={10} className="opacity-70" /></span>
-                        )}
-                        <button
-                          onClick={() => setUsePaymob(v => !v)}
-                          className={`w-12 h-6 rounded-full transition-all duration-200 relative ${usePaymob ? "bg-[#5D3FD3]" : "bg-black/15 dark:bg-white/15"}`}
-                          data-testid="button-toggle-paymob"
-                        >
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${usePaymob ? (dir === "rtl" ? "right-6" : "left-6") : (dir === "rtl" ? "right-0.5" : "left-0.5")}`} />
-                        </button>
-                      </div>
-                    </div>
-                    {usePaymob && paymobFee > 0 && (
-                      <div className="mt-2 text-xs text-[#5D3FD3]/70 dark:text-purple-300/70 bg-purple-50 dark:bg-purple-900/20 rounded-xl px-3 py-2">
-                        تُضاف رسوم ربط بوابة Paymob (100 ر.س) لباقة لايت — تأتي مجانًا مع برو والإنفينتي.
-                      </div>
-                    )}
-                  </div>
-                </div>
-                </div>
-
-                {/* Payment method label */}
-                <p className="text-[11px] font-black text-black/30 dark:text-white/30 uppercase tracking-[2px] px-1 mt-2 mb-3">
-                  {lang === "ar" ? "طريقة دفع الطلب" : "Order Payment Method"}
-                </p>
-
-                {/* Qirox Pay Card — always visible */}
-                <div className={`rounded-3xl border-2 transition-all overflow-hidden ${useWallet && walletBalance > 0 ? "border-cyan-400 shadow-lg shadow-cyan-100/50" : walletBalance === 0 ? "border-black/[0.06] dark:border-white/[0.06] opacity-80" : "border-black/[0.07] dark:border-white/[0.07]"}`}
-                  style={useWallet && walletBalance > 0 ? { background: "linear-gradient(135deg,#f0fdff,#ecfeff)" } : {}}>
-                  <div className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {/* Mini Qirox Pay card */}
-                        <div className="w-14 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-md"
-                          style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}>
-                          <div className="text-center leading-none">
-                            <span className="text-[7px] font-black tracking-wider block">
-                              <span className="text-cyan-400">QIROX</span>
-                            </span>
-                            <span className="text-[6px] font-black tracking-widest text-white/70 block">PAY</span>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-black text-black dark:text-white text-sm">Qirox Pay</p>
-                          {walletBalance > 0 ? (
-                            <p className="text-cyan-600 dark:text-cyan-400 text-xs font-bold flex items-center gap-1">
-                              {walletBalance.toLocaleString()} {lang === "ar" ? <><SARIcon size={10} className="opacity-70" /> متاح</> : "SAR available"}
-                            </p>
-                          ) : (
-                            <p className="text-black/30 dark:text-white/30 text-xs">
-                              {lang === "ar" ? "رصيدك صفر" : "No balance"}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {walletBalance > 0 ? (
-                        <button
-                          onClick={() => { setUseWallet(v => !v); if (!useWallet) setWalletAmount(maxWalletUsable); else setWalletAmount(0); }}
-                          className={`w-12 h-6 rounded-full transition-all duration-200 relative ${useWallet ? "bg-cyan-500" : "bg-black/15 dark:bg-white/15"}`}
-                          data-testid="toggle-wallet-orderflow">
-                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${useWallet ? (dir === "rtl" ? "right-6" : "left-6") : (dir === "rtl" ? "right-0.5" : "left-0.5")}`} />
-                        </button>
-                      ) : (
-                        <a href="/client-wallet" className="text-xs font-bold text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 px-3 py-1.5 rounded-xl hover:bg-cyan-100 transition-colors">
-                          {lang === "ar" ? "اشحن المحفظة" : "Top up"}
-                        </a>
-                      )}
-                    </div>
-                    {useWallet && walletBalance > 0 && (
-                      <div className="mt-3 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <input type="number" min={1} max={maxWalletUsable} value={walletAmount}
-                            onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
-                            className="flex-1 bg-white dark:bg-gray-800 border border-cyan-200 dark:border-cyan-700 rounded-xl px-4 py-2 text-black dark:text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                            data-testid="input-wallet-amount-orderflow" />
-                          <button onClick={() => setWalletAmount(maxWalletUsable)}
-                            className="px-3 py-2 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-xs font-bold rounded-xl hover:bg-cyan-200 dark:hover:bg-cyan-800/50 transition-colors"
-                            data-testid="button-wallet-all-orderflow">
-                            {lang === "ar" ? "كل الرصيد" : "Max"}
+                {/* Meeting Scheduling UI */}
+                {[{
+                  title: lang === "ar" ? "الأوقات المفضلة (اختر 3)" : "Preferred Times (choose 3)",
+                  options: ["9:00 صباحاً", "11:00 صباحاً", "1:00 ظهراً", "3:00 عصراً", "5:00 مساءً", "7:00 مساءً"],
+                  selected: meetingSlots,
+                  setSelected: setMeetingSlots,
+                  max: 3,
+                }, {
+                  title: lang === "ar" ? "الأيام المفضلة (اختر 3)" : "Preferred Days (choose 3)",
+                  options: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"],
+                  selected: meetingDays,
+                  setSelected: setMeetingDays,
+                  max: 3,
+                }].map(({ title, options, selected, setSelected, max }) => (
+                  <div key={title} className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] p-5">
+                    <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" /> {title}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {options.map(opt => {
+                        const isSel = selected.includes(opt);
+                        const canSelect = !isSel && selected.length >= max;
+                        return (
+                          <button
+                            key={opt}
+                            onClick={() => {
+                              if (isSel) { setSelected((p: string[]) => p.filter((v: string) => v !== opt)); }
+                              else if (!canSelect) { setSelected((p: string[]) => [...p, opt]); }
+                            }}
+                            disabled={canSelect}
+                            className={`py-3 px-2 rounded-2xl text-sm font-bold border-2 transition-all text-center ${
+                              isSel ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                                : canSelect ? "border-black/[0.04] dark:border-white/[0.04] text-black/20 dark:text-white/20 cursor-not-allowed"
+                                : "border-black/[0.07] dark:border-white/[0.07] text-black dark:text-white hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950"
+                            }`}
+                            data-testid={`meeting-opt-${opt}`}
+                          >
+                            {opt}
+                            {isSel && <Check className="w-3 h-3 mx-auto mt-1 opacity-70" />}
                           </button>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-black/40 dark:text-white/40">{lang === "ar" ? "خصم من Qirox Pay" : "Qirox Pay deduction"}</span>
-                          <span className="text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1">- {effectiveWalletAmt.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
-                        </div>
-                        {fullyPaidByWallet ? (
-                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200/50 dark:border-green-700/30 rounded-2xl p-3 text-center">
-                            <p className="text-green-700 dark:text-green-400 text-xs font-bold">{lang === "ar" ? "سيتم سداد الطلب بالكامل من Qirox Pay" : "Order fully paid via Qirox Pay"}</p>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between text-sm pt-1 border-t border-cyan-100 dark:border-cyan-800/50">
-                            <span className="font-semibold text-black/60 dark:text-white/60">{lang === "ar" ? "المتبقي بالتحويل" : "Remaining via transfer"}</span>
-                            <span className="font-black text-black dark:text-white flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={12} className="opacity-70" /></span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-black/30 dark:text-white/30 mt-3 text-center">
+                      {selected.length}/{max} {lang === "ar" ? "تم اختيارهم" : "selected"}
+                    </p>
+                  </div>
+                ))}
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                    <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+                    {lang === "ar"
+                      ? "سيتواصل معك فريق QIROX لتأكيد موعد الاجتماع خلال 24 ساعة بعد إتمام الدفع."
+                      : "The QIROX team will contact you to confirm the meeting within 24 hours after payment."}
+                  </p>
+                </div>
+
+                {/* Order recap */}
+                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+                  <div className="px-5 py-4 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.05] dark:border-white/[0.05]">
+                    <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-wider">{lang === "ar" ? "ملخص الطلب" : "Order Summary"}</p>
+                  </div>
+                  <div className="px-5 py-4 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-black dark:text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Plan`}</span>
+                    <span className="font-black text-black dark:text-white flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={11} className="opacity-60" /></span>
                   </div>
                 </div>
 
-                {/* Bank Transfer Card - Credit card style */}
-                {!fullyPaidByWallet && (
-                <div className="relative rounded-3xl overflow-hidden">
-                  <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 p-6 text-white relative">
-                    <div className="absolute inset-0 opacity-10">
-                      <div style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px", width: "100%", height: "100%" }} />
-                    </div>
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-300/20 rounded-full blur-2xl" />
-
-                    <div className="flex items-center justify-between mb-6 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <BanknoteIcon className="w-5 h-5 text-white/70" />
-                        <span className="text-white/70 text-sm font-medium">تحويل بنكي</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-white/50 text-xs">المبلغ المطلوب</span>
-                        <p className="text-white font-black text-xl flex items-center gap-1">{remainingAfterWallet.toLocaleString()} <SARIcon size={15} className="opacity-70" /></p>
-                        {effectiveWalletAmt > 0 && (
-                          <p className="text-white/40 text-xs line-through flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={10} className="opacity-70" /></p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 relative z-10">
-                      <div className="bg-white/10 rounded-2xl px-4 py-3 flex justify-between items-center">
-                        <span className="text-white/55 text-xs">البنك</span>
-                        <span className="text-white font-bold text-sm">{bank.bankName}</span>
-                      </div>
-                      <div className="bg-white/10 rounded-2xl px-4 py-3 flex justify-between items-center">
-                        <span className="text-white/55 text-xs">المستفيد</span>
-                        <span className="text-white font-bold text-sm">{bank.beneficiaryName}</span>
-                      </div>
-                      <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-                        <span className="text-white/55 text-xs shrink-0">IBAN</span>
-                        <span className="text-white font-mono font-bold text-sm truncate" dir="ltr">{bank.iban}</span>
-                        <button onClick={() => { navigator.clipboard.writeText(bank.iban); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2500); }}
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all shrink-0 ${copiedIban ? "bg-green-400 text-white" : "bg-white/20 text-white hover:bg-white/30"}`}
-                          data-testid="button-copy-iban-step5">
-                          {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 bg-amber-400/20 border border-amber-300/30 rounded-2xl p-3.5 relative z-10">
-                      <p className="text-amber-200 text-xs leading-relaxed">
-                        ⚠️ {lang === "ar" ? "حوّل المبلغ أولاً، ثم ارفع صورة الإيصال بعد إرسال الطلب" : "Transfer the amount first, then upload your payment receipt after submitting"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                )}
-
-                {/* Upload Receipt - only when bank transfer is needed */}
-                {!fullyPaidByWallet && (
-                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] p-6 shadow-sm">
-                  <FileUploadField
-                    label={lang === "ar" ? "إيصال التحويل البنكي (اختياري الآن)" : "Transfer Receipt (optional now)"}
-                    field="paymentProof" files={uploadedFiles.paymentProof}
-                    onUpload={handleFileUpload} onRemove={handleFileRemove} />
-                </div>
-                )}
               </div>
             )}
           </motion.div>
@@ -1719,11 +1549,20 @@ export default function OrderFlow() {
               {lang === "ar" ? <>التالي <ArrowLeft className="w-4 h-4" /></> : <>Next <ArrowRight className="w-4 h-4" /></>}
             </Button>
           ) : (
-            <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}
-              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-70" data-testid="button-submit">
-              {submitMutation.isPending
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جاري الإرسال..." : "Submitting..."}</>
-                : <>{lang === "ar" ? "إرسال الطلب" : "Submit Order"} {lang === "ar" ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}</>}
+            <Button
+              onClick={() => {
+                const wizardData = {
+                  planTier: selectedPlan, planPrice, planSegment: segmentFromUrl, planPeriod: periodFromUrl,
+                  selectedAddons, deviceCart, deviceBundles, formData,
+                  uploadedFiles: Object.fromEntries(Object.entries(uploadedFiles).map(([k, v]) => [k, v.map((f: any) => f.url)])),
+                  meetingSlots, meetingDays, grandTotal,
+                  businessName: formData.businessName, sector: formData.sector,
+                };
+                sessionStorage.setItem("qiroxWizardData", JSON.stringify(wizardData));
+                setLocation("/checkout");
+              }}
+              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30" data-testid="button-submit">
+              {lang === "ar" ? <>الانتقال للدفع <ArrowLeft className="w-4 h-4" /></> : <>Proceed to Payment <ArrowRight className="w-4 h-4" /></>}
             </Button>
           )}
         </div>

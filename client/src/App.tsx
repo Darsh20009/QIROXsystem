@@ -55,6 +55,7 @@ const AdminShipping = lazy(() => import("@/pages/AdminShipping"));
 const AdminCountries = lazy(() => import("@/pages/AdminCountries"));
 const Devices = lazy(() => import("@/pages/Devices"));
 const Cart = lazy(() => import("@/pages/Cart"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
 const InternalGate = lazy(() => import("@/pages/InternalGate"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
@@ -278,6 +279,7 @@ function AdminRouter() {
         <Route path="/sales/marketing" component={SalesMarketing} />
         <Route path="/payment-history" component={PaymentHistory} />
         <Route path="/cart" component={Cart} />
+        <Route path="/checkout" component={Checkout} />
         <Route path="/inbox" component={Inbox} />
         <Route path="/groups/:id" component={GroupChat} />
         <Route path="/groups" component={GroupChat} />

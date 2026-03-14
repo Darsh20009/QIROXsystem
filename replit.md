@@ -10,6 +10,36 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 14, 2026 - Session 49)
+
+### Checkout & Bank Transfer Rejection Notification System
+
+**New Checkout Page (client/src/pages/Checkout.tsx):**
+- Separate 3-step page at `/checkout`: Address → Payment → Confirmation
+- Step 1: Recipient name/phone, Saudi city picker, district/street, national address, OpenStreetMap geolocation
+- Step 2: Multi-method payment — Wallet (PIN), Qirox Card (visual + PIN), Bank Transfer (IBAN copy + receipt upload), PayPal, coupon code
+- Step 3: Success confirmation or bank transfer waiting state with re-upload
+
+**OrderFlow.tsx Step 5 Rebuilt:**
+- Step 5 is now Meeting Scheduling (replaces payment): pick 6 time slots + 6 day preferences
+- Submit saves wizard data to `sessionStorage("qiroxWizardData")` and navigates to `/checkout`
+- Checkout reads wizard data from sessionStorage, includes meeting preferences in order notes
+
+**Bank Transfer Rejection Notification System:**
+- `server/models.ts`: Added `paymentStatus` (pending/approved/rejected) and `paymentRejectionReason` to Order model
+- `server/routes.ts`:
+  - `POST /api/admin/orders/:id/reject-transfer` — sets paymentStatus=rejected, sends push/DB/email notification to client
+  - `POST /api/admin/orders/:id/approve-transfer` — sets paymentStatus=approved, notifies client
+  - `PATCH /api/orders/:id/proof` — now resets paymentStatus to pending when client re-uploads proof
+- `client/src/pages/AdminOrders.tsx`:
+  - New "قبول التحويل" (green) and "رفض التحويل" (red) buttons in payment proof section
+  - Reject opens a dialog to enter a reason
+  - Shows approved/rejected status badge in proof section
+- `client/src/pages/Dashboard.tsx` (client):
+  - Red alert banner "تم رفض إيصال التحويل" shows rejected orders with reason + re-upload button
+  - Inline "رُفع الإيصال" (red) and "تحويل مقبول" (green) badges in orders timeline
+  - Re-upload reuses existing proof upload mechanism and resets status to pending
+
 ## Latest Changes (Mar 13, 2026 - Session 48)
 
 ### 6 Major New Platform Features

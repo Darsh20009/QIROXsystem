@@ -118,6 +118,8 @@ const orderSchema = new mongoose.Schema({
   // Payment
   paymentMethod: { type: String, enum: ["bank_transfer", "paypal", "paypal_card", "wallet", "mixed", "stc_pay", "apple_pay", "cash", "other"] },
   paymentProofUrl: String,
+  paymentStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  paymentRejectionReason: { type: String, default: "" },
   totalAmount: Number,
   isDepositPaid: { type: Boolean, default: false },
   requirements: { type: Map, of: mongoose.Schema.Types.Mixed },

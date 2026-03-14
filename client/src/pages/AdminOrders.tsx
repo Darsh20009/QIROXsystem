@@ -31,6 +31,8 @@ interface OrderData {
   totalAmount?: number;
   paymentMethod?: string;
   paymentProofUrl?: string;
+  paymentStatus?: string;
+  paymentRejectionReason?: string;
   isDepositPaid?: boolean;
   projectType?: string;
   sector?: string;
@@ -105,6 +107,8 @@ export default function AdminOrders() {
   const [deliveryForm, setDeliveryForm] = useState({ videoUrl: "", files: "" });
   const [phoneReqOpen, setPhoneReqOpen] = useState(false);
   const [phoneReqNotes, setPhoneReqNotes] = useState("");
+  const [rejectTransferOpen, setRejectTransferOpen] = useState(false);
+  const [rejectTransferReason, setRejectTransferReason] = useState("");
 
   const { data: orders, isLoading } = useQuery<OrderData[]>({
     queryKey: ["/api/admin/orders"]
@@ -606,14 +610,64 @@ export default function AdminOrders() {
                           }}
                         />
                         {selectedOrder.paymentProofUrl && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full mt-2 text-xs gap-2"
-                            onClick={() => window.open(selectedOrder.paymentProofUrl, "_blank")}
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            عرض الإيصال الحالي
-                          </Button>
+                          <div className="mt-2 space-y-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full text-xs gap-2"
+                              onClick={() => window.open(selectedOrder.paymentProofUrl, "_blank")}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              عرض الإيصال الحالي
+                            </Button>
+                            {selectedOrder.paymentStatus !== "approved" && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
+                                  data-testid="button-approve-transfer"
+                                  onClick={async () => {
+                                    try {
+                                      await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/approve-transfer`, {});
+                                      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+                                      setSelectedOrder({ ...selectedOrder, paymentStatus: "approved", isDepositPaid: true });
+                                      toast({ title: "تمت الموافقة على التحويل" });
+                                    } catch { toast({ title: "فشل", variant: "destructive" }); }
+                                  }}
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  قبول التحويل
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs gap-1.5 border-red-200 text-red-700 hover:bg-red-50"
+                                  data-testid="button-reject-transfer"
+                                  onClick={() => setRejectTransferOpen(true)}
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  رفض التحويل
+                                </Button>
+                              </div>
+                            )}
+                            {selectedOrder.paymentStatus === "approved" && (
+                              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
+                                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <p className="text-xs font-semibold text-green-700">تم قبول التحويل</p>
+                              </div>
+                            )}
+                            {selectedOrder.paymentStatus === "rejected" && (
+                              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
+                                <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                <div>
+                                  <p className="text-xs font-semibold text-red-700">تم رفض التحويل</p>
+                                  {selectedOrder.paymentRejectionReason && (
+                                    <p className="text-[10px] text-red-600 mt-0.5">{selectedOrder.paymentRejectionReason}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
 
@@ -1387,6 +1441,55 @@ export default function AdminOrders() {
               >
                 {phoneReqMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 رفع الطلب
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Bank Transfer Dialog */}
+      <Dialog open={rejectTransferOpen} onOpenChange={open => { setRejectTransferOpen(open); if (!open) setRejectTransferReason(""); }}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-red-500" />
+              رفض إيصال التحويل
+            </DialogTitle>
+            <DialogDescription>
+              سيتم إرسال إشعار للعميل بسبب الرفض وطلب إعادة رفع إيصال صحيح
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">سبب الرفض</label>
+              <Textarea
+                value={rejectTransferReason}
+                onChange={e => setRejectTransferReason(e.target.value)}
+                placeholder="مثال: الإيصال غير واضح، المبلغ غير متطابق، تاريخ منتهي..."
+                className="resize-none text-sm"
+                rows={3}
+                data-testid="textarea-reject-transfer-reason"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRejectTransferOpen(false)}>إلغاء</Button>
+              <Button
+                className="bg-red-500 hover:bg-red-600 text-white gap-2"
+                data-testid="button-confirm-reject-transfer"
+                onClick={async () => {
+                  if (!selectedOrder) return;
+                  try {
+                    await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/reject-transfer`, { reason: rejectTransferReason || "إيصال التحويل غير صحيح" });
+                    queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+                    setSelectedOrder({ ...selectedOrder, paymentStatus: "rejected", paymentRejectionReason: rejectTransferReason || "إيصال التحويل غير صحيح" });
+                    setRejectTransferOpen(false);
+                    setRejectTransferReason("");
+                    toast({ title: "تم رفض التحويل وإرسال إشعار للعميل" });
+                  } catch { toast({ title: "فشل الرفض", variant: "destructive" }); }
+                }}
+              >
+                <XCircle className="w-4 h-4" />
+                تأكيد الرفض وإرسال إشعار
               </Button>
             </div>
           </div>

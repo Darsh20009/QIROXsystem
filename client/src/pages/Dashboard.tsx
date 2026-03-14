@@ -2475,6 +2475,56 @@ export default function Dashboard() {
             );
           })()}
 
+          {/* Rejected Bank Transfer Alert Banner */}
+          {(() => {
+            const rejectedOrders = (orders || []).filter((o: any) =>
+              o.paymentMethod === "bank_transfer" && o.paymentStatus === "rejected"
+            );
+            if (rejectedOrders.length === 0) return null;
+            return (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                className="col-span-full bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-700/30 rounded-2xl p-4 mb-2" dir="rtl">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center shrink-0">
+                    <XCircle className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-red-800 dark:text-red-300">{L ? "تم رفض إيصال التحويل" : "Transfer Proof Rejected"}</p>
+                    <p className="text-[10px] text-red-600 dark:text-red-500">{L ? "يرجى رفع إيصال تحويل صحيح" : "Please upload a valid bank transfer receipt"}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {rejectedOrders.map((o: any) => (
+                    <div key={o.id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-3 py-2.5 border border-red-100 dark:border-red-800/30">
+                      <div>
+                        <p className="text-xs font-bold text-black dark:text-white">طلب #{String(o.id)?.slice(-6)}</p>
+                        {o.paymentRejectionReason && (
+                          <p className="text-[10px] text-red-500 mt-0.5">{o.paymentRejectionReason}</p>
+                        )}
+                        <p className="text-[10px] text-black/40 dark:text-white/40 flex items-center gap-1">{o.totalAmount ? <><span>{Number(o.totalAmount).toLocaleString()}</span> <SARIcon size={8} className="opacity-50" /></> : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {uploadProofMutation.isPending && uploadingProofOrderId === String(o.id)
+                          ? <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                          : (
+                            <button
+                              onClick={() => { setUploadingProofOrderId(String(o.id)); proofFileRef.current?.click(); }}
+                              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                              data-testid={`button-reupload-proof-${o.id}`}
+                            >
+                              <Upload className="w-3 h-3" />
+                              {L ? "إعادة رفع الإيصال" : "Re-upload Proof"}
+                            </button>
+                          )
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })()}
+
           {/* Orders + Mod Requests Column */}
           <div className="space-y-5">
             {/* Orders Timeline */}
@@ -2513,6 +2563,17 @@ export default function Dashboard() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
+                              {order.paymentStatus === "rejected" && order.paymentMethod === "bank_transfer" && (
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/30 flex items-center gap-1">
+                                  <XCircle className="w-2.5 h-2.5" />
+                                  {L ? "رُفع الإيصال" : "Proof Rejected"}
+                                </span>
+                              )}
+                              {order.paymentStatus === "approved" && order.paymentMethod === "bank_transfer" && (
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-green-100 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800/30">
+                                  {L ? "تحويل مقبول" : "Transfer OK"}
+                                </span>
+                              )}
                               <Badge className={`text-[9px] px-2 py-0.5 border ${st.bg} ${st.color}`}>{st.label}</Badge>
                               <button
                                 onClick={() => setClientSpecsOrderId(String(order.id))}

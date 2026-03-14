@@ -1122,6 +1122,71 @@ export async function registerRoutes(
     res.json(order);
   });
 
+  // Admin: reject bank transfer payment proof
+  app.post("/api/admin/orders/:id/reject-transfer", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { OrderModel, NotificationModel, UserModel } = await import("./models");
+      const { reason } = req.body;
+      const order = await OrderModel.findByIdAndUpdate(
+        req.params.id,
+        { $set: { paymentStatus: "rejected", paymentRejectionReason: reason || "إيصال التحويل غير صحيح" } },
+        { new: true }
+      );
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const clientUser = await UserModel.findById(order.userId).select("email fullName username");
+      const notifTitle = "تم رفض إيصال التحويل البنكي";
+      const notifBody = reason || "إيصال التحويل غير صحيح، يرجى إعادة رفع إيصال صحيح";
+      await NotificationModel.create({
+        userId: order.userId,
+        type: "payment",
+        title: notifTitle,
+        body: notifBody,
+        link: "/dashboard",
+        icon: "❌",
+      }).catch(console.error);
+      pushNotification(String(order.userId), { title: notifTitle, body: notifBody, icon: "❌", link: "/dashboard" });
+      sendPushToUser(String(order.userId), {
+        title: notifTitle,
+        body: notifBody,
+        icon: "/icon-192.png",
+        badge: "/favicon-32.png",
+        tag: `payment-rejected-${order._id}`,
+        data: { url: "/dashboard" },
+      }).catch(() => {});
+      if (clientUser?.email) {
+        sendOrderStatusEmail(clientUser.email, clientUser.fullName || clientUser.username, String(order._id), "payment_rejected").catch(console.error);
+      }
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "فشل الرفض" }); }
+  });
+
+  // Admin: approve bank transfer payment proof
+  app.post("/api/admin/orders/:id/approve-transfer", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { OrderModel, NotificationModel } = await import("./models");
+      const order = await OrderModel.findByIdAndUpdate(
+        req.params.id,
+        { $set: { paymentStatus: "approved", isDepositPaid: true } },
+        { new: true }
+      );
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      const notifTitle = "تمت الموافقة على إيصال التحويل";
+      const notifBody = "تم التحقق من دفعتك وقبولها";
+      await NotificationModel.create({
+        userId: order.userId,
+        type: "payment",
+        title: notifTitle,
+        body: notifBody,
+        link: "/dashboard",
+        icon: "✅",
+      }).catch(console.error);
+      pushNotification(String(order.userId), { title: notifTitle, body: notifBody, icon: "✅", link: "/dashboard" });
+      res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "فشل القبول" }); }
+  });
+
   // ═══════════════════════════════════════════════
   // === ORDER EXPENSES & PROFIT TRACKING ===
   // ═══════════════════════════════════════════════
@@ -1455,6 +1520,8 @@ export async function registerRoutes(
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
       order.paymentProofUrl = paymentProofUrl;
+      order.paymentStatus = "pending";
+      order.paymentRejectionReason = "";
       await order.save();
       // Notify admins — use forAdmins flag (userId: "admin" is invalid ObjectId)
       await NotificationModel.create({

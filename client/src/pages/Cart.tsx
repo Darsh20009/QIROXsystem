@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Cart, CartItem } from "@shared/schema";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -87,6 +87,7 @@ interface UpFile { url: string; filename: string; size: number; }
 export default function Cart() {
   const { data: user } = useUser();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   /* add-on dialog states */
   const [coupon, setCoupon] = useState("");
@@ -901,7 +902,7 @@ export default function Cart() {
                 <Button
                   className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all"
                   disabled={items.length === 0}
-                  onClick={() => { setPreCheckoutStep(1); setPreCheckoutOpen(true); }}
+                  onClick={() => navigate("/checkout")}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
                   إتمام الطلب الآن
@@ -933,7 +934,7 @@ export default function Cart() {
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
-              onClick={() => { setPreCheckoutStep(1); setPreCheckoutOpen(true); }}
+              onClick={() => navigate("/checkout")}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
               أكمل الطلب
