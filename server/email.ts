@@ -760,6 +760,7 @@ interface QMeetEmailData {
   title: string;
   scheduledAt: Date;
   meetingLink: string;
+  joinCode?: string;
   hostName: string;
   durationMinutes?: number;
 }
@@ -769,17 +770,19 @@ export async function sendQMeetInviteEmail(to: string, name: string, data: QMeet
     weekday: "long", year: "numeric", month: "long", day: "numeric",
     hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh"
   });
+  const tableRows: [string, string][] = [
+    ["عنوان الاجتماع", data.title],
+    ["موعد الاجتماع", dateStr],
+    ["المدة المتوقعة", `${data.durationMinutes || 60} دقيقة`],
+    ["المضيف", data.hostName],
+  ];
+  if (data.joinCode) tableRows.push(["كود الانضمام", `<strong style="font-size:18px;letter-spacing:3px;color:#2563eb">${data.joinCode}</strong>`]);
   const html = baseTemplate(
     tag("QMeet — دعوة اجتماع") +
     title(`📅 دعوة: ${data.title}`) +
     text(`مرحباً ${cleanName(name)}، تمت دعوتك للمشاركة في اجتماع عبر منصة QMeet.`) +
-    infoTable([
-      ["عنوان الاجتماع", data.title],
-      ["موعد الاجتماع", dateStr],
-      ["المدة المتوقعة", `${data.durationMinutes || 60} دقيقة`],
-      ["المضيف", data.hostName],
-    ]) +
-    text("انضم للاجتماع عبر الرابط التالي. ستصلك رسالة تذكيرية قبل الاجتماع بدقيقتين.") +
+    infoTable(tableRows) +
+    text("انضم للاجتماع مباشرةً عبر الرابط التالي. ستصلك رسالة تذكيرية قبل الاجتماع بدقيقتين.") +
     btn(data.meetingLink, "🎥 انضم للاجتماع الآن") +
     highlight("يدعم الاجتماع: الفيديو والصوت، مشاركة الشاشة، السبورة التفاعلية.") +
     text("إذا لم تتوقع هذا الإيميل يمكنك تجاهله.", "color:#9ca3af;font-size:12px;")

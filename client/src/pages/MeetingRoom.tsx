@@ -979,9 +979,10 @@ export default function MeetingRoom() {
     let captureError: any = null;
 
     // Build ordered constraint list — try best first, fallback second
+    // iOS Safari 18+: captures current tab only; displaySurface constraint is NOT supported
+    // Android Chrome: video:true works; audio is not capturable
     const constraintList: DisplayMediaStreamOptions[] = isIOS
       ? [
-          { video: { displaySurface: "browser" } as MediaTrackConstraints, audio: false },
           { video: true, audio: false },
         ]
       : isAndroid
@@ -1043,15 +1044,19 @@ export default function MeetingRoom() {
     const newStream = new MediaStream([...(audio ? [audio] : []), screenTrack]);
 
     const peersNeedingRenegotiation: string[] = [];
-    pcsRef.current.forEach((pc, peerId) => {
+    for (const [peerId, pc] of pcsRef.current) {
       const sender = pc.getSenders().find(s => s.track?.kind === "video");
       if (sender) {
-        sender.replaceTrack(screenTrack);
+        await sender.replaceTrack(screenTrack).catch(() => {
+          // replaceTrack failed — try addTrack + renegotiate instead
+          pc.addTrack(screenTrack, newStream);
+          peersNeedingRenegotiation.push(peerId);
+        });
       } else {
         pc.addTrack(screenTrack, newStream);
         peersNeedingRenegotiation.push(peerId);
       }
-    });
+    }
 
     localStreamRef.current = newStream;
     setLocalStream(newStream);
@@ -1452,6 +1457,70 @@ export default function MeetingRoom() {
           </button>
         </div>
       </div>
+
+      {/* ── Join Request Alert Banner (host only) ─────────────────────────── */}
+      {isHost && pendingJoinRequests.length > 0 && (
+        <div className="shrink-0 z-50 px-3 py-2" style={{ background: "rgba(245,158,11,0.12)", borderBottom: "1px solid rgba(245,158,11,0.25)" }}>
+          <div className="flex items-center gap-3 max-w-3xl mx-auto">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 animate-bounce" style={{ background: "rgba(245,158,11,0.2)" }}>
+              <Bell className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-200 text-xs font-bold leading-tight">
+                {pendingJoinRequests.length === 1
+                  ? `${pendingJoinRequests[0].userName} يطلب الانضمام للاجتماع`
+                  : `${pendingJoinRequests.length} أشخاص ينتظرون الموافقة`}
+              </p>
+              {pendingJoinRequests.length === 1 && pendingJoinRequests[0].userPhone && (
+                <p className="text-amber-400/60 text-[10px]">{pendingJoinRequests[0].userPhone}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  const req = pendingJoinRequests[0];
+                  try {
+                    await apiRequest("PATCH", `/api/qmeet/meetings/${(meeting as any)._id || (meeting as any).id}/join-requests/${req.userId}`, { action: "approve" });
+                    setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                    toast({ title: "✅ تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
+                  } catch { toast({ title: "خطأ في الموافقة", variant: "destructive" }); }
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-green-300 transition-all"
+                style={{ background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.3)" }}
+                data-testid="button-banner-approve"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                قبول
+              </button>
+              <button
+                onClick={async () => {
+                  const req = pendingJoinRequests[0];
+                  try {
+                    await apiRequest("PATCH", `/api/qmeet/meetings/${(meeting as any)._id || (meeting as any).id}/join-requests/${req.userId}`, { action: "reject" });
+                    setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                  } catch { toast({ title: "خطأ في الرفض", variant: "destructive" }); }
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-red-300 transition-all"
+                style={{ background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.3)" }}
+                data-testid="button-banner-reject"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                رفض
+              </button>
+              {pendingJoinRequests.length > 1 && (
+                <button
+                  onClick={() => setActivePanel("requests")}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-300 transition-all"
+                  style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.25)" }}
+                  data-testid="button-banner-view-all"
+                >
+                  عرض الكل ({pendingJoinRequests.length})
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
@@ -1859,53 +1928,67 @@ export default function MeetingRoom() {
                       <Bell className="w-8 h-8" />
                       <p className="text-xs">لا توجد طلبات انضمام</p>
                     </div>
-                  ) : pendingJoinRequests.map((req) => (
-                    <div key={req._tempId || req.userId} className="bg-white/[0.06] rounded-xl p-3 space-y-2.5 border border-white/[0.08] mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-400 font-bold text-sm">
-                          {(req.userName || "?").charAt(0).toUpperCase()}
+                  ) : pendingJoinRequests.map((req) => {
+                    const meetingId = (meeting as any)._id || (meeting as any).id;
+                    const reqTime = req.requestedAt
+                      ? new Date(req.requestedAt).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })
+                      : "";
+                    return (
+                      <div key={req._tempId || req.userId} className="rounded-xl p-3 space-y-2.5 mb-2" style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.18)" }}>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-sm" style={{ background: "rgba(245,158,11,0.2)", color: "#fbbf24" }}>
+                            {(req.userName || "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-xs font-bold truncate">{req.userName}</p>
+                            {req.userEmail && <p className="text-white/30 text-[10px] truncate">{req.userEmail}</p>}
+                            {req.userPhone && (
+                              <p className="text-amber-400/70 text-[10px] font-mono">{req.userPhone}</p>
+                            )}
+                            {reqTime && (
+                              <p className="text-white/20 text-[10px]">طلب الدخول: {reqTime}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-xs font-bold truncate">{req.userName}</p>
-                          {req.userEmail && <p className="text-white/30 text-[10px] truncate">{req.userEmail}</p>}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await apiRequest("PATCH", `/api/qmeet/meetings/${meetingId}/join-requests/${req.userId}`, { action: "approve" });
+                                setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                                toast({ title: "✅ تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
+                              } catch (e: any) {
+                                toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                            style={{ background: "rgba(34,197,94,0.18)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }}
+                            data-testid={`button-approve-${req.userId}`}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            قبول
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await apiRequest("PATCH", `/api/qmeet/meetings/${meetingId}/join-requests/${req.userId}`, { action: "reject" });
+                                setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
+                                toast({ title: "تم الرفض" });
+                              } catch (e: any) {
+                                toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                            style={{ background: "rgba(239,68,68,0.18)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}
+                            data-testid={`button-reject-${req.userId}`}
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            رفض
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={async () => {
-                            try {
-                              await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "approve" });
-                              setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
-                              toast({ title: "تمت الموافقة", description: `وافقت على انضمام ${req.userName}` });
-                            } catch (e: any) {
-                              toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
-                            }
-                          }}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                          data-testid={`button-approve-${req.userId}`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          قبول
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await apiRequest("PATCH", `/api/qmeet/meetings/${meeting._id || meeting.id}/join-requests/${req.userId}`, { action: "reject" });
-                              setPendingJoinRequests(prev => prev.filter(r => r.userId !== req.userId));
-                              toast({ title: "تم الرفض" });
-                            } catch (e: any) {
-                              toast({ title: "خطأ", description: e?.message || "فشل", variant: "destructive" });
-                            }
-                          }}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                          data-testid={`button-reject-${req.userId}`}
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          رفض
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

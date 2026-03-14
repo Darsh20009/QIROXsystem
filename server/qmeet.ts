@@ -583,9 +583,12 @@ export function registerQMeetRoutes(app: Express) {
         if (existing.status === "rejected") return res.status(403).json({ message: "تم رفض طلبك من قِبل المضيف" });
       }
 
+      const userPhone = isLoggedIn ? ((req.user as any).phone || "") : (req.body.guestPhone || "");
+      const requestedAt = new Date().toISOString();
+
       // Add new request
       await QMeetingModel.findByIdAndUpdate(meeting._id, {
-        $push: { joinRequests: { userId, userName, userEmail, status: "pending", requestedAt: new Date() } }
+        $push: { joinRequests: { userId, userName, userEmail, userPhone, status: "pending", requestedAt: new Date() } }
       });
 
       // Notify host via WebSocket + device push
@@ -596,6 +599,8 @@ export function registerQMeetRoutes(app: Express) {
         userId,
         userName,
         userEmail,
+        userPhone,
+        requestedAt,
         message: `${userName} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
       });
       sendPushToUser(String(meeting.hostId), {
@@ -724,12 +729,13 @@ export function registerQMeetRoutes(app: Express) {
         return res.status(400).json({ message: "يجب إدخال بريد إلكتروني أو اختيار مستخدم واحد على الأقل" });
       }
 
-      const fullLink = `${req.protocol}://${req.get("host")}/join?code=${meeting.joinCode}`;
+      const fullLink = fullMeetLink(meeting.meetingLink);
       const hostName = req.user.fullName || req.user.username;
       const inviteData = {
         title: meeting.title,
         scheduledAt: meeting.scheduledAt,
         meetingLink: fullLink,
+        joinCode: meeting.joinCode,
         hostName,
         durationMinutes: meeting.durationMinutes,
       };
