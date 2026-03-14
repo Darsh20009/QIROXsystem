@@ -45,6 +45,7 @@ interface ShippingProvider {
 }
 
 interface PlanBundle {
+  linkedPlanId?: string;
   planNameAr: string;
   planDescAr: string;
   planTier: string;
@@ -55,7 +56,7 @@ interface PlanBundle {
 }
 
 const emptyBundle: PlanBundle = {
-  planNameAr: "", planDescAr: "", planTier: "custom",
+  linkedPlanId: "", planNameAr: "", planDescAr: "", planTier: "custom",
   planSegment: "", customPrice: "", isFree: false, features: "",
 };
 
@@ -167,6 +168,7 @@ export default function AdminProducts() {
       requiresShipping: (p as any).requiresShipping ?? false,
       shippingProviders: providers,
       planBundles: ((p as any).planBundles || []).map((b: any) => ({
+        linkedPlanId: b.linkedPlanId || "",
         planNameAr: b.planNameAr || "",
         planDescAr: b.planDescAr || "",
         planTier: b.planTier || "custom",
@@ -191,6 +193,7 @@ export default function AdminProducts() {
       customOutsideCityPrice: sp.customOutsideCityPrice === "" ? undefined : Number(sp.customOutsideCityPrice),
     }));
     const cleanedBundles = form.planBundles.map(b => ({
+      linkedPlanId: b.linkedPlanId || undefined,
       planNameAr: b.planNameAr,
       planDescAr: b.planDescAr || undefined,
       planTier: b.planTier,
@@ -518,12 +521,15 @@ export default function AdminProducts() {
                 <div className="space-y-4">
                   {form.planBundles.map((bundle, idx) => {
                     const TierIcon = TIER_ICONS[bundle.planTier] || LayoutGrid;
+                    const linkedPlan = (pricingPlans || []).find((p: any) => p._id === bundle.linkedPlanId || p.id === bundle.linkedPlanId);
                     return (
                       <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                         className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl overflow-hidden"
                         data-testid={`bundle-card-${idx}`}>
                         <div className={`h-1 bg-gradient-to-r ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"}`} />
                         <div className="p-4 space-y-3">
+
+                          {/* Header row */}
                           <div className="flex items-center gap-2 justify-between">
                             <div className="flex items-center gap-2">
                               <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_COLORS[bundle.planTier] || "from-blue-400 to-indigo-500"} flex items-center justify-center`}>
@@ -539,6 +545,67 @@ export default function AdminProducts() {
                             </button>
                           </div>
 
+                          {/* ── Plan Picker from System ── */}
+                          <div className="rounded-xl border border-violet-200 dark:border-violet-700/50 bg-violet-50/60 dark:bg-violet-900/15 p-3 space-y-2">
+                            <p className="text-[10px] font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5 uppercase tracking-wide">
+                              <Crown className="w-3 h-3" /> اختر من باقات النظام (يملأ التفاصيل تلقائياً)
+                            </p>
+                            <Select
+                              value={bundle.linkedPlanId || "__none__"}
+                              onValueChange={v => {
+                                if (v === "__none__") {
+                                  setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, linkedPlanId: "" } : b) }));
+                                  return;
+                                }
+                                const plan = (pricingPlans || []).find((p: any) => (p._id || p.id) === v);
+                                if (!plan) return;
+                                setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? {
+                                  ...b,
+                                  linkedPlanId: v,
+                                  planNameAr: plan.nameAr || plan.name || b.planNameAr,
+                                  planDescAr: plan.descriptionAr || plan.description || b.planDescAr,
+                                  planTier: plan.tier || b.planTier,
+                                  planSegment: plan.segment || b.planSegment,
+                                  features: Array.isArray(plan.featuresAr) && plan.featuresAr.length > 0
+                                    ? plan.featuresAr.join("، ")
+                                    : (Array.isArray(plan.features) ? plan.features.join("، ") : b.features),
+                                } : b) }));
+                              }}
+                              data-testid={`select-linked-plan-${idx}`}
+                            >
+                              <SelectTrigger className="h-9 text-sm bg-white dark:bg-gray-900">
+                                <SelectValue placeholder="— اختر باقة من النظام —" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">— بدون ربط (يدوي) —</SelectItem>
+                                {(pricingPlans || []).filter((p: any) => p.status !== "archived").map((p: any) => {
+                                  const PIcon = TIER_ICONS[p.tier] || LayoutGrid;
+                                  return (
+                                    <SelectItem key={p._id || p.id} value={p._id || p.id}>
+                                      <div className="flex items-center gap-2">
+                                        <PIcon className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{p.nameAr || p.name}</span>
+                                        {p.segment && p.segment !== "general" && (
+                                          <span className="text-[10px] text-black/40 dark:text-white/40">({p.segment})</span>
+                                        )}
+                                        <span className="text-[10px] font-bold text-black/30 dark:text-white/30 mr-auto">
+                                          {p.lifetimePrice > 0 ? `${p.lifetimePrice?.toLocaleString()} ر.س` : p.monthlyPrice > 0 ? `${p.monthlyPrice?.toLocaleString()}/شهر` : "مجاني"}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            {linkedPlan && (
+                              <p className="text-[10px] text-violet-600 dark:text-violet-400 flex items-center gap-1">
+                                <CheckSquare className="w-3 h-3" />
+                                تم ملء التفاصيل من باقة "{linkedPlan.nameAr || linkedPlan.name}" — يمكنك تعديلها أدناه
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Manual fields (auto-filled from plan, but editable) */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
                               <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">اسم الباقة (عربي) *</label>
@@ -561,22 +628,43 @@ export default function AdminProducts() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-green-500" />
-                              <span className="text-xs font-medium text-black/60 dark:text-white/60">الباقة مجانية</span>
+                          {/* Pricing section */}
+                          <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+                            <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03]">
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-green-500" />
+                                <div>
+                                  <p className="text-xs font-bold text-black/70 dark:text-white/70">الباقة مجانية عند شراء الجهاز</p>
+                                  <p className="text-[10px] text-black/35 dark:text-white/35">سيظهر للعميل "مجاناً" عند اختيار هذه الباقة</p>
+                                </div>
+                              </div>
+                              <Switch checked={bundle.isFree} onCheckedChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, isFree: v } : b) }))}
+                                data-testid={`switch-bundle-free-${idx}`} />
                             </div>
-                            <Switch checked={bundle.isFree} onCheckedChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, isFree: v } : b) }))}
-                              data-testid={`switch-bundle-free-${idx}`} />
+                            {!bundle.isFree && (
+                              <div className="p-3 border-t border-black/[0.06] dark:border-white/[0.06]">
+                                <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                  سعر الباقة مع الجهاز (<SARIcon size={8} className="opacity-60" />) *
+                                </label>
+                                <Input type="number" value={bundle.customPrice} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, customPrice: e.target.value === "" ? "" : Number(e.target.value) } : b) }))}
+                                  placeholder="0" className="h-9 text-sm" data-testid={`input-bundle-price-${idx}`} />
+                                {linkedPlan && (() => {
+                                  const origPrice = linkedPlan.lifetimePrice || linkedPlan.monthlyPrice || linkedPlan.price || 0;
+                                  const bundleNumPrice = bundle.customPrice === "" ? 0 : Number(bundle.customPrice);
+                                  if (origPrice > 0 && bundleNumPrice < origPrice) {
+                                    const saving = origPrice - bundleNumPrice;
+                                    return (
+                                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                                        <Sparkles className="w-3 h-3" />
+                                        السعر الأصلي للباقة {origPrice.toLocaleString()} ر.س — توفير {saving.toLocaleString()} ر.س
+                                      </p>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+                            )}
                           </div>
-
-                          {!bundle.isFree && (
-                            <div>
-                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 flex items-center gap-1">سعر الباقة (<SARIcon size={8} className="opacity-60" />) *</label>
-                              <Input type="number" value={bundle.customPrice} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, customPrice: e.target.value === "" ? "" : Number(e.target.value) } : b) }))}
-                                placeholder="0" className="h-9 text-sm" data-testid={`input-bundle-price-${idx}`} />
-                            </div>
-                          )}
 
                           <div>
                             <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">وصف الباقة</label>
