@@ -2388,6 +2388,67 @@ export async function registerRoutes(
     res.json(requests);
   });
 
+  // === WALLET PAYPAL TOP-UP ===
+  app.post("/api/wallet/topup-paypal/create", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { amount } = req.body;
+    if (!amount || Number(amount) < 1) return res.status(400).json({ error: "المبلغ غير صحيح (الحد الأدنى 1 ريال)" });
+    const sarAmount = Number(amount);
+    const SAR_TO_USD = 3.75;
+    const usdAmount = (sarAmount / SAR_TO_USD).toFixed(2);
+
+    try {
+      const { createPaypalOrder: _cp } = await import("./paypal");
+      req.body = {
+        amount: usdAmount,
+        currency: "USD",
+        intent: "CAPTURE",
+        return_url: `${req.protocol}://${req.get("host")}/client-wallet?paypal_wallet_return=1`,
+        cancel_url: `${req.protocol}://${req.get("host")}/client-wallet?paypal_wallet_cancel=1`,
+      };
+      return await _cp(req, res);
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message || "فشل إنشاء طلب PayPal" });
+    }
+  });
+
+  app.post("/api/wallet/topup-paypal/capture/:orderId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as User;
+    const { orderId } = req.params;
+    const { sarAmount } = req.body;
+
+    try {
+      const { capturePaypalOrderRaw } = await import("./paypal");
+      const captureData = await capturePaypalOrderRaw(orderId);
+
+      if (captureData?.status !== "COMPLETED") {
+        return res.status(400).json({ error: "لم يكتمل الدفع من PayPal" });
+      }
+
+      const amount = Number(sarAmount);
+      if (!amount || amount < 1) return res.status(400).json({ error: "المبلغ غير صالح" });
+
+      const { WalletTransactionModel, WalletTopupModel } = await import("./models");
+      await WalletTransactionModel.create({
+        userId: String(user.id), type: "credit", amount,
+        description: "شحن محفظة Qirox Pay - PayPal",
+        addedBy: String(user.id), note: `PayPal Order: ${orderId}`,
+      });
+      await atomicWalletCredit(String(user.id), amount);
+      await WalletTopupModel.create({
+        userId: String(user.id), amount, bankName: "PayPal",
+        bankRef: orderId, note: "شحن فوري عبر PayPal", status: "approved",
+        approvedAt: new Date(),
+      });
+
+      return res.json({ success: true, amount });
+    } catch (e: any) {
+      console.error("[wallet-paypal-capture]", e.message);
+      return res.status(500).json({ error: e.message || "فشل تأكيد الدفع" });
+    }
+  });
+
 
   // === CLIENT DATA REQUESTS ===
 

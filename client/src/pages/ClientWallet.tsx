@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import SARIcon from "@/components/SARIcon";
@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowUpRight, ArrowDownLeft,
   Clock, CreditCard, Eye, EyeOff, Copy, Share2, Lock, Plus, Building2,
-  CheckCircle2, XCircle, RefreshCw, Send, ChevronDown, ChevronUp, ShieldCheck
+  CheckCircle2, XCircle, RefreshCw, Send, ChevronDown, ChevronUp, ShieldCheck, Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -150,8 +150,13 @@ export default function ClientWallet() {
   // Modals
   const [pinModal, setPinModal] = useState(false);
   const [topupModal, setTopupModal] = useState(false);
+  const [paypalTopupModal, setPaypalTopupModal] = useState(false);
   const [shareModal, setShareModal] = useState(false);
   const [payOtpModal, setPayOtpModal] = useState(false);
+
+  // PayPal topup
+  const [paypalAmount, setPaypalAmount] = useState("");
+  const [paypalLoading, setPaypalLoading] = useState(false);
 
   // Forms
   const [pinForm, setPinForm] = useState({ currentPin: "", newPin: "", confirmPin: "" });
@@ -160,6 +165,72 @@ export default function ClientWallet() {
   const [shareStep, setShareStep] = useState<"form" | "otp">("form");
   const [shareOtp, setShareOtp] = useState("");
   const [shareResult, setShareResult] = useState<{ ownerName: string; maskedEmail: string } | null>(null);
+
+  // Handle PayPal wallet return/cancel
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isReturn = params.get("paypal_wallet_return") === "1";
+    const isCancel = params.get("paypal_wallet_cancel") === "1";
+    const token = params.get("token");
+
+    if (isReturn && token) {
+      window.history.replaceState({}, "", "/client-wallet");
+      const pendingSar = sessionStorage.getItem("paypal_wallet_sar");
+      sessionStorage.removeItem("paypal_wallet_sar");
+      if (!pendingSar) {
+        toast({ title: "لم يُعثر على مبلغ الشحن", variant: "destructive" });
+        return;
+      }
+      (async () => {
+        try {
+          const r = await fetch(`/api/wallet/topup-paypal/capture/${token}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ sarAmount: Number(pendingSar) }),
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "فشل تأكيد الدفع");
+          queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/wallet/card"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/wallet/topup-requests"] });
+          toast({ title: `✅ تم شحن محفظتك بـ ${Number(pendingSar).toLocaleString()} ريال عبر PayPal!` });
+          setActiveTab("topup");
+        } catch (e: any) {
+          toast({ title: e.message || "فشل تأكيد دفع PayPal", variant: "destructive" });
+        }
+      })();
+    } else if (isCancel) {
+      window.history.replaceState({}, "", "/client-wallet");
+      toast({ title: "تم إلغاء عملية الشحن عبر PayPal", variant: "destructive" });
+    }
+  }, []);
+
+  async function handlePaypalTopup() {
+    const amount = Number(paypalAmount);
+    if (!amount || amount < 1) {
+      toast({ title: "أدخل مبلغاً صحيحاً (الحد الأدنى 1 ريال)", variant: "destructive" });
+      return;
+    }
+    setPaypalLoading(true);
+    try {
+      const r = await fetch("/api/wallet/topup-paypal/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ amount }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "فشل إنشاء طلب PayPal");
+      const approveUrl = data.approveUrl || data.links?.find((l: any) => l.rel === "approve" || l.rel === "payer-action")?.href;
+      if (!approveUrl) throw new Error("لم يُعثر على رابط PayPal");
+      sessionStorage.setItem("paypal_wallet_sar", String(amount));
+      window.location.href = approveUrl;
+    } catch (e: any) {
+      setPaypalLoading(false);
+      toast({ title: e.message || "خطأ في PayPal", variant: "destructive" });
+    }
+  }
 
   const { data: walletData, isLoading: loadingWallet } = useQuery<WalletData>({ queryKey: ["/api/wallet"] });
   const { data: cardData, isLoading: loadingCard } = useQuery<CardData>({ queryKey: ["/api/wallet/card"] });
@@ -486,11 +557,31 @@ export default function ClientWallet() {
         {/* === TOPUP TAB === */}
         {activeTab === "topup" && (
           <div className="space-y-4">
+            {/* PayPal instant topup */}
+            <button
+              onClick={() => setPaypalTopupModal(true)}
+              data-testid="button-paypal-topup"
+              className="w-full rounded-2xl border-2 border-[#FFC439]/60 bg-gradient-to-br from-[#FFC439]/10 to-[#FFC439]/5 hover:from-[#FFC439]/20 hover:to-[#FFC439]/10 transition-all p-4 flex items-center gap-4 text-right"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#FFC439] flex items-center justify-center flex-shrink-0 shadow-sm">
+                <Zap className="w-6 h-6 text-[#003087]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-black text-[#003087] dark:text-[#FFC439]">شحن فوري عبر PayPal</p>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold px-2 py-0.5 rounded-full">فوري</span>
+                </div>
+                <p className="text-xs text-black/50 dark:text-white/40 mt-0.5">ادفع ببطاقتك أو حسابك في PayPal — يُضاف الرصيد تلقائياً</p>
+              </div>
+              <img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png" alt="PayPal" className="h-5 flex-shrink-0 opacity-80" />
+            </button>
+
+            {/* Bank transfer topup */}
             <Button onClick={() => setTopupModal(true)} className="w-full gap-2 text-white py-6"
               style={{ background: "linear-gradient(135deg,#0f172a,#1e3a5f)" }}
               data-testid="button-new-topup">
-              <Plus className="w-4 h-4 text-cyan-400" />
-              طلب شحن رصيد جديد
+              <Building2 className="w-4 h-4 text-cyan-400" />
+              شحن بتحويل بنكي (يحتاج موافقة)
             </Button>
 
             {loadingTopup ? (
@@ -592,6 +683,69 @@ export default function ClientWallet() {
               data-testid="button-confirm-pin">
               {setPinMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-cyan-400" />}
               حفظ كلمة المرور
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* === PayPal Topup Modal === */}
+      <Dialog open={paypalTopupModal} onOpenChange={v => { setPaypalTopupModal(v); if (!v) setPaypalAmount(""); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#FFC439]" />
+              شحن المحفظة عبر PayPal
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-xl bg-[#FFC439]/10 border border-[#FFC439]/30 p-4 flex items-start gap-3">
+              <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" alt="PayPal" className="h-5 rounded mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-[#003087] dark:text-[#FFC439]">دفع آمن وفوري</p>
+                <p className="text-xs text-black/50 dark:text-white/40 mt-0.5 leading-relaxed">
+                  ادفع ببطاقتك الائتمانية أو حسابك في PayPal — يُضاف الرصيد تلقائياً فور اكتمال الدفع.
+                </p>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-2 flex items-center gap-1">
+                المبلغ (<SARIcon size={10} className="opacity-60" />) <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                type="number" min="1" placeholder="مثال: 200"
+                value={paypalAmount}
+                onChange={e => setPaypalAmount(e.target.value)}
+                data-testid="input-paypal-amount"
+              />
+              {paypalAmount && Number(paypalAmount) > 0 && (
+                <p className="text-[11px] text-black/40 dark:text-white/30 mt-1.5 flex items-center gap-1">
+                  سيُخصم من PayPal: <span className="font-bold text-[#003087] dark:text-[#FFC439]">${(Number(paypalAmount) / 3.75).toFixed(2)}</span> (سعر صرف ثابت: 1$ = 3.75 ريال)
+                </p>
+              )}
+            </div>
+            <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] p-3 space-y-1.5">
+              {[
+                "سيتم تحويلك لصفحة PayPal الآمنة",
+                "بعد الدفع ستعود للمحفظة تلقائياً",
+                "يُضاف الرصيد فوراً بدون انتظار",
+              ].map((txt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                  <p className="text-xs text-black/50 dark:text-white/40">{txt}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setPaypalTopupModal(false); setPaypalAmount(""); }} className="text-xs">إلغاء</Button>
+            <Button
+              onClick={handlePaypalTopup}
+              disabled={paypalLoading || !paypalAmount || Number(paypalAmount) < 1}
+              data-testid="button-confirm-paypal-topup"
+              className="text-xs text-[#003087] font-bold gap-1.5 bg-[#FFC439] hover:bg-[#f0b429] border-0"
+            >
+              {paypalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              {paypalLoading ? "جاري التحويل..." : "ادفع عبر PayPal"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -170,6 +170,13 @@ export async function capturePaypalOrder(req: Request, res: Response) {
   }
 }
 
+export async function capturePaypalOrderRaw(orderID: string): Promise<any> {
+  await initPayPal();
+  if (!ordersController) throw new Error("PayPal not configured");
+  const { body } = await ordersController.captureOrder({ id: orderID, prefer: "return=minimal" });
+  return typeof body === "string" ? JSON.parse(body) : body;
+}
+
 export async function loadPaypalDefault(req: Request, res: Response) {
   try {
     const clientToken = await getClientToken();
