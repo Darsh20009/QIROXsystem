@@ -11,8 +11,9 @@ import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation, Phone } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -649,6 +650,71 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
 const SPLASH_KEY = "qirox_splash_v1";
 
+// ── PHONE REQUIRED MODAL ──────────────────────────────────────────────────────
+function PhoneRequiredModal({ onDone }: { onDone: () => void }) {
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const mutation = useMutation({
+    mutationFn: async (ph: string) => {
+      const res = await apiRequest("PATCH", "/api/profile/me", { phone: ph });
+      if (!res.ok) throw new Error("فشل الحفظ");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      onDone();
+    },
+    onError: () => setError("حدث خطأ، تأكد من الرقم وحاول مجدداً"),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const cleaned = phone.trim();
+    if (!cleaned || cleaned.length < 9) {
+      setError("يرجى إدخال رقم جوال صحيح");
+      return;
+    }
+    mutation.mutate(cleaned);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-8">
+        <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <Phone className="w-7 h-7 text-orange-600 dark:text-orange-400" />
+        </div>
+        <h2 className="text-xl font-black text-center text-black dark:text-white mb-2">أضف رقم جوالك</h2>
+        <p className="text-sm text-center text-black/50 dark:text-white/50 mb-6">
+          رقم الجوال مطلوب لإتمام الطلبات والتواصل معك. لن يُشارك مع أطراف خارجية.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="05xxxxxxxx"
+              dir="ltr"
+              data-testid="input-phone-required"
+              className="w-full border border-black/[0.12] dark:border-white/[0.12] rounded-2xl px-4 py-3 text-sm text-center font-mono bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            {error && <p className="text-xs text-red-500 mt-1.5 text-center">{error}</p>}
+          </div>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            data-testid="btn-submit-phone-required"
+            className="w-full h-12 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:bg-black/80"
+          >
+            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ رقم الجوال"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AppInner() {
   const [showSplash, setShowSplash] = useState(() => {
     try {
@@ -658,6 +724,7 @@ function AppInner() {
     }
   });
   const [location, navigate] = useLocation();
+  const [phoneDismissed, setPhoneDismissed] = useState(false);
   const isFullBleed = location === "/cs-chat" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
@@ -798,6 +865,9 @@ function AppInner() {
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />
+            {user && user.role === "client" && !user.phone && !phoneDismissed && (
+              <PhoneRequiredModal onDone={() => setPhoneDismissed(true)} />
+            )}
           </div>
         </div>
       </SidebarProvider>

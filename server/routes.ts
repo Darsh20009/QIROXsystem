@@ -5929,32 +5929,40 @@ export async function registerRoutes(
       const { CartModel, UserModel } = await import("./models");
       const carts = await CartModel.find({ "items.0": { $exists: true } })
         .sort({ updatedAt: -1 })
-        .limit(100)
+        .limit(200)
         .lean();
       const userIds = carts.map((c: any) => c.userId);
-      const users = await UserModel.find({ _id: { $in: userIds } })
+      const users = await UserModel.find({
+        _id: { $in: userIds },
+        $or: [
+          { phone: { $exists: true, $ne: "" } },
+          { whatsappNumber: { $exists: true, $ne: "" } },
+        ],
+      })
         .select("fullName username email phone whatsappNumber")
         .lean();
       const userMap: Record<string, any> = {};
       for (const u of users as any[]) userMap[String(u._id)] = u;
-      const result = carts.map((c: any) => {
-        const u = userMap[String(c.userId)] || {};
-        const totalVal = (c.items as any[]).reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
-        return {
-          cartId: c._id,
-          updatedAt: c.updatedAt,
-          itemsCount: (c.items as any[]).length,
-          total: totalVal,
-          items: (c.items as any[]).map((i: any) => ({ _id: i._id, name: i.nameAr || i.name, price: i.price, qty: i.qty, type: i.type, imageUrl: i.imageUrl })),
-          client: {
-            id: c.userId,
-            name: u.fullName || u.username || "—",
-            email: u.email || "",
-            phone: u.phone || "",
-            whatsapp: u.whatsappNumber || u.phone || "",
-          },
-        };
-      });
+      const result = carts
+        .filter((c: any) => !!userMap[String(c.userId)])
+        .map((c: any) => {
+          const u = userMap[String(c.userId)];
+          const totalVal = (c.items as any[]).reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
+          return {
+            cartId: c._id,
+            updatedAt: c.updatedAt,
+            itemsCount: (c.items as any[]).length,
+            total: totalVal,
+            items: (c.items as any[]).map((i: any) => ({ _id: i._id, name: i.nameAr || i.name, price: i.price, qty: i.qty, type: i.type, imageUrl: i.imageUrl })),
+            client: {
+              id: c.userId,
+              name: u.fullName || u.username || "—",
+              email: u.email || "",
+              phone: u.phone || "",
+              whatsapp: u.whatsappNumber || u.phone || "",
+            },
+          };
+        });
       res.json(result);
     } catch (err) {
       console.error("[employee/abandoned-carts]", err);
