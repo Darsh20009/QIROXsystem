@@ -667,7 +667,7 @@ export default function Cart() {
           </div>
         </div>
       ) : (
-        <div className="max-w-[1100px] mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+        <div className="max-w-[1100px] mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 bg-[#0c1322]">
 
           {/* ── Left: Items + Add-ons ── */}
           <div className="space-y-4">
