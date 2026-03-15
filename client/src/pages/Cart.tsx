@@ -1,6 +1,7 @@
 // @ts-nocheck
 import SARIcon from "@/components/SARIcon";
 import PayPalCheckoutButton from "@/components/PayPalCheckoutButton";
+import CartOrderWizard from "@/components/CartOrderWizard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,9 @@ export default function Cart() {
   const [domainExt, setDomainExt] = useState(".com");
   const [selectedEmail, setSelectedEmail] = useState<typeof emailPlans[0] | null>(null);
 
+  /* wizard */
+  const [wizardOpen, setWizardOpen] = useState(false);
+
   /* pre-checkout dialog states */
   const [preCheckoutOpen, setPreCheckoutOpen] = useState(false);
   const [preCheckoutStep, setPreCheckoutStep] = useState(1);
@@ -140,7 +144,14 @@ export default function Cart() {
   const { data: bankSettings } = useQuery<typeof BANK_FALLBACK>({ queryKey: ["/api/bank-settings"] });
   const BANK = { ...BANK_FALLBACK, ...(bankSettings || {}) };
 
-  const { data: cart, isLoading } = useQuery<Cart>({ queryKey: ["/api/cart"] });
+  const { data: cart, isLoading } = useQuery<Cart>({ queryKey: ["/api/cart"], enabled: !!user });
+
+  // Guest cart from localStorage
+  const guestCartItems: CartItem[] = (() => {
+    if (user) return [];
+    try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s).items || [] : []; }
+    catch { return []; }
+  })();
   const { data: extraAddons = [] } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
   const [extraAddonConfirm, setExtraAddonConfirm] = useState<any | null>(null);
   const { data: walletData } = useQuery<{ totalDebit: number; totalCredit: number; outstanding: number }>({
@@ -153,7 +164,7 @@ export default function Cart() {
     enabled: !!user && (user as any).role === "client",
   });
 
-  const items: CartItem[] = cart?.items || [];
+  const items: CartItem[] = user ? (cart?.items || []) : guestCartItems;
   const hasPhysical = items.some(i => PHYSICAL_TYPES.includes(i.type));
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = cart?.discountAmount || 0;
@@ -168,14 +179,30 @@ export default function Cart() {
   const remainingAfterWallet = Math.max(0, total - effectiveWalletAmount);
   const fullyPaidByWallet = useWallet && effectiveWalletAmount >= total - 0.01;
 
+  const removeGuestItem = (itemId: string) => {
+    const existing = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : { items: [] }; } catch { return { items: [] }; } })();
+    existing.items = existing.items.filter((i: any) => (i._id || i.id) !== itemId);
+    localStorage.setItem("qiroxGuestCart", JSON.stringify(existing));
+    queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+  };
+
   const removeMutation = useMutation({
-    mutationFn: async (itemId: string) => { const r = await apiRequest("DELETE", `/api/cart/items/${itemId}`); return r.json(); },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cart"] }),
+    mutationFn: async (itemId: string) => {
+      if (!user) { removeGuestItem(itemId); return {}; }
+      const r = await apiRequest("DELETE", `/api/cart/items/${itemId}`); return r.json();
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); },
     onError: () => toast({ title: "خطأ في الحذف", variant: "destructive" }),
   });
 
   const updateQtyMutation = useMutation({
     mutationFn: async ({ itemId, qty }: { itemId: string; qty: number }) => {
+      if (!user) {
+        const existing = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : { items: [] }; } catch { return { items: [] }; } })();
+        existing.items = existing.items.map((i: any) => (i._id || i.id) === itemId ? { ...i, qty } : i);
+        localStorage.setItem("qiroxGuestCart", JSON.stringify(existing));
+        return {};
+      }
       const r = await apiRequest("PATCH", `/api/cart/items/${itemId}`, { qty }); return r.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cart"] }),
@@ -400,21 +427,7 @@ export default function Cart() {
     return true;
   };
 
-  /* ─── Auth guard ─── */
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8] p-6">
-      <div className="text-center max-w-sm">
-        <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center mx-auto mb-6">
-          <ShoppingCart className="w-9 h-9 text-white" />
-        </div>
-        <h2 className="text-xl font-black text-black mb-2">سجّل دخولك أولاً</h2>
-        <p className="text-black/40 text-sm mb-8">للوصول إلى سلة التسوق يجب أن تكون مسجلاً</p>
-        <Link href="/login"><Button className="premium-btn px-8" data-testid="button-login-redirect">تسجيل الدخول</Button></Link>
-      </div>
-    </div>
-  );
-
-  if (isLoading) return (
+  if (user && isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f8f8]">
       <Loader2 className="animate-spin w-8 h-8 text-black/20" />
     </div>
@@ -902,7 +915,7 @@ export default function Cart() {
                 <Button
                   className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all"
                   disabled={items.length === 0}
-                  onClick={() => navigate("/checkout")}
+                  onClick={() => setWizardOpen(true)}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
                   إتمام الطلب الآن
@@ -934,7 +947,7 @@ export default function Cart() {
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
-              onClick={() => navigate("/checkout")}
+              onClick={() => setWizardOpen(true)}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
               أكمل الطلب
@@ -1649,6 +1662,15 @@ export default function Cart() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CartOrderWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        cartItems={items}
+        total={total}
+        user={user}
+        hasPhysical={hasPhysical}
+      />
     </div>
   );
 }

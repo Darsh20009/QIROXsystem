@@ -3,7 +3,6 @@ import Footer from "@/components/Footer";
 import { usePricingPlans } from "@/hooks/use-templates";
 import { Button } from "@/components/ui/button";
 import SARIcon from "@/components/SARIcon";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import { useI18n } from "@/lib/i18n";
@@ -20,7 +19,6 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import PlanOrderWizard, { type ProjectBrief } from "@/components/PlanOrderWizard";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
@@ -171,9 +169,9 @@ function GridPattern({ className = "" }: { className?: string }) {
 }
 
 /* ─── Tier Card ───────────────────────────────────────────────────────── */
-function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
+function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoading }: {
   plan: any; period: BillingPeriod; idx: number; isPopularOverride?: boolean;
-  onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string;
+  onSelect: (plan: any, price: number, period: BillingPeriod) => void; lang: string; isLoading?: boolean;
 }) {
   const cfg = TIER_CONFIG[plan.tier] || TIER_CONFIG.lite;
   const price = getPeriodPrice(plan, period);
@@ -311,12 +309,12 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang }: {
       {/* ─── CTA ─── */}
       <div className={`relative px-6 py-5 border-t ${isInfinite ? "border-amber-400/10 bg-[#09090f]" : isPro ? "border-white/10 bg-[#1a3a6e]" : "border-gray-100 bg-white dark:border-slate-800/60 dark:bg-[#0f172a]"}`}>
         <Button
-          onClick={e => { e.stopPropagation(); onSelect(plan, price, period); }}
+          onClick={e => { e.stopPropagation(); if (!isLoading) onSelect(plan, price, period); }}
+          disabled={isLoading}
           className={`w-full h-11 rounded-xl font-black text-sm gap-2 transition-all ${cfg.ctaBg}`}
           data-testid={`button-select-${plan.tier}`}
         >
-          {lang === "ar" ? `ابدأ بـ ${cfg.labelAr}` : `Start with ${cfg.labelEn}`}
-          <ArrowLeft className="w-4 h-4" />
+          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جارٍ الإضافة..." : "Adding..."}</> : <>{lang === "ar" ? `أضف للسلة` : `Add to Cart`} <ShoppingCart className="w-4 h-4" /></>}
         </Button>
       </div>
     </motion.div>
@@ -344,53 +342,62 @@ export default function Prices() {
 
   const [segment, setSegment] = useState("");
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
-  const [selectedPlan, setSelectedPlan] = useState<{ plan: any; price: number; period: BillingPeriod } | null>(null);
   const [, navigate] = useLocation();
   const { data: user } = useUser();
   const { toast } = useToast();
-
-  function handlePlanSelect(plan: any, price: number, p: BillingPeriod) {
-    setSelectedPlan({ plan, price, period: p });
-  }
+  const [addingPlanId, setAddingPlanId] = useState<string | null>(null);
 
   const addToCartMutation = useMutation({
-    mutationFn: async (brief: ProjectBrief) => {
-      if (!selectedPlan) return;
-      const periodLabelAr = PERIODS.find(p => p.key === selectedPlan.period)?.labelAr ?? selectedPlan.period;
-      const periodLabelEn = PERIODS.find(p => p.key === selectedPlan.period)?.labelEn ?? selectedPlan.period;
-      const tierLabelAr = TIER_CONFIG[selectedPlan.plan.tier]?.labelAr ?? selectedPlan.plan.tier;
-      const segInfo = SEGMENT_LOOKUP[selectedPlan.plan.segment];
-      const r = await apiRequest("POST", "/api/cart/items", {
+    mutationFn: async ({ plan, price, period }: { plan: any; price: number; period: BillingPeriod }) => {
+      const periodLabelAr = PERIODS.find(p => p.key === period)?.labelAr ?? period;
+      const periodLabelEn = PERIODS.find(p => p.key === period)?.labelEn ?? period;
+      const tierLabelAr = TIER_CONFIG[plan.tier]?.labelAr ?? plan.tier;
+      const segInfo = SEGMENT_LOOKUP[plan.segment];
+      const cartItem = {
         type: "plan",
-        refId: selectedPlan.plan._id || selectedPlan.plan.id || "",
-        name: selectedPlan.plan.nameEn || selectedPlan.plan.nameAr || tierLabelAr,
-        nameAr: selectedPlan.plan.nameAr || tierLabelAr,
-        price: selectedPlan.price,
+        refId: plan._id || plan.id || "",
+        name: plan.nameEn || plan.nameAr || tierLabelAr,
+        nameAr: plan.nameAr || tierLabelAr,
+        price,
         qty: 1,
         config: {
-          tier: selectedPlan.plan.tier,
+          tier: plan.tier,
           tierLabel: tierLabelAr,
-          segment: selectedPlan.plan.segment,
-          segmentLabel: segInfo?.labelAr || selectedPlan.plan.segment,
-          period: selectedPlan.period,
+          segment: plan.segment,
+          segmentLabel: segInfo?.labelAr || plan.segment,
+          period,
           periodLabel: periodLabelAr,
           periodLabelEn,
-          brief,
         },
-      });
+      };
+      if (!user) {
+        // Guest: save to localStorage
+        const existing = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : { items: [] }; } catch { return { items: [] }; } })();
+        // Remove any existing plan item to replace it
+        existing.items = existing.items.filter((i: any) => i.type !== "plan");
+        existing.items.push({ ...cartItem, _id: Date.now().toString() });
+        localStorage.setItem("qiroxGuestCart", JSON.stringify(existing));
+        return { guest: true };
+      }
+      const r = await apiRequest("POST", "/api/cart/items", cartItem);
       return r.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      setSelectedPlan(null);
+      setAddingPlanId(null);
       toast({ title: "✓ تمت إضافة الباقة للسلة" });
       navigate("/cart");
     },
     onError: () => {
-      toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" });
-      navigate("/login");
+      setAddingPlanId(null);
+      toast({ title: "تعذّر إضافة الباقة للسلة", variant: "destructive" });
     },
   });
+
+  function handlePlanSelect(plan: any, price: number, p: BillingPeriod) {
+    setAddingPlanId(plan._id || plan.id || plan.tier);
+    addToCartMutation.mutate({ plan, price, period: p });
+  }
 
   useEffect(() => {
     if (!segment && segments.length > 0) setSegment(segments[0].key);
@@ -557,7 +564,7 @@ export default function Prices() {
                 className="grid grid-cols-1 md:grid-cols-3 gap-5"
               >
                 {tierPlans.map((plan: any, idx: number) => (
-                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} />
+                  <TierCard key={`${plan.id}-${period}`} plan={plan} period={period} idx={idx} isPopularOverride={plan.tier === "pro"} onSelect={handlePlanSelect} lang={lang} isLoading={addToCartMutation.isPending && addingPlanId === (plan._id || plan.id || plan.tier)} />
                 ))}
               </motion.div>
             </AnimatePresence>
@@ -749,37 +756,6 @@ export default function Prices() {
       </section>
 
       <Footer />
-
-      {/* ══════════════════════════════════════════════════════════
-          PLAN ORDER WIZARD — مصنع الأنظمة
-      ══════════════════════════════════════════════════════════ */}
-      <Dialog open={!!selectedPlan} onOpenChange={v => !v && setSelectedPlan(null)}>
-        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-800/60 shadow-2xl bg-white dark:bg-[#08080f]" dir={dir}>
-          {selectedPlan && (() => {
-            const tierCfg = TIER_CONFIG[selectedPlan.plan.tier] || TIER_CONFIG.lite;
-            const segInfo = segments.find(s => s.key === selectedPlan.plan.segment) ?? (SEGMENT_LOOKUP[selectedPlan.plan.segment] ? { key: selectedPlan.plan.segment, ...SEGMENT_LOOKUP[selectedPlan.plan.segment] } : null);
-            const periodInfo = PERIODS.find(p => p.key === selectedPlan.period);
-            const periodLabel = (lang === "ar" ? periodInfo?.labelAr : periodInfo?.labelEn) ?? selectedPlan.period;
-            const tierLabel = lang === "ar" ? tierCfg.labelAr : tierCfg.labelEn;
-            const segLabel = segInfo ? (lang === "ar" ? segInfo.labelAr : segInfo.labelEn) : "";
-            return (
-              <PlanOrderWizard
-                plan={selectedPlan.plan}
-                price={selectedPlan.price}
-                periodLabel={periodLabel}
-                tierLabel={tierLabel}
-                segLabel={segLabel}
-                tierCfg={tierCfg}
-                lang={lang}
-                user={user}
-                isPending={addToCartMutation.isPending}
-                onClose={() => setSelectedPlan(null)}
-                onConfirm={(brief) => addToCartMutation.mutate(brief)}
-              />
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
