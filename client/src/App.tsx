@@ -11,9 +11,8 @@ import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation, Phone } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Moon, Sun, Search, X, Loader2, ShoppingCart, Wallet, FileText, Users, FolderOpen, LayoutDashboard, Navigation } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -663,109 +662,6 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
 const SPLASH_KEY = "qirox_splash_v1";
 
-// ── PHONE REQUIRED MODAL ──────────────────────────────────────────────────────
-function PhoneRequiredModal({ onDone, missingPhone, missingWhatsapp }: { onDone: () => void; missingPhone: boolean; missingWhatsapp: boolean }) {
-  const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [sameAsPhone, setSameAsPhone] = useState(false);
-  const [error, setError] = useState("");
-  const mutation = useMutation({
-    mutationFn: async (data: { phone?: string; whatsappNumber?: string }) => {
-      const res = await apiRequest("PATCH", "/api/profile/me", data);
-      if (!res.ok) throw new Error("فشل الحفظ");
-      return res.json();
-    },
-    onSuccess: (updated: any) => {
-      queryClient.setQueryData(["/api/user"], (old: any) => ({ ...old, ...updated }));
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      onDone();
-    },
-    onError: () => setError("حدث خطأ، تأكد من الأرقام وحاول مجدداً"),
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    const cleanedPhone = phone.trim();
-    const cleanedWa = sameAsPhone ? cleanedPhone : whatsapp.trim();
-    if (missingPhone && (!cleanedPhone || cleanedPhone.length < 8)) {
-      setError("يرجى إدخال رقم جوال صحيح");
-      return;
-    }
-    if (missingWhatsapp && (!cleanedWa || cleanedWa.length < 8)) {
-      setError("يرجى إدخال رقم واتساب صحيح");
-      return;
-    }
-    const payload: any = {};
-    if (missingPhone) payload.phone = cleanedPhone;
-    if (missingWhatsapp) payload.whatsappNumber = cleanedWa;
-    mutation.mutate(payload);
-  };
-
-  const inputCls = "w-full border border-black/[0.12] dark:border-white/[0.12] rounded-2xl px-4 py-3 text-sm text-center font-mono bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400";
-
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-8">
-        <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <Phone className="w-7 h-7 text-orange-600 dark:text-orange-400" />
-        </div>
-        <h2 className="text-xl font-black text-center text-black dark:text-white mb-2">أكمل بيانات التواصل</h2>
-        <p className="text-sm text-center text-black/50 dark:text-white/50 mb-6">
-          أرقام التواصل مطلوبة لإتمام الطلبات والتواصل معك بشكل سريع.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {missingPhone && (
-            <div>
-              <label className="text-xs text-black/50 dark:text-white/50 mb-1.5 block font-semibold">رقم الجوال *</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="05xxxxxxxx"
-                dir="ltr"
-                data-testid="input-phone-required"
-                className={inputCls}
-              />
-            </div>
-          )}
-          {missingWhatsapp && (
-            <div>
-              <label className="text-xs text-black/50 dark:text-white/50 mb-1.5 block font-semibold">رقم الواتساب *</label>
-              {missingPhone && (
-                <label className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50 mb-2 cursor-pointer">
-                  <input type="checkbox" checked={sameAsPhone} onChange={e => setSameAsPhone(e.target.checked)} className="rounded" />
-                  نفس رقم الجوال
-                </label>
-              )}
-              {!sameAsPhone && (
-                <input
-                  type="tel"
-                  value={whatsapp}
-                  onChange={e => setWhatsapp(e.target.value)}
-                  placeholder="+966 5xxxxxxxx"
-                  dir="ltr"
-                  data-testid="input-whatsapp-required"
-                  className={inputCls}
-                />
-              )}
-            </div>
-          )}
-          {error && <p className="text-xs text-red-500 text-center">{error}</p>}
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            data-testid="btn-submit-phone-required"
-            className="w-full h-12 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:bg-black/80"
-          >
-            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ البيانات والمتابعة"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 function AppInner() {
   const [showSplash, setShowSplash] = useState(() => {
     try {
@@ -915,13 +811,6 @@ function AppInner() {
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />
-            {user && user.role === "client" && (!user.phone || !(user as any).whatsappNumber) && (
-              <PhoneRequiredModal
-                onDone={() => {}}
-                missingPhone={!user.phone}
-                missingWhatsapp={!(user as any).whatsappNumber}
-              />
-            )}
           </div>
         </div>
       </SidebarProvider>
