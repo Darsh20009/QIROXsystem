@@ -75,6 +75,7 @@ const EmployeeDemos = lazy(() => import("@/pages/EmployeeDemos"));
 const EmployeeNewOrder = lazy(() => import("@/pages/EmployeeNewOrder"));
 const DevChecklist = lazy(() => import("@/pages/DevChecklist"));
 const PaymentHistory = lazy(() => import("@/pages/PaymentHistory"));
+const AdminAbandonedCarts = lazy(() => import("@/pages/AdminAbandonedCarts"));
 const AdminInvoices = lazy(() => import("@/pages/AdminInvoices"));
 const InvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
 const AdminReceipts = lazy(() => import("@/pages/AdminReceipts"));
@@ -282,6 +283,7 @@ function AdminRouter() {
         <Route path="/referral" component={ClientReferral} />
         <Route path="/sales/marketing" component={SalesMarketing} />
         <Route path="/payment-history" component={PaymentHistory} />
+        <Route path="/employee/abandoned-carts" component={AdminAbandonedCarts} />
         <Route path="/cart" component={Cart} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/inbox" component={Inbox} />
@@ -307,6 +309,7 @@ const ALL_PAGES = [
   { title: "أدواتي ومميزاتي", titleEn: "My Tools", url: "/my-tools", group: "client" },
   { title: "الباقات", titleEn: "Pricing", url: "/prices", group: "public" },
   { title: "الطلبات", titleEn: "Orders", url: "/admin/orders", group: "employee" },
+  { title: "عربات التسوق", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
@@ -652,12 +655,14 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 const SPLASH_KEY = "qirox_splash_v1";
 
 // ── PHONE REQUIRED MODAL ──────────────────────────────────────────────────────
-function PhoneRequiredModal({ onDone }: { onDone: () => void }) {
+function PhoneRequiredModal({ onDone, missingPhone, missingWhatsapp }: { onDone: () => void; missingPhone: boolean; missingWhatsapp: boolean }) {
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [sameAsPhone, setSameAsPhone] = useState(false);
   const [error, setError] = useState("");
   const mutation = useMutation({
-    mutationFn: async (ph: string) => {
-      const res = await apiRequest("PATCH", "/api/profile/me", { phone: ph });
+    mutationFn: async (data: { phone?: string; whatsappNumber?: string }) => {
+      const res = await apiRequest("PATCH", "/api/profile/me", data);
       if (!res.ok) throw new Error("فشل الحفظ");
       return res.json();
     },
@@ -665,19 +670,29 @@ function PhoneRequiredModal({ onDone }: { onDone: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       onDone();
     },
-    onError: () => setError("حدث خطأ، تأكد من الرقم وحاول مجدداً"),
+    onError: () => setError("حدث خطأ، تأكد من الأرقام وحاول مجدداً"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const cleaned = phone.trim();
-    if (!cleaned || cleaned.length < 9) {
+    const cleanedPhone = phone.trim();
+    const cleanedWa = sameAsPhone ? cleanedPhone : whatsapp.trim();
+    if (missingPhone && (!cleanedPhone || cleanedPhone.length < 8)) {
       setError("يرجى إدخال رقم جوال صحيح");
       return;
     }
-    mutation.mutate(cleaned);
+    if (missingWhatsapp && (!cleanedWa || cleanedWa.length < 8)) {
+      setError("يرجى إدخال رقم واتساب صحيح");
+      return;
+    }
+    const payload: any = {};
+    if (missingPhone) payload.phone = cleanedPhone;
+    if (missingWhatsapp) payload.whatsappNumber = cleanedWa;
+    mutation.mutate(payload);
   };
+
+  const inputCls = "w-full border border-black/[0.12] dark:border-white/[0.12] rounded-2xl px-4 py-3 text-sm text-center font-mono bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400";
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
@@ -685,30 +700,55 @@ function PhoneRequiredModal({ onDone }: { onDone: () => void }) {
         <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <Phone className="w-7 h-7 text-orange-600 dark:text-orange-400" />
         </div>
-        <h2 className="text-xl font-black text-center text-black dark:text-white mb-2">أضف رقم جوالك</h2>
+        <h2 className="text-xl font-black text-center text-black dark:text-white mb-2">أكمل بيانات التواصل</h2>
         <p className="text-sm text-center text-black/50 dark:text-white/50 mb-6">
-          رقم الجوال مطلوب لإتمام الطلبات والتواصل معك. لن يُشارك مع أطراف خارجية.
+          أرقام التواصل مطلوبة لإتمام الطلبات والتواصل معك بشكل سريع.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="05xxxxxxxx"
-              dir="ltr"
-              data-testid="input-phone-required"
-              className="w-full border border-black/[0.12] dark:border-white/[0.12] rounded-2xl px-4 py-3 text-sm text-center font-mono bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
-            {error && <p className="text-xs text-red-500 mt-1.5 text-center">{error}</p>}
-          </div>
+          {missingPhone && (
+            <div>
+              <label className="text-xs text-black/50 dark:text-white/50 mb-1.5 block font-semibold">رقم الجوال *</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="05xxxxxxxx"
+                dir="ltr"
+                data-testid="input-phone-required"
+                className={inputCls}
+              />
+            </div>
+          )}
+          {missingWhatsapp && (
+            <div>
+              <label className="text-xs text-black/50 dark:text-white/50 mb-1.5 block font-semibold">رقم الواتساب *</label>
+              {missingPhone && (
+                <label className="flex items-center gap-2 text-xs text-black/50 dark:text-white/50 mb-2 cursor-pointer">
+                  <input type="checkbox" checked={sameAsPhone} onChange={e => setSameAsPhone(e.target.checked)} className="rounded" />
+                  نفس رقم الجوال
+                </label>
+              )}
+              {!sameAsPhone && (
+                <input
+                  type="tel"
+                  value={whatsapp}
+                  onChange={e => setWhatsapp(e.target.value)}
+                  placeholder="+966 5xxxxxxxx"
+                  dir="ltr"
+                  data-testid="input-whatsapp-required"
+                  className={inputCls}
+                />
+              )}
+            </div>
+          )}
+          {error && <p className="text-xs text-red-500 text-center">{error}</p>}
           <button
             type="submit"
             disabled={mutation.isPending}
             data-testid="btn-submit-phone-required"
             className="w-full h-12 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:bg-black/80"
           >
-            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ رقم الجوال"}
+            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ البيانات والمتابعة"}
           </button>
         </form>
       </div>
@@ -725,7 +765,6 @@ function AppInner() {
     }
   });
   const [location, navigate] = useLocation();
-  const [phoneDismissed, setPhoneDismissed] = useState(false);
   const isFullBleed = location === "/cs-chat" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
@@ -868,8 +907,12 @@ function AppInner() {
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />
-            {user && user.role === "client" && !user.phone && !phoneDismissed && (
-              <PhoneRequiredModal onDone={() => setPhoneDismissed(true)} />
+            {user && user.role === "client" && (!user.phone || !(user as any).whatsappNumber) && (
+              <PhoneRequiredModal
+                onDone={() => {}}
+                missingPhone={!user.phone}
+                missingWhatsapp={!(user as any).whatsappNumber}
+              />
             )}
           </div>
         </div>

@@ -5916,16 +5916,10 @@ export async function registerRoutes(
       const { CartModel, UserModel } = await import("./models");
       const carts = await CartModel.find({ "items.0": { $exists: true } })
         .sort({ updatedAt: -1 })
-        .limit(200)
+        .limit(300)
         .lean();
       const userIds = carts.map((c: any) => c.userId);
-      const users = await UserModel.find({
-        _id: { $in: userIds },
-        $or: [
-          { phone: { $exists: true, $ne: "" } },
-          { whatsappNumber: { $exists: true, $ne: "" } },
-        ],
-      })
+      const users = await UserModel.find({ _id: { $in: userIds } })
         .select("fullName username email phone whatsappNumber")
         .lean();
       const userMap: Record<string, any> = {};
@@ -5936,17 +5930,18 @@ export async function registerRoutes(
           const u = userMap[String(c.userId)];
           const totalVal = (c.items as any[]).reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
           return {
-            cartId: c._id,
+            cartId: String(c._id),
             updatedAt: c.updatedAt,
             itemsCount: (c.items as any[]).length,
             total: totalVal,
             items: (c.items as any[]).map((i: any) => ({ _id: i._id, name: i.nameAr || i.name, price: i.price, qty: i.qty, type: i.type, imageUrl: i.imageUrl })),
             client: {
-              id: c.userId,
+              id: String(c.userId),
               name: u.fullName || u.username || "—",
               email: u.email || "",
               phone: u.phone || "",
               whatsapp: u.whatsappNumber || u.phone || "",
+              hasContact: !!(u.phone || u.whatsappNumber || u.email),
             },
           };
         });
@@ -5955,6 +5950,69 @@ export async function registerRoutes(
       console.error("[employee/abandoned-carts]", err);
       res.status(500).json({ error: "خطأ في الخادم" });
     }
+  });
+
+  // ── Send targeted email to cart client ──────────────────────────────
+  app.post("/api/employee/cart-send-email", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { clientEmail, clientName, subject, message } = req.body;
+      if (!clientEmail || !message) return res.status(400).json({ error: "البريد والرسالة مطلوبان" });
+      const html = `<div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9f9f9;border-radius:12px">
+        <h2 style="color:#0c1322">رسالة خاصة من فريق QIROX</h2>
+        <p style="font-size:16px;color:#333">عزيزي ${clientName || "العميل"}،</p>
+        <div style="background:#fff;padding:20px;border-radius:8px;border-right:4px solid #3b82f6;margin:16px 0;font-size:15px;color:#222;line-height:1.8">${message.replace(/\n/g, "<br>")}</div>
+        <p style="color:#888;font-size:13px;margin-top:24px">مع تحيات فريق QIROX Studio</p>
+      </div>`;
+      const ok = await sendDirectEmail(clientEmail, clientName || "عميل", subject || "رسالة من QIROX", html);
+      if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: "خطأ في الخادم" }); }
+  });
+
+  // ── Generate & send a private discount code to a cart client ────────
+  app.post("/api/employee/cart-send-discount", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { DiscountCodeModel } = await import("./models");
+      const { clientEmail, clientName, discountPercent = 10, note } = req.body;
+      if (!clientEmail) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
+      const actor = req.user as any;
+      const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
+      const code = `QRXVIP${rand}`;
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      await DiscountCodeModel.create({
+        code,
+        type: "percentage",
+        value: Math.min(Math.max(Number(discountPercent), 1), 80),
+        isActive: true,
+        usageLimit: 1,
+        usageCount: 0,
+        expiresAt,
+        showOnHome: false,
+        createdBy: actor._id || actor.id,
+        description: note || `خصم خاص لـ ${clientName || clientEmail}`,
+        appliesTo: "all",
+      });
+      const html = `<div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9f9f9;border-radius:12px">
+        <h2 style="color:#0c1322">🎁 كود خصم خاص لك من QIROX</h2>
+        <p style="font-size:16px;color:#333">عزيزي ${clientName || "العميل"}،</p>
+        <p style="color:#555">لديك منتجات في عربة التسوق! نقدم لك كود خصم حصري:</p>
+        <div style="background:#0c1322;color:#fff;text-align:center;padding:24px;border-radius:12px;margin:20px 0">
+          <div style="font-size:32px;font-weight:900;letter-spacing:4px">${code}</div>
+          <div style="font-size:18px;margin-top:8px;color:#60a5fa">خصم ${discountPercent}% على طلبك</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px">صالح حتى ${expiresAt.toLocaleDateString("ar-SA")}</div>
+        </div>
+        ${note ? `<p style="color:#555;font-size:14px">${note}</p>` : ""}
+        <a href="https://qirox.tech/prices" style="display:block;background:#3b82f6;color:#fff;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px">أكمل طلبك الآن</a>
+        <p style="color:#888;font-size:12px;margin-top:20px">مع تحيات فريق QIROX Studio</p>
+      </div>`;
+      const ok = await sendDirectEmail(clientEmail, clientName || "عميل", `🎁 كود خصم خاص لك — ${discountPercent}%`, html);
+      if (!ok) return res.status(500).json({ error: "تم إنشاء الكود لكن فشل البريد" });
+      res.json({ ok: true, code });
+    } catch (e) { res.status(500).json({ error: "خطأ في الخادم" }); }
   });
 
   // ═══════════════════════════════════════════════════════════
@@ -8560,7 +8618,7 @@ export async function registerRoutes(
     try {
       const { UserModel } = await import("./models");
       const uid = (req.user as any)._id || (req.user as any).id;
-      const allowed = ["fullName", "bio", "jobTitle", "phone", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree"];
+      const allowed = ["fullName", "bio", "jobTitle", "phone", "whatsappNumber", "country", "businessType", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree"];
       const update: any = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) update[key] = req.body[key];
