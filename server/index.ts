@@ -108,19 +108,57 @@ wss.on("connection", (ws) => {
 
       // ── WebRTC Meet Signaling ───────────────────────────────────────────────
       if (msg.type === "webrtc_join" && msg.roomId) {
-        if (currentRoomId && currentRoomId !== msg.roomId) {
-          const remaining = leaveMeetRoom(currentRoomId, userId);
-          for (const peerId of remaining) {
-            pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: currentRoomId });
+        (async () => {
+          const rId = String(msg.roomId);
+          const uid = String(userId);
+          // ── Lobby enforcement ─────────────────────────────────────────────
+          try {
+            const { QMeetingModel: QMF } = await import("./qmeet-db");
+            const meeting = await QMF().findOne({ roomName: rId });
+            if (meeting && meeting.lobbyEnabled) {
+              const inParticipants = (meeting.participantIds || []).some((id: any) => String(id) === uid);
+              const isHostUser = String(meeting.hostId) === uid;
+              if (!inParticipants && !isHostUser) {
+                // Save join request if not already pending
+                const existing = (meeting.joinRequests || []).find((r: any) => String(r.userId) === uid && r.status === "pending");
+                if (!existing) {
+                  await QMF().findByIdAndUpdate(meeting._id, {
+                    $push: { joinRequests: { userId: uid, userName: msg.name || uid, userEmail: "", userPhone: "", status: "pending", requestedAt: new Date() } }
+                  });
+                }
+                // Tell user they're in the lobby
+                ws.send(JSON.stringify({ type: "webrtc_lobby_waiting", roomId: rId, meetingId: String(meeting._id), meetingTitle: meeting.title }));
+                // Notify host
+                pushToUser(String(meeting.hostId), {
+                  type: "qmeet_join_request",
+                  meetingId: String(meeting._id),
+                  meetingTitle: meeting.title,
+                  userId: uid,
+                  userName: msg.name || uid,
+                  userEmail: "", userPhone: "",
+                  requestedAt: new Date().toISOString(),
+                  message: `${msg.name || uid} يطلب الانضمام إلى الاجتماع: ${meeting.title}`,
+                });
+                return;
+              }
+            }
+          } catch { /* on error, allow entry */ }
+
+          // ── Normal join ───────────────────────────────────────────────────
+          if (currentRoomId && currentRoomId !== rId) {
+            const remaining = leaveMeetRoom(currentRoomId, uid);
+            for (const peerId of remaining) {
+              pushToUser(peerId, { type: "webrtc_peer_left", peerId: uid, roomId: currentRoomId });
+            }
           }
-        }
-        currentRoomId = String(msg.roomId);
-        const existingPeers = joinMeetRoom(currentRoomId, userId, msg.name || userId, msg.photoUrl || "");
-        const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== userId);
-        ws.send(JSON.stringify({ type: "webrtc_peers", peers: existingPeers, peerInfoList, roomId: currentRoomId }));
-        for (const peerId of existingPeers) {
-          pushToUser(peerId, { type: "webrtc_peer_joined", peerId: userId, name: msg.name || userId, photoUrl: msg.photoUrl || "", roomId: currentRoomId });
-        }
+          currentRoomId = rId;
+          const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "");
+          const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== uid);
+          ws.send(JSON.stringify({ type: "webrtc_peers", peers: existingPeers, peerInfoList, roomId: currentRoomId }));
+          for (const peerId of existingPeers) {
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: uid, name: msg.name || uid, photoUrl: msg.photoUrl || "", roomId: currentRoomId });
+          }
+        })();
         return;
       }
 

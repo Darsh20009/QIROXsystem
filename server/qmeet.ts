@@ -268,6 +268,7 @@ export function registerQMeetRoutes(app: Express) {
         agenda: agenda || [],
         joinCode: generateJoinCode(),
         joinRequests: [],
+        lobbyEnabled: true,
       });
 
       // Send invite emails (non-blocking)
@@ -813,7 +814,7 @@ export function registerQMeetRoutes(app: Express) {
 
   // ── Instant / Quick Meeting ───────────────────────────────────────────────
 
-  app.post("/api/qmeet/instant", requireAuth, async (req: any, res) => {
+  app.post("/api/qmeet/instant", requireStaff, async (req: any, res) => {
     try {
       const userName = req.user.fullName || req.user.username;
       const userId = String(req.user._id || req.user.id);
@@ -844,6 +845,7 @@ export function registerQMeetRoutes(app: Express) {
         agenda: [],
         joinCode: generateJoinCode(),
         joinRequests: [],
+        lobbyEnabled: true,
         reminderSent: false,
         instantJoin: true,
       });

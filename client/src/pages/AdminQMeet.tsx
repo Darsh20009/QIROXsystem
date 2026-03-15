@@ -278,6 +278,7 @@ export default function AdminQMeet() {
               <Button onClick={() => navigate("/meet/join")} variant="outline" className="gap-2 border-black/10 dark:border-white/10" data-testid="button-join-by-code">
                 <Key className="w-4 h-4" /> انضمام بكود
               </Button>
+              {isManagement && (
               <Button
                 onClick={() => setOpenInstant(true)}
                 variant="outline"
@@ -286,7 +287,7 @@ export default function AdminQMeet() {
               >
                 <Zap className="w-4 h-4" />
                 اجتماع سريع
-              </Button>
+              </Button>)}
               {isManagement && (
                 <Button onClick={() => setOpenCreate(true)} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-create-meeting">
                   <Plus className="w-4 h-4" /> اجتماع جديد

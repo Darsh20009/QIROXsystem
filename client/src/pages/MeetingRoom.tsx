@@ -303,6 +303,7 @@ export default function MeetingRoom() {
   const [qaTicketDesc, setQaTicketDesc] = useState("");
 
   const [pendingJoinRequests, setPendingJoinRequests] = useState<any[]>([]);
+  const [lobbyWaiting, setLobbyWaiting] = useState(false);
   const [meetingNotes, setMeetingNotes] = useState("");
   const [notesSaved, setNotesSaved] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -631,6 +632,22 @@ export default function MeetingRoom() {
         setScreenSharerPeerId(prev => prev === data.peerId ? null : prev);
         break;
       }
+      case "webrtc_lobby_waiting": {
+        setLobbyWaiting(true);
+        break;
+      }
+      case "qmeet_join_response": {
+        if (data.approved) {
+          setLobbyWaiting(false);
+          const myPhoto = (user as any)?.profilePhotoUrl || (user as any)?.avatarUrl || "";
+          sendWs({ type: "webrtc_join", roomId, name: userName, photoUrl: myPhoto });
+          toast({ title: "✅ تمت الموافقة!", description: "أنت الآن في الاجتماع" });
+        } else {
+          toast({ title: "تم رفض الطلب", description: data.message || "رفض المضيف انضمامك للاجتماع", variant: "destructive" });
+          setTimeout(() => window.location.href = "/dashboard", 2500);
+        }
+        break;
+      }
       case "qmeet_join_request": {
         setPendingJoinRequests(prev => {
           const exists = prev.find(r => r.userId === data.userId);
@@ -744,7 +761,14 @@ export default function MeetingRoom() {
         if (data.type === "online_users") {
           const myPhoto = (user as any)?.profilePhotoUrl || (user as any)?.avatarUrl || "";
           ws.send(JSON.stringify({ type: "webrtc_join", roomId: rId, name: uName, photoUrl: myPhoto }));
+          // Don't set joined yet — wait for server response (peers list or lobby)
+        } else if (data.type === "webrtc_peers") {
           setJoined(true);
+          setLobbyWaiting(false);
+          await handleWsMessage(data);
+        } else if (data.type === "webrtc_lobby_waiting") {
+          setJoined(true);
+          setLobbyWaiting(true);
         } else {
           await handleWsMessage(data);
         }
@@ -1048,10 +1072,12 @@ export default function MeetingRoom() {
       const sender = pc.getSenders().find(s => s.track?.kind === "video");
       if (sender) {
         await sender.replaceTrack(screenTrack).catch(() => {
-          // replaceTrack failed — try addTrack + renegotiate instead
           pc.addTrack(screenTrack, newStream);
-          peersNeedingRenegotiation.push(peerId);
         });
+        // Mobile (iOS/Android): always renegotiate — codec must adapt to screen content
+        if (isIOSDevice || isAndroidDevice) {
+          peersNeedingRenegotiation.push(peerId);
+        }
       } else {
         pc.addTrack(screenTrack, newStream);
         peersNeedingRenegotiation.push(peerId);
@@ -1256,6 +1282,37 @@ export default function MeetingRoom() {
           <p className="text-white/40">قام المضيف بإزالتك من هذا الاجتماع</p>
           <Button onClick={() => window.close() || navigate("/dashboard")} variant="outline" className="border-white/15 text-white/70 hover:bg-white/10">
             إغلاق
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (lobbyWaiting) {
+    const [lFrom, lTo] = getAvatarColor(userName);
+    return (
+      <div className="min-h-screen flex items-center justify-center text-center p-6" dir="rtl" style={{ background: "linear-gradient(135deg, #080e1a 0%, #0d1630 100%)" }}>
+        <div className="space-y-6 max-w-sm w-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/25">
+            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+            <span className="text-amber-300 text-xs font-medium">صالة الانتظار</span>
+          </div>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-xl mx-auto animate-pulse"
+            style={{ background: `linear-gradient(135deg, ${lFrom}, ${lTo})` }}>
+            {userName.charAt(0).toUpperCase()}
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-white text-xl font-bold">{meeting?.title || "الاجتماع"}</h2>
+            <p className="text-white/50 text-sm">طلبك قيد المراجعة من المضيف</p>
+            <p className="text-white/30 text-xs">سيتم إشعارك فور الموافقة…</p>
+          </div>
+          <div className="flex justify-center gap-1.5 mt-2">
+            {[0,1,2].map(i => (
+              <span key={i} className="w-2 h-2 rounded-full bg-amber-400/70 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+            ))}
+          </div>
+          <Button onClick={() => navigate("/dashboard")} variant="outline" className="border-white/15 text-white/60 hover:bg-white/10 text-sm">
+            إلغاء والعودة
           </Button>
         </div>
       </div>

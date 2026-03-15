@@ -38,10 +38,12 @@ const qMeetingSchema = new mongoose.Schema({
   joinCode:       { type: String, default: null },
   instantJoin:    { type: Boolean, default: false },
   apiKeyId:       { type: String, default: null },
+  lobbyEnabled:   { type: Boolean, default: false },
   joinRequests:   [{
     userId:      { type: String, required: true },
     userName:    { type: String, default: "" },
     userEmail:   { type: String, default: "" },
+    userPhone:   { type: String, default: "" },
     status:      { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     requestedAt: { type: Date, default: Date.now },
   }],
