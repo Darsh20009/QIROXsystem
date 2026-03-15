@@ -19,6 +19,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { PackageFinderModal } from "@/components/PackageFinderModal";
 
 type BillingPeriod = "monthly" | "sixmonth" | "annual" | "lifetime";
 
@@ -342,6 +343,7 @@ export default function Prices() {
 
   const [segment, setSegment] = useState("");
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
+  const [finderOpen, setFinderOpen] = useState(false);
   const [, navigate] = useLocation();
   const { data: user } = useUser();
   const { toast } = useToast();
@@ -450,7 +452,7 @@ export default function Prices() {
                     : "Every sector has its own system built from scratch — not a template, a factory built for you."}
                 </p>
                 {/* Stats row */}
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 mb-8">
                   {[
                     { val: "100+", label: lang === "ar" ? "نظام مُسلَّم" : "Delivered" },
                     { val: "3",    label: lang === "ar" ? "مستويات" : "Tiers" },
@@ -462,6 +464,28 @@ export default function Prices() {
                     </div>
                   ))}
                 </div>
+
+                {/* Package Finder CTA */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setFinderOpen(true)}
+                  data-testid="button-open-package-finder"
+                  className="group relative flex items-center gap-3 px-5 py-3.5 rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-violet-500/10 hover:from-blue-500/20 hover:to-violet-500/20 hover:border-blue-500/50 transition-all duration-300 text-right max-w-xs"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {lang === "ar" ? "اعرف باقتك الخاصة بك" : "Find Your Package"}
+                    </p>
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                      {lang === "ar" ? "سؤالين وأختار لك الأنسب 🤖" : "AI recommends your perfect plan"}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-blue-500 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                </motion.button>
               </div>
 
             </div>
@@ -754,6 +778,8 @@ export default function Prices() {
           </div>
         </div>
       </section>
+
+      <PackageFinderModal open={finderOpen} onClose={() => setFinderOpen(false)} />
 
       <Footer />
     </div>
