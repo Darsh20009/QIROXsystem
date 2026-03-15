@@ -864,7 +864,7 @@ function AppInner() {
             <FloatingBrandPulse />
             <MobileBottomNav />
             <FloatingClientChat />
-            <QiroxAI />
+            {user?.role !== "employee" && user?.role !== "employee_manager" && <QiroxAI />}
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />
