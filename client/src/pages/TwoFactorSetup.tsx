@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
@@ -96,7 +97,7 @@ export default function TwoFactorSetup() {
   const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase;
 
   const methods = [
-    { id: "totp", label: "تطبيق المصادقة", desc: "Google Authenticator أو Authy", icon: Smartphone, enabled: status?.totp },
+    { id: "totp", label: "تطبيق المصادقة", desc: "Qirox Authenticator أو Google Authenticator", icon: Smartphone, enabled: status?.totp },
     { id: "email", label: "رمز عبر البريد", desc: "إرسال رمز تحقق لبريدك عند الدخول", icon: Mail, enabled: status?.emailOtp },
     { id: "passphrase", label: "كلمة الاسترداد", desc: "كلمة سرية تستخدمها كخيار بديل", icon: Lock, enabled: status?.passphrase },
   ];
@@ -130,6 +131,24 @@ export default function TwoFactorSetup() {
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 dark:text-amber-400">فعّل طريقة واحدة على الأقل لحماية حسابك. يمكنك تفعيل أكثر من طريقة للحصول على خيارات متعددة عند تسجيل الدخول.</p>
         </div>
+      )}
+
+      {/* Qirox Authenticator shortcut when TOTP is enabled */}
+      {status?.totp && (
+        <Link href="/authenticator">
+          <div className="bg-gradient-to-br from-black to-gray-900 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:shadow-xl hover:shadow-black/20 transition-all group" data-testid="link-qirox-authenticator">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-white">Qirox Authenticator</p>
+              <p className="text-xs text-white/40 mt-0.5">أدخل رمزك على أي جهاز جديد بدون تطبيق خارجي</p>
+            </div>
+            <div className="w-7 h-7 rounded-lg bg-white/10 group-hover:bg-white/15 flex items-center justify-center transition-colors">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+          </div>
+        </Link>
       )}
 
       <div className="space-y-3">

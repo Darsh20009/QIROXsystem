@@ -19,9 +19,37 @@ export interface SystemGuideSection {
   steps: string[];
 }
 
-export const CURRENT_VERSION = "5.3.0";
+export const CURRENT_VERSION = "5.4.0";
 
 export const CHANGELOG: VersionEntry[] = [
+  {
+    version: "5.4.0",
+    date: "2026-03-15",
+    label: "Qirox Authenticator — مصادق ثنائي داخل التطبيق",
+    summary: "مصادق ثنائي TOTP مدمج داخل Qirox يعرض كوداً حياً يتجدد كل 15 ثانية. يغني عن تطبيق خارجي — المستخدم يفتح Qirox على الجوال ويدخل الكود على الجهاز الجديد بسهولة.",
+    features: [
+      {
+        title: "Qirox Authenticator — مصادق ثنائي مدمج",
+        description: "صفحة /authenticator داخل Qirox تعرض كود TOTP حياً مكوناً من 6 أرقام، يتجدد كل 15 ثانية مع عداد تنازلي دائري ملوّن. يتغير لون العداد من أخضر لأحمر مع اقتراب انتهاء الكود. زر نسخ الكود بلمسة واحدة.",
+        type: "new",
+      },
+      {
+        title: "مصادقة عبر الأجهزة بدون تطبيق خارجي",
+        description: "لو كنت مسجلاً على الجوال، افتح Qirox Authenticator وشوف الكود الحالي، ثم أدخله على الجهاز الجديد في خانة التحقق الثنائي. لا حاجة لـ Google Authenticator أو Authy.",
+        type: "new",
+      },
+      {
+        title: "دورة TOTP 15 ثانية للأمان المحسّن",
+        description: "تحديث دورة التحقق من 30 إلى 15 ثانية في كل عمليات التحقق والإعداد. نافذة التسامح 3 دورات (±45 ثانية) لتقليل مشكلات توقيت الساعة بين الأجهزة.",
+        type: "improvement",
+      },
+      {
+        title: "بطاقة وصول سريع من إعدادات الأمان",
+        description: "عند تفعيل تطبيق المصادقة من صفحة الأمان، تظهر بطاقة 'Qirox Authenticator' بتصميم داكن للوصول المباشر للمصادق بنقرة واحدة.",
+        type: "new",
+      },
+    ],
+  },
   {
     version: "5.3.0",
     date: "2026-03-15",

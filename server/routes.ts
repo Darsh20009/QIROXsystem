@@ -743,7 +743,7 @@ export async function registerRoutes(
       if (method === "totp") {
         if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
         const speakeasy = await import("speakeasy");
-        verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), window: 2 });
+        verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), step: 15, window: 3 });
       } else if (method === "email") {
         if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
         const latestOtp = await OtpModel.findOne({ email: dbUser.email, type: "2fa_email", used: false }).sort({ createdAt: -1 });
@@ -9070,7 +9070,9 @@ export async function registerRoutes(
       const user = req.user as any;
       const secret = speakeasy.default.generateSecret({ name: `Qirox (${user.email || user.username})`, length: 20 });
       await UserModel.findByIdAndUpdate(user._id || user.id, { totpSecret: secret.base32 });
-      res.json({ secret: secret.base32, otpauth_url: secret.otpauth_url });
+      // Build otpauth_url with period=15 for QiroxAuthenticator
+      const otpauthUrl = `otpauth://totp/Qirox:${encodeURIComponent(user.email || user.username)}?secret=${secret.base32}&issuer=Qirox&period=15`;
+      res.json({ secret: secret.base32, otpauth_url: otpauthUrl });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -9083,7 +9085,7 @@ export async function registerRoutes(
       const { token } = req.body;
       const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
       if (!dbUser || !dbUser.totpSecret) return res.status(400).json({ error: "لم يتم إعداد المفتاح السري" });
-      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), window: 2 });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 15, window: 3 });
       if (!verified) return res.status(400).json({ error: "الرمز غير صحيح" });
       await UserModel.findByIdAndUpdate(user._id || user.id, { totpEnabled: true });
       res.json({ ok: true });
@@ -9109,8 +9111,27 @@ export async function registerRoutes(
       const { token } = req.body;
       const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
       if (!dbUser?.totpEnabled || !dbUser.totpSecret) return res.status(400).json({ error: "2FA غير مفعّل" });
-      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), window: 2 });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 15, window: 3 });
       res.json({ valid: verified });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/totp/current-code", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const speakeasy = await import("speakeasy");
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret totpEnabled");
+      if (!dbUser?.totpEnabled || !dbUser.totpSecret) return res.status(400).json({ error: "المصادق الثنائي غير مفعّل" });
+      const STEP = 15;
+      const nowMs = Date.now();
+      const epoch = Math.floor(nowMs / 1000);
+      const currentPeriod = Math.floor(epoch / STEP);
+      const msIntoCurrentPeriod = nowMs - (currentPeriod * STEP * 1000);
+      const secondsLeft = Math.ceil((STEP * 1000 - msIntoCurrentPeriod) / 1000);
+      const code = speakeasy.default.totp({ secret: dbUser.totpSecret, encoding: "base32", step: STEP, digits: 6 });
+      res.json({ code, secondsLeft, step: STEP });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
