@@ -297,7 +297,9 @@ export default function CartOrderWizard({ open, onClose, cartItems, total, user,
       const guestCart = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : null; } catch { return null; } })();
       if (guestCart?.items?.length) {
         for (const item of guestCart.items) {
-          try { await apiRequest("POST", "/api/cart/items", item); } catch {}
+          // Strip any client-generated _id before syncing to server
+          const { _id, id, ...cleanItem } = item as any;
+          try { await apiRequest("POST", "/api/cart/items", cleanItem); } catch {}
         }
         localStorage.removeItem("qiroxGuestCart");
         queryClient.invalidateQueries({ queryKey: ["/api/cart"] });

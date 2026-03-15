@@ -4235,8 +4235,15 @@ export async function registerRoutes(
   app.post("/api/cart/items", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const userId = String((req.user as any).id);
-    const cart = await storage.upsertCartItem(userId, req.body);
-    res.json(cart);
+    // Strip any client-side _id or id to let MongoDB auto-generate it
+    const { _id, id, ...cleanItem } = req.body;
+    try {
+      const cart = await storage.upsertCartItem(userId, cleanItem);
+      res.json(cart);
+    } catch (err: any) {
+      console.error("[Cart] upsertCartItem error:", err.message);
+      res.status(500).json({ message: err.message || "فشل إضافة العنصر للسلة" });
+    }
   });
 
   app.delete("/api/cart/items/:itemId", async (req, res) => {
