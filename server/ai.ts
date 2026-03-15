@@ -18,6 +18,15 @@ interface Session {
   userId?: string;
   userRole?: string;
 }
+
+/* ─── System data injected per-request ─── */
+interface SystemData {
+  orders?: { total: number; pending: number; active: number; completed: number; lastOrder?: any };
+  projects?: { total: number; active: number };
+  wallet?: { balance: number };
+  notifications?: { unread: number };
+  stats?: Record<string, any>;
+}
 const sessions = new Map<string, Session>();
 function getSession(id: string, userId?: string, role?: string): Session {
   if (!sessions.has(id)) {
@@ -180,8 +189,12 @@ async function searchWeb(query: string): Promise<string> {
 function detectIntent(msg: string, session: Session): string {
   const m = msg.toLowerCase();
   if (session.mode !== "GENERAL") return session.mode;
-  // Email — handle hamza variants
   const mNorm = m.replace(/أ|إ|آ/g, "ا");
+  // My data / real user info
+  if (mNorm.includes("طلباتي") || mNorm.includes("مشاريعي") || mNorm.includes("رصيدي") || mNorm.includes("محفظتي") || mNorm.includes("احصائياتي") || mNorm.includes("احصاءاتي") || mNorm.includes("وضعي") || mNorm.includes("بياناتي") || mNorm.includes("ملخص") || mNorm.includes("حسابي") || mNorm.includes("كم لدي") || mNorm.includes("كم عندي") || mNorm.includes("ايش عندي") || mNorm.includes("ايش لدي") || mNorm.includes("ماذا لدي") || mNorm.includes("show me my") || mNorm.includes("my orders") || mNorm.includes("my balance")) return "MY_DATA";
+  // Navigate
+  if (mNorm.includes("روح") || mNorm.includes("روح ل") || mNorm.includes("اذهب") || mNorm.includes("انتقل") || mNorm.includes("افتح") || mNorm.includes("اريد اشوف") || mNorm.includes("خذني") || mNorm.includes("navigate") || mNorm.includes("go to") || mNorm.includes("open page")) return "NAVIGATE";
+  // Email — handle hamza variants
   if (mNorm.includes("ارسل بريد") || mNorm.includes("بعث ايميل") || mNorm.includes("ارسل ايميل") || mNorm.includes("send email") || mNorm.includes("ارسل رساله") || mNorm.includes("ارسل رسالة") || mNorm.includes("بريد الكتروني") || mNorm.includes("ايميل") || m.includes("mail")) return "EMAIL";
   // Package advisor
   if (m.includes("أنسب باقة") || m.includes("انسب باقة") || m.includes("أي باقة") || m.includes("اي باقة") || m.includes("ساعدني تختار") || m.includes("الباقة المناسبة") || m.includes("بدي باقة") || m.includes("أختار باقة") || m.includes("اختر لي") || m.includes("أنسب خطة") || m.includes("which plan") || m.includes("help me choose")) return "PACKAGE_ADVISOR";
@@ -193,6 +206,22 @@ function detectIntent(msg: string, session: Session): string {
   if (m.includes("ابحث") || m.includes("بحث") || m.includes("search") || m.includes("معلومة عن") || m.includes("ما هو ال") || m.startsWith("ما ")) return "SEARCH";
   return "GENERAL";
 }
+
+/* ─── Navigation URL map ─── */
+const NAV_PAGES: { keywords: string[]; url: string; label: string }[] = [
+  { keywords: ["الطلبات","طلباتي","طلبات","orders"], url: "/dashboard", label: "لوحة التحكم — الطلبات" },
+  { keywords: ["المشاريع","مشاريعي","projects","مشروع"], url: "/project/status", label: "المشاريع" },
+  { keywords: ["الأسعار","الباقات","prices","باقة","أسعار"], url: "/prices", label: "الأسعار والباقات" },
+  { keywords: ["السلة","cart","الكارت","عربة التسوق"], url: "/cart", label: "سلة التسوق" },
+  { keywords: ["الفاتورة","الفواتير","invoice","invoices"], url: "/invoices", label: "الفواتير" },
+  { keywords: ["المحفظة","رصيدي","wallet","محفظتي"], url: "/wallet", label: "المحفظة" },
+  { keywords: ["الملف الشخصي","الحساب","profile","بياناتي"], url: "/profile", label: "الملف الشخصي" },
+  { keywords: ["التواصل","الدعم","المساعدة","help","contact","دعم"], url: "/help", label: "مركز المساعدة" },
+  { keywords: ["الرئيسية","لوحة القيادة","dashboard","الداشبورد"], url: "/dashboard", label: "لوحة القيادة" },
+  { keywords: ["الاجتماعات","اجتماع","meetings","qmeet"], url: "/qmeet", label: "اجتماعات QMeet" },
+  { keywords: ["الطلب الجديد","طلب جديد","اطلب","order"], url: "/order", label: "طلب جديد" },
+  { keywords: ["الاستشارة","استشارة","consultation"], url: "/consultation", label: "الاستشارة" },
+];
 
 /* ─── Find page in KB ─── */
 const PAGE_KEYWORDS: Record<string, string[]> = {
@@ -258,10 +287,70 @@ function buildGreeting(role?: string, name?: string): string {
 async function processMessage(
   sessionId: string,
   message: string,
-  context: { userId?: string; role?: string; page?: string; name?: string }
+  context: { userId?: string; role?: string; page?: string; name?: string; systemData?: SystemData }
 ): Promise<{ reply: string; suggestions?: string[]; action?: string; data?: any }> {
   const session = getSession(sessionId, context.userId, context.role);
   session.history.push({ role: "user", text: message });
+  const sd = context.systemData;
+
+  // ─── MY DATA — real user information ───
+  if (detectIntent(message, session) === "MY_DATA" && session.mode === "GENERAL") {
+    const role = context.role;
+    if (sd && role === "client") {
+      const o = sd.orders || { total: 0, pending: 0, active: 0, completed: 0 };
+      const p = sd.projects || { total: 0, active: 0 };
+      const w = sd.wallet || { balance: 0 };
+      const reply = `📊 **ملخص حسابك في QIROX**\n\n` +
+        `📦 **الطلبات:** ${o.total} إجمالي\n` +
+        `  • قيد المراجعة: ${o.pending}\n` +
+        `  • نشط / قيد التنفيذ: ${o.active}\n` +
+        `  • مكتمل: ${o.completed}\n\n` +
+        `🚀 **المشاريع:** ${p.active} مشروع نشط${p.total > p.active ? ` (${p.total} إجمالي)` : ""}\n\n` +
+        `💰 **رصيد المحفظة:** ${Number(w.balance).toLocaleString()} ريال\n\n` +
+        (o.pending > 0 ? `⚠️ لديك ${o.pending} طلب ينتظر المراجعة\n\n` : "") +
+        `هل تريد الذهاب لأي قسم؟`;
+      session.history.push({ role: "ai", text: reply });
+      return { reply, action: "SHOW_STATS", data: { orders: o, projects: p, wallet: w }, suggestions: ["عرض طلباتي", "عرض مشاريعي", "شحن المحفظة", "طلب جديد"] };
+    }
+    if (sd && (role === "admin" || role === "manager") && sd.stats) {
+      const s = sd.stats;
+      const reply = `📊 **إحصاءات النظام — لمحة سريعة**\n\n` +
+        `👥 إجمالي العملاء: **${s.totalClients || 0}**\n` +
+        `📦 الطلبات المفتوحة: **${s.openOrders || 0}**\n` +
+        `💰 إيرادات الشهر: **${Number(s.monthRevenue || 0).toLocaleString()} ريال**\n` +
+        `🆕 عملاء جدد هذا الأسبوع: **${s.newClients || 0}**\n\n` +
+        `هل تريد تحليلاً أعمق أو الانتقال لصفحة محددة؟`;
+      session.history.push({ role: "ai", text: reply });
+      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["عرض التحليلات", "الطلبات المعلقة", "تقرير مالي"] };
+    }
+    if (sd && (role === "employee" || role === "employee_manager") && sd.orders) {
+      const o = sd.orders;
+      const reply = `📋 **ملخص مهامك اليوم**\n\n` +
+        `📦 طلبات معلقة تحتاج متابعة: **${o.pending || 0}**\n` +
+        `⚙️ قيد التنفيذ: **${o.active || 0}**\n` +
+        `✅ مكتملة: **${o.completed || 0}**\n\n` +
+        `هل تريد مراجعة الطلبات أو الانتقال لصفحة أخرى؟`;
+      session.history.push({ role: "ai", text: reply });
+      return { reply, action: "SHOW_STATS", data: { orders: o }, suggestions: ["عرض الطلبات المعلقة", "لوحة الكانبان", "عرض الفواتير"] };
+    }
+    const reply = "لا تتوفر بيانات كافية الآن. يمكنني مساعدتك في شيء آخر؟";
+    session.history.push({ role: "ai", text: reply });
+    return { reply };
+  }
+
+  // ─── NAVIGATE — انتقل لصفحة ───
+  if (detectIntent(message, session) === "NAVIGATE" && session.mode === "GENERAL") {
+    const m = message.toLowerCase();
+    const match = NAV_PAGES.find(p => p.keywords.some(kw => m.includes(kw)));
+    if (match) {
+      const reply = `✅ سأنقلك الآن إلى **${match.label}**`;
+      session.history.push({ role: "ai", text: reply });
+      return { reply, action: "NAVIGATE", data: { url: match.url, label: match.label } };
+    }
+    const reply = `أخبرني إلى أي صفحة تريد الانتقال:\n\n• لوحة القيادة\n• طلباتي / مشاريعي\n• الأسعار والباقات\n• المحفظة\n• الفواتير\n• اجتماعات QMeet\n• الملف الشخصي`;
+    session.history.push({ role: "ai", text: reply });
+    return { reply, suggestions: ["لوحة القيادة", "طلباتي", "الأسعار", "المحفظة", "Qمeet"] };
+  }
 
   // ─── EMAIL flow ───
   if (session.mode === "EMAIL" || detectIntent(message, session) === "EMAIL") {
@@ -583,12 +672,67 @@ export function registerAiRoutes(app: Express) {
       const { message, sessionId, context = {} } = req.body;
       if (!message || !sessionId) return res.status(400).json({ error: "message and sessionId required" });
 
-      // Merge authenticated user info
       const user = (req as any).user;
       if (user) {
         context.userId = user._id?.toString() || user.id?.toString();
         context.role = user.role || "client";
         context.name = user.fullName || user.username;
+      }
+
+      // ── Inject real system data ──
+      if (user) {
+        try {
+          const { OrderModel, UserModel } = await import("./models");
+          const userId = user._id;
+          const role = context.role;
+
+          if (role === "client") {
+            const [allOrders, walletUser] = await Promise.all([
+              OrderModel.find({ clientId: userId }).lean(),
+              UserModel.findById(userId).select("walletBalance").lean() as any,
+            ]);
+            const orders = {
+              total: allOrders.length,
+              pending: allOrders.filter((o: any) => o.status === "pending").length,
+              active: allOrders.filter((o: any) => ["in_progress", "review", "active"].includes(o.status)).length,
+              completed: allOrders.filter((o: any) => o.status === "completed").length,
+              lastOrder: allOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0],
+            };
+            const projectOrders = allOrders.filter((o: any) => o.type !== "custom" || o.status !== "pending");
+            const projects = { total: projectOrders.length, active: projectOrders.filter((o: any) => o.status !== "completed").length };
+            context.systemData = {
+              orders,
+              projects,
+              wallet: { balance: (walletUser as any)?.walletBalance || 0 },
+            };
+          } else if (role === "admin" || role === "manager") {
+            const [totalClients, allOrders] = await Promise.all([
+              UserModel.countDocuments({ role: "client" }),
+              OrderModel.find({}).lean(),
+            ]);
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const openOrders = allOrders.filter((o: any) => !["completed", "cancelled"].includes(o.status)).length;
+            const monthRevenue = allOrders
+              .filter((o: any) => o.status === "completed" && new Date(o.createdAt) >= startOfMonth)
+              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+            const newClients = await UserModel.countDocuments({ role: "client", createdAt: { $gte: oneWeekAgo } });
+            context.systemData = { stats: { totalClients, openOrders, monthRevenue, newClients } };
+          } else if (role === "employee" || role === "employee_manager") {
+            const orders = await OrderModel.find({ assignedTo: userId }).lean();
+            context.systemData = {
+              orders: {
+                total: orders.length,
+                pending: orders.filter((o: any) => o.status === "pending").length,
+                active: orders.filter((o: any) => ["in_progress", "review"].includes(o.status)).length,
+                completed: orders.filter((o: any) => o.status === "completed").length,
+              },
+            };
+          }
+        } catch (dbErr) {
+          console.error("[AI] DB context error:", dbErr);
+        }
       }
 
       const result = await processMessage(sessionId, message, context);

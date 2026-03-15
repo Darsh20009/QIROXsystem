@@ -6,7 +6,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import {
   Send, Sparkles, RotateCcw, Loader2, Mail, Package,
-  Zap, MessageSquare, Star, Globe, Lightbulb, BookOpen, TrendingUp, Bot
+  Zap, MessageSquare, Star, Globe, Lightbulb, BookOpen, TrendingUp, Bot,
+  ArrowLeft, BarChart2, Wallet, ShoppingCart, FileText, Users, Clock
 } from "lucide-react";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -53,32 +54,32 @@ const ROLE_CFG = {
 
 const QUICK_ACTIONS: Record<string, { label: string; icon: any; msg: string }[]> = {
   admin: [
-    { label: "تحليل الموقع", icon: TrendingUp, msg: "اقتراحات لتحسين الموقع" },
-    { label: "شرح صفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
+    { label: "ملخص النظام", icon: BarChart2, msg: "ملخص احصاءات النظام" },
+    { label: "شرح الصفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
     { label: "مقارنة الباقات", icon: Package, msg: "قارن بين الباقات" },
     { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
   ],
   manager: [
-    { label: "تحليل الموقع", icon: TrendingUp, msg: "اقتراحات لتحسين الموقع" },
-    { label: "شرح صفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
+    { label: "ملخص النظام", icon: BarChart2, msg: "ملخص احصاءات النظام" },
+    { label: "شرح الصفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
     { label: "مقارنة الباقات", icon: Package, msg: "قارن بين الباقات" },
     { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
   ],
   employee: [
+    { label: "ملخص مهامي", icon: Clock, msg: "ايش عندي من مهام اليوم" },
     { label: "شرح الطلبات", icon: BookOpen, msg: "اشرح صفحة الطلبات" },
     { label: "شرح الكانبان", icon: Lightbulb, msg: "اشرح صفحة الكانبان" },
-    { label: "شرح الفواتير", icon: Globe, msg: "اشرح صفحة الفواتير" },
     { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
   ],
   employee_manager: [
+    { label: "ملخص مهامي", icon: Clock, msg: "ايش عندي من مهام اليوم" },
     { label: "شرح الطلبات", icon: BookOpen, msg: "اشرح صفحة الطلبات" },
     { label: "شرح الكانبان", icon: Lightbulb, msg: "اشرح صفحة الكانبان" },
-    { label: "شرح الفواتير", icon: Globe, msg: "اشرح صفحة الفواتير" },
     { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
   ],
   client: [
+    { label: "حسابي", icon: BarChart2, msg: "اعطني ملخص حسابي" },
     { label: "أنسب باقة لي", icon: Star, msg: "أنسب باقة لمشروعي" },
-    { label: "مقارنة الباقات", icon: Package, msg: "قارن بين الباقات" },
     { label: "طلب مخصص", icon: Zap, msg: "أريد طلباً مخصصاً" },
     { label: "تواصل معنا", icon: MessageSquare, msg: "كيف أتواصل مع فريق QIROX؟" },
   ],
@@ -90,6 +91,101 @@ const QUICK_ACTIONS: Record<string, { label: string; icon: any; msg: string }[]>
   ],
 };
 
+/* ─── Stats Card rendered inside chat ─── */
+function StatsCard({ data, role }: { data: any; role: string }) {
+  if (!data) return null;
+  if (role === "client" && data.orders) {
+    const { orders, projects, wallet } = data;
+    return (
+      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(14,165,233,0.07)", border: "1px solid rgba(14,165,233,0.2)" }}>
+        <div className="px-3 py-2 grid grid-cols-3 gap-2">
+          <div className="text-center">
+            <div className="text-[18px] font-black text-cyan-300">{orders.total}</div>
+            <div className="text-[9px] text-white/40">طلب إجمالي</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[18px] font-black text-emerald-300">{projects?.active ?? 0}</div>
+            <div className="text-[9px] text-white/40">مشروع نشط</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[14px] font-black text-amber-300">{Number(wallet?.balance ?? 0).toLocaleString()}</div>
+            <div className="text-[9px] text-white/40">رصيد (ريال)</div>
+          </div>
+        </div>
+        {orders.pending > 0 && (
+          <div className="px-3 py-1.5 text-[10px] text-amber-300 font-semibold" style={{ borderTop: "1px solid rgba(14,165,233,0.15)" }}>
+            ⚠️ {orders.pending} طلب في الانتظار
+          </div>
+        )}
+      </div>
+    );
+  }
+  if ((role === "admin" || role === "manager") && (data.totalClients !== undefined || data.openOrders !== undefined)) {
+    return (
+      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)" }}>
+        <div className="px-3 py-2 grid grid-cols-2 gap-2">
+          <div className="text-center">
+            <div className="text-[17px] font-black text-violet-300">{data.totalClients ?? 0}</div>
+            <div className="text-[9px] text-white/40">إجمالي العملاء</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[17px] font-black text-orange-300">{data.openOrders ?? 0}</div>
+            <div className="text-[9px] text-white/40">طلبات مفتوحة</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[14px] font-black text-emerald-300">{Number(data.monthRevenue ?? 0).toLocaleString()}</div>
+            <div className="text-[9px] text-white/40">إيرادات الشهر</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[17px] font-black text-cyan-300">{data.newClients ?? 0}</div>
+            <div className="text-[9px] text-white/40">عملاء جدد (أسبوع)</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if ((role === "employee" || role === "employee_manager") && data.orders) {
+    const o = data.orders;
+    return (
+      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.2)" }}>
+        <div className="px-3 py-2 grid grid-cols-3 gap-2">
+          <div className="text-center">
+            <div className="text-[17px] font-black text-amber-300">{o.pending ?? 0}</div>
+            <div className="text-[9px] text-white/40">معلقة</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[17px] font-black text-blue-300">{o.active ?? 0}</div>
+            <div className="text-[9px] text-white/40">نشطة</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[17px] font-black text-emerald-300">{o.completed ?? 0}</div>
+            <div className="text-[9px] text-white/40">مكتملة</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+/* ─── Navigate action card ─── */
+function NavigateCard({ url, label, onNavigate }: { url: string; label: string; onNavigate: (url: string) => void }) {
+  return (
+    <button
+      onClick={() => onNavigate(url)}
+      className="w-full mt-1.5 flex items-center gap-2 px-3 py-2.5 rounded-xl text-right transition-all hover:scale-[1.01]"
+      style={{ background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.3)" }}
+      data-testid="button-ai-navigate"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-bold text-cyan-300">انتقل إلى: {label}</div>
+        <div className="text-[9px] text-white/35 font-mono mt-0.5">{url}</div>
+      </div>
+      <ArrowLeft className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+    </button>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════
    AIPanel — مكوّن مدمج داخل الصفحات (ليس عائماً)
    استخدمه هكذا:  <AIPanel className="h-[520px]" />
@@ -99,7 +195,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => uid());
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const initialized = useRef(false);
@@ -116,11 +212,11 @@ export function AIPanel({ className = "" }: { className?: string }) {
       initialized.current = true;
       addAiMsg(
         role === "client"
-          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! ✨ أنا **QIROX AI**، مستشارك الشخصي.\n\nيمكنني مساعدتك في اختيار الباقة الأنسب، إنشاء طلب مخصص، أو الإجابة على أي استفسار.\n\nكيف أقدر أساعدك؟`
+          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! ✨ أنا **QIROX AI**، مستشارك الشخصي.\n\nيمكنني عرض حسابك، اختيار الباقة الأنسب، أو الانتقال لأي صفحة تحتاجها.\n\nكيف أقدر أساعدك؟`
           : role === "admin" || role === "manager"
-          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI**، مساعدك الإداري.\n\nيمكنني تحليل الموقع، شرح الصفحات، إرسال البريد، ومساعدتك في أي قرار.`
+          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI**، مساعدك الإداري.\n\nيمكنني عرض إحصاءات النظام، تحليل الموقع، إرسال البريد، والانتقال لأي صفحة.`
           : role === "employee" || role === "employee_manager"
-          ? `أهلاً${user?.fullName ? ` ${user.fullName}` : ""}! 💼 أنا **QIROX AI**، مساعدك داخل النظام.\n\nاسألني عن أي صفحة أو مهمة وسأشرحها لك.`
+          ? `أهلاً${user?.fullName ? ` ${user.fullName}` : ""}! 💼 أنا **QIROX AI**، مساعدك داخل النظام.\n\nيمكنني عرض مهامك، شرح أي صفحة، أو مساعدتك في التنقل.`
           : `مرحباً! أنا **QIROX AI**.\n\nيمكنني مساعدتك في اكتشاف الباقة المثالية أو الإجابة على أي سؤال.`,
         role === "guest" ? ["استكشف الباقات", "أنسب باقة لمشروعي", "كيف تعمل المنصة؟"] : undefined
       );
@@ -129,6 +225,10 @@ export function AIPanel({ className = "" }: { className?: string }) {
 
   function addAiMsg(text: string, suggestions?: string[], action?: string, data?: any) {
     setMsgs(prev => [...prev, { id: uid(), role: "ai", text, suggestions, action, data, timestamp: new Date() }]);
+  }
+
+  function handleNavigate(url: string) {
+    navigate(url);
   }
 
   const sendMessage = useCallback(async (text: string) => {
@@ -140,12 +240,31 @@ export function AIPanel({ className = "" }: { className?: string }) {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim(), sessionId, context: { role, page: location, name: user?.fullName || user?.username } }),
+        body: JSON.stringify({
+          message: text.trim(),
+          sessionId,
+          context: { role, page: location, name: user?.fullName || user?.username },
+        }),
       });
       const data = await res.json();
+
+      // Handle actions that trigger side-effects
       if (data.action === "CUSTOM_ORDER_SUBMITTED" && data.data) {
         fetch("/api/ai/custom-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data.data) }).catch(() => {});
       }
+      if (data.action === "NAVIGATE" && data.data?.url) {
+        addAiMsg(data.reply || "سأنقلك الآن...", data.suggestions, data.action, data.data);
+        setLoading(false);
+        setTimeout(() => handleNavigate(data.data.url), 900);
+        return;
+      }
+      if (data.action === "GO_PRICES") {
+        addAiMsg(data.reply || "انتقل للأسعار", data.suggestions, data.action, data.data);
+        setLoading(false);
+        setTimeout(() => handleNavigate("/prices"), 900);
+        return;
+      }
+
       addAiMsg(data.reply || "عذراً، حدث خطأ.", data.suggestions, data.action, data.data);
     } catch {
       addAiMsg("⚠️ حدث خطأ في الاتصال. تحقق من الإنترنت وحاول مجدداً.");
@@ -160,12 +279,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
     fetch(`/api/ai/session/${sessionId}`, { method: "DELETE" }).catch(() => {});
     setTimeout(() => {
       initialized.current = false;
-      // Re-trigger welcome
-      addAiMsg(
-        role === "client"
-          ? `مرحباً مجدداً! 👋 كيف أقدر أساعدك؟`
-          : `تم تجديد المحادثة. كيف أقدر أساعدك؟`
-      );
+      addAiMsg(role === "client" ? `مرحباً مجدداً! 👋 كيف أقدر أساعدك؟` : `تم تجديد المحادثة. كيف أقدر أساعدك؟`);
     }, 50);
   }
 
@@ -260,7 +374,17 @@ export function AIPanel({ className = "" }: { className?: string }) {
                   dangerouslySetInnerHTML={{ __html: renderText(msg.text) }}
                 />
 
-                {/* Package cards */}
+                {/* Stats card — SHOW_STATS action */}
+                {msg.action === "SHOW_STATS" && msg.data && (
+                  <StatsCard data={msg.data} role={role} />
+                )}
+
+                {/* Navigate card — NAVIGATE action */}
+                {msg.action === "NAVIGATE" && msg.data?.url && (
+                  <NavigateCard url={msg.data.url} label={msg.data.label} onNavigate={handleNavigate} />
+                )}
+
+                {/* Package cards — SHOW_PACKAGE action */}
                 {msg.action === "SHOW_PACKAGE" && msg.data?.all && (
                   <div className="w-full grid gap-1.5 mt-0.5">
                     {msg.data.all.map((pkg: any) => (
@@ -334,7 +458,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-            placeholder="اكتب سؤالك هنا..."
+            placeholder="اكتب سؤالك أو اطلب انتقالاً..."
             disabled={loading}
             className="flex-1 bg-transparent text-white text-[12.5px] placeholder:text-white/30 outline-none text-right"
             dir="rtl"
@@ -353,11 +477,10 @@ export function AIPanel({ className = "" }: { className?: string }) {
               : <Send className="w-3.5 h-3.5 text-white" style={{ transform: "scaleX(-1)" }} />}
           </motion.button>
         </div>
-        <p className="text-center text-[9px] text-white/20 mt-1">QIROX AI · مدعوم بالذكاء الاصطناعي</p>
+        <p className="text-center text-[9px] text-white/20 mt-1">QIROX AI · متصل بالنظام</p>
       </div>
     </div>
   );
 }
 
-/* الاستخدام الإضافي — يمكن استدعاء AIPanel مباشرة */
 export default AIPanel;

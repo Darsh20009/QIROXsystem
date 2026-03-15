@@ -1,6 +1,7 @@
 import SARIcon from "@/components/SARIcon";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { AIPanel } from "@/components/QiroxAI";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -755,6 +756,11 @@ export default function EmployeeRoleDashboard() {
             </Link>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* ── QIROX AI Assistant ── */}
+      <motion.div {...fade(0.4)} className="mt-4">
+        <AIPanel className="h-[460px]" />
       </motion.div>
     </div>
   );
