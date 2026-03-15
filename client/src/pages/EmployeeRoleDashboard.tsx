@@ -2,6 +2,7 @@ import SARIcon from "@/components/SARIcon";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,8 @@ import {
   DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle,
   Wrench, Code2, ShieldCheck, BarChart3, Palette, Upload, ExternalLink,
   FileText, Users, Activity, Wallet, Receipt, Banknote, Target,
-  ChevronRight, Star, Zap, Globe, Wand2, Video, Calendar, KeyRound
+  ChevronRight, Star, Zap, Globe, Wand2, Video, Calendar, KeyRound,
+  ShoppingCart, Phone, MessageCircle, ChevronDown, ChevronUp
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -576,6 +578,132 @@ function UpcomingMeetingsWidget() {
   );
 }
 
+// ── ABANDONED CARTS WIDGET ──────────────────────────────────────────────────────
+function AbandonedCartsWidget() {
+  const { data: carts, isLoading } = useQuery<any[]>({ queryKey: ["/api/employee/abandoned-carts"] });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const typeLabel: Record<string, string> = {
+    service: "خدمة", product: "منتج", domain: "دومين",
+    email: "بريد", hosting: "استضافة", gift: "هدية", plan: "باقة",
+  };
+
+  if (isLoading) {
+    return (
+      <motion.div {...fade(0.2)} className="mt-6">
+        <Card className="border border-black/[0.06] shadow-none">
+          <CardContent className="p-5 flex items-center gap-3">
+            <Loader2 className="w-4 h-4 animate-spin text-black/30" />
+            <span className="text-sm text-black/40">جارٍ تحميل العربات...</span>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  if (!carts || carts.length === 0) return null;
+
+  return (
+    <motion.div {...fade(0.2)} className="mt-6">
+      <Card className="border border-black/[0.06] shadow-none">
+        <CardHeader className="pb-3 pt-5 px-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+              <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold text-black dark:text-white">عربات التسوق المهجورة</CardTitle>
+              <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{carts.length} عميل لديه منتجات في العربة</p>
+            </div>
+            <Badge className="mr-auto bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-0">
+              {carts.length}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="px-5 pb-5 space-y-3">
+          {carts.map((cart: any) => {
+            const isExpanded = expandedId === cart.cartId;
+            const phone = cart.client.whatsapp || cart.client.phone;
+            const phoneClean = phone?.replace(/\D/g, "");
+            const waLink = phoneClean ? `https://wa.me/${phoneClean.startsWith("0") ? "966" + phoneClean.slice(1) : phoneClean}` : null;
+            const telLink = phoneClean ? `tel:${phone}` : null;
+            const timeAgo = (() => {
+              const diff = Date.now() - new Date(cart.updatedAt).getTime();
+              const hrs = Math.floor(diff / 3600000);
+              const days = Math.floor(hrs / 24);
+              if (days > 0) return `منذ ${days} يوم`;
+              if (hrs > 0) return `منذ ${hrs} ساعة`;
+              return "منذ قليل";
+            })();
+            return (
+              <div key={cart.cartId} data-testid={`abandoned-cart-${cart.cartId}`} className="border border-black/[0.06] dark:border-white/[0.08] rounded-2xl overflow-hidden">
+                <div className="flex items-center gap-3 p-4">
+                  <div className="w-9 h-9 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-black dark:text-white truncate">{cart.client.name}</p>
+                    <p className="text-[11px] text-black/40 dark:text-white/40">{cart.itemsCount} منتج · {cart.total.toFixed(0)} ر.س · {timeAgo}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {waLink && (
+                      <a href={waLink} target="_blank" rel="noopener noreferrer" data-testid={`wa-btn-${cart.cartId}`}
+                        className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors" title="واتساب">
+                        <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      </a>
+                    )}
+                    {telLink && (
+                      <a href={telLink} data-testid={`tel-btn-${cart.cartId}`}
+                        className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center hover:bg-blue-200 transition-colors" title="اتصل">
+                        <Phone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </a>
+                    )}
+                    {!phone && (
+                      <span className="text-[11px] text-black/30 dark:text-white/30 px-1">لا يوجد رقم</span>
+                    )}
+                    <button onClick={() => setExpandedId(isExpanded ? null : cart.cartId)} data-testid={`expand-cart-${cart.cartId}`}
+                      className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center hover:bg-black/[0.08] transition-colors">
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-black/40 dark:text-white/40" /> : <ChevronDown className="w-4 h-4 text-black/40 dark:text-white/40" />}
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div className="border-t border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] px-4 py-3 space-y-2">
+                    {cart.client.email && (
+                      <p className="text-[11px] text-black/40 dark:text-white/40">📧 {cart.client.email}</p>
+                    )}
+                    {cart.client.phone && (
+                      <p className="text-[11px] text-black/40 dark:text-white/40">📞 {cart.client.phone}</p>
+                    )}
+                    <div className="mt-2 space-y-1.5">
+                      {cart.items.map((item: any) => (
+                        <div key={item._id} className="flex items-center gap-2">
+                          {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-black dark:text-white truncate">{item.name}</p>
+                          </div>
+                          <span className="text-[11px] text-black/40 dark:text-white/40 flex-shrink-0">{(item.price * item.qty).toFixed(0)} ر.س</span>
+                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 flex-shrink-0">{typeLabel[item.type] || item.type}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-2 flex items-center justify-between border-t border-black/[0.06] dark:border-white/[0.06]">
+                      <span className="text-xs text-black/40 dark:text-white/40">الإجمالي</span>
+                      <span className="text-sm font-bold text-black dark:text-white flex items-center gap-1">
+                        {cart.total.toFixed(2)} <SARIcon className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
   const { data: user } = useUser();
@@ -608,6 +736,7 @@ export default function EmployeeRoleDashboard() {
     <div className="relative overflow-hidden">
       <PageGraphics variant="dashboard" />
       {roleDashboard}
+      <AbandonedCartsWidget />
       <UpcomingMeetingsWidget />
       <motion.div {...fade(0.3)} className="mt-4">
         <Card className="border border-black/[0.06] shadow-none hover:shadow-md transition-all cursor-pointer group">

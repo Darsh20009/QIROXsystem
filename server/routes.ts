@@ -5920,6 +5920,48 @@ export async function registerRoutes(
     res.json(users.map((u: any) => ({ id: u._id, email: u.email, name: u.fullName || u.username, role: u.role })));
   });
 
+  // === EMPLOYEE: ABANDONED CARTS ===
+  app.get("/api/employee/abandoned-carts", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const actor = req.user as any;
+    if (actor.role === "client") return res.sendStatus(403);
+    try {
+      const { CartModel, UserModel } = await import("./models");
+      const carts = await CartModel.find({ "items.0": { $exists: true } })
+        .sort({ updatedAt: -1 })
+        .limit(100)
+        .lean();
+      const userIds = carts.map((c: any) => c.userId);
+      const users = await UserModel.find({ _id: { $in: userIds } })
+        .select("fullName username email phone whatsappNumber")
+        .lean();
+      const userMap: Record<string, any> = {};
+      for (const u of users as any[]) userMap[String(u._id)] = u;
+      const result = carts.map((c: any) => {
+        const u = userMap[String(c.userId)] || {};
+        const totalVal = (c.items as any[]).reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
+        return {
+          cartId: c._id,
+          updatedAt: c.updatedAt,
+          itemsCount: (c.items as any[]).length,
+          total: totalVal,
+          items: (c.items as any[]).map((i: any) => ({ _id: i._id, name: i.nameAr || i.name, price: i.price, qty: i.qty, type: i.type, imageUrl: i.imageUrl })),
+          client: {
+            id: c.userId,
+            name: u.fullName || u.username || "—",
+            email: u.email || "",
+            phone: u.phone || "",
+            whatsapp: u.whatsappNumber || u.phone || "",
+          },
+        };
+      });
+      res.json(result);
+    } catch (err) {
+      console.error("[employee/abandoned-carts]", err);
+      res.status(500).json({ error: "خطأ في الخادم" });
+    }
+  });
+
   // ═══════════════════════════════════════════════════════════
   // === EMPLOYEE: CREATE CLIENT ACCOUNT + ORDER ===
   // ═══════════════════════════════════════════════════════════
