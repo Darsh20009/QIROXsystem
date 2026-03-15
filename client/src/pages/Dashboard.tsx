@@ -2502,7 +2502,8 @@ export default function Dashboard() {
           {/* Bank Transfer Proof Upload Banner */}
           {(() => {
             const pendingProofOrders = (orders || []).filter((o: any) =>
-              o.paymentMethod === "bank_transfer" && !o.paymentProofUrl
+              o.paymentMethod === "bank_transfer" && !o.paymentProofUrl &&
+              o.status !== "cancelled" && o.status !== "rejected"
             );
             if (pendingProofOrders.length === 0) return null;
             return (
@@ -2562,7 +2563,8 @@ export default function Dashboard() {
           {/* Rejected Bank Transfer Alert Banner */}
           {(() => {
             const rejectedOrders = (orders || []).filter((o: any) =>
-              o.paymentMethod === "bank_transfer" && o.paymentStatus === "rejected"
+              o.paymentMethod === "bank_transfer" && o.paymentStatus === "rejected" &&
+              o.status !== "cancelled" && o.status !== "rejected"
             );
             if (rejectedOrders.length === 0) return null;
             return (
