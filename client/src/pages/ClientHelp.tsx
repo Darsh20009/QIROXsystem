@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { Link } from "wouter";
+import { AIPanel } from "@/components/QiroxAI";
 
 const FAQ_ITEMS = [
   {
@@ -119,6 +120,77 @@ export default function ClientHelp() {
         ))}
       </div>
 
+      {/* ─── QIROX AI Panel ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h2 className="text-lg font-black text-black dark:text-white mb-4">
+            {ar ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}
+          </h2>
+          <p className="text-xs text-black/40 dark:text-white/40 mb-4">
+            {ar ? "اسأل المساعد أي سؤال وسيجيبك فوراً" : "Ask the assistant any question and get an instant answer"}
+          </p>
+          <AIPanel className="h-[420px]" />
+        </div>
+        <div>
+          <h2 className="text-lg font-black text-black dark:text-white mb-4" data-testid="text-contact-title">
+            {ar ? "تواصل معنا" : "Contact Us"}
+          </h2>
+          {sent ? (
+            <Card className="border-green-200 dark:border-green-800 shadow-none rounded-2xl dark:bg-gray-900">
+              <CardContent className="pt-8 pb-8 text-center">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <p className="font-bold text-black dark:text-white mb-1">{ar ? "تم إرسال رسالتك بنجاح!" : "Message sent successfully!"}</p>
+                <p className="text-sm text-black/40 dark:text-white/40 mb-4">{ar ? "سنرد عليك في أقرب وقت" : "We'll get back to you soon"}</p>
+                <Button variant="outline" onClick={() => setSent(false)} className="dark:text-white dark:border-white/10" data-testid="button-send-another">
+                  {ar ? "إرسال رسالة أخرى" : "Send another message"}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-black/[0.06] dark:border-white/[0.06] shadow-none rounded-2xl dark:bg-gray-900">
+              <CardContent className="pt-5 pb-5 space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الاسم" : "Name"}</label>
+                    <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder={ar ? "اسمك الكامل" : "Your full name"}
+                      className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" data-testid="input-name" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "البريد الإلكتروني" : "Email"}</label>
+                    <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                      placeholder={ar ? "بريدك الإلكتروني" : "Your email address"}
+                      className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" data-testid="input-email" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الموضوع" : "Subject"}</label>
+                  <Input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
+                    placeholder={ar ? "موضوع الرسالة (اختياري)" : "Message subject (optional)"}
+                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" data-testid="input-subject" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الرسالة" : "Message"}</label>
+                  <Textarea value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                    placeholder={ar ? "اكتب رسالتك هنا..." : "Write your message here..."}
+                    rows={4}
+                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" data-testid="input-message" />
+                </div>
+                <Button
+                  onClick={() => sendMutation.mutate()}
+                  disabled={!form.name.trim() || !form.email.trim() || !form.message.trim() || sendMutation.isPending}
+                  className="bg-black dark:bg-white text-white dark:text-black gap-2"
+                  data-testid="button-submit"
+                >
+                  {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {ar ? "إرسال الرسالة" : "Send Message"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
       <div>
         <h2 className="text-lg font-black text-black dark:text-white mb-4" data-testid="text-faq-title">
           {ar ? "الأسئلة الشائعة" : "Frequently Asked Questions"}
@@ -155,81 +227,6 @@ export default function ClientHelp() {
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-black text-black dark:text-white mb-4" data-testid="text-contact-title">
-          {ar ? "تواصل معنا" : "Contact Us"}
-        </h2>
-        {sent ? (
-          <Card className="border-green-200 dark:border-green-800 shadow-none rounded-2xl dark:bg-gray-900">
-            <CardContent className="pt-8 pb-8 text-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="font-bold text-black dark:text-white mb-1">{ar ? "تم إرسال رسالتك بنجاح!" : "Message sent successfully!"}</p>
-              <p className="text-sm text-black/40 dark:text-white/40 mb-4">{ar ? "سنرد عليك في أقرب وقت" : "We'll get back to you soon"}</p>
-              <Button variant="outline" onClick={() => setSent(false)} className="dark:text-white dark:border-white/10" data-testid="button-send-another">
-                {ar ? "إرسال رسالة أخرى" : "Send another message"}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-black/[0.06] dark:border-white/[0.06] shadow-none rounded-2xl dark:bg-gray-900">
-            <CardContent className="pt-5 pb-5 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الاسم" : "Name"}</label>
-                  <Input
-                    value={form.name}
-                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder={ar ? "اسمك الكامل" : "Your full name"}
-                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
-                    data-testid="input-name"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "البريد الإلكتروني" : "Email"}</label>
-                  <Input
-                    type="email"
-                    value={form.email}
-                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                    placeholder={ar ? "بريدك الإلكتروني" : "Your email address"}
-                    className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
-                    data-testid="input-email"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الموضوع" : "Subject"}</label>
-                <Input
-                  value={form.subject}
-                  onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
-                  placeholder={ar ? "موضوع الرسالة (اختياري)" : "Message subject (optional)"}
-                  className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
-                  data-testid="input-subject"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1 block">{ar ? "الرسالة" : "Message"}</label>
-                <Textarea
-                  value={form.message}
-                  onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
-                  placeholder={ar ? "اكتب رسالتك هنا..." : "Write your message here..."}
-                  rows={4}
-                  className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
-                  data-testid="input-message"
-                />
-              </div>
-              <Button
-                onClick={() => sendMutation.mutate()}
-                disabled={!form.name.trim() || !form.email.trim() || !form.message.trim() || sendMutation.isPending}
-                className="bg-black dark:bg-white text-white dark:text-black gap-2"
-                data-testid="button-submit"
-              >
-                {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {ar ? "إرسال الرسالة" : "Send Message"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
     </div>
   );
 }
