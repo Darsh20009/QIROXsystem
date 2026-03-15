@@ -9696,18 +9696,14 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  /* ══ Phone Verification (Telegram deep-link / Call) ════════════════════ */
+  /* ══ Phone Verification (Telegram Gateway OTP / Call) ════════════════════ */
 
-  const TELEGRAM_BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN || "";
-  const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "QIROX_BOT";
+  const TELEGRAM_GATEWAY_TOKEN = process.env.TELEGRAM_GATEWAY_TOKEN || "";
+  const TELEGRAM_BOT_TOKEN     = process.env.TELEGRAM_BOT_TOKEN || "";
+  const TELEGRAM_BOT_USERNAME  = process.env.TELEGRAM_BOT_USERNAME || "QIROX_BOT";
 
-  async function sendTelegramMessage(chatId: string | number, text: string) {
-    if (!TELEGRAM_BOT_TOKEN) return;
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-    }).catch(e => console.error("[TG]", e.message));
+  function genOtp(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
   }
 
   function genPhoneToken(): string {
@@ -9717,11 +9713,65 @@ export async function registerRoutes(
     return t;
   }
 
-  function genOtp(): string {
-    return String(Math.floor(100000 + Math.random() * 900000));
+  // Normalise phone to international format +966xxxxxxxxx
+  function normalisePhone(raw: string): string {
+    let p = String(raw).replace(/[\s\-().]/g, "");
+    if (p.startsWith("00")) p = "+" + p.slice(2);
+    if (!p.startsWith("+")) {
+      if (p.startsWith("05")) p = "+966" + p.slice(1);
+      else if (p.startsWith("5") && p.length === 9) p = "+966" + p;
+      else p = "+" + p;
+    }
+    return p;
   }
 
-  // POST /api/phone-verify/init  — create a pending verification record + otp
+  // Send OTP via Telegram Gateway API
+  async function sendOtpViaTelegramGateway(phone: string, otp: string, requestId: string): Promise<{ok: boolean; error?: string}> {
+    if (!TELEGRAM_GATEWAY_TOKEN) {
+      return { ok: false, error: "TELEGRAM_GATEWAY_TOKEN not configured" };
+    }
+    try {
+      const res = await fetch("https://gatewayapi.telegram.org/sendVerificationMessage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${TELEGRAM_GATEWAY_TOKEN}`,
+        },
+        body: JSON.stringify({
+          phone_number: phone,
+          request_id: requestId,
+          code: otp,
+          code_length: 6,
+          ttl: 900,
+        }),
+      });
+      const data = await res.json() as any;
+      if (!res.ok || !data.ok) {
+        console.error("[TGGateway] Error:", data);
+        return { ok: false, error: data.error?.message || "Gateway error" };
+      }
+      console.log("[TGGateway] OTP sent to", phone);
+      return { ok: true };
+    } catch (e: any) {
+      console.error("[TGGateway]", e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  // Fallback: send via Bot (only works if user has started the bot before)
+  async function sendTelegramMessage(chatId: string | number, text: string) {
+    if (!TELEGRAM_BOT_TOKEN) return false;
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+      });
+      return res.ok;
+    } catch { return false; }
+  }
+
+  // POST /api/phone-verify/init  — generate OTP and send via Telegram Gateway
   app.post("/api/phone-verify/init", otpLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -9730,22 +9780,23 @@ export async function registerRoutes(
       const { phone, method } = req.body;
       if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
       if (!["telegram", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
-      const normPhone = String(phone).trim();
+      const normPhone = normalisePhone(String(phone).trim());
 
       const dbUser = await (UserModel as any).findById(me._id || me.id);
       if (dbUser?.phoneVerified && dbUser?.phone === normPhone) {
         return res.json({ alreadyVerified: true });
       }
 
-      // Expire all previous pending tokens for this user
+      // Expire previous pending OTPs for this user
       await (PhoneVerifyOtpModel as any).updateMany(
         { userId: me._id || me.id, verified: false },
         { expiresAt: new Date() }
       );
 
-      const token = genPhoneToken();
-      const otp   = genOtp();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+      const otp       = genOtp();
+      const token     = genPhoneToken();
+      const requestId = `qirox-${(me._id || me.id).toString()}-${Date.now()}`;
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
       await (PhoneVerifyOtpModel as any).create({
         userId: me._id || me.id,
@@ -9763,8 +9814,21 @@ export async function registerRoutes(
       }
 
       if (method === "telegram") {
-        const botUsername = TELEGRAM_BOT_USERNAME;
-        return res.json({ method: "telegram", botUsername, expiresAt, phone: normPhone });
+        if (!TELEGRAM_GATEWAY_TOKEN) {
+          return res.status(503).json({
+            error: "gateway_not_configured",
+            message: "خدمة Telegram Gateway غير مُفعّلة. يرجى التواصل مع الدعم.",
+          });
+        }
+        const sent = await sendOtpViaTelegramGateway(normPhone, otp, requestId);
+        if (!sent.ok) {
+          return res.status(502).json({
+            error: "send_failed",
+            message: "تعذّر إرسال الرمز عبر تيليجرام. تحقق من أن رقمك مُسجّل على تيليجرام.",
+            detail: sent.error,
+          });
+        }
+        return res.json({ method: "telegram", expiresAt, phone: normPhone, sent: true });
       } else {
         const { NotificationModel } = await import("./models");
         await (NotificationModel as any).create({
@@ -9779,7 +9843,7 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  // POST /api/phone-verify/confirm-otp  — user submits the 6-digit OTP they received
+    // POST /api/phone-verify/confirm-otp  — user submits the 6-digit OTP they received
   app.post("/api/phone-verify/confirm-otp", otpLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {

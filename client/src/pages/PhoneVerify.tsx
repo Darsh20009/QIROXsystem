@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,11 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Phone, CheckCircle2, Loader2, ArrowRight,
-  ShieldCheck, Clock, ExternalLink, AlertTriangle,
-  PhoneCall, Info, Send, RefreshCw
+  Phone, CheckCircle2, Loader2, ShieldCheck,
+  Clock, AlertTriangle, PhoneCall, Send, RefreshCw, ArrowRight, Info
 } from "lucide-react";
 
 const TelegramIcon = () => (
@@ -21,26 +19,27 @@ const TelegramIcon = () => (
 );
 
 type Method = "telegram" | "call";
-type Stage  = "select-method" | "enter-phone" | "telegram-otp" | "call-wait" | "done";
+type Stage  = "enter-phone" | "enter-otp" | "call-wait" | "done";
+
+const OTP_LENGTH = 6;
 
 export default function PhoneVerify() {
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
   const nextAfterVerify = isRegisterFlow ? "/onboarding" : "/dashboard";
 
-  const [stage, setStage]     = useState<Stage>("select-method");
-  const [method, setMethod]   = useState<Method>("telegram");
-  const [phone, setPhone]     = useState((user as any)?.phone || "");
-  const [otp, setOtp]         = useState("");
-  const [botUsername, setBotUsername] = useState("QIROX_BOT");
-  const [expiresAt, setExpiresAt]     = useState<Date | null>(null);
-  const [remaining, setRemaining]     = useState("");
+  const [stage, setStage]   = useState<Stage>("enter-phone");
+  const [method, setMethod] = useState<Method>("telegram");
+  const [phone, setPhone]   = useState((user as any)?.phone || "");
+  const [otp, setOtp]       = useState<string[]>(Array(OTP_LENGTH).fill(""));
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [remaining, setRemaining] = useState("");
 
-  // Countdown timer
   useEffect(() => {
     if (!expiresAt) return;
     const tick = () => {
@@ -57,21 +56,36 @@ export default function PhoneVerify() {
   const initMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/phone-verify/init", { phone, method }).then(r => r.json()),
     onSuccess: (data: any) => {
-      if (data.alreadyVerified) { setStage("done"); return; }
+      if (data.alreadyVerified) {
+        if (isRegisterFlow) navigate("/onboarding");
+        else setStage("done");
+        return;
+      }
+      if (data.error === "gateway_not_configured") {
+        toast({ title: "الخدمة غير متاحة حالياً", description: data.message, variant: "destructive" });
+        return;
+      }
+      if (data.error === "send_failed") {
+        toast({ title: "فشل الإرسال", description: data.message, variant: "destructive" });
+        return;
+      }
       setExpiresAt(new Date(data.expiresAt));
-      if (data.botUsername) setBotUsername(data.botUsername);
-      if (method === "telegram") setStage("telegram-otp");
-      else setStage("call-wait");
+      if (method === "telegram") {
+        setOtp(Array(OTP_LENGTH).fill(""));
+        setStage("enter-otp");
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      } else {
+        setStage("call-wait");
+      }
     },
     onError: (e: any) => toast({ title: e?.message || "حدث خطأ", variant: "destructive" }),
   });
 
-  const confirmOtpMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/phone-verify/confirm-otp", { otp }).then(r => r.json()),
+  const confirmMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/phone-verify/confirm-otp", { otp: otp.join("") }).then(r => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
-      toast({ title: "✅ تم توثيق رقم جوالك بنجاح!" });
       if (isRegisterFlow) {
         navigate("/onboarding");
       } else {
@@ -81,6 +95,31 @@ export default function PhoneVerify() {
     onError: (e: any) => toast({ title: e?.message || "الرمز غير صحيح أو منتهي الصلاحية", variant: "destructive" }),
   });
 
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+    if (value && index < OTP_LENGTH - 1) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "Enter" && otp.join("").length === OTP_LENGTH) confirmMutation.mutate();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    const newOtp = Array(OTP_LENGTH).fill("");
+    pasted.split("").forEach((c, i) => { if (i < OTP_LENGTH) newOtp[i] = c; });
+    setOtp(newOtp);
+    otpRefs.current[Math.min(pasted.length - 1, OTP_LENGTH - 1)]?.focus();
+  };
+
   const handleStart = useCallback(() => {
     const cleaned = phone.replace(/\s/g, "");
     if (cleaned.length < 9) {
@@ -88,318 +127,266 @@ export default function PhoneVerify() {
       return;
     }
     initMutation.mutate();
-  }, [phone, initMutation]);
+  }, [phone, method, initMutation]);
 
-  const handleResend = () => {
-    setOtp("");
-    initMutation.mutate();
-  };
+  const isOtpFull = otp.join("").length === OTP_LENGTH;
 
   if ((user as any)?.phoneVerified && stage !== "done") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-white p-4" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950 p-4" dir="rtl">
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <ShieldCheck className="w-10 h-10 text-emerald-600" />
+          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+            <ShieldCheck className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h2 className="text-2xl font-black text-black mb-2">رقمك موثّق</h2>
-          <p className="text-black/50 text-sm mb-5">رقم جوالك {(user as any)?.phone} تم توثيقه مسبقاً.</p>
-          <Button onClick={() => navigate(nextAfterVerify)} className="rounded-2xl bg-black text-white h-11">{isRegisterFlow ? "متابعة ←" : "العودة للوحة التحكم"}</Button>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">رقمك موثّق</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">رقم جوالك تم توثيقه مسبقاً.</p>
+          <Button onClick={() => navigate(nextAfterVerify)} className="rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white h-11">
+            {isRegisterFlow ? "متابعة ←" : "لوحة التحكم"}
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-5 pt-safe-top pb-8">
-        <div className="max-w-lg mx-auto pt-6">
+      <div className="bg-gray-900 dark:bg-gray-950 border-b border-white/5 px-5 pb-6">
+        <div className="max-w-lg mx-auto pt-10">
           {isRegisterFlow && (
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-1 mb-5">
               {[
                 { n: 1, label: "البيانات", done: true },
                 { n: 2, label: "البريد", done: true },
                 { n: 3, label: "الجوال", done: false, active: true },
                 { n: 4, label: "الترحيب", done: false },
               ].map((step, i) => (
-                <div key={step.n} className="flex items-center gap-1.5">
+                <div key={step.n} className="flex items-center gap-1">
                   <div className="flex items-center gap-1.5">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border
-                      ${step.active ? "border-white bg-white text-black" : step.done ? "border-emerald-400 bg-emerald-400 text-white" : "border-white/20 text-white/30"}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all
+                      ${step.active ? "bg-white text-gray-900" : step.done ? "bg-emerald-500 text-white" : "bg-white/10 text-white/30"}`}>
                       {step.done ? "✓" : step.n}
                     </div>
-                    <span className={`text-[10px] font-bold hidden sm:block ${step.active ? "text-white" : step.done ? "text-emerald-400" : "text-white/25"}`}>{step.label}</span>
+                    <span className={`text-[10px] font-semibold hidden sm:block ${step.active ? "text-white" : step.done ? "text-emerald-400" : "text-white/20"}`}>{step.label}</span>
                   </div>
-                  {i < 3 && <div className={`h-px w-4 ${step.done ? "bg-emerald-400" : "bg-white/15"}`} />}
+                  {i < 3 && <div className={`h-px w-5 mx-1 ${step.done ? "bg-emerald-400" : "bg-white/10"}`} />}
                 </div>
               ))}
             </div>
           )}
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-black text-lg">توثيق رقم الجوال</h1>
-              <p className="text-white/50 text-xs">{isRegisterFlow ? "الخطوة 3 من 4 — توثيق رقم جوالك" : "حماية حسابك وتأكيد هويتك"}</p>
+              <h1 className="text-white font-black text-lg leading-tight">توثيق رقم الجوال</h1>
+              <p className="text-white/40 text-xs">{isRegisterFlow ? "الخطوة 3 من 4" : "تحقق من هوية حسابك"}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      {/* Body */}
+      <div className="max-w-lg mx-auto px-4 py-6">
         <AnimatePresence mode="wait">
-
-          {/* ── STAGE: Select Method ── */}
-          {stage === "select-method" && (
-            <motion.div key="select" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-bold text-amber-800">رقم جوالك غير موثّق</p>
-                  <p className="text-xs text-amber-700 mt-0.5">رقم الجوال مهم لأمان حسابك. يرجى توثيقه.</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-3xl border border-black/[0.06] p-5 shadow-sm">
-                <h2 className="font-black text-black mb-4">اختر طريقة التوثيق</h2>
-                <div className="space-y-3">
-                  <button onClick={() => { setMethod("telegram"); setStage("enter-phone"); }}
-                    className="w-full text-right rounded-2xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all p-4 flex items-center gap-4"
-                    data-testid="method-telegram">
-                    <div className="w-12 h-12 bg-[#2CA5E0] rounded-2xl flex items-center justify-center text-white shrink-0"><TelegramIcon /></div>
-                    <div className="flex-1">
-                      <p className="font-bold text-black">توثيق عبر تيليجرام</p>
-                      <p className="text-xs text-black/50 mt-0.5">أرسل رقمك للبوت — يصلك رمز 6 أرقام فوراً</p>
-                    </div>
-                    <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">أسرع</span>
-                  </button>
-
-                  <button onClick={() => { setMethod("call"); setStage("enter-phone"); }}
-                    className="w-full text-right rounded-2xl border-2 border-black/[0.07] hover:border-black/20 transition-all p-4 flex items-center gap-4"
-                    data-testid="method-call">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
-                      <PhoneCall className="w-6 h-6 text-emerald-700" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-black">توثيق عبر الاتصال</p>
-                      <p className="text-xs text-black/50 mt-0.5">سيتصل بك أحد موظفي QIROX لتأكيد رقمك</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <button onClick={() => navigate(nextAfterVerify)} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
-                {isRegisterFlow ? "تخطي الآن والتوثيق لاحقاً ←" : "سأوثّق لاحقاً ←"}
-              </button>
-            </motion.div>
-          )}
 
           {/* ── STAGE: Enter Phone ── */}
           {stage === "enter-phone" && (
-            <motion.div key="phone" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
-              <div className="bg-white rounded-3xl border border-black/[0.06] p-5 shadow-sm">
-                <div className="flex items-center gap-3 mb-5">
-                  {method === "telegram"
-                    ? <div className="w-10 h-10 bg-[#2CA5E0] rounded-2xl flex items-center justify-center text-white"><TelegramIcon /></div>
-                    : <div className="w-10 h-10 bg-emerald-100 rounded-2xl flex items-center justify-center"><PhoneCall className="w-5 h-5 text-emerald-700" /></div>
-                  }
-                  <div>
-                    <p className="font-black text-black">{method === "telegram" ? "توثيق عبر تيليجرام" : "توثيق عبر الاتصال"}</p>
-                    <p className="text-xs text-black/40">
-                      {method === "telegram" ? "أرسل رقمك للبوت واستلم الرمز" : "سنتصل بك خلال دقائق"}
+            <motion.div key="phone" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="space-y-4">
+
+              {/* Method toggle */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-1.5 flex gap-1.5 shadow-sm">
+                <button onClick={() => setMethod("telegram")}
+                  className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl font-bold text-sm transition-all
+                    ${method === "telegram" ? "bg-[#2CA5E0] text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                  data-testid="method-telegram">
+                  <TelegramIcon /> تيليجرام
+                </button>
+                <button onClick={() => setMethod("call")}
+                  className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl font-bold text-sm transition-all
+                    ${method === "call" ? "bg-emerald-500 text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                  data-testid="method-call">
+                  <PhoneCall className="w-4 h-4" /> اتصال
+                </button>
+              </div>
+
+              {/* Phone input */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-5 shadow-sm">
+                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+                  {method === "telegram" ? "سيصلك رمز التحقق على تيليجرام" : "سيتصل بك فريق QIROX"}
+                </p>
+                <div className="relative">
+                  <Phone className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="05xxxxxxxx"
+                    className="h-14 rounded-2xl pr-11 text-xl font-mono bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600"
+                    type="tel" dir="ltr" data-testid="input-phone-number"
+                    onKeyDown={e => e.key === "Enter" && handleStart()}
+                  />
+                </div>
+
+                {method === "telegram" && (
+                  <div className="flex items-start gap-2 mt-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl p-3">
+                    <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                      تأكد أن رقمك مُسجّل على تيليجرام. سيصلك رمز 6 أرقام مباشرةً في محادثة تيليجرام.
                     </p>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">رقم الجوال *</Label>
-                    <div className="relative">
-                      <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
-                      <Input value={phone} onChange={e => setPhone(e.target.value)}
-                        placeholder="05xxxxxxxx" className="h-12 rounded-xl pr-10 text-base"
-                        type="tel" dir="ltr" data-testid="input-phone-number"
-                        onKeyDown={e => e.key === "Enter" && handleStart()} />
-                    </div>
+                )}
+                {method === "call" && (
+                  <div className="flex items-start gap-2 mt-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl p-3">
+                    <Info className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                      سيتصل بك أحد موظفي QIROX على رقمك ويُؤكد توثيق الحساب.
+                    </p>
                   </div>
-
-                  {method === "telegram" && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                      <div className="flex items-start gap-2">
-                        <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                        <div className="text-xs text-blue-700 space-y-1">
-                          <p className="font-bold">كيف يعمل التوثيق؟</p>
-                          <p>1. أدخل رقم جوالك ثم اضغط "التالي"</p>
-                          <p>2. افتح @{botUsername} على تيليجرام</p>
-                          <p>3. أرسل رقم جوالك للبوت</p>
-                          <p>4. سيُرسل لك البوت رمز 6 أرقام</p>
-                          <p>5. أدخل الرمز هنا لإتمام التوثيق ✅</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {method === "call" && (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                      <div className="flex items-start gap-2">
-                        <Info className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                        <div className="text-xs text-emerald-700 space-y-1">
-                          <p className="font-bold">خطوات التوثيق عبر الاتصال:</p>
-                          <p>1. أدخل رقم جوالك واضغط "طلب الاتصال"</p>
-                          <p>2. يُبلَّغ فريق QIROX فوراً</p>
-                          <p>3. سيتصل بك موظف ويؤكد رقمك</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStage("select-method")} className="h-12 px-5 rounded-2xl" data-testid="btn-back">
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button onClick={handleStart} disabled={initMutation.isPending || !phone.trim()}
-                  className="flex-1 h-12 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black gap-2"
-                  data-testid="btn-start-verify">
-                  {initMutation.isPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : method === "telegram"
-                      ? <><Send className="w-4 h-4" /> التالي</>
-                      : <><PhoneCall className="w-4 h-4" /> طلب الاتصال</>
-                  }
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── STAGE: Telegram OTP Entry ── */}
-          {stage === "telegram-otp" && (
-            <motion.div key="tg-otp" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-
-              {/* Step 1: Open Bot */}
-              <div className="bg-white rounded-3xl border border-black/[0.06] p-5 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-[#2CA5E0] rounded-2xl flex items-center justify-center text-white shrink-0">
-                    <TelegramIcon />
-                  </div>
-                  <div>
-                    <p className="font-black text-black">افتح تيليجرام وأرسل رقمك</p>
-                    <p className="text-xs text-black/40">البوت سيُرسل لك رمز التحقق</p>
-                  </div>
-                </div>
-
-                {/* Step indicators */}
-                <div className="space-y-3 mb-5">
-                  {[
-                    { n: 1, text: `افتح @${botUsername} على تيليجرام`, done: false },
-                    { n: 2, text: `أرسل رقم جوالك: ${phone}`, done: false },
-                    { n: 3, text: "سيصلك رمز 6 أرقام من البوت", done: false },
-                    { n: 4, text: "أدخل الرمز في الحقل أدناه", done: false },
-                  ].map(s => (
-                    <div key={s.n} className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">{s.n}</div>
-                      <p className="text-sm text-black/70">{s.text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-[#2CA5E0] hover:bg-[#2498d1] text-white font-bold h-11 rounded-2xl transition-colors mb-4"
-                  data-testid="btn-open-telegram">
-                  <TelegramIcon />
-                  فتح @{botUsername}
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-
-                {/* OTP Input */}
-                <div>
-                  <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">
-                    أدخل الرمز الذي وصلك
-                  </Label>
-                  <Input
-                    value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="• • • • • •"
-                    className="h-14 rounded-xl text-center text-2xl font-black tracking-[0.5em] border-2 focus:border-slate-900"
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={6}
-                    dir="ltr"
-                    data-testid="input-otp"
-                    onKeyDown={e => e.key === "Enter" && otp.length === 6 && confirmOtpMutation.mutate()}
-                  />
-                  {expiresAt && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-black/40">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>ينتهي الرمز خلال {remaining}</span>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
 
               <Button
-                onClick={() => confirmOtpMutation.mutate()}
-                disabled={otp.length < 6 || confirmOtpMutation.isPending}
-                className="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black gap-2"
-                data-testid="btn-confirm-otp">
-                {confirmOtpMutation.isPending
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <><CheckCircle2 className="w-4 h-4" /> تأكيد الرمز</>
+                onClick={handleStart}
+                disabled={initMutation.isPending || phone.replace(/\s/g, "").length < 9}
+                className="w-full h-14 rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black text-base gap-2 shadow-lg shadow-gray-900/10"
+                data-testid="btn-start-verify">
+                {initMutation.isPending
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : method === "telegram"
+                    ? <><Send className="w-5 h-5" /> إرسال رمز التحقق</>
+                    : <><PhoneCall className="w-5 h-5" /> طلب اتصال</>
                 }
               </Button>
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStage("enter-phone")} className="flex-1 h-10 rounded-2xl text-sm">
-                  تغيير الرقم
+              {isRegisterFlow && (
+                <button onClick={() => navigate("/onboarding")} className="w-full text-center text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 py-2 transition-colors">
+                  تخطي الآن والتوثيق لاحقاً ←
+                </button>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── STAGE: OTP Entry ── */}
+          {stage === "enter-otp" && (
+            <motion.div key="otp" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+
+              {/* Status card */}
+              <div className="bg-[#2CA5E0]/10 dark:bg-[#2CA5E0]/5 border border-[#2CA5E0]/20 rounded-3xl p-4 flex items-start gap-3">
+                <div className="w-10 h-10 bg-[#2CA5E0] rounded-2xl flex items-center justify-center text-white shrink-0">
+                  <TelegramIcon />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-gray-900 dark:text-white text-sm">تحقق من تيليجرام</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                    تم إرسال رمز 6 أرقام إلى تيليجرام المرتبط بـ
+                  </p>
+                  <p className="font-mono font-bold text-[#2CA5E0] text-sm mt-0.5" dir="ltr">{phone}</p>
+                </div>
+              </div>
+
+              {/* OTP boxes */}
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-6 shadow-sm">
+                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 text-center">أدخل الرمز الذي وصلك</p>
+                <div className="flex justify-center gap-2 mb-4" onPaste={handleOtpPaste}>
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={el => { otpRefs.current[i] = el; }}
+                      value={digit}
+                      onChange={e => handleOtpChange(i, e.target.value)}
+                      onKeyDown={e => handleOtpKeyDown(i, e)}
+                      maxLength={1}
+                      type="tel"
+                      inputMode="numeric"
+                      dir="ltr"
+                      data-testid={`otp-box-${i}`}
+                      className={`w-12 h-14 text-center text-2xl font-black rounded-2xl border-2 outline-none transition-all
+                        bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white
+                        ${digit ? "border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "border-gray-200 dark:border-white/10 focus:border-gray-400 dark:focus:border-white/30"}`}
+                    />
+                  ))}
+                </div>
+                {expiresAt && (
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400 dark:text-gray-600">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>ينتهي الرمز خلال {remaining}</span>
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={() => confirmMutation.mutate()}
+                disabled={!isOtpFull || confirmMutation.isPending}
+                className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base gap-2"
+                data-testid="btn-confirm-otp">
+                {confirmMutation.isPending
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <><CheckCircle2 className="w-5 h-5" /> تأكيد الرمز</>
+                }
+              </Button>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStage("enter-phone")}
+                  className="flex-1 h-11 rounded-2xl text-sm border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 bg-transparent">
+                  <ArrowRight className="w-4 h-4 ml-1" /> تغيير الرقم
                 </Button>
-                <Button variant="outline" onClick={handleResend} disabled={initMutation.isPending} className="flex-1 h-10 rounded-2xl text-sm gap-1.5">
-                  {initMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><RefreshCw className="w-3.5 h-3.5" /> إعادة إرسال</>}
+                <Button variant="outline" onClick={() => initMutation.mutate()} disabled={initMutation.isPending}
+                  className="flex-1 h-11 rounded-2xl text-sm border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 bg-transparent gap-1.5">
+                  {initMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4" /> إعادة الإرسال</>}
                 </Button>
               </div>
 
-              <button onClick={() => { setMethod("call"); setStage("enter-phone"); }} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
-                لا يوجد تيليجرام؟ اطلب اتصالاً بدلاً من ذلك ←
-              </button>
+              {!isRegisterFlow && (
+                <button onClick={() => navigate("/dashboard")} className="w-full text-center text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 py-2 transition-colors">
+                  تخطي الآن ←
+                </button>
+              )}
             </motion.div>
           )}
 
           {/* ── STAGE: Call Wait ── */}
           {stage === "call-wait" && (
-            <motion.div key="call-wait" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="bg-white rounded-3xl border border-black/[0.06] p-6 shadow-sm text-center">
-                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                  <PhoneCall className="w-10 h-10 text-emerald-600" />
-                  <div className="absolute inset-0 rounded-full border-2 border-emerald-400/40 animate-ping" />
-                </div>
-                <h2 className="font-black text-black text-xl mb-1">في انتظار الاتصال</h2>
-                <p className="text-black/50 text-sm mb-2">طلبك وصل إلى فريق QIROX</p>
-                <div className="inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2 mb-5">
-                  <Phone className="w-4 h-4 text-black/40" />
-                  <span className="font-mono font-bold text-black" dir="ltr">{phone}</span>
-                </div>
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-right space-y-2 mb-4">
-                  <p className="text-sm font-bold text-emerald-800">ماذا يحدث الآن؟</p>
-                  <div className="space-y-1.5 text-xs text-emerald-700">
-                    <div className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /><span>تم إشعار فريق QIROX بطلبك</span></div>
-                    <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 shrink-0" /><span>سيتصل بك موظف خلال دقائق قليلة</span></div>
-                    <div className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 shrink-0" /><span>بعد التأكيد سيُحدَّث حسابك فوراً</span></div>
+            <motion.div key="call" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-6 text-center shadow-sm">
+                <div className="relative w-20 h-20 mx-auto mb-4">
+                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                    <PhoneCall className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
                   </div>
+                  <div className="absolute inset-0 rounded-full border-2 border-emerald-400/30 animate-ping" />
+                </div>
+                <h2 className="font-black text-gray-900 dark:text-white text-xl mb-1">انتظر الاتصال</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">طلبك وصل إلى فريق QIROX</p>
+                <div className="inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 mb-5">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                  <span className="font-mono font-bold text-gray-700 dark:text-gray-200" dir="ltr">{phone}</span>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl p-4 text-right space-y-2">
+                  {[
+                    "تم إشعار فريق QIROX بطلبك",
+                    "سيتصل بك موظف خلال دقائق قليلة",
+                    "بعد التأكيد يُحدَّث حسابك تلقائياً",
+                  ].map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t}</span>
+                    </div>
+                  ))}
                 </div>
                 {expiresAt && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-black/40">
+                  <div className="flex items-center justify-center gap-1.5 mt-4 text-xs text-gray-400 dark:text-gray-600">
                     <Clock className="w-3.5 h-3.5" />
                     <span>ينتهي الطلب خلال {remaining}</span>
                   </div>
                 )}
               </div>
 
-              <Button variant="outline" onClick={() => { setMethod("telegram"); setStage("enter-phone"); }} className="w-full h-11 rounded-2xl text-sm gap-2">
+              <Button variant="outline" onClick={() => { setMethod("telegram"); setStage("enter-phone"); }}
+                className="w-full h-11 rounded-2xl text-sm border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 bg-transparent gap-2">
                 <TelegramIcon /> التوثيق عبر تيليجرام بدلاً من ذلك
               </Button>
-              <button onClick={() => navigate(nextAfterVerify)} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
+              <button onClick={() => navigate(nextAfterVerify)}
+                className="w-full text-center text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 py-2 transition-colors">
                 {isRegisterFlow ? "تخطي ومتابعة ←" : "العودة للوحة التحكم ←"}
               </button>
             </motion.div>
@@ -407,20 +394,23 @@ export default function PhoneVerify() {
 
           {/* ── STAGE: Done ── */}
           {stage === "done" && (
-            <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="space-y-4">
-              <div className="bg-white rounded-3xl border border-black/[0.06] p-8 shadow-sm text-center">
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-                  className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                  <ShieldCheck className="w-12 h-12 text-emerald-600" />
+            <motion.div key="done" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-center">
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-8 shadow-sm">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1, stiffness: 250 }}
+                  className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <ShieldCheck className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
                 </motion.div>
-                <h2 className="font-black text-black text-2xl mb-2">🎉 تم التوثيق!</h2>
-                <p className="text-black/50 text-sm mb-1">رقم جوالك موثّق بنجاح</p>
-                <div className="inline-flex items-center gap-2 bg-emerald-50 rounded-xl px-4 py-2 mb-6">
-                  <Phone className="w-4 h-4 text-emerald-600" />
-                  <span className="font-mono font-bold text-emerald-700" dir="ltr">{phone}</span>
+                <h2 className="font-black text-gray-900 dark:text-white text-2xl mb-2">تم التوثيق! 🎉</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">رقم جوالك موثّق بنجاح</p>
+                <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl px-4 py-2 mb-6">
+                  <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">{phone}</span>
                 </div>
-                <Button onClick={() => navigate(nextAfterVerify)} className="w-full h-12 rounded-2xl bg-black hover:bg-black/80 text-white font-black gap-2" data-testid="btn-done">
-                  {isRegisterFlow ? "متابعة ←" : "العودة للوحة التحكم"}
+                <Button onClick={() => navigate(nextAfterVerify)}
+                  className="w-full h-12 rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black gap-2"
+                  data-testid="btn-done">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {isRegisterFlow ? "متابعة ←" : "لوحة التحكم"}
                 </Button>
               </div>
             </motion.div>
