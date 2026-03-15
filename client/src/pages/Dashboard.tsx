@@ -2191,7 +2191,8 @@ export default function Dashboard() {
                   const r = 28, cx = 36, cy = 36, circ = 2 * Math.PI * r;
                   const offset = circ * (1 - pct / 100);
                   const order = project.orderId as any;
-                  const projectTitle = order?.businessName || order?.serviceType || `مشروع #${String(project.id)?.slice(-6)}`;
+                  const projectNumber = `#${String(project.id)?.slice(-6).toUpperCase()}`;
+                  const projectTitle = order?.businessName || order?.serviceType || (L ? "مشروع رقمي" : "Digital Project");
                   const serviceLabel = L ? (({
                     restaurant: "مطعم وكافيه", store: "متجر إلكتروني", education: "منصة تعليمية",
                     health: "صحة ولياقة", realestate: "عقارات", website: "موقع ويب",
@@ -2234,7 +2235,10 @@ export default function Dashboard() {
                                 {planLabel && <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-white/10 text-white/70">{planLabel}</span>}
                                 <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-white/5 text-white/40 border border-white/10">{serviceLabel}</span>
                               </div>
-                              <h4 className="font-black text-white text-base leading-tight mb-1 truncate">{projectTitle}</h4>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="font-mono text-[10px] font-bold text-white/50 tracking-widest bg-white/10 px-1.5 py-0.5 rounded-md shrink-0">{projectNumber}</span>
+                              </div>
+                              <h4 className="font-black text-white text-sm leading-tight mb-1 line-clamp-2">{projectTitle}</h4>
                               <p className="text-[10px] text-white/35">
                                 {project.createdAt ? (L ? `بدأ ${new Date(project.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}` : `Started ${new Date(project.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`) : ""}
                                 {project.startDate ? (L ? ` · بدء تنفيذ ${new Date(project.startDate).toLocaleDateString('ar-SA', { month: 'long', day: 'numeric' })}` : ` · Build started ${new Date(project.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`) : ""}
@@ -2260,7 +2264,8 @@ export default function Dashboard() {
 
                         <div className="p-4">
                           {/* Phase stepper */}
-                          <div className="relative flex items-center mb-5 mt-1">
+                          <div className="overflow-x-auto pb-1 mb-4 mt-1 -mx-1 px-1">
+                          <div className="relative flex items-center min-w-[260px]">
                             <div className="absolute top-3 right-3 left-3 h-[2px] bg-black/[0.05] dark:bg-white/[0.06]" />
                             <div className="absolute top-3 h-[2px] bg-black transition-all duration-700 right-3"
                               style={{ width: `${(currentPhaseIdx / (PHASE_STEPS.length - 1)) * (100 - 8)}%` }} />
@@ -2283,9 +2288,10 @@ export default function Dashboard() {
                               })}
                             </div>
                           </div>
+                          </div>
 
                           {/* Stats row */}
-                          <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2 gap-y-2 flex-wrap mb-4">
                             {daysLeft !== null && (
                               <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold ${
                                 daysLeft < 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :

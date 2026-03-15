@@ -33,8 +33,9 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
+          <span className="font-mono text-[9px] font-bold text-black/30 dark:text-white/30 bg-black/[0.05] dark:bg-white/[0.07] px-1.5 py-0.5 rounded inline-block mb-0.5">{`#${String(project._id)?.slice(-6).toUpperCase()}`}</span>
           <p className="text-sm font-bold text-black dark:text-white truncate">
-            {project.order?.businessName || "مشروع"}
+            {project.order?.businessName || project.order?.serviceType || "مشروع"}
           </p>
           {project.order?.sector && (
             <span className="inline-flex items-center gap-1 text-[10px] text-black/40 dark:text-white/40 mt-0.5">

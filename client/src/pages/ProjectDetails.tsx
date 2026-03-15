@@ -130,7 +130,8 @@ export default function ProjectDetails() {
   );
 
   const order = (project as any).orderId as any;
-  const projectTitle = order?.businessName || order?.serviceType || `مشروع #${String(project.id)?.slice(-6)}`;
+  const projectNumber = `#${String(project.id)?.slice(-6).toUpperCase()}`;
+  const projectTitle = order?.businessName || order?.serviceType || "مشروع رقمي";
   const manager = (project as any).managerId as any;
   const pct = project.progress || 0;
   const r = 36, circPx = 2 * Math.PI * r;
@@ -151,7 +152,10 @@ export default function ProjectDetails() {
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)", backgroundSize: "24px 24px" }} />
           <div className="relative flex flex-col md:flex-row gap-6 items-start">
             <div className="flex-1 min-w-0">
-              <Badge className="mb-3 bg-white/10 text-white border-white/10 hover:bg-white/20">{getStatusLabel(project.status)}</Badge>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Badge className="bg-white/10 text-white border-white/10 hover:bg-white/20">{getStatusLabel(project.status)}</Badge>
+                <span className="font-mono text-[11px] font-bold text-white/50 tracking-widest bg-white/10 px-2 py-0.5 rounded-md">{projectNumber}</span>
+              </div>
               <h1 className="text-2xl md:text-3xl font-black text-white mb-1 leading-tight">{projectTitle}</h1>
               {order?.serviceType && order.serviceType !== projectTitle && (
                 <p className="text-white/40 text-sm mb-3">{order.serviceType}</p>
