@@ -498,7 +498,7 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
 }
 
 export default function Devices() {
-  const { dir, lang } = useI18n();
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
