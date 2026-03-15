@@ -9699,9 +9699,17 @@ export async function registerRoutes(
   /* ══ Phone Verification (Telegram deep-link / Call) ════════════════════ */
 
   const TELEGRAM_BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN || "";
-  const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "";
+  const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "QIROX_BOT";
 
-  // Helper: generate a unique short token
+  async function sendTelegramMessage(chatId: string | number, text: string) {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+    }).catch(e => console.error("[TG]", e.message));
+  }
+
   function genPhoneToken(): string {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let t = "PV";
@@ -9709,7 +9717,11 @@ export async function registerRoutes(
     return t;
   }
 
-  // POST /api/phone-verify/init  — start verification (telegram or call)
+  function genOtp(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  // POST /api/phone-verify/init  — create a pending verification record + otp
   app.post("/api/phone-verify/init", otpLimiter, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -9720,52 +9732,73 @@ export async function registerRoutes(
       if (!["telegram", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
       const normPhone = String(phone).trim();
 
-      // Check if already verified
       const dbUser = await (UserModel as any).findById(me._id || me.id);
       if (dbUser?.phoneVerified && dbUser?.phone === normPhone) {
         return res.json({ alreadyVerified: true });
       }
 
-      // Invalidate old tokens for this user
+      // Expire all previous pending tokens for this user
       await (PhoneVerifyOtpModel as any).updateMany(
         { userId: me._id || me.id, verified: false },
         { expiresAt: new Date() }
       );
 
       const token = genPhoneToken();
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+      const otp   = genOtp();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
       await (PhoneVerifyOtpModel as any).create({
         userId: me._id || me.id,
         phone: normPhone,
         token,
+        otp,
         method,
         expiresAt,
         verified: false,
         callStatus: method === "call" ? "pending" : undefined,
       });
 
-      // Update user phone if changed
       if (dbUser?.phone !== normPhone) {
         await (UserModel as any).findByIdAndUpdate(me._id || me.id, { phone: normPhone });
       }
 
       if (method === "telegram") {
-        const botUsername = TELEGRAM_BOT_USERNAME || "QiroxVerifyBot";
-        const deepLink = `https://t.me/${botUsername}?start=${token}`;
-        return res.json({ method: "telegram", token, deepLink, botUsername, expiresAt });
+        const botUsername = TELEGRAM_BOT_USERNAME;
+        return res.json({ method: "telegram", botUsername, expiresAt, phone: normPhone });
       } else {
-        // Call method: notify admins/employees via notification
         const { NotificationModel } = await import("./models");
-        const user = dbUser;
         await (NotificationModel as any).create({
           forAdmins: true,
           type: "info",
-          title: `📞 طلب توثيق جوال — ${user?.fullName || user?.username || "عميل"}`,
-          body: `العميل ${user?.fullName || user?.username} يطلب التحقق من رقمه ${normPhone} عبر اتصال هاتفي. رمز التحقق: ${token}`,
+          title: `📞 طلب توثيق جوال — ${dbUser?.fullName || dbUser?.username || "عميل"}`,
+          body: `العميل ${dbUser?.fullName || dbUser?.username} يطلب التحقق من رقمه ${normPhone} عبر اتصال هاتفي.`,
           link: `/admin/phone-verifications`,
         });
-        return res.json({ method: "call", token, expiresAt, phone: normPhone });
+        return res.json({ method: "call", expiresAt, phone: normPhone });
       }
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/phone-verify/confirm-otp  — user submits the 6-digit OTP they received
+  app.post("/api/phone-verify/confirm-otp", otpLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const { otp } = req.body;
+      if (!otp) return res.status(400).json({ error: "الرمز مطلوب" });
+      const record = await (PhoneVerifyOtpModel as any).findOne({
+        userId: me._id || me.id,
+        otp: String(otp).trim(),
+        verified: false,
+        method: "telegram",
+        expiresAt: { $gt: new Date() },
+      });
+      if (!record) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
+      record.verified = true;
+      await record.save();
+      await (UserModel as any).findByIdAndUpdate(me._id || me.id, { phone: record.phone, phoneVerified: true });
+      res.json({ success: true, phone: record.phone });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -9784,7 +9817,6 @@ export async function registerRoutes(
       res.json({
         phone: (dbUser as any)?.phone || null,
         phoneVerified: (dbUser as any)?.phoneVerified || false,
-        pendingToken: (pending as any)?.token || null,
         pendingMethod: (pending as any)?.method || null,
         pendingCallStatus: (pending as any)?.callStatus || null,
         pendingExpiresAt: (pending as any)?.expiresAt || null,
@@ -9792,70 +9824,69 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  // POST /api/telegram/webhook  — Telegram Bot webhook endpoint
+  // POST /api/telegram/webhook  — receives messages from the Telegram bot
   app.post("/api/telegram/webhook", async (req, res) => {
-    res.sendStatus(200); // Always reply 200 to Telegram immediately
+    res.sendStatus(200);
     try {
       const { PhoneVerifyOtpModel, UserModel } = await import("./models");
       const update = req.body;
       const msg = update?.message;
       if (!msg) return;
+      const chatId = msg.chat?.id;
       const text: string = (msg.text || "").trim();
-      // Parse /start TOKEN or /verify TOKEN
-      const match = text.match(/^\/start\s+(\S+)/) || text.match(/^\/verify\s+(\S+)/);
-      if (!match) {
-        // Send help message via Telegram
-        if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: msg.chat.id,
-              text: "أرسل رمز التحقق الخاص بك عبر الرابط من تطبيق QIROX.\nمثال: /start PV12345678",
-            }),
-          }).catch(()=>{});
+
+      // Strip all non-digit/plus chars to normalize phone numbers
+      const digitsOnly = text.replace(/[^\d+]/g, "");
+      // Detect if the message looks like a Saudi/intl phone number
+      const isSaudiPhone = /^(05|009665|9665|\+9665)\d{8}$/.test(digitsOnly) || /^05\d{8}$/.test(text.replace(/\s/g, ""));
+      const isIntlPhone  = /^(\+|00)\d{7,15}$/.test(digitsOnly) && digitsOnly.length >= 9;
+
+      if (isSaudiPhone || isIntlPhone) {
+        // Normalize to 05xxxxxxxxx format if Saudi
+        let normPhone = text.replace(/\s/g, "");
+        if (normPhone.startsWith("9665")) normPhone = "0" + normPhone.slice(3);
+        if (normPhone.startsWith("+9665")) normPhone = "0" + normPhone.slice(4);
+        if (normPhone.startsWith("009665")) normPhone = "0" + normPhone.slice(5);
+
+        // Find pending OTP for this phone
+        const record = await (PhoneVerifyOtpModel as any).findOne({
+          phone: normPhone,
+          verified: false,
+          method: "telegram",
+          expiresAt: { $gt: new Date() },
+        }).sort({ createdAt: -1 });
+
+        if (!record) {
+          await sendTelegramMessage(chatId, `❌ لا يوجد طلب توثيق نشط لهذا الرقم أو انتهت صلاحيته.\n\nتأكد من:\n• أن رقمك مُسجّل في تطبيق QIROX\n• أنك طلبت التوثيق خلال آخر 15 دقيقة`);
+          return;
         }
+
+        // Send OTP to user
+        await sendTelegramMessage(chatId,
+          `🔐 <b>رمز التحقق من QIROX</b>\n\n<code>${record.otp}</code>\n\nأدخل هذا الرمز في تطبيق QIROX لتوثيق رقمك.\n⏱ صالح لمدة 15 دقيقة.`
+        );
+        record.telegramChatId = String(chatId);
+        record.otpSent = true;
+        await record.save();
         return;
       }
-      const token = match[1];
-      const record = await (PhoneVerifyOtpModel as any).findOne({
-        token,
-        verified: false,
-        expiresAt: { $gt: new Date() },
-      });
-      if (!record) {
-        if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: msg.chat.id,
-              text: "❌ الرمز غير صحيح أو منتهي الصلاحية. الرجاء طلب رمز جديد من التطبيق.",
-            }),
-          }).catch(()=>{});
-        }
+
+      // /start command
+      if (text.startsWith("/start")) {
+        await sendTelegramMessage(chatId,
+          `👋 مرحباً بك في بوت QIROX للتوثيق!\n\nلتوثيق رقم جوالك:\n1️⃣ افتح تطبيق QIROX وابدأ عملية التوثيق\n2️⃣ أرسل لي رقم جوالك هنا (مثال: 05xxxxxxxx)\n3️⃣ سأُرسل لك رمز التحقق\n4️⃣ أدخله في التطبيق لإتمام التوثيق ✅`
+        );
         return;
       }
-      // Mark verified
-      record.verified = true;
-      await record.save();
-      await (UserModel as any).findByIdAndUpdate(record.userId, {
-        phone: record.phone,
-        phoneVerified: true,
-      });
-      // Reply success to user
-      if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: msg.chat.id,
-            text: `✅ تم توثيق رقم الجوال ${record.phone} بنجاح!\nيمكنك العودة لتطبيق QIROX الآن.`,
-          }),
-        }).catch(()=>{});
-      }
+
+      // Unknown message
+      await sendTelegramMessage(chatId,
+        `أرسل رقم جوالك لتلقّي رمز التحقق.\nمثال: <code>05xxxxxxxx</code>`
+      );
     } catch (err) { console.error("[TelegramWebhook]", err); }
   });
+
+  // GET /api/admin/phone-verifications  — pending call-based verifications
 
   // GET /api/admin/phone-verifications  — pending call-based verifications
   app.get("/api/admin/phone-verifications", async (req, res) => {

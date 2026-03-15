@@ -1593,8 +1593,11 @@ export const PhoneRequestModel = mongoose.models.PhoneRequest || mongoose.model(
 // ── Phone Verification OTP (Telegram deep-link or call) ──────────────────────
 const phoneVerifyOtpSchema = new mongoose.Schema({
   userId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-  phone:     { type: String, required: true },
+  phone:     { type: String, required: true, index: true },
   token:     { type: String, required: true, unique: true },
+  otp:       { type: String },
+  otpSent:   { type: Boolean, default: false },
+  telegramChatId: { type: String },
   method:    { type: String, enum: ["telegram", "call"], required: true },
   verified:  { type: Boolean, default: false },
   expiresAt: { type: Date, required: true },
