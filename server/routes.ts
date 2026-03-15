@@ -1527,6 +1527,28 @@ export async function registerRoutes(
     }
   });
 
+  // Client: update project details after payment
+  app.patch("/api/orders/:id/details", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    try {
+      const { OrderModel } = await import("./models");
+      const order = await OrderModel.findById(req.params.id);
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (String(order.userId) !== String(user.id)) return res.sendStatus(403);
+      const allowed = ["businessName","phone","sector","targetAudience","visualStyle","siteLanguage",
+        "whatsappIntegration","socialIntegration","hasLogo","needsLogoDesign","requiredFunctions",
+        "brandColor","inspirationSites","needsPayment","needsBooking","hasContent"];
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) (order as any)[key] = req.body[key];
+      }
+      await order.save();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "فشل تحديث التفاصيل" });
+    }
+  });
+
   // === PROJECTS API ===
   app.get(api.projects.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

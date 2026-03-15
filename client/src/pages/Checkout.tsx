@@ -16,8 +16,10 @@ import {
   Wallet, Building2, Loader2, Tag, X, Check, ChevronDown,
   Copy, Phone, User, Navigation as NavIcon, Clock, Calendar,
   AlertCircle, Upload, FileText, Lock, Eye, EyeOff, Sparkles,
-  Package, ShoppingBag, Truck
+  Package, ShoppingBag, Truck, Globe, Users, Star, MessageCircle,
+  Zap, Layers, ClipboardList
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SAUDI_CITIES = [
@@ -157,6 +159,15 @@ export default function Checkout() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPayMethod, setOrderPayMethod] = useState<PayMethod>("bank");
 
+  const [detailsSaved, setDetailsSaved] = useState(false);
+  const [projData, setProjData] = useState({
+    businessName: "", phone: "", sector: "",
+    targetAudience: "", siteLanguage: "ar",
+    whatsappIntegration: false, needsPayment: false, needsBooking: false,
+    brandColor: "", requiredFunctions: "",
+  });
+  const [projSection, setProjSection] = useState(0);
+
   const [selectedShippingCompanyId, setSelectedShippingCompanyId] = useState<string>("");
   const [isAddingPendingItems, setIsAddingPendingItems] = useState(false);
 
@@ -165,6 +176,13 @@ export default function Checkout() {
   const { data: cardData } = useQuery<any>({ queryKey: ["/api/wallet/card"], enabled: !!user });
   const { data: bankSettings } = useQuery<any>({ queryKey: ["/api/bank-settings"] });
   const { data: shippingCompanies } = useQuery<any[]>({ queryKey: ["/api/shipping-companies"] });
+  const { data: sectorTemplates = [] } = useQuery<any[]>({ queryKey: ["/api/templates"], staleTime: 5 * 60 * 1000 });
+
+  const detailsMutation = useMutation({
+    mutationFn: () => apiRequest("PATCH", `/api/orders/${orderId}/details`, projData),
+    onSuccess: () => { setDetailsSaved(true); toast({ title: "✅ تم حفظ تفاصيل مشروعك!" }); },
+    onError: () => toast({ title: "فشل حفظ التفاصيل", variant: "destructive" }),
+  });
 
   const wizardData = (() => { try { const s = sessionStorage.getItem("qiroxWizardData"); return s ? JSON.parse(s) : null; } catch { return null; } })();
 
@@ -187,6 +205,17 @@ export default function Checkout() {
   const total = Math.max(0, subtotal - (hasWizardData ? 0 : discount) + shippingFee);
 
   const BANK = bankSettings || { bankName: "بنك الراجحي", beneficiaryName: "QIROX Studio", iban: "SA0380205098017222121010" };
+
+  const SECTOR_ICONS: Record<string, any> = {
+    restaurant: "🍽️", ecommerce: "🛒", education: "📚", corporate: "🏢",
+    realestate: "🏠", healthcare: "🏥", beauty: "💅", fitness: "💪",
+    technology: "💻", fashion: "👗", default: "🌐",
+  };
+  const sectors = (sectorTemplates as any[])
+    .filter((t, idx, arr) => arr.findIndex(x => (x.category || x.sector) === (t.category || t.sector)) === idx)
+    .slice(0, 8)
+    .map(t => ({ value: (t.category || t.sector || "").trim(), label: t.sectorLabel || t.category || t.sector, icon: SECTOR_ICONS[(t.category || t.sector || "").trim()] || "🌐" }))
+    .filter(s => s.value);
 
   useEffect(() => {
     if (user) {
@@ -944,18 +973,19 @@ export default function Checkout() {
 
           {/* ─── STEP 3: CONFIRMATION ─── */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+            <motion.div key="step3" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
+
+              {/* ── Success Banner ── */}
               {orderPayMethod === "bank" ? (
-                /* Waiting for bank transfer confirmation */
-                <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-8 text-center space-y-6">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-50 border-4 border-amber-100">
-                    <Clock className="w-10 h-10 text-amber-500" />
+                <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-6 text-center space-y-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 border-4 border-amber-100">
+                    <Clock className="w-8 h-8 text-amber-500" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-black mb-2">في انتظار تأكيد التحويل</h2>
+                    <h2 className="text-xl font-black text-black mb-1">في انتظار تأكيد التحويل</h2>
                     <p className="text-black/50 text-sm">تم إنشاء طلبك. حوّل المبلغ ثم ارفع إيصال التحويل</p>
                     {orderId && (
-                      <div className="mt-3 inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
+                      <div className="mt-2 inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
                         <span className="text-xs text-black/40">رقم الطلب</span>
                         <span className="text-sm font-mono font-black text-black">#{orderId.slice(-8).toUpperCase()}</span>
                       </div>
@@ -969,16 +999,13 @@ export default function Checkout() {
                       <p>3. ارفع إيصال التحويل هنا للتحقق السريع</p>
                     </div>
                   </div>
-                  {/* Upload receipt */}
                   <div className="space-y-3">
                     <p className="text-sm font-bold text-black/60">ارفع إيصال التحويل (اختياري — لتسريع التحقق)</p>
                     {!proofFile ? (
-                      <div
-                        onClick={() => proofRef.current?.click()}
-                        className="border-2 border-dashed border-black/10 rounded-2xl p-6 cursor-pointer hover:border-black/25 hover:bg-gray-50 transition-all text-center"
-                        data-testid="upload-proof"
-                      >
-                        <Upload className="w-6 h-6 text-black/20 mx-auto mb-2" />
+                      <div onClick={() => proofRef.current?.click()}
+                        className="border-2 border-dashed border-black/10 rounded-2xl p-5 cursor-pointer hover:border-black/25 hover:bg-gray-50 transition-all text-center"
+                        data-testid="upload-proof">
+                        <Upload className="w-5 h-5 text-black/20 mx-auto mb-1" />
                         <p className="text-sm text-black/30">{uploadingProof ? "جارٍ الرفع..." : "اضغط لرفع الإيصال"}</p>
                         <input ref={proofRef} type="file" className="hidden" accept="image/*,application/pdf"
                           onChange={e => { if (e.target.files?.[0]) handleProofUpload(e.target.files[0]); }} />
@@ -997,47 +1024,207 @@ export default function Checkout() {
                       </Button>
                     )}
                   </div>
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => navigate("/orders")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm" data-testid="button-track-order">
-                      <Calendar className="w-4 h-4" /> تتبع الطلب
-                    </Button>
-                    <Button onClick={() => navigate("/dashboard")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm bg-black text-white hover:bg-black/80" data-testid="button-dashboard">
-                      لوحة التحكم
-                    </Button>
-                  </div>
                 </div>
               ) : (
-                /* Success */
-                <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-8 text-center space-y-6">
-                  <motion.div
-                    initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 12 }}
-                    className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 border-4 border-green-100"
-                  >
-                    <CheckCircle2 className="w-12 h-12 text-green-500" />
+                <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] p-6 text-center space-y-4">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 12 }}
+                    className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 border-4 border-green-100">
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
                   </motion.div>
                   <div>
-                    <h2 className="text-2xl font-black text-black mb-2">🎉 تم الدفع بنجاح!</h2>
+                    <h2 className="text-xl font-black text-black mb-1">🎉 تم الدفع بنجاح!</h2>
                     <p className="text-black/50 text-sm">سيتواصل معك فريق QIROX قريباً</p>
                     {orderId && (
-                      <div className="mt-3 inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
+                      <div className="mt-2 inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
                         <span className="text-xs text-black/40">رقم الطلب</span>
                         <span className="text-sm font-mono font-black text-black">#{orderId.slice(-8).toUpperCase()}</span>
                       </div>
                     )}
                   </div>
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                    <p className="text-sm text-blue-700">سيتم إرسال تأكيد الدفع على بريدك الإلكتروني. ستتلقى تحديثات تلقائية عبر الإشعارات.</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => navigate("/orders")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm" data-testid="button-track-order">
-                      <Calendar className="w-4 h-4" /> تتبع الطلب
-                    </Button>
-                    <Button onClick={() => navigate("/dashboard")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm bg-black text-white hover:bg-black/80" data-testid="button-go-dashboard">
-                      لوحة التحكم
-                    </Button>
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-3">
+                    <p className="text-sm text-blue-700">ستتلقى تأكيداً على بريدك الإلكتروني وإشعارات تلقائية بتطور طلبك.</p>
                   </div>
                 </div>
               )}
+
+              {/* ── Project Details Form ── */}
+              {!detailsSaved ? (
+                <div className="bg-white rounded-3xl shadow-sm border-2 border-violet-200 dark:border-violet-800/40 overflow-hidden">
+                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                        <ClipboardList className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-white">أكمل تفاصيل مشروعك</p>
+                        <p className="text-white/70 text-xs mt-0.5">تساعدنا هذه المعلومات على تسليم مشروعك بدقة</p>
+                      </div>
+                    </div>
+                    {/* Sub-section progress dots */}
+                    <div className="flex items-center gap-2 mt-3">
+                      {[Building2, Globe, Zap, Layers].map((Icon, i) => (
+                        <div key={i} className={`flex items-center gap-1.5 ${i < 3 ? "flex-1" : ""}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${projSection > i ? "bg-white shadow-sm" : projSection === i ? "bg-white scale-110 shadow-md" : "bg-white/20"}`}>
+                            {projSection > i
+                              ? <Check className="w-3.5 h-3.5 text-violet-600" />
+                              : <Icon className={`w-3 h-3 ${projSection === i ? "text-violet-600" : "text-white/60"}`} />}
+                          </div>
+                          {i < 3 && <div className={`flex-1 h-0.5 rounded-full transition-all ${projSection > i ? "bg-white/60" : "bg-white/20"}`} />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-5 space-y-4">
+                    {/* Section 0: Business Info */}
+                    <AnimatePresence mode="wait">
+                      {projSection === 0 && (
+                        <motion.div key="proj0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">اسم النشاط / المشروع *</Label>
+                              <Input value={projData.businessName} onChange={e => setProjData(p => ({ ...p, businessName: e.target.value }))}
+                                placeholder="مثال: مطعم الأصالة" className="h-11 rounded-xl" data-testid="proj-input-business-name" />
+                            </div>
+                            <div>
+                              <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">رقم الجوال</Label>
+                              <Input value={projData.phone} onChange={e => setProjData(p => ({ ...p, phone: e.target.value }))}
+                                placeholder="05xxxxxxxx" className="h-11 rounded-xl" data-testid="proj-input-phone" />
+                            </div>
+                          </div>
+                          {/* Sector */}
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block">القطاع *</Label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                              {sectors.length > 0 ? sectors.map(s => (
+                                <button key={s.value} onClick={() => setProjData(p => ({ ...p, sector: s.value }))}
+                                  data-testid={`proj-sector-${s.value}`}
+                                  className={`border-2 rounded-2xl p-3 text-center transition-all ${projData.sector === s.value ? "border-violet-500 bg-violet-50 shadow-sm" : "border-black/[0.07] hover:border-black/20"}`}>
+                                  <div className="text-2xl mb-1">{s.icon}</div>
+                                  <p className="text-[10px] font-bold text-black leading-tight">{s.label}</p>
+                                </button>
+                              )) : (
+                                <Input value={projData.sector} onChange={e => setProjData(p => ({ ...p, sector: e.target.value }))}
+                                  placeholder="اكتب قطاعك" className="h-11 rounded-xl col-span-3 sm:col-span-4" />
+                              )}
+                            </div>
+                          </div>
+                          {/* Target audience */}
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> الجمهور المستهدف</Label>
+                            <Input value={projData.targetAudience} onChange={e => setProjData(p => ({ ...p, targetAudience: e.target.value }))}
+                              placeholder="مثال: شباب 18-35، رجال أعمال..." className="h-11 rounded-xl" data-testid="proj-input-audience" />
+                          </div>
+                          <button onClick={() => projData.businessName && projData.sector && setProjSection(1)}
+                            disabled={!projData.businessName || !projData.sector}
+                            data-testid="proj-btn-next0"
+                            className="w-full h-11 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-black text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-2">
+                            التالي <ArrowLeft className="w-4 h-4" />
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {/* Section 1: Site Language & Integrations */}
+                      {projSection === 1 && (
+                        <motion.div key="proj1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> لغة الموقع</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[{ v: "ar", label: "عربي", emoji: "🇸🇦" }, { v: "en", label: "إنجليزي", emoji: "🇺🇸" }, { v: "both", label: "ثنائي", emoji: "🌐" }].map(({ v, label, emoji }) => (
+                                <button key={v} onClick={() => setProjData(p => ({ ...p, siteLanguage: v }))} data-testid={`proj-lang-${v}`}
+                                  className={`border-2 rounded-2xl py-3 px-2 text-center transition-all ${projData.siteLanguage === v ? "border-violet-500 bg-violet-50 shadow-md" : "border-black/[0.07] hover:border-black/20"}`}>
+                                  <div className="text-xl mb-1">{emoji}</div>
+                                  <p className="text-xs font-bold text-black">{label}</p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> ميزات مطلوبة</Label>
+                            <div className="space-y-2">
+                              {[
+                                { key: "whatsappIntegration", icon: MessageCircle, label: "ربط واتساب", color: "green" },
+                                { key: "needsPayment",        icon: CreditCard,    label: "نظام دفع إلكتروني", color: "violet" },
+                                { key: "needsBooking",        icon: Calendar,      label: "نظام حجز مسبق", color: "orange" },
+                              ].map(({ key, icon: Icon, label, color }) => (
+                                <button key={key} onClick={() => setProjData(p => ({ ...p, [key]: !(p as any)[key] }))}
+                                  data-testid={`proj-toggle-${key}`}
+                                  className={`w-full text-right rounded-2xl p-3 border-2 flex items-center gap-3 transition-all ${(projData as any)[key] ? `border-${color}-400 bg-${color}-50` : "border-black/[0.07] hover:border-black/20"}`}>
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${(projData as any)[key] ? `bg-${color}-500` : "bg-black/[0.05]"}`}>
+                                    <Icon className={`w-4 h-4 ${(projData as any)[key] ? "text-white" : "text-black/30"}`} />
+                                  </div>
+                                  <span className="flex-1 text-sm font-bold text-black">{label}</span>
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${(projData as any)[key] ? `border-${color}-500 bg-${color}-500` : "border-black/20"}`}>
+                                    {(projData as any)[key] && <Check className="w-3 h-3 text-white" />}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => setProjSection(0)} className="h-11 px-5 rounded-2xl border-2 border-black/[0.07] font-bold text-sm text-black/50 hover:border-black/20 transition-all">
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setProjSection(2)} data-testid="proj-btn-next1"
+                              className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-black text-sm flex items-center justify-center gap-2">
+                              التالي <ArrowLeft className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Section 2: Brand color */}
+                      {projSection === 2 && (
+                        <motion.div key="proj2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> الألوان المفضلة</Label>
+                            <Input value={projData.brandColor} onChange={e => setProjData(p => ({ ...p, brandColor: e.target.value }))}
+                              placeholder="مثال: أزرق وذهبي، أخضر داكن..." className="h-11 rounded-xl" data-testid="proj-input-color" />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> ملاحظات ومتطلبات إضافية</Label>
+                            <Textarea value={projData.requiredFunctions} onChange={e => setProjData(p => ({ ...p, requiredFunctions: e.target.value }))}
+                              placeholder="أي تفاصيل إضافية، ميزات خاصة، أو أي شيء تريدنا معرفته..." rows={4}
+                              className="rounded-xl resize-none" data-testid="proj-input-notes" />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => setProjSection(1)} className="h-11 px-5 rounded-2xl border-2 border-black/[0.07] font-bold text-sm text-black/50 hover:border-black/20 transition-all">
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => detailsMutation.mutate()} disabled={detailsMutation.isPending}
+                              data-testid="proj-btn-save"
+                              className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+                              {detailsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> حفظ التفاصيل</>}
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <button onClick={() => setDetailsSaved(true)} className="w-full text-center text-xs text-black/30 hover:text-black/50 transition-colors py-1" data-testid="proj-btn-skip">
+                      سأكملها لاحقاً من لوحة التحكم ←
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <p className="text-sm font-bold text-emerald-700">تم {detailsMutation.isSuccess ? "حفظ تفاصيل مشروعك!" : "تخطي تفاصيل المشروع"} — يمكنك إكمالها لاحقاً من لوحة التحكم.</p>
+                </div>
+              )}
+
+              {/* ── Navigation Buttons ── */}
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => navigate("/orders")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm" data-testid="button-track-order">
+                  <Calendar className="w-4 h-4" /> تتبع الطلب
+                </Button>
+                <Button onClick={() => navigate("/dashboard")} className="flex-1 rounded-2xl h-11 gap-1.5 text-sm bg-black text-white hover:bg-black/80" data-testid="button-go-dashboard">
+                  لوحة التحكم
+                </Button>
+              </div>
+
             </motion.div>
           )}
         </AnimatePresence>

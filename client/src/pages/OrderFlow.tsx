@@ -161,11 +161,10 @@ const BUNDLE_ICONS: Record<string, any> = { lite: Zap, pro: Crown, infinite: Inf
 const BUNDLE_COLORS: Record<string, string> = { lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600", infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500" };
 
 const STEP_CONFIG = [
-  { label: "الباقة",       labelEn: "Package",  icon: Crown },
-  { label: "الإضافات",     labelEn: "Add-ons",  icon: Plus },
-  { label: "تفاصيل الموقع",labelEn: "Details",  icon: Globe },
-  { label: "الأجهزة",      labelEn: "Devices",  icon: Package },
-  { label: "الدفع",        labelEn: "Payment",  icon: CreditCard },
+  { label: "الباقة",    labelEn: "Package",  icon: Crown },
+  { label: "الإضافات",  labelEn: "Add-ons",  icon: Plus },
+  { label: "الأجهزة",   labelEn: "Devices",  icon: Package },
+  { label: "الدفع",     labelEn: "Payment",  icon: CreditCard },
 ];
 
 const PLAN_LABELS: Record<string, string>  = { lite: "لايت", pro: "برو", infinite: "إنفينتي" };
@@ -186,7 +185,7 @@ function StepIndicator({ step, lang }: { step: number; lang: string }) {
         className="absolute top-5 h-0.5 bg-gradient-to-r from-black to-black/60 dark:from-white dark:to-white/60"
         style={{ right: 40, left: "auto" }}
         initial={{ width: "0%" }}
-        animate={{ width: `${((step - 1) / 4) * (100 - 0)}%` }}
+        animate={{ width: `${((step - 1) / 3) * (100 - 0)}%` }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       />
       {STEP_CONFIG.map((s, idx) => {
@@ -314,7 +313,6 @@ export default function OrderFlow() {
   const [walletAmount, setWalletAmount]   = useState(0);
   const [usePaymob, setUsePaymob]         = useState(false);
 
-  const [section3, setSection3] = useState(0);
   const [formData, setFormData] = useState({
     businessName: "", phone: "", sector: segmentFromUrl || "",
     targetAudience: "",
@@ -497,8 +495,7 @@ export default function OrderFlow() {
 
   const canNext = () => {
     if (step === 1) return !!selectedPlan;
-    if (step === 3) return !!formData.businessName && !!formData.sector && section3 === 3;
-    if (step === 4) {
+    if (step === 3) {
       const activeProducts = (products || []).filter((p: any) => p.isActive !== false);
       return Object.entries(deviceCart).every(([pid]) => {
         const p = activeProducts.find((pr: any) => pr.id === pid);
@@ -716,7 +713,7 @@ export default function OrderFlow() {
               <div className="space-y-5">
                 <div className="text-center mb-8">
                   <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">
-                    {lang === "ar" ? "الخطوة 1 من 5" : "Step 1 of 5"}
+                    {lang === "ar" ? "الخطوة 1 من 4" : "Step 1 of 4"}
                   </p>
                   <h2 className="text-3xl font-black text-black dark:text-white mb-2">
                     {lang === "ar" ? "اختر الباقة المناسبة" : "Choose Your Package"}
@@ -805,7 +802,7 @@ export default function OrderFlow() {
             {step === 2 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
-                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 2 من 5" : "Step 2 of 5"}</p>
+                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 2 من 4" : "Step 2 of 4"}</p>
                   <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "المميزات الإضافية" : "Extra Add-ons"}</h2>
                   <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "اختر ما تحتاجه (اختياري)" : "Choose what you need (optional)"}</p>
                 </div>
@@ -881,447 +878,11 @@ export default function OrderFlow() {
               </div>
             )}
 
-            {/* ─── STEP 3: Details (4 creative sections) ─── */}
+            {/* ─── STEP 3: Devices ─── */}
             {step === 3 && (
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="text-center mb-6">
-                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">
-                    {lang === "ar" ? "الخطوة 3 من 5" : "Step 3 of 5"}
-                  </p>
-                  <h2 className="text-3xl font-black text-black dark:text-white mb-2">
-                    {lang === "ar" ? "تفاصيل المشروع" : "Project Details"}
-                  </h2>
-                  {/* Sub-section progress */}
-                  <div className="flex items-center justify-center gap-1.5 mt-4">
-                    {[
-                      { icon: Building2, label: "النشاط" },
-                      { icon: Sparkles,  label: "الهوية" },
-                      { icon: Zap,       label: "النظام" },
-                      { icon: Layers,    label: "المحتوى" },
-                    ].map((s, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => section3 > i && setSection3(i)}
-                          className={`flex flex-col items-center gap-1 transition-all ${section3 > i ? "cursor-pointer opacity-100" : "cursor-default"}`}
-                        >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                            section3 > i ? "bg-emerald-500 shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/50 scale-90" :
-                            section3 === i ? "bg-black dark:bg-white scale-110 shadow-lg" :
-                            "bg-black/10 dark:bg-white/10"
-                          }`}>
-                            {section3 > i
-                              ? <Check className="w-4 h-4 text-white" />
-                              : <s.icon className={`w-3.5 h-3.5 ${section3 === i ? "text-white dark:text-black" : "text-black/25 dark:text-white/25"}`} />
-                            }
-                          </div>
-                          <span className={`text-[9px] font-bold tracking-wide transition-all ${
-                            section3 === i ? "text-black dark:text-white" : section3 > i ? "text-emerald-500" : "text-black/20 dark:text-white/20"
-                          }`}>{s.label}</span>
-                        </button>
-                        {i < 3 && (
-                          <div className={`h-0.5 w-8 rounded-full mb-4 transition-all duration-500 ${section3 > i ? "bg-emerald-400" : "bg-black/10 dark:bg-white/10"}`} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ── SECTION 0: النشاط التجاري ── */}
-                <div className={`rounded-3xl border-2 overflow-hidden transition-all duration-300 ${
-                  section3 === 0 ? "border-blue-200 dark:border-blue-800/40 shadow-xl shadow-blue-100/40 dark:shadow-blue-900/20" :
-                  section3 > 0  ? "border-emerald-200 dark:border-emerald-800/30" :
-                  "border-black/[0.06] dark:border-white/[0.06]"
-                }`}>
-                  {/* Section header */}
-                  <div className={`flex items-center gap-3 px-5 py-4 ${
-                    section3 === 0 ? "bg-gradient-to-r from-blue-500 to-indigo-600" :
-                    section3 > 0  ? "bg-emerald-50 dark:bg-emerald-900/20" :
-                    "bg-black/[0.02] dark:bg-white/[0.02]"
-                  }`}>
-                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
-                      section3 === 0 ? "bg-white/20" : section3 > 0 ? "bg-emerald-100 dark:bg-emerald-800/40" : "bg-black/10 dark:bg-white/10"
-                    }`}>
-                      {section3 > 0
-                        ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        : <Building2 className={`w-4 h-4 ${section3 === 0 ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                      }
-                    </div>
-                    <div className="flex-1">
-                      <p className={`font-black text-sm ${section3 === 0 ? "text-white" : section3 > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-black/30 dark:text-white/30"}`}>
-                        {lang === "ar" ? "١ · النشاط التجاري" : "1 · Business"}
-                      </p>
-                      {section3 > 0 && (
-                        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate">{formData.businessName}{formData.targetAudience ? ` · ${formData.targetAudience}` : ""}</p>
-                      )}
-                    </div>
-                    {section3 > 0 && (
-                      <button onClick={() => setSection3(0)} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-800/40 px-2.5 py-1 rounded-lg hover:bg-emerald-200 transition-colors">
-                        تعديل
-                      </button>
-                    )}
-                  </div>
-                  {/* Section body */}
-                  <AnimatePresence>
-                    {section3 === 0 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        className="bg-white dark:bg-gray-900 p-5 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">اسم النشاط *</Label>
-                            <Input value={formData.businessName} onChange={e => setFormData(f => ({ ...f, businessName: e.target.value }))}
-                              placeholder="مثال: مطعم كلوني" className="h-12 rounded-xl" data-testid="input-business-name" />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block">رقم الجوال</Label>
-                            <Input value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
-                              placeholder="05xxxxxxxx" className="h-12 rounded-xl" data-testid="input-phone" />
-                          </div>
-                        </div>
-                        {/* Sector */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2 block">القطاع *</Label>
-                          {segmentFromUrl ? (
-                            (() => {
-                              const locked = sectors.find(s => s.value === segmentFromUrl) || { value: segmentFromUrl, label: SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl, icon: Globe, color: "from-slate-400 to-gray-600" };
-                              return (
-                                <div className="flex items-center gap-3 border-2 border-black dark:border-white bg-black/[0.03] dark:bg-white/[0.03] rounded-2xl px-4 py-3">
-                                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${locked.color} flex items-center justify-center shrink-0`}>
-                                    <locked.icon className="w-4 h-4 text-white" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-bold text-black dark:text-white">{locked.label}</p>
-                                    <p className="text-[10px] text-black/40 dark:text-white/40">محدد من صفحة الباقات</p>
-                                  </div>
-                                  <Lock className="w-4 h-4 text-black/25 dark:text-white/25" />
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {sectors.map(s => (
-                                <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, sector: s.value }))}
-                                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} data-testid={`sector-${s.value}`}
-                                  className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.sector === s.value ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/20"}`}>
-                                  <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-2`}>
-                                    <s.icon className="w-4 h-4 text-white" />
-                                  </div>
-                                  <p className="text-xs font-bold text-black dark:text-white">{s.label}</p>
-                                </motion.button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        {/* Target audience */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5" /> الجمهور المستهدف
-                          </Label>
-                          <Input value={formData.targetAudience} onChange={e => setFormData(f => ({ ...f, targetAudience: e.target.value }))}
-                            placeholder="مثال: شباب 18-35، رجال أعمال، عائلات..." className="h-12 rounded-xl" data-testid="input-target-audience" />
-                        </div>
-                        <button
-                          onClick={() => formData.businessName && formData.sector && setSection3(1)}
-                          disabled={!formData.businessName || !formData.sector}
-                          data-testid="button-section0-next"
-                          className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-blue-200/50 flex items-center justify-center gap-2">
-                          متابعة <ArrowLeft className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* ── SECTION 1: تصميم الهوية ── */}
-                <div className={`rounded-3xl border-2 overflow-hidden transition-all duration-300 ${
-                  section3 === 1 ? "border-purple-200 dark:border-purple-800/40 shadow-xl shadow-purple-100/40 dark:shadow-purple-900/20" :
-                  section3 > 1  ? "border-emerald-200 dark:border-emerald-800/30" :
-                  "border-black/[0.06] dark:border-white/[0.06] opacity-60"
-                }`}>
-                  <div className={`flex items-center gap-3 px-5 py-4 ${
-                    section3 === 1 ? "bg-gradient-to-r from-violet-500 to-purple-600" :
-                    section3 > 1  ? "bg-emerald-50 dark:bg-emerald-900/20" :
-                    "bg-black/[0.02] dark:bg-white/[0.02]"
-                  }`}>
-                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
-                      section3 === 1 ? "bg-white/20" : section3 > 1 ? "bg-emerald-100 dark:bg-emerald-800/40" : "bg-black/10 dark:bg-white/10"
-                    }`}>
-                      {section3 > 1 ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Sparkles className={`w-4 h-4 ${section3 === 1 ? "text-white" : "text-black/30 dark:text-white/30"}`} />}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`font-black text-sm ${section3 === 1 ? "text-white" : section3 > 1 ? "text-emerald-700 dark:text-emerald-400" : "text-black/30 dark:text-white/30"}`}>
-                        {lang === "ar" ? "٢ · تصميم الهوية" : "2 · Brand Identity"}
-                      </p>
-                      {section3 > 1 && (
-                        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate">
-                          {formData.visualStyle ? VISUAL_STYLES.find(v => v.value === formData.visualStyle)?.label : ""}
-                          {formData.brandColor ? ` · ${formData.brandColor}` : ""}
-                          {formData.hasLogo ? " · شعار جاهز" : ""}
-                        </p>
-                      )}
-                    </div>
-                    {section3 > 1 && (
-                      <button onClick={() => setSection3(1)} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-800/40 px-2.5 py-1 rounded-lg hover:bg-emerald-200 transition-colors">تعديل</button>
-                    )}
-                  </div>
-                  <AnimatePresence>
-                    {section3 === 1 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        className="bg-white dark:bg-gray-900 p-5 space-y-5">
-                        {/* Logo toggles */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2.5 block flex items-center gap-1.5">
-                            <Image className="w-3.5 h-3.5" /> الشعار
-                          </Label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {[
-                              { key: "hasLogo", icon: Image, label: "لدي شعار جاهز", desc: "سأرفع ملف الشعار", color: "violet" },
-                              { key: "needsLogoDesign", icon: Brush, label: "أحتاج تصميم شعار", desc: "نصمم لك شعار احترافي", color: "purple" },
-                            ].map(({ key, icon: Icon, label, desc, color }) => (
-                              <button key={key} onClick={() => setFormData(f => ({ ...f, [key]: !(f as any)[key] }))}
-                                data-testid={`toggle-${key}`}
-                                className={`w-full text-right rounded-2xl p-4 border-2 transition-all flex items-center gap-3 ${
-                                  (formData as any)[key] ? `border-${color}-400 bg-${color}-50 dark:bg-${color}-900/20 shadow-md` : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20"
-                                }`}>
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${(formData as any)[key] ? `bg-${color}-500` : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
-                                  <Icon className={`w-5 h-5 ${(formData as any)[key] ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-bold text-sm text-black dark:text-white">{label}</p>
-                                  <p className="text-xs text-black/35 dark:text-white/35 mt-0.5">{desc}</p>
-                                </div>
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${(formData as any)[key] ? `border-${color}-500 bg-${color}-500` : "border-black/20 dark:border-white/20"}`}>
-                                  {(formData as any)[key] && <Check className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Visual style */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                            <Palette className="w-3.5 h-3.5" /> النمط البصري للموقع
-                          </Label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {VISUAL_STYLES.map(s => (
-                              <motion.button key={s.value} onClick={() => setFormData(f => ({ ...f, visualStyle: s.value }))}
-                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} data-testid={`style-${s.value}`}
-                                className={`border-2 rounded-2xl p-3 text-right transition-all ${formData.visualStyle === s.value ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 shadow-md" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/20"}`}>
-                                <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-2 shadow-sm`}>
-                                  <s.icon className="w-4 h-4 text-white" />
-                                </div>
-                                <p className="text-xs font-bold text-black dark:text-white">{s.label}</p>
-                                <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5 leading-tight">{s.desc}</p>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Brand color */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                            <Brush className="w-3.5 h-3.5" /> الألوان المفضلة للعلامة التجارية
-                          </Label>
-                          <Input value={formData.brandColor} onChange={e => setFormData(f => ({ ...f, brandColor: e.target.value }))}
-                            placeholder="مثال: أزرق وذهبي، أخضر داكن، تدرج بنفسجي..." className="h-12 rounded-xl" data-testid="input-brand-color" />
-                        </div>
-                        {/* Logo upload */}
-                        {formData.hasLogo && (
-                          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-                            <FileUploadField label="رفع الشعار" field="logo" files={uploadedFiles.logo} onUpload={handleFileUpload} onRemove={handleFileRemove} />
-                          </motion.div>
-                        )}
-                        {/* Brand identity upload */}
-                        <FileUploadField label="الهوية البصرية (اختياري)" field="brandIdentity" files={uploadedFiles.brandIdentity} onUpload={handleFileUpload} onRemove={handleFileRemove} />
-                        <button onClick={() => setSection3(2)} data-testid="button-section1-next"
-                          className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-black text-sm transition-all hover:shadow-lg hover:shadow-purple-200/50 flex items-center justify-center gap-2">
-                          متابعة <ArrowLeft className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* ── SECTION 2: النظام والتقنية ── */}
-                <div className={`rounded-3xl border-2 overflow-hidden transition-all duration-300 ${
-                  section3 === 2 ? "border-cyan-200 dark:border-cyan-800/40 shadow-xl shadow-cyan-100/40 dark:shadow-cyan-900/20" :
-                  section3 > 2  ? "border-emerald-200 dark:border-emerald-800/30" :
-                  "border-black/[0.06] dark:border-white/[0.06] opacity-60"
-                }`}>
-                  <div className={`flex items-center gap-3 px-5 py-4 ${
-                    section3 === 2 ? "bg-gradient-to-r from-cyan-500 to-teal-600" :
-                    section3 > 2  ? "bg-emerald-50 dark:bg-emerald-900/20" :
-                    "bg-black/[0.02] dark:bg-white/[0.02]"
-                  }`}>
-                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
-                      section3 === 2 ? "bg-white/20" : section3 > 2 ? "bg-emerald-100 dark:bg-emerald-800/40" : "bg-black/10 dark:bg-white/10"
-                    }`}>
-                      {section3 > 2 ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Zap className={`w-4 h-4 ${section3 === 2 ? "text-white" : "text-black/30 dark:text-white/30"}`} />}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`font-black text-sm ${section3 === 2 ? "text-white" : section3 > 2 ? "text-emerald-700 dark:text-emerald-400" : "text-black/30 dark:text-white/30"}`}>
-                        {lang === "ar" ? "٣ · النظام والتقنية" : "3 · System & Tech"}
-                      </p>
-                      {section3 > 2 && (
-                        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate">
-                          {[formData.siteLanguage === "ar" ? "عربي" : formData.siteLanguage === "en" ? "إنجليزي" : "عربي + إنجليزي",
-                            formData.whatsappIntegration ? "واتساب" : "", formData.needsPayment ? "دفع إلكتروني" : "", formData.needsBooking ? "حجز" : ""
-                          ].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
-                    </div>
-                    {section3 > 2 && (
-                      <button onClick={() => setSection3(2)} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-800/40 px-2.5 py-1 rounded-lg hover:bg-emerald-200 transition-colors">تعديل</button>
-                    )}
-                  </div>
-                  <AnimatePresence>
-                    {section3 === 2 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        className="bg-white dark:bg-gray-900 p-5 space-y-5">
-                        {/* Site language */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                            <Globe className="w-3.5 h-3.5" /> لغة الموقع
-                          </Label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {[
-                              { v: "ar", label: "عربي فقط", emoji: "🇸🇦" },
-                              { v: "en", label: "إنجليزي فقط", emoji: "🇺🇸" },
-                              { v: "both", label: "ثنائي اللغة", emoji: "🌐" },
-                            ].map(({ v, label, emoji }) => (
-                              <button key={v} onClick={() => setFormData(f => ({ ...f, siteLanguage: v }))} data-testid={`lang-${v}`}
-                                className={`border-2 rounded-2xl py-3 px-2 text-center transition-all ${formData.siteLanguage === v ? "border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 shadow-md" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20"}`}>
-                                <div className="text-2xl mb-1">{emoji}</div>
-                                <p className="text-xs font-bold text-black dark:text-white leading-tight">{label}</p>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Feature toggles */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2.5 block flex items-center gap-1.5">
-                            <MonitorSmartphone className="w-3.5 h-3.5" /> ميزات النظام
-                          </Label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {[
-                              { key: "whatsappIntegration", icon: MessageCircle, label: "ربط واتساب",          desc: "زر واتساب مباشر للتواصل",       color: "green"  },
-                              { key: "socialIntegration",   icon: Globe,         label: "ربط السوشيال ميديا",   desc: "تغذية مباشرة من حساباتك",       color: "blue"   },
-                              { key: "needsPayment",        icon: CreditCard,    label: "نظام دفع إلكتروني",    desc: "مدى، فيزا، Apple Pay...",         color: "violet" },
-                              { key: "needsBooking",        icon: Calendar,      label: "نظام حجز مسبق",        desc: "حجز المواعيد أو الطاولات",       color: "orange" },
-                            ].map(({ key, icon: Icon, label, desc, color }) => (
-                              <button key={key} onClick={() => setFormData(f => ({ ...f, [key]: !(f as any)[key] }))}
-                                data-testid={`toggle-${key}`}
-                                className={`w-full text-right rounded-2xl p-4 border-2 transition-all flex items-center gap-3 ${
-                                  (formData as any)[key] ? "border-current shadow-md bg-opacity-10" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20"
-                                } ${(formData as any)[key] ? `border-${color}-400 bg-${color}-50 dark:bg-${color}-900/20` : ""}`}>
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${(formData as any)[key] ? `bg-${color}-500` : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
-                                  <Icon className={`w-5 h-5 ${(formData as any)[key] ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-bold text-sm text-black dark:text-white">{label}</p>
-                                  <p className="text-xs text-black/35 dark:text-white/35 mt-0.5">{desc}</p>
-                                </div>
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${(formData as any)[key] ? `border-${color}-500 bg-${color}-500` : "border-black/20 dark:border-white/20"}`}>
-                                  {(formData as any)[key] && <Check className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Inspiration sites */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                            <Star className="w-3.5 h-3.5" /> مواقع مرجعية / ألهام (اختياري)
-                          </Label>
-                          <Input value={formData.inspirationSites} onChange={e => setFormData(f => ({ ...f, inspirationSites: e.target.value }))}
-                            placeholder="مثال: amazon.sa، namshi.com، ..." className="h-12 rounded-xl" dir="ltr" data-testid="input-inspiration-sites" />
-                        </div>
-                        <button onClick={() => setSection3(3)} data-testid="button-section2-next"
-                          className="w-full h-12 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-600 text-white font-black text-sm transition-all hover:shadow-lg hover:shadow-cyan-200/50 flex items-center justify-center gap-2">
-                          متابعة <ArrowLeft className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* ── SECTION 3: المحتوى والملاحظات ── */}
-                <div className={`rounded-3xl border-2 overflow-hidden transition-all duration-300 ${
-                  section3 === 3 ? "border-emerald-200 dark:border-emerald-800/40 shadow-xl shadow-emerald-100/40 dark:shadow-emerald-900/20" :
-                  "border-black/[0.06] dark:border-white/[0.06] opacity-60"
-                }`}>
-                  <div className={`flex items-center gap-3 px-5 py-4 ${
-                    section3 === 3 ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-black/[0.02] dark:bg-white/[0.02]"
-                  }`}>
-                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${section3 === 3 ? "bg-white/20" : "bg-black/10 dark:bg-white/10"}`}>
-                      <Layers className={`w-4 h-4 ${section3 === 3 ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                    </div>
-                    <p className={`font-black text-sm ${section3 === 3 ? "text-white" : "text-black/30 dark:text-white/30"}`}>
-                      {lang === "ar" ? "٤ · المحتوى والملاحظات" : "4 · Content & Notes"}
-                    </p>
-                  </div>
-                  <AnimatePresence>
-                    {section3 === 3 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        className="bg-white dark:bg-gray-900 p-5 space-y-5">
-                        {/* Has content toggle */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-2.5 block flex items-center gap-1.5">
-                            <BookOpen className="w-3.5 h-3.5" /> المحتوى الجاهز
-                          </Label>
-                          <button onClick={() => setFormData(f => ({ ...f, hasContent: !f.hasContent }))}
-                            data-testid="toggle-has-content"
-                            className={`w-full text-right rounded-2xl p-4 border-2 transition-all flex items-center gap-3 ${
-                              formData.hasContent ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 shadow-md" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20"
-                            }`}>
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all ${formData.hasContent ? "bg-emerald-500" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}>
-                              <FileText className={`w-5 h-5 ${formData.hasContent ? "text-white" : "text-black/30 dark:text-white/30"}`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-bold text-sm text-black dark:text-white">لدي محتوى وصور جاهزة</p>
-                              <p className="text-xs text-black/35 dark:text-white/35 mt-0.5">نصوص، صور، فيديوهات جاهزة للرفع</p>
-                            </div>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${formData.hasContent ? "border-emerald-500 bg-emerald-500" : "border-black/20 dark:border-white/20"}`}>
-                              {formData.hasContent && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                          </button>
-                        </div>
-                        {/* File upload */}
-                        {formData.hasContent && (
-                          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-                            <FileUploadField label="رفع المحتوى والصور" field="content" files={uploadedFiles.content} onUpload={handleFileUpload} onRemove={handleFileRemove} />
-                          </motion.div>
-                        )}
-                        {/* Notes */}
-                        <div>
-                          <Label className="text-xs font-bold text-black/40 dark:text-white/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                            <Star className="w-3.5 h-3.5" /> متطلبات إضافية أو ملاحظات خاصة
-                          </Label>
-                          <Textarea value={formData.requiredFunctions} onChange={e => setFormData(f => ({ ...f, requiredFunctions: e.target.value }))}
-                            placeholder="اكتب أي تفاصيل إضافية، ميزات خاصة، أو أي شيء تريدنا معرفته عن مشروعك..."
-                            className="h-28 resize-none rounded-xl" data-testid="textarea-notes" />
-                        </div>
-                        {/* Done indicator */}
-                        <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl p-4 flex items-center gap-3 border border-emerald-200/50 dark:border-emerald-700/30">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
-                            <CheckCircle className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-black text-sm text-emerald-700 dark:text-emerald-400">أنت جاهز!</p>
-                            <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">تم اكتمال كل التفاصيل — يمكنك المتابعة للخطوة التالية</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
-
-            {/* ─── STEP 4: Devices ─── */}
-            {step === 4 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
-                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 4 من 5" : "Step 4 of 5"}</p>
+                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 3 من 4" : "Step 3 of 4"}</p>
                   <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "الأجهزة والمنتجات" : "Devices & Products"}</h2>
                   <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "أضف أجهزة لنظامك (اختياري)" : "Add devices to your system (optional)"}</p>
                 </div>
@@ -1430,11 +991,11 @@ export default function OrderFlow() {
               </div>
             )}
 
-            {/* ─── STEP 5: Payment ─── */}
-            {step === 5 && (
+            {/* ─── STEP 4: Meeting ─── */}
+            {step === 4 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
-                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 5 من 5" : "Step 5 of 5"}</p>
+                  <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 4 من 4" : "Step 4 of 4"}</p>
                   <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "تحديد موعد الاجتماع" : "Schedule Your Meeting"}</h2>
                   <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "اختر 3 أوقات و 3 أيام مناسبة لك" : "Choose 3 preferred time slots and days"}</p>
                 </div>
