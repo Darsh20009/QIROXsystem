@@ -1047,10 +1047,10 @@ export default function Checkout() {
                 </div>
               )}
 
-              {/* ── Project Details Form ── */}
+              {/* ── Navigate to Project Details Setup Page ── */}
               {!detailsSaved ? (
-                <div className="bg-white rounded-3xl shadow-sm border-2 border-violet-200 dark:border-violet-800/40 overflow-hidden">
-                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-4">
+                <div className="bg-white rounded-3xl shadow-sm border-2 border-violet-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
                         <ClipboardList className="w-5 h-5 text-white" />
@@ -1060,158 +1060,25 @@ export default function Checkout() {
                         <p className="text-white/70 text-xs mt-0.5">تساعدنا هذه المعلومات على تسليم مشروعك بدقة</p>
                       </div>
                     </div>
-                    {/* Sub-section progress dots */}
-                    <div className="flex items-center gap-2 mt-3">
-                      {[Building2, Globe, Zap, Layers].map((Icon, i) => (
-                        <div key={i} className={`flex items-center gap-1.5 ${i < 3 ? "flex-1" : ""}`}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${projSection > i ? "bg-white shadow-sm" : projSection === i ? "bg-white scale-110 shadow-md" : "bg-white/20"}`}>
-                            {projSection > i
-                              ? <Check className="w-3.5 h-3.5 text-violet-600" />
-                              : <Icon className={`w-3 h-3 ${projSection === i ? "text-violet-600" : "text-white/60"}`} />}
-                          </div>
-                          {i < 3 && <div className={`flex-1 h-0.5 rounded-full transition-all ${projSection > i ? "bg-white/60" : "bg-white/20"}`} />}
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
-                  <div className="p-5 space-y-4">
-                    {/* Section 0: Business Info */}
-                    <AnimatePresence mode="wait">
-                      {projSection === 0 && (
-                        <motion.div key="proj0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">اسم النشاط / المشروع *</Label>
-                              <Input value={projData.businessName} onChange={e => setProjData(p => ({ ...p, businessName: e.target.value }))}
-                                placeholder="مثال: مطعم الأصالة" className="h-11 rounded-xl" data-testid="proj-input-business-name" />
-                            </div>
-                            <div>
-                              <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">رقم الجوال</Label>
-                              <Input value={projData.phone} onChange={e => setProjData(p => ({ ...p, phone: e.target.value }))}
-                                placeholder="05xxxxxxxx" className="h-11 rounded-xl" data-testid="proj-input-phone" />
-                            </div>
-                          </div>
-                          {/* Sector */}
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block">القطاع *</Label>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                              {sectors.length > 0 ? sectors.map(s => (
-                                <button key={s.value} onClick={() => setProjData(p => ({ ...p, sector: s.value }))}
-                                  data-testid={`proj-sector-${s.value}`}
-                                  className={`border-2 rounded-2xl p-3 text-center transition-all ${projData.sector === s.value ? "border-violet-500 bg-violet-50 shadow-sm" : "border-black/[0.07] hover:border-black/20"}`}>
-                                  <div className="text-2xl mb-1">{s.icon}</div>
-                                  <p className="text-[10px] font-bold text-black leading-tight">{s.label}</p>
-                                </button>
-                              )) : (
-                                <Input value={projData.sector} onChange={e => setProjData(p => ({ ...p, sector: e.target.value }))}
-                                  placeholder="اكتب قطاعك" className="h-11 rounded-xl col-span-3 sm:col-span-4" />
-                              )}
-                            </div>
-                          </div>
-                          {/* Target audience */}
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> الجمهور المستهدف</Label>
-                            <Input value={projData.targetAudience} onChange={e => setProjData(p => ({ ...p, targetAudience: e.target.value }))}
-                              placeholder="مثال: شباب 18-35، رجال أعمال..." className="h-11 rounded-xl" data-testid="proj-input-audience" />
-                          </div>
-                          <button onClick={() => projData.businessName && projData.sector && setProjSection(1)}
-                            disabled={!projData.businessName || !projData.sector}
-                            data-testid="proj-btn-next0"
-                            className="w-full h-11 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-black text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-2">
-                            التالي <ArrowLeft className="w-4 h-4" />
-                          </button>
-                        </motion.div>
-                      )}
-
-                      {/* Section 1: Site Language & Integrations */}
-                      {projSection === 1 && (
-                        <motion.div key="proj1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> لغة الموقع</Label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {[{ v: "ar", label: "عربي", emoji: "🇸🇦" }, { v: "en", label: "إنجليزي", emoji: "🇺🇸" }, { v: "both", label: "ثنائي", emoji: "🌐" }].map(({ v, label, emoji }) => (
-                                <button key={v} onClick={() => setProjData(p => ({ ...p, siteLanguage: v }))} data-testid={`proj-lang-${v}`}
-                                  className={`border-2 rounded-2xl py-3 px-2 text-center transition-all ${projData.siteLanguage === v ? "border-violet-500 bg-violet-50 shadow-md" : "border-black/[0.07] hover:border-black/20"}`}>
-                                  <div className="text-xl mb-1">{emoji}</div>
-                                  <p className="text-xs font-bold text-black">{label}</p>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-2 block flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> ميزات مطلوبة</Label>
-                            <div className="space-y-2">
-                              {[
-                                { key: "whatsappIntegration", icon: MessageCircle, label: "ربط واتساب", color: "green" },
-                                { key: "needsPayment",        icon: CreditCard,    label: "نظام دفع إلكتروني", color: "violet" },
-                                { key: "needsBooking",        icon: Calendar,      label: "نظام حجز مسبق", color: "orange" },
-                              ].map(({ key, icon: Icon, label, color }) => (
-                                <button key={key} onClick={() => setProjData(p => ({ ...p, [key]: !(p as any)[key] }))}
-                                  data-testid={`proj-toggle-${key}`}
-                                  className={`w-full text-right rounded-2xl p-3 border-2 flex items-center gap-3 transition-all ${(projData as any)[key] ? `border-${color}-400 bg-${color}-50` : "border-black/[0.07] hover:border-black/20"}`}>
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${(projData as any)[key] ? `bg-${color}-500` : "bg-black/[0.05]"}`}>
-                                    <Icon className={`w-4 h-4 ${(projData as any)[key] ? "text-white" : "text-black/30"}`} />
-                                  </div>
-                                  <span className="flex-1 text-sm font-bold text-black">{label}</span>
-                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${(projData as any)[key] ? `border-${color}-500 bg-${color}-500` : "border-black/20"}`}>
-                                    {(projData as any)[key] && <Check className="w-3 h-3 text-white" />}
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setProjSection(0)} className="h-11 px-5 rounded-2xl border-2 border-black/[0.07] font-bold text-sm text-black/50 hover:border-black/20 transition-all">
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => setProjSection(2)} data-testid="proj-btn-next1"
-                              className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-black text-sm flex items-center justify-center gap-2">
-                              التالي <ArrowLeft className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* Section 2: Brand color */}
-                      {projSection === 2 && (
-                        <motion.div key="proj2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> الألوان المفضلة</Label>
-                            <Input value={projData.brandColor} onChange={e => setProjData(p => ({ ...p, brandColor: e.target.value }))}
-                              placeholder="مثال: أزرق وذهبي، أخضر داكن..." className="h-11 rounded-xl" data-testid="proj-input-color" />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> ملاحظات ومتطلبات إضافية</Label>
-                            <Textarea value={projData.requiredFunctions} onChange={e => setProjData(p => ({ ...p, requiredFunctions: e.target.value }))}
-                              placeholder="أي تفاصيل إضافية، ميزات خاصة، أو أي شيء تريدنا معرفته..." rows={4}
-                              className="rounded-xl resize-none" data-testid="proj-input-notes" />
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => setProjSection(1)} className="h-11 px-5 rounded-2xl border-2 border-black/[0.07] font-bold text-sm text-black/50 hover:border-black/20 transition-all">
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => detailsMutation.mutate()} disabled={detailsMutation.isPending}
-                              data-testid="proj-btn-save"
-                              className="flex-1 h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-60">
-                              {detailsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> حفظ التفاصيل</>}
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <button onClick={() => setDetailsSaved(true)} className="w-full text-center text-xs text-black/30 hover:text-black/50 transition-colors py-1" data-testid="proj-btn-skip">
+                  <div className="px-5 py-4">
+                    <Button
+                      onClick={() => orderId && navigate(`/order-setup/${orderId}`)}
+                      className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black gap-2"
+                      data-testid="btn-setup-project-details"
+                    >
+                      <ClipboardList className="w-5 h-5" />
+                      أكمل تفاصيل مشروعك
+                    </Button>
+                    <button
+                      onClick={() => navigate("/dashboard")}
+                      className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors mt-1"
+                      data-testid="btn-skip-setup"
+                    >
                       سأكملها لاحقاً من لوحة التحكم ←
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                    <Check className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <p className="text-sm font-bold text-emerald-700">تم {detailsMutation.isSuccess ? "حفظ تفاصيل مشروعك!" : "تخطي تفاصيل المشروع"} — يمكنك إكمالها لاحقاً من لوحة التحكم.</p>
                 </div>
               )}
 
