@@ -839,6 +839,7 @@ function AppInner() {
         <TooltipProvider>
           <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
             <PublicRouter />
+            {location === "/" && <FloatingBrandPulse />}
             <FloatingClientChat />
             <Toaster />
           </div>
@@ -909,7 +910,6 @@ function AppInner() {
                 </div>
               )}
             </main>
-            {user?.role !== "employee" && <FloatingBrandPulse />}
             <MobileBottomNav />
             <FloatingClientChat />
             <PageHintCard />
