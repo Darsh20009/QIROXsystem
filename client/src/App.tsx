@@ -899,7 +899,7 @@ function AppInner() {
                 </div>
               )}
             </main>
-            <FloatingBrandPulse />
+            {user?.role !== "employee" && <FloatingBrandPulse />}
             <MobileBottomNav />
             <FloatingClientChat />
             <PageHintCard />
