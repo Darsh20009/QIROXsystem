@@ -1450,7 +1450,7 @@ export default function Dashboard() {
   // Redirect to email verification if account is not verified
   useEffect(() => {
     if (user && (user as any).emailVerified === false && (user as any).role === "client") {
-      setLocation("/verify-email");
+      setLocation("/verify-email?flow=register");
       return;
     }
     // Redirect new clients to onboarding (first time)

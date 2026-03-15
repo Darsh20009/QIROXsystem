@@ -314,6 +314,8 @@ export default function Login() {
                 description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
               });
             }
+            // Cache user data so verify-email page knows user is authenticated
+            queryClient.setQueryData(["/api/user"], user);
             // Navigate to standalone email verify page for registration flow
             setLocation("/verify-email?flow=register");
           } else {

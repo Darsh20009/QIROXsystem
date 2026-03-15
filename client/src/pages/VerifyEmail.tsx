@@ -31,10 +31,11 @@ export default function VerifyEmail() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) { setLocation("/login"); return; }
-    if ((user as any).emailVerified) {
+    // Don't auto-redirect while showing the success animation (setTimeout handles it)
+    if ((user as any).emailVerified && !verifySuccess) {
       setLocation(isRegisterFlow ? "/phone-verify?flow=register" : "/dashboard");
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, verifySuccess]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -86,7 +87,8 @@ export default function VerifyEmail() {
       return;
     }
 
-    // Refresh user session so dashboard loads with verified state
+    // Update user cache synchronously to prevent stale-data redirects
+    queryClient.setQueryData(["/api/user"], (old: any) => old ? { ...old, emailVerified: true } : old);
     queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
     setIsVerifying(false);
