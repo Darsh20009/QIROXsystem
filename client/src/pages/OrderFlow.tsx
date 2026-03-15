@@ -524,27 +524,10 @@ export default function OrderFlow() {
 
   if (isUserLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
 
-  /* ── Auth Gate ── */
-  if (!user) return (
-    <div className="min-h-screen bg-white dark:bg-gray-950" dir={dir}>
-      <Navigation />
-      <div className="max-w-md mx-auto pt-36 px-6 text-center">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="w-20 h-20 bg-black dark:bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <Lock className="w-9 h-9 text-white dark:text-black" />
-          </div>
-          <h2 className="text-2xl font-black mb-2 text-black dark:text-white">سجّل دخولك أولاً</h2>
-          <p className="text-black/50 dark:text-white/50 mb-6 text-sm">يجب أن تملك حساباً لتقديم طلب</p>
-          <Button onClick={() => setLocation("/login")} className="w-full h-12 rounded-xl font-bold">تسجيل الدخول</Button>
-          <p className="text-sm text-black/40 dark:text-white/40 mt-4">ليس لديك حساب؟ <button onClick={() => setLocation("/register")} className="text-black dark:text-white underline font-medium">أنشئ حساباً</button></p>
-        </motion.div>
-      </div>
-      <Footer />
-    </div>
-  );
+  /* ── Auth handled at Checkout ── (non-logged users may complete the wizard) */
 
-  /* ── Email Verify Gate ── */
-  const isVerified = (user as any).emailVerified || verifySuccess;
+  /* ── Email Verify Gate (only for logged-in users) ── */
+  const isVerified = !user || (user as any).emailVerified || verifySuccess;
   if (!isVerified) return (
     <div className="min-h-screen bg-white dark:bg-gray-950" dir={dir}>
       <Navigation />

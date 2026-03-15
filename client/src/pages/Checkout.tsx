@@ -117,6 +117,23 @@ export default function Checkout() {
 
   const [step, setStep] = useState<Step>(1);
 
+  // ── Inline auth state (shown when user is not logged in) ─────
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [loginId, setLoginId] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [showLoginPass, setShowLoginPass] = useState(false);
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regPass, setRegPass] = useState("");
+  const [showRegPass, setShowRegPass] = useState(false);
+  const [pendingVerifyEmail, setPendingVerifyEmail] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+
   const [addr, setAddr] = useState<AddressData>({
     recipientName: "", recipientPhone: "", city: "", district: "", street: "", nationalAddressId: ""
   });
@@ -207,6 +224,69 @@ export default function Checkout() {
     }, () => { toast({ title: "تعذّر الحصول على موقعك", variant: "destructive" }); setGeoLoading(false); });
   };
 
+  // ── After login: add pending cart item(s) if any ───────────
+  useEffect(() => {
+    if (!user) return;
+    const pending = sessionStorage.getItem("qiroxPendingCart");
+    if (!pending) return;
+    try {
+      const items: any[] = JSON.parse(pending);
+      const addAll = async () => {
+        for (const item of items) {
+          await apiRequest("POST", "/api/cart/items", item);
+        }
+        sessionStorage.removeItem("qiroxPendingCart");
+        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+      };
+      addAll().catch(() => sessionStorage.removeItem("qiroxPendingCart"));
+    } catch { sessionStorage.removeItem("qiroxPendingCart"); }
+  }, [user]);
+
+  // ── Auth handlers ────────────────────────────────────────────
+  async function handleAuthLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!loginId.trim() || !loginPass.trim()) return;
+    setAuthLoading(true); setAuthError("");
+    try {
+      const r = await fetch("/api/login", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: loginId, password: loginPass }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || data.message || "فشل تسجيل الدخول");
+      if (data.require2FA || data.twoFA) { navigate("/login?redirect=/checkout"); return; }
+      if (data.needsVerification) { setPendingVerifyEmail(data.email || loginId); setAuthLoading(false); return; }
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    } catch (e: any) { setAuthError(e.message); }
+    setAuthLoading(false);
+  }
+
+  async function handleAuthRegister(e: React.FormEvent) {
+    e.preventDefault();
+    if (!regName.trim() || !regEmail.trim() || !regPass.trim()) return;
+    setAuthLoading(true); setAuthError("");
+    try {
+      const username = regEmail.split("@")[0].replace(/[^a-z0-9_]/gi, "").slice(0, 15) + Math.random().toString(36).slice(2, 6);
+      const r = await fetch("/api/register", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fullName: regName, email: regEmail, phone: regPhone, password: regPass, username }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || data.message || "فشل إنشاء الحساب");
+      if (data.needsVerification) { setPendingVerifyEmail(data.email || regEmail); setAuthLoading(false); return; }
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    } catch (e: any) { setAuthError(e.message); }
+    setAuthLoading(false);
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (otpCode.length !== 6) return;
+    setOtpLoading(true); setOtpError("");
+    try {
+      const r = await fetch("/api/auth/verify-email", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: otpCode, email: pendingVerifyEmail }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || data.message || "رمز التحقق خاطئ");
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      setPendingVerifyEmail(null);
+    } catch (e: any) { setOtpError(e.message); }
+    setOtpLoading(false);
+  }
+
   const couponMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/cart/apply-coupon", { couponCode: couponCode.toUpperCase().trim() }).then(r => r.json()),
     onSuccess: () => { setCouponApplied(true); queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); toast({ title: "✅ تم تطبيق كوبون الخصم" }); },
@@ -290,11 +370,120 @@ export default function Checkout() {
   const canProceedStep2 = (payMethod === "bank") || (payMethod === "paypal" && paypalDone) ||
     (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
 
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-black/40">يجب تسجيل الدخول أولاً</p>
-    </div>
-  );
+  // ── Inline Auth Step (when user not logged in) ───────────────
+  if (!user) {
+    // OTP verification sub-step
+    if (pendingVerifyEmail) {
+      return (
+        <div className="min-h-screen flex flex-col bg-gray-50/50" dir="rtl">
+          <Navigation />
+          <div className="flex-1 flex items-center justify-center px-4 py-12">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-black/[0.06] dark:border-white/[0.06] p-8 text-center">
+              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <Lock className="w-7 h-7 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-black text-black dark:text-white mb-1">تحقق من بريدك</h2>
+              <p className="text-sm text-black/50 dark:text-white/50 mb-6">أرسلنا رمزاً من 6 أرقام إلى<br /><strong className="text-black/70 dark:text-white/70">{pendingVerifyEmail}</strong></p>
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <Input value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" dir="ltr" className="text-center text-2xl tracking-[0.5em] font-mono h-14 border-black/[0.1] dark:border-white/[0.1]" maxLength={6} data-testid="input-otp-code" />
+                {otpError && <p className="text-xs text-red-500">{otpError}</p>}
+                <Button type="submit" className="w-full h-12 rounded-xl font-bold" disabled={otpCode.length !== 6 || otpLoading} data-testid="button-verify-otp">
+                  {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "تحقق وتابع"}
+                </Button>
+                <button type="button" onClick={() => setPendingVerifyEmail(null)} className="text-xs text-black/40 dark:text-white/40 underline">رجوع</button>
+              </form>
+            </motion.div>
+          </div>
+          <Footer />
+        </div>
+      );
+    }
+
+    // Login / Register tabs
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50/50" dir="rtl">
+        <Navigation />
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-black dark:bg-white rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-7 h-7 text-white dark:text-black" />
+              </div>
+              <h2 className="text-2xl font-black text-black dark:text-white">أكمل طلبك</h2>
+              <p className="text-sm text-black/50 dark:text-white/50 mt-1">سجّل دخولك أو أنشئ حساباً للمتابعة</p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex bg-black/[0.04] dark:bg-white/[0.05] rounded-2xl p-1 mb-6">
+              <button onClick={() => { setAuthTab("login"); setAuthError(""); }} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${authTab === "login" ? "bg-white dark:bg-gray-800 shadow text-black dark:text-white" : "text-black/50 dark:text-white/50"}`} data-testid="tab-login">تسجيل الدخول</button>
+              <button onClick={() => { setAuthTab("register"); setAuthError(""); }} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${authTab === "register" ? "bg-white dark:bg-gray-800 shadow text-black dark:text-white" : "text-black/50 dark:text-white/50"}`} data-testid="tab-register">إنشاء حساب</button>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-black/[0.06] dark:border-white/[0.06] p-6">
+              {authError && (
+                <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                  <p className="text-xs text-red-600 dark:text-red-400">{authError}</p>
+                </div>
+              )}
+
+              <AnimatePresence mode="wait">
+                {authTab === "login" ? (
+                  <motion.form key="login" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} onSubmit={handleAuthLogin} className="space-y-4">
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">البريد الإلكتروني أو اسم المستخدم</Label>
+                      <Input value={loginId} onChange={e => setLoginId(e.target.value)} placeholder="name@email.com" dir="ltr" className="h-11 border-black/[0.1] dark:border-white/[0.1]" autoComplete="username" data-testid="input-login-id" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">كلمة المرور</Label>
+                      <div className="relative">
+                        <Input value={loginPass} onChange={e => setLoginPass(e.target.value)} type={showLoginPass ? "text" : "password"} placeholder="••••••••" dir="ltr" className="h-11 border-black/[0.1] dark:border-white/[0.1] pl-10" autoComplete="current-password" data-testid="input-login-pass" />
+                        <button type="button" onClick={() => setShowLoginPass(v => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors">
+                          {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full h-12 rounded-xl font-bold gap-2" disabled={!loginId || !loginPass || authLoading} data-testid="button-auth-login">
+                      {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ArrowLeft className="w-4 h-4" />تسجيل الدخول والمتابعة</>}
+                    </Button>
+                  </motion.form>
+                ) : (
+                  <motion.form key="register" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} onSubmit={handleAuthRegister} className="space-y-3">
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">الاسم الكامل</Label>
+                      <Input value={regName} onChange={e => setRegName(e.target.value)} placeholder="محمد العمري" className="h-11 border-black/[0.1] dark:border-white/[0.1]" autoComplete="name" data-testid="input-reg-name" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">البريد الإلكتروني</Label>
+                      <Input value={regEmail} onChange={e => setRegEmail(e.target.value)} type="email" placeholder="name@email.com" dir="ltr" className="h-11 border-black/[0.1] dark:border-white/[0.1]" autoComplete="email" data-testid="input-reg-email" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">رقم الجوال <span className="font-normal text-black/40">(اختياري)</span></Label>
+                      <Input value={regPhone} onChange={e => setRegPhone(e.target.value)} type="tel" placeholder="+966 5X XXX XXXX" dir="ltr" className="h-11 border-black/[0.1] dark:border-white/[0.1]" autoComplete="tel" data-testid="input-reg-phone" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1.5 block">كلمة المرور</Label>
+                      <div className="relative">
+                        <Input value={regPass} onChange={e => setRegPass(e.target.value)} type={showRegPass ? "text" : "password"} placeholder="6 أحرف على الأقل" dir="ltr" className="h-11 border-black/[0.1] dark:border-white/[0.1] pl-10" autoComplete="new-password" data-testid="input-reg-pass" />
+                        <button type="button" onClick={() => setShowRegPass(v => !v)} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors">
+                          {showRegPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full h-12 rounded-xl font-bold gap-2 mt-1" disabled={!regName || !regEmail || !regPass || authLoading} data-testid="button-auth-register">
+                      {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ArrowLeft className="w-4 h-4" />إنشاء الحساب والمتابعة</>}
+                    </Button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (items.length === 0 && !wizardData && step < 3) return (
     <div className="min-h-screen flex flex-col">

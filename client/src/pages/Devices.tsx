@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { useState } from "react";
 import type { QiroxProduct } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
@@ -351,7 +351,11 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
 
       {/* Sticky footer */}
       <div className="shrink-0 p-4 border-t border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 space-y-2">
-        {p.stock !== 0 && user ? (
+        {p.stock === 0 ? (
+          <div className="w-full h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center justify-center">
+            <span className="text-sm font-bold text-red-500">نفد المخزون</span>
+          </div>
+        ) : (
           <Button
             onClick={handleBuy}
             disabled={isPending}
@@ -364,16 +368,6 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
               : "أضف للسلة"
             }
           </Button>
-        ) : p.stock === 0 ? (
-          <div className="w-full h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center justify-center">
-            <span className="text-sm font-bold text-red-500">نفد المخزون</span>
-          </div>
-        ) : (
-          <Link href="/login">
-            <Button className="w-full h-12 rounded-2xl font-bold text-sm bg-black dark:bg-white text-white dark:text-black" data-testid="button-login-to-buy">
-              سجّل دخولك للشراء
-            </Button>
-          </Link>
         )}
         <div className="flex items-center justify-center gap-6 pt-1">
           {[{ icon: Shield, label: "ضمان عام" }, { icon: Truck, label: "توصيل سريع" }, { icon: Zap, label: "دعم 24/7" }].map(({ icon: Ic, label }) => (
@@ -505,10 +499,32 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
 export default function Devices() {
   const { data: user } = useUser();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [selectedProduct, setSelectedProduct] = useState<QiroxProduct | null>(null);
+
+  // Save product to sessionStorage and go to checkout (for non-logged users)
+  function goToCheckoutWithProduct(product: QiroxProduct, selectedBundle?: any) {
+    const type = product.category === "domain" ? "domain" : product.category === "email" ? "email" : product.category === "hosting" ? "hosting" : product.category === "gift" ? "gift" : "product";
+    const cartItems: any[] = [{
+      type, refId: product.id, name: product.name, nameAr: product.nameAr,
+      price: product.price, qty: 1, imageUrl: product.images?.[0],
+      config: { ...(product as any).specs },
+    }];
+    if (selectedBundle && !selectedBundle.isFree && (selectedBundle.customPrice || 0) > 0) {
+      cartItems.push({
+        type: "plan", refId: selectedBundle.planId || "",
+        name: selectedBundle.planNameAr || selectedBundle.planTier,
+        nameAr: selectedBundle.planNameAr || selectedBundle.planTier,
+        price: selectedBundle.customPrice || 0, qty: 1,
+        config: { tier: selectedBundle.planTier || "" },
+      });
+    }
+    try { sessionStorage.setItem("qiroxPendingCart", JSON.stringify(cartItems)); } catch {}
+    navigate("/checkout");
+  }
 
   const { data: products, isLoading } = useQuery<QiroxProduct[]>({ queryKey: ["/api/products"] });
   const { data: myShipments } = useQuery<any[]>({ queryKey: ["/api/shipments/my"], enabled: !!user });
@@ -770,11 +786,9 @@ export default function Devices() {
               </div>
             </div>
             {!user && (
-              <Link href="/login">
-                <Button className="bg-white text-black hover:bg-white/90 font-bold px-8 h-12 rounded-2xl shrink-0 gap-2">
-                  سجّل دخولك للشراء <ChevronLeft className="w-4 h-4" />
-                </Button>
-              </Link>
+              <Button onClick={() => navigate("/checkout")} className="bg-white text-black hover:bg-white/90 font-bold px-8 h-12 rounded-2xl shrink-0 gap-2" data-testid="button-guest-checkout">
+                أكمل طلبك <ChevronLeft className="w-4 h-4" />
+              </Button>
             )}
           </div>
         </motion.div>
@@ -791,7 +805,10 @@ export default function Devices() {
               user={user}
               onClose={() => setSelectedProduct(null)}
               onAddToCart={(shipping, notes, selectedBundle) => {
-                if (!user) { toast({ title: "يجب تسجيل الدخول أولاً", variant: "destructive" }); return; }
+                if (!user) {
+                  goToCheckoutWithProduct(selectedProduct, selectedBundle);
+                  return;
+                }
                 addToCartMutation.mutate({ product: selectedProduct, shipping: shipping ?? undefined, notes, selectedBundle });
               }}
               isPending={addToCartMutation.isPending}
