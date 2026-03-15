@@ -115,6 +115,10 @@ const orderSchema = new mongoose.Schema({
   videoUrl: String,
   accessCredentials: String,
   files: { type: mongoose.Schema.Types.Mixed },
+  // Shipping
+  shippingCompanyId: String,
+  shippingCompanyName: String,
+  shippingFee: { type: Number, default: 0 },
   // Payment
   paymentMethod: { type: String, enum: ["bank_transfer", "paypal", "paypal_card", "wallet", "mixed", "stc_pay", "apple_pay", "cash", "other"] },
   paymentProofUrl: String,

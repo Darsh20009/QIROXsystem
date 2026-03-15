@@ -713,7 +713,8 @@ function AppInner() {
     );
   }
 
-  const isPublicRoute = publicRoutes.some(r => location === r);
+  const isPublicRoute = publicRoutes.some(r => location === r)
+    || location.startsWith("/templates/");
 
   if (isPublicRoute) {
     return (

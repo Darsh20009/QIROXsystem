@@ -34,6 +34,9 @@ interface OrderData {
   paymentStatus?: string;
   paymentRejectionReason?: string;
   isDepositPaid?: boolean;
+  shippingCompanyId?: string;
+  shippingCompanyName?: string;
+  shippingFee?: number;
   projectType?: string;
   sector?: string;
   createdAt?: string;
@@ -781,6 +784,12 @@ export default function AdminOrders() {
                         <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
                           <div className="flex justify-between"><p className="text-xs text-black/50">طريقة الدفع</p><p className="text-xs font-bold text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</p></div>
                           <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></> : "—"}</p></div>
+                          {selectedOrder.shippingCompanyName && (
+                            <div className="flex justify-between"><p className="text-xs text-black/50">شركة الشحن</p><p className="text-xs font-bold text-black">{selectedOrder.shippingCompanyName}</p></div>
+                          )}
+                          {!!selectedOrder.shippingFee && (
+                            <div className="flex justify-between"><p className="text-xs text-black/50">رسوم الشحن</p><p className="text-xs font-bold text-black flex items-center gap-1">{Number(selectedOrder.shippingFee).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p></div>
+                          )}
                           <div className="flex justify-between"><p className="text-xs text-black/50">الدفعة الأولى</p>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                               {selectedOrder.isDepositPaid ? "مدفوعة ✓" : "لم تُدفع"}

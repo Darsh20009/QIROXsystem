@@ -1351,7 +1351,8 @@ export async function registerRoutes(
       const subtotal = cart.items.reduce((s: number, i: any) => s + (Number(i.price) || 0) * (Number(i.qty) || 1), 0);
       const discount = Number(cart.discountAmount) || 0;
       const afterDiscount = Math.max(0, subtotal - discount);
-      serverTotal = parseFloat(afterDiscount.toFixed(2));
+      const shippingFeeClient = parseFloat(Number(req.body.shippingFee || 0).toFixed(2));
+      serverTotal = parseFloat((afterDiscount + shippingFeeClient).toFixed(2));
       const clientTotal = parseFloat(Number(req.body.totalAmount || 0).toFixed(2));
       if (Math.abs(clientTotal - serverTotal) > 1.5) {
         return res.status(400).json({ error: `إجمالي الطلب غير مطابق. المتوقع: ${serverTotal.toLocaleString()} ر.س` });
@@ -1399,6 +1400,7 @@ export async function registerRoutes(
       "logoUrl","brandIdentityUrl","filesUrl","contentUrl","imagesUrl",
       "videoUrl","accessCredentials","files","requirements",
       "paymentMethod","paymentProofUrl","totalAmount","walletAmountUsed",
+      "shippingCompanyId","shippingCompanyName","shippingFee",
     ];
     const safeBody: Record<string, unknown> = {};
     for (const key of ALLOWED_ORDER_FIELDS) {
