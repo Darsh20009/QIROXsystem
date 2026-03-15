@@ -300,6 +300,38 @@ const translations = {
   "prices.custom.cta": { ar: "طلب عرض سعر", en: "Request a Quote" },
   "prices.sar": { ar: "ر.س", en: "SAR" },
   "prices.year": { ar: "/ سنة", en: "/ year" },
+
+  "news.badge":     { ar: "آخر الأخبار والتحديثات",                          en: "Latest News & Updates" },
+  "news.title":     { ar: "أخبار QIROX",                                      en: "QIROX News" },
+  "news.subtitle":  { ar: "ابق على اطلاع بأحدث المستجدات والإطلاقات",         en: "Stay up to date with the latest updates and launches" },
+  "news.readMore":  { ar: "اقرأ المزيد",                                       en: "Read More" },
+  "news.empty":     { ar: "لا توجد أخبار حالياً",                              en: "No news available" },
+  "news.emptyMsg":  { ar: "سيتم نشر التحديثات والأخبار هنا قريباً",            en: "Updates and news will be published here soon" },
+  "news.close":     { ar: "إغلاق",                                             en: "Close" },
+
+  "devices.title":      { ar: "المنتجات والأجهزة",        en: "Products & Devices" },
+  "devices.subtitle":   { ar: "اختر المنتج المناسب لمشروعك", en: "Choose the right product for your project" },
+  "devices.search":     { ar: "ابحث عن منتج...",           en: "Search products..." },
+  "devices.addToCart":  { ar: "أضف للسلة",                 en: "Add to Cart" },
+  "devices.buyNow":     { ar: "اشتري الآن",                 en: "Buy Now" },
+  "devices.inCart":     { ar: "في السلة",                  en: "In Cart" },
+  "devices.all":        { ar: "الكل",                      en: "All" },
+  "devices.empty":      { ar: "لا توجد منتجات",            en: "No products found" },
+
+  "common.close":       { ar: "إغلاق",          en: "Close" },
+  "common.confirm":     { ar: "تأكيد",          en: "Confirm" },
+  "common.back":        { ar: "رجوع",           en: "Back" },
+  "common.next":        { ar: "التالي",         en: "Next" },
+  "common.prev":        { ar: "السابق",         en: "Previous" },
+  "common.send":        { ar: "إرسال",          en: "Send" },
+  "common.view":        { ar: "عرض",            en: "View" },
+  "common.yes":         { ar: "نعم",            en: "Yes" },
+  "common.no":          { ar: "لا",             en: "No" },
+  "common.required":    { ar: "مطلوب",          en: "Required" },
+  "common.optional":    { ar: "اختياري",        en: "Optional" },
+  "common.success":     { ar: "تم بنجاح",       en: "Success" },
+  "common.error":       { ar: "حدث خطأ",        en: "An error occurred" },
+  "common.noData":      { ar: "لا توجد بيانات", en: "No data available" },
 } as const;
 
 type TranslationKey = keyof typeof translations;

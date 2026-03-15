@@ -6492,18 +6492,28 @@ export async function registerRoutes(
 
   app.get("/api/employee/clients-subscriptions", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const { UserModel } = await import("./models");
-    const { q } = req.query as any;
+    const { UserModel, ProjectAddonSubscriptionModel } = await import("./models");
+    const { q, liveFilter } = req.query as any;
     const filter: any = { role: "client" };
     if (q && String(q).trim().length >= 2) {
       const regex = new RegExp(String(q).trim(), "i");
       filter.$or = [{ fullName: regex }, { email: regex }, { username: regex }, { phone: regex }];
     }
+    if (liveFilter === "live") filter.isProjectLive = true;
+    if (liveFilter === "notlive") filter.isProjectLive = { $ne: true };
     const clients = await UserModel.find(filter)
-      .select("_id fullName email username phone subscriptionStatus subscriptionPeriod subscriptionStartDate subscriptionExpiresAt planTier")
+      .select("_id fullName email username phone subscriptionStatus subscriptionPeriod subscriptionStartDate subscriptionExpiresAt planTier isProjectLive projectLiveAt")
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(100)
       .lean();
+    const clientIds = clients.map((c: any) => c._id);
+    const addonSubs = await (ProjectAddonSubscriptionModel as any).find({ clientId: { $in: clientIds } }).lean();
+    const addonsByClient: Record<string, any[]> = {};
+    for (const a of addonSubs) {
+      const key = String(a.clientId);
+      if (!addonsByClient[key]) addonsByClient[key] = [];
+      addonsByClient[key].push(a);
+    }
     res.json(clients.map((c: any) => ({
       id: String(c._id),
       fullName: c.fullName,
@@ -6515,6 +6525,18 @@ export async function registerRoutes(
       subscriptionStartDate: c.subscriptionStartDate,
       subscriptionExpiresAt: c.subscriptionExpiresAt,
       planTier: c.planTier,
+      isProjectLive: c.isProjectLive || false,
+      projectLiveAt: c.projectLiveAt || null,
+      addonSubs: (addonsByClient[String(c._id)] || []).map((a: any) => ({
+        id: String(a._id),
+        addonNameAr: a.addonNameAr,
+        status: a.status,
+        quotaTotal: a.quotaTotal,
+        quotaUsed: a.quotaUsed,
+        expiresAt: a.expiresAt,
+        startedAt: a.startedAt,
+        billingType: a.billingType,
+      })),
     })));
   });
 
@@ -6556,6 +6578,133 @@ export async function registerRoutes(
     const { UserModel } = await import("./models");
     const client = await UserModel.findByIdAndUpdate(req.params.clientId, { $set: { subscriptionStatus: status } }, { new: true });
     if (!client) return res.status(404).json({ error: "العميل غير موجود" });
+    res.json({ success: true });
+  });
+
+  app.patch("/api/employee/subscription/:clientId/go-live", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { UserModel, NotificationModel } = await import("./models");
+    const client = await UserModel.findById(req.params.clientId).lean();
+    if (!client || (client as any).role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
+    const period = (client as any).subscriptionPeriod;
+    const durationDays = period === "annual" ? 365 : period === "6months" ? 180 : 30;
+    const liveAt = new Date();
+    const expires = new Date(liveAt.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    await UserModel.findByIdAndUpdate(req.params.clientId, {
+      $set: {
+        isProjectLive: true,
+        projectLiveAt: liveAt,
+        subscriptionStartDate: liveAt,
+        subscriptionExpiresAt: expires,
+        subscriptionStatus: "active",
+      },
+    });
+    try {
+      await (NotificationModel as any).create({
+        userId: req.params.clientId, forAdmins: false, type: "subscription",
+        title: "🚀 مشروعك أصبح Live!",
+        body: `تم نشر مشروعك وبدأ العد التنازلي للباقة — تنتهي في ${expires.toLocaleDateString("ar-SA")}`,
+        link: "/dashboard", icon: "🚀",
+      });
+    } catch (_) {}
+    res.json({ success: true, projectLiveAt: liveAt, subscriptionExpiresAt: expires });
+  });
+
+  app.patch("/api/employee/subscription/:clientId/unlive", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    const { UserModel } = await import("./models");
+    await UserModel.findByIdAndUpdate(req.params.clientId, {
+      $set: { isProjectLive: false, projectLiveAt: null },
+    });
+    res.json({ success: true });
+  });
+
+  app.get("/api/admin/client-addon-subs", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "superadmin"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ProjectAddonSubscriptionModel, UserModel } = await import("./models");
+    const { clientId, status } = req.query as any;
+    const filter: any = {};
+    if (clientId) filter.clientId = clientId;
+    if (status) filter.status = status;
+    const subs = await (ProjectAddonSubscriptionModel as any).find(filter)
+      .sort({ createdAt: -1 }).limit(200).lean();
+    const clientIds = [...new Set(subs.map((s: any) => String(s.clientId)))];
+    const users = await UserModel.find({ _id: { $in: clientIds } }).select("_id fullName email").lean();
+    const userMap: Record<string, any> = {};
+    for (const u of users) userMap[String(u._id)] = u;
+    res.json(subs.map((s: any) => ({
+      id: String(s._id),
+      clientId: String(s.clientId),
+      clientName: userMap[String(s.clientId)]?.fullName || "—",
+      clientEmail: userMap[String(s.clientId)]?.email || "—",
+      addonNameAr: s.addonNameAr,
+      status: s.status,
+      quotaTotal: s.quotaTotal,
+      quotaUsed: s.quotaUsed,
+      expiresAt: s.expiresAt,
+      startedAt: s.startedAt,
+      billingType: s.billingType,
+      renewalRequestedAt: s.renewalRequestedAt,
+    })));
+  });
+
+  app.post("/api/admin/client-addon-subs", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "superadmin"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ProjectAddonSubscriptionModel, NotificationModel } = await import("./models");
+    const { clientId, addonNameAr, quotaTotal, billingType, expiresAt, status } = req.body;
+    if (!clientId || !addonNameAr) return res.status(400).json({ error: "بيانات ناقصة" });
+    const sub = await (ProjectAddonSubscriptionModel as any).create({
+      projectId: new (await import("mongoose")).default.Types.ObjectId(),
+      clientId,
+      addonId: new (await import("mongoose")).default.Types.ObjectId(),
+      addonNameAr,
+      quotaTotal: quotaTotal || 0,
+      quotaUsed: 0,
+      billingType: billingType || "one_time",
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      status: status || "active",
+    });
+    try {
+      await (NotificationModel as any).create({
+        userId: clientId, forAdmins: false, type: "subscription",
+        title: "تم إضافة ميزة جديدة",
+        body: `تم إضافة ${addonNameAr} إلى حسابك`,
+        link: "/dashboard", icon: "⚡",
+      });
+    } catch (_) {}
+    res.json({ success: true, id: String(sub._id) });
+  });
+
+  app.patch("/api/admin/client-addon-subs/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "superadmin"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ProjectAddonSubscriptionModel, NotificationModel } = await import("./models");
+    const { quotaTotal, quotaUsed, status, expiresAt, addonNameAr } = req.body;
+    const update: any = {};
+    if (quotaTotal !== undefined) update.quotaTotal = Number(quotaTotal);
+    if (quotaUsed !== undefined) update.quotaUsed = Number(quotaUsed);
+    if (status) update.status = status;
+    if (expiresAt) update.expiresAt = new Date(expiresAt);
+    if (addonNameAr) update.addonNameAr = addonNameAr;
+    if (status === "active") update.renewalRequestedAt = null;
+    const sub = await (ProjectAddonSubscriptionModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!sub) return res.status(404).json({ error: "الاشتراك غير موجود" });
+    if (status === "active" && sub.clientId) {
+      try {
+        await (NotificationModel as any).create({
+          userId: sub.clientId, forAdmins: false, type: "subscription",
+          title: "تم تجديد الميزة",
+          body: `تم تجديد ${sub.addonNameAr} في حسابك`,
+          link: "/dashboard", icon: "✅",
+        });
+      } catch (_) {}
+    }
+    res.json({ success: true });
+  });
+
+  app.delete("/api/admin/client-addon-subs/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "superadmin"].includes((req.user as any).role)) return res.sendStatus(403);
+    const { ProjectAddonSubscriptionModel } = await import("./models");
+    await (ProjectAddonSubscriptionModel as any).findByIdAndDelete(req.params.id);
     res.json({ success: true });
   });
 

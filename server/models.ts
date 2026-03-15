@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema({
   subscriptionExpiresAt: Date,
   subscriptionStatus: { type: String, enum: ["active", "expired", "none", "suspended"], default: "none" },
   renewalReminderSentAt: { type: Date, default: null },
+  isProjectLive: { type: Boolean, default: false },
+  projectLiveAt: { type: Date, default: null },
   walletCardNumber: { type: String, unique: true, sparse: true, select: false },
   walletPin: { type: String, select: false },
   walletCardActive: { type: Boolean, default: false },

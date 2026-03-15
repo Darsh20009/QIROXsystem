@@ -1,4 +1,5 @@
 import SARIcon from "@/components/SARIcon";
+import { useI18n } from "@/lib/i18n";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -497,6 +498,7 @@ function ProductCard({ product: p, index, user, addedIds, onOpen, isFeat }: {
 }
 
 export default function Devices() {
+  const { dir, lang } = useI18n();
   const { data: user } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -618,7 +620,7 @@ export default function Devices() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5] dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-[#f5f5f5] dark:bg-gray-950" dir={dir}>
       <Navigation />
 
       {/* ── Hero ── */}
