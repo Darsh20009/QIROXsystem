@@ -35,7 +35,7 @@ export default function AdminContracts() {
 
   const { data: contracts = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/admin/contracts"] });
   const { data: orders = [] } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
-  const { data: clients = [] } = useQuery<any[]>({ queryKey: ["/api/admin/clients"] });
+  const { data: clients = [] } = useQuery<any[]>({ queryKey: ["/api/users/clients"] });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/admin/contracts", data),

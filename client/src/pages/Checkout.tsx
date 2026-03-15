@@ -292,7 +292,7 @@ export default function Checkout() {
   }
 
   const couponMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/cart/apply-coupon", { couponCode: couponCode.toUpperCase().trim() }).then(r => r.json()),
+    mutationFn: () => apiRequest("POST", "/api/cart/coupon", { couponCode: couponCode.toUpperCase().trim() }).then(r => r.json()),
     onSuccess: () => { setCouponApplied(true); queryClient.invalidateQueries({ queryKey: ["/api/cart"] }); toast({ title: "✅ تم تطبيق كوبون الخصم" }); },
     onError: (e: any) => toast({ title: e?.message || "كود خصم غير صالح", variant: "destructive" }),
   });
