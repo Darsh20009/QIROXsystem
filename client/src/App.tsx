@@ -18,6 +18,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { FloatingClientChat } from "@/components/FloatingClientChat";
+import QiroxAI from "@/components/QiroxAI";
 import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
@@ -790,6 +791,7 @@ function AppInner() {
           <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
             <PublicRouter />
             <FloatingClientChat />
+            <QiroxAI />
             <Toaster />
           </div>
         </TooltipProvider>
@@ -862,6 +864,7 @@ function AppInner() {
             <FloatingBrandPulse />
             <MobileBottomNav />
             <FloatingClientChat />
+            <QiroxAI />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />

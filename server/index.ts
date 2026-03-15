@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
+import { registerAiRoutes } from "./ai";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
@@ -299,6 +300,7 @@ app.use((req, res, next) => {
   registerQMeetRoutes(app);
   startQMeetScheduler();
   await registerInstallmentRoutes(app);
+  registerAiRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

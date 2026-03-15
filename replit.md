@@ -10,6 +10,46 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 15, 2026 - Session 52)
+
+### QIROX AI — Intelligent Platform Assistant
+
+**New Backend: `server/ai.ts`** — Full AI route handler:
+- `POST /api/ai/chat` — main conversational AI endpoint powered by Serper.dev search API + built-in platform knowledge
+- `POST /api/ai/custom-order` — creates custom project orders submitted via AI advisor
+- `DELETE /api/ai/session/:id` — resets conversation session
+- In-memory session store with state machine: GENERAL / EMAIL / PACKAGE_ADVISOR / CUSTOM_ORDER / PAGE_EXPLAIN
+- Platform knowledge base covering 16+ pages (pages KB + keyword aliases for Arabic intent detection)
+- Package recommendation engine using weighted scoring (business size, mobile needs, AI needs, budget)
+- Serper.dev web search integration for general queries
+- Full email composition flow via existing `sendDirectEmail`
+
+**New Frontend: `client/src/components/QiroxAI.tsx`** — Floating AI chat widget:
+- Floating button (bottom-left) with animated pulse ring + AI badge
+- Dark glass-morphism chat panel with smooth spring animation
+- Role-aware greeting and quick actions (admin/employee/client/guest)
+- Markdown-lite rendering in messages (bold, italic, code, links)
+- Typing indicator with animated dots
+- Package comparison cards rendered inline in chat
+- Suggestion chips for guided conversation
+- Session reset button
+- Expandable/minimizable panel
+- Global — added to both public and authenticated app layouts in `client/src/App.tsx`
+
+**AI Capabilities:**
+1. **Page Explanation** — explains any of 16 pages with tips for employees/admins
+2. **Email Composition** — multi-step flow: recipient → subject → body → send
+3. **Package Advisor** — 5-question wizard → recommends best tier (lite/pro/infinite)
+4. **Custom Orders** — collects requirements → creates order → notifies admin
+5. **Web Search** — Serper.dev API for general questions
+6. **Site Improvement** — suggests optimizations for any page
+7. **Package Info** — detailed info and comparison tables
+
+### Checkout Flow Refactor
+- `Prices.tsx`: Removed popup wizard; "أضف للسلة" button with loading state; guest cart to localStorage
+- `Cart.tsx`: Removed auth guard; guest cart from localStorage; checkout buttons open `CartOrderWizard`; guest remove/update items in localStorage
+- `CartOrderWizard.tsx`: Full 5-step project wizard opened at checkout (auth if guest → identity → features → assets → meeting → optional shipping)
+
 ## Latest Changes (Mar 14, 2026 - Session 50)
 
 ### Template Detail Page + Clickable Demo Cards
