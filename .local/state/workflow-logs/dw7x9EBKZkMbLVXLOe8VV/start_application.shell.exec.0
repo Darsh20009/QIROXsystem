@@ -1,0 +1,87 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+12:12:44 AM [express] serving on port 5000
+Initialized 9 cron jobs
+12:12:58 AM [express] GET /api/user 401 in 2ms
+12:13:12 AM [express] GET /api/user 401 in 1ms
+12:13:27 AM [express] GET /api/user 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:16:31 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:17:03 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:17:10 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m

@@ -1,0 +1,20 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+12:02:42 AM [express] serving on port 5000
+Initialized 9 cron jobs
+12:02:48 AM [express] GET /api/user 401 in 1ms
+12:02:55 AM [express] GET /api/user 401 in 1ms
+12:03:01 AM [express] GET /api/partners 304 in 36ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+12:03:01 AM [express] GET /api/app-downloads 304 in 36ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+12:03:01 AM [express] GET /api/public/settings 304 in 37ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+12:03:01 AM [express] GET /api/templates 304 in 70ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+12:03:02 AM [express] GET /api/discount-codes/public 304 in 36ms :: []
+12:03:05 AM [express] GET /api/user 401 in 1ms

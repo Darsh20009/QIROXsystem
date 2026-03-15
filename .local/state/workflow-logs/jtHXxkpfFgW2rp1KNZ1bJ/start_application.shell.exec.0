@@ -1,0 +1,153 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+11:34:14 PM [express] serving on port 5000
+Initialized 9 cron jobs
+11:34:21 PM [express] GET /api/user 401 in 2ms
+11:34:22 PM [express] GET /api/partners 304 in 38ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+11:34:22 PM [express] GET /api/app-downloads 304 in 35ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+11:34:22 PM [express] GET /api/public/settings 304 in 38ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+11:34:22 PM [express] GET /api/templates 304 in 59ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+11:34:22 PM [express] GET /api/discount-codes/public 304 in 46ms :: []
+11:35:47 PM [express] GET /api/pricing 304 in 76ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime…
+11:35:48 PM [express] GET /api/user 401 in 1ms
+11:36:07 PM [express] GET /api/user 401 in 1ms
+11:37:37 PM [express] GET /api/products 200 in 38ms :: [{"discount":0,"warrantyMonths":0,"name":"Handheld PDA Android POS Terminal Receipt Printer Barcode Printer, Data Collector, Portable Barcode Scanner Pos Machine, Hand…
+11:37:52 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+11:37:52 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+11:38:03 PM [express] POST /api/login 200 in 118ms :: {"subscriptionPeriod":null,"renewalReminderSentAt":null,"linktree":"","totpEnabled":false,"emailOtpEnabled":false,"recoveryPassphraseEnabled":false,"referredBy":null,"r…
+11:38:03 PM [express] GET /api/cart 200 in 91ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:38:03 PM [express] GET /api/notifications/unread-count 200 in 95ms :: {"count":4}
+11:38:03 PM [express] GET /api/badges 304 in 97ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+11:38:03 PM [express] GET /api/orders 200 in 90ms :: [{"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","projectType":"يؤ…
+11:38:03 PM [express] GET /api/wallet 200 in 213ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":747.5,"description":"دفع طلب #69af9fe0753eddccac801f40 من محفظة كيروكس باي","orderId":"69a…
+11:38:04 PM [express] GET /api/push/vapid-key 304 in 1ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+11:38:04 PM [express] GET /api/public/settings 304 in 38ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+11:38:04 PM [express] GET /api/notifications 200 in 37ms :: [{"_id":"69afb4a3409b71e295f1f634","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MMK7HLHJ","body":"صدرت فاتور…
+11:38:04 PM [express] GET /api/cs/my-session 200 in 75ms :: {"clientId":"699a420be5c888d6633c0611","agentId":"69a4ff10a18808005bdf37f9","status":"active","subject":"دردشة عامة","transferNote":"","previousAgentId":null,"rat…
+11:38:07 PM [express] GET /api/auth/webauthn/credentials 200 in 44ms :: [{"userId":"699a420be5c888d6633c0611","credentialId":"xPLrMVIy-PFLGAI3ZI6G-mj57DJGELk58kDA78iC6iA","counter":1,"transports":["internal"],"deviceName":…
+11:38:07 PM [express] GET /api/modification-requests 200 in 39ms :: [{"userId":"699a420be5c888d6633c0611","projectId":"69a27858527789d1101319be","title":"ق3","description":"ق3","priority":"urgent","status":"rejected","atta…
+11:38:07 PM [express] GET /api/qmeet/upcoming 200 in 36ms :: []
+11:38:07 PM [express] GET /api/admin/mod-type-prices 200 in 40ms :: []
+11:38:07 PM [express] GET /api/mod-quota 200 in 37ms :: {"hasOrders":false}
+11:38:07 PM [express] GET /api/projects 200 in 78ms :: [{"usageGuide":{"title":"شرح استخدام النظام","files":[]},"orderId":{"sector":"يث","totalAmount":8000,"id":"699ae6bea81a646c92373be8"},"clientId":"699a420be5c888d6633c0…
+11:38:07 PM [express] GET /api/attendance/status 200 in 37ms
+11:38:07 PM [express] GET /api/my-api-keys 200 in 38ms :: []
+11:38:10 PM [express] GET /api/bank-settings 200 in 38ms :: {"key":"main","bankName":"بنك الراجحي","beneficiaryName":"Mohammed Bin Ali ALdbani","iban":"SA74 8000 0336 6080 1608 1379","accountNumber":"","swiftCode":"","curr…
+11:38:10 PM [express] GET /api/extra-addons 200 in 69ms :: [{"name":"iOS App Store Publishing","nameAr":"نشر على App Store (iOS)","description":"","descriptionAr":"رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمر…
+11:38:10 PM [express] GET /api/wallet/card 200 in 72ms :: {"cardNumber":"4747460673989295","cardActive":true,"hasPin":false,"holderName":"darsh","balance":452.5}
+11:38:24 PM [express] GET /api/notifications 304 in 40ms :: [{"_id":"69afb4a3409b71e295f1f634","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MMK7HLHJ","body":"صدرت فاتور…
+11:38:34 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"total":0}
+11:38:34 PM [express] GET /api/cart 304 in 43ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:38:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/components/GlobalNotificationBanner.tsx, /src/components/FloatingBrandPulse.tsx, /src/components/MobileBottomNav.tsx, /src/components/app-sidebar.tsx, /src/components/PageHintCard.tsx, /src/components/FloatingClientChat.tsx, /src/components/Navigation.tsx, /src/components/Footer.tsx, /src/pages/Prices.tsx, /src/pages/Devices.tsx, /src/pages/Login.tsx, /src/components/QuickPinButton.tsx, /src/components/BiometricManager.tsx, /src/components/BiometricButton.tsx, /src/pages/Dashboard.tsx, /src/pages/Cart.tsx, /src/pages/Checkout.tsx[22m
+11:38:45 PM [express] GET /api/notifications 304 in 35ms :: [{"_id":"69afb4a3409b71e295f1f634","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MMK7HLHJ","body":"صدرت فاتور…
+11:38:47 PM [express] GET /api/push/vapid-key 304 in 1ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+11:39:11 PM [express] GET /api/cart 304 in 42ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:39:32 PM [express] GET /api/cart 304 in 34ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:39:53 PM [express] GET /api/cart 304 in 34ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:40:13 PM [express] GET /api/cart 304 in 37ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:40:36 PM [express] GET /api/cart 304 in 37ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:40:57 PM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+11:41:17 PM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"product","refId":"69a4750aa18808005bdf30bc","name":"مجموعة الكاشير المتكاملة من QIROX","nameAr":"مجموعة الكاشير المت…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:41:26 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:41:38 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:41:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m [33m(x2)[39m

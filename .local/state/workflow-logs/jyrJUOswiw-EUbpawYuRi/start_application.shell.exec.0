@@ -1,0 +1,91 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+11:55:13 PM [express] serving on port 5000
+Initialized 9 cron jobs
+11:55:22 PM [express] GET /api/user 401 in 2ms
+11:55:23 PM [express] GET /api/partners 304 in 38ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+11:55:23 PM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+11:55:23 PM [express] GET /api/public/settings 304 in 34ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+11:55:23 PM [express] GET /api/discount-codes/public 304 in 34ms :: []
+11:55:23 PM [express] GET /api/templates 304 in 38ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+11:56:40 PM [express] GET /api/user 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:59:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:01:25 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:01:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m

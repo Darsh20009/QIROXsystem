@@ -1,0 +1,514 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[Seed] Admin account verified: qadmin
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+12:39:28 AM [express] serving on port 5000
+Initialized 9 cron jobs
+12:39:34 AM [express] GET /api/user 401 in 2ms
+12:39:39 AM [express] GET /api/user 401 in 0ms
+12:39:42 AM [express] GET /api/partners 304 in 34ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+12:39:42 AM [express] GET /api/app-downloads 304 in 35ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+12:39:42 AM [express] GET /api/public/settings 304 in 34ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+12:39:42 AM [express] GET /api/templates 304 in 72ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+12:39:42 AM [express] GET /api/discount-codes/public 304 in 39ms :: []
+12:39:45 AM [express] GET /api/employee/clients-subscriptions 403 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:41:54 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:31 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:35 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:40 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/i18n.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.loading" in object literal[33m
+338 |    "devices.empty": { ar: "لا توجد منتجات", en: "No products found" },
+339 |  
+340 |    "common.loading": { ar: "جارٍ التحميل...", en: "Loading..." },
+    |    ^
+341 |    "common.close": { ar: "إغلاق", en: "Close" },
+342 |    "common.save": { ar: "حفظ", en: "Save" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.save" in object literal[33m
+340 |    "common.loading": { ar: "جارٍ التحميل...", en: "Loading..." },
+341 |    "common.close": { ar: "إغلاق", en: "Close" },
+342 |    "common.save": { ar: "حفظ", en: "Save" },
+    |    ^
+343 |    "common.cancel": { ar: "إلغاء", en: "Cancel" },
+344 |    "common.confirm": { ar: "تأكيد", en: "Confirm" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.cancel" in object literal[33m
+341 |    "common.close": { ar: "إغلاق", en: "Close" },
+342 |    "common.save": { ar: "حفظ", en: "Save" },
+343 |    "common.cancel": { ar: "إلغاء", en: "Cancel" },
+    |    ^
+344 |    "common.confirm": { ar: "تأكيد", en: "Confirm" },
+345 |    "common.search": { ar: "بحث", en: "Search" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.search" in object literal[33m
+343 |    "common.cancel": { ar: "إلغاء", en: "Cancel" },
+344 |    "common.confirm": { ar: "تأكيد", en: "Confirm" },
+345 |    "common.search": { ar: "بحث", en: "Search" },
+    |    ^
+346 |    "common.filter": { ar: "تصفية", en: "Filter" },
+347 |    "common.all": { ar: "الكل", en: "All" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.filter" in object literal[33m
+344 |    "common.confirm": { ar: "تأكيد", en: "Confirm" },
+345 |    "common.search": { ar: "بحث", en: "Search" },
+346 |    "common.filter": { ar: "تصفية", en: "Filter" },
+    |    ^
+347 |    "common.all": { ar: "الكل", en: "All" },
+348 |    "common.back": { ar: "رجوع", en: "Back" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.all" in object literal[33m
+345 |    "common.search": { ar: "بحث", en: "Search" },
+346 |    "common.filter": { ar: "تصفية", en: "Filter" },
+347 |    "common.all": { ar: "الكل", en: "All" },
+    |    ^
+348 |    "common.back": { ar: "رجوع", en: "Back" },
+349 |    "common.next": { ar: "التالي", en: "Next" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.delete" in object literal[33m
+350 |    "common.prev": { ar: "السابق", en: "Previous" },
+351 |    "common.send": { ar: "إرسال", en: "Send" },
+352 |    "common.delete": { ar: "حذف", en: "Delete" },
+    |    ^
+353 |    "common.edit": { ar: "تعديل", en: "Edit" },
+354 |    "common.add": { ar: "إضافة", en: "Add" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.edit" in object literal[33m
+351 |    "common.send": { ar: "إرسال", en: "Send" },
+352 |    "common.delete": { ar: "حذف", en: "Delete" },
+353 |    "common.edit": { ar: "تعديل", en: "Edit" },
+    |    ^
+354 |    "common.add": { ar: "إضافة", en: "Add" },
+355 |    "common.view": { ar: "عرض", en: "View" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:42:58 AM[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: [33mDuplicate key "common.add" in object literal[33m
+352 |    "common.delete": { ar: "حذف", en: "Delete" },
+353 |    "common.edit": { ar: "تعديل", en: "Edit" },
+354 |    "common.add": { ar: "إضافة", en: "Add" },
+    |    ^
+355 |    "common.view": { ar: "عرض", en: "View" },
+356 |    "common.yes": { ar: "نعم", en: "Yes" },
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36m/home/runner/workspace/client/src/lib/i18n.tsx[39m
+[2m12:43:00 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/lib/i18n.tsx[22m Could not Fast Refresh ("translations" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m12:43:00 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/components/PageHintCard.tsx, /src/components/app-sidebar.tsx, /src/pages/Home.tsx, /src/components/Navigation.tsx, /src/components/Footer.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:43:20 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/i18n.tsx, /src/index.css[22m
+[2m12:43:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/lib/i18n.tsx[22m Could not Fast Refresh ("translations" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m12:43:22 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/components/PageHintCard.tsx, /src/components/app-sidebar.tsx, /src/pages/Home.tsx, /src/components/Navigation.tsx, /src/components/Footer.tsx[22m
+12:43:32 AM [express] PATCH /api/employee/subscription/testid/go-live 403 in 1ms
+12:43:33 AM [express] GET /api/admin/client-addon-subs 403 in 1ms
+12:43:57 AM [express] GET /api/user 401 in 0ms
+12:44:05 AM [express] GET /api/user 401 in 1ms
+12:46:31 AM [express] GET /api/user 401 in 0ms
+12:46:32 AM [express] GET /api/plans 200 in 10ms
+12:46:33 AM [express] GET /api/news 200 in 36ms :: []
+12:46:42 AM [express] GET /api/products 200 in 39ms :: [{"discount":0,"warrantyMonths":0,"name":"Handheld PDA Android POS Terminal Receipt Printer Barcode Printer, Data Collector, Portable Barcode Scanner Pos Machine, Hand…
+12:46:42 AM [express] GET /api/subscription-plans 200 in 8ms
+12:46:42 AM [express] POST /api/contact 500 in 2ms :: {"error":"فشل إرسال الرسالة، يرجى المحاولة مرة أخرى"}
+12:47:44 AM [express] GET /api/employee/clients-subscriptions 403 in 1ms
+12:48:05 AM [express] POST /api/contact 200 in 1628ms :: {"success":true}
+12:48:14 AM [express] GET /api/admin/addon-subscriptions 403 in 1ms
+12:48:14 AM [express] GET /api/admin/client-addon-subs 403 in 1ms
+12:48:44 AM [express] GET /api/user 401 in 0ms
+12:48:46 AM [express] GET /api/user 401 in 1ms
+12:49:42 AM [express] GET /api/news 200 in 1ms :: []
+12:49:42 AM [express] GET /api/products 200 in 1ms :: [{"discount":0,"warrantyMonths":0,"name":"Handheld PDA Android POS Terminal Receipt Printer Barcode Printer, Data Collector, Portable Barcode Scanner Pos Machine, Handh…
+12:49:42 AM [express] GET /api/reviews/public 200 in 31ms :: []
+12:49:42 AM [express] GET /api/installment/offers 200 in 36ms :: []
+12:49:43 AM [express] GET /api/admin/users 403 in 1ms
+12:49:43 AM [express] GET /api/admin/orders 403 in 1ms
+12:49:43 AM [express] GET /api/admin/addon-subscriptions 403 in 0ms
+12:49:43 AM [express] GET /api/admin/client-addon-subs 403 in 1ms
+12:49:43 AM [express] GET /api/employee/clients-subscriptions 403 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:52:17 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
