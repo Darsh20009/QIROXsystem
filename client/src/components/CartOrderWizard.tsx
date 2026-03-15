@@ -163,7 +163,7 @@ export default function CartOrderWizard({ open, onClose, cartItems, total, user,
 
   // Auth states
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [authData, setAuthData] = useState({ username: "", password: "", fullName: "", confirmPassword: "" });
+  const [authData, setAuthData] = useState({ username: "", password: "", fullName: "", confirmPassword: "", email: "" });
   const [showPass, setShowPass] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -247,18 +247,50 @@ export default function CartOrderWizard({ open, onClose, cartItems, total, user,
     if (!authData.username || !authData.password) {
       toast({ title: "أدخل اسم المستخدم وكلمة المرور", variant: "destructive" }); return;
     }
+    if (authMode === "register" && !authData.email) {
+      toast({ title: "البريد الإلكتروني مطلوب للتسجيل", variant: "destructive" }); return;
+    }
     if (authMode === "register" && authData.password !== authData.confirmPassword) {
       toast({ title: "كلمة المرور غير متطابقة", variant: "destructive" }); return;
     }
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const res = await apiRequest("POST", "/api/auth/login", { username: authData.username, password: authData.password });
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: authData.username, password: authData.password }),
+        });
         const d = await res.json();
-        if (d.requires2FA) { toast({ title: "مطلوب التحقق الثنائي - سجّل الدخول من الصفحة الرئيسية", variant: "destructive" }); return; }
+        if (!res.ok) throw new Error(d.error || "اسم المستخدم أو كلمة المرور غير صحيحة");
+        if (d.requires2FA) { toast({ title: "مطلوب التحقق الثنائي — سجّل الدخول من الصفحة الرئيسية", variant: "destructive" }); setAuthLoading(false); return; }
+        if (d.needsVerification) { toast({ title: "بريدك غير مفعّل — سجّل الدخول من الصفحة الرئيسية وفعّل بريدك أولاً", variant: "destructive" }); setAuthLoading(false); return; }
       } else {
-        await apiRequest("POST", "/api/auth/register", { username: authData.username, password: authData.password, fullName: authData.fullName || authData.username, role: "client" });
-        await apiRequest("POST", "/api/auth/login", { username: authData.username, password: authData.password });
+        const regRes = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: authData.username,
+            password: authData.password,
+            fullName: authData.fullName || authData.username,
+            role: "client",
+            email: authData.email || undefined,
+          }),
+        });
+        const regData = await regRes.json();
+        if (!regRes.ok) throw new Error(regData.error || "فشل إنشاء الحساب");
+        if (regData.needsVerification) {
+          toast({ title: "تحقق من بريدك الإلكتروني لتفعيل الحساب", description: "سجّل الدخول بعد تفعيل البريد ثم أكمل طلبك" });
+          setAuthLoading(false);
+          return;
+        }
+        // Login after register
+        const loginRes = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: authData.username, password: authData.password }),
+        });
+        if (!loginRes.ok) throw new Error("تم إنشاء الحساب، سجّل الدخول للمتابعة");
       }
 
       // Sync guest cart to server
@@ -363,6 +395,11 @@ export default function CartOrderWizard({ open, onClose, cartItems, total, user,
                   {authMode === "register" && (
                     <Field label="الاسم الكامل">
                       <TInput value={authData.fullName} onChange={(v: string) => setAuthData(p => ({ ...p, fullName: v }))} placeholder="اسمك الكامل" />
+                    </Field>
+                  )}
+                  {authMode === "register" && (
+                    <Field label="البريد الإلكتروني" required>
+                      <TInput value={authData.email} onChange={(v: string) => setAuthData(p => ({ ...p, email: v }))} placeholder="example@email.com" type="email" />
                     </Field>
                   )}
                   <Field label="اسم المستخدم" required>
