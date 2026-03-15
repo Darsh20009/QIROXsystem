@@ -27,6 +27,7 @@ import type { ModificationRequest, Order } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
 import { AIPanel } from "@/components/QiroxAI";
+import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
@@ -2416,8 +2417,15 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* ─── QIROX AI Panel (right column) ─── */}
-          <div className="xl:col-span-1 flex flex-col gap-0">
+          {/* ─── Right column: Notifications + What's New + AI ─── */}
+          <div className="xl:col-span-1 flex flex-col gap-4">
+            {/* Notifications */}
+            <NotificationsWidget />
+
+            {/* What's New */}
+            <WhatsNewWidget />
+
+            {/* QIROX AI */}
             <div className="sticky top-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
