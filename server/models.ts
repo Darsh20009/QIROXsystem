@@ -54,6 +54,8 @@ const userSchema = new mongoose.Schema({
   emailOtpEnabled: { type: Boolean, default: false },
   recoveryPassphrase: { type: String, select: false },
   recoveryPassphraseEnabled: { type: Boolean, default: false },
+  // ── Phone Verification ──
+  phoneVerified: { type: Boolean, default: false },
   // ── Referral ──
   referralCode: { type: String, sparse: true, index: true },
   referredBy: { type: String, default: null },
@@ -1587,6 +1589,21 @@ const phoneRequestSchema = new mongoose.Schema({
 }, { timestamps: true });
 phoneRequestSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const PhoneRequestModel = mongoose.models.PhoneRequest || mongoose.model("PhoneRequest", phoneRequestSchema);
+
+// ── Phone Verification OTP (Telegram deep-link or call) ──────────────────────
+const phoneVerifyOtpSchema = new mongoose.Schema({
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  phone:     { type: String, required: true },
+  token:     { type: String, required: true, unique: true },
+  method:    { type: String, enum: ["telegram", "call"], required: true },
+  verified:  { type: Boolean, default: false },
+  expiresAt: { type: Date, required: true },
+  callStatus: { type: String, enum: ["pending", "called", "resolved", "cancelled"], default: "pending" },
+  resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  resolvedAt: { type: Date },
+}, { timestamps: true });
+phoneVerifyOtpSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const PhoneVerifyOtpModel = mongoose.models.PhoneVerifyOtp || mongoose.model("PhoneVerifyOtp", phoneVerifyOtpSchema);
 
 // ── Review (تقييمات العملاء) ─────────────────────────────────────────────────
 const reviewSchema = new mongoose.Schema({

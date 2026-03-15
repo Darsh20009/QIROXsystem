@@ -28,6 +28,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const ClientOnboarding = lazy(() => import("@/pages/ClientOnboarding"));
 const QiroxAuthenticator = lazy(() => import("@/pages/QiroxAuthenticator"));
 const ProjectDetailsSetup = lazy(() => import("@/pages/ProjectDetailsSetup"));
+const PhoneVerify = lazy(() => import("@/pages/PhoneVerify"));
 const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
 const AdminServices = lazy(() => import("@/pages/AdminServices"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
@@ -53,6 +54,7 @@ const AdminJobs = lazy(() => import("@/pages/AdminJobs"));
 const AdminBankSettings = lazy(() => import("@/pages/AdminBankSettings"));
 const AdminSubscriptionPlans = lazy(() => import("@/pages/AdminSubscriptionPlans"));
 const AdminModRequests = lazy(() => import("@/pages/AdminModRequests"));
+const AdminPhoneVerifications = lazy(() => import("@/pages/AdminPhoneVerifications"));
 const AdminCustomers = lazy(() => import("@/pages/AdminCustomers"));
 const AdminProducts = lazy(() => import("@/pages/AdminProducts"));
 const AdminShipping = lazy(() => import("@/pages/AdminShipping"));
@@ -202,6 +204,7 @@ function AdminRouter() {
         <Route path="/onboarding" component={ClientOnboarding} />
         <Route path="/authenticator" component={QiroxAuthenticator} />
         <Route path="/order-setup/:orderId" component={ProjectDetailsSetup} />
+        <Route path="/phone-verify" component={PhoneVerify} />
         <Route path="/projects/:id" component={ProjectDetails} />
         <Route path="/project/:section" component={ProjectDetails} />
         <Route path="/admin" component={AdminSystemMap} />
@@ -216,6 +219,7 @@ function AdminRouter() {
         <Route path="/admin/bank-settings" component={AdminBankSettings} />
         <Route path="/admin/subscription-plans" component={AdminSubscriptionPlans} />
         <Route path="/admin/mod-requests" component={AdminModRequests} />
+        <Route path="/admin/phone-verifications" component={AdminPhoneVerifications} />
         <Route path="/admin/customers" component={AdminCustomers} />
         <Route path="/admin/products" component={AdminProducts} />
         <Route path="/admin/shipping" component={AdminShipping} />

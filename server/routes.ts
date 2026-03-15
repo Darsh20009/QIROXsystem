@@ -9696,6 +9696,218 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  /* ══ Phone Verification (Telegram deep-link / Call) ════════════════════ */
+
+  const TELEGRAM_BOT_TOKEN    = process.env.TELEGRAM_BOT_TOKEN || "";
+  const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "";
+
+  // Helper: generate a unique short token
+  function genPhoneToken(): string {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let t = "PV";
+    for (let i = 0; i < 8; i++) t += chars[Math.floor(Math.random() * chars.length)];
+    return t;
+  }
+
+  // POST /api/phone-verify/init  — start verification (telegram or call)
+  app.post("/api/phone-verify/init", otpLimiter, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const { phone, method } = req.body;
+      if (!phone || !method) return res.status(400).json({ error: "phone و method مطلوبان" });
+      if (!["telegram", "call"].includes(method)) return res.status(400).json({ error: "method غير صحيح" });
+      const normPhone = String(phone).trim();
+
+      // Check if already verified
+      const dbUser = await (UserModel as any).findById(me._id || me.id);
+      if (dbUser?.phoneVerified && dbUser?.phone === normPhone) {
+        return res.json({ alreadyVerified: true });
+      }
+
+      // Invalidate old tokens for this user
+      await (PhoneVerifyOtpModel as any).updateMany(
+        { userId: me._id || me.id, verified: false },
+        { expiresAt: new Date() }
+      );
+
+      const token = genPhoneToken();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+      await (PhoneVerifyOtpModel as any).create({
+        userId: me._id || me.id,
+        phone: normPhone,
+        token,
+        method,
+        expiresAt,
+        verified: false,
+        callStatus: method === "call" ? "pending" : undefined,
+      });
+
+      // Update user phone if changed
+      if (dbUser?.phone !== normPhone) {
+        await (UserModel as any).findByIdAndUpdate(me._id || me.id, { phone: normPhone });
+      }
+
+      if (method === "telegram") {
+        const botUsername = TELEGRAM_BOT_USERNAME || "QiroxVerifyBot";
+        const deepLink = `https://t.me/${botUsername}?start=${token}`;
+        return res.json({ method: "telegram", token, deepLink, botUsername, expiresAt });
+      } else {
+        // Call method: notify admins/employees via notification
+        const { NotificationModel } = await import("./models");
+        const user = dbUser;
+        await (NotificationModel as any).create({
+          forAdmins: true,
+          type: "info",
+          title: `📞 طلب توثيق جوال — ${user?.fullName || user?.username || "عميل"}`,
+          body: `العميل ${user?.fullName || user?.username} يطلب التحقق من رقمه ${normPhone} عبر اتصال هاتفي. رمز التحقق: ${token}`,
+          link: `/admin/phone-verifications`,
+        });
+        return res.json({ method: "call", token, expiresAt, phone: normPhone });
+      }
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // GET /api/phone-verify/status  — check if user phone is verified
+  app.get("/api/phone-verify/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const dbUser = await (UserModel as any).findById(me._id || me.id).select("phone phoneVerified").lean();
+      const pending = await (PhoneVerifyOtpModel as any).findOne({
+        userId: me._id || me.id,
+        verified: false,
+        expiresAt: { $gt: new Date() },
+      }).sort({ createdAt: -1 }).lean();
+      res.json({
+        phone: (dbUser as any)?.phone || null,
+        phoneVerified: (dbUser as any)?.phoneVerified || false,
+        pendingToken: (pending as any)?.token || null,
+        pendingMethod: (pending as any)?.method || null,
+        pendingCallStatus: (pending as any)?.callStatus || null,
+        pendingExpiresAt: (pending as any)?.expiresAt || null,
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/telegram/webhook  — Telegram Bot webhook endpoint
+  app.post("/api/telegram/webhook", async (req, res) => {
+    res.sendStatus(200); // Always reply 200 to Telegram immediately
+    try {
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const update = req.body;
+      const msg = update?.message;
+      if (!msg) return;
+      const text: string = (msg.text || "").trim();
+      // Parse /start TOKEN or /verify TOKEN
+      const match = text.match(/^\/start\s+(\S+)/) || text.match(/^\/verify\s+(\S+)/);
+      if (!match) {
+        // Send help message via Telegram
+        if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: msg.chat.id,
+              text: "أرسل رمز التحقق الخاص بك عبر الرابط من تطبيق QIROX.\nمثال: /start PV12345678",
+            }),
+          }).catch(()=>{});
+        }
+        return;
+      }
+      const token = match[1];
+      const record = await (PhoneVerifyOtpModel as any).findOne({
+        token,
+        verified: false,
+        expiresAt: { $gt: new Date() },
+      });
+      if (!record) {
+        if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: msg.chat.id,
+              text: "❌ الرمز غير صحيح أو منتهي الصلاحية. الرجاء طلب رمز جديد من التطبيق.",
+            }),
+          }).catch(()=>{});
+        }
+        return;
+      }
+      // Mark verified
+      record.verified = true;
+      await record.save();
+      await (UserModel as any).findByIdAndUpdate(record.userId, {
+        phone: record.phone,
+        phoneVerified: true,
+      });
+      // Reply success to user
+      if (TELEGRAM_BOT_TOKEN && msg.chat?.id) {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: msg.chat.id,
+            text: `✅ تم توثيق رقم الجوال ${record.phone} بنجاح!\nيمكنك العودة لتطبيق QIROX الآن.`,
+          }),
+        }).catch(()=>{});
+      }
+    } catch (err) { console.error("[TelegramWebhook]", err); }
+  });
+
+  // GET /api/admin/phone-verifications  — pending call-based verifications
+  app.get("/api/admin/phone-verifications", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PhoneVerifyOtpModel } = await import("./models");
+      const docs = await (PhoneVerifyOtpModel as any)
+        .find({ method: "call", verified: false, expiresAt: { $gt: new Date() } })
+        .populate("userId", "fullName username phone email avatarUrl")
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+      res.json(docs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/admin/phone-verifications/:token/resolve  — employee marks call verified
+  app.post("/api/admin/phone-verifications/:token/resolve", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const me = req.user as any;
+      const record = await (PhoneVerifyOtpModel as any).findOne({ token: req.params.token });
+      if (!record) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (record.verified) return res.status(400).json({ error: "تم التحقق مسبقاً" });
+      record.verified   = true;
+      record.callStatus = "resolved";
+      record.resolvedBy = me._id || me.id;
+      record.resolvedAt = new Date();
+      await record.save();
+      await (UserModel as any).findByIdAndUpdate(record.userId, {
+        phone: record.phone,
+        phoneVerified: true,
+      });
+      res.json({ success: true, phone: record.phone });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/admin/phone-verifications/:token/cancel  — cancel a call request
+  app.post("/api/admin/phone-verifications/:token/cancel", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PhoneVerifyOtpModel } = await import("./models");
+      const record = await (PhoneVerifyOtpModel as any).findOne({ token: req.params.token });
+      if (!record) return res.status(404).json({ error: "غير موجود" });
+      record.callStatus = "cancelled";
+      record.expiresAt  = new Date();
+      await record.save();
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ─── T002: Reviews & Ratings ──────────────────────────────────────────────────
   app.post("/api/orders/:orderId/review", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

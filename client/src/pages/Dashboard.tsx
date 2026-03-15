@@ -1732,6 +1732,13 @@ export default function Dashboard() {
   const isEmployee = user.role !== 'client';
   const dateStr = currentTime.toLocaleDateString(L ? 'ar-SA' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  const { data: phoneVerifyStatus } = useQuery<any>({
+    queryKey: ["/api/phone-verify/status"],
+    enabled: user?.role === "client",
+    staleTime: 30000,
+  });
+  const phoneUnverified = user?.role === "client" && phoneVerifyStatus && !phoneVerifyStatus.phoneVerified;
+
   const projectPhases = L ? ["التصميم", "التطوير", "الاختبار", "التسليم"] : ["Design", "Development", "Testing", "Delivery"];
   const getPhase = (progress: number) => Math.min(Math.floor(progress / 25), 3);
 
@@ -1781,6 +1788,24 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-5 md:py-8">
+        {/* Phone Verification Banner */}
+        {phoneUnverified && (
+          <Link href="/phone-verify">
+            <div className="mb-5 bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-amber-100 transition-all" data-testid="banner-phone-verify">
+              <div className="w-10 h-10 bg-amber-200 rounded-xl flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-amber-900 text-sm">{L ? "رقم جوالك غير موثّق" : "Phone number not verified"}</p>
+                <p className="text-amber-700 text-xs mt-0.5">{L ? "وثّق رقمك عبر تيليجرام أو اتصال — يُحسّن أمان حسابك" : "Verify via Telegram or call for account security"}</p>
+              </div>
+              <div className="bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0">
+                {L ? "توثيق الآن" : "Verify Now"}
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
