@@ -314,7 +314,8 @@ export default function Login() {
                 description: "يوجد حساب غير مفعّل بهذه البيانات. أرسلنا رمزًا جديدًا إلى بريدك.",
               });
             }
-            setVerifyStep({ email: user.email, name: user.fullName || user.username || "" });
+            // Navigate to standalone email verify page for registration flow
+            setLocation("/verify-email?flow=register");
           } else {
             queryClient.setQueryData(["/api/user"], user);
             if (user.role === "client") {

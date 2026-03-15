@@ -25,11 +25,15 @@ export default function VerifyEmail() {
   const [verifyError, setVerifyError] = useState("");
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
 
+  const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
+
   // Redirect if not authenticated or already verified
   useEffect(() => {
     if (isLoading) return;
     if (!user) { setLocation("/login"); return; }
-    if ((user as any).emailVerified) { setLocation("/dashboard"); }
+    if ((user as any).emailVerified) {
+      setLocation(isRegisterFlow ? "/phone-verify?flow=register" : "/dashboard");
+    }
   }, [user, isLoading]);
 
   const handleOtpChange = (index: number, value: string) => {
@@ -87,7 +91,7 @@ export default function VerifyEmail() {
 
     setIsVerifying(false);
     setVerifySuccess({ name: (user as any).fullName || (user as any).username || "" });
-    setTimeout(() => setLocation("/dashboard"), 3500);
+    setTimeout(() => setLocation(isRegisterFlow ? "/phone-verify?flow=register" : "/dashboard"), 2000);
   };
 
   const handleResend = async () => {
@@ -152,6 +156,31 @@ export default function VerifyEmail() {
             <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain mx-auto" />
           </Link>
         </div>
+
+        {/* Registration flow progress */}
+        {isRegisterFlow && (
+          <div className="w-full max-w-md mb-6">
+            <div className="flex items-center justify-between mb-2">
+              {[
+                { n: 1, label: "البيانات", done: true },
+                { n: 2, label: "البريد", done: false, active: true },
+                { n: 3, label: "الجوال", done: false },
+                { n: 4, label: "الترحيب", done: false },
+              ].map((step, i) => (
+                <div key={step.n} className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1.5 ${step.active ? "text-black" : step.done ? "text-emerald-600" : "text-black/25"}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all
+                      ${step.active ? "border-black bg-black text-white" : step.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/15 bg-transparent text-black/25"}`}>
+                      {step.done ? "✓" : step.n}
+                    </div>
+                    <span className="text-xs font-bold hidden sm:block">{step.label}</span>
+                  </div>
+                  {i < 3 && <div className={`flex-1 h-0.5 mx-2 rounded-full ${step.done ? "bg-emerald-400" : "bg-black/10"}`} style={{ width: "2rem" }} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {verifySuccess ? (

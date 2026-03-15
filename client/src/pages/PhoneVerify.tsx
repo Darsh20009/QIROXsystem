@@ -29,6 +29,9 @@ export default function PhoneVerify() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const isRegisterFlow = new URLSearchParams(window.location.search).get("flow") === "register";
+  const nextAfterVerify = isRegisterFlow ? "/onboarding" : "/dashboard";
+
   const [stage, setStage]     = useState<Stage>("select-method");
   const [method, setMethod]   = useState<Method>("telegram");
   const [phone, setPhone]     = useState((user as any)?.phone || "");
@@ -66,10 +69,14 @@ export default function PhoneVerify() {
   const confirmOtpMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/phone-verify/confirm-otp", { otp }).then(r => r.json()),
     onSuccess: () => {
-      setStage("done");
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
       toast({ title: "✅ تم توثيق رقم جوالك بنجاح!" });
+      if (isRegisterFlow) {
+        navigate("/onboarding");
+      } else {
+        setStage("done");
+      }
     },
     onError: (e: any) => toast({ title: e?.message || "الرمز غير صحيح أو منتهي الصلاحية", variant: "destructive" }),
   });
@@ -97,7 +104,7 @@ export default function PhoneVerify() {
           </div>
           <h2 className="text-2xl font-black text-black mb-2">رقمك موثّق</h2>
           <p className="text-black/50 text-sm mb-5">رقم جوالك {(user as any)?.phone} تم توثيقه مسبقاً.</p>
-          <Button onClick={() => navigate("/dashboard")} className="rounded-2xl bg-black text-white h-11">العودة للوحة التحكم</Button>
+          <Button onClick={() => navigate(nextAfterVerify)} className="rounded-2xl bg-black text-white h-11">{isRegisterFlow ? "متابعة ←" : "العودة للوحة التحكم"}</Button>
         </div>
       </div>
     );
@@ -108,13 +115,34 @@ export default function PhoneVerify() {
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-5 pt-safe-top pb-8">
         <div className="max-w-lg mx-auto pt-6">
+          {isRegisterFlow && (
+            <div className="flex items-center gap-2 mb-4">
+              {[
+                { n: 1, label: "البيانات", done: true },
+                { n: 2, label: "البريد", done: true },
+                { n: 3, label: "الجوال", done: false, active: true },
+                { n: 4, label: "الترحيب", done: false },
+              ].map((step, i) => (
+                <div key={step.n} className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border
+                      ${step.active ? "border-white bg-white text-black" : step.done ? "border-emerald-400 bg-emerald-400 text-white" : "border-white/20 text-white/30"}`}>
+                      {step.done ? "✓" : step.n}
+                    </div>
+                    <span className={`text-[10px] font-bold hidden sm:block ${step.active ? "text-white" : step.done ? "text-emerald-400" : "text-white/25"}`}>{step.label}</span>
+                  </div>
+                  {i < 3 && <div className={`h-px w-4 ${step.done ? "bg-emerald-400" : "bg-white/15"}`} />}
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-white font-black text-lg">توثيق رقم الجوال</h1>
-              <p className="text-white/50 text-xs">حماية حسابك وتأكيد هويتك</p>
+              <p className="text-white/50 text-xs">{isRegisterFlow ? "الخطوة 3 من 4 — توثيق رقم جوالك" : "حماية حسابك وتأكيد هويتك"}</p>
             </div>
           </div>
         </div>
@@ -162,8 +190,8 @@ export default function PhoneVerify() {
                 </div>
               </div>
 
-              <button onClick={() => navigate("/dashboard")} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
-                سأوثّق لاحقاً ←
+              <button onClick={() => navigate(nextAfterVerify)} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
+                {isRegisterFlow ? "تخطي الآن والتوثيق لاحقاً ←" : "سأوثّق لاحقاً ←"}
               </button>
             </motion.div>
           )}
@@ -371,8 +399,8 @@ export default function PhoneVerify() {
               <Button variant="outline" onClick={() => { setMethod("telegram"); setStage("enter-phone"); }} className="w-full h-11 rounded-2xl text-sm gap-2">
                 <TelegramIcon /> التوثيق عبر تيليجرام بدلاً من ذلك
               </Button>
-              <button onClick={() => navigate("/dashboard")} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
-                العودة للوحة التحكم ←
+              <button onClick={() => navigate(nextAfterVerify)} className="w-full text-center text-xs text-black/30 hover:text-black/50 py-2 transition-colors">
+                {isRegisterFlow ? "تخطي ومتابعة ←" : "العودة للوحة التحكم ←"}
               </button>
             </motion.div>
           )}
@@ -391,8 +419,8 @@ export default function PhoneVerify() {
                   <Phone className="w-4 h-4 text-emerald-600" />
                   <span className="font-mono font-bold text-emerald-700" dir="ltr">{phone}</span>
                 </div>
-                <Button onClick={() => navigate("/dashboard")} className="w-full h-12 rounded-2xl bg-black hover:bg-black/80 text-white font-black gap-2" data-testid="btn-done">
-                  العودة للوحة التحكم
+                <Button onClick={() => navigate(nextAfterVerify)} className="w-full h-12 rounded-2xl bg-black hover:bg-black/80 text-white font-black gap-2" data-testid="btn-done">
+                  {isRegisterFlow ? "متابعة ←" : "العودة للوحة التحكم"}
                 </Button>
               </div>
             </motion.div>
