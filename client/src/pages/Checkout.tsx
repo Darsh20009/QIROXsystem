@@ -158,6 +158,7 @@ export default function Checkout() {
   const [orderPayMethod, setOrderPayMethod] = useState<PayMethod>("bank");
 
   const [selectedShippingCompanyId, setSelectedShippingCompanyId] = useState<string>("");
+  const [isAddingPendingItems, setIsAddingPendingItems] = useState(false);
 
   const { data: cart } = useQuery<any>({ queryKey: ["/api/cart"] });
   const { data: walletData } = useQuery<any>({ queryKey: ["/api/wallet"], enabled: !!user });
@@ -230,16 +231,19 @@ export default function Checkout() {
     const pending = sessionStorage.getItem("qiroxPendingCart");
     if (!pending) return;
     try {
-      const items: any[] = JSON.parse(pending);
+      const pendingItems: any[] = JSON.parse(pending);
+      if (!pendingItems.length) { sessionStorage.removeItem("qiroxPendingCart"); return; }
+      setIsAddingPendingItems(true);
       const addAll = async () => {
-        for (const item of items) {
+        for (const item of pendingItems) {
           await apiRequest("POST", "/api/cart/items", item);
         }
         sessionStorage.removeItem("qiroxPendingCart");
-        queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+        setIsAddingPendingItems(false);
       };
-      addAll().catch(() => sessionStorage.removeItem("qiroxPendingCart"));
-    } catch { sessionStorage.removeItem("qiroxPendingCart"); }
+      addAll().catch(() => { sessionStorage.removeItem("qiroxPendingCart"); setIsAddingPendingItems(false); });
+    } catch { sessionStorage.removeItem("qiroxPendingCart"); setIsAddingPendingItems(false); }
   }, [user]);
 
   // ── Auth handlers ────────────────────────────────────────────
@@ -485,7 +489,7 @@ export default function Checkout() {
     );
   }
 
-  if (items.length === 0 && !wizardData && step < 3) return (
+  if (items.length === 0 && !wizardData && step < 3 && !isAddingPendingItems) return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
