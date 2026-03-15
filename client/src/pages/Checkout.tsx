@@ -1048,7 +1048,7 @@ export default function Checkout() {
               )}
 
               {/* ── Navigate to Project Details Setup Page ── */}
-              {!detailsSaved ? (
+              {!detailsSaved && (
                 <div className="bg-white rounded-3xl shadow-sm border-2 border-violet-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-5">
                     <div className="flex items-center gap-3">
