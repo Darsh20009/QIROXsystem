@@ -25,6 +25,7 @@ import { PageHintCard } from "@/components/PageHintCard";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const ClientOnboarding = lazy(() => import("@/pages/ClientOnboarding"));
 const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
 const AdminServices = lazy(() => import("@/pages/AdminServices"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
@@ -196,6 +197,7 @@ function AdminRouter() {
     <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/dashboard" component={Dashboard} />
+        <Route path="/onboarding" component={ClientOnboarding} />
         <Route path="/projects/:id" component={ProjectDetails} />
         <Route path="/project/:section" component={ProjectDetails} />
         <Route path="/admin" component={AdminSystemMap} />

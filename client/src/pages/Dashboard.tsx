@@ -8,6 +8,7 @@ import { usePricingPlans } from "@/hooks/use-templates";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1450,6 +1451,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (user && (user as any).emailVerified === false && (user as any).role === "client") {
       setLocation("/verify-email");
+      return;
+    }
+    // Redirect new clients to onboarding (first time)
+    if (user && user.role === "client") {
+      try {
+        const done = localStorage.getItem("qirox_onboarding_done");
+        if (!done) setLocation("/onboarding");
+      } catch {}
     }
   }, [user]);
 
@@ -2109,7 +2118,25 @@ export default function Dashboard() {
             </div>
 
             {isLoadingProjects ? (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-16 text-center border border-black/[0.06] dark:border-white/[0.08]"><Loader2 className="w-6 h-6 animate-spin mx-auto text-black/20 dark:text-white/20" /></div>
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5">
+                    <div className="flex items-center gap-4 mb-4">
+                      <Skeleton className="w-11 h-11 rounded-2xl flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-2/5 rounded-lg" />
+                        <Skeleton className="h-3 w-1/3 rounded-lg" />
+                      </div>
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full mb-2" />
+                    <div className="flex gap-2 mt-3">
+                      <Skeleton className="h-8 w-24 rounded-xl" />
+                      <Skeleton className="h-8 w-24 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : !projects || projects.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.08] p-16 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-3xl bg-black/[0.03] dark:bg-white/[0.05] flex items-center justify-center mb-5">
@@ -2551,6 +2578,81 @@ export default function Dashboard() {
             );
           })()}
 
+          {/* Project Timeline / Gantt */}
+          {projects && projects.length > 0 && (
+            <div className="mt-2">
+              <h2 className="font-bold text-black dark:text-white flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center">
+                  <Activity className="w-3.5 h-3.5 text-white" />
+                </div>
+                {L ? "خط زمني للمشاريع" : "Project Timeline"}
+              </h2>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5 overflow-x-auto">
+                {(() => {
+                  const PHASES = L
+                    ? ["استقبال", "دراسة", "تنفيذ", "اختبار", "تسليم"]
+                    : ["Received", "Review", "Building", "Testing", "Delivery"];
+                  const PHASE_KEYS = ["new", "under_study", "in_progress", "testing", "delivery"];
+                  const PHASE_COLORS = [
+                    "bg-slate-200 dark:bg-slate-700",
+                    "bg-blue-200 dark:bg-blue-900",
+                    "bg-violet-200 dark:bg-violet-900",
+                    "bg-amber-200 dark:bg-amber-900",
+                    "bg-green-200 dark:bg-green-900",
+                  ];
+                  const PHASE_ACTIVE = [
+                    "bg-slate-500",
+                    "bg-blue-500",
+                    "bg-violet-500",
+                    "bg-amber-500",
+                    "bg-green-500",
+                  ];
+                  return (
+                    <div className="space-y-4 min-w-[400px]">
+                      {/* Header row */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-32 flex-shrink-0" />
+                        <div className="flex-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${PHASES.length}, 1fr)` }}>
+                          {PHASES.map((ph) => (
+                            <div key={ph} className="text-[9px] font-bold text-black/30 dark:text-white/30 text-center truncate">{ph}</div>
+                          ))}
+                        </div>
+                      </div>
+                      {projects.slice(0, 5).map((project: any) => {
+                        const order = project.orderId as any;
+                        const title = order?.businessName || order?.serviceType || `#${String(project.id).slice(-4)}`;
+                        const phaseIdx = PHASE_KEYS.findIndex(k => k === project.status);
+                        const activeIdx = phaseIdx >= 0 ? phaseIdx : (project.status === "closed" ? 4 : 0);
+                        return (
+                          <div key={project.id} className="flex items-center gap-3" data-testid={`timeline-project-${project.id}`}>
+                            <div className="w-32 flex-shrink-0">
+                              <p className="text-xs font-semibold text-black/70 dark:text-white/70 truncate">{title}</p>
+                              <p className="text-[9px] text-black/30 dark:text-white/30">{project.progress || 0}%</p>
+                            </div>
+                            <div className="flex-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${PHASES.length}, 1fr)` }}>
+                              {PHASES.map((_, idx) => (
+                                <div key={idx} className={`h-5 rounded-md transition-all ${idx <= activeIdx ? PHASE_ACTIVE[idx] : PHASE_COLORS[idx]}`} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {/* Legend */}
+                      <div className="flex items-center gap-3 pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
+                        {PHASES.map((ph, idx) => (
+                          <div key={ph} className="flex items-center gap-1">
+                            <div className={`w-2.5 h-2.5 rounded-sm ${PHASE_ACTIVE[idx]}`} />
+                            <span className="text-[9px] text-black/40 dark:text-white/40">{ph}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
           {/* Orders + Mod Requests Column */}
           <div className="space-y-5">
             {/* Orders Timeline */}
@@ -2561,7 +2663,18 @@ export default function Dashboard() {
               </h2>
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
                 {isLoadingOrders ? (
-                  <div className="p-12 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-black/15 dark:text-white/15" /></div>
+                  <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="px-4 py-3.5 flex items-center gap-3">
+                        <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <Skeleton className="h-3.5 w-3/5 rounded" />
+                          <Skeleton className="h-2.5 w-2/5 rounded" />
+                        </div>
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </div>
+                    ))}
+                  </div>
                 ) : !orders || orders.length === 0 ? (
                   <div className="p-10 text-center">
                     <FileText className="w-8 h-8 mx-auto text-black/10 dark:text-white/10 mb-3" />

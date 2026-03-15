@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, FileText, MessageSquare, Headphones, Wallet,
   ShoppingCart, BarChart3, Users, Wrench, User
@@ -8,6 +9,21 @@ import {
 export function MobileBottomNav() {
   const [location] = useLocation();
   const { data: user } = useUser();
+
+  const { data: inboxData } = useQuery<any>({
+    queryKey: ["/api/inbox/unread-count"],
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const { data: pendingData } = useQuery<any>({
+    queryKey: ["/api/orders/pending-count"],
+    enabled: !!user && user.role !== "client",
+    refetchInterval: 30000,
+  });
+
+  const unreadMessages = inboxData?.count || 0;
+  const pendingOrders = pendingData?.count || 0;
 
   if (!user) return null;
 
@@ -19,23 +35,23 @@ export function MobileBottomNav() {
     { icon: ShoppingCart, label: "السلة", url: "/cart" },
     { icon: Headphones, label: "الدعم", url: "/cs-chat" },
     { icon: Wallet, label: "محفظتي", url: "/wallet" },
-    { icon: MessageSquare, label: "الرسائل", url: "/inbox" },
+    { icon: MessageSquare, label: "الرسائل", url: "/inbox", badge: unreadMessages },
   ];
 
   const employeeItems = [
     { icon: LayoutDashboard, label: "لوحتي", url: "/dashboard" },
-    { icon: FileText, label: "الطلبات", url: "/admin/orders" },
+    { icon: FileText, label: "الطلبات", url: "/admin/orders", badge: pendingOrders },
     { icon: Wrench, label: "تعديلات", url: "/admin/mod-requests" },
-    { icon: MessageSquare, label: "الرسائل", url: "/inbox" },
+    { icon: MessageSquare, label: "الرسائل", url: "/inbox", badge: unreadMessages },
     { icon: User, label: "ملفي", url: "/employee/profile" },
   ];
 
   const adminItems = [
     { icon: LayoutDashboard, label: "الإدارة", url: "/admin" },
-    { icon: FileText, label: "الطلبات", url: "/admin/orders" },
+    { icon: FileText, label: "الطلبات", url: "/admin/orders", badge: pendingOrders },
     { icon: Users, label: "العملاء", url: "/admin/customers" },
     { icon: BarChart3, label: "التحليل", url: "/admin/analytics" },
-    { icon: MessageSquare, label: "الرسائل", url: "/inbox" },
+    { icon: MessageSquare, label: "الرسائل", url: "/inbox", badge: unreadMessages },
   ];
 
   const items = isManagement ? adminItems : isEmployee ? employeeItems : clientItems;
@@ -45,6 +61,7 @@ export function MobileBottomNav() {
       <div className="flex items-stretch justify-around h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {items.map((item) => {
           const isActive = location === item.url;
+          const badge = (item as any).badge || 0;
           return (
             <Link
               key={item.url}
@@ -60,6 +77,11 @@ export function MobileBottomNav() {
                 <item.icon className={`w-5 h-5 transition-all duration-200 ${
                   isActive ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"
                 }`} />
+                {badge > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 leading-none">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </div>
               <span className={`text-[10px] font-medium truncate w-full text-center leading-none transition-all duration-200 ${
                 isActive ? "text-black dark:text-white font-bold" : "text-black/30 dark:text-white/30"

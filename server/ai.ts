@@ -190,23 +190,25 @@ async function searchWeb(query: string): Promise<string> {
 function detectIntent(msg: string, session: Session): string {
   const m = msg.toLowerCase();
   if (session.mode !== "GENERAL") return session.mode;
-  const mNorm = m.replace(/أ|إ|آ/g, "ا");
-  // My data / real user info
-  if (mNorm.includes("طلباتي") || mNorm.includes("مشاريعي") || mNorm.includes("رصيدي") || mNorm.includes("محفظتي") || mNorm.includes("احصائياتي") || mNorm.includes("احصاءاتي") || mNorm.includes("وضعي") || mNorm.includes("بياناتي") || mNorm.includes("ملخص") || mNorm.includes("حسابي") || mNorm.includes("كم لدي") || mNorm.includes("كم عندي") || mNorm.includes("ايش عندي") || mNorm.includes("ايش لدي") || mNorm.includes("ماذا لدي") || mNorm.includes("show me my") || mNorm.includes("my orders") || mNorm.includes("my balance")) return "MY_DATA";
-  // Navigate
-  if (mNorm.includes("روح") || mNorm.includes("روح ل") || mNorm.includes("اذهب") || mNorm.includes("انتقل") || mNorm.includes("افتح") || mNorm.includes("اريد اشوف") || mNorm.includes("خذني") || mNorm.includes("navigate") || mNorm.includes("go to") || mNorm.includes("open page")) return "NAVIGATE";
+  const mNorm = m.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه");
+  // System status (admin/employee) — Saudi dialect: وش صاير، ايش الوضع، كيف الشغل
+  if (mNorm.includes("وش صاير") || mNorm.includes("ايش صاير") || mNorm.includes("ايش الوضع") || mNorm.includes("وش الوضع") || mNorm.includes("كيف الشغل") || mNorm.includes("كيف الاوضاع") || mNorm.includes("شو في") || mNorm.includes("وش في جديد") || mNorm.includes("ايش في") || mNorm.includes("الوضع كيف") || mNorm.includes("ايش اخبار النظام") || mNorm.includes("وش اخبار")) return "SYSTEM_STATUS";
+  // My data / real user info — expanded with Saudi dialect
+  if (mNorm.includes("طلباتي") || mNorm.includes("مشاريعي") || mNorm.includes("رصيدي") || mNorm.includes("محفظتي") || mNorm.includes("احصائياتي") || mNorm.includes("احصاءاتي") || mNorm.includes("وضعي") || mNorm.includes("بياناتي") || mNorm.includes("ملخص") || mNorm.includes("حسابي") || mNorm.includes("كم لدي") || mNorm.includes("كم عندي") || mNorm.includes("ايش عندي") || mNorm.includes("ايش لدي") || mNorm.includes("ماذا لدي") || mNorm.includes("show me my") || mNorm.includes("my orders") || mNorm.includes("my balance") || mNorm.includes("وش عندي") || mNorm.includes("ابي اشوف حسابي") || mNorm.includes("حسابي وش فيه") || mNorm.includes("زبايني") || mNorm.includes("كلاينتس")) return "MY_DATA";
+  // Navigate — expanded
+  if (mNorm.includes("روح") || mNorm.includes("روح ل") || mNorm.includes("اذهب") || mNorm.includes("انتقل") || mNorm.includes("افتح") || mNorm.includes("اريد اشوف") || mNorm.includes("خذني") || mNorm.includes("navigate") || mNorm.includes("go to") || mNorm.includes("open page") || mNorm.includes("ودني") || mNorm.includes("وصلني") || mNorm.includes("ابغى اروح")) return "NAVIGATE";
   // Consultation
-  if (mNorm.includes("استشارة") || mNorm.includes("استشاره") || mNorm.includes("استشر") || mNorm.includes("نصيحة خاصة") || mNorm.includes("ابغى تتصل") || mNorm.includes("تواصل معي") || mNorm.includes("كلمني") || mNorm.includes("محتاج شخص") || mNorm.includes("consultation")) return "CONSULTATION";
-  // Email — handle hamza variants
-  if (mNorm.includes("ارسل بريد") || mNorm.includes("بعث ايميل") || mNorm.includes("ارسل ايميل") || mNorm.includes("send email") || mNorm.includes("ارسل رساله") || mNorm.includes("ارسل رسالة") || mNorm.includes("بريد الكتروني") || mNorm.includes("ايميل") || m.includes("mail")) return "EMAIL";
-  // Package advisor
-  if (m.includes("أنسب باقة") || m.includes("انسب باقة") || m.includes("أي باقة") || m.includes("اي باقة") || m.includes("ساعدني تختار") || m.includes("الباقة المناسبة") || m.includes("بدي باقة") || m.includes("أختار باقة") || m.includes("اختر لي") || m.includes("أنسب خطة") || m.includes("which plan") || m.includes("help me choose")) return "PACKAGE_ADVISOR";
+  if (mNorm.includes("استشاره") || mNorm.includes("استشر") || mNorm.includes("نصيحه خاصه") || mNorm.includes("ابغى تتصل") || mNorm.includes("تواصل معي") || mNorm.includes("كلمني") || mNorm.includes("محتاج شخص") || mNorm.includes("consultation") || mNorm.includes("تكلم معي") || mNorm.includes("ابغى احد يتصل")) return "CONSULTATION";
+  // Email
+  if (mNorm.includes("ارسل بريد") || mNorm.includes("بعث ايميل") || mNorm.includes("ارسل ايميل") || mNorm.includes("send email") || mNorm.includes("ارسل رساله") || mNorm.includes("بريد الكتروني") || mNorm.includes("ايميل") || m.includes("mail") || mNorm.includes("ابعث") || mNorm.includes("راسل")) return "EMAIL";
+  // Package advisor — Saudi dialect
+  if (mNorm.includes("انسب باقه") || mNorm.includes("اي باقه") || mNorm.includes("ساعدني تختار") || mNorm.includes("الباقه المناسبه") || mNorm.includes("بدي باقه") || mNorm.includes("اختر لي") || mNorm.includes("انسب خطه") || mNorm.includes("which plan") || mNorm.includes("help me choose") || mNorm.includes("ابغى باقه") || mNorm.includes("وش الباقه") || mNorm.includes("ايش الباقه") || mNorm.includes("اختار لي باقه")) return "PACKAGE_ADVISOR";
   // Custom order
-  if (m.includes("طلب مخصص") || m.includes("مشروع مخصص") || m.includes("ما فيه باقة") || m.includes("ما في باقة") || m.includes("custom order") || m.includes("احتياج خاص")) return "CUSTOM_ORDER";
+  if (mNorm.includes("طلب مخصص") || mNorm.includes("مشروع مخصص") || mNorm.includes("ما فيه باقه") || mNorm.includes("ما في باقه") || mNorm.includes("custom order") || mNorm.includes("احتياج خاص") || mNorm.includes("شي خاص") || mNorm.includes("غير مألوف")) return "CUSTOM_ORDER";
   // Page explain
-  if (m.includes("ما هي") || m.includes("ما هو") || m.includes("شرح") || m.includes("اشرح") || m.includes("يعمل") || m.includes("وظيفة") || m.includes("صفحة")) return "PAGE_EXPLAIN";
+  if (mNorm.includes("ما هي") || mNorm.includes("ما هو") || mNorm.includes("شرح") || mNorm.includes("اشرح") || mNorm.includes("يعمل") || mNorm.includes("وظيفه") || mNorm.includes("صفحه") || mNorm.includes("ايش هي") || mNorm.includes("وش هي") || mNorm.includes("ايش هو") || mNorm.includes("وش هو")) return "PAGE_EXPLAIN";
   // Web search
-  if (m.includes("ابحث") || m.includes("بحث") || m.includes("search") || m.includes("معلومة عن") || m.includes("ما هو ال") || m.startsWith("ما ")) return "SEARCH";
+  if (mNorm.includes("ابحث") || mNorm.includes("بحث") || mNorm.includes("search") || mNorm.includes("معلومه عن") || mNorm.includes("ما هو ال") || m.startsWith("ما ")) return "SEARCH";
   return "GENERAL";
 }
 
@@ -422,12 +424,14 @@ async function processMessage(
       const s = sd.stats;
       const reply = `📊 **إحصاءات النظام — لمحة سريعة**\n\n` +
         `👥 إجمالي العملاء: **${s.totalClients || 0}**\n` +
-        `📦 الطلبات المفتوحة: **${s.openOrders || 0}**\n` +
+        `📦 الطلبات المفتوحة: **${s.openOrders || 0}**` + (s.pendingOrders > 0 ? ` (${s.pendingOrders} تنتظر الموافقة)` : "") + `\n` +
+        `💰 إيرادات اليوم: **${Number(s.todayRevenue || 0).toLocaleString()} ريال**\n` +
         `💰 إيرادات الشهر: **${Number(s.monthRevenue || 0).toLocaleString()} ريال**\n` +
-        `🆕 عملاء جدد هذا الأسبوع: **${s.newClients || 0}**\n\n` +
-        `هل تريد تحليلاً أعمق أو الانتقال لصفحة محددة؟`;
+        `🆕 طلبات اليوم: **${s.todayNewOrders || 0}** · عملاء جدد هذا الأسبوع: **${s.newClients || 0}**\n` +
+        (s.delayedOrders > 0 ? `⚠️ **تنبيه:** ${s.delayedOrders} طلب متأخر يحتاج متابعة عاجلة!\n` : "") +
+        `\nهل تريد تحليلاً أعمق أو الانتقال لصفحة محددة؟`;
       session.history.push({ role: "ai", text: reply });
-      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["عرض التحليلات", "الطلبات المعلقة", "تقرير مالي"] };
+      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["عرض التحليلات", "الطلبات المعلقة", "تقرير مالي", "الطلبات المتأخرة"] };
     }
     if (sd && (role === "employee" || role === "employee_manager") && sd.orders) {
       const o = sd.orders;
@@ -456,6 +460,46 @@ async function processMessage(
     const reply = `أخبرني إلى أي صفحة تريد الانتقال:\n\n• لوحة القيادة\n• طلباتي / مشاريعي\n• الأسعار والباقات\n• المحفظة\n• الفواتير\n• اجتماعات QMeet\n• الملف الشخصي`;
     session.history.push({ role: "ai", text: reply });
     return { reply, suggestions: ["لوحة القيادة", "طلباتي", "الأسعار", "المحفظة", "Qمeet"] };
+  }
+
+  // ─── SYSTEM STATUS — وش صاير / ايش الوضع (admin/employee) ───
+  if (detectIntent(message, session) === "SYSTEM_STATUS" && session.mode === "GENERAL") {
+    if (sd?.stats && (context.role === "admin" || context.role === "manager")) {
+      const s = sd.stats;
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? "صباح النشاط" : hour < 17 ? "مساك خير" : "مساء النور";
+      let reply = `${greeting}! 👋 إليك لمحة عن وضع النظام الآن:\n\n`;
+      reply += `📊 **الطلبات**\n`;
+      reply += `• مفتوحة: **${s.openOrders || 0}** ${s.pendingOrders > 0 ? `(⚠️ ${s.pendingOrders} تنتظر موافقتك!)` : "✅"}\n`;
+      reply += `• جديدة اليوم: **${s.todayNewOrders || 0}**\n\n`;
+      reply += `💰 **الإيرادات**\n`;
+      reply += `• اليوم: **${Number(s.todayRevenue || 0).toLocaleString()} ريال**\n`;
+      reply += `• هذا الشهر: **${Number(s.monthRevenue || 0).toLocaleString()} ريال**\n\n`;
+      reply += `👥 **العملاء**\n`;
+      reply += `• الإجمالي: **${s.totalClients || 0}**\n`;
+      reply += `• جدد هذا الأسبوع: **${s.newClients || 0}**\n`;
+      if (s.delayedOrders > 0) {
+        reply += `\n🔴 **تنبيه عاجل:** ${s.delayedOrders} طلب متأخر أكثر من أسبوع — يحتاج متابعة!`;
+      } else {
+        reply += `\n✅ لا توجد طلبات متأخرة — الأمور تسير بانتظام!`;
+      }
+      session.history.push({ role: "ai", text: reply });
+      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["الطلبات المعلقة", "عرض التحليلات", "الطلبات المتأخرة", "تقرير مالي"] };
+    }
+    if (sd?.orders && (context.role === "employee" || context.role === "employee_manager")) {
+      const o = sd.orders;
+      const reply = `👋 هلا! إليك ملخص وضعك الآن:\n\n` +
+        `📋 **طلباتك المسندة:** ${o.total || 0}\n` +
+        `• معلقة: **${o.pending || 0}** ${o.pending > 0 ? "⚠️" : "✅"}\n` +
+        `• قيد التنفيذ: **${o.active || 0}**\n` +
+        `• مكتملة: **${o.completed || 0}**\n\n` +
+        `${o.pending > 0 ? `ابدأ بالطلبات المعلقة أولاً! 💪` : `ما شاء الله، كل شيء تمام! 🎉`}`;
+      session.history.push({ role: "ai", text: reply });
+      return { reply, suggestions: ["الطلبات المعلقة", "الكانبان", "مشاريعي"] };
+    }
+    const reply = "لا تتوفر بيانات النظام الآن. حاول مرة أخرى.";
+    session.history.push({ role: "ai", text: reply });
+    return { reply };
   }
 
   // ─── EMAIL flow ───
@@ -872,13 +916,26 @@ export function registerAiRoutes(app: Express) {
             ]);
             const now = new Date();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
             const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const openOrders = allOrders.filter((o: any) => !["completed", "cancelled"].includes(o.status)).length;
+            const openOrders = allOrders.filter((o: any) => !["completed", "cancelled", "rejected", "closed"].includes(o.status)).length;
+            const pendingOrders = allOrders.filter((o: any) => o.status === "pending").length;
             const monthRevenue = allOrders
-              .filter((o: any) => o.status === "completed" && new Date(o.createdAt) >= startOfMonth)
+              .filter((o: any) => ["completed", "delivered"].includes(o.status) && new Date(o.createdAt) >= startOfMonth)
               .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+            const todayRevenue = allOrders
+              .filter((o: any) => ["completed", "delivered"].includes(o.status) && new Date(o.updatedAt || o.createdAt) >= startOfToday)
+              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+            const todayNewOrders = allOrders.filter((o: any) => new Date(o.createdAt) >= startOfToday).length;
+            const delayedOrders = allOrders.filter((o: any) =>
+              ["in_progress", "review", "active", "approved"].includes(o.status) &&
+              new Date(o.updatedAt || o.createdAt) < oneWeekAgo
+            ).length;
             const newClients = await UserModel.countDocuments({ role: "client", createdAt: { $gte: oneWeekAgo } });
-            context.systemData = { stats: { totalClients, openOrders, monthRevenue, newClients } };
+            const totalRevenue = allOrders
+              .filter((o: any) => ["completed", "delivered"].includes(o.status))
+              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+            context.systemData = { stats: { totalClients, openOrders, pendingOrders, monthRevenue, todayRevenue, todayNewOrders, delayedOrders, newClients, totalRevenue } };
           } else if (role === "employee" || role === "employee_manager") {
             const orders = await OrderModel.find({ assignedTo: userId }).lean();
             context.systemData = {

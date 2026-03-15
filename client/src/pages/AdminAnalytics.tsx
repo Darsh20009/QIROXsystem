@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import SARIcon from "@/components/SARIcon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Loader2, TrendingUp, TrendingDown, Users, ShoppingCart, Clock,
   BarChart3, Download, DollarSign, CheckCircle, Star, CreditCard,
   ArrowUpRight, ArrowDownRight, Building2, Minus, Video, Mail, Send,
+  Flame, Activity, Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,8 +89,28 @@ export default function AdminAnalytics() {
   };
 
   if (isLoading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="w-8 h-8 animate-spin text-black/20 dark:text-white/20" />
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5">
+            <Skeleton className="h-3 w-3/5 mb-3 rounded" />
+            <Skeleton className="h-7 w-2/5 mb-2 rounded" />
+            <Skeleton className="h-2.5 w-1/2 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5">
+            <Skeleton className="h-4 w-1/3 mb-4 rounded" />
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] p-5">
+        <Skeleton className="h-4 w-1/4 mb-4 rounded" />
+        <Skeleton className="h-56 w-full rounded-xl" />
+      </div>
     </div>
   );
 
@@ -399,6 +421,105 @@ export default function AdminAnalytics() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Conversion Rate Card ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <Target className="w-4 h-4 text-emerald-500" />
+              معدل التحويل
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="relative w-24 h-24 shrink-0">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-black/[0.06] dark:text-white/[0.06]" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#10b981" strokeWidth="2.5"
+                    strokeDasharray={`${(data?.conversionRate || 0) * 0.999} 100`}
+                    strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xl font-black text-black dark:text-white">{data?.conversionRate || 0}%</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-black/50 dark:text-white/50">طلّبوا (عملاء)</span>
+                  <span className="font-bold text-black dark:text-white">{data?.clientsWithOrdersCount || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-black/50 dark:text-white/50">إجمالي العملاء</span>
+                  <span className="font-bold text-black dark:text-white">{stats.totalUsers || 0}</span>
+                </div>
+                <div className={`text-[10px] px-2 py-1 rounded-full font-bold text-center ${
+                  (data?.conversionRate || 0) >= 60 ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" :
+                  (data?.conversionRate || 0) >= 30 ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
+                  "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                }`}>
+                  {(data?.conversionRate || 0) >= 60 ? "ممتاز 🎉" : (data?.conversionRate || 0) >= 30 ? "متوسط" : "يحتاج تحسين"}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Top 2 page heatmap cards ── */}
+        <Card className="md:col-span-2 border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-500" />
+              خريطة حرارة الصفحات (الأكثر زيارة)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {(data?.pageHeatmap || []).slice(0, 7).map((p: any, i: number) => {
+                const max = (data?.pageHeatmap?.[0]?.visits || 1);
+                const pct = Math.round((p.visits / max) * 100);
+                const heat = pct >= 80 ? "bg-red-400" : pct >= 60 ? "bg-orange-400" : pct >= 40 ? "bg-amber-400" : pct >= 20 ? "bg-yellow-300" : "bg-gray-200 dark:bg-gray-700";
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-[10px] text-black/40 dark:text-white/40 w-4 text-center font-bold">{i + 1}</span>
+                    <span className="text-xs text-black/70 dark:text-white/70 w-28 shrink-0 truncate">{p.page}</span>
+                    <div className="flex-1 h-4 bg-black/[0.04] dark:bg-white/[0.04] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${heat} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] text-black/40 dark:text-white/40 w-14 text-left">{p.visits.toLocaleString()} زيارة</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Year-over-Year Revenue Comparison ── */}
+      <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-500" />
+            مقارنة الإيرادات: {new Date().getFullYear()} مقابل {new Date().getFullYear() - 1}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-[220px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data?.yearlyComparison || []} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#00000008" />
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#00000060" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: "#00000060" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(v: any, name: string) => [`${Number(v).toLocaleString()} ر.س`, name === "thisYear" ? String(new Date().getFullYear()) : String(new Date().getFullYear() - 1)]}
+                contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.07)" }}
+              />
+              <Legend formatter={(v) => v === "thisYear" ? String(new Date().getFullYear()) : String(new Date().getFullYear() - 1)} />
+              <Bar dataKey="thisYear" name="thisYear" fill="#000" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="lastYear" name="lastYear" fill="#9ca3af" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* ── Email Report ── */}
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
