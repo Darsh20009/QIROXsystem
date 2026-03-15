@@ -28,6 +28,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
 import { AIPanel } from "@/components/QiroxAI";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
+import { WelcomeAssistant } from "@/components/WelcomeAssistant";
 
 const statusMap: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
@@ -1726,6 +1727,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" dir={dir}>
+      <WelcomeAssistant />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08]">
