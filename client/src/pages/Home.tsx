@@ -137,10 +137,11 @@ export default function Home() {
 
   const scrollCarousel = useCallback((direction: "left" | "right") => {
     if (!carouselRef.current) return;
-    const card = carouselRef.current.querySelector("[data-carousel-card]") as HTMLElement | null;
-    const step = card ? card.offsetWidth + 20 : 320;
+    const el = carouselRef.current;
+    const card = el.querySelector("[data-carousel-card]") as HTMLElement | null;
+    const step = card ? card.offsetWidth + 20 : 300;
     const scrollAmount = direction === "right" ? step : -step;
-    carouselRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    el.scrollBy({ left: scrollAmount, behavior: "smooth" });
   }, []);
 
   useEffect(() => {
@@ -148,8 +149,8 @@ export default function Home() {
     if (!el) return;
     const handleScroll = () => {
       const card = el.querySelector("[data-carousel-card]") as HTMLElement | null;
-      const step = card ? card.offsetWidth + 20 : 320;
-      const idx = Math.round(el.scrollLeft / step);
+      const step = card ? card.offsetWidth + 20 : 300;
+      const idx = Math.round(Math.abs(el.scrollLeft) / step);
       setActiveCarouselIdx(idx);
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
@@ -938,7 +939,7 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              <div className="lg:col-span-9 relative">
+              <div className="lg:col-span-9 relative min-w-0">
                 <div className="flex items-center gap-3 mb-4 justify-end">
                   <button
                     onClick={() => scrollCarousel("right")}
@@ -958,17 +959,17 @@ export default function Home() {
 
                 <div
                   ref={carouselRef}
+                  dir={dir}
                   className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {templates?.map((template, idx) => {
                     const Icon = sectorIcons[template.icon || "Globe"] || Globe;
                     return (
-                      <Link key={template.id} href="/systems">
+                      <Link key={template.id} href="/systems" className="flex-shrink-0 block w-[260px] sm:w-[300px] snap-start" data-carousel-card>
                         <div
-                          className="flex-shrink-0 w-[300px] bg-white dark:bg-gray-900/60 rounded-[24px] p-8 cursor-pointer group snap-start border border-black/[0.04] dark:border-white/[0.04] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-xl hover:shadow-black/[0.04]"
+                          className="w-full h-full bg-white dark:bg-gray-900/60 rounded-[24px] p-6 sm:p-8 cursor-pointer group border border-black/[0.04] dark:border-white/[0.04] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-xl hover:shadow-black/[0.04]"
                           data-testid={`carousel-card-${template.slug}`}
-                          data-carousel-card
                         >
                           <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] mb-6">
                             <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
@@ -978,7 +979,7 @@ export default function Home() {
                             {lang === "ar" ? template.descriptionAr : (template.description || template.descriptionAr)}
                           </p>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium">
+                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium max-w-[130px] truncate block">
                               {template.category}
                             </span>
                             <div className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white group-hover:text-white transition-colors">
