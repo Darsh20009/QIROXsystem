@@ -666,7 +666,8 @@ function PhoneRequiredModal({ onDone, missingPhone, missingWhatsapp }: { onDone:
       if (!res.ok) throw new Error("فشل الحفظ");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updated: any) => {
+      queryClient.setQueryData(["/api/user"], (old: any) => ({ ...old, ...updated }));
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       onDone();
     },
