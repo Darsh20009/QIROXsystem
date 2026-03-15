@@ -6,6 +6,7 @@
 import type { Express } from "express";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
+import { PricingPlanModel } from "./models";
 
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";
 
@@ -726,10 +727,30 @@ async function processMessage(
     session.history.push({ role: "ai", text: reply });
     return { reply, suggestions: ["أضف إنفينيت للسلة", "مقارنة الباقات", "طلب مخصص"] };
   }
-  if (m.includes("قارن") || m.includes("مقارنة") || m.includes("الفرق بين")) {
-    const reply = `📊 **مقارنة الباقات:**\n\n| الميزة | لايت | برو | إنفينيت |\n|---|---|---|---|\n| الموقع | ✅ | ✅ | ✅ |\n| تطبيق جوال | ❌ | ✅ | ✅ |\n| ذكاء اصطناعي | ❌ | ✅ | ✅ |\n| خادم مخصص | ❌ | ❌ | ✅ |\n| تخصيص كامل | ❌ | ❌ | ✅ |\n| الدعم | أساسي | مميز | مخصص |\n| السعر | 5,000+ | 10,000+ | 20,000+ |\n\nهل تريد أساعدك في اختيار الأنسب؟`;
+  if (m.includes("قارن") || m.includes("مقارنة") || m.includes("الفرق بين") || m.includes("فروق") || m.includes("فرق بين") || m.includes("ايش الفرق") || m.includes("ايش فرق") || m.includes("الباقات كلها") || m.includes("compare") || m.includes("difference")) {
+    let liteMonthly = "—", litePriceLifetime = "—", proMonthly = "—", proLifetime = "—", infMonthly = "—", infLifetime = "—";
+    try {
+      const allPlans = await PricingPlanModel.find({ status: "active" }).lean();
+      const slugTier = (slug, nameAr) => {
+        const s = (slug + " " + nameAr).toLowerCase();
+        if (s.includes("infinite") || s.includes("إنفينيت")) return "infinite";
+        if (s.includes("pro") || s.includes("برو")) return "pro";
+        return "lite";
+      };
+      const fmt = (plans, tier, cycle) => {
+        const p = plans.find(x => slugTier(x.slug, x.nameAr) === tier && x.billingCycle === cycle);
+        return p ? `${p.price.toLocaleString()} ر.س` : "—";
+      };
+      liteMonthly = fmt(allPlans, "lite", "monthly");
+      litePriceLifetime = fmt(allPlans, "lite", "one_time");
+      proMonthly = fmt(allPlans, "pro", "monthly");
+      proLifetime = fmt(allPlans, "pro", "one_time");
+      infMonthly = fmt(allPlans, "infinite", "monthly");
+      infLifetime = fmt(allPlans, "infinite", "one_time");
+    } catch {}
+    const reply = `📊 **مقارنة الباقات — الأسعار من النظام:**\n\n| الميزة | ⚡ لايت | 🚀 برو | ♾️ إنفينيت |\n|---|---|---|---|\n| الموقع | ✅ | ✅ | ✅ |\n| تطبيق جوال | ❌ | ✅ | ✅ |\n| ذكاء اصطناعي | ❌ | ✅ | ✅ |\n| خادم مخصص | ❌ | ❌ | ✅ |\n| تخصيص كامل | ❌ | ❌ | ✅ |\n| دعم 24/7 | ❌ | ❌ | ✅ |\n| الدعم | أساسي | مميز | مخصص |\n| شهري | ${liteMonthly} | ${proMonthly} | ${infMonthly} |\n| مدى الحياة | ${litePriceLifetime} | ${proLifetime} | ${infLifetime} |\n\n💡 **متى تختار كل باقة؟**\n• **لايت** — للبدايات والمشاريع الصغيرة\n• **برو** — للمشاريع المتنامية التي تحتاج تطبيق ودفع\n• **إنفينيت** — للشركات الكبيرة والمؤسسات\n\nهل تريد أساعدك في اختيار الأنسب لك؟`;
     session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أنسب باقة لمشروعي", "مزيد من التفاصيل", "طلب مخصص"] };
+    return { reply, suggestions: ["أنسب باقة لمشروعي", "تفاصيل باقة برو", "طلب مخصص"] };
   }
 
   // ─── WEB SEARCH ───
