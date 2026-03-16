@@ -789,16 +789,10 @@ export async function registerRoutes(
           if (dbUser?.emailOtpEnabled) methods.push("email");
           if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
           // Push Approval method — available when user has active push subscriptions
-          // Push CANNOT be the sole 2FA method; it always needs a secondary fallback.
           const { PushSubscriptionModel } = await import("./models");
           const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
           if (pushSubCount > 0) {
             methods.unshift("push"); // put push first as most convenient
-            // Ensure there is always a second method alongside push
-            if (methods.length === 1 && dbUser?.email) {
-              // Automatically add email OTP as fallback when push is the only method
-              methods.push("email");
-            }
           }
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
