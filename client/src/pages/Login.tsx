@@ -133,6 +133,29 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [isRegister]);
 
+  const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
+  const verifyMode = "email" as const;
+  const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
+  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
+
+  const [twoFA, setTwoFA] = useState<{ tempToken: string; methods: string[] } | null>(null);
+  const [twoFAMethod, setTwoFAMethod] = useState<string>("");
+  const [twoFACode, setTwoFACode] = useState("");
+  const [twoFAPassphrase, setTwoFAPassphrase] = useState("");
+  const [is2FAVerifying, setIs2FAVerifying] = useState(false);
+  const [twoFAError, setTwoFAError] = useState("");
+  const [is2FAResending, setIs2FAResending] = useState(false);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
+
+  // Push Approval states
+  const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
+  const [pushNumber, setPushNumber] = useState<number | null>(null);
+  const [pushStatus, setPushStatus] = useState<"idle" | "requesting" | "waiting" | "approved" | "denied" | "expired">("idle");
+
   // Push Approval: poll for status when waiting
   useEffect(() => {
     if (pushStatus !== "waiting" || !pushChallengeId) return;
@@ -173,29 +196,6 @@ export default function Login() {
     const interval = setInterval(poll, 2500);
     return () => { cancelled = true; clearInterval(interval); };
   }, [pushStatus, pushChallengeId]);
-
-  const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
-  const verifyMode = "email" as const;
-  const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
-  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [verifyError, setVerifyError] = useState("");
-
-  const [twoFA, setTwoFA] = useState<{ tempToken: string; methods: string[] } | null>(null);
-  const [twoFAMethod, setTwoFAMethod] = useState<string>("");
-  const [twoFACode, setTwoFACode] = useState("");
-  const [twoFAPassphrase, setTwoFAPassphrase] = useState("");
-  const [is2FAVerifying, setIs2FAVerifying] = useState(false);
-  const [twoFAError, setTwoFAError] = useState("");
-  const [is2FAResending, setIs2FAResending] = useState(false);
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
-
-  // Push Approval states
-  const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
-  const [pushNumber, setPushNumber] = useState<number | null>(null);
-  const [pushStatus, setPushStatus] = useState<"idle" | "requesting" | "waiting" | "approved" | "denied" | "expired">("idle");
 
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();

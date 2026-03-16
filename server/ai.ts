@@ -10,12 +10,23 @@ import { sendDirectEmail } from "./email";
 import axios from "axios";
 
 /* ─── OpenAI client (OpenRouter) ─── */
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://qiroxstudio.online",
-    "X-Title": "QIROX Studio AI",
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": "https://qiroxstudio.online",
+        "X-Title": "QIROX Studio AI",
+      },
+    });
+  }
+  return _openai;
+}
+const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    return (getOpenAI() as any)[prop];
   },
 });
 
