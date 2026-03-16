@@ -340,7 +340,7 @@ app.use((req, res, next) => {
   startQMeetScheduler();
   await registerInstallmentRoutes(app);
   registerAiRoutes(app);
-  registerSandboxRoutes(app);
+  registerSandboxRoutes(app, httpServer);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -1780,3 +1780,32 @@ const sandboxEnvVarSchema = new mongoose.Schema({
 }, { timestamps: true });
 sandboxEnvVarSchema.index({ projectId: 1, key: 1 }, { unique: true });
 export const SandboxEnvVarModel = mongoose.models.SandboxEnvVar || mongoose.model("SandboxEnvVar", sandboxEnvVarSchema);
+
+// ── Sandbox File Metadata (فهرس الملفات في الساندبوكس) ──────────────────────
+const sandboxFileSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  path:      { type: String, required: true },
+  type:      { type: String, enum: ["file", "directory"], default: "file" },
+  size:      { type: Number, default: 0 },
+  mimeType:  { type: String, default: "" },
+  hash:      { type: String, default: "" },
+  syncedAt:  { type: Date, default: null },
+}, { timestamps: true });
+sandboxFileSchema.index({ projectId: 1, path: 1 }, { unique: true });
+export const SandboxFileModel = mongoose.models.SandboxFile || mongoose.model("SandboxFile", sandboxFileSchema);
+
+// ── Sandbox Deployment (نشر مشاريع الساندبوكس) ─────────────────────────────
+const sandboxDeploymentSchema = new mongoose.Schema({
+  projectId:  { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  deployedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  version:    { type: String, default: "1.0.0" },
+  status:     { type: String, enum: ["pending", "building", "live", "failed", "stopped"], default: "pending" },
+  url:        { type: String, default: "" },
+  port:       { type: Number, default: null },
+  buildLog:   { type: String, default: "" },
+  errorLog:   { type: String, default: "" },
+  startedAt:  { type: Date, default: null },
+  stoppedAt:  { type: Date, default: null },
+}, { timestamps: true });
+sandboxDeploymentSchema.index({ projectId: 1, createdAt: -1 });
+export const SandboxDeploymentModel = mongoose.models.SandboxDeployment || mongoose.model("SandboxDeployment", sandboxDeploymentSchema);

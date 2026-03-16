@@ -22,20 +22,25 @@ The application is a full-stack TypeScript project with a React frontend and Exp
   - **File Operations**: `GET /api/sandbox/projects/:id/files` (tree), `GET/PUT/DELETE /api/sandbox/projects/:id/file`, rename, create folder
   - **Process Control**: `POST /api/sandbox/projects/:id/start|stop|restart`
   - **Env Vars**: `GET/POST /api/sandbox/projects/:id/env`, `DELETE /api/sandbox/projects/:id/env/:key` (AES-256-CBC encrypted)
-  - **AI Code Gen**: `POST /api/sandbox/projects/:id/ai/generate` (single file), `POST /api/sandbox/projects/:id/ai/scaffold` (full project)
-  - **ZIP Export/Import**: `GET /api/sandbox/projects/:id/export`, `POST /api/sandbox/projects/:id/import`
-  - **GitHub**: `POST /api/sandbox/projects/:id/github/clone|pull`
-  - **Preview Proxy**: `/sandbox/:id/preview/*` proxies to sandbox process port
+  - **AI Code Gen**: `POST /api/sandbox/:id/ai/generate` with modes: create, edit, explain, full-project (OpenRouter gpt-4o, context-aware)
+  - **ZIP Download/Import**: `GET /api/sandbox/projects/:id/download`, `POST /api/sandbox/projects/:id/import-zip`
+  - **GitHub**: clone, import (with optional PAT), pull, push, status (modified files, branch, last commits)
+  - **Deployments**: `GET /api/sandbox/projects/:id/deployments`, `POST /api/sandbox/projects/:id/deploy`
+  - **File Sync**: `POST /api/sandbox/projects/:id/sync` (disk → DB metadata sync)
+  - **Preview Proxy**: `/sandbox/:id/preview/*` proxies to sandbox process port (HTTP + WebSocket upgrade)
   - **Admin**: `GET /api/sandbox/admin/running`, `POST /api/sandbox/admin/stop-all`
   - **Templates**: `GET /api/sandbox/templates` (blank, express, static, react)
 
 **New MongoDB Models (server/models.ts):**
 - `SandboxProject` — project metadata (owner, name, runtime, commands, GitHub, status, port)
 - `SandboxEnvVar` — AES-256 encrypted environment variables per project
+- `SandboxFile` — file metadata index synced from disk (path, type, size, hash)
+- `SandboxDeployment` — deployment records (version, status, build/error logs, URL)
 
 **Integration (server/index.ts):**
-- `registerSandboxRoutes(app)` called during startup
+- `registerSandboxRoutes(app, httpServer)` called during startup with HTTP server for WS upgrade
 - Graceful shutdown stops all sandbox processes
+- WebSocket upgrade handler for `/sandbox/:id/preview` proxy
 
 **Dependencies Added:** `simple-git`, `http-proxy-middleware`
 

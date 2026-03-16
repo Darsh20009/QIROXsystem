@@ -1,12 +1,16 @@
-// @ts-nocheck
 import type { Express, Request, Response } from "express";
+import type { Server as HttpServer } from "http";
 import crypto from "crypto";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
-if (!ENC_KEY_RAW) console.warn("[Sandbox] ⚠ SANDBOX_ENC_KEY not set — using default key (NOT safe for production)");
+if (!ENC_KEY_RAW && process.env.NODE_ENV === "production") {
+  console.error("[Sandbox] SANDBOX_ENC_KEY is required in production!");
+} else if (!ENC_KEY_RAW) {
+  console.warn("[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)");
+}
 const ENC_KEY = (ENC_KEY_RAW || "qirox-sandbox-default-key-32ch").padEnd(32, "0").slice(0, 32);
-const ENC_ALGO = "aes-256-cbc";
+const ENC_ALGO = "aes-256-cbc" as const;
 
 function encrypt(text: string): { encrypted: string; iv: string } {
   const iv = crypto.randomBytes(16);
@@ -24,11 +28,11 @@ function decrypt(encrypted: string, ivHex: string): string {
 }
 
 function requireAuth(req: Request, res: Response): any {
-  if (!req.isAuthenticated?.() || !req.user) {
+  if (!req.isAuthenticated?.() || !(req as any).user) {
     res.status(401).json({ error: "يجب تسجيل الدخول" });
     return null;
   }
-  return req.user;
+  return (req as any).user;
 }
 
 function requireAdmin(req: Request, res: Response): any {
@@ -41,7 +45,7 @@ function requireAdmin(req: Request, res: Response): any {
   return user;
 }
 
-async function requireProjectAccess(req: Request, res: Response): Promise<any> {
+async function requireProjectAccess(req: Request, res: Response): Promise<{ user: any; project: any } | null> {
   const user = requireAuth(req, res);
   if (!user) return null;
   const { SandboxProjectModel } = await import("./models");
@@ -55,6 +59,36 @@ async function requireProjectAccess(req: Request, res: Response): Promise<any> {
     return null;
   }
   return { user, project };
+}
+
+async function syncFilesToDb(projectId: string, objectId: any): Promise<number> {
+  const { SandboxFileModel } = await import("./models");
+  const { listTree } = await import("./sandbox-fs");
+  const tree = listTree(projectId, "", 10);
+
+  function flatten(entries: any[], result: any[] = []): any[] {
+    for (const e of entries) {
+      result.push({ path: e.path, type: e.type, size: e.size || 0 });
+      if (e.children) flatten(e.children, result);
+    }
+    return result;
+  }
+
+  const files = flatten(tree);
+  await SandboxFileModel.deleteMany({ projectId: objectId });
+  if (files.length > 0) {
+    await SandboxFileModel.insertMany(
+      files.map((f: any) => ({
+        projectId: objectId,
+        path: f.path,
+        type: f.type,
+        size: f.size,
+        syncedAt: new Date(),
+      })),
+      { ordered: false }
+    );
+  }
+  return files.length;
 }
 
 const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: string; startCmd: string; installCmd: string }> = {
@@ -95,17 +129,51 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
   },
 };
 
-export function registerSandboxRoutes(app: Express): void {
+async function getOpenAIClient() {
+  const OpenAI = (await import("openai")).default;
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+    baseURL: "https://openrouter.ai/api/v1",
+    defaultHeaders: {
+      "HTTP-Referer": "https://qiroxstudio.online",
+      "X-Title": "QIROX Sandbox AI",
+    },
+  });
+}
+
+const proxyCache = new Map<number, ReturnType<typeof createProxyMiddleware>>();
+
+function getOrCreateProxy(port: number, projectId: string) {
+  if (proxyCache.has(port)) return proxyCache.get(port)!;
+  const proxy = createProxyMiddleware({
+    target: `http://127.0.0.1:${port}`,
+    changeOrigin: true,
+    pathRewrite: (_path: string) => _path.replace(new RegExp(`^/sandbox/${projectId}/preview`), ""),
+    ws: true,
+    on: {
+      error: (_err: any, _req: any, res: any) => {
+        if (res && typeof res.status === "function") {
+          res.status(502).send("الخادم غير متاح حالياً");
+        }
+      },
+    },
+  });
+  proxyCache.set(port, proxy);
+  return proxy;
+}
+
+export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): void {
+
   // ── Project CRUD ──────────────────────────────────────────────────────────
 
-  app.get("/api/sandbox/projects", async (req, res) => {
+  app.get("/api/sandbox/projects", async (req: Request, res: Response) => {
     const user = requireAuth(req, res);
     if (!user) return;
     try {
       const { SandboxProjectModel } = await import("./models");
       const { isRunning } = await import("./sandbox-runner");
       const isAdmin = ["admin", "manager"].includes(user.role);
-      const query = isAdmin ? {} : { ownerId: user._id };
+      const query: any = isAdmin ? {} : { ownerId: user._id };
       const projects = await SandboxProjectModel.find(query).sort({ updatedAt: -1 }).lean();
       const result = projects.map((p: any) => ({
         ...p,
@@ -120,7 +188,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/projects", async (req, res) => {
+  app.post("/api/sandbox/projects", async (req: Request, res: Response) => {
     const user = requireAuth(req, res);
     if (!user) return;
     try {
@@ -151,13 +219,15 @@ export function registerSandboxRoutes(app: Express): void {
         fsWrite(projectId, filePath, content);
       }
 
+      await syncFilesToDb(projectId, project._id);
+
       res.status(201).json({ id: projectId, ...project.toJSON() });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.get("/api/sandbox/projects/:id", async (req, res) => {
+  app.get("/api/sandbox/projects/:id", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -177,7 +247,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/sandbox/projects/:id", async (req, res) => {
+  app.patch("/api/sandbox/projects/:id", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -185,7 +255,7 @@ export function registerSandboxRoutes(app: Express): void {
       const allowed = isAdmin
         ? ["name", "nameAr", "description", "entryFile", "startCmd", "installCmd", "buildCmd", "runtime", "githubRepo", "githubBranch", "isPublic", "tags"]
         : ["name", "nameAr", "description", "entryFile", "runtime", "isPublic", "tags"];
-      const updates: any = {};
+      const updates: Record<string, any> = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
       }
@@ -197,17 +267,19 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/sandbox/projects/:id", async (req, res) => {
+  app.delete("/api/sandbox/projects/:id", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
       const { stopProcess } = await import("./sandbox-runner");
       const { deleteProjectDir } = await import("./sandbox-fs");
-      const { SandboxProjectModel, SandboxEnvVarModel } = await import("./models");
+      const { SandboxProjectModel, SandboxEnvVarModel, SandboxFileModel, SandboxDeploymentModel } = await import("./models");
       const pid = String(ctx.project._id);
       await stopProcess(pid);
       deleteProjectDir(pid);
       await SandboxEnvVarModel.deleteMany({ projectId: ctx.project._id });
+      await SandboxFileModel.deleteMany({ projectId: ctx.project._id });
+      await SandboxDeploymentModel.deleteMany({ projectId: ctx.project._id });
       await SandboxProjectModel.findByIdAndDelete(ctx.project._id);
       res.json({ success: true });
     } catch (err: any) {
@@ -217,7 +289,7 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── File Operations ───────────────────────────────────────────────────────
 
-  app.get("/api/sandbox/projects/:id/files", async (req, res) => {
+  app.get("/api/sandbox/projects/:id/files", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -230,7 +302,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/sandbox/projects/:id/file", async (req, res) => {
+  app.get("/api/sandbox/projects/:id/file", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -244,7 +316,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.put("/api/sandbox/projects/:id/file", async (req, res) => {
+  app.put("/api/sandbox/projects/:id/file", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -252,27 +324,35 @@ export function registerSandboxRoutes(app: Express): void {
       if (!filePath) return res.status(400).json({ error: "مسار الملف مطلوب" });
       const { writeFile } = await import("./sandbox-fs");
       writeFile(String(ctx.project._id), filePath, content || "");
+      const { SandboxFileModel } = await import("./models");
+      await SandboxFileModel.findOneAndUpdate(
+        { projectId: ctx.project._id, path: filePath },
+        { type: "file", size: Buffer.byteLength(content || ""), syncedAt: new Date() },
+        { upsert: true }
+      );
       res.json({ success: true, path: filePath });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.delete("/api/sandbox/projects/:id/file", async (req, res) => {
+  app.delete("/api/sandbox/projects/:id/file", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const filePath = req.query.path as string || req.body.path;
+      const filePath = (req.query.path as string) || req.body.path;
       if (!filePath) return res.status(400).json({ error: "مسار الملف مطلوب" });
       const { deleteFile } = await import("./sandbox-fs");
       deleteFile(String(ctx.project._id), filePath);
+      const { SandboxFileModel } = await import("./models");
+      await SandboxFileModel.deleteMany({ projectId: ctx.project._id, path: { $regex: `^${filePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}` } });
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/sandbox/projects/:id/rename", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/rename", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -280,13 +360,18 @@ export function registerSandboxRoutes(app: Express): void {
       if (!oldPath || !newPath) return res.status(400).json({ error: "المسار القديم والجديد مطلوبان" });
       const { renameFile } = await import("./sandbox-fs");
       renameFile(String(ctx.project._id), oldPath, newPath);
+      const { SandboxFileModel } = await import("./models");
+      await SandboxFileModel.updateMany(
+        { projectId: ctx.project._id, path: { $regex: `^${oldPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}` } },
+        [{ $set: { path: { $replaceOne: { input: "$path", find: oldPath, replacement: newPath } } } }]
+      );
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/sandbox/projects/:id/folder", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/folder", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -294,7 +379,24 @@ export function registerSandboxRoutes(app: Express): void {
       if (!folderPath) return res.status(400).json({ error: "مسار المجلد مطلوب" });
       const { createFolder } = await import("./sandbox-fs");
       createFolder(String(ctx.project._id), folderPath);
+      const { SandboxFileModel } = await import("./models");
+      await SandboxFileModel.findOneAndUpdate(
+        { projectId: ctx.project._id, path: folderPath },
+        { type: "directory", syncedAt: new Date() },
+        { upsert: true }
+      );
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/sync", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const count = await syncFilesToDb(String(ctx.project._id), ctx.project._id);
+      res.json({ success: true, filesSynced: count });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -302,7 +404,7 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── Process Control ───────────────────────────────────────────────────────
 
-  app.post("/api/sandbox/projects/:id/start", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/start", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -312,7 +414,7 @@ export function registerSandboxRoutes(app: Express): void {
 
       const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
       const env: Record<string, string> = {};
-      for (const doc of envDocs) {
+      for (const doc of envDocs as any[]) {
         try { env[doc.key] = decrypt(doc.value, doc.iv); } catch {}
       }
 
@@ -338,7 +440,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/projects/:id/stop", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/stop", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -356,7 +458,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/projects/:id/restart", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/restart", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -367,7 +469,7 @@ export function registerSandboxRoutes(app: Express): void {
 
       const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
       const env: Record<string, string> = {};
-      for (const doc of envDocs) {
+      for (const doc of envDocs as any[]) {
         try { env[doc.key] = decrypt(doc.value, doc.iv); } catch {}
       }
 
@@ -391,13 +493,13 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── Env Vars ──────────────────────────────────────────────────────────────
 
-  app.get("/api/sandbox/projects/:id/env", async (req, res) => {
+  app.get("/api/sandbox/projects/:id/env", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
       const { SandboxEnvVarModel } = await import("./models");
       const vars = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
-      const result = vars.map((v: any) => ({
+      const result = (vars as any[]).map((v) => ({
         id: String(v._id),
         key: v.key,
         value: (() => { try { return decrypt(v.value, v.iv); } catch { return "***"; } })(),
@@ -408,7 +510,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/projects/:id/env", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/env", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -427,7 +529,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.delete("/api/sandbox/projects/:id/env/:key", async (req, res) => {
+  app.delete("/api/sandbox/projects/:id/env/:key", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -441,34 +543,111 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── AI Code Generation ────────────────────────────────────────────────────
 
-  app.post("/api/sandbox/projects/:id/ai/generate", async (req, res) => {
+  app.post("/api/sandbox/:id/ai/generate", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const { prompt, filePath, existingCode } = req.body;
+      const { prompt, targetFile, mode } = req.body;
       if (!prompt) return res.status(400).json({ error: "الأمر مطلوب" });
 
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: {
-          "HTTP-Referer": "https://qiroxstudio.online",
-          "X-Title": "QIROX Sandbox AI",
-        },
-      });
+      const validModes = ["create", "edit", "explain", "full-project"];
+      const activeMode = validModes.includes(mode) ? mode : "create";
+
+      const openai = await getOpenAIClient();
+      const { listTree, readFile, writeFile } = await import("./sandbox-fs");
+      const pid = String(ctx.project._id);
+
+      const tree = listTree(pid, "", 2);
+      const treeStr = JSON.stringify(tree.map((e: any) => e.path), null, 2);
+
+      let existingCode = "";
+      if (targetFile && (activeMode === "edit" || activeMode === "explain")) {
+        try { existingCode = readFile(pid, targetFile); } catch {}
+      }
+
+      if (activeMode === "full-project") {
+        const completion = await openai.chat.completions.create({
+          model: "openai/gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `أنت مساعد QIROX Studio لتوليد هيكل مشاريع كاملة.
+الملفات الحالية: ${treeStr}
+أرجع JSON فقط بهذا الشكل:
+{
+  "files": { "path/file.ext": "محتوى الملف" },
+  "startCmd": "أمر التشغيل",
+  "installCmd": "أمر التثبيت",
+  "entryFile": "الملف الرئيسي"
+}
+لا تضف أي شرح خارج JSON.`,
+            },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 8000,
+        });
+
+        let raw = completion.choices[0]?.message?.content?.trim() || "{}";
+        raw = raw.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "");
+        const scaffold = JSON.parse(raw);
+
+        const { SandboxProjectModel } = await import("./models");
+        let filesCreated = 0;
+
+        if (scaffold.files && typeof scaffold.files === "object") {
+          for (const [fp, content] of Object.entries(scaffold.files)) {
+            writeFile(pid, fp, String(content));
+            filesCreated++;
+          }
+        }
+
+        const updates: Record<string, any> = {};
+        if (scaffold.startCmd) updates.startCmd = scaffold.startCmd;
+        if (scaffold.installCmd) updates.installCmd = scaffold.installCmd;
+        if (scaffold.entryFile) updates.entryFile = scaffold.entryFile;
+        if (Object.keys(updates).length > 0) {
+          await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, updates);
+        }
+
+        await syncFilesToDb(pid, ctx.project._id);
+
+        return res.json({ success: true, mode: "full-project", filesCreated, tokens: completion.usage?.total_tokens || 0 });
+      }
+
+      if (activeMode === "explain") {
+        const completion = await openai.chat.completions.create({
+          model: "openai/gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "أنت مساعد برمجي خبير. اشرح الكود التالي بالعربية بشكل واضح ومختصر.",
+            },
+            { role: "user", content: `اشرح هذا الكود${targetFile ? ` (${targetFile})` : ""}:\n\`\`\`\n${existingCode || prompt}\n\`\`\`\n\n${prompt}` },
+          ],
+          temperature: 0.3,
+          max_tokens: 2000,
+        });
+
+        return res.json({
+          explanation: completion.choices[0]?.message?.content?.trim() || "",
+          mode: "explain",
+          tokens: completion.usage?.total_tokens || 0,
+        });
+      }
 
       const systemPrompt = `أنت مساعد برمجي خبير في QIROX Studio. أنشئ كود نظيف وجاهز للتشغيل.
-إذا طلب المستخدم تعديل كود موجود، أرجع الكود المعدّل بالكامل.
+الملفات الحالية في المشروع: ${treeStr}
+${activeMode === "edit" ? "المطلوب تعديل الكود الموجود وإرجاع النسخة المعدّلة بالكامل." : "أنشئ كود جديد."}
 أرجع الكود فقط بدون أي شرح أو تعليقات إضافية.
 لا تستخدم markdown code fences.`;
 
       const userMsg = existingCode
-        ? `الكود الحالي في ${filePath || "الملف"}:\n\`\`\`\n${existingCode}\n\`\`\`\n\nالمطلوب: ${prompt}`
-        : `أنشئ كود ${filePath ? `للملف ${filePath}` : ""}: ${prompt}`;
+        ? `الكود الحالي في ${targetFile || "الملف"}:\n\`\`\`\n${existingCode}\n\`\`\`\n\nالمطلوب: ${prompt}`
+        : `أنشئ كود ${targetFile ? `للملف ${targetFile}` : ""}: ${prompt}`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o-mini",
+        model: "openai/gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMsg },
@@ -480,88 +659,25 @@ export function registerSandboxRoutes(app: Express): void {
       let code = completion.choices[0]?.message?.content?.trim() || "";
       code = code.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "");
 
-      if (filePath) {
-        const { writeFile } = await import("./sandbox-fs");
-        writeFile(String(ctx.project._id), filePath, code);
+      if (targetFile) {
+        writeFile(pid, targetFile, code);
+        const { SandboxFileModel } = await import("./models");
+        await SandboxFileModel.findOneAndUpdate(
+          { projectId: ctx.project._id, path: targetFile },
+          { type: "file", size: Buffer.byteLength(code), syncedAt: new Date() },
+          { upsert: true }
+        );
       }
 
-      res.json({ code, filePath, tokens: completion.usage?.total_tokens || 0 });
+      res.json({ code, targetFile, mode: activeMode, tokens: completion.usage?.total_tokens || 0 });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/sandbox/projects/:id/ai/scaffold", async (req, res) => {
-    const ctx = await requireProjectAccess(req, res);
-    if (!ctx) return;
-    try {
-      const { prompt } = req.body;
-      if (!prompt) return res.status(400).json({ error: "وصف المشروع مطلوب" });
+  // ── ZIP Download / Import ─────────────────────────────────────────────────
 
-      const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: {
-          "HTTP-Referer": "https://qiroxstudio.online",
-          "X-Title": "QIROX Sandbox AI",
-        },
-      });
-
-      const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `أنت مساعد QIROX Studio لتوليد هيكل مشاريع كاملة.
-أرجع JSON فقط بهذا الشكل:
-{
-  "files": { "path/file.ext": "محتوى الملف" },
-  "startCmd": "أمر التشغيل",
-  "installCmd": "أمر التثبيت",
-  "entryFile": "الملف الرئيسي"
-}
-لا تضف أي شرح خارج JSON.`,
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 8000,
-      });
-
-      let raw = completion.choices[0]?.message?.content?.trim() || "{}";
-      raw = raw.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "");
-      const scaffold = JSON.parse(raw);
-
-      const { writeFile } = await import("./sandbox-fs");
-      const { SandboxProjectModel } = await import("./models");
-      const pid = String(ctx.project._id);
-      let filesCreated = 0;
-
-      if (scaffold.files && typeof scaffold.files === "object") {
-        for (const [fp, content] of Object.entries(scaffold.files)) {
-          writeFile(pid, fp, String(content));
-          filesCreated++;
-        }
-      }
-
-      const updates: any = {};
-      if (scaffold.startCmd) updates.startCmd = scaffold.startCmd;
-      if (scaffold.installCmd) updates.installCmd = scaffold.installCmd;
-      if (scaffold.entryFile) updates.entryFile = scaffold.entryFile;
-      if (Object.keys(updates).length > 0) {
-        await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, updates);
-      }
-
-      res.json({ success: true, filesCreated, tokens: completion.usage?.total_tokens || 0 });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // ── ZIP Export / Import ────────────────────────────────────────────────────
-
-  app.get("/api/sandbox/projects/:id/export", async (req, res) => {
+  app.get("/api/sandbox/projects/:id/download", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -574,7 +690,7 @@ export function registerSandboxRoutes(app: Express): void {
 
       const archive = archiver("zip", { zlib: { level: 6 } });
       archive.pipe(res);
-      archive.directory(dir, false, (entry) => {
+      archive.directory(dir, false, (entry: any) => {
         if (entry.name.startsWith("node_modules/") || entry.name.startsWith(".git/")) return false;
         return entry;
       });
@@ -584,16 +700,16 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/projects/:id/import", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/import-zip", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
       const multer = (await import("multer")).default;
-      const upload = multer({ limits: { fileSize: 50 * 1024 * 1024 } }).single("file");
+      const upload = multer({ limits: { fileSize: 50 * 1024 * 1024 }, storage: multer.memoryStorage() }).single("file");
 
-      upload(req, res, async (err: any) => {
+      upload(req as any, res as any, async (err: any) => {
         if (err) return res.status(400).json({ error: err.message });
-        if (!req.file) return res.status(400).json({ error: "ملف ZIP مطلوب" });
+        if (!(req as any).file) return res.status(400).json({ error: "ملف ZIP مطلوب" });
 
         const { Readable } = await import("stream");
         const unzipper = await import("unzipper");
@@ -604,22 +720,24 @@ export function registerSandboxRoutes(app: Express): void {
         let totalSize = 0;
         const MAX_FILES = 500;
         const MAX_TOTAL_SIZE = 100 * 1024 * 1024;
-        const stream = Readable.from(req.file.buffer);
+        const stream = Readable.from((req as any).file.buffer);
         const zip = stream.pipe(unzipper.Parse());
 
         for await (const entry of zip) {
-          const filePath = entry.path;
-          if (count >= MAX_FILES) { entry.autodrain(); continue; }
-          if (entry.type === "File" && !filePath.includes("node_modules/") && !filePath.includes(".git/")) {
-            const buf = await entry.buffer();
+          const filePath = (entry as any).path;
+          if (count >= MAX_FILES) { (entry as any).autodrain(); continue; }
+          if ((entry as any).type === "File" && !filePath.includes("node_modules/") && !filePath.includes(".git/")) {
+            const buf = await (entry as any).buffer();
             totalSize += buf.length;
-            if (totalSize > MAX_TOTAL_SIZE) { break; }
+            if (totalSize > MAX_TOTAL_SIZE) break;
             writeFile(pid, filePath, buf.toString("utf-8"));
             count++;
           } else {
-            entry.autodrain();
+            (entry as any).autodrain();
           }
         }
+
+        await syncFilesToDb(pid, ctx.project._id);
 
         res.json({ success: true, filesImported: count });
       });
@@ -630,7 +748,7 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── GitHub Integration ────────────────────────────────────────────────────
 
-  app.post("/api/sandbox/projects/:id/github/clone", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/github/clone", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -653,13 +771,54 @@ export function registerSandboxRoutes(app: Express): void {
         githubBranch: branch || "main",
       });
 
+      await syncFilesToDb(pid, ctx.project._id);
+
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.post("/api/sandbox/projects/:id/github/pull", async (req, res) => {
+  app.post("/api/sandbox/projects/:id/github/import", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { repoUrl, branch, pat } = req.body;
+      if (!repoUrl) return res.status(400).json({ error: "رابط المستودع مطلوب" });
+
+      const simpleGit = (await import("simple-git")).default;
+      const { ensureProjectDir, deleteProjectDir } = await import("./sandbox-fs");
+      const { SandboxProjectModel } = await import("./models");
+      const pid = String(ctx.project._id);
+
+      let cloneUrl = repoUrl;
+      if (pat) {
+        const url = new URL(repoUrl);
+        url.username = pat;
+        url.password = "x-oauth-basic";
+        cloneUrl = url.toString();
+      }
+
+      deleteProjectDir(pid);
+      const dir = ensureProjectDir(pid);
+
+      const git = simpleGit();
+      await git.clone(cloneUrl, dir, ["--branch", branch || "main", "--depth", "1"]);
+
+      await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, {
+        githubRepo: repoUrl,
+        githubBranch: branch || "main",
+      });
+
+      await syncFilesToDb(pid, ctx.project._id);
+
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/github/pull", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
@@ -668,7 +827,75 @@ export function registerSandboxRoutes(app: Express): void {
       const dir = getProjectDir(String(ctx.project._id));
       const git = simpleGit(dir);
       const result = await git.pull();
+      await syncFilesToDb(String(ctx.project._id), ctx.project._id);
       res.json({ success: true, summary: result.summary });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/github/push", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { message, pat } = req.body;
+      const simpleGit = (await import("simple-git")).default;
+      const { getProjectDir } = await import("./sandbox-fs");
+      const dir = getProjectDir(String(ctx.project._id));
+      const git = simpleGit(dir);
+
+      if (pat && ctx.project.githubRepo) {
+        const url = new URL(ctx.project.githubRepo);
+        url.username = pat;
+        url.password = "x-oauth-basic";
+        await git.remote(["set-url", "origin", url.toString()]);
+      }
+
+      await git.add(".");
+      await git.commit(message || "Update from QIROX Sandbox");
+      const pushResult = await git.push("origin", ctx.project.githubBranch || "main");
+
+      if (pat && ctx.project.githubRepo) {
+        await git.remote(["set-url", "origin", ctx.project.githubRepo]);
+      }
+
+      res.json({ success: true, pushed: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/sandbox/projects/:id/github/status", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const simpleGit = (await import("simple-git")).default;
+      const { getProjectDir } = await import("./sandbox-fs");
+      const dir = getProjectDir(String(ctx.project._id));
+      const git = simpleGit(dir);
+
+      const [statusResult, logResult, branchResult] = await Promise.all([
+        git.status(),
+        git.log({ maxCount: 5 }).catch(() => ({ all: [] })),
+        git.branch().catch(() => ({ current: "unknown", all: [] })),
+      ]);
+
+      res.json({
+        branch: branchResult.current,
+        branches: branchResult.all,
+        modified: statusResult.modified,
+        created: statusResult.created,
+        deleted: statusResult.deleted,
+        staged: statusResult.staged,
+        notAdded: statusResult.not_added,
+        isClean: statusResult.isClean(),
+        lastCommits: (logResult as any).all?.slice(0, 5).map((c: any) => ({
+          hash: c.hash?.slice(0, 8),
+          message: c.message,
+          date: c.date,
+          author: c.author_name,
+        })) || [],
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -676,41 +903,62 @@ export function registerSandboxRoutes(app: Express): void {
 
   // ── Preview Proxy ─────────────────────────────────────────────────────────
 
-  app.use("/sandbox/:id/preview", async (req, res, next) => {
+  app.use("/sandbox/:id/preview", async (req: Request, res: Response, next: any) => {
     try {
       const { SandboxProjectModel } = await import("./models");
       const project = await SandboxProjectModel.findById(req.params.id);
       if (!project || !project.port) return res.status(404).send("المشروع غير متاح");
 
-      const isOwner = req.isAuthenticated?.() && String((req.user as any)?._id) === String(project.ownerId);
-      const isAdmin = req.isAuthenticated?.() && ["admin", "manager"].includes((req.user as any)?.role);
+      const isOwner = req.isAuthenticated?.() && String((req as any).user?._id) === String(project.ownerId);
+      const isAdmin = req.isAuthenticated?.() && ["admin", "manager"].includes((req as any).user?.role);
       if (!project.isPublic && !isOwner && !isAdmin) {
         return res.status(403).send("غير مصرّح");
       }
 
-      const proxy = createProxyMiddleware({
-        target: `http://127.0.0.1:${project.port}`,
-        changeOrigin: true,
-        pathRewrite: { [`^/sandbox/${req.params.id}/preview`]: "" },
-        ws: true,
-        on: {
-          error: (_err, _req, res) => {
-            if (res && typeof (res as any).status === "function") {
-              (res as any).status(502).send("الخادم غير متاح حالياً");
-            }
-          },
-        },
-      });
-
+      const proxy = getOrCreateProxy(project.port, String(project._id));
       proxy(req, res, next);
-    } catch (err: any) {
+    } catch {
       res.status(500).send("خطأ في البروكسي");
     }
   });
 
-  // ── Admin: list all running sandboxes ──────────────────────────────────────
+  // ── Deployments ───────────────────────────────────────────────────────────
 
-  app.get("/api/sandbox/admin/running", async (req, res) => {
+  app.get("/api/sandbox/projects/:id/deployments", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { SandboxDeploymentModel } = await import("./models");
+      const deployments = await SandboxDeploymentModel.find({ projectId: ctx.project._id })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+      res.json(deployments.map((d: any) => ({ ...d, id: String(d._id), _id: undefined, __v: undefined })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/deploy", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { SandboxDeploymentModel } = await import("./models");
+      const deployment = await SandboxDeploymentModel.create({
+        projectId: ctx.project._id,
+        deployedBy: ctx.user._id,
+        version: req.body.version || "1.0.0",
+        status: "pending",
+      });
+      res.status(201).json({ id: String(deployment._id), status: "pending" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
+
+  app.get("/api/sandbox/admin/running", async (req: Request, res: Response) => {
     const user = requireAdmin(req, res);
     if (!user) return;
     try {
@@ -721,7 +969,7 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/sandbox/admin/stop-all", async (req, res) => {
+  app.post("/api/sandbox/admin/stop-all", async (req: Request, res: Response) => {
     const user = requireAdmin(req, res);
     if (!user) return;
     try {
@@ -733,9 +981,9 @@ export function registerSandboxRoutes(app: Express): void {
     }
   });
 
-  // ── Templates list ────────────────────────────────────────────────────────
+  // ── Templates ─────────────────────────────────────────────────────────────
 
-  app.get("/api/sandbox/templates", (_req, res) => {
+  app.get("/api/sandbox/templates", (_req: Request, res: Response) => {
     const list = Object.entries(TEMPLATES).map(([key, tmpl]) => ({
       id: key,
       name: key.charAt(0).toUpperCase() + key.slice(1),
@@ -744,4 +992,24 @@ export function registerSandboxRoutes(app: Express): void {
     }));
     res.json(list);
   });
+
+  // ── WebSocket upgrade for sandbox preview ─────────────────────────────────
+  if (httpServer) {
+    httpServer.on("upgrade", async (req: any, socket: any, head: any) => {
+      if (req.url?.startsWith("/sandbox/") && req.url?.includes("/preview")) {
+        try {
+          const match = req.url.match(/^\/sandbox\/([^/]+)\/preview/);
+          if (!match) return;
+          const projectId = match[1];
+          const { SandboxProjectModel } = await import("./models");
+          const project = await SandboxProjectModel.findById(projectId);
+          if (!project || !project.port) { socket.destroy(); return; }
+          const proxy = getOrCreateProxy(project.port, String(project._id));
+          (proxy as any).upgrade(req, socket, head);
+        } catch {
+          socket.destroy();
+        }
+      }
+    });
+  }
 }
