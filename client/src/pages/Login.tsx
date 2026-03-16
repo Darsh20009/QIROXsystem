@@ -633,7 +633,7 @@ export default function Login() {
             </div>
 
             {twoFA.methods.length > 1 && (
-              <div className="flex gap-2 mb-5 p-1 bg-black/[0.03] rounded-xl overflow-x-auto">
+              <div className={`mb-5 p-1 bg-black/[0.03] rounded-xl ${twoFA.methods.length >= 3 ? "grid grid-cols-2 gap-1" : "flex gap-1"}`}>
                 {twoFA.methods.map(m => (
                   <button
                     key={m}
@@ -642,10 +642,10 @@ export default function Login() {
                       if (m !== "email") setEmailOtpSent(false);
                       if (m !== "push") { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }
                     }}
-                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
+                    className={`py-2.5 px-2 rounded-lg text-[11px] font-bold transition-all text-center leading-tight ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
                     data-testid={`tab-2fa-${m}`}
                   >
-                    {m === "totp" ? "تطبيق المصادقة" : m === "email" ? "البريد الإلكتروني" : m === "push" ? "🔔 إشعار الجهاز" : "كلمة الاسترداد"}
+                    {m === "totp" ? "🔐 المصادقة" : m === "email" ? "📧 البريد" : m === "push" ? "🔔 إشعار الجهاز" : "🛡️ الاسترداد"}
                   </button>
                 ))}
               </div>

@@ -1,29 +1,49 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Check, X, Smartphone, AlertTriangle, Lock, Loader2 } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 
-function useQuery(key: string) {
+function useQueryParam(key: string) {
   const params = new URLSearchParams(window.location.search);
   return params.get(key);
+}
+
+function generateDistractors(correct: number): number[] {
+  const nums = new Set<number>();
+  nums.add(correct);
+  while (nums.size < 3) {
+    const n = Math.floor(10 + Math.random() * 90);
+    if (n !== correct) nums.add(n);
+  }
+  const arr = Array.from(nums);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 type ChallengeStatus = "loading" | "pending" | "approved" | "denied" | "expired" | "error";
 
 export default function PushApproval() {
-  const challengeId = useQuery("id");
+  const challengeId = useQueryParam("id");
   const { data: user } = useUser();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const [, navigate] = useLocation();
 
   const [status, setStatus] = useState<ChallengeStatus>("loading");
-  const [number, setNumber] = useState<number | null>(null);
-  const [deviceInfo, setDeviceInfo] = useState("");
+  const [correctNumber, setCorrectNumber] = useState<number | null>(null);
   const [responding, setResponding] = useState(false);
+  const [selectedNum, setSelectedNum] = useState<number | null>(null);
   const [error, setError] = useState("");
+
+  const choices = useMemo(
+    () => (correctNumber !== null ? generateDistractors(correctNumber) : []),
+    [correctNumber]
+  );
 
   const loadChallenge = useCallback(async () => {
     if (!challengeId) { setStatus("error"); setError(L ? "رمز التحقق مفقود" : "Missing challenge ID"); return; }
@@ -32,7 +52,7 @@ export default function PushApproval() {
       if (res.status === 404 || res.status === 410) { setStatus("expired"); return; }
       if (!res.ok) { setStatus("error"); return; }
       const data = await res.json();
-      setNumber(data.number);
+      setCorrectNumber(data.number);
       if (data.status === "approved") { setStatus("approved"); return; }
       if (data.status === "denied") { setStatus("denied"); return; }
       setStatus("pending");
@@ -44,9 +64,12 @@ export default function PushApproval() {
 
   useEffect(() => { loadChallenge(); }, [loadChallenge]);
 
-  const respond = async (action: "approve" | "deny") => {
-    if (!challengeId || responding) return;
+  const handleSelect = async (num: number) => {
+    if (!challengeId || responding || correctNumber === null) return;
+    setSelectedNum(num);
     setResponding(true);
+
+    const action = num === correctNumber ? "approve" : "deny";
     try {
       const res = await fetch("/api/auth/push-challenge/respond", {
         method: "POST",
@@ -55,11 +78,12 @@ export default function PushApproval() {
         body: JSON.stringify({ challengeId, action }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || (L ? "حدث خطأ" : "An error occurred")); setResponding(false); return; }
+      if (!res.ok) { setError(data.error || (L ? "حدث خطأ" : "An error occurred")); setResponding(false); setSelectedNum(null); return; }
       setStatus(action === "approve" ? "approved" : "denied");
     } catch {
       setError(L ? "خطأ في الاتصال" : "Connection error");
       setResponding(false);
+      setSelectedNum(null);
     }
   };
 
@@ -96,68 +120,84 @@ export default function PushApproval() {
             </motion.div>
           )}
 
-          {/* Pending — main approval UI */}
-          {status === "pending" && number !== null && (
+          {/* Pending — 3-number selection UI */}
+          {status === "pending" && correctNumber !== null && (
             <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
 
-              {/* Number card */}
-              <div className="bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-3xl p-8 text-center relative overflow-hidden">
+              {/* Instruction card */}
+              <div className="bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] rounded-3xl p-6 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none rounded-3xl" />
 
-                <p className="text-white/50 text-sm mb-4">
-                  {L ? "تأكد أن هذا الرمز يطابق ما يظهر على الجهاز الجديد:" : "Make sure this number matches what's shown on the new device:"}
-                </p>
-
-                {/* The big number */}
-                <motion.div
-                  className="w-28 h-28 mx-auto rounded-3xl flex items-center justify-center mb-6 relative"
-                  style={{ background: "linear-gradient(135deg, rgba(14,165,233,0.15), rgba(124,58,237,0.15))", border: "2px solid rgba(14,165,233,0.3)" }}
-                  animate={{ boxShadow: ["0 0 20px rgba(14,165,233,0.2)", "0 0 40px rgba(124,58,237,0.3)", "0 0 20px rgba(14,165,233,0.2)"] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <span className="text-5xl font-black text-white tabular-nums" dir="ltr">{number}</span>
-                </motion.div>
-
-                {/* Device info */}
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Smartphone className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
-                  <p className="text-white/30 text-[11px] truncate">{L ? "جهاز جديد يطلب الدخول" : "New device requesting access"}</p>
+                  <Smartphone className="w-4 h-4 text-white/40 flex-shrink-0" />
+                  <p className="text-white/40 text-xs">{L ? "مرحباً " + (user?.fullName || user?.username) : "Hi " + (user?.fullName || user?.username)}</p>
                 </div>
-                <p className="text-white/20 text-[10px]">{L ? "مرحباً " + (user?.fullName || user?.username) : "Hi " + (user?.fullName || user?.username)}</p>
+
+                <p className="text-white font-bold text-base mb-1">
+                  {L ? "اختر الرقم الظاهر على الجهاز الجديد" : "Tap the number shown on the new device"}
+                </p>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  {L
+                    ? "انظر إلى الجهاز الذي تحاول تسجيل الدخول منه، واختر الرقم المطابق"
+                    : "Look at the device trying to log in and tap the matching number"}
+                </p>
               </div>
 
-              {/* Approve / Deny buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <motion.button
-                  onClick={() => respond("deny")}
-                  disabled={responding}
-                  whileTap={{ scale: 0.97 }}
-                  data-testid="button-push-deny"
-                  className="h-14 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-white/[0.05] border border-white/[0.08] text-red-400 hover:bg-red-500/10 hover:border-red-500/20 disabled:opacity-40"
-                >
-                  <X className="w-5 h-5" />
-                  {L ? "رفض" : "Deny"}
-                </motion.button>
-                <motion.button
-                  onClick={() => respond("approve")}
-                  disabled={responding}
-                  whileTap={{ scale: 0.97 }}
-                  data-testid="button-push-approve"
-                  className="h-14 rounded-2xl font-black text-base flex items-center justify-center gap-2 transition-all text-white relative overflow-hidden disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, #0ea5e9, #7c3aed)" }}
-                >
-                  {responding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                  {L ? "نعم، أنا" : "Yes, it's me"}
-                </motion.button>
+              {/* 3-number grid */}
+              <div className="grid grid-cols-3 gap-3">
+                {choices.map((num) => {
+                  const isSelected = selectedNum === num;
+                  const isCorrect = num === correctNumber;
+                  return (
+                    <motion.button
+                      key={num}
+                      onClick={() => handleSelect(num)}
+                      disabled={responding}
+                      whileTap={{ scale: 0.94 }}
+                      data-testid={`button-push-number-${num}`}
+                      className={`h-20 rounded-2xl font-black text-3xl flex items-center justify-center transition-all relative overflow-hidden disabled:cursor-not-allowed
+                        ${isSelected
+                          ? isCorrect
+                            ? "bg-green-500/30 border-2 border-green-400"
+                            : "bg-red-500/20 border-2 border-red-400"
+                          : "bg-white/[0.07] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.25]"
+                        }
+                      `}
+                      style={!isSelected ? {
+                        background: "linear-gradient(135deg, rgba(14,165,233,0.08), rgba(124,58,237,0.08))",
+                      } : undefined}
+                    >
+                      {isSelected && responding ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-white/60" />
+                      ) : (
+                        <span className="text-white tabular-nums" dir="ltr">{num}</span>
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
               {error && <p className="text-red-400 text-xs text-center mt-2">{error}</p>}
+
+              {/* Deny option */}
+              <motion.button
+                onClick={() => handleSelect(-1)}
+                disabled={responding}
+                whileTap={{ scale: 0.97 }}
+                data-testid="button-push-deny"
+                className="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-white/[0.04] border border-white/[0.06] text-red-400/70 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 disabled:opacity-40"
+              >
+                <X className="w-4 h-4" />
+                {L ? "لم أكن أنا — رفض الطلب" : "Not me — Deny this request"}
+              </motion.button>
 
               {/* Security warning */}
               <div className="flex items-start gap-2 px-1">
                 <Lock className="w-3.5 h-3.5 text-amber-400/60 flex-shrink-0 mt-0.5" />
                 <p className="text-white/25 text-[11px] leading-relaxed">
-                  {L ? "إذا لم تكن أنت من يحاول الدخول، انقر رفض وقم بتغيير كلمة المرور فوراً." : "If you didn't try to log in, tap Deny and change your password immediately."}
+                  {L
+                    ? "إذا لم تكن أنت من يحاول الدخول، انقر رفض الطلب وغيّر كلمة مرورك فوراً."
+                    : "If you didn't try to log in, tap Deny and change your password immediately."}
                 </p>
               </div>
             </motion.div>

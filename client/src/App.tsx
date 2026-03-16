@@ -803,8 +803,7 @@ function AppInner() {
             </header>
             <GlobalNotificationBanner />
             <main
-              className={`flex-1 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 sm:p-5 md:p-8 md:pb-8"}`}
-              style={{ ["--safe-pb" as any]: "env(safe-area-inset-bottom, 0px)" } as React.CSSProperties}
+              className={`flex-1 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 pb-[80px] sm:p-5 sm:pb-[80px] md:p-8"}`}
               id="main-content"
             >
               {isFullBleed ? (

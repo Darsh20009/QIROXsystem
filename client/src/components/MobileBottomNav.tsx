@@ -57,33 +57,34 @@ export function MobileBottomNav() {
   const items = isManagement ? adminItems : isEmployee ? employeeItems : clientItems;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-t border-black/[0.06] dark:border-white/[0.06] safe-bottom">
-      <div className="flex items-stretch justify-around h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-t border-black/[0.06] dark:border-white/[0.06]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center justify-around h-[60px]">
         {items.map((item) => {
-          const isActive = location === item.url;
+          const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url));
           const badge = (item as any).badge || 0;
           return (
             <Link
               key={item.url}
               href={item.url}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 px-1 transition-all duration-200 ${
-                isActive ? "text-black dark:text-white" : "text-black/30 dark:text-white/30"
-              }`}
+              className="flex flex-col items-center justify-center gap-[3px] flex-1 min-w-0 h-full py-2 transition-all duration-200"
               data-testid={`mobile-nav-${item.url.replace(/\//g, "-").slice(1) || "home"}`}
             >
-              <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${
+              <div className={`relative flex-shrink-0 p-[5px] rounded-xl transition-all duration-200 ${
                 isActive ? "bg-black dark:bg-white" : ""
               }`}>
-                <item.icon className={`w-5 h-5 transition-all duration-200 ${
-                  isActive ? "text-white dark:text-black" : "text-black/40 dark:text-white/40"
+                <item.icon className={`w-[18px] h-[18px] transition-all duration-200 ${
+                  isActive ? "text-white dark:text-black" : "text-black/35 dark:text-white/35"
                 }`} />
                 {badge > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 leading-none">
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center px-0.5 leading-none">
                     {badge > 99 ? "99+" : badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-medium truncate w-full text-center leading-none transition-all duration-200 ${
+              <span className={`text-[9px] font-medium truncate max-w-full px-0.5 text-center leading-tight transition-all duration-200 ${
                 isActive ? "text-black dark:text-white font-bold" : "text-black/30 dark:text-white/30"
               }`}>
                 {item.label}
