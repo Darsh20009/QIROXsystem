@@ -46,6 +46,8 @@ function GrowthBadge({ pct }: { pct: number }) {
 
 export default function AdminAnalytics() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [reportEmail, setReportEmail] = useState("");
   const [showEmailInput, setShowEmailInput] = useState(false);
 
