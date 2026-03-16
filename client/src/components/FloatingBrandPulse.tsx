@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import { Headphones } from "lucide-react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -156,10 +155,6 @@ export function FloatingBrandPulse() {
 
   const currentSlide = slides[slideIdx];
 
-  function handleContactClick() {
-    if (isClient) window.dispatchEvent(new Event("open-cs-chat"));
-  }
-
   return (
     <div className="floating-brand-pulse fixed right-4 md:right-6 z-[90] flex flex-col items-end gap-3 pointer-events-none max-w-[calc(100vw-2rem)]">
       <AnimatePresence mode="wait">
@@ -286,23 +281,6 @@ export function FloatingBrandPulse() {
 
       </AnimatePresence>
 
-      {/* ── Persistent client support button (always visible for clients) ── */}
-      {isClient && (
-        <button
-          onClick={handleContactClick}
-          className="pointer-events-auto relative group cursor-pointer"
-          data-testid="btn-floating-support"
-        >
-          <motion.div
-            className="absolute inset-0 rounded-full bg-black dark:bg-white"
-            animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0, 0.2] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="relative w-11 h-11 bg-black dark:bg-white rounded-full flex items-center justify-center shadow-xl shadow-black/20 group-hover:scale-110 transition-transform duration-200">
-            <Headphones className="w-5 h-5 text-white dark:text-black" />
-          </div>
-        </button>
-      )}
     </div>
   );
 }
