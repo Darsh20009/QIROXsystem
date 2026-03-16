@@ -109,6 +109,8 @@ export default function Cart() {
   const [preCheckoutOpen, setPreCheckoutOpen] = useState(false);
   const [preCheckoutStep, setPreCheckoutStep] = useState(1);
   const [projectNotes, setProjectNotes] = useState("");
+  const [featureIdeas, setFeatureIdeas] = useState<string[]>(["", "", "", "", ""]);
+  const [selectedCheckoutAddons, setSelectedCheckoutAddons] = useState<string[]>([]);
   const [docsFiles, setDocsFiles] = useState<UpFile[]>([]);
   const [shipping, setShipping] = useState({ name: "", phone: "", city: "", address: "" });
   const docsInputRef = useRef<HTMLInputElement>(null);
@@ -280,10 +282,14 @@ export default function Cart() {
           const pShipping = pendingData.shipping || {};
           const pDocs = pendingData.docsFiles || [];
           const pWalletUsed = parseFloat((pendingData.walletUsed || 0).toFixed(2));
+          const pFeatureIdeas = (pendingData.featureIdeas || []).filter((f: string) => f.trim());
+          const pSelectedAddons = pendingData.selectedCheckoutAddons || [];
           const paymentMethod = pWalletUsed > 0 ? "mixed" : "paypal";
 
           const fullNotes = [
             pNotes ? `الفكرة: ${pNotes}` : "",
+            pFeatureIdeas.length ? `أفكار الميزات: ${pFeatureIdeas.map((f: string, i: number) => `${i + 1}. ${f}`).join(" | ")}` : "",
+            pSelectedAddons.length ? `إضافات مختارة: ${pSelectedAddons.join("، ")}` : "",
             pShipping.name ? `الشحن: ${pShipping.name} — ${pShipping.phone} — ${pShipping.city} — ${pShipping.address}` : "",
             pWalletUsed > 0 ? `دفع بالمحفظة: ${pWalletUsed.toLocaleString()} ر.س` : "",
           ].filter(Boolean).join(" | ") || `طلب من السلة — ${cartItems.length} عنصر`;
@@ -338,8 +344,11 @@ export default function Cart() {
       const serviceItem = items.find(i => i.type === "service");
       const derivedProjectType = planItem ? (planItem.nameAr || planItem.name) : serviceItem ? (serviceItem.nameAr || serviceItem.name) : items[0] ? (items[0].nameAr || items[0].name) : "طلب من السلة";
 
+      const filledIdeas = featureIdeas.filter(f => f.trim());
       const fullNotes = [
         projectNotes ? `الفكرة: ${projectNotes}` : "",
+        filledIdeas.length ? `أفكار الميزات: ${filledIdeas.map((f, i) => `${i + 1}. ${f}`).join(" | ")}` : "",
+        selectedCheckoutAddons.length ? `إضافات مختارة: ${selectedCheckoutAddons.join("، ")}` : "",
         hasPhysical && shipping.name ? `الشحن: ${shipping.name} — ${shipping.phone} — ${shipping.city} — ${shipping.address}` : "",
         walletUsed > 0 ? `دفع بالمحفظة: ${walletUsed.toLocaleString()} ر.س` : "",
       ].filter(Boolean).join(" | ") || `طلب من السلة — ${items.length} عنصر`;
@@ -959,12 +968,13 @@ export default function Cart() {
         </div>
       )}
 
-      {/* ═══════ Pre-Checkout Dialog ═══════ */}
-      <Dialog open={preCheckoutOpen} onOpenChange={open => { if (!checkoutMutation.isPending) setPreCheckoutOpen(open); }}>
-        <DialogContent className="w-[95vw] max-w-lg max-h-[92dvh] p-0 overflow-hidden rounded-2xl" dir={dir}>
+      {/* ═══════ Pre-Checkout Full-Page ═══════ */}
+      {preCheckoutOpen && (
+        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-950 overflow-y-auto" dir={dir}>
+          <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
 
           {/* Gradient Header */}
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden rounded-2xl">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
             <div className="absolute -top-8 -left-8 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
             <div className="relative z-10">
@@ -978,8 +988,9 @@ export default function Cart() {
                     {preCheckoutStep === 1 ? "تفاصيل المشروع والملفات" : preCheckoutStep === paymentStep ? "اختر طريقة الدفع" : "بيانات الشحن"}
                   </p>
                 </div>
-                <button onClick={() => setPreCheckoutOpen(false)} className="mr-auto w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white">
-                  <X className="w-4 h-4" />
+                <button onClick={() => { if (!checkoutMutation.isPending) { setPreCheckoutOpen(false); setPreCheckoutStep(1); } }} className="mr-auto flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white text-xs font-bold">
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  رجوع
                 </button>
               </div>
 
@@ -1021,10 +1032,7 @@ export default function Cart() {
           </div>
 
           {/* Content area */}
-          <DialogHeader className="sr-only"><DialogTitle>إتمام الطلب</DialogTitle></DialogHeader>
-
-          <ScrollArea className="max-h-[50dvh]">
-            <div className="space-y-4 p-4 sm:p-5 pb-2">
+          <div className="space-y-5 mt-5">
 
               {/* Step 1: Project idea + documents */}
               {preCheckoutStep === 1 && (
@@ -1041,6 +1049,63 @@ export default function Cart() {
                       data-testid="textarea-project-notes"
                     />
                   </div>
+
+                  {/* ── 5 Feature Idea Inputs ── */}
+                  <div>
+                    <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-1 block">
+                      أفكار الميزات <span className="text-black/30 font-normal">(اختياري — حتى 5 أفكار)</span>
+                    </Label>
+                    <p className="text-xs text-black/35 mb-3">اكتب أي ميزة أو فكرة تريدها في مشروعك — مثال: تسجيل دخول بواتساب، لوحة تحكم، تطبيق جوال...</p>
+                    <div className="space-y-2">
+                      {featureIdeas.map((idea, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-black/[0.05] dark:bg-white/[0.07] flex items-center justify-center text-[10px] font-black text-black/40 dark:text-white/40 shrink-0">{idx + 1}</span>
+                          <Input
+                            value={idea}
+                            onChange={e => setFeatureIdeas(prev => prev.map((v, i) => i === idx ? e.target.value : v))}
+                            placeholder={`فكرة ${idx + 1}...`}
+                            className="h-10 rounded-xl text-sm flex-1"
+                            data-testid={`input-feature-idea-${idx + 1}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Extra Add-ons from System ── */}
+                  {extraAddons.length > 0 && (
+                    <div>
+                      <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-1 block">
+                        الإضافات المتاحة <span className="text-black/30 font-normal">(اختياري)</span>
+                      </Label>
+                      <p className="text-xs text-black/35 mb-3">اختر الإضافات التي تحتاجها لمشروعك</p>
+                      <div className="grid gap-2">
+                        {extraAddons.map((addon: any) => {
+                          const isSelected = selectedCheckoutAddons.includes(addon._id || addon.id || addon.nameAr);
+                          return (
+                            <button
+                              key={addon._id || addon.id}
+                              onClick={() => setSelectedCheckoutAddons(prev =>
+                                isSelected ? prev.filter(x => x !== (addon._id || addon.id || addon.nameAr)) : [...prev, addon._id || addon.id || addon.nameAr]
+                              )}
+                              data-testid={`toggle-addon-${addon._id || addon.id}`}
+                              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-right transition-all ${isSelected ? "border-cyan-400 bg-cyan-50 dark:bg-cyan-900/20" : "border-black/[0.07] dark:border-white/[0.07] bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/20"}`}>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-cyan-500 bg-cyan-500" : "border-black/20 dark:border-white/20"}`}>
+                                {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-black dark:text-white">{addon.nameAr || addon.name}</p>
+                                {addon.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">{addon.descriptionAr}</p>}
+                              </div>
+                              {addon.price > 0 && (
+                                <span className="text-xs font-black text-black dark:text-white shrink-0 flex items-center gap-0.5">{addon.price?.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-2 block">
@@ -1295,6 +1360,8 @@ export default function Cart() {
                               }}
                               pendingData={{
                                 projectNotes,
+                                featureIdeas,
+                                selectedCheckoutAddons,
                                 docsFiles,
                                 shipping,
                                 useWallet,
@@ -1314,10 +1381,11 @@ export default function Cart() {
                 </>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
-          {/* Dialog footer */}
-          <div className="px-5 pb-5 pt-3 border-t border-black/[0.06] space-y-3">
+          {/* Checkout footer — fixed at bottom */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-black/[0.06] dark:border-white/[0.06] px-4 pb-6 pt-3 space-y-3 z-10 max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto space-y-3">
             {/* Trust line */}
             <div className="flex items-center justify-center gap-4 text-[10px] text-black/30">
               <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> دفع آمن</span>
@@ -1366,9 +1434,11 @@ export default function Cart() {
                 </Button>
               )}
             </div>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ═══════ Extra Addon Confirm Dialog ═══════ */}
       <Dialog open={!!extraAddonConfirm} onOpenChange={() => setExtraAddonConfirm(null)}>
