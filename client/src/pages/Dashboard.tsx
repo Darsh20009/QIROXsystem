@@ -1987,15 +1987,17 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2">
               {upcomingMeetings.length > 0 && <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{upcomingMeetings.length} {L ? "اجتماع" : "meeting(s)"}</span>}
-              <button
-                onClick={() => instantMeetMutation.mutate()}
-                disabled={instantMeetMutation.isPending}
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-700/50 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-60"
-                data-testid="button-quick-meeting-dashboard"
-              >
-                {instantMeetMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                {L ? "اجتماع سريع" : "Quick Meeting"}
-              </button>
+              {isEmployee && (
+                <button
+                  onClick={() => instantMeetMutation.mutate()}
+                  disabled={instantMeetMutation.isPending}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-700/50 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-60"
+                  data-testid="button-quick-meeting-dashboard"
+                >
+                  {instantMeetMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  {L ? "اجتماع سريع" : "Quick Meeting"}
+                </button>
+              )}
               <button onClick={() => setLocation("/meet/join")} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="button-join-by-code-dashboard">
                 <KeyRound className="w-3.5 h-3.5" />
                 {L ? "انضم بكود" : "Join by Code"}
