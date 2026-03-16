@@ -11371,6 +11371,41 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  /* ── AI Sessions (Admin) ── */
+  app.get("/api/admin/ai-sessions", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { NotificationModel } = await import("./models");
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
+      const skip = (page - 1) * limit;
+      const total = await NotificationModel.countDocuments({ type: "ai_digest" });
+      const sessions = await NotificationModel.find({ type: "ai_digest" })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      res.json({ sessions, total, page, pages: Math.ceil(total / limit) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch("/api/admin/ai-sessions/:id/read", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin", "manager"].includes((req.user as any).role)) {
+      return res.sendStatus(403);
+    }
+    try {
+      const { NotificationModel } = await import("./models");
+      await NotificationModel.findByIdAndUpdate(req.params.id, { read: true });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   return httpServer;
 }
 

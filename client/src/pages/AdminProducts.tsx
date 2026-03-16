@@ -68,15 +68,29 @@ const TIER_COLORS: Record<string, string> = {
 };
 function getTierLabels(L: boolean): Record<string, string> { return { lite: L ? "لايت" : "Lite", pro: L ? "برو" : "Pro", infinite: L ? "إنفينتي" : "Infinite", custom: L ? "مخصص" : "Custom" }; }
 
-const categoryLabels: Record<string, { label: string; color: string }> = {
-  device:   { label: L ? "جهاز / معدات" : "Device / Equipment",     color: "bg-blue-50 text-blue-700 border-blue-200" },
-  hosting:  { label: L ? "استضافة" : "Hosting",          color: "bg-purple-50 text-purple-700 border-purple-200" },
-  domain:   { label: L ? "دومين" : "Domain",            color: "bg-green-50 text-green-700 border-green-200" },
-  email:    { label: L ? "بريد إلكتروني" : "Email",    color: "bg-orange-50 text-orange-700 border-orange-200" },
-  gift:     { label: L ? "هدية" : "Gift",             color: "bg-pink-50 text-pink-700 border-pink-200" },
-  software: { label: L ? "برمجيات" : "Software",          color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  other:    { label: "أخرى",              color: "bg-gray-50 text-gray-600 border-gray-200" },
-};
+function getCategoryLabels(L: boolean): Record<string, { label: string; color: string }> {
+  return {
+    device:   { label: L ? "جهاز / معدات" : "Device / Equipment",  color: "bg-blue-50 text-blue-700 border-blue-200" },
+    hosting:  { label: L ? "استضافة" : "Hosting",                  color: "bg-purple-50 text-purple-700 border-purple-200" },
+    domain:   { label: L ? "دومين" : "Domain",                     color: "bg-green-50 text-green-700 border-green-200" },
+    email:    { label: L ? "بريد إلكتروني" : "Email",              color: "bg-orange-50 text-orange-700 border-orange-200" },
+    gift:     { label: L ? "هدية" : "Gift",                        color: "bg-pink-50 text-pink-700 border-pink-200" },
+    software: { label: L ? "برمجيات" : "Software",                 color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    other:    { label: L ? "أخرى" : "Other",                       color: "bg-gray-50 text-gray-600 border-gray-200" },
+  };
+}
+
+function getTypeMap(L: boolean): Record<string, string> {
+  return {
+    device:   L ? "جهاز / معدات" : "Device / Equipment",
+    hosting:  L ? "استضافة" : "Hosting",
+    domain:   L ? "دومين" : "Domain",
+    email:    L ? "بريد إلكتروني" : "Email",
+    gift:     L ? "هدية" : "Gift",
+    software: L ? "برمجيات" : "Software",
+    other:    L ? "أخرى" : "Other",
+  };
+}
 
 const emptyForm = {
   name: "", nameAr: "", description: "", descriptionAr: "",
@@ -94,6 +108,7 @@ export default function AdminProducts() {
   const L = lang === "ar";
   const TIER_LABELS = getTierLabels(L);
   const TYPE_MAP = getTypeMap(L);
+  const categoryLabels = getCategoryLabels(L);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);

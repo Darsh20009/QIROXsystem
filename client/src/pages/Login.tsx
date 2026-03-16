@@ -315,9 +315,7 @@ export default function Login() {
     email: z.string().email("بريد إلكتروني غير صالح"),
     fullName: z.string().min(2, "الاسم الكامل مطلوب"),
     confirmPassword: z.string(),
-    whatsappNumber: isEmployeeRegister
-      ? z.string().optional()
-      : z.string().min(5, "رقم الجوال مطلوب"),
+    whatsappNumber: z.string().optional(),
     country: z.string().optional(),
     businessType: z.string().optional(),
     role: z.string().optional(),
@@ -350,7 +348,8 @@ export default function Login() {
 
   const onSubmit = (data: any) => {
     if (isRegister) {
-      const { confirmPassword, ...userData } = data;
+      const { confirmPassword, whatsappNumber, ...rest } = data;
+      const userData = { ...rest, phone: whatsappNumber || undefined, whatsappNumber: whatsappNumber || undefined };
       register(userData, {
         onSuccess: (user: any) => {
           if (user.email) {

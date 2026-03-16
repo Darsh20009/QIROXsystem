@@ -67,6 +67,7 @@ const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 const Inbox = lazy(() => import("@/pages/Inbox"));
 const GroupChat = lazy(() => import("@/pages/GroupChat"));
 const AIStudio = lazy(() => import("@/pages/AIStudio"));
+const AdminAISessions = lazy(() => import("@/pages/AdminAISessions"));
 const PushApproval = lazy(() => import("@/pages/PushApproval"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const AdminActivityLog = lazy(() => import("@/pages/AdminActivityLog"));
@@ -285,6 +286,7 @@ function AdminRouter() {
         <Route path="/employee/system-builder" component={SystemBuilder} />
         <Route path="/admin/kanban" component={AdminKanban} />
         <Route path="/ai-studio" component={AIStudio} />
+        <Route path="/admin/ai-sessions" component={AdminAISessions} />
         <Route path="/admin/referrals" component={AdminReferrals} />
         <Route path="/admin/addon-subscriptions" component={AdminAddonSubscriptions} />
         <Route path="/admin/contact-messages" component={AdminContactMessages} />

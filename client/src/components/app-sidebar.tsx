@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -137,39 +137,40 @@ export function AppSidebar() {
 
     // Admin — main
     { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "AI Studio" : "AI Studio", icon: Sparkles, url: "/ai-studio", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
+    { title: ar ? "AI Studio" : "AI Studio", icon: Sparkles, url: "/ai-studio", group: "admin", section: "main", allowedRoles: STAFF_ROLES },
+    { title: ar ? "جلسات الذكاء الاصطناعي" : "AI Sessions", icon: Bot, url: "/admin/ai-sessions", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     // Admin — products & services (core catalog)
-    { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "شركات الشحن" : "Shipping Companies", icon: Truck, url: "/admin/shipping", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
+    { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
+    { title: ar ? "المنتجات والأجهزة" : "Products & Devices", icon: Package, url: "/admin/products", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
+    { title: ar ? "شركات الشحن" : "Shipping Companies", icon: Truck, url: "/admin/shipping", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     { title: ar ? "إدارة الدول" : "Countries", icon: Globe, url: "/admin/countries", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الموردون والشركاء" : "Suppliers & Partners", icon: Handshake, url: "/admin/suppliers", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الموردون والشركاء" : "Suppliers & Partners", icon: Handshake, url: "/admin/suppliers", group: "admin", section: "operations", allowedRoles: STAFF_ROLES },
     // Admin — client operations
-    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "العقود الإلكترونية" : "Digital Contracts", icon: FileText, url: "/admin/contracts", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "تتبع SLA" : "SLA Tracking", icon: Timer, url: "/admin/sla", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/admin/loyalty", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "سجل الإحالات" : "Referrals", icon: Gift, url: "/admin/referrals", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "اشتراكات الإضافات" : "Addon Subscriptions", icon: Package, url: "/admin/addon-subscriptions", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "تذكيرات التجديد" : "Renewal Reminders", icon: Bell, url: "/admin/switch-reminders", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "العقود الإلكترونية" : "Digital Contracts", icon: FileText, url: "/admin/contracts", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "تتبع SLA" : "SLA Tracking", icon: Timer, url: "/admin/sla", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/admin/loyalty", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "سجل الإحالات" : "Referrals", icon: Gift, url: "/admin/referrals", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "اشتراكات الإضافات" : "Addon Subscriptions", icon: Package, url: "/admin/addon-subscriptions", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "كودات الخصم" : "Discount Codes", icon: Tag, url: "/admin/discount-codes", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "الشحنات" : "Shipments", icon: Truck, url: "/admin/shipments", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
+    { title: ar ? "تذكيرات التجديد" : "Renewal Reminders", icon: Bell, url: "/admin/switch-reminders", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
     { title: ar ? "مفاتيح API للعملاء" : "Client API Keys", icon: KeyRound, url: "/admin/api-keys", group: "admin", section: "clients_ops", allowedRoles: MANAGEMENT_ROLES },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
     { title: ar ? "لوحة المشاريع" : "Project Board", icon: LayoutGrid, url: "/admin/kanban", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
     // Admin — team
     { title: ar ? "الموظفون" : "Employees", icon: Users, url: "/admin/employees", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "التقييمات والمراجعات" : "Reviews & Ratings", icon: Star, url: "/admin/reviews", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
+    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
+    { title: ar ? "التقييمات والمراجعات" : "Reviews & Ratings", icon: Star, url: "/admin/reviews", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
     { title: ar ? "إشعارات Push" : "Push Notifications", icon: Megaphone, url: "/admin/push-notifications", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     // Admin — finance
-    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: STAFF_ROLES },
+    { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: STAFF_ROLES },
+    { title: ar ? "الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "admin", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "الاشتراكات والأسعار" : "Subscriptions & Pricing", icon: Crown, url: "/admin/subscription-plans", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إعدادات البنك" : "Bank Settings", icon: Building2, url: "/admin/bank-settings", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     // Admin — settings + content (merged)
@@ -178,15 +179,15 @@ export function AppSidebar() {
     { title: ar ? "حصص التعديل" : "Modification Quotas", icon: Wrench, url: "/admin/mod-config", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "مميزات المشاريع" : "Project Features", icon: LayoutGrid, url: "/admin/project-features", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إعدادات النظام" : "System Settings", icon: Settings2, url: "/admin/qirox-settings", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الشركاء" : "Partners", icon: Handshake, url: "/admin/partners", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الأخبار" : "News", icon: Newspaper, url: "/admin/news", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", section: "settings", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "الشركاء" : "Partners", icon: Handshake, url: "/admin/partners", group: "admin", section: "settings", allowedRoles: STAFF_ROLES },
+    { title: ar ? "الأخبار" : "News", icon: Newspaper, url: "/admin/news", group: "admin", section: "settings", allowedRoles: STAFF_ROLES },
+    { title: ar ? "الوظائف" : "Jobs", icon: Briefcase, url: "/admin/jobs", group: "admin", section: "settings", allowedRoles: STAFF_ROLES },
     // Admin — devtools + monitoring (merged)
     { title: "MongoDB Atlas", icon: Database, url: "/admin/atlas", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إعدادات الاتصال" : "Connection Settings", icon: Settings2, url: "/admin/connection-settings", group: "admin", section: "devtools", allowedRoles: ["admin"] },
     { title: "Cron Jobs", icon: Clock, url: "/admin/cron-jobs", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "نشر التطبيقات" : "App Publishing", icon: Smartphone, url: "/admin/app-publish", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
-    { title: ar ? "سجل النشاط" : "Activity Log", icon: Activity, url: "/admin/activity-log", group: "admin", section: "devtools", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "سجل النشاط" : "Activity Log", icon: Activity, url: "/admin/activity-log", group: "admin", section: "devtools", allowedRoles: STAFF_ROLES },
     // Admin — investors
     { title: ar ? "المستثمرون" : "Investors", icon: TrendingUp, url: "/admin/investors", group: "admin", section: "investors", allowedRoles: ["admin"] },
   ];

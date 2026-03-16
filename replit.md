@@ -10,7 +10,39 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
-## Latest Changes (Mar 16, 2026 - Session 53)
+## Latest Changes (Mar 16, 2026 - Session 54)
+
+### Bug Fixes & Feature Additions
+
+**Registration Fix:**
+- Made `whatsappNumber` field optional in registration form (Login.tsx)
+- Maps `whatsappNumber` → `phone` on submit to match server expectations
+
+**AdminProducts Fix:**
+- Added missing `getTypeMap()` function
+- Converted module-level `categoryLabels` (that referenced undefined `L`) to `getCategoryLabels(L)` function called inside component
+
+**Employee Sidebar Expansion:**
+- Changed many admin pages from `MANAGEMENT_ROLES` to `STAFF_ROLES` so employees can see them
+- Added "AI Sessions" link (`/admin/ai-sessions`) under admin section (MANAGEMENT_ROLES only)
+
+**AI Sessions Feature:**
+- Added `ai_digest` type to Notification schema (`models.ts`)
+- Added GET `/api/admin/ai-sessions` and PATCH `/api/admin/ai-sessions/:id/read` routes inside `registerRoutes` in `routes.ts`
+- Created `AdminAISessions.tsx` client page with pagination and read/unread tracking
+- Added lazy import and route `/admin/ai-sessions` in `App.tsx`
+- Used `Bot` icon (not `Sparkles`) for "AI Sessions" sidebar entry to distinguish from "AI Studio"
+
+**Server Reliability:**
+- Added auto-creation of `uploads/` and `sandbox-projects/` directories on startup (`server/index.ts`)
+
+**Render Deployment (render.yaml):**
+- Removed unused `DATABASE_URL` env var
+- Added `OPENAI_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `SANDBOX_ENC_KEY` as `sync: false` secrets
+
+---
+
+## Previous Changes (Mar 16, 2026 - Session 53)
 
 ### System Builder Frontend IDE — صانع الأنظمة (Cloud IDE UI)
 

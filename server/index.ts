@@ -12,6 +12,11 @@ import { registerSandboxRoutes } from "./sandbox-routes";
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
+import { mkdirSync } from "fs";
+
+// Ensure required directories exist on startup
+try { mkdirSync("uploads", { recursive: true }); } catch {}
+try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 
 const app = express();
 app.set("trust proxy", 1);
