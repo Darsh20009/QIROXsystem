@@ -40,7 +40,8 @@ function getRegionLabels(L: boolean): Record<string, { label: string; icon: stri
   saudi:         { label: L ? "السعودية" : "Saudi Arabia", icon: "🇸🇦", color: "bg-green-50 text-green-700 border-green-200" },
   gcc:           { label: L ? "دول الخليج" : "GCC Countries", icon: "🌍", color: "bg-amber-50 text-amber-700 border-amber-200" },
   international: { label: L ? "دولي" : "International", icon: "✈️", color: "bg-purple-50 text-purple-700 border-purple-200" },
-}; }
+};
+}
 
 const emptyForm = {
   name: "", nameAr: "", logo: "🚚", color: "#000000",

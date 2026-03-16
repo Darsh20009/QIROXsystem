@@ -18,7 +18,8 @@ function getPriorityMap(L: boolean): Record<string, { label: string; color: stri
   medium: { label: L ? "متوسطة" : "Medium", color: "bg-amber-100 text-amber-700 border-amber-200" },
   high: { label: L ? "عالية" : "High", color: "bg-orange-100 text-orange-700 border-orange-200" },
   critical: { label: L ? "حرجة" : "Critical", color: "bg-red-100 text-red-700 border-red-200" },
-}; }
+};
+}
 
 function HoursBar({ hoursElapsed, slaHours = 48, L = true }: { hoursElapsed: number; slaHours?: number; L?: boolean }) {
   const pct = Math.min(100, Math.round((hoursElapsed / slaHours) * 100));

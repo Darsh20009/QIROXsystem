@@ -51,12 +51,14 @@ function getStatusMap(L: boolean): Record<string, { label: string; color: string
   open:   { label: L ? "مفتوح" : "Open",   color: "bg-green-100 text-green-700 border-green-200" },
   closed: { label: L ? "مغلق" : "Closed",   color: "bg-red-100 text-red-600 border-red-200" },
   paused: { label: L ? "متوقف" : "Paused",  color: "bg-amber-100 text-amber-700 border-amber-200" },
-}; }
+};
+}
 
 function getTypeMap(L: boolean): Record<string, string> { return {
   "full-time": L ? "دوام كامل" : "Full-time", "part-time": L ? "دوام جزئي" : "Part-time",
   "remote": L ? "عن بُعد" : "Remote", "freelance": L ? "مستقل" : "Freelance", "internship": L ? "تدريب" : "Internship",
-}; }
+};
+}
 
 function getAppStatusMap(L: boolean): Record<string, { label: string; color: string; icon: any }> { return {
   new:       { label: L ? "جديد" : "New",          color: "bg-blue-100 text-blue-700 border-blue-200",     icon: Star },
@@ -65,13 +67,15 @@ function getAppStatusMap(L: boolean): Record<string, { label: string; color: str
   accepted:  { label: L ? "مقبول ✓" : "Accepted ✓",      color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
   hired:     { label: L ? "موظف ✓✓" : "Hired ✓✓",       color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: Shield },
   rejected:  { label: L ? "مرفوض" : "Rejected",         color: "bg-red-100 text-red-600 border-red-200",        icon: X },
-}; }
+};
+}
 
 function getRoleLabels(L: boolean): Record<string, string> { return {
   manager: L ? "مدير" : "Manager", accountant: L ? "محاسب" : "Accountant", sales_manager: L ? "مدير مبيعات" : "Sales Manager",
   sales: L ? "موظف مبيعات" : "Sales", developer: L ? "مطور برمجيات" : "Developer", designer: L ? "مصمم" : "Designer",
   support: L ? "دعم فني" : "Support", merchant: L ? "توصيل وتسليم" : "Delivery",
-}; }
+};
+}
 
 export default function AdminJobs() {
   const { toast } = useToast();

@@ -27,13 +27,15 @@ function getStatusMeta(L: boolean): Record<string, { label: string; color: strin
   submitted:       { label: L ? "أُرسل من العميل" : "Submitted by Client", color: "text-blue-700",   bg: "bg-blue-50",     border: "border-blue-200",   icon: CheckCircle2 },
   approved:        { label: L ? "مقبول ✓" : "Approved ✓",         color: "text-emerald-700",bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
   revision_needed: { label: L ? "تحتاج مراجعة" : "Needs Revision",   color: "text-red-700",    bg: "bg-red-50",      border: "border-red-200",    icon: RotateCcw },
-}; }
+};
+}
 function getPriorityMeta(L: boolean): Record<string, { label: string; color: string }> { return {
   low:    { label: L ? "منخفضة" : "Low",    color: "text-slate-500" },
   normal: { label: L ? "عادية" : "Normal",  color: "text-blue-600" },
   high:   { label: L ? "عالية" : "High",    color: "text-amber-600" },
   urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-red-600" },
-}; }
+};
+}
 
 function fmt(d: string, L: boolean) {
   return new Date(d).toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" });

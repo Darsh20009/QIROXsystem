@@ -27,7 +27,8 @@ function getAddonStatusMap(L: boolean): Record<string, { label: string; color: s
   active: { label: L ? "نشط" : "Active", color: "bg-green-100 text-green-700" },
   expired: { label: L ? "منتهي" : "Expired", color: "bg-gray-100 text-gray-500" },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-600" },
-}; }
+};
+}
 
 export default function AdminModConfig() {
   const { toast } = useToast();

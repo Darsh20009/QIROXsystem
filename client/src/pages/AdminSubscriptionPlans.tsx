@@ -65,7 +65,7 @@ const periodLabels: Record<string, string> = {
   "6months": "6 أشهر",
   annual: L ? "سنوي" : "Annual",
   renewal: L ? "تجديد سنوي" : "Annual Renewal",
-}; }
+};
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   active: { label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
@@ -75,7 +75,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string; i
   reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
   approved: { label: L ? "مقبول" : "Approved", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
-}; }
+};
 
 const emptySegment: Partial<SegmentPricing> = {
   segmentKey: "",

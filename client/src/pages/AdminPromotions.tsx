@@ -34,7 +34,8 @@ function getRoleLabels(L: boolean): Record<string, string> { return {
   accountant: L ? "محاسب" : "Accountant", sales: L ? "مبيعات" : "Sales", sales_manager: L ? "مدير مبيعات" : "Sales Manager",
   support: L ? "دعم فني" : "Support", merchant: L ? "تاجر" : "Merchant", client: L ? "عميل" : "Client",
   customer: L ? "زبون" : "Customer", investor: L ? "مستثمر" : "Investor",
-}; }
+};
+}
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",

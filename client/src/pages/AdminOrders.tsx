@@ -70,19 +70,22 @@ function getStatusMap(L: boolean): Record<string, { label: string; color: string
   completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.06] text-black/60 border-black/[0.08]" },
   cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-500/10 text-red-600 border-red-500/20" },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-500/10 text-red-600 border-red-500/20" },
-}; }
+};
+}
 
 function getPaymentMethods(L: boolean): Record<string, string> { return {
   bank_transfer: L ? "تحويل بنكي" : "Bank Transfer",
   paypal: "PayPal",
   cash: L ? "نقدي" : "Cash",
-}; }
+};
+}
 
 function getRoleLabels(L: boolean): Record<string, string> { return {
   admin: L ? "مدير النظام" : "System Admin", manager: L ? "مدير" : "Manager", developer: L ? "مطور" : "Developer",
   designer: L ? "مصمم" : "Designer", support: L ? "دعم" : "Support", sales: L ? "مبيعات" : "Sales",
   sales_manager: L ? "مدير مبيعات" : "Sales Manager", accountant: L ? "محاسب" : "Accountant",
-}; }
+};
+}
 
 const EMPTY_SPECS = {
   projectName: "", clientEmail: "", totalBudget: "", paidAmount: "",

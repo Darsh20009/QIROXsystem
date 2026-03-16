@@ -19,7 +19,8 @@ function getOfferStatus(L: boolean): Record<string, { label: string; color: stri
   reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-blue-100 text-blue-700 border-blue-200" },
   accepted: { label: L ? "مقبول" : "Accepted", color: "bg-green-100 text-green-700 border-green-200" },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 border-red-200" },
-}; }
+};
+}
 
 export default function AdminSuppliers() {
   const { toast } = useToast();

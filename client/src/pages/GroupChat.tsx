@@ -105,7 +105,7 @@ export default function GroupChat() {
       setCreateOpen(false);
       setNewGroup({ name: "", description: "", icon: "💬" });
       setSelectedMembers([]);
-      toast({ title: L ? "تم {L ? "إنشاء المجموعة" : "Create Group"}" : "Group created" });
+      toast({ title: L ? "تم إنشاء المجموعة" : "Group created" });
       if (d?.id || d?._id) navigate(`/groups/${d.id || d._id}`);
     },
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),

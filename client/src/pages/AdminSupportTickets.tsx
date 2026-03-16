@@ -32,14 +32,16 @@ const STATUS_COLORS: Record<string, string> = {
 };
 function getStatusLabels(L: boolean): Record<string, string> { return {
   open: L ? "مفتوحة" : "Open", in_review: L ? "قيد المراجعة" : "Under Review", resolved: L ? "تم الحل" : "Resolved", closed: L ? "مغلقة" : "Closed",
-}; }
+};
+}
 const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-gray-100 text-gray-500", medium: "bg-yellow-100 text-yellow-700", high: "bg-red-100 text-red-700",
 };
 function getPriorityLabels(L: boolean): Record<string, string> { return { low: L ? "منخفض" : "Low", medium: L ? "متوسط" : "Medium", high: L ? "عالي" : "High" }; }
 function getCatLabels(L: boolean): Record<string, string> { return {
   technical: L ? "مشكلة تقنية" : "Technical Issue", billing: L ? "مالية" : "Billing", general: L ? "استفسار عام" : "General Inquiry", complaint: L ? "شكوى" : "Complaint",
-}; }
+};
+}
 
 export default function AdminSupportTickets() {
   const { toast } = useToast();

@@ -25,7 +25,8 @@ function getStatusMap(L: boolean): Record<string, { label: string; color: string
   live: { label: L ? "يبث الآن 🔴" : "Live Now 🔴", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
   completed: { label: L ? "منتهي" : "Completed", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
   cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
-}; }
+};
+}
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (

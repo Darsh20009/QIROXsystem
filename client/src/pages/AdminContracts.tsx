@@ -18,7 +18,8 @@ function getStatusMap(L: boolean): Record<string, { label: string; color: string
   pending: { label: L ? "بانتظار التوقيع" : "Awaiting Signature", color: "bg-amber-100 text-amber-700 border-amber-200" },
   acknowledged: { label: L ? "موقّع" : "Signed", color: "bg-green-100 text-green-700 border-green-200" },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 border-red-200" },
-}; }
+};
+}
 
 const CONTRACT_TEMPLATES = [
   { label: "عقد تطوير موقع", body: `بسم الله الرحمن الرحيم\n\nعقد تطوير موقع إلكتروني\n\nيتعهد مزود الخدمة (شركة قيروكس ستوديو) بتقديم خدمات تطوير الموقع الإلكتروني وفق المواصفات المتفق عليها.\n\nالالتزامات:\n- تسليم المشروع في الوقت المحدد\n- ضمان جودة العمل لمدة 30 يوماً\n- توفير الدعم الفني خلال مرحلة الإطلاق\n\nشروط الدفع:\n- 50% عند بدء المشروع\n- 50% عند التسليم النهائي` },

@@ -18,7 +18,8 @@ function getCategoryLabels(L: boolean): Record<string, { label: string; color: s
   salary: { label: L ? "راتب" : "Salary", color: "bg-teal-50 text-teal-700" },
   commission: { label: L ? "عمولة" : "Commission", color: "bg-cyan-50 text-cyan-700" },
   other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
-}; }
+};
+}
 
 function getStatusLabels(L: boolean): Record<string, { label: string; color: string }> { return {
   pending: { label: L ? "قيد المراجعة" : "Pending", color: "text-amber-600 bg-amber-50 border-amber-100" },
@@ -26,7 +27,8 @@ function getStatusLabels(L: boolean): Record<string, { label: string; color: str
   in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
   completed: { label: L ? "مكتمل" : "Completed", color: "text-green-600 bg-green-50 border-green-100" },
   rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-600 bg-red-50 border-red-100" },
-}; }
+};
+}
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;

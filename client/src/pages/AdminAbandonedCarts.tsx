@@ -104,7 +104,7 @@ function DiscountModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => 
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-green-400" />
-            <h3 className="font-black text-white">{L ? "إرسال كود {L ? "خصم خاص" : "Special Discount"}" : "Send Special Discount Code"}</h3>
+            <h3 className="font-black text-white">{L ? "إرسال كود خصم خاص" : "Send Special Discount Code"}</h3>
           </div>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>

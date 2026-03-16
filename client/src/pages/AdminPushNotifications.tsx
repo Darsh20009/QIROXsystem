@@ -141,7 +141,7 @@ export default function AdminPushNotifications() {
             <CardHeader><CardTitle className="text-sm">{L ? "قوالب جاهزة" : "Ready Templates"}</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {TEMPLATES.map((t, i) => (
-                <button key={i} onClick={() => handleTemplate(t)} className={`w-full p-3 rounded-xl ${L ? "text-right" : "text-left"} hover:bg-black/5 border border-black/10 hover:border-black/20 transition-all` data-testid={`button-template-${i}`}>
+                <button key={i} onClick={() => handleTemplate(t)} className={`w-full p-3 rounded-xl ${L ? "text-right" : "text-left"} hover:bg-black/5 border border-black/10 hover:border-black/20 transition-all`} data-testid={`button-template-${i}`}>
                   <div className="font-medium text-sm">{t.title}</div>
                   <div className="text-xs text-black/40 mt-0.5 line-clamp-2">{t.body}</div>
                 </button>

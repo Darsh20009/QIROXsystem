@@ -21,7 +21,8 @@ function getStatusConfig(L: boolean): Record<string, { label: string; color: str
   delivered:        { label: L ? "تم التوصيل" : "Delivered", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle },
   cancelled:        { label: L ? "ملغي" : "Cancelled", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
   returned:         { label: L ? "مُرتجع" : "Returned", color: "bg-gray-50 text-gray-600 border-gray-200", icon: ArrowLeft },
-}; }
+};
+}
 
 const emptyForm = {
   clientName: "", clientEmail: "", clientPhone: "",

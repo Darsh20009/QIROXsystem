@@ -31,7 +31,8 @@ function getStatusMap(L: boolean) { return {
   contacted:      { label: L ? "تم التواصل" : "Contacted", color: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-500" },
   converted:      { label: L ? "تحوّل لعميل" : "Converted", color: "bg-green-100 text-green-700 border-green-200", dot: "bg-green-500" },
   not_interested: { label: L ? "غير مهتم" : "Not Interested", color: "bg-gray-100 text-gray-600 border-gray-200", dot: "bg-gray-400" },
-}; }
+};
+}
 
 function getServiceLabels(L: boolean): Record<string, string> { return L ? {
   website: "موقع إلكتروني", ecommerce: "متجر إلكتروني", app: "تطبيق جوال",
@@ -41,7 +42,8 @@ function getServiceLabels(L: boolean): Record<string, string> { return L ? {
   website: "Website", ecommerce: "E-commerce", app: "Mobile App",
   erp: "ERP / Management", pos: "POS", crm: "CRM", design: "Design & Identity",
   marketing: "Digital Marketing", hosting: "Hosting", other: "Other",
-}; }
+};
+}
 
 function daysUntil(dateStr: string) {
   const diff = new Date(dateStr).getTime() - Date.now();
