@@ -18,6 +18,7 @@ import {
   Send, Link2, VideoIcon, CheckCheck, ArrowLeft
 } from "lucide-react";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 const STATUSES = [
@@ -126,7 +127,7 @@ export default function ProjectWorkspace() {
       return r.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "features"] }),
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const createIssueMutation = useMutation({
@@ -139,9 +140,9 @@ export default function ProjectWorkspace() {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "issues"] });
       setShowIssueDialog(false);
       setIssueForm({ title: '', description: '', priority: 'medium' });
-      toast({ title: "تم رفع المشكلة" });
+      toast({ title: L ? "تم رفع المشكلة" : "Issue submitted" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateIssueMutation = useMutation({
@@ -152,9 +153,9 @@ export default function ProjectWorkspace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "issues"] });
       setEditIssue(null);
-      toast({ title: "تم تحديث المشكلة" });
+      toast({ title: L ? "تم تحديث المشكلة" : "Issue updated" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const createMeetingMutation = useMutation({
@@ -167,9 +168,9 @@ export default function ProjectWorkspace() {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "meetings"] });
       setShowMeetingDialog(false);
       setMeetingForm({ notes: '', scheduledAt: '', meetingLink: '', duration: 60 });
-      toast({ title: isClient ? "تم إرسال طلب الاجتماع" : "تم تحديد موعد الاجتماع" });
+      toast({ title: isClient ? (L ? "تم إرسال طلب الاجتماع" : "Meeting request sent") : (L ? "تم تحديد موعد الاجتماع" : "Meeting scheduled") });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMeetingMutation = useMutation({
@@ -180,22 +181,22 @@ export default function ProjectWorkspace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "meetings"] });
       setEditMeeting(null);
-      toast({ title: "تم تحديث الاجتماع" });
+      toast({ title: L ? "تم تحديث الاجتماع" : "Meeting updated" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
-  if (!projectId) return <div className="p-8 text-center text-black/30">معرّف المشروع غير صحيح</div>;
+  if (!projectId) return <div className="p-8 text-center text-black/30">{L ? "معرّف المشروع غير صحيح" : "Invalid project ID"}</div>;
 
   const completed = features.filter((f: any) => f.status === 'completed').length;
   const pct = features.length > 0 ? Math.round((completed / features.length) * 100) : 0;
   const openIssues = issues.filter((i: any) => i.status === 'open' || i.status === 'in_progress').length;
   const upcomingMeetings = meetings.filter((m: any) => m.status === 'scheduled').length;
 
-  const projectName = project?.stagingUrl || `مشروع #${projectId?.slice(-6)}`;
+  const projectName = project?.stagingUrl || `${L ? "مشروع" : "Project"} #${projectId?.slice(-6)}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={dir}>
       <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.07] dark:border-white/[0.07] px-4 py-3">
@@ -210,13 +211,13 @@ export default function ProjectWorkspace() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="font-black text-sm text-black dark:text-white truncate">{projectName}</h1>
-            <p className="text-[10px] text-black/40 dark:text-white/30">مساحة عمل المشروع</p>
+            <p className="text-[10px] text-black/40 dark:text-white/30">{L ? "مساحة عمل المشروع" : "Project Workspace"}</p>
           </div>
           {/* Summary badges */}
           <div className="hidden sm:flex items-center gap-2">
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${pct === 100 ? 'bg-green-100 text-green-700' : 'bg-violet-100 text-violet-700'}`}>{pct}% مكتمل</span>
-            {openIssues > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">{openIssues} مشكلة</span>}
-            {upcomingMeetings > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{upcomingMeetings} اجتماع</span>}
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${pct === 100 ? 'bg-green-100 text-green-700' : 'bg-violet-100 text-violet-700'}`}>{pct}% {L ? "مكتمل" : "complete"}</span>
+            {openIssues > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">{openIssues} {L ? "مشكلة" : "issue(s)"}</span>}
+            {upcomingMeetings > 0 && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{upcomingMeetings} {L ? "اجتماع" : "meeting(s)"}</span>}
           </div>
         </div>
       </div>
@@ -225,13 +226,13 @@ export default function ProjectWorkspace() {
         <Tabs defaultValue="features">
           <TabsList className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] p-1 rounded-xl gap-1 mb-4 w-full">
             <TabsTrigger value="features" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-features">
-              <LayoutGrid className="w-3.5 h-3.5 ml-1" /> المميزات ({features.length})
+              <LayoutGrid className="w-3.5 h-3.5 ml-1" /> {L ? "المميزات" : "Features"} ({features.length})
             </TabsTrigger>
             <TabsTrigger value="issues" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-issues">
-              <Bug className="w-3.5 h-3.5 ml-1" /> المشاكل {openIssues > 0 && <span className="mr-1 bg-red-500 text-white rounded-full text-[8px] px-1">{openIssues}</span>}
+              <Bug className="w-3.5 h-3.5 ml-1" /> {L ? "المشاكل" : "Issues"} {openIssues > 0 && <span className="mr-1 bg-red-500 text-white rounded-full text-[8px] px-1">{openIssues}</span>}
             </TabsTrigger>
             <TabsTrigger value="meetings" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-meetings">
-              <Calendar className="w-3.5 h-3.5 ml-1" /> الاجتماعات
+              <Calendar className="w-3.5 h-3.5 ml-1" /> {L ? "الاجتماعات" : "Meetings"}
             </TabsTrigger>
           </TabsList>
 
@@ -241,16 +242,16 @@ export default function ProjectWorkspace() {
               {/* Progress bar */}
               <div className="px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.05]">
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-xs font-black text-black/60 dark:text-white/50">نسبة الإنجاز</p>
+                  <p className="text-xs font-black text-black/60 dark:text-white/50">{L ? "نسبة الإنجاز" : "Progress"}</p>
                   <p className="text-xs font-black text-black dark:text-white">{pct}%</p>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-white/[0.08] rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-l from-green-500 to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] text-black/30 dark:text-white/20">{completed} مكتملة</span>
-                  <span className="text-[10px] text-black/30 dark:text-white/20">{features.filter((f: any) => f.status === 'in_progress').length} جارية</span>
-                  <span className="text-[10px] text-black/30 dark:text-white/20">{features.filter((f: any) => f.status === 'pending').length} منتظرة</span>
+                  <span className="text-[10px] text-black/30 dark:text-white/20">{completed} {L ? "مكتملة" : "done"}</span>
+                  <span className="text-[10px] text-black/30 dark:text-white/20">{features.filter((f: any) => f.status === 'in_progress').length} {L ? "جارية" : "active"}</span>
+                  <span className="text-[10px] text-black/30 dark:text-white/20">{features.filter((f: any) => f.status === 'pending').length} {L ? "منتظرة" : "pending"}</span>
                 </div>
               </div>
 
@@ -259,8 +260,8 @@ export default function ProjectWorkspace() {
               ) : features.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2">
                   <LayoutGrid className="w-10 h-10 text-black/10 dark:text-white/10" />
-                  <p className="text-sm text-black/30 dark:text-white/20">لا توجد مميزات مضافة بعد</p>
-                  <p className="text-xs text-black/20 dark:text-white/15">سيقوم الفريق بإضافة مميزات مشروعك قريباً</p>
+                  <p className="text-sm text-black/30 dark:text-white/20">{L ? "لا توجد مميزات مضافة بعد" : "No features added yet"}</p>
+                  <p className="text-xs text-black/20 dark:text-white/15">{L ? "سيقوم الفريق بإضافة مميزات مشروعك قريباً" : "The team will add your project features soon"}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
@@ -302,19 +303,19 @@ export default function ProjectWorkspace() {
                                 <User className="w-2.5 h-2.5" /> {f.assignedTo.fullName || f.assignedTo.username}
                               </span>
                             )}
-                            {f.completedAt && <span className="text-[10px] text-green-600 dark:text-green-400">✓ {new Date(f.completedAt).toLocaleDateString('ar-SA')}</span>}
+                            {f.completedAt && <span className="text-[10px] text-green-600 dark:text-green-400">✓ {new Date(f.completedAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}</span>}
                           </div>
                           {/* Employee action buttons */}
                           {isEmployee && (canStart || canComplete) && (
                             <div className="flex gap-2 mt-2">
                               {canStart && (
                                 <Button size="sm" className="h-6 text-[10px] gap-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'in_progress' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-start-feature-${f.id}`}>
-                                  <Play className="w-2.5 h-2.5" /> بدء التنفيذ
+                                  <Play className="w-2.5 h-2.5" /> {L ? "بدء التنفيذ" : "Start"}
                                 </Button>
                               )}
                               {canComplete && (
                                 <Button size="sm" className="h-6 text-[10px] gap-1 bg-green-600 hover:bg-green-700 text-white rounded-lg px-2" onClick={() => featureUpdateMutation.mutate({ id: f.id, updates: { status: 'completed' } })} disabled={featureUpdateMutation.isPending} data-testid={`button-complete-feature-${f.id}`}>
-                                  <CheckCircle2 className="w-2.5 h-2.5" /> إنهاء الميزة
+                                  <CheckCircle2 className="w-2.5 h-2.5" /> {L ? "إنهاء الميزة" : "Complete"}
                                 </Button>
                               )}
                             </div>
@@ -332,9 +333,9 @@ export default function ProjectWorkspace() {
           <TabsContent value="issues">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-black text-black/50 dark:text-white/30">المشاكل والملاحظات</p>
+                <p className="text-xs font-black text-black/50 dark:text-white/30">{L ? "المشاكل والملاحظات" : "Issues & Notes"}</p>
                 <Button size="sm" className="h-7 text-xs gap-1 bg-black text-white rounded-xl" onClick={() => setShowIssueDialog(true)} data-testid="button-new-issue">
-                  <Plus className="w-3.5 h-3.5" /> رفع مشكلة
+                  <Plus className="w-3.5 h-3.5" /> {L ? "رفع مشكلة" : "Report Issue"}
                 </Button>
               </div>
               {loadingIssues ? (
@@ -342,7 +343,7 @@ export default function ProjectWorkspace() {
               ) : issues.length === 0 ? (
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] flex flex-col items-center justify-center py-14 gap-2">
                   <Bug className="w-10 h-10 text-black/10 dark:text-white/10" />
-                  <p className="text-sm text-black/30 dark:text-white/20">لا توجد مشاكل مرفوعة</p>
+                  <p className="text-sm text-black/30 dark:text-white/20">{L ? "لا توجد مشاكل مرفوعة" : "No issues reported"}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -362,20 +363,20 @@ export default function ProjectWorkspace() {
                             </div>
                             {issue.description && <p className="text-[11px] text-black/45 dark:text-white/35 mt-1">{issue.description}</p>}
                             <div className="flex items-center gap-2 mt-1.5">
-                              <span className="text-[10px] text-black/35 dark:text-white/25">{fromMe ? "أرسلته أنت" : `من: ${issue.fromUserId?.fullName || issue.fromUserId?.username || '؟'}`}</span>
-                              <span className="text-[10px] text-black/25 dark:text-white/20">{timeAgo(issue.createdAt)}</span>
+                              <span className="text-[10px] text-black/35 dark:text-white/25">{fromMe ? (L ? "أرسلته أنت" : "You") : `${L ? "من:" : "From:"} ${issue.fromUserId?.fullName || issue.fromUserId?.username || '?'}`}</span>
+                              <span className="text-[10px] text-black/25 dark:text-white/20">{timeAgo(issue.createdAt, L)}</span>
                             </div>
                             {/* Employee actions on issues */}
                             {isEmployee && issue.status !== 'resolved' && issue.status !== 'closed' && (
                               <div className="flex gap-2 mt-2">
                                 {issue.status === 'open' && (
                                   <Button size="sm" className="h-6 text-[10px] gap-1 bg-amber-500 text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'in_progress' } })} data-testid={`button-issue-progress-${issue.id}`}>
-                                    <Play className="w-2.5 h-2.5" /> بدء المعالجة
+                                    <Play className="w-2.5 h-2.5" /> {L ? "بدء المعالجة" : "Start"}
                                   </Button>
                                 )}
                                 {issue.status === 'in_progress' && (
                                   <Button size="sm" className="h-6 text-[10px] gap-1 bg-green-600 text-white rounded-lg px-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'resolved' } })} data-testid={`button-issue-resolve-${issue.id}`}>
-                                    <CheckCircle2 className="w-2.5 h-2.5" /> تم الحل
+                                    <CheckCircle2 className="w-2.5 h-2.5" /> {L ? "تم الحل" : "Resolve"}
                                   </Button>
                                 )}
                               </div>
@@ -383,7 +384,7 @@ export default function ProjectWorkspace() {
                             {/* Client actions */}
                             {isClient && issue.status === 'resolved' && (
                               <Button size="sm" className="h-6 text-[10px] gap-1 bg-gray-500 text-white rounded-lg px-2 mt-2" onClick={() => updateIssueMutation.mutate({ id: issue.id, updates: { status: 'closed' } })} data-testid={`button-issue-close-${issue.id}`}>
-                                <XCircle className="w-2.5 h-2.5" /> إغلاق
+                                <XCircle className="w-2.5 h-2.5" /> {L ? "إغلاق" : "Close"}
                               </Button>
                             )}
                           </div>
@@ -397,17 +398,17 @@ export default function ProjectWorkspace() {
 
             {/* Issue dialog */}
             <Dialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
-              <DialogContent className="sm:max-w-md" dir="rtl">
-                <DialogHeader><DialogTitle className="font-black">رفع مشكلة جديدة</DialogTitle></DialogHeader>
+              <DialogContent className="sm:max-w-md" dir={dir}>
+                <DialogHeader><DialogTitle className="font-black">{L ? "رفع مشكلة جديدة" : "Report New Issue"}</DialogTitle></DialogHeader>
                 <div className="space-y-3 mt-2">
-                  <Input value={issueForm.title} onChange={e => setIssueForm(p => ({ ...p, title: e.target.value }))} placeholder="عنوان المشكلة" className="rounded-xl" data-testid="input-issue-title" />
-                  <Textarea value={issueForm.description} onChange={e => setIssueForm(p => ({ ...p, description: e.target.value }))} placeholder="وصف المشكلة بالتفصيل..." rows={3} className="rounded-xl text-sm" data-testid="input-issue-desc" />
+                  <Input value={issueForm.title} onChange={e => setIssueForm(p => ({ ...p, title: e.target.value }))} placeholder={L ? "عنوان المشكلة" : "Issue title"} className="rounded-xl" data-testid="input-issue-title" />
+                  <Textarea value={issueForm.description} onChange={e => setIssueForm(p => ({ ...p, description: e.target.value }))} placeholder={L ? "وصف المشكلة بالتفصيل..." : "Describe the issue in detail..."} rows={3} className="rounded-xl text-sm" data-testid="input-issue-desc" />
                   <Select value={issueForm.priority} onValueChange={v => setIssueForm(p => ({ ...p, priority: v }))}>
-                    <SelectTrigger className="rounded-xl text-sm" data-testid="select-issue-priority"><SelectValue placeholder="الأولوية" /></SelectTrigger>
+                    <SelectTrigger className="rounded-xl text-sm" data-testid="select-issue-priority"><SelectValue placeholder={L ? "الأولوية" : "Priority"} /></SelectTrigger>
                     <SelectContent>{PRIORITIES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <Button className="w-full bg-black text-white font-bold rounded-xl h-10 gap-2" onClick={() => createIssueMutation.mutate(issueForm)} disabled={!issueForm.title.trim() || createIssueMutation.isPending} data-testid="button-submit-issue">
-                    {createIssueMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} رفع المشكلة
+                    {createIssueMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {L ? "رفع المشكلة" : "Submit Issue"}
                   </Button>
                 </div>
               </DialogContent>
@@ -418,9 +419,9 @@ export default function ProjectWorkspace() {
           <TabsContent value="meetings">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-black text-black/50 dark:text-white/30">الاجتماعات</p>
+                <p className="text-xs font-black text-black/50 dark:text-white/30">{L ? "الاجتماعات" : "Meetings"}</p>
                 <Button size="sm" className="h-7 text-xs gap-1 bg-black text-white rounded-xl" onClick={() => setShowMeetingDialog(true)} data-testid="button-request-meeting">
-                  <Plus className="w-3.5 h-3.5" /> {isClient ? "طلب اجتماع" : "إضافة اجتماع"}
+                  <Plus className="w-3.5 h-3.5" /> {isClient ? (L ? "طلب اجتماع" : "Request Meeting") : (L ? "إضافة اجتماع" : "Add Meeting")}
                 </Button>
               </div>
 
@@ -429,8 +430,8 @@ export default function ProjectWorkspace() {
               ) : meetings.length === 0 ? (
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] flex flex-col items-center justify-center py-14 gap-2">
                   <Calendar className="w-10 h-10 text-black/10 dark:text-white/10" />
-                  <p className="text-sm text-black/30 dark:text-white/20">لا توجد اجتماعات</p>
-                  {isClient && <p className="text-xs text-black/20 dark:text-white/15">يمكنك طلب اجتماع مع الفريق</p>}
+                  <p className="text-sm text-black/30 dark:text-white/20">{L ? "لا توجد اجتماعات" : "No meetings"}</p>
+                  {isClient && <p className="text-xs text-black/20 dark:text-white/15">{L ? "يمكنك طلب اجتماع مع الفريق" : "You can request a meeting with the team"}</p>}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -447,20 +448,20 @@ export default function ProjectWorkspace() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-bold text-black dark:text-white">
-                                {scheduledDate ? scheduledDate.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "اجتماع مطلوب"}
+                                {scheduledDate ? scheduledDate.toLocaleDateString(L ? 'ar-SA' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : (L ? "اجتماع مطلوب" : "Meeting Requested")}
                               </p>
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${ms.color}`}>{ms.label}</span>
-                              {canJoin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white animate-pulse">الآن!</span>}
+                              {canJoin && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white animate-pulse">{L ? "الآن!" : "Now!"}</span>}
                             </div>
                             {scheduledDate && (
                               <p className="text-[11px] text-black/45 dark:text-white/35 mt-0.5">
-                                {scheduledDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })} — {meeting.duration} دقيقة
+                                {scheduledDate.toLocaleTimeString(L ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })} — {meeting.duration} {L ? "دقيقة" : "min"}
                               </p>
                             )}
                             {meeting.notes && <p className="text-[11px] text-black/40 dark:text-white/30 mt-1 italic">{meeting.notes}</p>}
                             {meeting.employeeId && (
                               <p className="text-[10px] text-black/35 dark:text-white/25 mt-1">
-                                الموظف: {meeting.employeeId.fullName || meeting.employeeId.username}
+                                {L ? "الموظف:" : "Employee:"} {meeting.employeeId.fullName || meeting.employeeId.username}
                               </p>
                             )}
                             <div className="flex gap-2 mt-2 flex-wrap">
@@ -468,7 +469,7 @@ export default function ProjectWorkspace() {
                               {isClient && canJoin && meeting.meetingLink && (
                                 <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
                                   <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white rounded-lg" data-testid={`button-join-meeting-${meeting.id}`}>
-                                    <VideoIcon className="w-3.5 h-3.5" /> دخول الاجتماع
+                                    <VideoIcon className="w-3.5 h-3.5" /> {L ? "دخول الاجتماع" : "Join Meeting"}
                                   </Button>
                                 </a>
                               )}
@@ -478,7 +479,7 @@ export default function ProjectWorkspace() {
                                   setMeetingForm({ notes: meeting.notes || '', scheduledAt: meeting.scheduledAt ? new Date(meeting.scheduledAt).toISOString().slice(0, 16) : '', meetingLink: meeting.meetingLink || '', duration: meeting.duration || 60 });
                                   setEditMeeting(meeting);
                                 }} data-testid={`button-schedule-meeting-${meeting.id}`}>
-                                  <Calendar className="w-3.5 h-3.5" /> تحديد الموعد
+                                  <Calendar className="w-3.5 h-3.5" /> {L ? "تحديد الموعد" : "Schedule"}
                                 </Button>
                               )}
                               {/* Employee: can add/update link for scheduled meeting */}
@@ -487,19 +488,19 @@ export default function ProjectWorkspace() {
                                   setMeetingForm({ notes: meeting.notes || '', scheduledAt: meeting.scheduledAt ? new Date(meeting.scheduledAt).toISOString().slice(0, 16) : '', meetingLink: meeting.meetingLink || '', duration: meeting.duration || 60 });
                                   setEditMeeting(meeting);
                                 }} data-testid={`button-edit-meeting-${meeting.id}`}>
-                                  <Link2 className="w-3.5 h-3.5" /> تعديل الرابط
+                                  <Link2 className="w-3.5 h-3.5" /> {L ? "تعديل الرابط" : "Edit Link"}
                                 </Button>
                               )}
                               {isEmployee && meeting.status === 'scheduled' && (
                                 <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 text-white rounded-lg" onClick={() => updateMeetingMutation.mutate({ id: meeting.id, updates: { status: 'completed' } })} data-testid={`button-complete-meeting-${meeting.id}`}>
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> إنهاء الاجتماع
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> {L ? "إنهاء الاجتماع" : "Complete Meeting"}
                                 </Button>
                               )}
                               {/* Employee join too */}
                               {isEmployee && canJoin && meeting.meetingLink && (
                                 <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
                                   <Button size="sm" className="h-7 text-xs gap-1 bg-green-600 text-white rounded-lg">
-                                    <VideoIcon className="w-3.5 h-3.5" /> دخول
+                                    <VideoIcon className="w-3.5 h-3.5" /> {L ? "دخول" : "Join"}
                                   </Button>
                                 </a>
                               )}
@@ -515,32 +516,32 @@ export default function ProjectWorkspace() {
 
             {/* Meeting request/schedule dialog */}
             <Dialog open={showMeetingDialog || !!editMeeting} onOpenChange={v => { if (!v) { setShowMeetingDialog(false); setEditMeeting(null); } }}>
-              <DialogContent className="sm:max-w-md" dir="rtl">
+              <DialogContent className="sm:max-w-md" dir={dir}>
                 <DialogHeader>
                   <DialogTitle className="font-black">
-                    {isClient ? "طلب اجتماع" : editMeeting ? "تحديد موعد الاجتماع" : "إضافة اجتماع"}
+                    {isClient ? (L ? "طلب اجتماع" : "Request Meeting") : editMeeting ? (L ? "تحديد موعد الاجتماع" : "Schedule Meeting") : (L ? "إضافة اجتماع" : "Add Meeting")}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 mt-2">
                   {isClient && !editMeeting && (
-                    <Textarea value={meetingForm.notes} onChange={e => setMeetingForm(p => ({ ...p, notes: e.target.value }))} placeholder="اذكر الهدف من الاجتماع وأي تفاصيل..." rows={3} className="rounded-xl text-sm" data-testid="input-meeting-notes" />
+                    <Textarea value={meetingForm.notes} onChange={e => setMeetingForm(p => ({ ...p, notes: e.target.value }))} placeholder={L ? "اذكر الهدف من الاجتماع وأي تفاصيل..." : "Describe the meeting purpose and any details..."} rows={3} className="rounded-xl text-sm" data-testid="input-meeting-notes" />
                   )}
                   {isEmployee && (
                     <>
                       <div>
-                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">موعد الاجتماع</label>
+                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "موعد الاجتماع" : "Meeting Time"}</label>
                         <Input type="datetime-local" value={meetingForm.scheduledAt} onChange={e => setMeetingForm(p => ({ ...p, scheduledAt: e.target.value }))} className="rounded-xl text-sm" data-testid="input-meeting-datetime" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">المدة (دقيقة)</label>
+                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "المدة (دقيقة)" : "Duration (min)"}</label>
                         <Input type="number" value={meetingForm.duration} onChange={e => setMeetingForm(p => ({ ...p, duration: Number(e.target.value) }))} min={15} step={15} className="rounded-xl text-sm" data-testid="input-meeting-duration" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">رابط الاجتماع (Google Meet / Zoom)</label>
+                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "رابط الاجتماع (Google Meet / Zoom)" : "Meeting Link (Google Meet / Zoom)"}</label>
                         <Input value={meetingForm.meetingLink} onChange={e => setMeetingForm(p => ({ ...p, meetingLink: e.target.value }))} placeholder="https://meet.google.com/..." className="rounded-xl text-sm" data-testid="input-meeting-link" />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">ملاحظات</label>
+                        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
                         <Textarea value={meetingForm.notes} onChange={e => setMeetingForm(p => ({ ...p, notes: e.target.value }))} rows={2} className="rounded-xl text-sm" data-testid="input-meeting-notes-emp" />
                       </div>
                     </>
@@ -568,7 +569,7 @@ export default function ProjectWorkspace() {
                     data-testid="button-submit-meeting"
                   >
                     {(createMeetingMutation.isPending || updateMeetingMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    {isClient ? "إرسال الطلب" : "حفظ"}
+                    {isClient ? (L ? "إرسال الطلب" : "Send Request") : (L ? "حفظ" : "Save")}
                   </Button>
                 </div>
               </DialogContent>

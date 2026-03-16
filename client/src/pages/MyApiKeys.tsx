@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +38,8 @@ const ALL_SCOPES = [
   { id: "customers", label: "العملاء",  icon: "👥", desc: "بيانات عملاء المشروع" },
 ];
 
-function ScopeChip({ scope }: { scope: string }) {
-  const s = ALL_SCOPES.find(x => x.id === scope);
+function ScopeChip({ scope, scopes }: { scope: string; scopes: typeof ALL_SCOPES }) {
+  const s = scopes.find(x => x.id === scope);
   return (
     <span className="inline-flex items-center gap-1 bg-black/[0.05] dark:bg-white/[0.08] text-black/60 dark:text-white/60 text-[10px] font-medium px-2 py-0.5 rounded-full border border-black/[0.06] dark:border-white/[0.06]">
       {s?.icon} {s?.label || scope}
@@ -47,7 +48,17 @@ function ScopeChip({ scope }: { scope: string }) {
 }
 
 export default function MyApiKeys() {
-  const { toast } = useToast();
+    const { toast } = useToast();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const ALL_SCOPES = [
+      { id: "orders",    label: L ? "الطلبات" : "Orders",       icon: "📦", desc: L ? "قراءة الطلبات والحالات" : "Read orders and statuses" },
+      { id: "projects",  label: L ? "المشاريع" : "Projects",    icon: "🗂️", desc: L ? "بيانات المشاريع والتقدم" : "Project data and progress" },
+      { id: "invoices",  label: L ? "الفواتير" : "Invoices",    icon: "🧾", desc: L ? "الفواتير والمدفوعات" : "Invoices and payments" },
+      { id: "stats",     label: L ? "الإحصائيات" : "Statistics",icon: "📊", desc: L ? "الإيرادات والتقارير" : "Revenue and reports" },
+      { id: "wallet",    label: L ? "المحفظة" : "Wallet",       icon: "💳", desc: L ? "رصيد المحفظة والحركات" : "Wallet balance and transactions" },
+      { id: "customers", label: L ? "العملاء" : "Customers",    icon: "👥", desc: L ? "بيانات عملاء المشروع" : "Project customer data" },
+    ];
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState<(ApiKey & { rawKey?: string }) | null>(null);
   const [copied, setCopied] = useState(false);
@@ -74,7 +85,7 @@ export default function MyApiKeys() {
       setNewKey(data);
       setForm({ name: "", projectName: "", scopes: ["orders", "projects", "invoices", "stats"], expiresAt: "", allowedOrigins: "" });
     },
-    onError: (err: any) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "خطأ" : "Error", description: err.message, variant: "destructive" }),
   });
 
   const toggleMutation = useMutation({
@@ -90,7 +101,7 @@ export default function MyApiKeys() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-api-keys"] });
       setDeleteTarget(null);
-      toast({ title: "تم إلغاء المفتاح" });
+      toast({ title: L ? "تم إلغاء المفتاح" : "API Key deleted" });
     },
   });
 
@@ -108,8 +119,8 @@ export default function MyApiKeys() {
   };
 
   const handleCreate = () => {
-    if (!form.name.trim()) { toast({ title: "اسم المفتاح مطلوب", variant: "destructive" }); return; }
-    if (form.scopes.length === 0) { toast({ title: "يجب اختيار صلاحية واحدة", variant: "destructive" }); return; }
+    if (!form.name.trim()) { toast({ title: L ? "اسم المفتاح مطلوب" : "Key name is required", variant: "destructive" }); return; }
+    if (form.scopes.length === 0) { toast({ title: L ? "يجب اختيار صلاحية واحدة" : "At least one scope is required", variant: "destructive" }); return; }
     createMutation.mutate({
       ...form,
       allowedOrigins: form.allowedOrigins.split(",").map(s => s.trim()).filter(Boolean),
@@ -120,7 +131,7 @@ export default function MyApiKeys() {
   const baseUrl = window.location.origin;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={dir}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="bg-black rounded-3xl p-6 relative overflow-hidden">
@@ -132,22 +143,22 @@ export default function MyApiKeys() {
               <Key className="w-6 h-6 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-white">مفاتيح API</h1>
-              <p className="text-white/40 text-sm">اربط مشاريعك الخارجية بنظام Qirox بأمان</p>
+              <h1 className="text-xl font-black text-white">{L ? "مفاتيح API" : "API Keys"}</h1>
+              <p className="text-white/40 text-sm">{L ? "اربط مشاريعك الخارجية بنظام Qirox بأمان" : "Connect your external projects to Qirox securely"}</p>
             </div>
           </div>
           <Button onClick={() => setShowCreate(true)} data-testid="btn-create-key"
             className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-10">
-            <Plus className="w-4 h-4" /> مفتاح جديد
+            <Plus className="w-4 h-4" /> {L ? "مفتاح جديد" : "New Key"}
           </Button>
         </div>
 
         {/* Stats row */}
         <div className="relative z-10 grid grid-cols-3 gap-3 mt-5">
           {[
-            { val: keys.length, label: "إجمالي المفاتيح", color: "text-white" },
-            { val: keys.filter(k => k.isActive).length, label: "نشط", color: "text-green-400" },
-            { val: keys.reduce((s, k) => s + k.requestCount, 0).toLocaleString("ar"), label: "طلب API كلي", color: "text-violet-400" },
+            { val: keys.length, label: L ? "إجمالي المفاتيح" : "Total Keys", color: "text-white" },
+            { val: keys.filter(k => k.isActive).length, label: L ? "نشط" : "Active", color: "text-green-400" },
+            { val: keys.reduce((s, k) => s + k.requestCount, 0).toLocaleString(), label: L ? "طلب API كلي" : "Total API Requests", color: "text-violet-400" },
           ].map(({ val, label, color }) => (
             <div key={label} className="bg-white/5 rounded-2xl px-4 py-2.5 text-center">
               <p className={`text-xl font-black ${color}`}>{val}</p>
@@ -162,14 +173,14 @@ export default function MyApiKeys() {
         className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Terminal className="w-4 h-4 text-violet-500" />
-          <p className="font-bold text-sm text-black dark:text-white">كيفية الاستخدام</p>
+          <p className="font-bold text-sm text-black dark:text-white">{L ? "كيفية الاستخدام" : "Usage Guide"}</p>
         </div>
         <div className="bg-black rounded-xl p-3 font-mono text-xs text-green-400 overflow-x-auto">
-          <p className="text-white/30 mb-1"># أضف المفتاح في رأس الطلب</p>
+          <p className="text-white/30 mb-1">{L ? "# أضف المفتاح في رأس الطلب" : "# Add the key in the request header"}</p>
           <p>Authorization: Bearer qrx_live_xxxxxxxxxx...</p>
-          <p className="text-white/30 mt-2 mb-1"># مثال: جلب الطلبات</p>
+          <p className="text-white/30 mt-2 mb-1">{L ? "# مثال: جلب الطلبات" : "# Example: fetch orders"}</p>
           <p>GET {baseUrl}/api/v1/orders</p>
-          <p className="text-white/30 mt-2 mb-1"># المسارات المتاحة</p>
+          <p className="text-white/30 mt-2 mb-1">{L ? "# المسارات المتاحة" : "# Available endpoints"}</p>
           {["/api/v1/me", "/api/v1/orders", "/api/v1/projects", "/api/v1/invoices", "/api/v1/stats", "/api/v1/wallet", "/api/v1/customers"].map(p => (
             <p key={p} className="text-blue-400">GET {baseUrl}{p}</p>
           ))}
@@ -182,10 +193,10 @@ export default function MyApiKeys() {
       ) : keys.length === 0 ? (
         <div className="text-center py-20 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl">
           <Key className="w-12 h-12 mx-auto mb-3 text-black/10 dark:text-white/10" />
-          <p className="text-black/40 dark:text-white/40 font-medium">لا توجد مفاتيح API بعد</p>
-          <p className="text-black/25 dark:text-white/25 text-sm mt-1">أنشئ مفتاحك الأول لربط مشاريعك بنظام Qirox</p>
+          <p className="text-black/40 dark:text-white/40 font-medium">{L ? "لا توجد مفاتيح API بعد" : "No API keys yet"}</p>
+          <p className="text-black/25 dark:text-white/25 text-sm mt-1">{L ? "أنشئ مفتاحك الأول لربط مشاريعك بنظام Qirox" : "Create your first key to connect your projects to Qirox"}</p>
           <Button onClick={() => setShowCreate(true)} className="mt-4 rounded-xl gap-2 bg-black hover:bg-black/80 text-white dark:bg-white dark:text-black" data-testid="btn-create-first-key">
-            <Plus className="w-4 h-4" /> أنشئ مفتاحاً الآن
+            <Plus className="w-4 h-4" /> {L ? "أنشئ مفتاحاً الآن" : "Create Now"}
           </Button>
         </div>
       ) : (
@@ -204,7 +215,7 @@ export default function MyApiKeys() {
                       <p className="font-bold text-black dark:text-white text-sm">{key.name}</p>
                       {key.projectName && <span className="text-[10px] bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded-full">{key.projectName}</span>}
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"}`}>
-                        {key.isActive ? "نشط" : "معطّل"}
+                        {key.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                       </span>
                     </div>
                     {/* Key prefix */}
@@ -213,13 +224,13 @@ export default function MyApiKeys() {
                     </div>
                     {/* Scopes */}
                     <div className="flex flex-wrap gap-1">
-                      {key.scopes.map(s => <ScopeChip key={s} scope={s} />)}
+                      {key.scopes.map(s => <ScopeChip key={s} scope={s} scopes={ALL_SCOPES} />)}
                     </div>
                     {/* Meta */}
                     <div className="flex flex-wrap gap-3 text-[10px] text-black/30 dark:text-white/30 mt-2">
-                      <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{key.requestCount.toLocaleString("ar")} طلب</span>
-                      {key.lastUsedAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />آخر استخدام: {new Date(key.lastUsedAt).toLocaleDateString("ar-SA")}</span>}
-                      {key.expiresAt && <span className="flex items-center gap-1"><Lock className="w-3 h-3" />ينتهي: {new Date(key.expiresAt).toLocaleDateString("ar-SA")}</span>}
+                      <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{key.requestCount.toLocaleString()} {L ? "طلب" : "requests"}</span>
+                      {key.lastUsedAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{L ? "آخر استخدام:" : "Last used:"} {new Date(key.lastUsedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
+                      {key.expiresAt && <span className="flex items-center gap-1"><Lock className="w-3 h-3" />{L ? "ينتهي:" : "Expires:"} {new Date(key.expiresAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
                     </div>
                   </div>
                 </div>
@@ -229,7 +240,7 @@ export default function MyApiKeys() {
                     onClick={() => toggleMutation.mutate({ id: key.id, isActive: !key.isActive })}
                     data-testid={`btn-toggle-key-${key.id}`}
                     className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border ${key.isActive ? "border-green-200 bg-green-50 hover:bg-green-100 text-green-600 dark:border-green-800 dark:bg-green-950/20 dark:hover:bg-green-950/40 dark:text-green-400" : "border-black/[0.08] bg-black/[0.03] hover:bg-black/[0.06] text-black/30 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/30"}`}
-                    title={key.isActive ? "تعطيل" : "تفعيل"}
+                    title={key.isActive ? (L ? "تعطيل" : "Disable") : (L ? "تفعيل" : "Enable")}
                   >
                     {key.isActive ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
                   </button>
@@ -249,25 +260,25 @@ export default function MyApiKeys() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-lg rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black text-lg flex items-center gap-2">
-              <Key className="w-5 h-5 text-violet-500" /> إنشاء مفتاح API جديد
+              <Key className="w-5 h-5 text-violet-500" /> {L ? "إنشاء مفتاح API جديد" : "Create New API Key"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">اسم المفتاح *</label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: مفتاح متجر Shopify" className="rounded-xl" data-testid="input-key-name" />
+              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "اسم المفتاح *" : "Key Name *"}</label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={L ? "مثال: مفتاح متجر Shopify" : "e.g. Shopify Store Key"} className="rounded-xl" data-testid="input-key-name" />
             </div>
             <div>
-              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">اسم المشروع (اختياري)</label>
-              <Input value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} placeholder="مثال: متجري الإلكتروني" className="rounded-xl" data-testid="input-project-name" />
+              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "اسم المشروع (اختياري)" : "Project Name (optional)"}</label>
+              <Input value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} placeholder={L ? "مثال: متجري الإلكتروني" : "e.g. My Online Store"} className="rounded-xl" data-testid="input-project-name" />
             </div>
 
             {/* Scopes */}
             <div>
-              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-2 block">الصلاحيات *</label>
+              <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-2 block">{L ? "الصلاحيات *" : "Scopes *"}</label>
               <div className="grid grid-cols-2 gap-2">
                 {ALL_SCOPES.map(s => (
                   <button key={s.id} onClick={() => toggleScope(s.id)} data-testid={`scope-${s.id}`}
@@ -285,24 +296,24 @@ export default function MyApiKeys() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">تاريخ الانتهاء (اختياري)</label>
+                <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "تاريخ الانتهاء (اختياري)" : "Expiry Date (optional)"}</label>
                 <Input type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} className="rounded-xl" dir="ltr" data-testid="input-expires" />
               </div>
               <div>
-                <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">النطاقات المسموحة</label>
+                <label className="text-xs font-bold text-black/40 dark:text-white/40 mb-1.5 block">{L ? "النطاقات المسموحة" : "Allowed Origins"}</label>
                 <Input value={form.allowedOrigins} onChange={e => setForm(f => ({ ...f, allowedOrigins: e.target.value }))} placeholder="example.com,shop.com" className="rounded-xl" dir="ltr" data-testid="input-origins" />
               </div>
             </div>
 
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-amber-700 dark:text-amber-400 text-xs">المفتاح يُعرض مرة واحدة فقط عند الإنشاء. احفظه في مكان آمن فوراً.</p>
+              <p className="text-amber-700 dark:text-amber-400 text-xs">{L ? "المفتاح يُعرض مرة واحدة فقط عند الإنشاء. احفظه في مكان آمن فوراً." : "The key is shown only once upon creation. Save it in a safe place immediately."}</p>
             </div>
 
             <Button onClick={handleCreate} disabled={createMutation.isPending} data-testid="btn-confirm-create"
               className="w-full h-11 rounded-2xl bg-black hover:bg-black/80 dark:bg-white dark:text-black gap-2 font-bold">
               {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-              إنشاء المفتاح
+              {L ? "إنشاء المفتاح" : "Create Key"}
             </Button>
           </div>
         </DialogContent>
@@ -310,17 +321,17 @@ export default function MyApiKeys() {
 
       {/* New Key Reveal Dialog */}
       <Dialog open={!!newKey} onOpenChange={() => setNewKey(null)}>
-        <DialogContent className="max-w-md rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-md rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black text-lg flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-green-500" /> مفتاحك الجديد جاهز!
+              <ShieldCheck className="w-5 h-5 text-green-500" /> {L ? "مفتاحك الجديد جاهز!" : "Your New Key is Ready!"}
             </DialogTitle>
           </DialogHeader>
           {newKey && (
             <div className="space-y-4">
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 flex gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold">انسخ المفتاح الآن — لن يُعرض مجدداً أبداً بعد إغلاق هذه النافذة.</p>
+                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold">{L ? "انسخ المفتاح الآن — لن يُعرض مجدداً أبداً بعد إغلاق هذه النافذة." : "Copy the key now — it will never be shown again after closing this window."}</p>
               </div>
               <div className="bg-black rounded-2xl p-4">
                 <p className="text-[10px] text-white/30 mb-2 font-mono">API KEY</p>
@@ -328,9 +339,9 @@ export default function MyApiKeys() {
               </div>
               <Button onClick={() => copyKey(newKey.rawKey || "")} data-testid="btn-copy-key"
                 className={`w-full h-11 rounded-2xl gap-2 font-bold transition-all ${copied ? "bg-green-600 hover:bg-green-600 text-white" : "bg-black hover:bg-black/80 dark:bg-white dark:text-black text-white"}`}>
-                {copied ? <><Check className="w-4 h-4" /> تم النسخ!</> : <><Copy className="w-4 h-4" /> انسخ المفتاح</>}
+                {copied ? <><Check className="w-4 h-4" /> {L ? "تم النسخ!" : "Copied!"}</> : <><Copy className="w-4 h-4" /> {L ? "انسخ المفتاح" : "Copy Key"}</>}
               </Button>
-              <p className="text-center text-xs text-black/30 dark:text-white/30">أضفه في رأس الطلب: <code className="bg-black/[0.06] dark:bg-white/[0.06] px-1.5 py-0.5 rounded">Authorization: Bearer YOUR_KEY</code></p>
+              <p className="text-center text-xs text-black/30 dark:text-white/30">{L ? "أضفه في رأس الطلب:" : "Add it to the request header:"} <code className="bg-black/[0.06] dark:bg-white/[0.06] px-1.5 py-0.5 rounded">Authorization: Bearer YOUR_KEY</code></p>
             </div>
           )}
         </DialogContent>
@@ -338,18 +349,18 @@ export default function MyApiKeys() {
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent className="max-w-sm rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-right font-black text-lg text-red-600">تأكيد الحذف</DialogTitle>
+            <DialogTitle className="text-right font-black text-lg text-red-600">{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
           </DialogHeader>
-          <p className="text-black/60 dark:text-white/60 text-sm">سيُحذف المفتاح نهائياً ولن تتمكن من استخدامه للوصول للـ API. هذا الإجراء لا يمكن التراجع عنه.</p>
+          <p className="text-black/60 dark:text-white/60 text-sm">{L ? "سيُحذف المفتاح نهائياً ولن تتمكن من استخدامه للوصول للـ API. هذا الإجراء لا يمكن التراجع عنه." : "The key will be permanently deleted and can no longer be used to access the API. This action cannot be undone."}</p>
           <div className="flex gap-2 mt-2">
             <Button onClick={() => deleteMutation.mutate(deleteTarget!)} disabled={deleteMutation.isPending}
               className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white gap-2" data-testid="btn-confirm-delete">
               {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               حذف المفتاح
             </Button>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl">إلغاء</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
           </div>
         </DialogContent>
       </Dialog>

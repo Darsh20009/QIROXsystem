@@ -12,6 +12,7 @@ import {
   Key, Search, Filter, Power, PowerOff, Trash2, Activity, Clock,
   Loader2, Users, Globe,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type ApiKey = {
   id: string;
@@ -65,7 +66,7 @@ export default function AdminApiKeys() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
-      toast({ title: "تم تحديث حالة المفتاح" });
+      toast({ title: L ? "تم تحديث حالة المفتاح" : "Key status updated" });
     },
   });
 
@@ -74,7 +75,7 @@ export default function AdminApiKeys() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
       setSelected(null);
-      toast({ title: "تم حذف المفتاح" });
+      toast({ title: L ? "تم حذف المفتاح" : "Key deleted" });
     },
   });
 
@@ -97,7 +98,7 @@ export default function AdminApiKeys() {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={dir}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="bg-black rounded-3xl p-6 relative overflow-hidden">
@@ -108,16 +109,16 @@ export default function AdminApiKeys() {
               <Key className="w-6 h-6 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-white">إدارة مفاتيح API</h1>
-              <p className="text-white/40 text-sm">مراقبة وإدارة جميع مفاتيح ربط العملاء</p>
+              <h1 className="text-xl font-black text-white">{L ? "إدارة مفاتيح API" : "API Keys Management"}</h1>
+              <p className="text-white/40 text-sm">{L ? "مراقبة وإدارة جميع مفاتيح ربط العملاء" : "Monitor and manage all client API keys"}</p>
             </div>
           </div>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { val: stats.total, label: "إجمالي", color: "text-white" },
-              { val: stats.active, label: "نشط", color: "text-green-400" },
-              { val: stats.clients, label: "عميل", color: "text-blue-400" },
-              { val: stats.totalRequests.toLocaleString("ar"), label: "طلب API", color: "text-violet-400" },
+              { val: stats.total, label: L ? "إجمالي" : "Total", color: "text-white" },
+              { val: stats.active, label: L ? "نشط" : "Active", color: "text-green-400" },
+              { val: stats.clients, label: L ? "عميل" : "Clients", color: "text-blue-400" },
+              { val: stats.totalRequests.toLocaleString(L ? "ar" : "en"), label: L ? "طلب API" : "API Requests", color: "text-violet-400" },
             ].map(({ val, label, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl px-4 py-2 text-center">
                 <p className={`text-xl font-black ${color}`}>{val}</p>
@@ -132,7 +133,7 @@ export default function AdminApiKeys() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو العميل أو المشروع..." className="pr-10 rounded-xl" data-testid="input-search" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={L ? "بحث بالاسم أو العميل أو المشروع..." : "Search by name, client or project..."} className="pr-10 rounded-xl" data-testid="input-search" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-44 rounded-xl" data-testid="select-status">
@@ -140,9 +141,9 @@ export default function AdminApiKeys() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل المفاتيح</SelectItem>
-            <SelectItem value="active">نشط فقط</SelectItem>
-            <SelectItem value="inactive">معطّل فقط</SelectItem>
+            <SelectItem value="all">{L ? "كل المفاتيح" : "All Keys"}</SelectItem>
+            <SelectItem value="active">{L ? "نشط فقط" : "Active Only"}</SelectItem>
+            <SelectItem value="inactive">{L ? "معطّل فقط" : "Disabled Only"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -153,7 +154,7 @@ export default function AdminApiKeys() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl">
           <Key className="w-12 h-12 mx-auto mb-3 text-black/10 dark:text-white/10" />
-          <p className="text-black/30 dark:text-white/30 font-medium">لا توجد مفاتيح</p>
+          <p className="text-black/30 dark:text-white/30 font-medium">{L ? "لا توجد مفاتيح" : "No keys found"}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -171,14 +172,14 @@ export default function AdminApiKeys() {
                     <p className="font-bold text-sm text-black dark:text-white">{key.name}</p>
                     {key.projectName && <span className="text-[10px] bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">{key.projectName}</span>}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${key.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700"}`}>
-                      {key.isActive ? "نشط" : "معطّل"}
+                      {key.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-black/40 dark:text-white/40 mt-1 flex-wrap">
                     <span className="flex items-center gap-1"><Users className="w-3 h-3" />{key.client?.fullName || "—"}</span>
                     <code className="text-[10px] bg-black/[0.04] dark:bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{key.keyPrefix}</code>
-                    <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{key.requestCount.toLocaleString("ar")}</span>
-                    {key.lastUsedAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(key.lastUsedAt).toLocaleDateString("ar-SA")}</span>}
+                    <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{key.requestCount.toLocaleString(L ? "ar" : "en")}</span>
+                    {key.lastUsedAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(key.lastUsedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1 justify-end">
@@ -197,12 +198,12 @@ export default function AdminApiKeys() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-lg rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-lg rounded-3xl" dir={dir}>
           {selected && (
             <>
               <DialogHeader>
                 <DialogTitle className="text-right font-black text-lg flex items-center gap-2">
-                  <Key className="w-5 h-5 text-violet-500" /> تفاصيل المفتاح
+                  <Key className="w-5 h-5 text-violet-500" /> {L ? "تفاصيل المفتاح" : "Key Details"}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
@@ -211,17 +212,17 @@ export default function AdminApiKeys() {
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-black dark:text-white">{selected.name}</p>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${selected.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
-                      {selected.isActive ? "نشط" : "معطّل"}
+                      {selected.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
                     </span>
                   </div>
-                  {selected.projectName && <p className="text-sm text-black/50 dark:text-white/50">المشروع: {selected.projectName}</p>}
-                  <p className="text-sm text-black/50 dark:text-white/50">العميل: <strong>{selected.client?.fullName || "—"}</strong> ({selected.client?.email || "—"})</p>
+                  {selected.projectName && <p className="text-sm text-black/50 dark:text-white/50">{L ? "المشروع" : "Project"}: {selected.projectName}</p>}
+                  <p className="text-sm text-black/50 dark:text-white/50">{L ? "العميل" : "Client"}: <strong>{selected.client?.fullName || "—"}</strong> ({selected.client?.email || "—"})</p>
                   <code className="text-xs font-mono text-black/40 dark:text-white/40 bg-black/[0.04] dark:bg-white/[0.04] px-2 py-1 rounded-lg block">{selected.keyPrefix}</code>
                 </div>
 
                 {/* Scopes */}
                 <div>
-                  <p className="text-xs font-bold text-black/40 dark:text-white/40 mb-2">الصلاحيات</p>
+                  <p className="text-xs font-bold text-black/40 dark:text-white/40 mb-2">{L ? "الصلاحيات" : "Permissions"}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {selected.scopes.map(s => (
                       <span key={s} className={`text-xs font-bold px-2.5 py-1 rounded-full border ${SCOPE_COLORS[s] || "bg-gray-100 text-gray-600"} border-transparent`}>
@@ -253,11 +254,11 @@ export default function AdminApiKeys() {
                     data-testid="btn-toggle-key"
                     className={`flex-1 rounded-xl gap-2 ${selected.isActive ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"}`}
                   >
-                    {selected.isActive ? <><PowerOff className="w-4 h-4" /> تعطيل المفتاح</> : <><Power className="w-4 h-4" /> تفعيل المفتاح</>}
+                    {selected.isActive ? <><PowerOff className="w-4 h-4" /> {L ? "تعطيل المفتاح" : "Disable Key"}</> : <><Power className="w-4 h-4" /> {L ? "تفعيل المفتاح" : "Enable Key"}</>}
                   </Button>
                   <Button
                     variant="ghost"
-                    onClick={() => { if (confirm("حذف هذا المفتاح نهائياً؟")) deleteMutation.mutate(selected.id || selected._id); }}
+                    onClick={() => { if (confirm(L ? "حذف هذا المفتاح نهائياً؟" : "Permanently delete this key?")) deleteMutation.mutate(selected.id || selected._id); }}
                     disabled={deleteMutation.isPending}
                     data-testid="btn-delete-key"
                     className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600"

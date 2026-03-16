@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "مدير", manager: "مدير عام", developer: "مطور", designer: "مصمم",
@@ -104,10 +105,10 @@ export default function GroupChat() {
       setCreateOpen(false);
       setNewGroup({ name: "", description: "", icon: "💬" });
       setSelectedMembers([]);
-      toast({ title: "تم إنشاء المجموعة" });
+      toast({ title: L ? "تم {L ? "إنشاء المجموعة" : "Create Group"}" : "Group created" });
       if (d?.id || d?._id) navigate(`/groups/${d.id || d._id}`);
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const sendMsg = useMutation({
@@ -117,7 +118,7 @@ export default function GroupChat() {
       qc.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "messages"] });
       qc.invalidateQueries({ queryKey: ["/api/groups"] });
     },
-    onError: (e: any) => toast({ title: "خطأ في الإرسال", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ في الإرسال" : "Send error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMsg = useMutation({
@@ -131,13 +132,13 @@ export default function GroupChat() {
       qc.invalidateQueries({ queryKey: ["/api/groups"] });
       setAddMemberOpen(false);
       setSelectedMembers([]);
-      toast({ title: "تمت إضافة الأعضاء" });
+      toast({ title: L ? "تمت إضافة الأعضاء" : "Members added" });
     },
   });
 
   const removeMember = useMutation({
     mutationFn: (userId: string) => apiRequest("DELETE", `/api/groups/${activeGroupId}/members/${userId}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); toast({ title: "تم الإزالة" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); toast({ title: L ? "تم الإزالة" : "Member removed" }); },
   });
 
   const promoteAdmin = useMutation({
@@ -148,12 +149,12 @@ export default function GroupChat() {
 
   const leaveGroup = useMutation({
     mutationFn: () => apiRequest("DELETE", `/api/groups/${activeGroupId}/members/${uid}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); navigate("/groups"); toast({ title: "غادرت المجموعة" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); navigate("/groups"); toast({ title: L ? "غادرت المجموعة" : "Left group" }); },
   });
 
   const deleteGroup = useMutation({
     mutationFn: () => apiRequest("DELETE", `/api/groups/${activeGroupId}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); navigate("/groups"); toast({ title: "تم حذف المجموعة" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/groups"] }); navigate("/groups"); toast({ title: L ? "تم حذف المجموعة" : "Group deleted" }); },
   });
 
   const filteredGroups = groups.filter((g: any) => !search || g.name?.includes(search));
@@ -165,22 +166,22 @@ export default function GroupChat() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-white dark:bg-gray-950 overflow-hidden" dir="rtl">
+    <div className="flex h-[calc(100vh-4rem)] bg-white dark:bg-gray-950 overflow-hidden" dir={dir}>
 
       {/* ── Sidebar ─────────────────────────────────── */}
       <div className={`flex flex-col border-l border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 ${activeGroupId ? "hidden md:flex w-72" : "flex w-full md:w-72"}`}>
         <div className="p-4 border-b border-black/[0.06] dark:border-white/[0.06]">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-base font-bold text-black dark:text-white flex items-center gap-2">
-              <Users className="w-4 h-4" /> مجموعات الفريق
+              <Users className="w-4 h-4" /> {L ? "مجموعات الفريق" : "Team Groups"}
             </h1>
             <Button size="sm" onClick={() => { setCreateOpen(true); setSelectedMembers([]); }} className="h-7 px-2 gap-1 text-xs" data-testid="button-create-group">
-              <Plus className="w-3 h-3" /> جديدة
+              <Plus className="w-3 h-3" /> {L ? "جديدة" : "New"}
             </Button>
           </div>
           <div className="relative">
             <Search className="absolute right-2.5 top-2.5 w-3.5 h-3.5 text-black/30 dark:text-white/30" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..." className="pr-8 h-8 text-sm" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={L ? "بحث..." : "Search..."} className="pr-8 h-8 text-sm" />
           </div>
         </div>
 
@@ -190,8 +191,8 @@ export default function GroupChat() {
           ) : filteredGroups.length === 0 ? (
             <div className="text-center py-12 px-4">
               <MessageSquare className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />
-              <p className="text-sm text-black/40 dark:text-white/40">لا توجد مجموعات</p>
-              <p className="text-xs text-black/25 dark:text-white/25 mt-1">ابدأ بإنشاء مجموعتك الأولى</p>
+              <p className="text-sm text-black/40 dark:text-white/40">{L ? "لا توجد مجموعات" : "No groups"}</p>
+              <p className="text-xs text-black/25 dark:text-white/25 mt-1">{L ? "ابدأ بإنشاء مجموعتك الأولى" : "Create your first group"}</p>
             </div>
           ) : (
             <div className="p-2 space-y-0.5">
@@ -212,11 +213,11 @@ export default function GroupChat() {
                       <div className="flex items-center justify-between">
                         <span className={`font-semibold text-sm truncate ${isActive ? "text-white dark:text-black" : "text-black dark:text-white"}`}>{g.name}</span>
                         {g.lastMessageAt && (
-                          <span className={`text-[10px] shrink-0 mr-1 ${isActive ? "text-white/60 dark:text-black/60" : "text-black/30 dark:text-white/30"}`}>{timeAgo(g.lastMessageAt)}</span>
+                          <span className={`text-[10px] shrink-0 mr-1 ${isActive ? "text-white/60 dark:text-black/60" : "text-black/30 dark:text-white/30"}`}>{timeAgo(g.lastMessageAt, L)}</span>
                         )}
                       </div>
                       <p className={`text-xs truncate ${isActive ? "text-white/70 dark:text-black/70" : "text-black/40 dark:text-white/40"}`}>
-                        {g.lastMessage || `${g.memberIds?.length || 0} عضو`}
+                        {g.lastMessage || `${g.memberIds?.length || 0} ${L ? "عضو" : "members"}`}
                       </p>
                     </div>
                   </button>
@@ -240,7 +241,7 @@ export default function GroupChat() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-bold text-sm text-black dark:text-white truncate">{activeGroup.name}</h2>
-              <p className="text-xs text-black/40 dark:text-white/40">{activeGroup.memberIds?.length || 0} عضو</p>
+              <p className="text-xs text-black/40 dark:text-white/40">{activeGroup.memberIds?.length || 0} {L ? "عضو" : "members"}</p>
             </div>
             <div className="flex items-center gap-1">
               {amGroupAdmin && (
@@ -261,8 +262,8 @@ export default function GroupChat() {
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-center">
                 <MessageSquare className="w-10 h-10 mb-3 text-black/10 dark:text-white/10" />
-                <p className="text-sm text-black/40 dark:text-white/40">لا توجد رسائل بعد</p>
-                <p className="text-xs text-black/25 dark:text-white/25 mt-1">كن أول من يكتب!</p>
+                <p className="text-sm text-black/40 dark:text-white/40">{L ? "لا توجد رسائل بعد" : "No messages yet"}</p>
+                <p className="text-xs text-black/25 dark:text-white/25 mt-1">{L ? "كن أول من يكتب!" : "Be the first to write!"}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -290,7 +291,7 @@ export default function GroupChat() {
                         <div className={`relative px-3 py-2 rounded-2xl text-sm leading-relaxed ${isMe ? "bg-black dark:bg-white text-white dark:text-black rounded-tl-sm" : "bg-black/[0.05] dark:bg-white/[0.05] text-black dark:text-white rounded-tr-sm"}`}>
                           {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
                           <div className="flex items-center justify-end gap-1 mt-0.5">
-                            <span className={`text-[10px] ${isMe ? "text-white/50 dark:text-black/50" : "text-black/30 dark:text-white/30"}`}>{formatTime(m.createdAt)}</span>
+                            <span className={`text-[10px] ${isMe ? "text-white/50 dark:text-black/50" : "text-black/30 dark:text-white/30"}`}>{formatTime(m.createdAt, L)}</span>
                           </div>
                           {isMe && (
                             <button
@@ -318,7 +319,7 @@ export default function GroupChat() {
                 value={msg}
                 onChange={e => setMsg(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder="اكتب رسالتك..."
+                placeholder={L ? "اكتب رسالتك..." : "Write a message..."}
                 className="flex-1 h-10 text-sm"
                 data-testid="input-group-message"
               />
@@ -340,10 +341,10 @@ export default function GroupChat() {
             <div className="w-20 h-20 bg-black/[0.04] dark:bg-white/[0.04] rounded-3xl flex items-center justify-center mb-4 mx-auto">
               <MessageSquare className="w-10 h-10 text-black/20 dark:text-white/20" />
             </div>
-            <h2 className="text-xl font-bold text-black dark:text-white mb-2">مجموعات الفريق</h2>
-            <p className="text-sm text-black/40 dark:text-white/40 max-w-xs">اختر مجموعة من القائمة أو أنشئ مجموعة جديدة للتواصل مع فريق العمل</p>
+            <h2 className="text-xl font-bold text-black dark:text-white mb-2">{L ? "مجموعات الفريق" : "Team Groups"}</h2>
+            <p className="text-sm text-black/40 dark:text-white/40 max-w-xs">{L ? "اختر مجموعة من القائمة أو أنشئ مجموعة جديدة للتواصل مع فريق العمل" : "Select a group or create a new one to communicate with your team"}</p>
             <Button onClick={() => setCreateOpen(true)} className="mt-4 gap-2">
-              <Plus className="w-4 h-4" /> إنشاء مجموعة جديدة
+              <Plus className="w-4 h-4" /> {L ? "إنشاء مجموعة جديدة" : "Create New Group"}
             </Button>
           </div>
         </div>
@@ -351,11 +352,11 @@ export default function GroupChat() {
 
       {/* ── Create Group Dialog ──────────────────────── */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5" /> إنشاء مجموعة جديدة</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5" /> {L ? "إنشاء مجموعة جديدة" : "Create New Group"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">أيقونة المجموعة</label>
+              <label className="text-sm font-medium mb-1.5 block">{L ? "أيقونة المجموعة" : "Group Icon"}</label>
               <div className="flex flex-wrap gap-2">
                 {EMOJI_OPTIONS.map(e => (
                   <button key={e} onClick={() => setNewGroup(g => ({ ...g, icon: e }))}
@@ -366,16 +367,16 @@ export default function GroupChat() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">اسم المجموعة *</label>
-              <Input value={newGroup.name} onChange={e => setNewGroup(g => ({ ...g, name: e.target.value }))} placeholder="مثال: فريق التطوير" data-testid="input-group-name" />
+              <label className="text-sm font-medium mb-1.5 block">{L ? "اسم المجموعة *" : "Group Name *"}</label>
+              <Input value={newGroup.name} onChange={e => setNewGroup(g => ({ ...g, name: e.target.value }))} placeholder={L ? "مثال: فريق التطوير" : "e.g. Development Team"} data-testid="input-group-name" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">الوصف (اختياري)</label>
-              <Input value={newGroup.description} onChange={e => setNewGroup(g => ({ ...g, description: e.target.value }))} placeholder="وصف قصير للمجموعة" />
+              <label className="text-sm font-medium mb-1.5 block">{L ? "الوصف (اختياري)" : "Description (optional)"}</label>
+              <Input value={newGroup.description} onChange={e => setNewGroup(g => ({ ...g, description: e.target.value }))} placeholder={L ? "وصف قصير للمجموعة" : "Short group description"} />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">إضافة أعضاء</label>
-              <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="بحث عن موظف..." className="mb-2" />
+              <label className="text-sm font-medium mb-1.5 block">{L ? "إضافة أعضاء" : "Add Members"}</label>
+              <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder={L ? "بحث عن موظف..." : "Search staff..."} className="mb-2" />
               <ScrollArea className="h-36 border rounded-lg p-1">
                 {(allStaff as any[]).filter((s: any) => String(s.id || s._id) !== uid && (!memberSearch || (s.fullName || s.username)?.includes(memberSearch))).map((s: any) => {
                   const sid = String(s.id || s._id);
@@ -393,11 +394,11 @@ export default function GroupChat() {
                   );
                 })}
               </ScrollArea>
-              {selectedMembers.length > 0 && <p className="text-xs text-black/40 dark:text-white/40 mt-1">تم اختيار {selectedMembers.length} عضو</p>}
+              {selectedMembers.length > 0 && <p className="text-xs text-black/40 dark:text-white/40 mt-1">{L ? "تم اختيار" : "Selected"} {selectedMembers.length} {L ? "عضو" : "member(s)"}</p>}
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={() => createGroup.mutate()} disabled={!newGroup.name.trim() || createGroup.isPending} data-testid="button-confirm-create-group">
               {createGroup.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : null}
               إنشاء المجموعة
@@ -408,7 +409,7 @@ export default function GroupChat() {
 
       {/* ── Group Settings Dialog ────────────────────── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-xl">{activeGroup?.icon}</span>
@@ -419,7 +420,7 @@ export default function GroupChat() {
             <div className="space-y-4 px-1">
               {activeGroup?.description && <p className="text-sm text-black/50 dark:text-white/50">{activeGroup.description}</p>}
               <div>
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> الأعضاء ({activeGroup?.memberIds?.length || 0})</h3>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> {L ? "الأعضاء" : "Members"} ({activeGroup?.memberIds?.length || 0})</h3>
                 <div className="space-y-1">
                   {(activeGroup?.memberIds || []).map((m: any) => {
                     const memberId = String(m._id || m);
@@ -429,16 +430,16 @@ export default function GroupChat() {
                       <div key={memberId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
                         <UserAvatar profilePhotoUrl={m.profilePhotoUrl} avatarConfig={m.avatarConfig} name={m.fullName || m.username || "؟"} role={m.role} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate block">{m.fullName || m.username || "عضو"}</span>
+                          <span className="text-sm font-medium truncate block">{m.fullName || m.username || (L ? "عضو" : "Member")}</span>
                           {m.role && <span className="text-[10px] text-black/40 dark:text-white/40">{ROLE_LABELS[m.role] || m.role}</span>}
                         </div>
-                        {isGroupAdmin && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" title="مشرف المجموعة" />}
+                        {isGroupAdmin && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" title={L ? "مشرف المجموعة" : "Group Admin"} />}
                         {amGroupAdmin && !isSelf && (
                           <div className="flex gap-1">
                             <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => promoteAdmin.mutate({ userId: memberId, action: isGroupAdmin ? "demote" : "promote" })}>
                               {isGroupAdmin ? <Crown className="w-3 h-3 text-yellow-500" /> : <Crown className="w-3 h-3 text-black/30 dark:text-white/30" />}
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-red-500" onClick={() => { if (confirm("إزالة العضو؟")) removeMember.mutate(memberId); }}>
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-red-500" onClick={() => { if (confirm(L ? "إزالة العضو؟" : "Remove member?")) removeMember.mutate(memberId); }}>
                               <UserMinus className="w-3 h-3" />
                             </Button>
                           </div>
@@ -451,15 +452,15 @@ export default function GroupChat() {
               <div className="border-t pt-3 space-y-2">
                 {amGroupAdmin && (
                   <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => { setSettingsOpen(false); setAddMemberOpen(true); }}>
-                    <UserPlus className="w-4 h-4" /> إضافة أعضاء
+                    <UserPlus className="w-4 h-4" /> {L ? "إضافة أعضاء" : "Add Members"}
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="w-full gap-2 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => { if (confirm("مغادرة المجموعة؟")) leaveGroup.mutate(); }}>
-                  <LogOut className="w-4 h-4" /> مغادرة المجموعة
+                <Button variant="outline" size="sm" className="w-full gap-2 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => { if (confirm(L ? "مغادرة المجموعة؟" : "Leave group?")) leaveGroup.mutate(); }}>
+                  <LogOut className="w-4 h-4" /> {L ? "مغادرة المجموعة" : "Leave Group"}
                 </Button>
                 {amGroupAdmin && (
-                  <Button variant="outline" size="sm" className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50" onClick={() => { if (confirm("حذف المجموعة نهائياً؟")) deleteGroup.mutate(); }}>
-                    <Trash2 className="w-4 h-4" /> حذف المجموعة
+                  <Button variant="outline" size="sm" className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50" onClick={() => { if (confirm(L ? "حذف المجموعة نهائياً؟" : "Delete group permanently?")) deleteGroup.mutate(); }}>
+                    <Trash2 className="w-4 h-4" /> {L ? "حذف المجموعة" : "Delete Group"}
                   </Button>
                 )}
               </div>
@@ -470,9 +471,9 @@ export default function GroupChat() {
 
       {/* ── Add Member Dialog ────────────────────────── */}
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-        <DialogContent className="max-w-sm" dir="rtl">
-          <DialogHeader><DialogTitle>إضافة أعضاء جدد</DialogTitle></DialogHeader>
-          <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="بحث عن موظف..." className="mb-2" />
+        <DialogContent className="max-w-sm" dir={dir}>
+          <DialogHeader><DialogTitle>{L ? "إضافة أعضاء جدد" : "Add New Members"}</DialogTitle></DialogHeader>
+          <Input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder={L ? "بحث عن موظف..." : "Search staff..."} className="mb-2" />
           <ScrollArea className="h-48 border rounded-lg p-1">
             {availableStaff.filter((s: any) => !memberSearch || (s.fullName || s.username)?.includes(memberSearch)).map((s: any) => {
               const sid = String(s.id || s._id);
@@ -490,9 +491,9 @@ export default function GroupChat() {
             })}
           </ScrollArea>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setAddMemberOpen(false); setSelectedMembers([]); }}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setAddMemberOpen(false); setSelectedMembers([]); }}>{L ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={() => addMembers.mutate()} disabled={selectedMembers.length === 0 || addMembers.isPending}>
-              إضافة ({selectedMembers.length})
+              {L ? "إضافة" : "Add"} ({selectedMembers.length})
             </Button>
           </DialogFooter>
         </DialogContent>

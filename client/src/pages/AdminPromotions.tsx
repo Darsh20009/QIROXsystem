@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +29,12 @@ type PromotionLog = {
   createdAt: string;
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "أدمن", manager: "مدير", developer: "مطور", designer: "مصمم",
-  accountant: "محاسب", sales: "مبيعات", sales_manager: "مدير مبيعات",
-  support: "دعم فني", merchant: "تاجر", client: "عميل",
-  customer: "زبون", investor: "مستثمر",
-};
+function getRoleLabels(L: boolean): Record<string, string> { return {
+  admin: L ? "أدمن" : "Admin", manager: L ? "مدير" : "Manager", developer: L ? "مطور" : "Developer", designer: L ? "مصمم" : "Designer",
+  accountant: L ? "محاسب" : "Accountant", sales: L ? "مبيعات" : "Sales", sales_manager: L ? "مدير مبيعات" : "Sales Manager",
+  support: L ? "دعم فني" : "Support", merchant: L ? "تاجر" : "Merchant", client: L ? "عميل" : "Client",
+  customer: L ? "زبون" : "Customer", investor: L ? "مستثمر" : "Investor",
+}; }
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
@@ -62,6 +63,9 @@ type Tab = "users" | "log";
 export default function AdminPromotions() {
   const { data: currentUser } = useUser();
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const ROLE_LABELS = getRoleLabels(L);
   const [tab, setTab] = useState<Tab>("users");
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -96,18 +100,18 @@ export default function AdminPromotions() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/all-users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/promotion-log"] });
       setSelected(null); setNewRole(""); setReason("");
-      toast({ title: `✅ تم تغيير الدور إلى: ${ROLE_LABELS[newRole] || newRole}` });
+      toast({ title: L ? `✅ تم تغيير الدور إلى: ${ROLE_LABELS[newRole] || newRole}` : `✅ Role changed to: ${ROLE_LABELS[newRole] || newRole}` });
     },
-    onError: (e: any) => toast({ title: e?.message || "فشل تغيير الدور", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e?.message || (L ? "فشل تغيير الدور" : "Failed to change role"), variant: "destructive" }),
   });
 
   const additionalRolesMutation = useMutation({
     mutationFn: () => apiRequest("PATCH", `/api/admin/users/${selected?.id || selected?._id}/additional-roles`, { additionalRoles }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/all-users"] });
-      toast({ title: "✅ تم تحديث الأدوار الإضافية" });
+      toast({ title: L ? "✅ تم تحديث الأدوار الإضافية" : "✅ Additional roles updated" });
     },
-    onError: () => toast({ title: "فشل التحديث", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
   });
 
   const openUser = (u: User) => {
@@ -127,7 +131,7 @@ export default function AdminPromotions() {
   });
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-5xl mx-auto space-y-6">
 
@@ -140,8 +144,8 @@ export default function AdminPromotions() {
               <Crown className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-black dark:text-white">نظام الترقية والأدوار</h1>
-              <p className="text-black/40 dark:text-white/40 text-sm">إدارة أدوار المستخدمين والترقيات بصلاحيات هرمية</p>
+              <h1 className="text-2xl font-black text-black dark:text-white">{L ? "نظام الترقية والأدوار" : "Promotions & Roles System"}</h1>
+              <p className="text-black/40 dark:text-white/40 text-sm">{L ? "إدارة أدوار المستخدمين والترقيات بصلاحيات هرمية" : "Manage user roles and promotions with hierarchical permissions"}</p>
             </div>
           </div>
 
@@ -167,8 +171,8 @@ export default function AdminPromotions() {
         {/* Tabs */}
         <div className="flex gap-2 border-b border-black/[0.06] dark:border-white/[0.06]">
           {([
-            { id: "users" as Tab, label: "المستخدمون", icon: Users },
-            { id: "log" as Tab, label: "سجل الترقيات", icon: History },
+            { id: "users" as Tab, label: L ? "المستخدمون" : "Users", icon: Users },
+            { id: "log" as Tab, label: L ? "سجل الترقيات" : "Promotions Log", icon: History },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-purple-500 text-purple-600 dark:text-purple-400" : "border-transparent text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"}`}
@@ -184,12 +188,12 @@ export default function AdminPromotions() {
             <div className="flex gap-3 flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 dark:text-white/30" />
-                <Input className="pr-9" value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو البريد..." data-testid="input-search" />
+                <Input className="pr-9" value={search} onChange={e => setSearch(e.target.value)} placeholder={L ? "بحث بالاسم أو البريد..." : "Search by name or email..."} data-testid="input-search" />
               </div>
               <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
                 className="h-10 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-transparent text-sm text-black dark:text-white"
                 data-testid="select-filter-role">
-                <option value="all">جميع الأدوار</option>
+                <option value="all">{L ? "جميع الأدوار" : "All Roles"}</option>
                 {ALL_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
               </select>
             </div>
@@ -222,7 +226,7 @@ export default function AdminPromotions() {
                     </div>
                     {canChangeRole(u) && (
                       <Button variant="outline" size="sm" onClick={() => openUser(u)} className="gap-2 shrink-0" data-testid={`btn-change-role-${u.id || u._id}`}>
-                        <Shield className="w-3.5 h-3.5" /> تغيير الدور
+                        <Shield className="w-3.5 h-3.5" /> {L ? "تغيير الدور" : "Change Role"}
                       </Button>
                     )}
                   </motion.div>
@@ -238,7 +242,7 @@ export default function AdminPromotions() {
             {logsLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
             ) : logs.length === 0 ? (
-              <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><History className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />لا يوجد سجل بعد</div>
+              <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><History className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />{L ? "لا يوجد سجل بعد" : "No log yet"}</div>
             ) : (
               logs.map(log => (
                 <div key={log.id} className="flex items-center gap-4 p-4 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900" data-testid={`log-${log.id}`}>
@@ -252,7 +256,7 @@ export default function AdminPromotions() {
                       <ChevronRight className="w-3 h-3 text-black/30 dark:text-white/30" />
                       <Badge className={`text-[10px] px-2 py-0 border-0 ${ROLE_COLORS[log.toRole] || "bg-gray-100 text-gray-600"}`}>{ROLE_LABELS[log.toRole] || log.toRole}</Badge>
                     </div>
-                    <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">بواسطة: {log.promotedById?.fullName} · {new Date(log.createdAt).toLocaleDateString("ar-SA")}</p>
+                    <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">{L ? "بواسطة:" : "By:"} {log.promotedById?.fullName} · {new Date(log.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</p>
                     {log.reason && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 italic">"{log.reason}"</p>}
                   </div>
                   <Clock className="w-4 h-4 text-black/20 dark:text-white/20 shrink-0" />
@@ -265,11 +269,11 @@ export default function AdminPromotions() {
 
       {/* Promote Dialog */}
       <Dialog open={!!selected} onOpenChange={v => !v && setSelected(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black flex items-center gap-2">
               <Shield className="w-5 h-5 text-purple-500" />
-              تغيير دور: {selected?.fullName}
+              {L ? "تغيير دور:" : "Change Role:"} {selected?.fullName}
             </DialogTitle>
           </DialogHeader>
           {selected && (
@@ -281,7 +285,7 @@ export default function AdminPromotions() {
               </div>
 
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1.5 block font-semibold">الدور الجديد</label>
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1.5 block font-semibold">{L ? "الدور الجديد" : "New Role"}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {availableRoles.map(r => (
                     <button key={r} onClick={() => setNewRole(r)}
@@ -294,13 +298,13 @@ export default function AdminPromotions() {
               </div>
 
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">سبب التغيير (اختياري)</label>
-                <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="اكتب السبب..." data-testid="input-reason" />
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "سبب التغيير (اختياري)" : "Reason for change (optional)"}</label>
+                <Input value={reason} onChange={e => setReason(e.target.value)} placeholder={L ? "اكتب السبب..." : "Write the reason..."} data-testid="input-reason" />
               </div>
 
               {/* Additional Roles */}
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1.5 block font-semibold">الأدوار الإضافية (متعددة)</label>
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1.5 block font-semibold">{L ? "الأدوار الإضافية (متعددة)" : "Additional Roles (multiple)"}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {availableRoles.map(r => (
                     <button key={r} onClick={() => setAdditionalRoles(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r])}
@@ -313,7 +317,7 @@ export default function AdminPromotions() {
                 </div>
                 <Button onClick={() => additionalRolesMutation.mutate()} disabled={additionalRolesMutation.isPending} variant="outline" size="sm" className="mt-2 w-full gap-2" data-testid="btn-save-additional">
                   {additionalRolesMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
-                  حفظ الأدوار الإضافية
+                  {L ? "حفظ الأدوار الإضافية" : "Save Additional Roles"}
                 </Button>
               </div>
 
@@ -324,7 +328,7 @@ export default function AdminPromotions() {
                 data-testid="btn-confirm-promote"
               >
                 {promoteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                {ROLE_LEVEL[newRole] > ROLE_LEVEL[selected.role] ? "ترقية" : "تخفيض"} إلى {ROLE_LABELS[newRole]}
+                {ROLE_LEVEL[newRole] > ROLE_LEVEL[selected.role] ? (L ? "ترقية" : "Promote") : (L ? "تخفيض" : "Demote")} {L ? "إلى" : "to"} {ROLE_LABELS[newRole]}
               </Button>
             </div>
           )}

@@ -10,29 +10,32 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Plus, Trash2, Pencil, Star, CheckCircle2, XCircle, Settings2, Info, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
-const CATEGORIES = [
-  { value: "general", label: "عام" },
-  { value: "technical", label: "تقني" },
-  { value: "design", label: "تصميم" },
-  { value: "support", label: "دعم" },
-  { value: "security", label: "أمان" },
-  { value: "performance", label: "أداء" },
-];
+function getCategories(L: boolean) { return [
+  { value: "general", label: L ? "عام" : "General" },
+  { value: "technical", label: L ? "تقني" : "Technical" },
+  { value: "design", label: L ? "تصميم" : "Design" },
+  { value: "support", label: L ? "دعم" : "Support" },
+  { value: "security", label: L ? "أمان" : "Security" },
+  { value: "performance", label: L ? "أداء" : "Performance" },
+]; }
 
 const ICONS = ["Star", "Shield", "Zap", "Globe", "Server", "Code", "Lock", "Cpu", "Database", "Cloud", "Phone", "Mail", "BarChart", "Users", "Award", "Heart", "Gift", "CheckCircle", "Layers", "Package"];
 
-const catLabel: Record<string, string> = {
-  general: "عام", technical: "تقني", design: "تصميم", support: "دعم", security: "أمان", performance: "أداء",
-};
+
 
 const empty = { name: "", nameAr: "", description: "", icon: "Star", isInLite: false, isInPro: true, isInInfinite: true, category: "general", sortOrder: 0, isActive: true };
 
 export default function AdminSystemFeatures() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const CATEGORIES = getCategories(L);
+  const catLabel: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]));
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string|null>(null);
@@ -44,8 +47,8 @@ export default function AdminSystemFeatures() {
     mutationFn: (d: any) => editId
       ? apiRequest("PUT", `/api/admin/system-features/${editId}`, d)
       : apiRequest("POST", "/api/admin/system-features", d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/system-features"] }); setOpen(false); toast({ title: "تم الحفظ" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/system-features"] }); setOpen(false); toast({ title: L ? "تم الحفظ" : "Saved" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const del = useMutation({
@@ -70,7 +73,7 @@ export default function AdminSystemFeatures() {
   const inf = features.filter((f: any) => f.isInInfinite).length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto" dir="rtl">
+    <div className="p-6 max-w-5xl mx-auto" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -158,33 +161,33 @@ export default function AdminSystemFeatures() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>الاسم بالعربي *</Label>
+                <Label>{L ? "الاسم بالعربي *" : "Arabic Name *"}</Label>
                 <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder="دعم فني 24/7" data-testid="input-feature-name-ar" />
               </div>
               <div>
-                <Label>الاسم بالإنجليزي</Label>
+                <Label>{L ? "الاسم بالإنجليزي" : "English Name"}</Label>
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="24/7 Support" dir="ltr" data-testid="input-feature-name" />
               </div>
             </div>
             <div>
-              <Label>الوصف</Label>
+              <Label>{L ? "الوصف" : "Description"}</Label>
               <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} data-testid="input-feature-desc" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>الفئة</Label>
+                <Label>{L ? "الفئة" : "Category"}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger data-testid="select-feature-cat"><SelectValue /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>الترتيب</Label>
+                <Label>{L ? "الترتيب" : "Sort Order"}</Label>
                 <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value)||0 }))} data-testid="input-feature-order" />
               </div>
             </div>
             <div className="border rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-gray-700">تضمين في الباقات</p>
+              <p className="text-sm font-semibold text-gray-700">{L ? "تضمين في الباقات" : "Include in Plans"}</p>
               {[
                 { key: "isInLite", label: "لايت (Lite)" },
                 { key: "isInPro", label: "برو (Pro)" },
@@ -198,9 +201,9 @@ export default function AdminSystemFeatures() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
             <Button onClick={() => save.mutate(form)} disabled={save.isPending || !form.nameAr} data-testid="button-save-feature">
-              {save.isPending ? "جاري الحفظ..." : editId ? "تحديث" : "إضافة"}
+              {save.isPending ? (L ? "جاري الحفظ..." : "Saving...") : editId ? (L ? "تحديث" : "Update") : (L ? "إضافة" : "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>

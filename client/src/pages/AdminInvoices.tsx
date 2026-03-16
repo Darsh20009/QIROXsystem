@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Printer, Mail, Check, Trash2, Eye, FileText, Search, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 interface Invoice {
   id: string;
@@ -46,6 +47,8 @@ interface Order {
 
 function InvoiceForm({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
 
   const { data: clients } = useQuery<Client[]>({
@@ -133,24 +136,24 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       if (sendEmail && data?.id) {
         try {
           await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-          toast({ title: "تم إنشاء الفاتورة وإرسالها بالبريد ✅" });
+          toast({ title: L ? "تم إنشاء الفاتورة وإرسالها بالبريد ✅" : "Invoice created and emailed ✅" });
         } catch {
-          toast({ title: "تم إنشاء الفاتورة، لكن فشل إرسال البريد", variant: "destructive" });
+          toast({ title: L ? "تم إنشاء الفاتورة، لكن فشل إرسال البريد" : "Invoice created, but email failed", variant: "destructive" });
         }
       } else {
-        toast({ title: "تم إنشاء الفاتورة بنجاح" });
+        toast({ title: L ? "تم إنشاء الفاتورة بنجاح" : "Invoice created successfully" });
       }
       onClose();
     },
-    onError: () => toast({ title: "فشل إنشاء الفاتورة", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إنشاء الفاتورة" : "Failed to create invoice", variant: "destructive" }),
   });
 
   return (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir="rtl">
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
 
       {/* Status Toggle */}
       <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
-        {([["paid", "✅ مدفوعة"], ["unpaid", "⏳ غير مدفوعة"]] as const).map(([val, label]) => (
+        {([["paid", L ? "✅ مدفوعة" : "✅ Paid"], ["unpaid", L ? "⏳ غير مدفوعة" : "⏳ Unpaid"]] as const).map(([val, label]) => (
           <button
             key={val}
             type="button"
@@ -165,13 +168,13 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
       {/* Order Quick Selector */}
       <div className="bg-cyan-50 border border-cyan-200/60 rounded-xl p-3">
-        <Label className="text-xs text-cyan-700 font-bold mb-2 block">🔗 اربط بطلب موجود (يُعبّئ المبلغ والعميل تلقائياً)</Label>
+        <Label className="text-xs text-cyan-700 font-bold mb-2 block">{L ? "🔗 اربط بطلب موجود (يُعبّئ المبلغ والعميل تلقائياً)" : "🔗 Link to existing order (auto-fills amount & client)"}</Label>
         <Select value={form.orderId || "none"} onValueChange={handleOrderSelect}>
           <SelectTrigger className="h-9 text-sm border-cyan-200 bg-white">
-            <SelectValue placeholder="اختر طلباً..." />
+            <SelectValue placeholder={L ? "اختر طلباً..." : "Select an order..."} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">بدون ربط بطلب</SelectItem>
+            <SelectItem value="none">{L ? "بدون ربط بطلب" : "No order link"}</SelectItem>
             {(orders || []).map((o: Order) => (
               <SelectItem key={o.id} value={o.id}>
                 {o.projectType || o.sector || o.id.slice(-6)}
@@ -184,10 +187,10 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">العميل *</Label>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "العميل *" : "Client *"}</Label>
           <Select value={form.userId} onValueChange={v => setForm(p => ({ ...p, userId: v }))}>
             <SelectTrigger className="h-9 text-sm border-black/[0.10]">
-              <SelectValue placeholder="اختر العميل" />
+              <SelectValue placeholder={L ? "اختر العميل" : "Select client"} />
             </SelectTrigger>
             <SelectContent>
               {(clients || []).map((c: Client) => (
@@ -197,7 +200,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">المبلغ (<SARIcon size={9} className="opacity-60" />) {form.orderId ? "— مُعبّأ من الطلب" : ""}</Label>
+          <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">{L ? "المبلغ" : "Amount"} (<SARIcon size={9} className="opacity-60" />) {form.orderId ? (L ? "— مُعبّأ من الطلب" : "— filled from order") : ""}</Label>
           <Input
             type="number"
             placeholder="1000"
@@ -210,14 +213,14 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-2 block">بنود الفاتورة</Label>
+        <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود الفاتورة" : "Invoice Items"}</Label>
         <div className="grid grid-cols-4 gap-2 mb-2">
-          <Input placeholder="اسم البند" value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
-          <Input placeholder="الكمية" type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
-          <Input placeholder="السعر" type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+          <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
+          <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+          <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
         </div>
         <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs mb-3" disabled={!form.newItemName || !form.newItemPrice}>
-          <Plus className="w-3 h-3 ml-1" /> إضافة بند
+          <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند" : "Add Item"}
         </Button>
         {form.items.length > 0 && (
           <div className="space-y-1.5 mb-2">
@@ -231,20 +234,20 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
               </div>
             ))}
             <div className="text-xs font-bold text-black/70 text-left px-3">
-              <span className="flex items-center gap-1 flex-wrap">المجموع: {totalFromItems.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
+              <span className="flex items-center gap-1 flex-wrap">{L ? "المجموع:" : "Total:"} {totalFromItems.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
             </div>
           </div>
         )}
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">تاريخ الاستحقاق</Label>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "تاريخ الاستحقاق" : "Due Date"}</Label>
         <Input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">ملاحظات</Label>
-        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder="ملاحظات اختيارية..." />
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
+        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder={L ? "ملاحظات اختيارية..." : "Optional notes..."} />
       </div>
 
       <label className="flex items-center gap-2.5 cursor-pointer select-none" data-testid="checkbox-send-email-invoice">
@@ -254,7 +257,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
           onChange={e => setSendEmail(e.target.checked)}
           className="w-4 h-4 accent-black rounded"
         />
-        <span className="text-xs text-black/60 font-medium">إرسال الفاتورة للعميل بالبريد الإلكتروني بعد الإنشاء</span>
+        <span className="text-xs text-black/60 font-medium">{L ? "إرسال الفاتورة للعميل بالبريد الإلكتروني بعد الإنشاء" : "Send invoice to client by email after creation"}</span>
         <Mail className="w-3.5 h-3.5 text-black/30" />
       </label>
 
@@ -264,7 +267,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
         className="w-full bg-black text-white h-10 rounded-xl font-bold"
         data-testid="button-create-invoice"
       >
-        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? "إنشاء وإرسال بالبريد" : "إنشاء الفاتورة"}
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? (L ? "إنشاء وإرسال بالبريد" : "Create & Email") : (L ? "إنشاء الفاتورة" : "Create Invoice")}
       </Button>
     </div>
   );
@@ -272,6 +275,8 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
 export default function AdminInvoices() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
@@ -292,8 +297,8 @@ export default function AdminInvoices() {
       const r = await apiRequest("PATCH", `/api/invoices/${id}`, { status: "paid" });
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: "تم تحديد الفاتورة كمدفوعة" }); },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: L ? "تم تحديد الفاتورة كمدفوعة" : "Invoice marked as paid" }); },
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const sendEmailMutation = useMutation({
@@ -301,8 +306,8 @@ export default function AdminInvoices() {
       const r = await apiRequest("POST", `/api/invoices/${id}/send-email`, {});
       return r.json();
     },
-    onSuccess: () => toast({ title: "تم إرسال الفاتورة بالبريد الإلكتروني ✅" }),
-    onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
+    onSuccess: () => toast({ title: L ? "تم إرسال الفاتورة بالبريد الإلكتروني ✅" : "Invoice sent by email ✅" }),
+    onError: () => toast({ title: L ? "فشل إرسال البريد" : "Email send failed", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -310,8 +315,8 @@ export default function AdminInvoices() {
       const r = await apiRequest("DELETE", `/api/invoices/${id}`, {});
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: "تم حذف الفاتورة" }); },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/invoices"] }); toast({ title: L ? "تم حذف الفاتورة" : "Invoice deleted" }); },
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const filtered = (invoices || []).filter(inv => {
@@ -327,7 +332,7 @@ export default function AdminInvoices() {
     return "bg-yellow-50 text-yellow-700 border-yellow-200";
   };
 
-  const statusLabel = (s: string) => ({ paid: "مدفوع", unpaid: "غير مدفوع", cancelled: "ملغي" }[s] || s);
+  const statusLabel = (s: string) => L ? ({ paid: "مدفوع", unpaid: "غير مدفوع", cancelled: "ملغي" }[s] || s) : ({ paid: "Paid", unpaid: "Unpaid", cancelled: "Cancelled" }[s] || s);
 
   if (isLoading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -336,7 +341,7 @@ export default function AdminInvoices() {
   );
 
   return (
-    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -345,19 +350,19 @@ export default function AdminInvoices() {
             <FileText className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-black">الفواتير</h1>
-            <p className="text-xs text-black/35">{filtered.length} فاتورة</p>
+            <h1 className="text-xl font-black text-black">{L ? "الفواتير" : "Invoices"}</h1>
+            <p className="text-xs text-black/35">{filtered.length} {L ? "فاتورة" : "invoices"}</p>
           </div>
         </div>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
             <Button className="bg-black text-white h-9 rounded-xl text-sm font-bold gap-1.5" data-testid="button-new-invoice">
-              <Plus className="w-4 h-4" /> فاتورة جديدة
+              <Plus className="w-4 h-4" /> {L ? "فاتورة جديدة" : "New Invoice"}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogContent className="max-w-2xl" dir={dir}>
             <DialogHeader>
-              <DialogTitle className="text-right font-black">إنشاء فاتورة جديدة</DialogTitle>
+              <DialogTitle className="text-right font-black">{L ? "إنشاء فاتورة جديدة" : "Create New Invoice"}</DialogTitle>
             </DialogHeader>
             <InvoiceForm onClose={() => setShowCreate(false)} />
           </DialogContent>
@@ -369,7 +374,7 @@ export default function AdminInvoices() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/25" />
           <Input
-            placeholder="بحث برقم الفاتورة أو اسم العميل..."
+            placeholder={L ? "بحث برقم الفاتورة أو اسم العميل..." : "Search by invoice number or client name..."}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="h-9 pr-9 text-sm border-black/[0.10]"
@@ -384,7 +389,7 @@ export default function AdminInvoices() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === s ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.08]"}`}
               data-testid={`filter-${s}`}
             >
-              {({ all: "الكل", unpaid: "غير مدفوع", paid: "مدفوع", cancelled: "ملغي" } as any)[s]}
+              {L ? ({ all: "الكل", unpaid: "غير مدفوع", paid: "مدفوع", cancelled: "ملغي" } as any)[s] : ({ all: "All", unpaid: "Unpaid", paid: "Paid", cancelled: "Cancelled" } as any)[s]}
             </button>
           ))}
         </div>
@@ -395,19 +400,19 @@ export default function AdminInvoices() {
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-black/30">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">لا توجد فواتير</p>
+            <p className="text-sm">{L ? "لا توجد فواتير" : "No invoices"}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-black/[0.06] bg-black/[0.02]">
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">رقم الفاتورة</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">العميل</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">المبلغ</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">الحالة</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">الاستحقاق</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">الإجراءات</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "رقم الفاتورة" : "Invoice #"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "العميل" : "Client"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "المبلغ" : "Amount"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "الحالة" : "Status"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "الاستحقاق" : "Due Date"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "الإجراءات" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -429,14 +434,14 @@ export default function AdminInvoices() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-black/40">
-                        {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("ar-SA") : "—"}
+                        {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString(L ? "ar-SA" : "en-US") : "—"}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => setLocation(`/admin/invoice-print/${inv.id}`)}
                             className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
-                            title="عرض وطباعة"
+                            title={L ? "عرض وطباعة" : "View & Print"}
                             data-testid={`button-print-${inv.id}`}
                           >
                             <Printer className="w-3.5 h-3.5" />
@@ -445,7 +450,7 @@ export default function AdminInvoices() {
                             onClick={() => sendEmailMutation.mutate(inv.id)}
                             disabled={sendEmailMutation.isPending}
                             className="p-1.5 rounded-lg hover:bg-blue-50 text-black/40 hover:text-blue-600 transition-colors"
-                            title="إرسال بالبريد"
+                            title={L ? "إرسال بالبريد" : "Send by Email"}
                             data-testid={`button-email-${inv.id}`}
                           >
                             <Mail className="w-3.5 h-3.5" />
@@ -455,7 +460,7 @@ export default function AdminInvoices() {
                               onClick={() => markPaidMutation.mutate(inv.id)}
                               disabled={markPaidMutation.isPending}
                               className="p-1.5 rounded-lg hover:bg-green-50 text-black/40 hover:text-green-600 transition-colors"
-                              title="تحديد كمدفوع"
+                              title={L ? "تحديد كمدفوع" : "Mark as Paid"}
                               data-testid={`button-paid-${inv.id}`}
                             >
                               <Check className="w-3.5 h-3.5" />
@@ -465,7 +470,7 @@ export default function AdminInvoices() {
                             onClick={() => deleteMutation.mutate(inv.id)}
                             disabled={deleteMutation.isPending}
                             className="p-1.5 rounded-lg hover:bg-red-50 text-black/40 hover:text-red-500 transition-colors"
-                            title="حذف"
+                            title={L ? "حذف" : "Delete"}
                             data-testid={`button-delete-invoice-${inv.id}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />

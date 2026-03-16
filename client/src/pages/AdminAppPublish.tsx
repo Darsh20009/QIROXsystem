@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useRef } from "react";
+import { useI18n } from "@/lib/i18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,8 @@ const PERMISSIONS = [
 function CopyBtn({ text }: { text: string }) {
   const { toast } = useToast();
   return (
-    <button onClick={() => { navigator.clipboard.writeText(text); toast({ title: "تم النسخ ✓" }); }}
-      className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="نسخ">
+    <button onClick={() => { navigator.clipboard.writeText(text); toast({ title: "Copied ✓" }); }}
+      className="p-1.5 rounded hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="Copy">
       <Copy className="w-3.5 h-3.5" />
     </button>
   );
@@ -59,8 +60,8 @@ function CodeBlock({ title, code }: { title: string; code: string }) {
       <div className="flex items-center justify-between bg-black/[0.04] px-4 py-2 border-b border-black/[0.06]">
         <span className="text-[11px] font-mono font-semibold text-black/60">{title}</span>
         <div className="flex items-center gap-1">
-          <button onClick={() => navigator.clipboard.writeText(code)} className="text-[10px] text-black/40 hover:text-black/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-black/[0.05] transition-colors"><Copy className="w-3 h-3" /> نسخ</button>
-          <button onClick={downloadFile} className="text-[10px] text-black/40 hover:text-black/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-black/[0.05] transition-colors"><Download className="w-3 h-3" /> تنزيل</button>
+          <button onClick={() => navigator.clipboard.writeText(code)} className="text-[10px] text-black/40 hover:text-black/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-black/[0.05] transition-colors"><Copy className="w-3 h-3" /> Copy</button>
+          <button onClick={downloadFile} className="text-[10px] text-black/40 hover:text-black/70 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-black/[0.05] transition-colors"><Download className="w-3 h-3" /> Download</button>
         </div>
       </div>
       <pre className="p-4 text-[11px] font-mono text-black/70 bg-white overflow-x-auto leading-relaxed whitespace-pre-wrap">{code}</pre>
@@ -1118,7 +1119,7 @@ export default function AdminAppPublish() {
 
   const saveMutation = useMutation({
     mutationFn: (d: any) => apiRequest("PUT", "/api/admin/store-publish-config", d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/store-publish-config"] }); setSettingsOpen(false); toast({ title: "تم حفظ الإعدادات ✓" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/store-publish-config"] }); setSettingsOpen(false); toast({ title: L ? "تم حفظ الإعدادات ✓" : "Settings saved ✓" }); },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
@@ -1302,7 +1303,7 @@ export default function AdminAppPublish() {
   );
 
   return (
-    <div dir="rtl" className="max-w-5xl mx-auto py-6 px-4">
+    <div dir={dir} className="max-w-5xl mx-auto py-6 px-4">
       {/* ─── Header ──────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -1310,12 +1311,12 @@ export default function AdminAppPublish() {
             <Store className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-black">مركز نشر التطبيق</h1>
-            <p className="text-xs text-black/40 mt-0.5">توليد حزم حقيقية · Google Play · App Store · Microsoft Store · App Gallery</p>
+            <h1 className="text-xl font-black text-black">{L ? "مركز نشر التطبيق" : "App Publishing Center"}</h1>
+            <p className="text-xs text-black/40 mt-0.5">{L ? "توليد حزم حقيقية · Google Play · App Store · Microsoft Store · App Gallery" : "Generate real packages · Google Play · App Store · Microsoft Store · App Gallery"}</p>
           </div>
         </div>
         <Button onClick={openSettings} variant="outline" className="gap-2 text-sm" data-testid="button-open-store-settings">
-          <Settings className="w-4 h-4" /> إعدادات المتاجر
+          <Settings className="w-4 h-4" /> {L ? "إعدادات المتاجر" : "Store Settings"}
         </Button>
       </div>
 
@@ -1323,43 +1324,43 @@ export default function AdminAppPublish() {
       {settingsOpen && (
         <div className="mb-6 p-5 rounded-2xl border border-black/[0.08] bg-black/[0.02]">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-black text-black">إعدادات النشر على المتاجر</h2>
-            <button onClick={() => setSettingsOpen(false)} className="text-black/30 hover:text-black/60 text-xs">✕ إغلاق</button>
+            <h2 className="text-sm font-black text-black">{L ? "إعدادات النشر على المتاجر" : "Store Publishing Settings"}</h2>
+            <button onClick={() => setSettingsOpen(false)} className="text-black/30 hover:text-black/60 text-xs">✕ {L ? "إغلاق" : "Close"}</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">عام</p>
-              {FIELD("رابط الموقع", data.siteUrl || "", v => f("siteUrl", v), { placeholder: "https://qiroxstudio.online" })}
-              {FIELD("اسم التطبيق (English)", data.appName || "", v => f("appName", v))}
-              {FIELD("اسم التطبيق (عربي)", data.appNameAr || "", v => f("appNameAr", v))}
-              {FIELD("الإصدار", data.appVersion || "1.0.0", v => f("appVersion", v))}
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">{L ? "عام" : "General"}</p>
+              {FIELD(L ? "رابط الموقع" : "Site URL", data.siteUrl || "", v => f("siteUrl", v), { placeholder: "https://qiroxstudio.online" })}
+              {FIELD(L ? "اسم التطبيق (English)" : "App Name (English)", data.appName || "", v => f("appName", v))}
+              {FIELD(L ? "اسم التطبيق (عربي)" : "App Name (Arabic)", data.appNameAr || "", v => f("appNameAr", v))}
+              {FIELD(L ? "الإصدار" : "Version", data.appVersion || "1.0.0", v => f("appVersion", v))}
             </div>
             <div className="space-y-3">
               <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">Google Play (Android)</p>
               {FIELD("Package Name", data.androidPackage || "", v => f("androidPackage", v), { placeholder: "com.qirox.studio" })}
               {FIELD("SHA-256 Fingerprint", data.androidFingerprint || "", v => f("androidFingerprint", v), { placeholder: "AA:BB:CC:..." })}
-              {FIELD("رابط Google Play", data.playStoreUrl || "", v => f("playStoreUrl", v))}
+              {FIELD(L ? "رابط Google Play" : "Google Play URL", data.playStoreUrl || "", v => f("playStoreUrl", v))}
             </div>
             <div className="space-y-3">
               <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">Apple App Store</p>
               {FIELD("Team ID", data.appleTeamId || "", v => f("appleTeamId", v), { placeholder: "ABCDE12345" })}
               {FIELD("Bundle ID", data.appleBundleId || "", v => f("appleBundleId", v), { placeholder: "com.qirox.studio" })}
-              {FIELD("رابط App Store", data.appStoreUrl || "", v => f("appStoreUrl", v))}
+              {FIELD(L ? "رابط App Store" : "App Store URL", data.appStoreUrl || "", v => f("appStoreUrl", v))}
             </div>
             <div className="space-y-3">
               <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">Huawei App Gallery</p>
               {FIELD("Package Name", data.huaweiPackage || "", v => f("huaweiPackage", v), { placeholder: "com.qirox.studio.huawei" })}
               {FIELD("SHA-256 Fingerprint", data.huaweiFingerprint || "", v => f("huaweiFingerprint", v), { placeholder: "AA:BB:CC:..." })}
-              {FIELD("رابط App Gallery", data.huaweiStoreUrl || "", v => f("huaweiStoreUrl", v))}
+              {FIELD(L ? "رابط App Gallery" : "App Gallery URL", data.huaweiStoreUrl || "", v => f("huaweiStoreUrl", v))}
               <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">Microsoft Store</p>
               {FIELD("MS App Identity", data.msAppId || "", v => f("msAppId", v), { placeholder: "12345YourName.QiroxStudio" })}
-              {FIELD("رابط Microsoft Store", data.msStoreUrl || "", v => f("msStoreUrl", v))}
+              {FIELD(L ? "رابط Microsoft Store" : "Microsoft Store URL", data.msStoreUrl || "", v => f("msStoreUrl", v))}
             </div>
           </div>
           <div className="flex justify-end mt-4">
             <Button onClick={() => saveMutation.mutate(form)} disabled={saveMutation.isPending} className="gap-2" data-testid="button-save-store-settings">
               {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              حفظ الإعدادات
+              {L ? "حفظ الإعدادات" : "Save Settings"}
             </Button>
           </div>
         </div>
@@ -1372,8 +1373,8 @@ export default function AdminAppPublish() {
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-sm font-black text-black">جاهزية التطبيق للمتاجر</p>
-            <span className="text-xs text-black/40">{readyCount} / {readinessChecklist.length} معيار</span>
+            <p className="text-sm font-black text-black">{L ? "جاهزية التطبيق للمتاجر" : "App Store Readiness"}</p>
+            <span className="text-xs text-black/40">{readyCount} / {readinessChecklist.length} {L ? "معيار" : "criteria"}</span>
           </div>
           <div className="w-full h-2 rounded-full bg-black/[0.06] overflow-hidden">
             <div className="h-full bg-black rounded-full transition-all" style={{ width: `${(readyCount / readinessChecklist.length) * 100}%` }} />
@@ -1385,13 +1386,13 @@ export default function AdminAppPublish() {
         {data.msStoreUrl && <StoreBadge store="Microsoft" url={data.msStoreUrl} />}
       </div>
 
-      <Tabs defaultValue="builder" dir="rtl">
+      <Tabs defaultValue="builder" dir={dir}>
         <TabsList className="mb-5 flex-wrap h-auto gap-1 bg-black/[0.03] p-1 rounded-xl">
           <TabsTrigger value="builder" className="gap-1.5 text-xs data-[state=active]:bg-black data-[state=active]:text-white rounded-lg">
-            <Package className="w-3.5 h-3.5" /> مولّد الحزم ✨
+            <Package className="w-3.5 h-3.5" /> {L ? "مولّد الحزم ✨" : "Package Builder ✨"}
           </TabsTrigger>
           <TabsTrigger value="readiness" className="gap-1.5 text-xs data-[state=active]:bg-black data-[state=active]:text-white rounded-lg">
-            <Shield className="w-3.5 h-3.5" /> حالة الجاهزية
+            <Shield className="w-3.5 h-3.5" /> {L ? "حالة الجاهزية" : "Readiness Status"}
           </TabsTrigger>
           <TabsTrigger value="google" className="gap-1.5 text-xs data-[state=active]:bg-black data-[state=active]:text-white rounded-lg">
             <Smartphone className="w-3.5 h-3.5" /> Google Play
@@ -1406,7 +1407,7 @@ export default function AdminAppPublish() {
             <Globe className="w-3.5 h-3.5" /> Microsoft Store
           </TabsTrigger>
           <TabsTrigger value="files" className="gap-1.5 text-xs data-[state=active]:bg-black data-[state=active]:text-white rounded-lg">
-            <Download className="w-3.5 h-3.5" /> ملفات الربط
+            <Download className="w-3.5 h-3.5" /> {L ? "ملفات الربط" : "Linking Files"}
           </TabsTrigger>
         </TabsList>
 
@@ -1420,7 +1421,7 @@ export default function AdminAppPublish() {
             <div className="lg:col-span-2 space-y-4">
               {/* Platform Cards */}
               <div>
-                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">اختر المنصة المستهدفة</p>
+                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">{L ? "اختر المنصة المستهدفة" : "Choose Target Platform"}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {PLATFORMS.map(plt => {
                     const Icon = plt.icon;
@@ -1446,18 +1447,18 @@ export default function AdminAppPublish() {
 
               {/* Build Config */}
               <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
-                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">إعدادات البناء</p>
+                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">{L ? "إعدادات البناء" : "Build Configuration"}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-bold text-black/50 block mb-1">رقم الإصدار</label>
+                    <label className="text-[11px] font-bold text-black/50 block mb-1">{L ? "رقم الإصدار" : "Version Number"}</label>
                     <Input value={buildVer} onChange={e => setBuildVer(e.target.value)} className="text-sm h-9 font-mono" dir="ltr" placeholder="1.0.0" data-testid="input-build-version" />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-black/50 block mb-1">اسم التطبيق</label>
+                    <label className="text-[11px] font-bold text-black/50 block mb-1">{L ? "اسم التطبيق" : "App Name"}</label>
                     <Input value={appName} disabled className="text-sm h-9 opacity-60" dir="ltr" />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-black/50 block mb-1">رابط التطبيق</label>
+                    <label className="text-[11px] font-bold text-black/50 block mb-1">{L ? "رابط التطبيق" : "App URL"}</label>
                     <Input value={siteUrl} disabled className="text-sm h-9 opacity-60" dir="ltr" />
                   </div>
                   <div>
@@ -1473,7 +1474,7 @@ export default function AdminAppPublish() {
 
               {/* Permissions */}
               <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
-                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">الصلاحيات والأذونات</p>
+                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">{L ? "الصلاحيات والأذونات" : "Permissions"}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {PERMISSIONS.map(perm => {
                     const active = buildPerms.includes(perm.id);
@@ -1488,7 +1489,7 @@ export default function AdminAppPublish() {
                         className={`p-2.5 rounded-xl border text-right transition-all ${active ? "border-black bg-black text-white" : "border-black/[0.08] bg-black/[0.02] text-black hover:border-black/20"} ${perm.required ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
                       >
                         <p className={`text-[11px] font-bold ${active ? "text-white" : "text-black"}`}>{perm.label}</p>
-                        {perm.required && <p className={`text-[9px] ${active ? "text-white/50" : "text-black/30"}`}>مطلوب</p>}
+                        {perm.required && <p className={`text-[9px] ${active ? "text-white/50" : "text-black/30"}`}>{L ? "مطلوب" : "Required"}</p>}
                       </button>
                     );
                   })}
@@ -1497,7 +1498,7 @@ export default function AdminAppPublish() {
 
               {/* What's inside */}
               <div className="p-4 rounded-2xl border border-black/[0.06] bg-gradient-to-br from-black/[0.02] to-transparent">
-                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">ما يحتويه الملف المُولَّد</p>
+                <p className="text-[11px] font-black text-black/40 uppercase tracking-widest mb-3">{L ? "ما يحتويه الملف المُولَّد" : "What's inside the generated file"}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                   {selectedPlatform === "android" && [
                     "AndroidManifest.xml (كل الصلاحيات)",
@@ -1553,16 +1554,16 @@ export default function AdminAppPublish() {
                 <div className="flex items-center gap-2 mb-4">
                   {(() => { const plt = PLATFORMS.find(p => p.id === selectedPlatform)!; const Icon = plt.icon; return <Icon className="w-5 h-5 text-white/70" />; })()}
                   <div>
-                    <p className="text-sm font-black">{PLATFORMS.find(p => p.id === selectedPlatform)?.label}</p>
+                    <p className="text-sm font-black">{L ? PLATFORMS.find(p => p.id === selectedPlatform)?.label : PLATFORMS.find(p => p.id === selectedPlatform)?.labelEn}</p>
                     <p className="text-[10px] text-white/50">{PLATFORMS.find(p => p.id === selectedPlatform)?.desc}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-4">
                   {[
-                    { label: "الإصدار", value: buildVer },
-                    { label: "الصلاحيات", value: `${buildPerms.length} صلاحية` },
-                    { label: "الملف", value: `${PLATFORMS.find(p => p.id === selectedPlatform)?.ext} + README` },
+                    { label: L ? "الإصدار" : "Version", value: buildVer },
+                    { label: L ? "الصلاحيات" : "Permissions", value: `${buildPerms.length} ${L ? "صلاحية" : "permissions"}` },
+                    { label: L ? "الملف" : "File", value: `${PLATFORMS.find(p => p.id === selectedPlatform)?.ext} + README` },
                   ].map(row => (
                     <div key={row.label} className="flex items-center justify-between text-[11px]">
                       <span className="text-white/50">{row.label}</span>
@@ -1574,7 +1575,7 @@ export default function AdminAppPublish() {
                 {generating && (
                   <div className="mb-4">
                     <div className="flex items-center justify-between text-[11px] text-white/60 mb-1.5">
-                      <span>جاري التوليد...</span>
+                      <span>{L ? "جاري التوليد..." : "Generating..."}</span>
                       <span>{buildProgress}%</span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
@@ -1590,14 +1591,14 @@ export default function AdminAppPublish() {
                   className="w-full bg-white text-black hover:bg-white/90 font-black gap-2 h-11"
                 >
                   {generating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> جاري التوليد...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {L ? "جاري التوليد..." : "Generating..."}</>
                   ) : (
-                    <><FileArchive className="w-4 h-4" /> توليد وتنزيل الحزمة</>
+                    <><FileArchive className="w-4 h-4" /> {L ? "توليد وتنزيل الحزمة" : "Generate & Download Package"}</>
                   )}
                 </Button>
 
                 <p className="text-[10px] text-white/40 mt-3 text-center leading-relaxed">
-                  الحزمة تحتوي مشروعاً كاملاً جاهزاً للبناء إلى تطبيق حقيقي
+                  {L ? "الحزمة تحتوي مشروعاً كاملاً جاهزاً للبناء إلى تطبيق حقيقي" : "The package contains a complete project ready to build into a real app"}
                 </p>
               </div>
 
@@ -1606,9 +1607,9 @@ export default function AdminAppPublish() {
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-bold text-black mb-1">كيف يعمل؟</p>
+                    <p className="text-xs font-bold text-black mb-1">{L ? "كيف يعمل؟" : "How does it work?"}</p>
                     <p className="text-[11px] text-black/50 leading-relaxed">
-                      الملف المُولَّد هو مشروع كامل (ZIP) يحتوي جميع الملفات اللازمة لبناء تطبيق حقيقي. افتحه في البيئة المناسبة (Android Studio / VS Code / Xcode / DevEco) واتبع README.
+                      {L ? "الملف المُولَّد هو مشروع كامل (ZIP) يحتوي جميع الملفات اللازمة لبناء تطبيق حقيقي. افتحه في البيئة المناسبة (Android Studio / VS Code / Xcode / DevEco) واتبع README." : "The generated file is a complete project (ZIP) with all files needed to build a real app. Open it in the appropriate environment (Android Studio / VS Code / Xcode / DevEco) and follow the README."}
                     </p>
                   </div>
                 </div>
@@ -1618,9 +1619,9 @@ export default function AdminAppPublish() {
               {generatedPackages.length > 0 && (
                 <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[11px] font-black text-black/50 uppercase tracking-widest">الحزم السابقة</p>
+                    <p className="text-[11px] font-black text-black/50 uppercase tracking-widest">{L ? "الحزم السابقة" : "Previous Packages"}</p>
                     <button onClick={clearHistory} className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-1">
-                      <Trash2 className="w-3 h-3" /> مسح
+                      <Trash2 className="w-3 h-3" /> {L ? "مسح" : "Clear"}
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -1639,7 +1640,7 @@ export default function AdminAppPublish() {
                             onClick={() => handleRedownload(pkg)}
                             disabled={redownloading === pkg.id}
                             className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.08] dark:hover:bg-white/[0.10] transition-colors shrink-0 disabled:opacity-70"
-                            title="إعادة تنزيل"
+                            title={L ? "إعادة تنزيل" : "Re-download"}
                             data-testid={`btn-redownload-${pkg.id}`}
                           >
                             {redownloading === pkg.id
@@ -1663,19 +1664,19 @@ export default function AdminAppPublish() {
         <TabsContent value="readiness">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">المتطلبات التقنية</p>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">{L ? "المتطلبات التقنية" : "Technical Requirements"}</p>
               {readinessChecklist.slice(0, 7).map((item, i) => <ReadinessItem key={i} {...item} />)}
             </div>
             <div>
-              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">إعدادات المتاجر</p>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">{L ? "إعدادات المتاجر" : "Store Settings"}</p>
               {readinessChecklist.slice(7).map((item, i) => <ReadinessItem key={i} {...item} />)}
               {!hasAndroid || !hasApple || !hasMs ? (
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">
-                  لإكمال الجاهزية، اضغط على <strong>"إعدادات المتاجر"</strong> أعلاه وأدخل البيانات.
+                  {L ? 'لإكمال الجاهزية، اضغط على "إعدادات المتاجر" أعلاه وأدخل البيانات.' : 'To complete readiness, click "Store Settings" above and enter your data.'}
                 </div>
               ) : (
                 <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-700 font-bold">
-                  🎉 التطبيق جاهز للنشر على جميع المتاجر!
+                  {L ? "🎉 التطبيق جاهز للنشر على جميع المتاجر!" : "🎉 The app is ready to publish on all stores!"}
                 </div>
               )}
             </div>
@@ -1691,7 +1692,7 @@ export default function AdminAppPublish() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center"><Smartphone className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Google Play Store</h2><p className="text-[10px] text-black/40">عبر Trusted Web Activity (TWA)</p></div>
-                {data.playStoreUrl && <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-200"><CheckCircle2 className="w-3 h-3" /> منشور</Badge></a>}
+                {data.playStoreUrl && <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة Android" desc='اضغط على تبويب "مولّد الحزم" → اختر Android → توليد وتنزيل' />
               <StepCard n={2} title="فتح في Android Studio" desc="افتح المجلد المُستخرج من ZIP في Android Studio" />
@@ -1701,7 +1702,7 @@ export default function AdminAppPublish() {
               <StepCard n={6} title="رفع على Google Play Console" desc="أنشئ تطبيقاً جديداً وارفع ملف AAB" link="https://play.google.com/console" linkLabel="Google Play Console" />
             </div>
             <div>
-              <p className="text-xs font-black text-black/40 mb-3">ملف bubblewrap التلقائي</p>
+              <p className="text-xs font-black text-black/40 mb-3">{L ? "ملف bubblewrap التلقائي" : "Auto bubblewrap file"}</p>
               <CodeBlock title="bubblewrap.config.json" code={bubblewrapConfig} />
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06]">
                 <p className="text-[10px] font-bold text-black/50 mb-2">assetlinks.json:</p>
@@ -1722,7 +1723,7 @@ export default function AdminAppPublish() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center"><Apple className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Apple App Store</h2><p className="text-[10px] text-black/40">عبر Capacitor + Xcode</p></div>
-                {data.appStoreUrl && <a href={data.appStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1"><CheckCircle2 className="w-3 h-3 text-blue-500" /> منشور</Badge></a>}
+                {data.appStoreUrl && <a href={data.appStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1"><CheckCircle2 className="w-3 h-3 text-blue-500" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة iOS" desc='تبويب "مولّد الحزم" → اختر iOS → توليد وتنزيل الحزمة' />
               <StepCard n={2} title="تثبيت المتطلبات" desc="npm install && cd ios/App && pod install" />
@@ -1751,7 +1752,7 @@ export default function AdminAppPublish() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-xl bg-red-500 flex items-center justify-center"><Cpu className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Huawei App Gallery</h2><p className="text-[10px] text-black/40">HarmonyOS NEXT</p></div>
-                {data.huaweiStoreUrl && <a href={data.huaweiStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-red-600 border-red-200"><CheckCircle2 className="w-3 h-3" /> منشور</Badge></a>}
+                {data.huaweiStoreUrl && <a href={data.huaweiStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-red-600 border-red-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة HarmonyOS" desc='تبويب "مولّد الحزم" → اختر هارموني → توليد وتنزيل' />
               <StepCard n={2} title="فتح في DevEco Studio" desc="افتح المجلد المُستخرج من ZIP في DevEco Studio 4.0+" />
@@ -1760,7 +1761,7 @@ export default function AdminAppPublish() {
               <StepCard n={5} title="رفع على AppGallery Connect" desc="Software Versions → New Version → ارفع ملف .app" link="https://developer.huawei.com/consumer/en/service/josp/agc/index.html" linkLabel="AppGallery Connect" />
             </div>
             <div>
-              <p className="text-xs font-black text-black/40 mb-3">assetlinks.json (مشترك)</p>
+              <p className="text-xs font-black text-black/40 mb-3">{L ? "assetlinks.json (مشترك)" : "assetlinks.json (shared)"}</p>
               <CodeBlock title=".well-known/assetlinks.json" code={assetlinksJson} />
             </div>
           </div>
@@ -1775,7 +1776,7 @@ export default function AdminAppPublish() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center"><Globe className="w-4 h-4 text-white" /></div>
                 <div><h2 className="text-sm font-black">Microsoft Store</h2><p className="text-[10px] text-black/40">Electron + MSIX</p></div>
-                {data.msStoreUrl && <a href={data.msStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-blue-600 border-blue-200"><CheckCircle2 className="w-3 h-3" /> منشور</Badge></a>}
+                {data.msStoreUrl && <a href={data.msStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-blue-600 border-blue-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
               </div>
               <StepCard n={1} title="توليد حزمة Windows" desc='تبويب "مولّد الحزم" → اختر ويندوز → توليد وتنزيل' />
               <StepCard n={2} title="تثبيت المتطلبات" desc="npm install (في المجلد المستخرج)" />
@@ -1791,20 +1792,20 @@ export default function AdminAppPublish() {
                 </a>
               </div>
               <div className="p-4 rounded-xl border border-black/[0.06] bg-white">
-                <p className="text-xs font-bold text-black mb-3">مقارنة متطلبات المتاجر</p>
-                <table className="w-full text-[10px]" dir="rtl">
+                <p className="text-xs font-bold text-black mb-3">{L ? "مقارنة متطلبات المتاجر" : "Store Requirements Comparison"}</p>
+                <table className="w-full text-[10px]" dir={dir}>
                   <thead><tr className="border-b border-black/[0.06]">
-                    <th className="text-right pb-2 font-bold text-black/40">المتجر</th>
-                    <th className="text-center pb-2 font-bold text-black/40">الرسوم</th>
+                    <th className="text-right pb-2 font-bold text-black/40">{L ? "المتجر" : "Store"}</th>
+                    <th className="text-center pb-2 font-bold text-black/40">{L ? "الرسوم" : "Fee"}</th>
                     <th className="text-center pb-2 font-bold text-black/40">Mac</th>
-                    <th className="text-center pb-2 font-bold text-black/40">التعقيد</th>
+                    <th className="text-center pb-2 font-bold text-black/40">{L ? "التعقيد" : "Complexity"}</th>
                   </tr></thead>
                   <tbody>
                     {[
-                      { name: "Google Play", fee: "$25", mac: "لا", c: "متوسط" },
-                      { name: "App Store", fee: "$99/سنة", mac: "✓ نعم", c: "عالٍ" },
-                      { name: "Huawei", fee: "مجاني", mac: "لا", c: "متوسط" },
-                      { name: "Microsoft", fee: "$19", mac: "لا", c: "سهل ✓" },
+                      { name: "Google Play", fee: "$25", mac: L ? "لا" : "No", c: L ? "متوسط" : "Medium" },
+                      { name: "App Store", fee: L ? "$99/سنة" : "$99/yr", mac: "✓ " + (L ? "نعم" : "Yes"), c: L ? "عالٍ" : "High" },
+                      { name: "Huawei", fee: L ? "مجاني" : "Free", mac: L ? "لا" : "No", c: L ? "متوسط" : "Medium" },
+                      { name: "Microsoft", fee: "$19", mac: L ? "لا" : "No", c: L ? "سهل ✓" : "Easy ✓" },
                     ].map(r => (
                       <tr key={r.name} className="border-b border-black/[0.03]">
                         <td className="py-1.5 font-semibold">{r.name}</td>
@@ -1826,20 +1827,20 @@ export default function AdminAppPublish() {
         <TabsContent value="files">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs font-black text-black/40 uppercase tracking-widest mb-3">ملف Android Digital Asset Links</p>
+              <p className="text-xs font-black text-black/40 uppercase tracking-widest mb-3">{L ? "ملف Android Digital Asset Links" : "Android Digital Asset Links File"}</p>
               <CodeBlock title=".well-known/assetlinks.json" code={assetlinksJson} />
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06] text-[10px] text-black/50 space-y-1">
-                <p className="font-bold text-black/60">يُستخدم لـ: Google Play · Huawei · Android Links</p>
+                <p className="font-bold text-black/60">{L ? "يُستخدم لـ: Google Play · Huawei · Android Links" : "Used for: Google Play · Huawei · Android Links"}</p>
                 <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">
                   {siteUrl}/.well-known/assetlinks.json
                 </a>
               </div>
             </div>
             <div>
-              <p className="text-xs font-black text-black/40 uppercase tracking-widest mb-3">ملف Apple App Site Association</p>
+              <p className="text-xs font-black text-black/40 uppercase tracking-widest mb-3">{L ? "ملف Apple App Site Association" : "Apple App Site Association File"}</p>
               <CodeBlock title="apple-app-site-association" code={aasaJson} />
               <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06] text-[10px] text-black/50">
-                <p className="font-bold text-black/60 mb-1">يُستخدم لـ: iOS Universal Links · App Store</p>
+                <p className="font-bold text-black/60 mb-1">{L ? "يُستخدم لـ: iOS Universal Links · App Store" : "Used for: iOS Universal Links · App Store"}</p>
                 <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline" dir="ltr">
                   {siteUrl}/.well-known/apple-app-site-association
                 </a>

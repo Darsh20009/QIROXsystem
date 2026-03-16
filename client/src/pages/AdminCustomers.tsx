@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 
 type PhoneRequest = {
   id: string;
@@ -40,6 +41,8 @@ type PhoneRequest = {
 
 export default function Customers() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: user } = useUser();
   const isAdmin = user && ["admin", "manager"].includes((user as any).role);
 
@@ -69,10 +72,10 @@ export default function Customers() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/users/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
-      toast({ title: "تم حذف العميل بنجاح" });
+      toast({ title: L ? "تم حذف العميل بنجاح" : "Customer deleted successfully" });
       setDeleteTarget(null);
     },
-    onError: (err: any) => toast({ title: "فشل الحذف", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "فشل الحذف" : "Delete failed", description: err.message, variant: "destructive" }),
   });
 
   const phoneReqMutation = useMutation({
@@ -80,11 +83,11 @@ export default function Customers() {
       apiRequest("POST", "/api/phone-requests", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/phone-requests"] });
-      toast({ title: "تم رفع طلب تصحيح الرقم", description: "سيتم مراجعته من المسؤول قريباً" });
+      toast({ title: L ? "تم رفع طلب تصحيح الرقم" : "Phone correction request submitted", description: L ? "سيتم مراجعته من المسؤول قريباً" : "It will be reviewed by the admin soon" });
       setPhoneReqTarget(null);
       setPhoneReqNotes("");
     },
-    onError: (err: any) => toast({ title: "فشل رفع الطلب", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "فشل رفع الطلب" : "Failed to submit request", description: err.message, variant: "destructive" }),
   });
 
   const resolveMutation = useMutation({
@@ -93,11 +96,11 @@ export default function Customers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/phone-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
-      toast({ title: "تم تحديث الطلب وتعيين الرقم الجديد" });
+      toast({ title: L ? "تم تحديث الطلب وتعيين الرقم الجديد" : "Request resolved and phone updated" });
       setResolveTarget(null);
       setResolveNewPhone("");
     },
-    onError: (err: any) => toast({ title: "فشل", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "فشل" : "Failed", description: err.message, variant: "destructive" }),
   });
 
   const filtered = (customers || []).filter(c => {
@@ -125,7 +128,7 @@ export default function Customers() {
   }
 
   return (
-    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -135,8 +138,8 @@ export default function Customers() {
             <Users className="w-5 h-5 text-foreground/60" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">قائمة العملاء</h1>
-            <p className="text-sm text-foreground/40">{customers?.length || 0} عميل مسجل</p>
+            <h1 className="text-xl font-bold text-foreground">{L ? "قائمة العملاء" : "Customers List"}</h1>
+            <p className="text-sm text-foreground/40">{customers?.length || 0} {L ? "عميل مسجل" : "registered customers"}</p>
           </div>
         </div>
         <div className="relative w-full sm:w-72">
@@ -144,7 +147,7 @@ export default function Customers() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="ابحث بالاسم أو البريد أو الهاتف..."
+            placeholder={L ? "ابحث بالاسم أو البريد أو الهاتف..." : "Search by name, email, or phone..."}
             className="pr-9 bg-background border-foreground/10"
             data-testid="input-customer-search"
           />
@@ -161,7 +164,7 @@ export default function Customers() {
         <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3.5">
           <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-sm text-amber-700 dark:text-amber-300">
-            <span className="font-semibold">{noPhone.length} عميل</span> ليس لديهم رقم هاتف مسجّل — قد لا يتلقون إشعارات واتساب
+            <span className="font-semibold">{noPhone.length} {L ? "عميل" : "customers"}</span> {L ? "ليس لديهم رقم هاتف مسجّل — قد لا يتلقون إشعارات واتساب" : "don't have a registered phone number — they may not receive WhatsApp notifications"}
           </p>
         </div>
       )}
@@ -176,7 +179,7 @@ export default function Customers() {
           >
             <div className="flex items-center gap-2.5">
               <PhoneOff className="w-4 h-4 text-foreground/50" />
-              <span className="text-sm font-semibold text-foreground">طلبات تصحيح الرقم</span>
+              <span className="text-sm font-semibold text-foreground">{L ? "طلبات تصحيح الرقم" : "Phone Correction Requests"}</span>
               {pendingCount > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
                   {pendingCount}
@@ -193,7 +196,7 @@ export default function Customers() {
                   <Loader2 className="w-5 h-5 animate-spin text-foreground/30" />
                 </div>
               ) : !phoneRequests?.length ? (
-                <p className="text-center text-sm text-foreground/30 py-8">لا توجد طلبات</p>
+                <p className="text-center text-sm text-foreground/30 py-8">{L ? "لا توجد طلبات" : "No requests"}</p>
               ) : (
                 <div className="divide-y divide-foreground/[0.04] dark:divide-white/[0.04]">
                   {phoneRequests.map(req => (
@@ -206,13 +209,13 @@ export default function Customers() {
                             <span className="text-xs text-foreground/40 font-mono">{req.clientPhone}</span>
                           )}
                           <Badge className={`text-[9px] px-2 py-0.5 border-0 ${req.status === "pending" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" : req.status === "resolved" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" : "bg-foreground/[0.06] text-foreground/50"}`}>
-                            {req.status === "pending" ? "قيد الانتظار" : req.status === "resolved" ? "تم الحل" : "ملغى"}
+                            {req.status === "pending" ? (L ? "قيد الانتظار" : "Pending") : req.status === "resolved" ? (L ? "تم الحل" : "Resolved") : (L ? "ملغى" : "Cancelled")}
                           </Badge>
                         </div>
                         {req.notes && <p className="text-xs text-foreground/50 mt-1 leading-relaxed">{req.notes}</p>}
                         <div className="flex items-center gap-3 mt-1.5 text-[10px] text-foreground/30">
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(req.createdAt).toLocaleDateString("ar-SA")}</span>
-                          <span>بواسطة: {req.requestedByName}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(req.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>
+                          <span>{L ? "بواسطة:" : "By:"} {req.requestedByName}</span>
                           {req.status === "resolved" && req.newPhone && (
                             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">→ {req.newPhone}</span>
                           )}
@@ -227,7 +230,7 @@ export default function Customers() {
                           data-testid={`button-resolve-phone-request-${req.id}`}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 ml-1.5" />
-                          حل الطلب
+                          {L ? "حل الطلب" : "Resolve"}
                         </Button>
                       )}
                     </div>
@@ -245,11 +248,11 @@ export default function Customers() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-foreground/[0.06] dark:border-white/[0.06]">
-                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">العميل</th>
-                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">البريد الإلكتروني</th>
-                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">الهاتف / تواصل</th>
-                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider hidden md:table-cell">نوع النشاط</th>
-                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider hidden lg:table-cell">تاريخ التسجيل</th>
+                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">{L ? "العميل" : "Customer"}</th>
+                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">{L ? "البريد الإلكتروني" : "Email"}</th>
+                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider">{L ? "الهاتف / تواصل" : "Phone / Contact"}</th>
+                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider hidden md:table-cell">{L ? "نوع النشاط" : "Business Type"}</th>
+                <th className="text-right p-4 text-[11px] font-semibold text-foreground/40 uppercase tracking-wider hidden lg:table-cell">{L ? "تاريخ التسجيل" : "Registration Date"}</th>
                 <th className="p-4 w-12"></th>
               </tr>
             </thead>
@@ -292,7 +295,7 @@ export default function Customers() {
                         ) : (
                           <span className="text-xs text-amber-500 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
-                            لا يوجد هاتف
+                            {L ? "لا يوجد هاتف" : "No phone"}
                           </span>
                         )}
 
@@ -304,22 +307,22 @@ export default function Customers() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                              title="فتح واتساب"
+                              title={L ? "فتح واتساب" : "Open WhatsApp"}
                               data-testid={`link-whatsapp-${customer.id}`}
                             >
                               <SiWhatsapp className="w-3 h-3" />
-                              واتساب
+                              {L ? "واتساب" : "WhatsApp"}
                             </a>
                             <a
                               href={buildTgLink(cleanPhone)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                              title="فتح تيليغرام"
+                              title={L ? "فتح تيليغرام" : "Open Telegram"}
                               data-testid={`link-telegram-${customer.id}`}
                             >
                               <SiTelegram className="w-3 h-3" />
-                              تيليغرام
+                              {L ? "تيليغرام" : "Telegram"}
                             </a>
                           </div>
                         )}
@@ -328,11 +331,11 @@ export default function Customers() {
                         <button
                           onClick={() => { setPhoneReqTarget(customer); setPhoneReqNotes(""); }}
                           className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                          title="الرقم خطأ — رفع طلب تصحيح"
+                          title={L ? "الرقم خطأ — رفع طلب تصحيح" : "Wrong number — submit correction request"}
                           data-testid={`button-wrong-phone-${customer.id}`}
                         >
                           <PhoneOff className="w-3 h-3" />
-                          الرقم خطأ؟
+                          {L ? "الرقم خطأ؟" : "Wrong number?"}
                         </button>
                       </div>
                     </td>
@@ -350,7 +353,7 @@ export default function Customers() {
                     <td className="p-4 hidden lg:table-cell">
                       <span className="text-xs text-foreground/40 flex items-center gap-1.5">
                         <Calendar className="w-3 h-3" />
-                        {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" }) : "—"}
+                        {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" }) : "—"}
                       </span>
                     </td>
 
@@ -358,7 +361,7 @@ export default function Customers() {
                       <button
                         onClick={() => setDeleteTarget(customer)}
                         className="p-2 rounded-lg text-foreground/20 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                        title="حذف العميل"
+                        title={L ? "حذف العميل" : "Delete customer"}
                         data-testid={`button-delete-customer-${customer.id}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -371,7 +374,7 @@ export default function Customers() {
                 <tr>
                   <td colSpan={6} className="p-12 text-center text-foreground/30">
                     <Users className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                    <p>{search ? "لا توجد نتائج للبحث" : "لا يوجد عملاء مسجلون بعد"}</p>
+                    <p>{search ? (L ? "لا توجد نتائج للبحث" : "No search results") : (L ? "لا يوجد عملاء مسجلون بعد" : "No customers registered yet")}</p>
                   </td>
                 </tr>
               )}
@@ -382,24 +385,24 @@ export default function Customers() {
 
       {/* ── Delete confirmation dialog ── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle>حذف حساب العميل</AlertDialogTitle>
+            <AlertDialogTitle>{L ? "حذف حساب العميل" : "Delete Customer Account"}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من حذف حساب <span className="font-semibold text-foreground">{deleteTarget?.fullName}</span>؟
+              {L ? "هل أنت متأكد من حذف حساب" : "Are you sure you want to delete"} <span className="font-semibold text-foreground">{deleteTarget?.fullName}</span>{L ? "؟" : "?"}
               <br />
-              <span className="text-red-500 text-xs mt-1 inline-block">هذا الإجراء لا يمكن التراجع عنه.</span>
+              <span className="text-red-500 text-xs mt-1 inline-block">{L ? "هذا الإجراء لا يمكن التراجع عنه." : "This action cannot be undone."}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogCancel data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">{L ? "إلغاء" : "Cancel"}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && deleteMutation.mutate(String(deleteTarget.id))}
               className="bg-red-500 hover:bg-red-600 text-white"
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حذف نهائياً"}
+              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "حذف نهائياً" : "Delete Permanently")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -407,14 +410,14 @@ export default function Customers() {
 
       {/* ── Report wrong phone dialog ── */}
       <Dialog open={!!phoneReqTarget} onOpenChange={open => !open && setPhoneReqTarget(null)}>
-        <DialogContent dir="rtl" className="max-w-md">
+        <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PhoneOff className="w-4 h-4 text-rose-500" />
-              رفع طلب تصحيح الرقم
+              {L ? "رفع طلب تصحيح الرقم" : "Submit Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
-              العميل: <span className="font-semibold text-foreground">{phoneReqTarget?.fullName}</span>
+              {L ? "العميل:" : "Customer:"} <span className="font-semibold text-foreground">{phoneReqTarget?.fullName}</span>
               {phoneReqTarget?.phone && (
                 <span className="mr-2 text-foreground/50 font-mono text-xs">{phoneReqTarget.phone}</span>
               )}
@@ -422,18 +425,18 @@ export default function Customers() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">سبب الطلب أو الملاحظات</label>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">{L ? "سبب الطلب أو الملاحظات" : "Reason or notes"}</label>
               <Textarea
                 value={phoneReqNotes}
                 onChange={e => setPhoneReqNotes(e.target.value)}
-                placeholder="مثال: العميل أفاد أن الرقم لا يعمل، أو تم تغيير الرقم..."
+                placeholder={L ? "مثال: العميل أفاد أن الرقم لا يعمل، أو تم تغيير الرقم..." : "e.g. Client reported the number doesn't work, or the number has changed..."}
                 className="resize-none text-sm"
                 rows={3}
                 data-testid="textarea-phone-request-notes"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setPhoneReqTarget(null)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setPhoneReqTarget(null)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
                 className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
                 onClick={() => phoneReqTarget && phoneReqMutation.mutate({ clientId: String(phoneReqTarget.id), notes: phoneReqNotes })}
@@ -441,7 +444,7 @@ export default function Customers() {
                 data-testid="button-submit-phone-request"
               >
                 {phoneReqMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                رفع الطلب
+                {L ? "رفع الطلب" : "Submit Request"}
               </Button>
             </div>
           </div>
@@ -450,14 +453,14 @@ export default function Customers() {
 
       {/* ── Resolve phone request dialog (admin) ── */}
       <Dialog open={!!resolveTarget} onOpenChange={open => !open && setResolveTarget(null)}>
-        <DialogContent dir="rtl" className="max-w-md">
+        <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              حل طلب تصحيح الرقم
+              {L ? "حل طلب تصحيح الرقم" : "Resolve Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
-              العميل: <span className="font-semibold text-foreground">{resolveTarget?.clientName}</span>
+              {L ? "العميل:" : "Customer:"} <span className="font-semibold text-foreground">{resolveTarget?.clientName}</span>
               {resolveTarget?.clientPhone && (
                 <span className="mr-2 text-foreground/40 font-mono text-xs line-through">{resolveTarget.clientPhone}</span>
               )}
@@ -465,7 +468,7 @@ export default function Customers() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">الرقم الجديد الصحيح</label>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">{L ? "الرقم الجديد الصحيح" : "Correct new number"}</label>
               <Input
                 value={resolveNewPhone}
                 onChange={e => setResolveNewPhone(e.target.value)}
@@ -473,16 +476,16 @@ export default function Customers() {
                 className="font-mono"
                 data-testid="input-resolve-new-phone"
               />
-              <p className="text-[11px] text-foreground/40 mt-1">سيتم تحديث رقم العميل في النظام تلقائياً</p>
+              <p className="text-[11px] text-foreground/40 mt-1">{L ? "سيتم تحديث رقم العميل في النظام تلقائياً" : "The client's phone number will be automatically updated in the system"}</p>
             </div>
             {resolveTarget?.notes && (
               <div className="bg-foreground/[0.03] dark:bg-white/[0.03] rounded-xl p-3 text-xs text-foreground/60">
-                <span className="font-semibold text-foreground/40 block mb-1">ملاحظة الموظف:</span>
+                <span className="font-semibold text-foreground/40 block mb-1">{L ? "ملاحظة الموظف:" : "Staff note:"}</span>
                 {resolveTarget.notes}
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setResolveTarget(null)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setResolveTarget(null)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
                 onClick={() => resolveTarget && resolveMutation.mutate({ id: resolveTarget.id, newPhone: resolveNewPhone, status: "resolved" })}
@@ -490,7 +493,7 @@ export default function Customers() {
                 data-testid="button-confirm-resolve"
               >
                 {resolveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                تأكيد وتحديث الرقم
+                {L ? "تأكيد وتحديث الرقم" : "Confirm & Update Phone"}
               </Button>
             </div>
           </div>

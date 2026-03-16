@@ -10,6 +10,7 @@ import { Loader2, Plus, Pencil, Trash2, Tag, Copy, ToggleLeft, Percent, DollarSi
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
@@ -22,12 +23,16 @@ const emptyForm = {
   expiresAt: "", bannerTextAr: "", bannerColor: "#000000",
 };
 
-const appliesToLabels: Record<string, string> = {
-  all: "الكل", products: "المنتجات", packages: "الباقات", devices: "الأجهزة",
-};
+function getAppliesToLabels(L: boolean): Record<string, string> {
+  return L ? { all: "الكل", products: "المنتجات", packages: "الباقات", devices: "الأجهزة" }
+           : { all: "All", products: "Products", packages: "Packages", devices: "Devices" };
+}
 
 export default function AdminDiscountCodes() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const appliesToLabels = getAppliesToLabels(L);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -49,16 +54,16 @@ export default function AdminDiscountCodes() {
       setDialogOpen(false);
       setEditingId(null);
       setForm({ ...emptyForm });
-      toast({ title: editingId ? "تم تحديث الكود" : "تم إنشاء الكود" });
+      toast({ title: editingId ? (L ? "تم تحديث الكود" : "Code updated") : (L ? "تم إنشاء الكود" : "Code created") });
     },
-    onError: (e: any) => toast({ title: e.message || "فشل", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل" : "Failed"), variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/discount-codes/${id}`); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] });
-      toast({ title: "تم حذف الكود" });
+      toast({ title: L ? "تم حذف الكود" : "Code deleted" });
     },
   });
 
@@ -94,7 +99,7 @@ export default function AdminDiscountCodes() {
 
   const handleSave = () => {
     if (!form.code || !form.value) {
-      return toast({ title: "الكود والقيمة مطلوبان", variant: "destructive" });
+      return toast({ title: L ? "الكود والقيمة مطلوبان" : "Code and value are required", variant: "destructive" });
     }
     saveMutation.mutate({
       code: form.code.toUpperCase(),
@@ -117,7 +122,7 @@ export default function AdminDiscountCodes() {
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast({ title: `تم نسخ "${code}"` });
+    toast({ title: L ? `تم نسخ "${code}"` : `Copied "${code}"` });
   };
 
   const filtered = (codes || []).filter((c: any) =>
@@ -131,25 +136,25 @@ export default function AdminDiscountCodes() {
   };
 
   return (
-    <div dir="rtl">
+    <div dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-black dark:text-white">كودات الخصم</h1>
-          <p className="text-sm text-black/40 dark:text-white/40 mt-1">إنشاء وإدارة كودات الخصم للعملاء</p>
+          <h1 className="text-xl md:text-2xl font-black text-black dark:text-white">{L ? "كودات الخصم" : "Discount Codes"}</h1>
+          <p className="text-sm text-black/40 dark:text-white/40 mt-1">{L ? "إنشاء وإدارة كودات الخصم للعملاء" : "Create and manage discount codes for customers"}</p>
         </div>
         <Button onClick={() => { setEditingId(null); setForm({ ...emptyForm }); setDialogOpen(true); }}
           className="bg-black dark:bg-white text-white dark:text-black rounded-xl h-9 text-sm gap-2" data-testid="button-add-code">
-          <Plus className="w-4 h-4" />كود جديد
+          <Plus className="w-4 h-4" />{L ? "كود جديد" : "New Code"}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: "إجمالي الكودات", value: stats.total, icon: Tag },
-          { label: "كودات نشطة", value: stats.active, icon: ToggleLeft },
-          { label: "ظاهرة في الرئيسية", value: stats.global, icon: Home },
+          { label: L ? "إجمالي الكودات" : "Total Codes", value: stats.total, icon: Tag },
+          { label: L ? "كودات نشطة" : "Active Codes", value: stats.active, icon: ToggleLeft },
+          { label: L ? "ظاهرة في الرئيسية" : "Shown on Home", value: stats.global, icon: Home },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
             <div className="text-2xl font-black text-black dark:text-white">{s.value}</div>
@@ -159,7 +164,7 @@ export default function AdminDiscountCodes() {
       </div>
 
       <div className="mb-4">
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالكود أو الوصف..." className="max-w-xs" data-testid="input-search-codes" />
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={L ? "بحث بالكود أو الوصف..." : "Search by code or description..."} className="max-w-xs" data-testid="input-search-codes" />
       </div>
 
       {isLoading ? (
@@ -167,7 +172,7 @@ export default function AdminDiscountCodes() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-black/30 dark:text-white/30">
           <Tag className="w-10 h-10 mx-auto mb-3 opacity-70" />
-          <p>لا توجد كودات — أضف أول كود خصم</p>
+          <p>{L ? "لا توجد كودات — أضف أول كود خصم" : "No codes — add your first discount code"}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -182,11 +187,11 @@ export default function AdminDiscountCodes() {
                     <Copy className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
                   </button>
                   <Badge className={`text-xs border ${code.isActive ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-600 border-gray-200"}`}>
-                    {code.isActive ? "نشط" : "متوقف"}
+                    {code.isActive ? (L ? "نشط" : "Active") : (L ? "متوقف" : "Inactive")}
                   </Badge>
                   {code.showOnHome && (
                     <Badge className="text-xs border bg-blue-50 text-blue-700 border-blue-200">
-                      <Home className="w-3 h-3 ml-1" />رئيسية
+                      <Home className="w-3 h-3 ml-1" />{L ? "رئيسية" : "Home"}
                     </Badge>
                   )}
                   <Badge className="text-xs border bg-black/[0.04] text-black/60 border-black/[0.08] dark:bg-white/[0.04] dark:text-white/60 dark:border-white/[0.08]">
@@ -196,12 +201,12 @@ export default function AdminDiscountCodes() {
                 <div className="flex items-center gap-3 text-xs text-black/50 dark:text-white/50 flex-wrap">
                   <span className="flex items-center gap-1 font-semibold text-black dark:text-white">
                     {code.type === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
-                    {code.value}{code.type === "percentage" ? "%" : <> <SARIcon size={10} className="opacity-60 mx-0.5" /></>} خصم
+                    {code.value}{code.type === "percentage" ? "%" : <> <SARIcon size={10} className="opacity-60 mx-0.5" /></>} {L ? "خصم" : "off"}
                   </span>
                   {code.descriptionAr && <span>{code.descriptionAr}</span>}
-                  {code.usageLimit && <span>الاستخدام: {code.usageCount || 0}/{code.usageLimit}</span>}
-                  {code.expiresAt && <span>ينتهي: {new Date(code.expiresAt).toLocaleDateString('ar-SA')}</span>}
-                  {code.minOrderAmount > 0 && <span className="flex items-center gap-0.5">الحد الأدنى: {code.minOrderAmount} <SARIcon size={9} className="opacity-50" /></span>}
+                  {code.usageLimit && <span>{L ? "الاستخدام" : "Usage"}: {code.usageCount || 0}/{code.usageLimit}</span>}
+                  {code.expiresAt && <span>{L ? "ينتهي" : "Expires"}: {new Date(code.expiresAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}</span>}
+                  {code.minOrderAmount > 0 && <span className="flex items-center gap-0.5">{L ? "الحد الأدنى" : "Min order"}: {code.minOrderAmount} <SARIcon size={9} className="opacity-50" /></span>}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -220,84 +225,84 @@ export default function AdminDiscountCodes() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-right">{editingId ? "تعديل الكود" : "كود خصم جديد"}</DialogTitle>
+            <DialogTitle className="text-right">{editingId ? (L ? "تعديل الكود" : "Edit Code") : (L ? "كود خصم جديد" : "New Discount Code")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">الكود *</label>
+              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "الكود *" : "Code *"}</label>
               <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
                 placeholder="SUMMER2025" className="font-mono tracking-widest text-lg" data-testid="input-code" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">نوع الخصم</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "نوع الخصم" : "Discount Type"}</label>
                 <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                    <SelectItem value="fixed">مبلغ ثابت (SAR)</SelectItem>
+                    <SelectItem value="percentage">{L ? "نسبة مئوية (%)" : "Percentage (%)"}</SelectItem>
+                    <SelectItem value="fixed">{L ? "مبلغ ثابت (SAR)" : "Fixed Amount (SAR)"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">قيمة الخصم *</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "قيمة الخصم *" : "Discount Value *"}</label>
                 <Input type="number" min="0" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
                   placeholder={form.type === "percentage" ? "20" : "50"} data-testid="input-discount-value" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">الوصف بالعربي</label>
-              <Input value={form.descriptionAr} onChange={e => setForm(f => ({ ...f, descriptionAr: e.target.value }))} placeholder="خصم الصيف..." data-testid="input-desc-ar" />
+              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "الوصف بالعربي" : "Description (AR)"}</label>
+              <Input value={form.descriptionAr} onChange={e => setForm(f => ({ ...f, descriptionAr: e.target.value }))} placeholder={L ? "خصم الصيف..." : "Summer discount..."} data-testid="input-desc-ar" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">الحد الأدنى للطلب</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "الحد الأدنى للطلب" : "Min Order Amount"}</label>
                 <Input type="number" min="0" value={form.minOrderAmount} onChange={e => setForm(f => ({ ...f, minOrderAmount: e.target.value }))} data-testid="input-min-order" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1">أقصى خصم (<SARIcon size={10} className="opacity-60" />)</label>
-                <Input type="number" min="0" value={form.maxDiscountAmount} onChange={e => setForm(f => ({ ...f, maxDiscountAmount: e.target.value }))} placeholder="اختياري" data-testid="input-max-discount" />
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 flex items-center gap-1">{L ? "أقصى خصم" : "Max Discount"} (<SARIcon size={10} className="opacity-60" />)</label>
+                <Input type="number" min="0" value={form.maxDiscountAmount} onChange={e => setForm(f => ({ ...f, maxDiscountAmount: e.target.value }))} placeholder={L ? "اختياري" : "Optional"} data-testid="input-max-discount" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">حد الاستخدام</label>
-                <Input type="number" min="0" value={form.usageLimit} onChange={e => setForm(f => ({ ...f, usageLimit: e.target.value }))} placeholder="غير محدود" data-testid="input-usage-limit" />
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "حد الاستخدام" : "Usage Limit"}</label>
+                <Input type="number" min="0" value={form.usageLimit} onChange={e => setForm(f => ({ ...f, usageLimit: e.target.value }))} placeholder={L ? "غير محدود" : "Unlimited"} data-testid="input-usage-limit" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">تاريخ الانتهاء</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "تاريخ الانتهاء" : "Expiry Date"}</label>
                 <Input type="date" value={form.expiresAt} onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} data-testid="input-expires-at" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">ينطبق على</label>
+              <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "ينطبق على" : "Applies To"}</label>
               <Select value={form.appliesTo} onValueChange={v => setForm(f => ({ ...f, appliesTo: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="products">المنتجات والأجهزة</SelectItem>
-                  <SelectItem value="packages">الباقات</SelectItem>
-                  <SelectItem value="devices">الأجهزة فقط</SelectItem>
+                  <SelectItem value="all">{L ? "الكل" : "All"}</SelectItem>
+                  <SelectItem value="products">{L ? "المنتجات والأجهزة" : "Products & Devices"}</SelectItem>
+                  <SelectItem value="packages">{L ? "الباقات" : "Packages"}</SelectItem>
+                  <SelectItem value="devices">{L ? "الأجهزة فقط" : "Devices Only"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="border border-black/[0.06] dark:border-white/[0.06] rounded-xl p-4 space-y-3">
-              <p className="text-xs font-semibold text-black/60 dark:text-white/60">إعدادات العرض</p>
+              <p className="text-xs font-semibold text-black/60 dark:text-white/60">{L ? "إعدادات العرض" : "Display Settings"}</p>
               <div className="flex items-center justify-between">
-                <label className="text-sm text-black/70 dark:text-white/70">إظهار في الصفحة الرئيسية</label>
+                <label className="text-sm text-black/70 dark:text-white/70">{L ? "إظهار في الصفحة الرئيسية" : "Show on Home Page"}</label>
                 <Switch checked={form.showOnHome} onCheckedChange={v => setForm(f => ({ ...f, showOnHome: v }))} data-testid="switch-show-home" />
               </div>
               {form.showOnHome && (
                 <>
                   <div>
-                    <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">نص البانر</label>
-                    <Input value={form.bannerTextAr} onChange={e => setForm(f => ({ ...f, bannerTextAr: e.target.value }))} placeholder="وفّر 20% على جميع الأجهزة!" data-testid="input-banner-text" />
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "نص البانر" : "Banner Text"}</label>
+                    <Input value={form.bannerTextAr} onChange={e => setForm(f => ({ ...f, bannerTextAr: e.target.value }))} placeholder={L ? "وفّر 20% على جميع الأجهزة!" : "Save 20% on all devices!"} data-testid="input-banner-text" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">لون البانر</label>
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "لون البانر" : "Banner Color"}</label>
                     <div className="flex items-center gap-2">
                       <input type="color" value={form.bannerColor} onChange={e => setForm(f => ({ ...f, bannerColor: e.target.value }))} className="h-9 w-16 rounded-lg border border-black/[0.1] cursor-pointer" />
                       <Input value={form.bannerColor} onChange={e => setForm(f => ({ ...f, bannerColor: e.target.value }))} className="font-mono" />
@@ -308,14 +313,14 @@ export default function AdminDiscountCodes() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="text-sm text-black/70 dark:text-white/70">الكود نشط</label>
+              <label className="text-sm text-black/70 dark:text-white/70">{L ? "الكود نشط" : "Code Active"}</label>
               <Switch checked={form.isActive} onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} data-testid="switch-is-active" />
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1 rounded-xl">إلغاء</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
               <Button onClick={handleSave} disabled={saveMutation.isPending} className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl" data-testid="button-save-code">
-                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editingId ? "حفظ" : "إنشاء"}
+                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editingId ? (L ? "حفظ" : "Save") : (L ? "إنشاء" : "Create")}
               </Button>
             </div>
           </div>

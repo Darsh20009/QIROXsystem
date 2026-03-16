@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
@@ -23,11 +24,13 @@ function extractYouTubeId(url: string): string {
 }
 
 export default function ProjectDetails() {
-  const [, params] = useRoute("/project/:section");
-  const section = params?.section || "status";
-  const { data: user } = useUser();
-  const queryClient = useQueryClient();
-  const { data: projectList, isLoading } = useProjects();
+    const [, params] = useRoute("/project/:section");
+    const section = params?.section || "status";
+    const { data: user } = useUser();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const queryClient = useQueryClient();
+    const { data: projectList, isLoading } = useProjects();
   const project = Array.isArray(projectList) ? projectList[0] : projectList;
   const { data: tasks, isLoading: isLoadingTasks } = useTasks(project?.id);
   const { data: vaultItems, isLoading: isLoadingVault } = useVault(project?.id);
@@ -39,7 +42,7 @@ export default function ProjectDetails() {
       await apiRequest("DELETE", `/api/projects/${project?.id}/vault/${vaultId}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "vault"] }),
-    onError: () => toast({ title: "فشل حذف العنصر", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل حذف العنصر" : "Failed to delete item", variant: "destructive" }),
   });
 
   const deleteTaskMutation = useMutation({
@@ -47,7 +50,7 @@ export default function ProjectDetails() {
       await apiRequest("DELETE", `/api/projects/${project?.id}/tasks/${taskId}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "tasks"] }),
-    onError: () => toast({ title: "فشل حذف المهمة", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل حذف المهمة" : "Failed to delete task", variant: "destructive" }),
   });
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
@@ -95,28 +98,27 @@ export default function ProjectDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "addon-subscriptions"] });
-      toast({ title: "تم إرسال طلب التجديد", description: "سيتواصل معك الفريق قريباً" });
+      toast({ title: L ? "تم إرسال طلب التجديد" : "Renewal request sent", description: L ? "سيتواصل معك الفريق قريباً" : "The team will reach out soon" });
       setRenewingId(null);
     },
     onError: () => {
-      toast({ title: "فشل إرسال الطلب", variant: "destructive" });
+      toast({ title: L ? "فشل إرسال الطلب" : "Request failed", variant: "destructive" });
       setRenewingId(null);
     },
   });
 
   const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      new: "جديد",
-      under_study: "قيد الدراسة",
-      pending_payment: "بانتظار الدفع",
-      in_progress: "جاري التنفيذ",
-      testing: "اختبار",
-      review: "مراجعة",
-      delivery: "تسليم",
-      closed: "مغلق"
+      const labels: Record<string, string> = L ? {
+        new: "جديد", under_study: "قيد الدراسة", pending_payment: "بانتظار الدفع",
+        in_progress: "جاري التنفيذ", testing: "اختبار", review: "مراجعة",
+        delivery: "تسليم", closed: "مغلق"
+      } : {
+        new: "New", under_study: "Under Study", pending_payment: "Pending Payment",
+        in_progress: "In Progress", testing: "Testing", review: "Review",
+        delivery: "Delivery", closed: "Closed"
+      };
+      return labels[status] || status;
     };
-    return labels[status] || status;
-  };
 
   if (isLoading) return <div className="min-h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
   if (!project) return (
@@ -124,14 +126,14 @@ export default function ProjectDetails() {
       <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
         <FileText className="w-10 h-10 text-slate-300" />
       </div>
-      <p className="text-slate-500 font-medium mb-2">لا توجد مشاريع نشطة حالياً</p>
-      <p className="text-xs text-slate-400">سيظهر مشروعك هنا بمجرد موافقة الفريق على طلبك</p>
+      <p className="text-slate-500 font-medium mb-2">{L ? "لا توجد مشاريع نشطة حالياً" : "No active projects currently"}</p>
+      <p className="text-xs text-slate-400">{L ? "سيظهر مشروعك هنا بمجرد موافقة الفريق على طلبك" : "Your project will appear here once the team approves your request"}</p>
     </div>
   );
 
   const order = (project as any).orderId as any;
   const projectNumber = `#${String(project.id)?.slice(-6).toUpperCase()}`;
-  const projectTitle = order?.businessName || order?.serviceType || "مشروع رقمي";
+  const projectTitle = order?.businessName || order?.serviceType || (L ? "مشروع رقمي" : "Digital Project");
   const manager = (project as any).managerId as any;
   const pct = project.progress || 0;
   const r = 36, circPx = 2 * Math.PI * r;
@@ -143,7 +145,7 @@ export default function ProjectDetails() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 relative overflow-hidden" dir="rtl">
+    <div className="p-4 md:p-6 space-y-6 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="minimal" />
 
       {/* Creative project header */}
@@ -162,21 +164,21 @@ export default function ProjectDetails() {
               )}
               <div className="flex flex-wrap gap-4 mt-4">
                 <div>
-                  <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">بدء التنفيذ</p>
+                  <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">{L ? "بدء التنفيذ" : "Start Date"}</p>
                   <p className="text-white text-sm font-semibold flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-white/40" />
-                    {project.startDate ? new Date(project.startDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : 'قيد الانتظار'}
+                    {project.startDate ? new Date(project.startDate).toLocaleDateString(L ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (L ? 'قيد الانتظار' : 'Pending')}
                   </p>
                 </div>
                 {project.deadline && (
                   <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">موعد التسليم</p>
-                    <p className="text-white text-sm font-semibold">{new Date(project.deadline).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">{L ? "موعد التسليم" : "Deadline"}</p>
+                    <p className="text-white text-sm font-semibold">{new Date(project.deadline).toLocaleDateString(L ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </div>
                 )}
                 {manager?.fullName && (
                   <div>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">مدير المشروع</p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest mb-0.5">{L ? "مدير المشروع" : "Project Manager"}</p>
                     <p className="text-white text-sm font-semibold">{manager.fullName}</p>
                   </div>
                 )}
@@ -196,13 +198,13 @@ export default function ProjectDetails() {
                   <span className="text-white/40 text-[10px]">%</span>
                 </div>
               </div>
-              <p className="text-white/40 text-[10px]">نسبة الإنجاز</p>
+              <p className="text-white/40 text-[10px]">{L ? "نسبة الإنجاز" : "Progress"}</p>
             </div>
           </div>
         </div>
         {/* Phase bar */}
         <div className="flex border-t border-white/[0.06]">
-          {["استقبال","دراسة","تنفيذ","اختبار","تسليم"].map((ph, pi) => {
+          {(L ? ["استقبال","دراسة","تنفيذ","اختبار","تسليم"] : ["Intake","Study","Execute","Test","Deliver"]).map((ph, pi) => {
             const statusOrder = ["new","under_study","in_progress","testing","delivery","closed"];
             const currIdx = statusOrder.indexOf(project.status);
             const done = pi < Math.max(currIdx, 0);
@@ -220,11 +222,11 @@ export default function ProjectDetails() {
 
       <Tabs defaultValue={section} className="w-full" dir="rtl">
         <TabsList className="bg-white border p-1 h-auto flex-wrap justify-start gap-2 hidden md:flex">
-          <TabsTrigger value="status" className="data-[state=active]:bg-primary data-[state=active]:text-white">حالة المشروع</TabsTrigger>
-          <TabsTrigger value="implementation" className="data-[state=active]:bg-primary data-[state=active]:text-white">مراحل التنفيذ</TabsTrigger>
-          <TabsTrigger value="files" className="data-[state=active]:bg-primary data-[state=active]:text-white">ملفات المشروع</TabsTrigger>
-          <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-white">روابط الأدوات</TabsTrigger>
-          <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-white">محادثة الفريق</TabsTrigger>
+          <TabsTrigger value="status" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "حالة المشروع" : "Project Status"}</TabsTrigger>
+          <TabsTrigger value="implementation" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "مراحل التنفيذ" : "Implementation"}</TabsTrigger>
+          <TabsTrigger value="files" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "ملفات المشروع" : "Project Files"}</TabsTrigger>
+          <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "روابط الأدوات" : "Tool Links"}</TabsTrigger>
+          <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "محادثة الفريق" : "Team Chat"}</TabsTrigger>
           <TabsTrigger value="invoices" className="data-[state=active]:bg-primary data-[state=active]:text-white">الفواتير</TabsTrigger>
           <TabsTrigger value="payments" className="data-[state=active]:bg-primary data-[state=active]:text-white">الدفعات</TabsTrigger>
           <TabsTrigger value="contracts" className="data-[state=active]:bg-primary data-[state=active]:text-white">العقود</TabsTrigger>
@@ -232,7 +234,7 @@ export default function ProjectDetails() {
           <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-white">التنبيهات</TabsTrigger>
           <TabsTrigger value="deliverables" className="data-[state=active]:bg-primary data-[state=active]:text-white">التسليمات</TabsTrigger>
           <TabsTrigger value="addons" className="data-[state=active]:bg-primary data-[state=active]:text-white relative">
-            الإضافات
+            {L ? "الإضافات" : "Add-ons"}
             {addonSubs.some((s: any) => s.status === "expired" || s.status === "exhausted") && (
               <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
             )}
@@ -243,24 +245,24 @@ export default function ProjectDetails() {
           <TabsContent value="status">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="md:col-span-2">
-                <CardHeader><CardTitle className="font-heading">ملخص الحالة</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="font-heading">{L ? "ملخص الحالة" : "Status Summary"}</CardTitle></CardHeader>
                 <CardContent className="space-y-4 text-slate-600">
-                  <p>المشروع يسير وفق الخطة الزمنية المحددة. تم الانتهاء من مرحلة التحليل والتصميم، ونحن الآن في مرحلة البرمجة.</p>
+                  <p>{L ? "المشروع يسير وفق الخطة الزمنية المحددة. تم الانتهاء من مرحلة التحليل والتصميم، ونحن الآن في مرحلة البرمجة." : "The project is on track. Analysis and design phases are complete; we are now in the programming phase."}</p>
                   <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg text-sm border border-green-100">
                     <CheckCircle2 className="w-4 h-4" />
-                    تم تسليم جميع متطلبات المرحلة الأولى
+                    {L ? "تم تسليم جميع متطلبات المرحلة الأولى" : "All Phase 1 requirements have been delivered"}
                   </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="font-heading">المواعيد</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="font-heading">{L ? "المواعيد" : "Dates"}</CardTitle></CardHeader>
                 <CardContent className="space-y-4 text-sm">
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-slate-500">بداية المشروع:</span>
+                    <span className="text-slate-500">{L ? "بداية المشروع:" : "Start:"}</span>
                     <span className="font-medium">01/02/2026</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-slate-500">موعد التسليم:</span>
+                    <span className="text-slate-500">{L ? "موعد التسليم:" : "Deadline:"}</span>
                     <span className="font-medium text-secondary">15/03/2026</span>
                   </div>
                 </CardContent>
@@ -273,26 +275,26 @@ export default function ProjectDetails() {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="font-heading flex items-center justify-between">
-                    <span>مراحل التنفيذ والمهام</span>
-                    <Button size="sm" variant="outline"><Plus className="w-4 h-4 ml-2" /> مهمة جديدة</Button>
+                    <span>{L ? "مراحل التنفيذ والمهام" : "Implementation Stages & Tasks"}</span>
+                    <Button size="sm" variant="outline"><Plus className="w-4 h-4 ml-2" /> {L ? "مهمة جديدة" : "New Task"}</Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {isLoadingTasks ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 
-                     tasks?.length === 0 ? <p className="text-center text-slate-400 py-8">لا توجد مهام حالياً</p> :
+                     tasks?.length === 0 ? <p className="text-center text-slate-400 py-8">{L ? "لا توجد مهام حالياً" : "No tasks yet"}</p> :
                      tasks?.map((task: any) => (
                       <div key={task.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors group">
                         <div className="flex items-center gap-3">
                           <CheckCircle2 className={`w-5 h-5 ${task.status === 'completed' ? 'text-green-500' : 'text-slate-300'}`} />
                           <div>
                             <p className="font-bold text-primary">{task.title}</p>
-                            <p className="text-xs text-slate-500">{task.priority === 'high' ? 'أولوية قصوى' : task.priority}</p>
+                            <p className="text-xs text-slate-500">{task.priority === 'high' ? (L ? 'أولوية قصوى' : 'High Priority') : task.priority}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                            {task.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}
+                            {task.status === 'completed' ? (L ? 'مكتملة' : 'Completed') : (L ? 'قيد التنفيذ' : 'In Progress')}
                           </Badge>
                           {(user as any)?.role !== 'client' && (
                             <button
@@ -311,14 +313,14 @@ export default function ProjectDetails() {
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="font-heading">المخطط الزمني</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="font-heading">{L ? "المخطط الزمني" : "Timeline"}</CardTitle></CardHeader>
                 <CardContent>
                    <div className="space-y-6">
                     {[
-                      { title: "تحليل المتطلبات", status: "completed", date: "05/02/2026" },
-                      { title: "تصميم واجهات المستخدم UI/UX", status: "completed", date: "12/02/2026" },
-                      { title: "برمجة الواجهة الأمامية", status: "in-progress", date: "25/02/2026" },
-                      { title: "تطوير النظام الخلفي والربط", status: "pending", date: "05/03/2026" },
+                      { title: L ? "تحليل المتطلبات" : "Requirements Analysis", status: "completed", date: "05/02/2026" },
+                      { title: L ? "تصميم واجهات المستخدم UI/UX" : "UI/UX Design", status: "completed", date: "12/02/2026" },
+                      { title: L ? "برمجة الواجهة الأمامية" : "Frontend Programming", status: "in-progress", date: "25/02/2026" },
+                      { title: L ? "تطوير النظام الخلفي والربط" : "Backend Development & Integration", status: "pending", date: "05/03/2026" },
                     ].map((step, i) => (
                       <div key={i} className="flex gap-4 relative">
                         {i !== 3 && <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-slate-100" />}
@@ -330,7 +332,7 @@ export default function ProjectDetails() {
                         </div>
                         <div className="flex-1 pb-4">
                           <p className="font-bold text-primary text-sm">{step.title}</p>
-                          <p className="text-[10px] text-slate-500 mt-1">الموعد: {step.date}</p>
+                          <p className="text-[10px] text-slate-500 mt-1">{L ? "الموعد:" : "Date:"} {step.date}</p>
                         </div>
                       </div>
                     ))}
@@ -345,7 +347,7 @@ export default function ProjectDetails() {
                 <CardHeader><CardTitle className="font-heading">ملفات المشروع</CardTitle></CardHeader>
                 <CardContent>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {['دليل العلامة التجارية.pdf', 'مواصفات النظام.docx', 'تصاميم Figma.link'].map((file, i) => (
+                      {(L ? ['دليل العلامة التجارية.pdf', 'مواصفات النظام.docx', 'تصاميم Figma.link'] : ['Brand Guide.pdf', 'System Specs.docx', 'Figma Designs.link']).map((file, i) => (
                         <div key={i} className="flex items-center justify-between p-4 border rounded-xl hover:bg-slate-50 transition-colors">
                            <div className="flex items-center gap-3">
                               <FileText className="w-5 h-5 text-primary" />
@@ -364,9 +366,9 @@ export default function ProjectDetails() {
               <CardHeader className="border-b">
                 <CardTitle className="font-heading flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-primary" />
-                  محادثة الفريق والعميل
+                  {L ? "محادثة الفريق والعميل" : "Team & Client Chat"}
                 </CardTitle>
-                <p className="text-xs text-slate-500">جميع المحادثات محفوظة وغير قابلة للحذف لضمان الجودة</p>
+                <p className="text-xs text-slate-500">{L ? "جميع المحادثات محفوظة وغير قابلة للحذف لضمان الجودة" : "All conversations are saved and cannot be deleted to ensure quality"}</p>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
                 <ScrollArea className="flex-1 p-4">
@@ -374,7 +376,7 @@ export default function ProjectDetails() {
                     {isLoadingMessages ? (
                       <div className="flex justify-center p-4"><Loader2 className="w-6 h-6 animate-spin" /></div>
                     ) : messages?.length === 0 ? (
-                      <div className="text-center py-20 text-slate-400">ابدأ المحادثة الآن</div>
+                      <div className="text-center py-20 text-slate-400">{L ? "ابدأ المحادثة الآن" : "Start the conversation now"}</div>
                     ) : (
                       messages.map((msg: any) => (
                         <div key={msg.id} className={`flex flex-col ${msg.senderId === user?.id ? 'items-start' : 'items-end'}`}>
@@ -386,7 +388,7 @@ export default function ProjectDetails() {
                             {msg.content}
                           </div>
                           <span className="text-[10px] text-slate-400 mt-1">
-                            {new Date(msg.createdAt).toLocaleTimeString('ar-SA')}
+                            {new Date(msg.createdAt).toLocaleTimeString(L ? 'ar-SA' : 'en-US')}
                           </span>
                         </div>
                       ))
@@ -395,7 +397,7 @@ export default function ProjectDetails() {
                 </ScrollArea>
                 <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
                   <Input 
-                    placeholder="اكتب رسالتك هنا..." 
+                    placeholder={L ? "اكتب رسالتك هنا..." : "Write your message..."} 
                     value={messageContent}
                     onChange={(e) => setMessageContent(e.target.value)}
                     disabled={sendMessageMutation.isPending}
@@ -414,16 +416,16 @@ export default function ProjectDetails() {
                 <CardTitle className="font-heading flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-primary" />
-                    Vault المشروع (البيانات الحساسة)
+                    {L ? "Vault المشروع (البيانات الحساسة)" : "Project Vault (Sensitive Data)"}
                   </div>
-                  <Button size="sm" variant="secondary"><Plus className="w-4 h-4 ml-2" /> إضافة عنصر</Button>
+                  <Button size="sm" variant="secondary"><Plus className="w-4 h-4 ml-2" /> {L ? "إضافة عنصر" : "Add Item"}</Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingVault ? <Loader2 className="w-8 h-8 animate-spin mx-auto" /> :
                  !vaultItems || vaultItems.length === 0 ? (
                   <div className="p-8 text-center bg-white rounded-xl border border-secondary/20">
-                    <p className="text-slate-600">لا توجد بيانات حساسة مخزنة حالياً في هذا المشروع.</p>
+                    <p className="text-slate-600">{L ? "لا توجد بيانات حساسة مخزنة حالياً في هذا المشروع." : "No sensitive data stored for this project yet."}</p>
                   </div>
                  ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -448,7 +450,7 @@ export default function ProjectDetails() {
                             {item.isSecret ? "••••••••••••" : item.content}
                           </div>
                           <div className="flex gap-2 mt-4">
-                            <Button variant="ghost" size="sm" className="flex-1 text-xs">عرض المحتوى</Button>
+                            <Button variant="ghost" size="sm" className="flex-1 text-xs">{L ? "عرض المحتوى" : "View Content"}</Button>
                             {(user as any)?.role !== 'client' && (
                               <Button
                                 variant="ghost"
@@ -477,16 +479,16 @@ export default function ProjectDetails() {
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { name: "بيئة التطوير (Staging)", url: "https://staging.qirox.tech" },
-                    { name: "لوحة تحكم WordPress", url: "https://site.com/wp-admin" },
-                    { name: "رابط Google Drive", url: "#" },
+                    { name: L ? "بيئة التطوير (Staging)" : "Staging Environment", url: "https://staging.qirox.tech" },
+                    { name: L ? "لوحة تحكم WordPress" : "WordPress Admin", url: "https://site.com/wp-admin" },
+                    { name: L ? "رابط Google Drive" : "Google Drive Link", url: "#" },
                   ].map((tool, i) => (
                     <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
                         <Link2 className="w-5 h-5 text-primary" />
                         <span className="font-medium text-slate-700">{tool.name}</span>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-blue-600">زيارة الرابط</Button>
+                      <Button size="sm" variant="ghost" className="text-blue-600">{L ? "زيارة الرابط" : "Visit Link"}</Button>
                     </div>
                   ))}
                 </div>
@@ -527,7 +529,7 @@ export default function ProjectDetails() {
                 <div className="space-y-4">
                   <div className="p-6 bg-slate-50 rounded-xl border border-dashed text-center text-slate-500">
                     <CreditCard className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                    <p>سجل الدفعات سيكون متاحاً بعد تأكيد الفاتورة القادمة</p>
+                    <p>{L ? "سجل الدفعات سيكون متاحاً بعد تأكيد الفاتورة القادمة" : "Payment history will be available after the next invoice is confirmed"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -541,9 +543,9 @@ export default function ProjectDetails() {
                 <div className="flex items-center justify-between p-4 border rounded-xl">
                   <div className="flex items-center gap-3">
                     <FileSignature className="w-5 h-5 text-primary" />
-                    <span className="font-medium">عقد تقديم الخدمات البرمجية.pdf</span>
+                    <span className="font-medium">{L ? "عقد تقديم الخدمات البرمجية.pdf" : "Software Services Contract.pdf"}</span>
                   </div>
-                  <Badge className="bg-green-100 text-green-700">موقع إلكترونياً</Badge>
+                  <Badge className="bg-green-100 text-green-700">{L ? "موقع إلكترونياً" : "Digitally Signed"}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -555,8 +557,8 @@ export default function ProjectDetails() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-sm text-blue-800">تم تحديث حالة المشروع إلى "قيد التنفيذ"</p>
-                    <p className="text-[10px] text-blue-600 mt-1">منذ ساعتين</p>
+                    <p className="text-sm text-blue-800">{L ? 'تم تحديث حالة المشروع إلى "قيد التنفيذ"' : 'Project status updated to "In Progress"'}</p>
+                    <p className="text-[10px] text-blue-600 mt-1">{L ? "منذ ساعتين" : "2 hours ago"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -570,7 +572,7 @@ export default function ProjectDetails() {
                 <div className="rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-white">
                   <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                     <PlayCircle className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-slate-800">فيديو شرح التسليم</h3>
+                    <h3 className="font-bold text-slate-800">{L ? "فيديو شرح التسليم" : "Delivery Video"}</h3>
                   </div>
                   <div className="p-4">
                     {(project as any).deliveryVideoUrl.includes("youtube.com") || (project as any).deliveryVideoUrl.includes("youtu.be") ? (
@@ -578,7 +580,7 @@ export default function ProjectDetails() {
                         <iframe
                           className="absolute inset-0 w-full h-full"
                           src={`https://www.youtube.com/embed/${extractYouTubeId((project as any).deliveryVideoUrl)}`}
-                          title="فيديو التسليم"
+                          title="Delivery Video"
                           allowFullScreen
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         />
@@ -589,7 +591,7 @@ export default function ProjectDetails() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
                           <Video className="w-5 h-5 text-primary" />
                         </div>
-                        <span className="font-medium text-slate-700 group-hover:text-primary transition-colors">مشاهدة فيديو الشرح</span>
+                        <span className="font-medium text-slate-700 group-hover:text-primary transition-colors">{L ? "مشاهدة فيديو الشرح" : "Watch Explanation Video"}</span>
                         <ExternalLink className="w-4 h-4 text-slate-400 mr-auto" />
                       </a>
                     )}
@@ -602,7 +604,7 @@ export default function ProjectDetails() {
                 <div className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                     <Download className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-slate-800">ملفات التسليم</h3>
+                    <h3 className="font-bold text-slate-800">{L ? "ملفات التسليم" : "Delivery Files"}</h3>
                     <Badge className="mr-auto text-[10px] h-5">{(project as any).deliveryFiles.length}</Badge>
                   </div>
                   <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -613,7 +615,7 @@ export default function ProjectDetails() {
                           {file.icon || "📄"}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-slate-800 truncate">{file.nameAr || "ملف"}</p>
+                          <p className="font-semibold text-sm text-slate-800 truncate">{file.nameAr || (L ? "ملف" : "File")}</p>
                           <p className="text-[10px] text-slate-400 truncate" dir="ltr">{file.url}</p>
                         </div>
                         <Download className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0" />
@@ -628,13 +630,13 @@ export default function ProjectDetails() {
                 <div className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-violet-600" />
-                    <h3 className="font-bold text-slate-800">{(project as any).usageGuide?.title || "دليل الاستخدام"}</h3>
+                    <h3 className="font-bold text-slate-800">{(project as any).usageGuide?.title || (L ? "دليل الاستخدام" : "Usage Guide")}</h3>
                   </div>
                   <div className="p-5">
                     <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{(project as any).usageGuide.description}</div>
                     {Array.isArray((project as any).usageGuide?.files) && (project as any).usageGuide.files.length > 0 && (
                       <div className="mt-4 space-y-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">ملفات الدليل</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{L ? "ملفات الدليل" : "Guide Files"}</p>
                         {(project as any).usageGuide.files.map((f: string, i: number) => (
                           <a key={i} href={f} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-2 p-2.5 bg-violet-50 hover:bg-violet-100 border border-violet-100 rounded-lg text-sm text-violet-700 transition-colors">
@@ -654,8 +656,8 @@ export default function ProjectDetails() {
                 <Card>
                   <CardContent className="p-12 text-center text-slate-400">
                     <Download className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                    <p className="font-medium mb-1">لم يتم رفع ملفات التسليم بعد</p>
-                    <p className="text-xs text-slate-300">سيتم رفع ملفات التسليم والشرح هنا عند اكتمال المشروع</p>
+                    <p className="font-medium mb-1">{L ? "لم يتم رفع ملفات التسليم بعد" : "Delivery files not uploaded yet"}</p>
+                    <p className="text-xs text-slate-300">{L ? "سيتم رفع ملفات التسليم والشرح هنا عند اكتمال المشروع" : "Delivery and explanation files will be uploaded here when the project is complete"}</p>
                   </CardContent>
                 </Card>
               )}
@@ -678,8 +680,8 @@ export default function ProjectDetails() {
                 ) : addonSubs.length === 0 ? (
                   <div className="py-12 text-center">
                     <Package className="w-12 h-12 mx-auto mb-3 opacity-10 text-slate-400" />
-                    <p className="text-slate-400 text-sm">لا توجد إضافات مفعّلة لهذا المشروع بعد</p>
-                    <p className="text-slate-300 text-xs mt-1">يمكنك طلب إضافة مميزات عبر التواصل مع الفريق</p>
+                    <p className="text-slate-400 text-sm">{L ? "لا توجد إضافات مفعّلة لهذا المشروع بعد" : "No add-ons activated for this project yet"}</p>
+                    <p className="text-slate-300 text-xs mt-1">{L ? "يمكنك طلب إضافة مميزات عبر التواصل مع الفريق" : "You can request feature add-ons by contacting the team"}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -691,19 +693,19 @@ export default function ProjectDetails() {
                       const alreadyRequested = !!sub.renewalRequestedAt;
 
                       const statusConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
-                        active: { icon: CheckCheck, label: "نشط", color: "text-green-700", bg: "bg-green-100" },
-                        expired: { icon: XCircle, label: "منتهي الصلاحية", color: "text-red-700", bg: "bg-red-100" },
-                        exhausted: { icon: AlertCircle, label: "استُنفدت الحصة", color: "text-amber-700", bg: "bg-amber-100" },
-                        cancelled: { icon: XCircle, label: "ملغي", color: "text-slate-500", bg: "bg-slate-100" },
+                        active: { icon: CheckCheck, label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-100" },
+                          expired: { icon: XCircle, label: L ? "منتهي الصلاحية" : "Expired", color: "text-red-700", bg: "bg-red-100" },
+                          exhausted: { icon: AlertCircle, label: L ? "استُنفدت الحصة" : "Quota Exhausted", color: "text-amber-700", bg: "bg-amber-100" },
+                          cancelled: { icon: XCircle, label: L ? "ملغي" : "Cancelled", color: "text-slate-500", bg: "bg-slate-100" },
                       };
                       const st = statusConfig[sub.status] || statusConfig.active;
                       const StatusIcon = st.icon;
 
                       const billingLabels: Record<string, string> = {
-                        one_time: "مرة واحدة",
-                        monthly: "شهري",
-                        annual: "سنوي",
-                        lifetime: "مدى الحياة",
+                        one_time: L ? "مرة واحدة" : "One-time",
+                        monthly: L ? "شهري" : "Monthly",
+                        annual: L ? "سنوي" : "Annual",
+                        lifetime: L ? "مدى الحياة" : "Lifetime",
                       };
 
                       const quotaPct = sub.quotaTotal > 0
@@ -719,7 +721,7 @@ export default function ProjectDetails() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <p className="font-bold text-slate-800">{sub.addonNameAr || sub.addonId?.nameAr || "إضافة"}</p>
+                                <p className="font-bold text-slate-800">{sub.addonNameAr || sub.addonId?.nameAr || (L ? "إضافة" : "Add-on")}</p>
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>
                                   <StatusIcon className="w-3 h-3" />
                                   {st.label}
@@ -734,7 +736,7 @@ export default function ProjectDetails() {
                               {quotaPct !== null && (
                                 <div className="mt-2 mb-1">
                                   <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                                    <span>الاستخدام: {sub.quotaUsed} / {sub.quotaTotal} {sub.quotaLabel || ""}</span>
+                                    <span>{L ? "الاستخدام:" : "Usage:"} {sub.quotaUsed} / {sub.quotaTotal} {sub.quotaLabel || ""}</span>
                                     <span>{quotaPct}%</span>
                                   </div>
                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -750,13 +752,13 @@ export default function ProjectDetails() {
                                 {sub.startedAt && (
                                   <span className="text-[10px] text-slate-400 flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
-                                    بدأ: {new Date(sub.startedAt).toLocaleDateString("ar-SA")}
+                                    {L ? "بدأ:" : "Started:"} {new Date(sub.startedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                                   </span>
                                 )}
                                 {sub.expiresAt && (
                                   <span className={`text-[10px] flex items-center gap-1 ${isExpired ? "text-red-500 font-bold" : "text-slate-400"}`}>
                                     <Calendar className="w-3 h-3" />
-                                    {isExpired ? "انتهى:" : "ينتهي:"} {new Date(sub.expiresAt).toLocaleDateString("ar-SA")}
+                                    {isExpired ? (L ? "انتهى:" : "Expired:") : (L ? "ينتهي:" : "Expires:")} {new Date(sub.expiresAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                                   </span>
                                 )}
                               </div>
@@ -780,13 +782,13 @@ export default function ProjectDetails() {
                                     {renewingId === (sub._id || sub.id)
                                       ? <Loader2 className="w-3 h-3 animate-spin" />
                                       : <RefreshCw className="w-3 h-3" />}
-                                    طلب التجديد
+                                    {L ? "طلب التجديد" : "Request Renewal"}
                                   </Button>
                                 )
                               )}
                               {isActive && sub.quotaTotal > 0 && (
                                 <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-1">
-                                  متبقي: {sub.quotaTotal - sub.quotaUsed} {sub.quotaLabel || ""}
+                                  {L ? "متبقي:" : "Remaining:"} {sub.quotaTotal - sub.quotaUsed} {sub.quotaLabel || ""}
                                 </p>
                               )}
                             </div>

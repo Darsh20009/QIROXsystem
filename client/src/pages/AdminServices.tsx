@@ -9,20 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Plus, Edit2, Trash2, Briefcase, Search, X, Upload, FileText, Video, File, ExternalLink } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { type Service } from "@shared/schema";
 import { useState, useMemo, useRef } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 
-const categories = [
-  { value: "restaurants", label: "مطاعم وكافيهات" },
-  { value: "stores", label: "متاجر وبراندات" },
-  { value: "education", label: "تعليم" },
-  { value: "institutions", label: "مؤسسات وشركات" },
-  { value: "health", label: "صحة ولياقة" },
-  { value: "personal", label: "شخصي" },
-  { value: "food", label: "أغذية" },
-  { value: "commerce", label: "تجارة إلكترونية" },
-];
+function getCategories(L: boolean) { return [
+  { value: "restaurants", label: L ? "مطاعم وكافيهات" : "Restaurants & Cafes" },
+  { value: "stores", label: L ? "متاجر وبراندات" : "Stores & Brands" },
+  { value: "education", label: L ? "تعليم" : "Education" },
+  { value: "institutions", label: L ? "مؤسسات وشركات" : "Institutions & Companies" },
+  { value: "health", label: L ? "صحة ولياقة" : "Health & Fitness" },
+  { value: "personal", label: L ? "شخصي" : "Personal" },
+  { value: "food", label: L ? "أغذية" : "Food" },
+  { value: "commerce", label: L ? "تجارة إلكترونية" : "E-Commerce" },
+]; }
 
 interface PortfolioFile {
   url: string;
@@ -78,6 +79,9 @@ function getFileIcon(type: string) {
 }
 
 export default function AdminServices() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const categories = getCategories(L);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -125,12 +129,12 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
-      toast({ title: "تم إضافة الخدمة بنجاح" });
+      toast({ title: L ? "تم إضافة الخدمة بنجاح" : "Service added successfully" });
       setOpen(false);
       setFormData(emptyForm);
     },
     onError: () => {
-      toast({ title: "خطأ في إضافة الخدمة", variant: "destructive" });
+      toast({ title: L ? "خطأ في إضافة الخدمة" : "Error adding service", variant: "destructive" });
     },
   });
 
@@ -141,13 +145,13 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
-      toast({ title: "تم تحديث الخدمة بنجاح" });
+      toast({ title: L ? "تم تحديث الخدمة بنجاح" : "Service updated successfully" });
       setOpen(false);
       setEditingId(null);
       setFormData(emptyForm);
     },
     onError: () => {
-      toast({ title: "خطأ في تحديث الخدمة", variant: "destructive" });
+      toast({ title: L ? "خطأ في تحديث الخدمة" : "Error updating service", variant: "destructive" });
     },
   });
 
@@ -157,17 +161,17 @@ export default function AdminServices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
-      toast({ title: "تم حذف الخدمة بنجاح" });
+      toast({ title: L ? "تم حذف الخدمة بنجاح" : "Service deleted successfully" });
     },
     onError: () => {
-      toast({ title: "خطأ في حذف الخدمة", variant: "destructive" });
+      toast({ title: L ? "خطأ في حذف الخدمة" : "Error deleting service", variant: "destructive" });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
-      toast({ title: "يرجى ملء الحقول المطلوبة", variant: "destructive" });
+      toast({ title: L ? "يرجى ملء الحقول المطلوبة" : "Please fill required fields", variant: "destructive" });
       return;
     }
     if (editingId) {
@@ -219,7 +223,7 @@ export default function AdminServices() {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          toast({ title: `خطأ في رفع ${file.name}`, description: data.error || "فشل الرفع", variant: "destructive" });
+          toast({ title: L ? `خطأ في رفع ${file.name}` : `Error uploading ${file.name}`, description: data.error || (L ? "فشل الرفع" : "Upload failed"), variant: "destructive" });
           continue;
         }
         const data = await res.json();
@@ -230,9 +234,9 @@ export default function AdminServices() {
         };
         setFormData(f => ({ ...f, portfolioFiles: [...f.portfolioFiles, newFile] }));
       }
-      toast({ title: "تم رفع الملفات بنجاح" });
+      toast({ title: L ? "تم رفع الملفات بنجاح" : "Files uploaded successfully" });
     } catch {
-      toast({ title: "خطأ في رفع الملفات", variant: "destructive" });
+      toast({ title: L ? "خطأ في رفع الملفات" : "Error uploading files", variant: "destructive" });
     }
     setIsUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -277,7 +281,7 @@ export default function AdminServices() {
           <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="بحث في الخدمات..."
+            placeholder={L ? "بحث في الخدمات..." : "Search services..."}
             className="pr-9 h-10 rounded-xl border-black/[0.1] text-sm"
             data-testid="input-search-services"
           />
@@ -289,10 +293,10 @@ export default function AdminServices() {
         </div>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="w-44 h-10 rounded-xl border-black/[0.1] text-sm" data-testid="select-filter-category">
-            <SelectValue placeholder="كل الفئات" />
+            <SelectValue placeholder={L ? "كل الفئات" : "All Categories"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">كل الفئات</SelectItem>
+            <SelectItem value="all">{L ? "كل الفئات" : "All Categories"}</SelectItem>
             {categories.map(c => (
               <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
             ))}
@@ -310,11 +314,11 @@ export default function AdminServices() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-black/[0.06]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الخدمة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الفئة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">السعر</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المدة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الملفات</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الخدمة" : "Service"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الفئة" : "Category"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "السعر" : "Price"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المدة" : "Duration"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الملفات" : "Files"}</th>
                 <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
               </tr>
             </thead>
@@ -338,7 +342,7 @@ export default function AdminServices() {
                     <td className="p-4 text-sm text-black/60">
                       {service.priceMin && service.priceMax
                         ? <span className="flex items-center gap-1">{service.priceMin?.toLocaleString()} - {service.priceMax?.toLocaleString()} <SARIcon size={11} /></span>
-                        : service.priceMin ? <span className="flex items-center gap-1">من {service.priceMin?.toLocaleString()} <SARIcon size={11} /></span> : "—"}
+                        : service.priceMin ? <span className="flex items-center gap-1">{L ? "من" : "from"} {service.priceMin?.toLocaleString()} <SARIcon size={11} /></span> : "—"}
                     </td>
                     <td className="p-4 text-sm text-black/60">{service.estimatedDuration || "—"}</td>
                     <td className="p-4 text-sm text-black/60">
@@ -377,7 +381,7 @@ export default function AdminServices() {
               {filteredServices.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-black/30">
-                    {services?.length ? "لا توجد نتائج مطابقة للبحث" : "لا توجد خدمات بعد"}
+                    {services?.length ? (L ? "لا توجد نتائج مطابقة للبحث" : "No matching results") : (L ? "لا توجد خدمات بعد" : "No services yet")}
                   </td>
                 </tr>
               )}
@@ -390,31 +394,31 @@ export default function AdminServices() {
         <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-black">
-              {editingId ? "تعديل الخدمة" : "إضافة خدمة جديدة"}
+              {editingId ? (L ? "تعديل الخدمة" : "Edit Service") : (L ? "إضافة خدمة جديدة" : "Add New Service")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">اسم الخدمة *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "اسم الخدمة *" : "Service Name *"}</label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
-                placeholder="مثال: نظام المطاعم"
+                placeholder={L ? "مثال: نظام المطاعم" : "e.g. Restaurant System"}
                 data-testid="input-title"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">الوصف *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "الوصف *" : "Description *"}</label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
                 className="min-h-[80px]"
-                placeholder="وصف تفصيلي للخدمة"
+                placeholder={L ? "وصف تفصيلي للخدمة" : "Detailed service description"}
                 data-testid="input-description"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">الفئة</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "الفئة" : "Category"}</label>
               <Select value={formData.category} onValueChange={(v) => setFormData(f => ({ ...f, category: v }))}>
                 <SelectTrigger data-testid="select-category">
                   <SelectValue />
@@ -428,7 +432,7 @@ export default function AdminServices() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">السعر الأدنى (<SARIcon size={10} className="opacity-60" />)</label>
+                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">{L ? "السعر الأدنى" : "Min Price"} (<SARIcon size={10} className="opacity-60" />)</label>
                 <Input
                   type="number"
                   value={formData.priceMin}
@@ -438,7 +442,7 @@ export default function AdminServices() {
                 />
               </div>
               <div>
-                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">السعر الأقصى (<SARIcon size={10} className="opacity-60" />)</label>
+                <label className="flex items-center gap-1 text-sm font-medium text-black/60 mb-1.5">{L ? "السعر الأقصى" : "Max Price"} (<SARIcon size={10} className="opacity-60" />)</label>
                 <Input
                   type="number"
                   value={formData.priceMax}
@@ -450,7 +454,7 @@ export default function AdminServices() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">المدة المتوقعة</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "المدة المتوقعة" : "Estimated Duration"}</label>
                 <Input
                   value={formData.estimatedDuration}
                   onChange={(e) => setFormData(f => ({ ...f, estimatedDuration: e.target.value }))}
@@ -459,7 +463,7 @@ export default function AdminServices() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">الأيقونة</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "الأيقونة" : "Icon"}</label>
                 <Input
                   value={formData.icon}
                   onChange={(e) => setFormData(f => ({ ...f, icon: e.target.value }))}
@@ -469,17 +473,17 @@ export default function AdminServices() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">المميزات (مفصولة بفاصلة)</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "المميزات (مفصولة بفاصلة)" : "Features (comma-separated)"}</label>
               <Input
                 value={formData.features}
                 onChange={(e) => setFormData(f => ({ ...f, features: e.target.value }))}
-                placeholder="ميزة 1, ميزة 2, ميزة 3"
+                placeholder={L ? "ميزة 1, ميزة 2, ميزة 3" : "Feature 1, Feature 2, Feature 3"}
                 data-testid="input-features"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط المنصة</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "رابط المنصة" : "Platform URL"}</label>
               <Input
                 value={formData.platformUrl}
                 onChange={(e) => setFormData(f => ({ ...f, platformUrl: e.target.value }))}
@@ -490,7 +494,7 @@ export default function AdminServices() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">طريقة الاستخدام</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "طريقة الاستخدام" : "Usage Instructions"}</label>
               <Textarea
                 value={formData.usageInstructions}
                 onChange={(e) => setFormData(f => ({ ...f, usageInstructions: e.target.value }))}
@@ -501,7 +505,7 @@ export default function AdminServices() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">ملفات الشرح (PDF / فيديو)</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "ملفات الشرح (PDF / فيديو)" : "Explanation Files (PDF / Video)"}</label>
               <div className="border-2 border-dashed border-black/[0.1] rounded-xl p-4 text-center hover:border-black/[0.2] transition-colors">
                 <input
                   ref={fileInputRef}
@@ -525,7 +529,7 @@ export default function AdminServices() {
                   ) : (
                     <Upload className="w-4 h-4" />
                   )}
-                  {isUploading ? "جاري الرفع..." : "اختر ملفات"}
+                  {isUploading ? (L ? "جاري الرفع..." : "Uploading...") : (L ? "اختر ملفات" : "Choose Files")}
                 </Button>
                 <p className="text-xs text-black/30 mt-2">PDF, فيديو, مستندات — بدون حد للحجم (حتى 500MB)</p>
               </div>
@@ -537,7 +541,7 @@ export default function AdminServices() {
                       {getFileIcon(file.type)}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-black truncate">{file.name}</p>
-                        <p className="text-xs text-black/40">{file.type === "pdf" ? "PDF" : file.type === "video" ? "فيديو" : file.type === "document" ? "مستند" : "ملف"}</p>
+                        <p className="text-xs text-black/40">{file.type === "pdf" ? "PDF" : file.type === "video" ? (L ? "فيديو" : "Video") : file.type === "document" ? (L ? "مستند" : "Document") : (L ? "ملف" : "File")}</p>
                       </div>
                       <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-black/[0.05] transition-colors" data-testid={`link-preview-file-${idx}`}>
                         <ExternalLink className="w-3.5 h-3.5 text-black/40" />
@@ -558,14 +562,14 @@ export default function AdminServices() {
 
             <div>
               <ImageUpload
-                label="صور المحفظة"
+                label={L ? "صور المحفظة" : "Portfolio Images"}
                 multiple
                 value={formData.portfolioImages ? formData.portfolioImages.split(",").map(s => s.trim()).filter(Boolean) : []}
                 onChange={(urls) => setFormData(f => ({ ...f, portfolioImages: urls.join(", ") }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">رابط المحفظة</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "رابط المحفظة" : "Portfolio URL"}</label>
               <Input
                 value={formData.portfolioUrl}
                 onChange={(e) => setFormData(f => ({ ...f, portfolioUrl: e.target.value }))}
@@ -581,7 +585,7 @@ export default function AdminServices() {
                 data-testid="button-submit-form"
               >
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {editingId ? "تحديث" : "إضافة"}
+                {editingId ? (L ? "تحديث" : "Update") : (L ? "إضافة" : "Add")}
               </Button>
               <Button
                 type="button"

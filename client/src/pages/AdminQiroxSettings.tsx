@@ -3,6 +3,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,8 @@ type Section = "company" | "contact" | "social" | "financial" | "distribution" |
 
 export default function AdminQiroxSettings() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [section, setSection] = useState<Section>("company");
   const [form, setForm] = useState<Settings>(EMPTY);
   const [dirty, setDirty] = useState(false);
@@ -72,9 +75,9 @@ export default function AdminQiroxSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/qirox-settings"] });
       setDirty(false);
-      toast({ title: "✅ تم حفظ الإعدادات بنجاح" });
+      toast({ title: L ? "✅ تم حفظ الإعدادات بنجاح" : "✅ Settings saved successfully" });
     },
-    onError: () => toast({ title: "فشل الحفظ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل الحفظ" : "Save failed", variant: "destructive" }),
   });
 
   // Store Config (app downloads)
@@ -101,15 +104,15 @@ export default function AdminQiroxSettings() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/store-publish-config"] });
       queryClient.invalidateQueries({ queryKey: ["/api/app-downloads"] });
       setStoreDirty(false);
-      toast({ title: "✅ تم حفظ روابط التحميل بنجاح" });
+      toast({ title: L ? "✅ تم حفظ روابط التحميل بنجاح" : "✅ Download links saved successfully" });
     },
-    onError: () => toast({ title: "فشل الحفظ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل الحفظ" : "Save failed", variant: "destructive" }),
   });
 
   const set = (k: keyof Settings, v: any) => { setForm(f => ({ ...f, [k]: v })); setDirty(true); };
 
   const addDist = () => {
-    setForm(f => ({ ...f, profitDistribution: [...f.profitDistribution, { roleType: "investor", percentage: 0, label: "مستثمرون" }] }));
+    setForm(f => ({ ...f, profitDistribution: [...f.profitDistribution, { roleType: "investor", percentage: 0, label: L ? "مستثمرون" : "Investors" }] }));
     setDirty(true);
   };
   const removeDist = (i: number) => { setForm(f => ({ ...f, profitDistribution: f.profitDistribution.filter((_, j) => j !== i) })); setDirty(true); };
@@ -122,18 +125,18 @@ export default function AdminQiroxSettings() {
   const totalDist = form.profitDistribution.reduce((s, d) => s + (d.percentage || 0), 0);
 
   const SECTIONS: { id: Section; label: string; icon: any; color: string }[] = [
-    { id: "company", label: "معلومات الشركة", icon: Building2, color: "text-blue-500" },
-    { id: "contact", label: "التواصل والعنوان", icon: Phone, color: "text-green-500" },
-    { id: "social", label: "السوشيال ميديا", icon: Globe, color: "text-purple-500" },
-    { id: "financial", label: "التقييم المالي", icon: DollarSign, color: "text-amber-500" },
-    { id: "distribution", label: "توزيع الأرباح", icon: BarChart3, color: "text-cyan-500" },
-    { id: "appdownload", label: "تحميل التطبيق", icon: Smartphone, color: "text-violet-500" },
+    { id: "company", label: L ? "معلومات الشركة" : "Company Info", icon: Building2, color: "text-blue-500" },
+    { id: "contact", label: L ? "التواصل والعنوان" : "Contact & Address", icon: Phone, color: "text-green-500" },
+    { id: "social", label: L ? "السوشيال ميديا" : "Social Media", icon: Globe, color: "text-purple-500" },
+    { id: "financial", label: L ? "التقييم المالي" : "Financial Valuation", icon: DollarSign, color: "text-amber-500" },
+    { id: "distribution", label: L ? "توزيع الأرباح" : "Profit Distribution", icon: BarChart3, color: "text-cyan-500" },
+    { id: "appdownload", label: L ? "تحميل التطبيق" : "App Downloads", icon: Smartphone, color: "text-violet-500" },
   ];
 
   if (isLoading) return <div className="flex justify-center py-32"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-4xl mx-auto space-y-6">
 
@@ -146,13 +149,13 @@ export default function AdminQiroxSettings() {
               <Settings2 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-black dark:text-white">إعدادات نظام كيروكس</h1>
-              <p className="text-black/40 dark:text-white/40 text-sm">إدارة بيانات الشركة، التواصل، التقييم المالي وتوزيع الأرباح</p>
+              <h1 className="text-2xl font-black text-black dark:text-white">{L ? "إعدادات نظام كيروكس" : "Qirox System Settings"}</h1>
+              <p className="text-black/40 dark:text-white/40 text-sm">{L ? "إدارة بيانات الشركة، التواصل، التقييم المالي وتوزيع الأرباح" : "Manage company data, contact, financial valuation and profit distribution"}</p>
             </div>
             {dirty && (
               <div className="mr-auto flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">يوجد تغييرات غير محفوظة</span>
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">{L ? "يوجد تغييرات غير محفوظة" : "Unsaved changes"}</span>
               </div>
             )}
           </div>
@@ -181,21 +184,21 @@ export default function AdminQiroxSettings() {
           {/* Company Info */}
           {section === "company" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-500" /> معلومات الشركة</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-500" /> {L ? "معلومات الشركة" : "Company Info"}</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label-xs">اسم الشركة (EN)</label><Input value={form.companyName} onChange={e => set("companyName", e.target.value)} data-testid="input-company-name" /></div>
-                <div><label className="label-xs">اسم الشركة (AR)</label><Input value={form.companyNameAr} onChange={e => set("companyNameAr", e.target.value)} data-testid="input-company-name-ar" /></div>
-                <div><label className="label-xs">الدومين</label><Input value={form.domain} onChange={e => set("domain", e.target.value)} dir="ltr" data-testid="input-domain" /></div>
-                <div><label className="label-xs">الشعار القصير (EN)</label><Input value={form.tagline} onChange={e => set("tagline", e.target.value)} data-testid="input-tagline" /></div>
-                <div><label className="label-xs">الشعار القصير (AR)</label><Input value={form.taglineAr} onChange={e => set("taglineAr", e.target.value)} data-testid="input-tagline-ar" /></div>
-                <div><label className="label-xs">سنة التأسيس</label><Input type="number" value={form.foundedYear} onChange={e => set("foundedYear", parseInt(e.target.value))} data-testid="input-founded-year" /></div>
-                <div><label className="label-xs">حجم الفريق</label><Input type="number" value={form.teamSize} onChange={e => set("teamSize", parseInt(e.target.value))} data-testid="input-team-size" /></div>
+                <div><label className="label-xs">{L ? "اسم الشركة (EN)" : "Company Name (EN)"}</label><Input value={form.companyName} onChange={e => set("companyName", e.target.value)} data-testid="input-company-name" /></div>
+                <div><label className="label-xs">{L ? "اسم الشركة (AR)" : "Company Name (AR)"}</label><Input value={form.companyNameAr} onChange={e => set("companyNameAr", e.target.value)} data-testid="input-company-name-ar" /></div>
+                <div><label className="label-xs">{L ? "الدومين" : "Domain"}</label><Input value={form.domain} onChange={e => set("domain", e.target.value)} dir="ltr" data-testid="input-domain" /></div>
+                <div><label className="label-xs">{L ? "الشعار القصير (EN)" : "Tagline (EN)"}</label><Input value={form.tagline} onChange={e => set("tagline", e.target.value)} data-testid="input-tagline" /></div>
+                <div><label className="label-xs">{L ? "الشعار القصير (AR)" : "Tagline (AR)"}</label><Input value={form.taglineAr} onChange={e => set("taglineAr", e.target.value)} data-testid="input-tagline-ar" /></div>
+                <div><label className="label-xs">{L ? "سنة التأسيس" : "Founded Year"}</label><Input type="number" value={form.foundedYear} onChange={e => set("foundedYear", parseInt(e.target.value))} data-testid="input-founded-year" /></div>
+                <div><label className="label-xs">{L ? "حجم الفريق" : "Team Size"}</label><Input type="number" value={form.teamSize} onChange={e => set("teamSize", parseInt(e.target.value))} data-testid="input-team-size" /></div>
               </div>
-              <div><label className="label-xs">رابط الشعار (URL)</label><Input value={form.logoUrl} onChange={e => set("logoUrl", e.target.value)} dir="ltr" data-testid="input-logo-url" /></div>
-              <div><label className="label-xs">وصف الشركة</label><Textarea value={form.description} onChange={e => set("description", e.target.value)} rows={4} data-testid="textarea-description" /></div>
+              <div><label className="label-xs">{L ? "رابط الشعار (URL)" : "Logo URL"}</label><Input value={form.logoUrl} onChange={e => set("logoUrl", e.target.value)} dir="ltr" data-testid="input-logo-url" /></div>
+              <div><label className="label-xs">{L ? "وصف الشركة" : "Company Description"}</label><Textarea value={form.description} onChange={e => set("description", e.target.value)} rows={4} data-testid="textarea-description" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label-xs">الرقم الضريبي</label><Input value={form.taxNumber} onChange={e => set("taxNumber", e.target.value)} data-testid="input-tax" /></div>
-                <div><label className="label-xs">السجل التجاري</label><Input value={form.commercialReg} onChange={e => set("commercialReg", e.target.value)} data-testid="input-commercial-reg" /></div>
+                <div><label className="label-xs">{L ? "الرقم الضريبي" : "Tax Number"}</label><Input value={form.taxNumber} onChange={e => set("taxNumber", e.target.value)} data-testid="input-tax" /></div>
+                <div><label className="label-xs">{L ? "السجل التجاري" : "Commercial Registration"}</label><Input value={form.commercialReg} onChange={e => set("commercialReg", e.target.value)} data-testid="input-commercial-reg" /></div>
               </div>
             </div>
           )}
@@ -203,22 +206,22 @@ export default function AdminQiroxSettings() {
           {/* Contact */}
           {section === "contact" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" /> بيانات التواصل والعنوان</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Phone className="w-4 h-4 text-green-500" /> {L ? "بيانات التواصل والعنوان" : "Contact & Address"}</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label-xs">البريد الإلكتروني</label><Input type="email" value={form.contactEmail} onChange={e => set("contactEmail", e.target.value)} dir="ltr" data-testid="input-email" /></div>
-                <div><label className="label-xs">رقم الهاتف</label><Input value={form.contactPhone} onChange={e => set("contactPhone", e.target.value)} data-testid="input-phone" /></div>
-                <div><label className="label-xs">واتساب</label><Input value={form.whatsapp} onChange={e => set("whatsapp", e.target.value)} data-testid="input-whatsapp" /></div>
-                <div><label className="label-xs">المدينة</label><Input value={form.city} onChange={e => set("city", e.target.value)} data-testid="input-city" /></div>
-                <div><label className="label-xs">الدولة</label><Input value={form.country} onChange={e => set("country", e.target.value)} data-testid="input-country" /></div>
+                <div><label className="label-xs">{L ? "البريد الإلكتروني" : "Email"}</label><Input type="email" value={form.contactEmail} onChange={e => set("contactEmail", e.target.value)} dir="ltr" data-testid="input-email" /></div>
+                <div><label className="label-xs">{L ? "رقم الهاتف" : "Phone Number"}</label><Input value={form.contactPhone} onChange={e => set("contactPhone", e.target.value)} data-testid="input-phone" /></div>
+                <div><label className="label-xs">{L ? "واتساب" : "WhatsApp"}</label><Input value={form.whatsapp} onChange={e => set("whatsapp", e.target.value)} data-testid="input-whatsapp" /></div>
+                <div><label className="label-xs">{L ? "المدينة" : "City"}</label><Input value={form.city} onChange={e => set("city", e.target.value)} data-testid="input-city" /></div>
+                <div><label className="label-xs">{L ? "الدولة" : "Country"}</label><Input value={form.country} onChange={e => set("country", e.target.value)} data-testid="input-country" /></div>
               </div>
-              <div><label className="label-xs">العنوان التفصيلي</label><Input value={form.address} onChange={e => set("address", e.target.value)} data-testid="input-address" /></div>
+              <div><label className="label-xs">{L ? "العنوان التفصيلي" : "Detailed Address"}</label><Input value={form.address} onChange={e => set("address", e.target.value)} data-testid="input-address" /></div>
             </div>
           )}
 
           {/* Social */}
           {section === "social" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Globe className="w-4 h-4 text-purple-500" /> منصات التواصل الاجتماعي</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><Globe className="w-4 h-4 text-purple-500" /> {L ? "منصات التواصل الاجتماعي" : "Social Media Platforms"}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { k: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500" },
@@ -242,21 +245,21 @@ export default function AdminQiroxSettings() {
           {/* Financial */}
           {section === "financial" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
-              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><DollarSign className="w-4 h-4 text-amber-500" /> التقييم المالي للنظام</h3>
+              <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><DollarSign className="w-4 h-4 text-amber-500" /> {L ? "التقييم المالي للنظام" : "System Financial Valuation"}</h3>
               <div className="bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-5">
-                <p className="text-xs text-amber-700 dark:text-amber-400 mb-3 font-medium">القيمة الإجمالية لنظام كيروكس (بالعملة المحددة)</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mb-3 font-medium">{L ? "القيمة الإجمالية لنظام كيروكس (بالعملة المحددة)" : "Total valuation of the Qirox system (in selected currency)"}</p>
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
-                    <label className="label-xs">قيمة النظام</label>
+                    <label className="label-xs">{L ? "قيمة النظام" : "System Valuation"}</label>
                     <Input type="number" value={form.systemValuation} onChange={e => set("systemValuation", parseFloat(e.target.value) || 0)} className="text-xl font-black h-12" data-testid="input-valuation" />
                   </div>
                   <div className="w-28">
-                    <label className="label-xs">العملة</label>
+                    <label className="label-xs">{L ? "العملة" : "Currency"}</label>
                     <Input value={form.currency} onChange={e => set("currency", e.target.value)} data-testid="input-currency" />
                   </div>
                 </div>
                 <div className="mt-3 text-2xl font-black text-amber-600 dark:text-amber-400">
-                  {form.systemValuation.toLocaleString("ar-SA")} {form.currency}
+                  {form.systemValuation.toLocaleString(L ? "ar-SA" : "en-US")} {form.currency}
                 </div>
               </div>
             </div>
@@ -266,14 +269,14 @@ export default function AdminQiroxSettings() {
           {section === "distribution" && (
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-5 bg-white dark:bg-gray-900">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-cyan-500" /> قواعد توزيع الأرباح</h3>
-                <Button variant="outline" size="sm" className="gap-2" onClick={addDist} data-testid="btn-add-dist"><Plus className="w-3.5 h-3.5" /> إضافة قاعدة</Button>
+                <h3 className="font-bold text-black dark:text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-cyan-500" /> {L ? "قواعد توزيع الأرباح" : "Profit Distribution Rules"}</h3>
+                <Button variant="outline" size="sm" className="gap-2" onClick={addDist} data-testid="btn-add-dist"><Plus className="w-3.5 h-3.5" /> {L ? "إضافة قاعدة" : "Add Rule"}</Button>
               </div>
 
               {/* Total indicator */}
               <div className={`flex items-center gap-3 p-3 rounded-xl ${totalDist === 100 ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"} border`}>
                 {totalDist === 100 ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
-                <span className="text-sm font-medium text-black dark:text-white">الإجمالي: {totalDist}% {totalDist !== 100 && "(يجب أن يكون 100%)"}</span>
+                <span className="text-sm font-medium text-black dark:text-white">{L ? "الإجمالي:" : "Total:"} {totalDist}% {totalDist !== 100 && (L ? "(يجب أن يكون 100%)" : "(must be 100%)")}</span>
                 <div className="flex-1 h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                   <div className={`h-full rounded-full ${totalDist === 100 ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${Math.min(totalDist, 100)}%` }} />
                 </div>
@@ -283,26 +286,26 @@ export default function AdminQiroxSettings() {
               <div className="space-y-3">
                 {form.profitDistribution.map((d, i) => (
                   <div key={i} className="grid grid-cols-[1fr_1fr_80px_36px] gap-3 items-end" data-testid={`dist-row-${i}`}>
-                    <div><label className="label-xs">الوصف</label><Input value={d.label} onChange={e => setDist(i, "label", e.target.value)} placeholder="مثال: مستثمرون" /></div>
-                    <div><label className="label-xs">نوع الدور</label>
+                    <div><label className="label-xs">{L ? "الوصف" : "Description"}</label><Input value={d.label} onChange={e => setDist(i, "label", e.target.value)} placeholder={L ? "مثال: مستثمرون" : "e.g. Investors"} /></div>
+                    <div><label className="label-xs">{L ? "نوع الدور" : "Role Type"}</label>
                       <select value={d.roleType} onChange={e => setDist(i, "roleType", e.target.value)}
                         className="w-full h-10 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-transparent text-sm text-black dark:text-white">
                         {["investor", "admin", "manager", "developer", "accountant", "client", "other"].map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
-                    <div><label className="label-xs">النسبة %</label><Input type="number" min={0} max={100} value={d.percentage} onChange={e => setDist(i, "percentage", parseFloat(e.target.value) || 0)} /></div>
+                    <div><label className="label-xs">{L ? "النسبة %" : "Percentage %"}</label><Input type="number" min={0} max={100} value={d.percentage} onChange={e => setDist(i, "percentage", parseFloat(e.target.value) || 0)} /></div>
                     <button onClick={() => removeDist(i)} className="h-10 w-9 flex items-center justify-center rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-black/30 hover:text-red-500 transition-colors border border-black/10 dark:border-white/10" data-testid={`del-dist-${i}`}><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
                 {form.profitDistribution.length === 0 && (
-                  <p className="text-center py-8 text-sm text-black/30 dark:text-white/30">لا توجد قواعد — اضغط "إضافة قاعدة"</p>
+                  <p className="text-center py-8 text-sm text-black/30 dark:text-white/30">{L ? 'لا توجد قواعد — اضغط "إضافة قاعدة"' : 'No rules — click "Add Rule"'}</p>
                 )}
               </div>
 
               {/* Visual breakdown */}
               {form.profitDistribution.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs font-semibold text-black/40 dark:text-white/40 uppercase tracking-wide">التوزيع البصري</p>
+                  <p className="text-xs font-semibold text-black/40 dark:text-white/40 uppercase tracking-wide">{L ? "التوزيع البصري" : "Visual Distribution"}</p>
                   <div className="h-6 rounded-xl overflow-hidden flex">
                     {form.profitDistribution.map((d, i) => {
                       const colors = ["bg-cyan-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-amber-500", "bg-green-500"];
@@ -317,11 +320,11 @@ export default function AdminQiroxSettings() {
                   </div>
                   {form.systemValuation > 0 && (
                     <div className="mt-2 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] space-y-1">
-                      <p className="text-xs font-semibold text-black/40 dark:text-white/40">الأرباح المتوقعة (بناءً على تقييم {form.systemValuation.toLocaleString("ar-SA")} {form.currency}):</p>
+                      <p className="text-xs font-semibold text-black/40 dark:text-white/40">{L ? "الأرباح المتوقعة (بناءً على تقييم" : "Expected profits (based on valuation"} {form.systemValuation.toLocaleString(L ? "ar-SA" : "en-US")} {form.currency}):</p>
                       {form.profitDistribution.map((d, i) => (
                         <div key={i} className="flex justify-between text-xs">
                           <span className="text-black/60 dark:text-white/60">{d.label}</span>
-                          <span className="font-medium text-black dark:text-white">{((form.systemValuation * d.percentage) / 100).toLocaleString("ar-SA")} {form.currency}</span>
+                          <span className="font-medium text-black dark:text-white">{((form.systemValuation * d.percentage) / 100).toLocaleString(L ? "ar-SA" : "en-US")} {form.currency}</span>
                         </div>
                       ))}
                     </div>
@@ -335,10 +338,10 @@ export default function AdminQiroxSettings() {
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-6 space-y-6 bg-white dark:bg-gray-900">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-violet-500" />
-                <h3 className="font-bold text-black dark:text-white">روابط تحميل التطبيق</h3>
+                <h3 className="font-bold text-black dark:text-white">{L ? "روابط تحميل التطبيق" : "App Download Links"}</h3>
               </div>
               <p className="text-xs text-black/40 dark:text-white/40">
-                هذه الروابط ستظهر في الفوتر للزوار. إذا أضفت رابطاً وفعّلت النشر، يظهر زر التحميل. إذا أضفت الرابط فقط بدون تفعيل، يظهر كـ "قريباً".
+                {L ? 'هذه الروابط ستظهر في الفوتر للزوار. إذا أضفت رابطاً وفعّلت النشر، يظهر زر التحميل. إذا أضفت الرابط فقط بدون تفعيل، يظهر كـ "قريباً".' : 'These links appear in the footer. When a link is added and enabled, a download button shows. If a link is added without enabling, it shows as "Coming Soon".'}
               </p>
 
               {[
@@ -377,17 +380,17 @@ export default function AdminQiroxSettings() {
                     </span>
                     <span className="font-semibold text-sm text-black dark:text-white">{p.label}</span>
                     {store[p.enabledKey] && store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">نشط — يظهر في الرئيسية والفوتر</span>
+                      <span className="mr-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full font-medium">{L ? "نشط — يظهر في الرئيسية والفوتر" : "Active — shown in header & footer"}</span>
                     )}
                     {!store[p.enabledKey] && store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-medium">قريباً — يظهر معطّلاً</span>
+                      <span className="mr-auto text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-medium">{L ? "قريباً — يظهر معطّلاً" : "Coming Soon — disabled button"}</span>
                     )}
                     {!store[p.urlKey] && (
-                      <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.08] dark:border-white/[0.08] px-2 py-0.5 rounded-full font-medium">مخفي — لا رابط</span>
+                      <span className="mr-auto text-[10px] bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.08] dark:border-white/[0.08] px-2 py-0.5 rounded-full font-medium">{L ? "مخفي — لا رابط" : "Hidden — no URL"}</span>
                     )}
                   </div>
                   <div>
-                    <label className="label-xs">رابط الصفحة في المتجر</label>
+                    <label className="label-xs">{L ? "رابط الصفحة في المتجر" : "Store Page URL"}</label>
                     <Input
                       value={store[p.urlKey]}
                       onChange={e => setS(p.urlKey, e.target.value)}
@@ -405,7 +408,7 @@ export default function AdminQiroxSettings() {
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-200 ${store[p.enabledKey] ? "right-0.5" : "left-0.5"}`} />
                     </div>
                     <span className="text-sm text-black/60 dark:text-white/60">
-                      {store[p.enabledKey] ? "مفعّل — زر التحميل يعمل" : "قريباً — زر معطّل بشارة \"قريباً\""}
+                      {store[p.enabledKey] ? (L ? "مفعّل — زر التحميل يعمل" : 'Active — download button works') : (L ? 'قريباً — زر معطّل بشارة "قريباً"' : 'Coming Soon — disabled badge')}
                     </span>
                   </label>
                 </div>
@@ -419,7 +422,7 @@ export default function AdminQiroxSettings() {
                   className="gap-2 bg-gradient-to-l from-violet-600 to-purple-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-violet-500/20"
                 >
                   {saveStoreMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  {saveStoreMutation.isPending ? "جارٍ الحفظ..." : "حفظ روابط التحميل"}
+                  {saveStoreMutation.isPending ? (L ? "جارٍ الحفظ..." : "Saving...") : (L ? "حفظ روابط التحميل" : "Save Download Links")}
                 </Button>
               </div>
             </div>
@@ -431,7 +434,7 @@ export default function AdminQiroxSettings() {
         <div className="flex justify-end pb-8">
           <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white px-8 h-12 text-base font-bold rounded-2xl shadow-lg shadow-blue-500/20" data-testid="btn-save-settings">
             {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
+            {saveMutation.isPending ? (L ? "جارٍ الحفظ..." : "Saving...") : (L ? "حفظ الإعدادات" : "Save Settings")}
           </Button>
         </div>
         )}

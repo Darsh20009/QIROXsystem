@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, DollarSign, Download, RefreshCw, CheckCircle, Clock, Banknote } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { exportToExcel } from "@/lib/excel";
 
 interface PayrollRecord {
@@ -29,13 +30,18 @@ interface PayrollRecord {
 }
 
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700", approved: "bg-blue-100 text-blue-700", paid: "bg-green-100 text-green-700",
 };
-const STATUS_LABELS: Record<string, string> = { pending: "معلق", approved: "معتمد", paid: "مدفوع" };
+function getStatusLabels(L: boolean): Record<string, string> { return { pending: L ? "معلق" : "Pending", approved: L ? "معتمد" : "Approved", paid: L ? "مدفوع" : "Paid" }; }
 
 export default function AdminPayroll() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STATUS_LABELS = getStatusLabels(L);
+  const MONTHS = L ? MONTHS_AR : MONTHS_EN;
   const queryClient = useQueryClient();
   const now = new Date();
   const [genMonth, setGenMonth] = useState(now.getMonth() + 1);
@@ -55,9 +61,9 @@ export default function AdminPayroll() {
     mutationFn: () => apiRequest("POST", "/api/admin/payroll/generate", { month: genMonth, year: genYear }).then(r => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payroll"] });
-      toast({ title: `تم توليد كشف رواتب ${MONTHS_AR[genMonth - 1]} ${genYear}` });
+      toast({ title: L ? `تم توليد كشف رواتب ${MONTHS_AR[genMonth - 1]} ${genYear}` : `Payroll for ${MONTHS_EN[genMonth - 1]} ${genYear} generated` });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -65,9 +71,9 @@ export default function AdminPayroll() {
       apiRequest("PATCH", `/api/admin/payroll/${id}`, data).then(r => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payroll"] });
-      toast({ title: "تم تحديث السجل" });
+      toast({ title: L ? "تم تحديث السجل" : "Record updated" });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const exportExcel = () => {
@@ -77,7 +83,7 @@ export default function AdminPayroll() {
       data: records.map(r => ({
         الموظف: r.userId?.fullName || "-",
         الدور: r.userId?.role || "-",
-        الشهر: `${MONTHS_AR[r.month - 1]} ${r.year}`,
+        الشهر: `${MONTHS[r.month - 1]} ${r.year}`,
         "ساعات العمل": r.workHours.toFixed(1),
         "سعر الساعة": r.hourlyRate,
         "الراتب الأساسي": r.baseSalary.toFixed(0),
@@ -92,7 +98,7 @@ export default function AdminPayroll() {
   const total = (records || []).reduce((acc, r) => acc + r.netSalary, 0);
 
   return (
-    <div className="relative overflow-hidden space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -164,43 +170,43 @@ export default function AdminPayroll() {
                   </div>
                   <div className="text-left shrink-0">
                     <p className="font-black text-lg text-black dark:text-white flex items-center gap-1">{rec.netSalary.toLocaleString()} <SARIcon size={13} className="opacity-60" /></p>
-                    <p className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-0.5">{rec.workHours.toFixed(1)} ساعة × {rec.hourlyRate} <SARIcon size={9} className="opacity-60" /></p>
+                    <p className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-0.5">{rec.workHours.toFixed(1)} {L ? "ساعة" : "hrs"} × {rec.hourlyRate} <SARIcon size={9} className="opacity-60" /></p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mb-3 text-center">
                   <div className="bg-black/[0.02] dark:bg-white/[0.02] rounded-lg p-2">
-                    <p className="text-[10px] text-black/30 dark:text-white/30">الأساسي</p>
+                    <p className="text-[10px] text-black/30 dark:text-white/30">{L ? "الأساسي" : "Basic"}</p>
                     <p className="font-bold text-sm text-black dark:text-white">{rec.baseSalary.toFixed(0)}</p>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
-                    <p className="text-[10px] text-green-600">مكافآت</p>
+                    <p className="text-[10px] text-green-600">{L ? "مكافآت" : "Bonuses"}</p>
                     <p className="font-bold text-sm text-green-700">{rec.bonuses}</p>
                   </div>
                   <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
-                    <p className="text-[10px] text-red-500">خصومات</p>
+                    <p className="text-[10px] text-red-500">{L ? "خصومات" : "Deductions"}</p>
                     <p className="font-bold text-sm text-red-600">{rec.deductions}</p>
                   </div>
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
-                  <Input type="number" placeholder="مكافأة" className="w-28 h-8 text-xs border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
+                  <Input type="number" placeholder={L ? "مكافأة" : "Bonus"} className="w-28 h-8 text-xs border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                     onChange={e => setEditMap(p => ({ ...p, [rec.id]: { ...p[rec.id], bonuses: Number(e.target.value) } }))} />
-                  <Input type="number" placeholder="خصم" className="w-28 h-8 text-xs border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
+                  <Input type="number" placeholder={L ? "خصم" : "Deduction"} className="w-28 h-8 text-xs border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                     onChange={e => setEditMap(p => ({ ...p, [rec.id]: { ...p[rec.id], deductions: Number(e.target.value) } }))} />
                   <Button size="sm" variant="outline" className="h-8 text-xs dark:text-white dark:border-white/10"
                     onClick={() => updateMutation.mutate({ id: rec.id, data: editMap[rec.id] || {} })}>
-                    حفظ
+                    {L ? "حفظ" : "Save"}
                   </Button>
                   {rec.status !== "paid" && (
                     <Button size="sm" className="h-8 text-xs bg-green-600 text-white gap-1"
                       onClick={() => updateMutation.mutate({ id: rec.id, data: { status: "paid" } })}>
-                      <CheckCircle className="w-3 h-3" /> تأكيد الدفع
+                      <CheckCircle className="w-3 h-3" /> {L ? "تأكيد الدفع" : "Confirm Payment"}
                     </Button>
                   )}
                   {rec.status === "paid" && rec.paidAt && (
                     <span className="text-[11px] text-green-600 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> دُفع {new Date(rec.paidAt).toLocaleDateString("ar-SA")}
+                      <CheckCircle className="w-3 h-3" /> {L ? "دُفع" : "Paid"} {new Date(rec.paidAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                     </span>
                   )}
                 </div>

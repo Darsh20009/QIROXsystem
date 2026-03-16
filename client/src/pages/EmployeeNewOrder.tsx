@@ -5,6 +5,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import {
   User, Mail, Phone, Lock, Building2, Globe, CheckCircle2,
   ShoppingCart, Lightbulb, DollarSign, FileText, Plus, X,
@@ -51,20 +52,12 @@ const ADDON_ICONS: Record<string, any> = {
   Smartphone, Globe, Globe2, Code2, Shield, Database, Monitor, Wifi,
   Zap, Star, Package, Plus, PlusCircle, Layers, Briefcase, Tag,
 };
-const BILLING_LABELS: Record<string, string> = {
-  monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة",
-};
+
 const BILLING_PRICE_KEY: Record<string, string> = {
   monthly: "monthlyPrice", sixmonth: "sixMonthPrice", annual: "annualPrice", lifetime: "lifetimePrice",
 };
-const TIER_LABELS: Record<string, string> = {
-  lite: "لايت", pro: "برو", infinite: "إنفينت", custom: "مخصص",
-};
-const SEGMENT_LABELS: Record<string, string> = {
-  general: "عام", restaurant: "مطاعم وكافيهات", ecommerce: "متاجر إلكترونية",
-  education: "تعليم", corporate: "شركات ومؤسسات", realestate: "عقارات",
-  healthcare: "صحة وعيادات",
-};
+
+
 
 function generatePassword(length = 10): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#";
@@ -85,7 +78,18 @@ interface Result {
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function EmployeeNewOrder() {
-  const { toast } = useToast();
+    const { toast } = useToast();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const BILLING_LABELS: Record<string, string> = L
+      ? { monthly: "شهري", sixmonth: "نصف سنوي", annual: "سنوي", lifetime: "مدى الحياة" }
+      : { monthly: "Monthly", sixmonth: "6-Month", annual: "Annual", lifetime: "Lifetime" };
+    const TIER_LABELS: Record<string, string> = L
+      ? { lite: "لايت", pro: "برو", infinite: "إنفينت", custom: "مخصص" }
+      : { lite: "Lite", pro: "Pro", infinite: "Infinite", custom: "Custom" };
+    const SEGMENT_LABELS: Record<string, string> = L
+      ? { general: "عام", restaurant: "مطاعم وكافيهات", ecommerce: "متاجر إلكترونية", education: "تعليم", corporate: "شركات ومؤسسات", realestate: "عقارات", healthcare: "صحة وعيادات" }
+      : { general: "General", restaurant: "Restaurants & Cafes", ecommerce: "E-Commerce", education: "Education", corporate: "Corporate", realestate: "Real Estate", healthcare: "Healthcare" };
   const [mode, setMode] = useState<Mode>("new");
   const [step, setStep] = useState<Step>("client");
   const [copiedPw, setCopiedPw] = useState(false);
@@ -139,13 +143,13 @@ export default function EmployeeNewOrder() {
   const newClientMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/employee/create-client-order", data),
     onSuccess: async (res: any) => { const data = await res.json(); setResult(data); setStep("done"); },
-    onError: (err: any) => toast({ title: err.message || "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
   const existingClientMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/employee/order-for-client", data),
     onSuccess: async (res: any) => { const data = await res.json(); setResult(data); setStep("done"); },
-    onError: (err: any) => toast({ title: err.message || "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
   const isPending = newClientMutation.isPending || existingClientMutation.isPending;
@@ -199,11 +203,11 @@ export default function EmployeeNewOrder() {
 
     if (mode === "new") {
       if (!fullName || !email || !username || !password) {
-        toast({ title: "أكمل بيانات العميل أولاً", variant: "destructive" }); return;
+        toast({ title: L ? "أكمل بيانات العميل أولاً" : "Complete client info first", variant: "destructive" }); return;
       }
       newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
     } else {
-      if (!selectedClient) { toast({ title: "يجب تحديد عميل", variant: "destructive" }); return; }
+      if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
       existingClientMutation.mutate({ clientId: selectedClient.id, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank" });
     }
   }
@@ -217,7 +221,7 @@ export default function EmployeeNewOrder() {
 
   /* ─────────────────────────────────── RENDER ─────────────────────────────── */
   return (
-    <div className="relative overflow-hidden min-h-screen bg-black/[0.02] p-4 md:p-8" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-black/[0.02] p-4 md:p-8" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-3xl mx-auto">
 
@@ -229,8 +233,8 @@ export default function EmployeeNewOrder() {
             </button>
           </Link>
           <div>
-            <h1 className="text-2xl font-black font-heading text-black">إنشاء طلب</h1>
-            <p className="text-black/40 text-sm">أنشئ طلباً لعميل جديد أو موجود مسبقاً</p>
+            <h1 className="text-2xl font-black font-heading text-black">{L ? "إنشاء طلب" : "Create Order"}</h1>
+            <p className="text-black/40 text-sm">{L ? "أنشئ طلباً لعميل جديد أو موجود مسبقاً" : "Create an order for a new or existing client"}</p>
           </div>
         </div>
 
@@ -238,8 +242,8 @@ export default function EmployeeNewOrder() {
         {step !== "done" && (
           <div className="flex gap-2 mb-6 bg-white border border-black/[0.07] rounded-2xl p-1.5">
             {([
-              { key: "new", label: "عميل جديد", icon: User },
-              { key: "existing", label: "عميل موجود", icon: Users },
+              { key: "new", label: L ? "عميل جديد" : "New Client", icon: User },
+              { key: "existing", label: L ? "عميل موجود" : "Existing Client", icon: Users },
             ] as { key: Mode; label: string; icon: any }[]).map(m => {
               const Icon = m.icon;
               return (
@@ -257,8 +261,8 @@ export default function EmployeeNewOrder() {
         {step !== "done" && (
           <div className="flex items-center gap-2 mb-6">
             {[
-              { key: "client", label: mode === "new" ? "بيانات العميل" : "تحديد العميل", icon: User },
-              { key: "order",  label: "تفاصيل الطلب",  icon: Package },
+              { key: "client", label: mode === "new" ? (L ? "بيانات العميل" : "Client Info") : (L ? "تحديد العميل" : "Select Client"), icon: User },
+              { key: "order",  label: L ? "تفاصيل الطلب" : "Order Details", icon: Package },
             ].map((s, i) => (
               <div key={s.key} className="flex items-center gap-2">
                 <button onClick={() => { if (s.key === "order" && !clientValid) return; setStep(s.key as Step); }}
@@ -281,35 +285,35 @@ export default function EmployeeNewOrder() {
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center"><User className="w-4 h-4 text-white" /></div>
                   <div>
-                    <h2 className="font-bold text-black text-base">معلومات العميل الجديد</h2>
-                    <p className="text-black/35 text-xs">ستُرسَل بيانات الدخول لبريده الإلكتروني تلقائياً</p>
+                    <h2 className="font-bold text-black text-base">{L ? "معلومات العميل الجديد" : "New Client Info"}</h2>
+                    <p className="text-black/35 text-xs">{L ? "ستُرسَل بيانات الدخول لبريده الإلكتروني تلقائياً" : "Login credentials will be sent to their email automatically"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">الاسم الكامل <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-red-400">*</span></label>
                     <div className="relative">
                       <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
-                      <input value={fullName} onChange={e => setFullName(e.target.value)} onBlur={() => { if (fullName && !username) setUsername(generateUsername(fullName)); }} placeholder="محمد أحمد العلي" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-fullname" />
+                      <input value={fullName} onChange={e => setFullName(e.target.value)} onBlur={() => { if (fullName && !username) setUsername(generateUsername(fullName)); }} placeholder={L ? "محمد أحمد العلي" : "John Smith"} className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-fullname" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">البريد الإلكتروني <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-red-400">*</span></label>
                     <div className="relative">
                       <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
                       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="client@email.com" dir="ltr" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-email" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">رقم الهاتف</label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "رقم الهاتف" : "Phone Number"}</label>
                     <div className="relative">
                       <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
                       <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" dir="ltr" className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors" data-testid="input-client-phone" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">اسم المستخدم <span className="text-red-400">*</span>
-                      <button type="button" onClick={() => setUsername(generateUsername(fullName || "client"))} className="mr-2 text-[10px] text-black/30 hover:text-black/60 underline">توليد تلقائي</button>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "اسم المستخدم" : "Username"} <span className="text-red-400">*</span>
+                      <button type="button" onClick={() => setUsername(generateUsername(fullName || "client"))} className="mr-2 text-[10px] text-black/30 hover:text-black/60 underline">{L ? "توليد تلقائي" : "Auto-generate"}</button>
                     </label>
                     <div className="relative">
                       <User className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
@@ -317,8 +321,8 @@ export default function EmployeeNewOrder() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">كلمة المرور <span className="text-red-400">*</span>
-                      <button type="button" onClick={() => setPassword(generatePassword())} className="mr-2 text-[10px] text-black/30 hover:text-black/60"><RefreshCw className="inline w-2.5 h-2.5 ml-0.5" /> توليد جديد</button>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "كلمة المرور" : "Password"} <span className="text-red-400">*</span>
+                      <button type="button" onClick={() => setPassword(generatePassword())} className="mr-2 text-[10px] text-black/30 hover:text-black/60"><RefreshCw className="inline w-2.5 h-2.5 ml-0.5" /> {L ? "توليد جديد" : "Generate"}</button>
                     </label>
                     <div className="relative">
                       <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
@@ -330,22 +334,22 @@ export default function EmployeeNewOrder() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">نوع النشاط</label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "نوع النشاط" : "Business Type"}</label>
                     <select value={businessType} onChange={e => setBusinessType(e.target.value)} className="w-full h-11 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors appearance-none" data-testid="select-business-type">
-                      <option value="">اختر نوع النشاط</option>
+                      <option value="">{L ? "اختر نوع النشاط" : "Select business type"}</option>
                       {BUSINESS_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">الدولة</label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "الدولة" : "Country"}</label>
                     <select value={country} onChange={e => setCountry(e.target.value)} className="w-full h-11 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors appearance-none" data-testid="select-country">
                       {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="mt-6">
-                  <Button onClick={() => { if (!clientValid) { toast({ title: "أكمل الحقول المطلوبة", variant: "destructive" }); return; } setStep("order"); }} className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2" data-testid="button-next-order">
-                    التالي: تفاصيل الطلب <ArrowLeft className="w-4 h-4" />
+                  <Button onClick={() => { if (!clientValid) { toast({ title: L ? "أكمل الحقول المطلوبة" : "Complete the required fields", variant: "destructive" }); return; } setStep("order"); }} className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2" data-testid="button-next-order">
+                    {L ? "التالي: تفاصيل الطلب" : "Next: Order Details"} <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -359,8 +363,8 @@ export default function EmployeeNewOrder() {
                 <div className="flex items-center gap-2 mb-5">
                   <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center"><Users className="w-4 h-4 text-white" /></div>
                   <div>
-                    <h2 className="font-bold text-black text-base">اختر عميلاً</h2>
-                    <p className="text-black/35 text-xs">ابحث أو تصفّح القائمة واضغط على العميل لتحديده</p>
+                    <h2 className="font-bold text-black text-base">{L ? "اختر عميلاً" : "Select a Client"}</h2>
+                    <p className="text-black/35 text-xs">{L ? "ابحث أو تصفّح القائمة واضغط على العميل لتحديده" : "Search or browse the list and click to select"}</p>
                   </div>
                 </div>
 
@@ -392,7 +396,7 @@ export default function EmployeeNewOrder() {
                   <input
                     value={clientSearch}
                     onChange={e => { setClientSearch(e.target.value); setSelectedClient(null); }}
-                    placeholder="ابحث بالاسم أو البريد أو الجوال..."
+                    placeholder={L ? "ابحث بالاسم أو البريد أو الجوال..." : "Search by name, email, or phone..."}
                     className="w-full h-11 pr-10 pl-10 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 transition-colors"
                     data-testid="input-search-client"
                   />
@@ -412,7 +416,7 @@ export default function EmployeeNewOrder() {
                     <div className="py-10 text-center">
                       <Users className="w-8 h-8 text-black/10 mx-auto mb-2" />
                       <p className="text-sm text-black/30">
-                        {clientSearch.trim().length >= 2 ? "لم يُعثر على عميل بهذا البحث" : "لا يوجد عملاء مسجلون بعد"}
+                        {clientSearch.trim().length >= 2 ? (L ? "لم يُعثر على عميل بهذا البحث" : "No client found") : (L ? "لا يوجد عملاء مسجلون بعد" : "No registered clients yet")}
                       </p>
                     </div>
                   ) : clientList.map((c: any) => {
@@ -445,18 +449,18 @@ export default function EmployeeNewOrder() {
                 {clientList.length > 0 && (
                   <p className="text-[11px] text-black/25 mt-2 text-center">
                     {clientSearch.trim().length >= 2
-                      ? `${clientList.length} نتيجة`
-                      : `آخر ${clientList.length} عميل مسجل`}
+                      ? `${clientList.length} ${L ? "نتيجة" : "results"}`
+                      : L ? `آخر ${clientList.length} عميل مسجل` : `Last ${clientList.length} registered clients`}
                   </p>
                 )}
 
                 <div className="mt-5">
                   <Button
-                    onClick={() => { if (!selectedClient) { toast({ title: "يجب تحديد عميل أولاً", variant: "destructive" }); return; } setStep("order"); }}
+                    onClick={() => { if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل أولاً" : "Please select a client first", variant: "destructive" }); return; } setStep("order"); }}
                     disabled={!selectedClient}
                     className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-11 font-bold text-sm gap-2 disabled:opacity-70"
                     data-testid="button-next-order-existing">
-                    التالي: تفاصيل الطلب <ArrowLeft className="w-4 h-4" />
+                    {L ? "التالي: تفاصيل الطلب" : "Next: Order Details"} <ArrowLeft className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -475,7 +479,7 @@ export default function EmployeeNewOrder() {
                   <p className="text-white/40 text-xs truncate">{mode === "new" ? email : selectedClient?.email}</p>
                 </div>
                 <button onClick={() => setStep("client")} className="text-white/30 hover:text-white/60 transition-colors text-xs flex items-center gap-1">
-                  <ArrowRight className="w-3.5 h-3.5" /> تعديل
+                  <ArrowRight className="w-3.5 h-3.5" /> {L ? "تعديل" : "Edit"}
                 </button>
               </div>
 
@@ -485,7 +489,7 @@ export default function EmployeeNewOrder() {
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-2">
                       <Crown className="w-4 h-4 text-black/30" />
-                      <span className="text-sm font-bold text-black">الباقات المتاحة</span>
+                      <span className="text-sm font-bold text-black">{L ? "الباقات المتاحة" : "Available Plans"}</span>
                     </div>
                     <div className="flex gap-1 bg-black/[0.04] rounded-lg p-1">
                       {Object.entries(BILLING_LABELS).map(([key, label]) => (
@@ -523,13 +527,13 @@ export default function EmployeeNewOrder() {
                           )}
                           {price !== null ? (
                             <p className={`text-xs mt-1.5 font-semibold ${selected ? "text-white/80" : "text-black/70"}`}>
-                              {price === 0 ? "مجاني" : <>{price.toLocaleString()} <SARIcon size={9} className="opacity-60" /></>}
+                              {price === 0 ? (L ? "مجاني" : "Free") : <>{price.toLocaleString()} <SARIcon size={9} className="opacity-60" /></>}
                               <span className={`font-normal text-[10px] mr-1 ${selected ? "text-white/40" : "text-black/30"}`}>
                                 / {BILLING_LABELS[selectedBilling]}
                               </span>
                             </p>
                           ) : (
-                            <p className={`text-[11px] mt-1.5 ${selected ? "text-white/40" : "text-black/25"}`}>لا سعر لهذه الفترة</p>
+                            <p className={`text-[11px] mt-1.5 ${selected ? "text-white/40" : "text-black/25"}`}>{L ? "لا سعر لهذه الفترة" : "No price for this period"}</p>
                           )}
                         </button>
                       );
@@ -543,7 +547,7 @@ export default function EmployeeNewOrder() {
                 <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <Smartphone className="w-4 h-4 text-black/30" />
-                    <span className="text-sm font-bold text-black">الأجهزة والمنتجات</span>
+                    <span className="text-sm font-bold text-black">{L ? "الأجهزة والمنتجات" : "Devices & Products"}</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {products.map((prod: any) => {
@@ -569,8 +573,8 @@ export default function EmployeeNewOrder() {
                 <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <PlusCircle className="w-4 h-4 text-black/30" />
-                    <span className="text-sm font-bold text-black">الإضافات المتاحة</span>
-                    <span className="text-[11px] text-black/25 mr-auto">اضغط لإضافتها للطلب</span>
+                    <span className="text-sm font-bold text-black">{L ? "الإضافات المتاحة" : "Available Add-ons"}</span>
+                    <span className="text-[11px] text-black/25 mr-auto">{L ? "اضغط لإضافتها للطلب" : "Tap to add to order"}</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                     {extraAddons.map((addon: any) => {
@@ -604,38 +608,38 @@ export default function EmployeeNewOrder() {
               <div className="bg-white border border-black/[0.06] rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="w-4 h-4 text-black/30" />
-                  <span className="text-sm font-bold text-black">تفاصيل إضافية</span>
+                  <span className="text-sm font-bold text-black">{L ? "تفاصيل إضافية" : "Additional Details"}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">نوع المشروع</label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "نوع المشروع" : "Project Type"}</label>
                     <select value={projectType} onChange={e => setProjectType(e.target.value)} className="w-full h-11 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 appearance-none" data-testid="select-project-type">
-                      <option value="">اختر نوع المشروع</option>
+                      <option value="">{L ? "اختر نوع المشروع" : "Select project type"}</option>
                       {PROJECT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-black/50 block mb-1.5">القطاع</label>
+                    <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "القطاع" : "Sector"}</label>
                     <select value={sector} onChange={e => setSector(e.target.value)} className="w-full h-11 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 appearance-none" data-testid="select-sector">
-                      <option value="">اختر القطاع</option>
+                      <option value="">{L ? "اختر القطاع" : "Select sector"}</option>
                       {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-black/50 block mb-1.5">فكرة / وصف المشروع</label>
-                  <textarea value={idea} onChange={e => setIdea(e.target.value)} rows={3} placeholder="اكتب وصفاً مختصراً للمشروع..." className="w-full px-4 py-3 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 resize-none transition-colors" data-testid="input-idea" />
+                  <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "فكرة / وصف المشروع" : "Project Idea / Description"}</label>
+                  <textarea value={idea} onChange={e => setIdea(e.target.value)} rows={3} placeholder={L ? "اكتب وصفاً مختصراً للمشروع..." : "Write a brief project description..."} className="w-full px-4 py-3 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 resize-none transition-colors" data-testid="input-idea" />
                 </div>
 
                 {/* Custom service */}
                 <div>
-                  <label className="text-xs font-semibold text-black/50 block mb-1.5">إضافة خدمة / بند مخصص</label>
+                  <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "إضافة خدمة / بند مخصص" : "Add Custom Service / Item"}</label>
                   <div className="flex gap-2">
-                    <input value={customItem} onChange={e => setCustomItem(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }} placeholder="اكتب بنداً ثم اضغط إضافة..." className="flex-1 h-10 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25" data-testid="input-custom-item" />
+                    <input value={customItem} onChange={e => setCustomItem(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }} placeholder={L ? "اكتب بنداً ثم اضغط إضافة..." : "Type an item then press Add..."} className="flex-1 h-10 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25" data-testid="input-custom-item" />
                     <Button type="button" onClick={addCustom} variant="outline" size="sm" className="h-10 px-4 gap-1" data-testid="button-add-custom">
-                      <Plus className="w-3.5 h-3.5" /> إضافة
+                      <Plus className="w-3.5 h-3.5" /> {L ? "إضافة" : "Add"}
                     </Button>
                   </div>
                 </div>
@@ -643,7 +647,7 @@ export default function EmployeeNewOrder() {
                 {/* Selected items summary */}
                 {selectedItems.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-black/50 mb-2">العناصر المحددة ({selectedItems.length})</p>
+                    <p className="text-xs font-semibold text-black/50 mb-2">{L ? "العناصر المحددة" : "Selected Items"} ({selectedItems.length})</p>
                     <div className="space-y-1.5">
                       {selectedItems.map(item => (
                         <div key={item.id} className="flex items-center gap-2 bg-black/[0.02] rounded-lg px-3 py-2">
@@ -670,8 +674,8 @@ export default function EmployeeNewOrder() {
                     <div className="space-y-3">
                       <div>
                         <label className="text-xs font-semibold text-black/50 mb-1.5 flex items-center gap-1">
-                          المبلغ الإجمالي (<SARIcon size={9} className="opacity-60" />)
-                          {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30 flex items-center gap-0.5">محسوب تلقائياً: {autoTotal.toLocaleString()} <SARIcon size={8} className="opacity-40" /></span>}
+                          {L ? "المبلغ الإجمالي" : "Total Amount"} (<SARIcon size={9} className="opacity-60" />)
+                          {autoTotal > 0 && !totalAmount && <span className="mr-2 text-black/30 flex items-center gap-0.5">{L ? "محسوب تلقائياً:" : "Auto-calculated:"} {autoTotal.toLocaleString()} <SARIcon size={8} className="opacity-40" /></span>}
                         </label>
                         <div className="relative">
                           <DollarSign className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 pointer-events-none" />
@@ -682,7 +686,7 @@ export default function EmployeeNewOrder() {
                       {/* Discount */}
                       <div>
                         <label className="text-xs font-semibold text-black/50 block mb-1.5 flex items-center gap-1.5">
-                          <Scissors className="w-3.5 h-3.5" /> خصم على الطلب (اختياري)
+                          <Scissors className="w-3.5 h-3.5" /> {L ? "خصم على الطلب (اختياري)" : "Order Discount (optional)"}
                         </label>
                         <div className="flex gap-2">
                           <div className="flex bg-black/[0.04] rounded-xl p-1 shrink-0">
@@ -704,7 +708,7 @@ export default function EmployeeNewOrder() {
                             <input
                               type="number" value={discountValue}
                               onChange={e => setDiscountValue(e.target.value)}
-                              placeholder={discountType === "percent" ? "مثال: 10" : "مثال: 500"}
+                              placeholder={discountType === "percent" ? "e.g. 10" : "e.g. 500"}
                               min="0" max={discountType === "percent" ? "100" : undefined}
                               className="w-full h-11 pr-10 pl-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 font-mono"
                               data-testid="input-discount-value"
@@ -716,7 +720,7 @@ export default function EmployeeNewOrder() {
                             <div className="text-xs text-green-700">
                               <span className="font-semibold inline-flex items-center gap-0.5">{base.toLocaleString()} <SARIcon size={8} className="opacity-60" /></span>
                               <span className="mx-1.5 text-green-400">−</span>
-                              <span className="font-semibold text-red-500 inline-flex items-center gap-0.5">{discount.toLocaleString()} <SARIcon size={8} className="opacity-60" /> خصم</span>
+                              <span className="font-semibold text-red-500 inline-flex items-center gap-0.5">{discount.toLocaleString()} <SARIcon size={8} className="opacity-60" /> {L ? "خصم" : "off"}</span>
                             </div>
                             <div className="text-sm font-black text-green-800 flex items-center gap-1">
                               = {finalTotal.toLocaleString()} <SARIcon size={10} className="opacity-60" />
@@ -729,14 +733,14 @@ export default function EmployeeNewOrder() {
                 })()}
 
                 <div>
-                  <label className="text-xs font-semibold text-black/50 block mb-1.5">ملاحظات داخلية</label>
-                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="ملاحظات تظهر للفريق فقط..." className="w-full px-4 py-3 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 resize-none" data-testid="input-notes" />
+                  <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "ملاحظات داخلية" : "Internal Notes"}</label>
+                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={L ? "ملاحظات تظهر للفريق فقط..." : "Notes visible to the team only..."} className="w-full px-4 py-3 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25 resize-none" data-testid="input-notes" />
                 </div>
               </div>
 
               {/* Submit */}
               <Button onClick={handleSubmit} disabled={isPending} className="w-full bg-black hover:bg-black/80 text-white rounded-xl h-12 font-bold text-sm gap-2 shadow-lg" data-testid="button-submit-order">
-                {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري الإنشاء...</> : <><CheckCircle2 className="w-4 h-4" /> {mode === "new" ? "إنشاء العميل والطلب" : "إنشاء الطلب"}</>}
+                {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> {L ? "جاري الإنشاء..." : "Creating..."}</> : <><CheckCircle2 className="w-4 h-4" /> {mode === "new" ? (L ? "إنشاء العميل والطلب" : "Create Client & Order") : (L ? "إنشاء الطلب" : "Create Order")}</>}
               </Button>
             </motion.div>
           )}
@@ -748,19 +752,19 @@ export default function EmployeeNewOrder() {
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-8 h-8 text-green-600" />
                 </div>
-                <h2 className="text-xl font-black text-black mb-1">تم بنجاح!</h2>
-                <p className="text-black/40 text-sm mb-6">{mode === "new" ? "تم إنشاء حساب العميل والطلب وإرسال بيانات الدخول بالبريد" : "تم إنشاء الطلب وإرسال تأكيد للعميل"}</p>
+                <h2 className="text-xl font-black text-black mb-1">{L ? "تم بنجاح!" : "Done Successfully!"}</h2>
+                <p className="text-black/40 text-sm mb-6">{mode === "new" ? (L ? "تم إنشاء حساب العميل والطلب وإرسال بيانات الدخول بالبريد" : "Client account and order created, credentials sent by email") : (L ? "تم إنشاء الطلب وإرسال تأكيد للعميل" : "Order created and confirmation sent to client")}</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-right">
                   <div className="bg-black/[0.02] rounded-xl p-4">
-                    <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">العميل</p>
+                    <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">{L ? "العميل" : "Client"}</p>
                     <p className="font-bold text-sm text-black">{result.client.fullName}</p>
                     <p className="text-xs text-black/40">{result.client.email}</p>
                     {result.client.username && <p className="text-xs text-black/30 font-mono mt-0.5">@{result.client.username}</p>}
                   </div>
                   {result.order && (
                     <div className="bg-black/[0.02] rounded-xl p-4">
-                      <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">رقم الطلب</p>
+                      <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">{L ? "رقم الطلب" : "Order Number"}</p>
                       <p className="font-mono font-bold text-sm text-black">#{String(result.order.id).slice(-8).toUpperCase()}</p>
                     </div>
                   )}
@@ -768,11 +772,11 @@ export default function EmployeeNewOrder() {
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
-                    <Plus className="w-4 h-4" /> طلب جديد
+                    <Plus className="w-4 h-4" /> {L ? "طلب جديد" : "New Order"}
                   </Button>
                   <Link href="/admin/orders">
                     <Button className="bg-black text-white rounded-xl gap-2">
-                      <FileText className="w-4 h-4" /> عرض الطلبات
+                      <FileText className="w-4 h-4" /> {L ? "عرض الطلبات" : "View Orders"}
                     </Button>
                   </Link>
                 </div>

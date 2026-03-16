@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import {
   Plus, Pencil, Trash2, Loader2, Crown, Clock, CheckCircle2, AlertCircle,
   Users, CreditCard, Layers, ChevronRight, RefreshCcw, Bell, Zap, CalendarCheck
@@ -60,21 +61,21 @@ interface SubServiceRequest {
 }
 
 const periodLabels: Record<string, string> = {
-  monthly: "شهري",
+  monthly: L ? "شهري" : "Monthly",
   "6months": "6 أشهر",
-  annual: "سنوي",
-  renewal: "تجديد سنوي",
-};
+  annual: L ? "سنوي" : "Annual",
+  renewal: L ? "تجديد سنوي" : "Annual Renewal",
+}; }
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  active: { label: "نشط", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-  expired: { label: "منتهي", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
-  none: { label: "بدون اشتراك", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
-  pending: { label: "قيد المراجعة", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-  reviewing: { label: "جاري المراجعة", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
-  approved: { label: "مقبول", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-  rejected: { label: "مرفوض", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
-};
+  active: { label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
+  expired: { label: L ? "منتهي" : "Expired", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+  none: { label: L ? "بدون اشتراك" : "No Subscription", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
+  pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
+  reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
+  approved: { label: L ? "مقبول" : "Approved", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+}; }
 
 const emptySegment: Partial<SegmentPricing> = {
   segmentKey: "",
@@ -124,9 +125,9 @@ export default function AdminSubscriptionPlans() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
       setSegmentDialog(false);
-      toast({ title: "تم إضافة القطاع بنجاح" });
+      toast({ title: L ? "تم إضافة القطاع بنجاح" : "Sector added successfully" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateSegment = useMutation({
@@ -135,9 +136,9 @@ export default function AdminSubscriptionPlans() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
       setSegmentDialog(false);
-      toast({ title: "تم تحديث القطاع بنجاح" });
+      toast({ title: L ? "تم تحديث القطاع بنجاح" : "Sector updated successfully" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteSegment = useMutation({
@@ -145,7 +146,7 @@ export default function AdminSubscriptionPlans() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/segment-pricing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/segment-pricing"] });
-      toast({ title: "تم حذف القطاع" });
+      toast({ title: L ? "تم حذف القطاع" : "Sector deleted" });
     },
   });
 
@@ -155,9 +156,9 @@ export default function AdminSubscriptionPlans() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
       setSubDialog(false);
-      toast({ title: "تم تعيين الاشتراك بنجاح" });
+      toast({ title: L ? "تم تعيين الاشتراك بنجاح" : "Subscription set successfully" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateRequest = useMutation({
@@ -166,7 +167,7 @@ export default function AdminSubscriptionPlans() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/sub-service-requests"] });
       setReqDialog(false);
-      toast({ title: "تم تحديث الطلب" });
+      toast({ title: L ? "تم تحديث الطلب" : "Request updated" });
     },
   });
 
@@ -176,9 +177,9 @@ export default function AdminSubscriptionPlans() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
       setRenewDialog(false);
-      toast({ title: "✅ تم تجديد الاشتراك بنجاح", description: "تم تجديد اشتراك العميل وإرسال إشعار له" });
+      toast({ title: L ? "✅ تم تجديد الاشتراك بنجاح" : "✅ Subscription renewed", description: L ? "تم تجديد اشتراك العميل وإرسال إشعار له" : "Client subscription renewed and notification sent" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const handleSaveSegment = () => {
@@ -248,7 +249,7 @@ export default function AdminSubscriptionPlans() {
               </div>
               <div>
                 <h1 className="text-2xl font-black text-black font-heading">إدارة الاشتراكات والأسعار</h1>
-                <p className="text-xs text-black/40 mt-0.5">تحكم في أسعار القطاعات وإدارة اشتراكات العملاء</p>
+                <p className="text-xs text-black/40 mt-0.5">{L ? "تحكم في أسعار القطاعات وإدارة اشتراكات العملاء" : "Control sector pricing and manage client subscriptions"}</p>
               </div>
             </div>
             {pendingReqs > 0 && (
@@ -308,7 +309,7 @@ export default function AdminSubscriptionPlans() {
             ) : !segments || segments.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
                 <CreditCard className="w-10 h-10 text-black/10 mx-auto mb-4" />
-                <h3 className="font-bold text-black/40 mb-2">لا توجد قطاعات بعد</h3>
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد قطاعات بعد" : "No sectors yet"}</h3>
                 <p className="text-xs text-black/30 mb-6">أضف قطاع وحدد الأسعار المناسبة لكل فترة</p>
                 {isAdmin && (
                   <Button onClick={openNewSegment} className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2">
@@ -328,14 +329,14 @@ export default function AdminSubscriptionPlans() {
                         </div>
                         <div className="flex items-center gap-2">
                           {!seg.isActive && (
-                            <Badge className="bg-white/10 text-white/60 border-0 text-[10px]">غير نشط</Badge>
+                            <Badge className="bg-white/10 text-white/60 border-0 text-[10px]">{L ? "غير نشط" : "Inactive"}</Badge>
                           )}
                           {isAdmin && (
                             <>
                               <button onClick={() => openEditSegment(seg)} className="w-7 h-7 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-edit-segment-${seg.id}`}>
                                 <Pencil className="w-3.5 h-3.5 text-white" />
                               </button>
-                              <button onClick={() => { if (confirm("حذف هذا القطاع؟")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
+                              <button onClick={() => { if (confirm(L ? "حذف هذا القطاع؟" : "Delete this sector?")) deleteSegment.mutate(seg.id); }} className="w-7 h-7 bg-white/10 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors" data-testid={`button-delete-segment-${seg.id}`}>
                                 <Trash2 className="w-3.5 h-3.5 text-white" />
                               </button>
                             </>
@@ -344,10 +345,10 @@ export default function AdminSubscriptionPlans() {
                       </div>
                       <div className="p-5 grid grid-cols-2 gap-3">
                         {[
-                          { label: "شهري", value: seg.monthlyPrice, accent: false },
+                          { label: L ? "شهري" : "Monthly", value: seg.monthlyPrice, accent: false },
                           { label: "6 أشهر", value: seg.sixMonthPrice, accent: false },
-                          { label: "سنوي", value: seg.annualPrice, accent: true },
-                          { label: "تجديد سنوي", value: seg.renewalPrice, accent: false },
+                          { label: L ? "سنوي" : "Annual", value: seg.annualPrice, accent: true },
+                          { label: L ? "تجديد سنوي" : "Annual Renewal", value: seg.renewalPrice, accent: false },
                         ].map(({ label, value, accent }) => (
                           <div key={label} className={`rounded-xl p-3 text-center ${accent ? "bg-black" : "bg-black/[0.03]"}`}>
                             <p className={`text-[10px] mb-1 ${accent ? "text-white/50" : "text-black/40"}`}>{label}</p>
@@ -381,7 +382,7 @@ export default function AdminSubscriptionPlans() {
                   <p className="font-black text-red-800 text-sm">
                     {subscriptions.filter(s => s.needsRenewal).length} عميل يحتاج التجديد الآن
                   </p>
-                  <p className="text-red-600 text-xs mt-0.5">اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً</p>
+                  <p className="text-red-600 text-xs mt-0.5">{L ? "اشتراكات هؤلاء العملاء وصلت إلى 10% من مدتها — تواصل معهم فوراً" : "These clients' subscriptions are at 10% of their duration — contact them immediately"}</p>
                 </div>
               </motion.div>
             )}
@@ -402,8 +403,8 @@ export default function AdminSubscriptionPlans() {
             ) : !subscriptions || subscriptions.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
                 <Users className="w-10 h-10 text-black/10 mx-auto mb-4" />
-                <h3 className="font-bold text-black/40 mb-2">لا توجد اشتراكات</h3>
-                <p className="text-xs text-black/30">ستبدأ الاشتراكات تلقائياً عند تسليم المشاريع</p>
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد اشتراكات" : "No subscriptions"}</h3>
+                <p className="text-xs text-black/30">{L ? "ستبدأ الاشتراكات تلقائياً عند تسليم المشاريع" : "Subscriptions will start automatically upon project delivery"}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -450,7 +451,7 @@ export default function AdminSubscriptionPlans() {
                               <div className="flex items-center gap-3 mt-1.5 flex-wrap text-[11px] text-black/50">
                                 {sub.subscriptionSegmentNameAr && <span className="bg-black/[0.04] px-2 py-0.5 rounded-full">{sub.subscriptionSegmentNameAr}</span>}
                                 {sub.subscriptionPeriod && <span>{periodLabels[sub.subscriptionPeriod] || sub.subscriptionPeriod}</span>}
-                                {expiresAt && <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />ينتهي: {expiresAt.toLocaleDateString("ar-SA")}</span>}
+                                {expiresAt && <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{L ? "ينتهي:" : "Expires:"} {expiresAt.toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
                               </div>
                             </div>
                           </div>
@@ -461,7 +462,7 @@ export default function AdminSubscriptionPlans() {
                                 <p className={`text-xl font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-black"}`}>
                                   {sub.remainingDays}
                                 </p>
-                                <p className="text-[10px] text-black/40 text-center">يوم متبقي</p>
+                                <p className="text-[10px] text-black/40 text-center">{L ? "يوم متبقي" : "days left"}</p>
                               </div>
                             )}
                             <div className="flex gap-1.5">
@@ -483,7 +484,7 @@ export default function AdminSubscriptionPlans() {
                         {sub.subscriptionStatus === "active" && sub.percentRemaining !== null && (
                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] text-black/30">المدة المتبقية</span>
+                              <span className="text-[10px] text-black/30">{L ? "المدة المتبقية" : "Time remaining"}</span>
                               <span className={`text-[10px] font-black ${pct <= 10 ? "text-red-600" : pct <= 25 ? "text-amber-600" : "text-green-600"}`}>
                                 {pct}%
                               </span>
@@ -519,8 +520,8 @@ export default function AdminSubscriptionPlans() {
             ) : !subRequests || subRequests.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-black/[0.06] p-16 text-center">
                 <Layers className="w-10 h-10 text-black/10 mx-auto mb-4" />
-                <h3 className="font-bold text-black/40 mb-2">لا توجد طلبات بعد</h3>
-                <p className="text-xs text-black/30">طلبات العملاء للخدمات الفرعية ستظهر هنا</p>
+                <h3 className="font-bold text-black/40 mb-2">{L ? "لا توجد طلبات بعد" : "No requests yet"}</h3>
+                <p className="text-xs text-black/30">{L ? "طلبات العملاء للخدمات الفرعية ستظهر هنا" : "Client requests for sub-services will appear here"}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -537,7 +538,7 @@ export default function AdminSubscriptionPlans() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-bold text-sm text-black">{req.serviceType}</p>
                             {req.projectLabel && (
-                              <Badge className="bg-black/[0.04] text-black/50 border-0 text-[10px]">مشروع: {req.projectLabel}</Badge>
+                              <Badge className="bg-black/[0.04] text-black/50 border-0 text-[10px]">{L ? "مشروع:" : "Project:"} {req.projectLabel}</Badge>
                             )}
                             <Badge className={`text-[10px] border ${st.bg} ${st.color}`}>
                               {st.label}
@@ -573,31 +574,31 @@ export default function AdminSubscriptionPlans() {
           {renewTarget && (
             <div className="space-y-4">
               <div className={`rounded-2xl p-3 border ${renewTarget.needsRenewal ? "bg-red-50 border-red-200" : "bg-black/[0.02] border-black/[0.06]"}`}>
-                <p className="text-xs text-black/50 mb-1">الخطة الحالية</p>
+                <p className="text-xs text-black/50 mb-1">{L ? "الخطة الحالية" : "Current Plan"}</p>
                 <p className="font-bold text-sm text-black">{renewTarget.subscriptionSegmentNameAr || "—"} · {periodLabels[renewTarget.subscriptionPeriod] || renewTarget.subscriptionPeriod}</p>
                 {renewTarget.subscriptionExpiresAt && (
-                  <p className="text-xs text-black/40 mt-1">ينتهي: {new Date(renewTarget.subscriptionExpiresAt).toLocaleDateString("ar-SA")}</p>
+                  <p className="text-xs text-black/40 mt-1">{L ? "ينتهي:" : "Expires:"} {new Date(renewTarget.subscriptionExpiresAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</p>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-black/50 mb-2 block">بداية الاشتراك الجديد</label>
+                <label className="text-xs font-bold text-black/50 mb-2 block">{L ? "بداية الاشتراك الجديد" : "New Subscription Start"}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setRenewFrom("expiry")}
                     className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "expiry" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
                     data-testid="btn-renew-from-expiry"
                   >
-                    <p className="text-xs font-bold">من نهاية الحالي</p>
-                    <p className="text-[10px] opacity-60 mt-0.5">تجديد متواصل</p>
+                    <p className="text-xs font-bold">{L ? "من نهاية الحالي" : "From current end"}</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">{L ? "تجديد متواصل" : "Continuous renewal"}</p>
                   </button>
                   <button
                     onClick={() => setRenewFrom("today")}
                     className={`rounded-xl border p-3 text-center transition-all ${renewFrom === "today" ? "border-black bg-black text-white" : "border-black/[0.08] hover:bg-black/[0.03]"}`}
                     data-testid="btn-renew-from-today"
                   >
-                    <p className="text-xs font-bold">من اليوم</p>
-                    <p className="text-[10px] opacity-60 mt-0.5">بدء فوري</p>
+                    <p className="text-xs font-bold">{L ? "من اليوم" : "From today"}</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">{L ? "بدء فوري" : "Immediate start"}</p>
                   </button>
                 </div>
               </div>
@@ -611,7 +612,7 @@ export default function AdminSubscriptionPlans() {
                 {quickRenewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 تجديد الاشتراك الآن
               </Button>
-              <p className="text-center text-[11px] text-black/30">سيُرسَل إشعار للعميل تلقائياً بعد التجديد</p>
+              <p className="text-center text-[11px] text-black/30">{L ? "سيُرسَل إشعار للعميل تلقائياً بعد التجديد" : "A notification will be sent to the client automatically after renewal"}</p>
             </div>
           )}
         </DialogContent>
@@ -621,12 +622,12 @@ export default function AdminSubscriptionPlans() {
       <Dialog open={segmentDialog} onOpenChange={setSegmentDialog}>
         <DialogContent className="max-w-lg rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="font-black text-lg">{isEditMode ? "تعديل القطاع" : "إضافة قطاع جديد"}</DialogTitle>
+            <DialogTitle className="font-black text-lg">{isEditMode ? (L ? "تعديل القطاع" : "Edit Sector") : (L ? "إضافة قطاع جديد" : "Add New Sector")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">مفتاح القطاع (بالإنجليزية)</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "مفتاح القطاع (بالإنجليزية)" : "Sector Key (English)"}</label>
                 <Input
                   value={editingSegment.segmentKey || ""}
                   onChange={e => setEditingSegment(p => ({ ...p, segmentKey: e.target.value }))}
@@ -636,11 +637,11 @@ export default function AdminSubscriptionPlans() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">اسم القطاع (بالعربية)</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "اسم القطاع (بالعربية)" : "Sector Name (Arabic)"}</label>
                 <Input
                   value={editingSegment.segmentNameAr || ""}
                   onChange={e => setEditingSegment(p => ({ ...p, segmentNameAr: e.target.value }))}
-                  placeholder="المطاعم والكافيهات"
+                  placeholder={L ? "المطاعم والكافيهات" : "Restaurants & Cafes"}
                   className="rounded-xl h-9 text-sm border-black/[0.08]"
                   data-testid="input-segment-name-ar"
                 />
@@ -653,10 +654,10 @@ export default function AdminSubscriptionPlans() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { labelText: "شهري", key: "monthlyPrice" as keyof SegmentPricing },
+                  { labelText: L ? "شهري" : "Monthly", key: "monthlyPrice" as keyof SegmentPricing },
                   { labelText: "6 أشهر", key: "sixMonthPrice" as keyof SegmentPricing },
-                  { labelText: "سنوي", key: "annualPrice" as keyof SegmentPricing },
-                  { labelText: "تجديد سنوي", key: "renewalPrice" as keyof SegmentPricing },
+                  { labelText: L ? "سنوي" : "Annual", key: "annualPrice" as keyof SegmentPricing },
+                  { labelText: L ? "تجديد سنوي" : "Annual Renewal", key: "renewalPrice" as keyof SegmentPricing },
                 ].map(({ labelText, key }) => (
                   <div key={key}>
                     <label className="text-[11px] font-bold text-black/50 mb-1 flex items-center gap-1">{labelText} (<SARIcon size={9} className="opacity-60" />)</label>
@@ -673,7 +674,7 @@ export default function AdminSubscriptionPlans() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-black/60 mb-1 block">ملاحظات (اختياري)</label>
+              <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "ملاحظات (اختياري)" : "Notes (optional)"}</label>
               <Textarea
                 value={editingSegment.notes || ""}
                 onChange={e => setEditingSegment(p => ({ ...p, notes: e.target.value }))}
@@ -684,7 +685,7 @@ export default function AdminSubscriptionPlans() {
             </div>
 
             <div className="flex items-center gap-3">
-              <label className="text-xs font-bold text-black/60">مرتبة العرض</label>
+              <label className="text-xs font-bold text-black/60">{L ? "مرتبة العرض" : "Display Order"}</label>
               <Input
                 type="number"
                 value={editingSegment.sortOrder ?? 0}
@@ -699,13 +700,13 @@ export default function AdminSubscriptionPlans() {
                   onChange={e => setEditingSegment(p => ({ ...p, isActive: e.target.checked }))}
                   className="rounded"
                 />
-                <span className="text-xs font-bold text-black/60">نشط</span>
+                <span className="text-xs font-bold text-black/60">{L ? "نشط" : "Active"}</span>
               </label>
             </div>
 
             <div className="flex gap-3 pt-2">
               <Button onClick={handleSaveSegment} disabled={createSegment.isPending || updateSegment.isPending} className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold" data-testid="button-save-segment">
-                {(createSegment.isPending || updateSegment.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditMode ? "حفظ التعديلات" : "إضافة القطاع"}
+                {(createSegment.isPending || updateSegment.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditMode ? (L ? "حفظ التعديلات" : "Save Changes") : (L ? "إضافة القطاع" : "Add Sector")}
               </Button>
               <Button onClick={() => setSegmentDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
             </div>
@@ -717,7 +718,7 @@ export default function AdminSubscriptionPlans() {
       <Dialog open={subDialog} onOpenChange={setSubDialog}>
         <DialogContent className="max-w-md rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="font-black text-lg">تعيين اشتراك للعميل</DialogTitle>
+            <DialogTitle className="font-black text-lg">{L ? "تعيين اشتراك للعميل" : "Assign Client Subscription"}</DialogTitle>
           </DialogHeader>
           {selectedClient && (
             <div className="space-y-4 mt-2">
@@ -732,13 +733,13 @@ export default function AdminSubscriptionPlans() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">القطاع</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "القطاع" : "Sector"}</label>
                 <Select value={subForm.segmentId} onValueChange={v => {
                   const seg = segments?.find(s => s.id === v);
                   setSubForm(p => ({ ...p, segmentId: v, segmentNameAr: seg?.segmentNameAr || "" }));
                 }}>
                   <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
-                    <SelectValue placeholder="اختر القطاع" />
+                    <SelectValue placeholder={L ? "اختر القطاع" : "Select sector"} />
                   </SelectTrigger>
                   <SelectContent>
                     {segments?.map(seg => (
@@ -749,34 +750,34 @@ export default function AdminSubscriptionPlans() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">فترة الاشتراك</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "فترة الاشتراك" : "Subscription Period"}</label>
                 <Select value={subForm.period} onValueChange={v => setSubForm(p => ({ ...p, period: v }))}>
                   <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">شهري (30 يوم)</SelectItem>
+                    <SelectItem value="monthly">{L ? "شهري (30 يوم)" : "Monthly (30 days)"}</SelectItem>
                     <SelectItem value="6months">6 أشهر (180 يوم)</SelectItem>
-                    <SelectItem value="annual">سنوي (365 يوم)</SelectItem>
-                    <SelectItem value="renewal">تجديد سنوي</SelectItem>
+                    <SelectItem value="annual">{L ? "سنوي (365 يوم)" : "Annual (365 days)"}</SelectItem>
+                    <SelectItem value="renewal">{L ? "تجديد سنوي" : "Annual Renewal"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-black/60 mb-1 block">تاريخ البدء</label>
+                  <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "تاريخ البدء" : "Start Date"}</label>
                   <Input type="date" value={subForm.startDate} onChange={e => setSubForm(p => ({ ...p, startDate: e.target.value }))} className="rounded-xl h-9 text-sm border-black/[0.08]" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-black/60 mb-1 block">تاريخ الانتهاء</label>
+                  <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "تاريخ الانتهاء" : "End Date"}</label>
                   <Input type="date" value={subForm.expiresAt} onChange={e => setSubForm(p => ({ ...p, expiresAt: e.target.value }))} className="rounded-xl h-9 text-sm border-black/[0.08]" />
                 </div>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <Button onClick={handleSetSub} disabled={setSubscription.isPending || !subForm.segmentId || !subForm.expiresAt} className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold">
-                  {setSubscription.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "تعيين الاشتراك"}
+                  {setSubscription.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "تعيين الاشتراك" : "Assign Subscription")}
                 </Button>
                 <Button onClick={() => setSubDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
               </div>
@@ -789,46 +790,46 @@ export default function AdminSubscriptionPlans() {
       <Dialog open={reqDialog} onOpenChange={setReqDialog}>
         <DialogContent className="max-w-md rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="font-black text-lg">مراجعة طلب الخدمة الفرعية</DialogTitle>
+            <DialogTitle className="font-black text-lg">{L ? "مراجعة طلب الخدمة الفرعية" : "Review Sub-Service Request"}</DialogTitle>
           </DialogHeader>
           {selectedReq && (
             <div className="space-y-4 mt-2">
               <div className="bg-black/[0.03] rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-black/50">نوع الخدمة:</p>
+                  <p className="text-xs font-bold text-black/50">{L ? "نوع الخدمة:" : "Service Type:"}</p>
                   <p className="text-sm font-bold text-black">{selectedReq.serviceType}</p>
                 </div>
                 {selectedReq.projectLabel && (
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-black/50">المشروع:</p>
+                    <p className="text-xs font-bold text-black/50">{L ? "المشروع:" : "Project:"}</p>
                     <p className="text-sm text-black/70">{selectedReq.projectLabel}</p>
                   </div>
                 )}
                 {selectedReq.notes && (
                   <div>
-                    <p className="text-xs font-bold text-black/50 mb-1">ملاحظات العميل:</p>
+                    <p className="text-xs font-bold text-black/50 mb-1">{L ? "ملاحظات العميل:" : "Client Notes:"}</p>
                     <p className="text-xs text-black/60 bg-white rounded-lg p-2">{selectedReq.notes}</p>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">الحالة</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "الحالة" : "Status"}</label>
                 <Select value={reqStatus} onValueChange={setReqStatus}>
                   <SelectTrigger className="rounded-xl h-9 text-sm border-black/[0.08]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">قيد المراجعة</SelectItem>
-                    <SelectItem value="reviewing">جاري المراجعة</SelectItem>
-                    <SelectItem value="approved">مقبول</SelectItem>
-                    <SelectItem value="rejected">مرفوض</SelectItem>
+                    <SelectItem value="pending">{L ? "قيد المراجعة" : "Pending Review"}</SelectItem>
+                    <SelectItem value="reviewing">{L ? "جاري المراجعة" : "Under Review"}</SelectItem>
+                    <SelectItem value="approved">{L ? "مقبول" : "Approved"}</SelectItem>
+                    <SelectItem value="rejected">{L ? "مرفوض" : "Rejected"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-black/60 mb-1 block">ملاحظات الإدارة (اختياري)</label>
+                <label className="text-xs font-bold text-black/60 mb-1 block">{L ? "ملاحظات الإدارة (اختياري)" : "Admin Notes (optional)"}</label>
                 <Textarea value={reqAdminNotes} onChange={e => setReqAdminNotes(e.target.value)} className="rounded-xl text-sm border-black/[0.08] resize-none" rows={3} placeholder="أضف ملاحظاتك هنا..." />
               </div>
 
@@ -838,7 +839,7 @@ export default function AdminSubscriptionPlans() {
                   disabled={updateRequest.isPending}
                   className="flex-1 bg-black text-white hover:bg-black/80 rounded-xl h-10 text-sm font-bold"
                 >
-                  {updateRequest.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ"}
+                  {updateRequest.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "حفظ" : "Save")}
                 </Button>
                 <Button onClick={() => setReqDialog(false)} variant="outline" className="rounded-xl h-10 px-4 border-black/[0.08]">إلغاء</Button>
               </div>

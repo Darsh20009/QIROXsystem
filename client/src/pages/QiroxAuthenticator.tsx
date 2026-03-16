@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Smartphone, Copy, Check, RefreshCw, Lock, ChevronRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
@@ -33,7 +34,9 @@ function CountdownRing({ secondsLeft }: { secondsLeft: number }) {
 
 export default function QiroxAuthenticator() {
   const { data: user } = useUser();
-  const { toast } = useToast();
+    const { toast } = useToast();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
 
   const [code, setCode] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(STEP);
@@ -46,7 +49,7 @@ export default function QiroxAuthenticator() {
       const res = await fetch("/api/totp/current-code", { credentials: "include" });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || "خطأ في جلب الرمز");
+        setError(data.error || (L ? "خطأ في جلب الرمز" : "Error fetching code"));
         setCode(null);
         return;
       }
@@ -55,7 +58,7 @@ export default function QiroxAuthenticator() {
       setSecondsLeft(data.secondsLeft);
       setError(null);
     } catch {
-      setError("خطأ في الاتصال بالخادم");
+      setError(L ? "خطأ في الاتصال بالخادم" : "Connection error");
     } finally {
       setLoading(false);
     }
@@ -83,7 +86,7 @@ export default function QiroxAuthenticator() {
     if (!code) return;
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
-      toast({ title: "تم نسخ الرمز" });
+      toast({ title: L ? "تم نسخ الرمز" : "Code copied" });
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -91,7 +94,7 @@ export default function QiroxAuthenticator() {
   const digits = code ? code.split("") : ["–", "–", "–", "–", "–", "–"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-gray-900 flex flex-col items-center justify-center px-4 py-10" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-gray-900 flex flex-col items-center justify-center px-4 py-10" dir={dir}>
 
       {/* Header */}
       <motion.div
@@ -103,7 +106,7 @@ export default function QiroxAuthenticator() {
           <Shield className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight">Qirox Authenticator</h1>
-        <p className="text-white/40 text-sm mt-1.5">رمز التحقق الثنائي — يتجدد كل {STEP} ثانية</p>
+        <p className="text-white/40 text-sm mt-1.5">{L ? `رمز التحقق الثنائي — يتجدد كل ${STEP} ثانية` : `2FA Code — refreshes every ${STEP} seconds`}</p>
       </motion.div>
 
       {/* Code card */}
@@ -118,7 +121,7 @@ export default function QiroxAuthenticator() {
             <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
             <p className="text-red-300 font-bold text-sm mb-2">{error}</p>
             {error.includes("مفعّل") && (
-              <p className="text-red-400/60 text-xs mb-5">يجب تفعيل المصادق الثنائي أولاً من إعدادات الأمان</p>
+              <p className="text-red-400/60 text-xs mb-5">{L ? "يجب تفعيل المصادق الثنائي أولاً من إعدادات الأمان" : "You must activate 2FA first from security settings"}</p>
             )}
             {error.includes("مفعّل") ? (
               <Link href="/security/2fa">
@@ -134,7 +137,7 @@ export default function QiroxAuthenticator() {
                 className="bg-white/10 text-white hover:bg-white/20 rounded-xl"
               >
                 <RefreshCw className="w-3.5 h-3.5 ml-1.5" />
-                إعادة المحاولة
+                {L ? "إعادة المحاولة" : "Retry"}
               </Button>
             )}
           </div>
@@ -159,7 +162,7 @@ export default function QiroxAuthenticator() {
                     {loading ? "–" : secondsLeft}
                   </motion.span>
                 </AnimatePresence>
-                <p className="text-[9px] text-white/30 font-medium mt-0.5">ثانية</p>
+                <p className="text-[9px] text-white/30 font-medium mt-0.5">{L ? "ثانية" : "sec"}</p>
               </div>
             </div>
 
@@ -192,7 +195,7 @@ export default function QiroxAuthenticator() {
               data-testid="button-copy-auth-code"
             >
               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-              {copied ? "تم النسخ" : "نسخ الرمز"}
+              {copied ? (L ? "تم النسخ" : "Copied") : (L ? "نسخ الرمز" : "Copy Code")}
             </button>
 
             {/* Refresh button */}
@@ -202,7 +205,7 @@ export default function QiroxAuthenticator() {
               data-testid="button-refresh-code"
             >
               <RefreshCw className="w-3 h-3" />
-              تحديث يدوي
+              {L ? "تحديث يدوي" : "Manual Refresh"}
             </button>
           </div>
         )}
@@ -217,14 +220,14 @@ export default function QiroxAuthenticator() {
       >
         <div className="flex items-center gap-2.5 mb-4">
           <Smartphone className="w-4 h-4 text-white/50" />
-          <p className="text-white/70 text-sm font-bold">كيف تستخدم المصادق؟</p>
+          <p className="text-white/70 text-sm font-bold">{L ? "كيف تستخدم المصادق؟" : "How to use the Authenticator?"}</p>
         </div>
         <ol className="space-y-3 text-right">
           {[
-            { num: "١", text: "افتح Qirox على الجهاز الذي أنت مسجّل فيه (كالجوال)" },
-            { num: "٢", text: "انتقل لصفحة المصادق — ستظهر هذه الصفحة بكودها الحالي" },
-            { num: "٣", text: "على الجهاز الجديد (كاللابتوب)، أدخل الكود في خانة التحقق الثنائي" },
-            { num: "٤", text: "الكود يتجدد كل 15 ثانية — أدخله قبل انتهاء العداد" },
+            { num: L ? "١" : "1", text: L ? "افتح Qirox على الجهاز الذي أنت مسجّل فيه (كالجوال)" : "Open Qirox on the device you are logged into (e.g. your phone)" },
+            { num: L ? "٢" : "2", text: L ? "انتقل لصفحة المصادق — ستظهر هذه الصفحة بكودها الحالي" : "Go to the Authenticator page — this page will show the current code" },
+            { num: L ? "٣" : "3", text: L ? "على الجهاز الجديد (كاللابتوب)، أدخل الكود في خانة التحقق الثنائي" : "On your new device (e.g. laptop), enter the code in the 2FA field" },
+            { num: L ? "٤" : "4", text: L ? "الكود يتجدد كل 15 ثانية — أدخله قبل انتهاء العداد" : "The code refreshes every 15 seconds — enter it before the timer runs out" },
           ].map(step => (
             <li key={step.num} className="flex items-start gap-3">
               <span className="w-6 h-6 rounded-full bg-white/10 text-white/70 text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">{step.num}</span>
@@ -242,12 +245,12 @@ export default function QiroxAuthenticator() {
         className="mt-5 flex items-center gap-2 text-white/25 text-xs"
       >
         <Lock className="w-3.5 h-3.5" />
-        <span>الرمز خاص بك — لا تشاركه مع أي شخص آخر</span>
+        <span>{L ? "الرمز خاص بك — لا تشاركه مع أي شخص آخر" : "This code is private — do not share it with anyone"}</span>
       </motion.div>
 
       {/* Back link */}
       <Link href="/dashboard" className="mt-8 text-white/25 text-xs hover:text-white/50 transition-colors">
-        ← العودة للوحة التحكم
+        {L ? "← العودة للوحة التحكم" : "← Back to Dashboard"}
       </Link>
     </div>
   );

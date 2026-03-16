@@ -13,18 +13,19 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock, Image as ImageIcon } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
 import SARIcon from "@/components/SARIcon";
 
-const CATEGORIES = [
-  { value: "feature",     label: "ميزة إضافية",    color: "bg-blue-100 text-blue-700" },
-  { value: "hosting",     label: "استضافة / قاعدة بيانات", color: "bg-green-100 text-green-700" },
-  { value: "design",      label: "تصميم",            color: "bg-pink-100 text-pink-700" },
-  { value: "support",     label: "دعم فني",          color: "bg-amber-100 text-amber-700" },
-  { value: "integration", label: "تكامل خارجي",      color: "bg-purple-100 text-purple-700" },
-  { value: "app",         label: "تطبيق جوال",       color: "bg-indigo-100 text-indigo-700" },
-  { value: "marketing",   label: "تسويق وSEO",       color: "bg-orange-100 text-orange-700" },
-];
+function getCategories(L: boolean) { return [
+  { value: "feature",     label: L ? "ميزة إضافية" : "Extra Feature",    color: "bg-blue-100 text-blue-700" },
+  { value: "hosting",     label: L ? "استضافة / قاعدة بيانات" : "Hosting / Database", color: "bg-green-100 text-green-700" },
+  { value: "design",      label: L ? "تصميم" : "Design",            color: "bg-pink-100 text-pink-700" },
+  { value: "support",     label: L ? "دعم فني" : "Tech Support",          color: "bg-amber-100 text-amber-700" },
+  { value: "integration", label: L ? "تكامل خارجي" : "External Integration",      color: "bg-purple-100 text-purple-700" },
+  { value: "app",         label: L ? "تطبيق جوال" : "Mobile App",       color: "bg-indigo-100 text-indigo-700" },
+  { value: "marketing",   label: L ? "تسويق وSEO" : "Marketing & SEO",       color: "bg-orange-100 text-orange-700" },
+]; }
 
 const ALL_SEGMENTS = [
   { value: "restaurant",    label: "🍽️ مطاعم ومقاهي" },
@@ -49,9 +50,6 @@ const ALL_PLANS = [
   { value: "infinite", label: "∞ إنفينتي" },
   { value: "custom",   label: "🏢 مخصصة" },
 ];
-
-const catLabel: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]));
-const catColor: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.color]));
 
 const empty = {
   name: "", nameAr: "", description: "", descriptionAr: "",
@@ -99,6 +97,11 @@ function MultiToggle({ label, options, selected, onChange }: {
 
 export default function AdminExtraAddons() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const CATEGORIES = getCategories(L);
+  const catLabel: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.label]));
+  const catColor: Record<string, string> = Object.fromEntries(CATEGORIES.map(c => [c.value, c.color]));
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -111,8 +114,8 @@ export default function AdminExtraAddons() {
     mutationFn: (d: any) => editId
       ? apiRequest("PUT", `/api/admin/extra-addons/${editId}`, d)
       : apiRequest("POST", "/api/admin/extra-addons", d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] }); setOpen(false); toast({ title: "✅ تم الحفظ" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] }); setOpen(false); toast({ title: L ? "✅ تم الحفظ" : "✅ Saved" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -121,11 +124,11 @@ export default function AdminExtraAddons() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
       setConfirmDeleteId(null);
-      toast({ title: "تم حذف الإضافة بنجاح" });
+      toast({ title: L ? "تم حذف الإضافة بنجاح" : "Add-on deleted successfully" });
     },
     onError: (e: any) => {
       setConfirmDeleteId(null);
-      toast({ title: "فشل حذف الإضافة", description: e.message, variant: "destructive" });
+      toast({ title: L ? "فشل حذف الإضافة" : "Failed to delete add-on", description: e.message, variant: "destructive" });
     },
   });
 
@@ -139,9 +142,9 @@ export default function AdminExtraAddons() {
     onSuccess: async (res) => {
       const data = await res.json();
       qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
-      toast({ title: `تم إضافة ${data.added} إضافة افتراضية${data.skipped > 0 ? ` (${data.skipped} موجودة مسبقاً)` : ""}` });
+      toast({ title: L ? `تم إضافة ${data.added} إضافة افتراضية${data.skipped > 0 ? ` (${data.skipped} موجودة مسبقاً)` : ""}` : `Added ${data.added} default add-ons${data.skipped > 0 ? ` (${data.skipped} already existed)` : ""}` });
     },
-    onError: () => toast({ title: "خطأ في الزرع", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في الزرع" : "Seeding error", variant: "destructive" }),
   });
 
   function openNew() { setEditId(null); setForm({ ...empty }); setOpen(true); }
@@ -162,7 +165,7 @@ export default function AdminExtraAddons() {
   const totalActive = addons.filter((a: any) => a.isActive).length;
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto relative overflow-hidden" dir="rtl">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -171,15 +174,15 @@ export default function AdminExtraAddons() {
           <Tag className="w-5 h-5 text-blue-700" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold">المميزات الإضافية</h1>
-          <p className="text-xs sm:text-sm text-black/40">إضافات اختيارية بأسعار منفصلة — يمكن تقييدها بقطاع أو باقة معينة</p>
+          <h1 className="text-xl sm:text-2xl font-bold">{L ? "المميزات الإضافية" : "Extra Add-ons"}</h1>
+          <p className="text-xs sm:text-sm text-black/40">{L ? "إضافات اختيارية بأسعار منفصلة — يمكن تقييدها بقطاع أو باقة معينة" : "Optional add-ons with separate pricing — can be restricted by segment or plan"}</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-seed-addons">
-            <Sparkles className="w-3.5 h-3.5" /> {seedDefaults.isPending ? "جاري الإضافة..." : "إضافات افتراضية"}
+            <Sparkles className="w-3.5 h-3.5" /> {seedDefaults.isPending ? (L ? "جاري الإضافة..." : "Seeding...") : (L ? "إضافات افتراضية" : "Default Add-ons")}
           </Button>
           <Button onClick={openNew} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-new-addon">
-            <Plus className="w-3.5 h-3.5" /> إضافة جديدة
+            <Plus className="w-3.5 h-3.5" /> {L ? "إضافة جديدة" : "New Add-on"}
           </Button>
         </div>
       </div>
@@ -188,12 +191,12 @@ export default function AdminExtraAddons() {
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-black/40">
           <Package className="w-4 h-4" />
-          <span>{totalActive} إضافة نشطة من {addons.length} إجمالاً</span>
+          <span>{totalActive} {L ? "إضافة نشطة من" : "active of"} {addons.length} {L ? "إجمالاً" : "total"}</span>
         </div>
         <div className="flex gap-1.5 mr-auto flex-wrap">
           <button onClick={() => setFilterCat("all")}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterCat === "all" ? "bg-black text-white" : "bg-black/[0.04] text-black/50 hover:bg-black/[0.07]"}`}>
-            الكل ({addons.length})
+            {L ? "الكل" : "All"} ({addons.length})
           </button>
           {CATEGORIES.map(c => {
             const count = addons.filter((a: any) => a.category === c.value).length;
@@ -210,13 +213,13 @@ export default function AdminExtraAddons() {
 
       {/* List */}
       {isLoading ? (
-        <div className="text-center py-16 text-black/30">جاري التحميل...</div>
+        <div className="text-center py-16 text-black/30">{L ? "جاري التحميل..." : "Loading..."}</div>
       ) : displayed.length === 0 ? (
         <div className="text-center py-16 text-black/30">
           <Tag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="mb-4">لا توجد إضافات. استخدم "إضافات افتراضية" للبدء بسرعة.</p>
+          <p className="mb-4">{L ? 'لا توجد إضافات. استخدم "إضافات افتراضية" للبدء بسرعة.' : 'No add-ons found. Use "Default Add-ons" to get started quickly.'}</p>
           <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-2">
-            <Sparkles className="w-4 h-4" /> إضافات افتراضية جاهزة
+            <Sparkles className="w-4 h-4" /> {L ? "إضافات افتراضية جاهزة" : "Ready Default Add-ons"}
           </Button>
         </div>
       ) : (
@@ -273,7 +276,7 @@ export default function AdminExtraAddons() {
                     <div className="flex items-center gap-1.5 flex-wrap mt-1">
                       {(!a.segments?.length && !a.plans?.length) ? (
                         <span className="flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                          <Globe className="w-2.5 h-2.5" /> لجميع القطاعات والباقات
+                          <Globe className="w-2.5 h-2.5" /> {L ? "لجميع القطاعات والباقات" : "All segments & plans"}
                         </span>
                       ) : (
                         <>
@@ -302,28 +305,28 @@ export default function AdminExtraAddons() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl w-[95vw] sm:w-full" dir="rtl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full" dir={dir}>
           <DialogHeader>
-            <DialogTitle>{editId ? "تعديل الإضافة" : "إضافة جديدة"}</DialogTitle>
+            <DialogTitle>{editId ? (L ? "تعديل الإضافة" : "Edit Add-on") : (L ? "إضافة جديدة" : "New Add-on")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>الاسم بالعربي *</Label>
+                <Label>{L ? "الاسم بالعربي *" : "Arabic Name *"}</Label>
                 <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))}
                   placeholder="نشر على App Store" data-testid="input-addon-name-ar" />
               </div>
               <div>
-                <Label>الاسم بالإنجليزي</Label>
+                <Label>{L ? "الاسم بالإنجليزي" : "English Name"}</Label>
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="App Store Publishing" dir="ltr" data-testid="input-addon-name" />
               </div>
             </div>
 
             <div>
-              <Label>وصف بالعربي</Label>
+              <Label>{L ? "وصف بالعربي" : "Arabic Description"}</Label>
               <Textarea value={form.descriptionAr} onChange={e => setForm(f => ({ ...f, descriptionAr: e.target.value }))}
-                className="h-16 resize-none" placeholder="وصف مختصر يظهر للعميل عند الاختيار" data-testid="input-addon-desc-ar" />
+                className="h-16 resize-none" placeholder={L ? "وصف مختصر يظهر للعميل عند الاختيار" : "Brief description shown to client when selecting"} data-testid="input-addon-desc-ar" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -334,7 +337,7 @@ export default function AdminExtraAddons() {
                   min={0} step={50} data-testid="input-addon-price" />
               </div>
               <div>
-                <Label>الفئة</Label>
+                <Label>{L ? "الفئة" : "Category"}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger data-testid="select-addon-cat"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -346,7 +349,7 @@ export default function AdminExtraAddons() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>الترتيب</Label>
+                <Label>{L ? "الترتيب" : "Sort Order"}</Label>
                 <Input type="number" value={form.sortOrder}
                   onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))}
                   data-testid="input-addon-order" />
@@ -356,67 +359,67 @@ export default function AdminExtraAddons() {
             {/* Image Upload */}
             <div className="border border-black/[0.07] rounded-xl p-4 bg-black/[0.01] space-y-2">
               <p className="text-xs font-black text-black/50 uppercase tracking-widest flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5" /> صورة الإضافة (اختيارية)
+                <ImageIcon className="w-3.5 h-3.5" /> {L ? "صورة الإضافة (اختيارية)" : "Add-on Image (optional)"}
               </p>
               <ImageUpload
                 label=""
                 value={form.imageUrl}
                 onChange={url => setForm(f => ({ ...f, imageUrl: url }))}
               />
-              <p className="text-[10px] text-black/30">تظهر بجانب اسم الإضافة عند اختيارها من صفحة الطلب</p>
+              <p className="text-[10px] text-black/30">{L ? "تظهر بجانب اسم الإضافة عند اختيارها من صفحة الطلب" : "Shown next to the add-on name when selected from the order page"}</p>
             </div>
 
             {/* Segment restriction */}
             <div className="border border-blue-100 rounded-xl p-4 bg-blue-50/40 space-y-3">
-              <p className="text-xs font-black text-blue-700 uppercase tracking-widest">تقييد الظهور</p>
+              <p className="text-xs font-black text-blue-700 uppercase tracking-widest">{L ? "تقييد الظهور" : "Visibility Restrictions"}</p>
               <MultiToggle
-                label="القطاعات المسموح بها"
+                label={L ? "القطاعات المسموح بها" : "Allowed Segments"}
                 options={ALL_SEGMENTS}
                 selected={form.segments}
                 onChange={v => setForm(f => ({ ...f, segments: v }))}
               />
               <MultiToggle
-                label="الباقات المسموح بها"
+                label={L ? "الباقات المسموح بها" : "Allowed Plans"}
                 options={ALL_PLANS}
                 selected={form.plans}
                 onChange={v => setForm(f => ({ ...f, plans: v }))}
               />
               <p className="text-[10px] text-blue-600/60">
-                إذا تركت القطاعات أو الباقات فارغة، ستظهر الإضافة للجميع بغض النظر عن القطاع أو الباقة المختارة.
+                {L ? "إذا تركت القطاعات أو الباقات فارغة، ستظهر الإضافة للجميع بغض النظر عن القطاع أو الباقة المختارة." : "If segments or plans are left empty, the add-on will be visible to all regardless of segment or plan."}
               </p>
             </div>
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
             <Button
               onClick={() => save.mutate(form)}
               disabled={save.isPending || !form.nameAr || form.price < 0}
               data-testid="button-save-addon"
             >
-              {save.isPending ? "جاري الحفظ..." : editId ? "تحديث" : "إضافة"}
+              {save.isPending ? (L ? "جاري الحفظ..." : "Saving...") : editId ? (L ? "تحديث" : "Update") : (L ? "إضافة" : "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!confirmDeleteId} onOpenChange={(v) => { if (!v) setConfirmDeleteId(null); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{L ? "تأكيد الحذف" : "Confirm Deletion"}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-black/50 dark:text-white/50">
-            هل أنت متأكد من حذف هذه الإضافة؟ لا يمكن التراجع عن هذا الإجراء.
+            {L ? "هل أنت متأكد من حذف هذه الإضافة؟ لا يمكن التراجع عن هذا الإجراء." : "Are you sure you want to delete this add-on? This action cannot be undone."}
           </p>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setConfirmDeleteId(null)} data-testid="button-cancel-delete">إلغاء</Button>
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)} data-testid="button-cancel-delete">{L ? "إلغاء" : "Cancel"}</Button>
             <Button
               variant="destructive"
               onClick={() => confirmDeleteId && del.mutate(confirmDeleteId)}
               disabled={del.isPending}
               data-testid="button-confirm-delete"
             >
-              {del.isPending ? "جاري الحذف..." : "حذف"}
+              {del.isPending ? (L ? "جاري الحذف..." : "Deleting...") : (L ? "حذف" : "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

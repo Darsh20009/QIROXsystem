@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,12 +35,12 @@ interface ShippingCompany {
   sortOrder: number;
 }
 
-const REGION_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  riyadh:        { label: "الرياض",        icon: "🏙️", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  saudi:         { label: "السعودية",       icon: "🇸🇦", color: "bg-green-50 text-green-700 border-green-200" },
-  gcc:           { label: "دول الخليج",    icon: "🌍", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  international: { label: "دولي",          icon: "✈️", color: "bg-purple-50 text-purple-700 border-purple-200" },
-};
+function getRegionLabels(L: boolean): Record<string, { label: string; icon: string; color: string }> { return {
+  riyadh:        { label: L ? "الرياض" : "Riyadh", icon: "🏙️", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  saudi:         { label: L ? "السعودية" : "Saudi Arabia", icon: "🇸🇦", color: "bg-green-50 text-green-700 border-green-200" },
+  gcc:           { label: L ? "دول الخليج" : "GCC Countries", icon: "🌍", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  international: { label: L ? "دولي" : "International", icon: "✈️", color: "bg-purple-50 text-purple-700 border-purple-200" },
+}; }
 
 const emptyForm = {
   name: "", nameAr: "", logo: "🚚", color: "#000000",
@@ -49,6 +50,9 @@ const emptyForm = {
 };
 
 function RegionToggle({ selected, onChange }: { selected: string[]; onChange: (r: string[]) => void }) {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const REGION_LABELS = getRegionLabels(L);
   const toggle = (key: string) => {
     onChange(selected.includes(key) ? selected.filter(k => k !== key) : [...selected, key]);
   };
@@ -76,6 +80,9 @@ function RegionToggle({ selected, onChange }: { selected: string[]; onChange: (r
 
 export default function AdminShipping() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const REGION_LABELS = getRegionLabels(L);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -90,7 +97,7 @@ export default function AdminShipping() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/shipping-companies"] });
       toast({ title: data.message });
     },
-    onError: () => toast({ title: "خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ" : "Error", variant: "destructive" }),
   });
 
   const createMutation = useMutation({
@@ -98,9 +105,9 @@ export default function AdminShipping() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/shipping-companies"] });
       setDialogOpen(false);
-      toast({ title: "تم إضافة شركة الشحن" });
+      toast({ title: L ? "تم إضافة شركة الشحن" : "Shipping company added" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -109,16 +116,16 @@ export default function AdminShipping() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/shipping-companies"] });
       setDialogOpen(false);
-      toast({ title: "تم التحديث" });
+      toast({ title: L ? "تم التحديث" : "Updated" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/shipping-companies/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/shipping-companies"] });
-      toast({ title: "تم الحذف" });
+      toast({ title: L ? "تم الحذف" : "Deleted" });
     },
   });
 
@@ -170,19 +177,19 @@ export default function AdminShipping() {
         <div>
           <h1 className="text-2xl font-black text-black dark:text-white flex items-center gap-3">
             <Truck className="w-7 h-7 text-black/40 dark:text-white/40" />
-            شركات الشحن والتوصيل
+            {L ? "شركات الشحن والتوصيل" : "Shipping & Delivery Companies"}
           </h1>
-          <p className="text-sm text-black/40 dark:text-white/40 mt-0.5">إدارة شركاء التوصيل داخل وخارج الرياض</p>
+          <p className="text-sm text-black/40 dark:text-white/40 mt-0.5">{L ? "إدارة شركاء التوصيل داخل وخارج الرياض" : "Manage delivery partners inside and outside Riyadh"}</p>
         </div>
         <div className="flex gap-2">
           {total === 0 && (
             <Button variant="outline" className="gap-2 text-sm border-black/10 dark:border-white/10" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} data-testid="button-seed-defaults">
               {seedMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-500" />}
-              إضافة الشركات الافتراضية
+              {L ? "إضافة الشركات الافتراضية" : "Add Default Companies"}
             </Button>
           )}
           <Button className="premium-btn gap-2" onClick={openCreate} data-testid="button-add-company">
-            <Plus className="w-4 h-4" /> إضافة شركة
+            <Plus className="w-4 h-4" /> {L ? "إضافة شركة" : "Add Company"}
           </Button>
         </div>
       </div>
@@ -190,10 +197,10 @@ export default function AdminShipping() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "إجمالي الشركات", val: total, icon: Truck, color: "text-black dark:text-white", bg: "bg-black/[0.03] dark:bg-white/[0.05]" },
-          { label: "نشطة", val: active, icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/20" },
-          { label: "متوقفة", val: total - active, icon: XCircle, color: "text-red-500 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20" },
-          { label: "تغطية دولية", val: companies?.filter(c => c.regions?.includes("international")).length || 0, icon: Globe, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20" },
+          { label: L ? "إجمالي الشركات" : "Total Companies", val: total, icon: Truck, color: "text-black dark:text-white", bg: "bg-black/[0.03] dark:bg-white/[0.05]" },
+          { label: L ? "نشطة" : "Active", val: active, icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/20" },
+          { label: L ? "متوقفة" : "Inactive", val: total - active, icon: XCircle, color: "text-red-500 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20" },
+          { label: L ? "تغطية دولية" : "International Coverage", val: companies?.filter(c => c.regions?.includes("international")).length || 0, icon: Globe, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20" },
         ].map(s => {
           const Icon = s.icon;
           return (
@@ -212,8 +219,8 @@ export default function AdminShipping() {
       {!isLoading && total === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 border-2 border-dashed border-black/[0.07] dark:border-white/[0.07] rounded-3xl">
           <Truck className="w-14 h-14 mx-auto mb-4 text-black/10 dark:text-white/10" />
-          <p className="font-bold text-black/40 dark:text-white/40 mb-1">لا توجد شركات شحن بعد</p>
-          <p className="text-sm text-black/25 dark:text-white/25 mb-6">ابدأ بإضافة الشركات الافتراضية أو أضف شركة يدوياً</p>
+          <p className="font-bold text-black/40 dark:text-white/40 mb-1">{L ? "لا توجد شركات شحن بعد" : "No shipping companies yet"}</p>
+          <p className="text-sm text-black/25 dark:text-white/25 mb-6">{L ? "ابدأ بإضافة الشركات الافتراضية أو أضف شركة يدوياً" : "Start by adding default companies or add one manually"}</p>
           <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} className="gap-2">
             {seedMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             إضافة الشركات الافتراضية (6 شركات)
@@ -261,7 +268,7 @@ export default function AdminShipping() {
                   <div className="bg-black/[0.02] dark:bg-white/[0.03] rounded-xl p-2.5 text-center">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
                       <MapPin className="w-3 h-3 text-blue-500" />
-                      <span className="text-[10px] text-black/40 dark:text-white/40">الرياض</span>
+                      <span className="text-[10px] text-black/40 dark:text-white/40">{L ? "الرياض" : "Riyadh"}</span>
                     </div>
                     <p className="text-base font-black text-black dark:text-white flex items-center gap-1">{c.basePrice} <SARIcon size={11} className="opacity-40" /></p>
                     <p className="text-[9px] text-black/30 dark:text-white/30 flex items-center justify-center gap-0.5 mt-0.5">
@@ -271,7 +278,7 @@ export default function AdminShipping() {
                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-2.5 text-center border border-amber-200/60 dark:border-amber-700/30">
                     <div className="flex items-center justify-center gap-1 mb-0.5">
                       <Globe className="w-3 h-3 text-amber-500" />
-                      <span className="text-[10px] text-amber-700 dark:text-amber-400">خارج الرياض</span>
+                      <span className="text-[10px] text-amber-700 dark:text-amber-400">{L ? "خارج الرياض" : "Outside Riyadh"}</span>
                     </div>
                     <p className="text-base font-black text-amber-700 dark:text-amber-400 flex items-center gap-1">{c.outsideCityPrice} <SARIcon size={11} className="opacity-60" /></p>
                     <p className="text-[9px] text-amber-600/60 dark:text-amber-500/60 flex items-center justify-center gap-0.5 mt-0.5">
@@ -297,7 +304,7 @@ export default function AdminShipping() {
                 {c.trackingUrlTemplate && (
                   <div className="flex items-center gap-1.5 text-[10px] text-black/40 dark:text-white/40 mb-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-lg px-2.5 py-1.5">
                     <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">تتبع: {c.trackingUrlTemplate.replace("{code}", "XXXX")}</span>
+                    <span className="truncate">{L ? "تتبع:" : "Tracking:"} {c.trackingUrlTemplate.replace("{code}", "XXXX")}</span>
                   </div>
                 )}
 
@@ -309,7 +316,7 @@ export default function AdminShipping() {
                   <Button
                     size="sm" variant="ghost"
                     className="h-8 w-8 text-red-400 hover:text-red-600"
-                    onClick={() => { if (confirm("حذف شركة الشحن؟")) deleteMutation.mutate(c.id); }}
+                    onClick={() => { if (confirm(L ? "حذف شركة الشحن؟" : "Delete shipping company?")) deleteMutation.mutate(c.id); }}
                     data-testid={`button-delete-${c.id}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -326,36 +333,36 @@ export default function AdminShipping() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-black text-lg">
-              {editingId ? "تعديل شركة الشحن" : "إضافة شركة شحن"}
+              {editingId ? (L ? "تعديل شركة الشحن" : "Edit Shipping Company") : (L ? "إضافة شركة شحن" : "Add Shipping Company")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">اسم الشركة (عربي) *</label>
-                <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder="سمسا إكسبرس" data-testid="input-company-name-ar" />
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "اسم الشركة (عربي) *" : "Company Name (Arabic) *"}</label>
+                <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder={L ? "سمسا إكسبرس" : "e.g. Aramex"} data-testid="input-company-name-ar" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">اسم الشركة (English) *</label>
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "اسم الشركة (English) *" : "Company Name (English) *"}</label>
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="SMSA Express" data-testid="input-company-name" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">الشعار (إيموجي)</label>
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "الشعار (إيموجي)" : "Logo (Emoji)"}</label>
                 <Input value={form.logo} onChange={e => setForm(f => ({ ...f, logo: e.target.value }))} placeholder="🚚" className="text-center text-xl" data-testid="input-company-logo" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">لون الشركة</label>
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "لون الشركة" : "Company Color"}</label>
                 <div className="flex gap-2 items-center">
                   <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="w-10 h-9 rounded-lg border border-black/[0.08] cursor-pointer" data-testid="input-company-color" />
                   <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="flex-1 text-xs font-mono" />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">ترتيب العرض</label>
+                <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "ترتيب العرض" : "Display Order"}</label>
                 <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))} placeholder="0" data-testid="input-company-order" />
               </div>
             </div>
@@ -395,7 +402,7 @@ export default function AdminShipping() {
 
             {/* Regions */}
             <div>
-              <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-2 block">مناطق التغطية</label>
+              <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-2 block">{L ? "مناطق التغطية" : "Coverage Areas"}</label>
               <RegionToggle selected={form.regions} onChange={regions => setForm(f => ({ ...f, regions }))} />
             </div>
 
@@ -409,15 +416,15 @@ export default function AdminShipping() {
 
             {/* Notes */}
             <div>
-              <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">ملاحظات</label>
+              <label className="text-xs font-semibold text-black/50 dark:text-white/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
               <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="resize-none text-sm" placeholder="أي ملاحظات إضافية..." data-testid="input-company-notes" />
             </div>
 
             {/* Active */}
             <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
               <div>
-                <p className="text-xs font-semibold text-black/60 dark:text-white/60">تفعيل الشركة</p>
-                <p className="text-[10px] text-black/30 dark:text-white/30">تظهر للعملاء عند الطلب</p>
+                <p className="text-xs font-semibold text-black/60 dark:text-white/60">{L ? "تفعيل الشركة" : "Activate Company"}</p>
+                <p className="text-[10px] text-black/30 dark:text-white/30">{L ? "تظهر للعملاء عند الطلب" : "Visible to clients when ordering"}</p>
               </div>
               <Switch checked={form.isActive} onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} data-testid="switch-company-active" />
             </div>
@@ -430,7 +437,7 @@ export default function AdminShipping() {
                 data-testid="button-submit-company"
               >
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                {editingId ? "حفظ التعديلات" : "إضافة الشركة"}
+                {editingId ? (L ? "حفظ التعديلات" : "Save Changes") : (L ? "إضافة الشركة" : "Add Company")}
               </Button>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
             </div>

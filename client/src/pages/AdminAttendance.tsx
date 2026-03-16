@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Loader2, MapPin, Clock, CheckCircle, XCircle, Users, Activity, AlertCircle, Navigation, BarChart3, Search, Calendar, LogIn, LogOut } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 const roleLabels: Record<string, string> = {
   admin: "مدير", manager: "مدير عام", developer: "مطور", designer: "مصمم",
@@ -76,7 +77,7 @@ export default function AdminAttendance() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/attendance"] });
-      toast({ title: "تم تحديث سجل الحضور" });
+      toast({ title: L ? "تم تحديث سجل الحضور" : "Attendance record updated" });
       setSelectedRecord(null);
     },
   });
@@ -122,7 +123,7 @@ export default function AdminAttendance() {
   };
 
   return (
-    <div className="relative overflow-hidden space-y-5" dir="rtl">
+    <div className="relative overflow-hidden space-y-5" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -132,10 +133,10 @@ export default function AdminAttendance() {
             <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center">
               <Users className="w-4.5 h-4.5 text-white" />
             </div>
-            إدارة الحضور والانصراف
+            {L ? "إدارة الحضور والانصراف" : "Attendance Management"}
           </h1>
           <p className="text-xs text-black/35 mt-0.5">
-            {new Date().toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -145,7 +146,7 @@ export default function AdminAttendance() {
             onClick={() => setViewMode("today")}
             className={`text-xs h-8 gap-1.5 ${viewMode === "today" ? "bg-black text-white" : "border-black/10"}`}
           >
-            <Calendar className="w-3.5 h-3.5" />اليوم
+            <Calendar className="w-3.5 h-3.5" />{L ? "اليوم" : "Today"}
           </Button>
           <Button
             size="sm"
@@ -153,7 +154,7 @@ export default function AdminAttendance() {
             onClick={() => setViewMode("history")}
             className={`text-xs h-8 gap-1.5 ${viewMode === "history" ? "bg-black text-white" : "border-black/10"}`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />السجل
+            <BarChart3 className="w-3.5 h-3.5" />{L ? "السجل" : "History"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs h-8 border-black/10">
             <Activity className="w-3.5 h-3.5" />
@@ -177,7 +178,7 @@ export default function AdminAttendance() {
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/25" />
-        <Input placeholder="بحث بالاسم..." value={search} onChange={e => setSearch(e.target.value)}
+        <Input placeholder={L ? "بحث بالاسم..." : "Search by name..."} value={search} onChange={e => setSearch(e.target.value)}
           className="h-9 text-xs pr-9 bg-white border-black/[0.08]" />
       </div>
 
@@ -193,7 +194,7 @@ export default function AdminAttendance() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">حاضرون الآن ({presentToday.length})</p>
+                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "حاضرون الآن" : "Present Now"} ({presentToday.length})</p>
               </div>
               <div className="grid gap-3">
                 {presentToday.map((d: any) => {
@@ -223,10 +224,10 @@ export default function AdminAttendance() {
                           </div>
                           <div className="flex items-center gap-4 mt-1.5 flex-wrap">
                             <span className="text-[11px] text-black/40 flex items-center gap-1">
-                              <LogIn className="w-3 h-3" />حضر {formatTime(att.checkIn)}
+                              <LogIn className="w-3 h-3" />{L ? "حضر" : "In"} {formatTime(att.checkIn, L)}
                             </span>
                             <span className="text-[11px] text-black/40 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />{Math.floor(workMins / 60)}س {workMins % 60}د
+                              <Clock className="w-3 h-3" />{Math.floor(workMins / 60)}{L ? "س" : "h"} {workMins % 60}{L ? "د" : "m"}
                             </span>
                             {loc && (
                               <a
@@ -236,7 +237,7 @@ export default function AdminAttendance() {
                                 onClick={e => e.stopPropagation()}
                                 className="text-[11px] text-blue-500 hover:text-blue-700 flex items-center gap-1"
                               >
-                                <MapPin className="w-3 h-3" />عرض الموقع
+                                <MapPin className="w-3 h-3" />{L ? "عرض الموقع" : "View Location"}
                               </a>
                             )}
                           </div>
@@ -248,11 +249,11 @@ export default function AdminAttendance() {
                           {att.locationHistory?.length > 0 && (
                             <div className="flex items-center gap-1 text-[10px] text-blue-500 mb-1">
                               <Navigation className="w-2.5 h-2.5" />
-                              {att.locationHistory.length} نقطة
+                              {att.locationHistory.length} {L ? "نقطة" : "points"}
                             </div>
                           )}
                           <p className="text-[10px] text-black/25">
-                            آخر نشاط: {timeSince(att.lastActivityAt || att.checkIn)}
+                            {L ? "آخر نشاط" : "Last activity"}: {timeSince(att.lastActivityAt || att.checkIn, L)}
                           </p>
                         </div>
                       </div>
@@ -268,7 +269,7 @@ export default function AdminAttendance() {
             <div>
               <div className="flex items-center gap-2 mb-2 mt-4">
                 <div className="w-2 h-2 rounded-full bg-blue-400" />
-                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">انصرفوا اليوم ({checkedOutToday.length})</p>
+                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "انصرفوا اليوم" : "Checked Out Today"} ({checkedOutToday.length})</p>
               </div>
               <div className="grid gap-2">
                 {checkedOutToday.map((d: any) => {
@@ -283,13 +284,13 @@ export default function AdminAttendance() {
                           <p className="font-semibold text-sm text-black/70">{d.user.fullName}</p>
                           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                             <span className="text-[10px] text-black/30 flex items-center gap-0.5">
-                              <LogIn className="w-2.5 h-2.5" />{formatTime(att.checkIn)}
+                              <LogIn className="w-2.5 h-2.5" />{formatTime(att.checkIn, L)}
                             </span>
                             <span className="text-[10px] text-black/30 flex items-center gap-0.5">
-                              <LogOut className="w-2.5 h-2.5" />{formatTime(att.checkOut)}
+                              <LogOut className="w-2.5 h-2.5" />{formatTime(att.checkOut, L)}
                             </span>
                             <span className="text-[10px] font-semibold text-blue-600">
-                              {att.workHours?.toFixed(1)} ساعة
+                              {att.workHours?.toFixed(1)} {L ? "ساعة" : "hrs"}
                             </span>
                           </div>
                         </div>
@@ -309,7 +310,7 @@ export default function AdminAttendance() {
             <div>
               <div className="flex items-center gap-2 mb-2 mt-4">
                 <div className="w-2 h-2 rounded-full bg-red-400" />
-                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">غائبون ({absentToday.length})</p>
+                <p className="text-xs font-bold text-black/50 uppercase tracking-wider">{L ? "غائبون" : "Absent"} ({absentToday.length})</p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {absentToday.map((d: any) => (
@@ -328,7 +329,7 @@ export default function AdminAttendance() {
           {/* History Mode */}
           {viewMode === "history" && (
             <div>
-              <p className="text-xs font-bold text-black/50 uppercase tracking-wider mb-3">السجل الأسبوعي</p>
+              <p className="text-xs font-bold text-black/50 uppercase tracking-wider mb-3">{L ? "السجل الأسبوعي" : "Weekly History"}</p>
               <div className="space-y-3">
                 {filtered.map((d: any) => (
                   <div key={d.user.id || d.user._id} className="bg-white border border-black/[0.06] rounded-2xl p-4">
@@ -340,9 +341,9 @@ export default function AdminAttendance() {
                       </div>
                       <div className="mr-auto text-left">
                         <p className="text-xs font-bold text-black/60">
-                          {(d.recentRecords || []).reduce((a: number, r: any) => a + (r.workHours || 0), 0).toFixed(1)} ساعة
+                          {(d.recentRecords || []).reduce((a: number, r: any) => a + (r.workHours || 0), 0).toFixed(1)} {L ? "ساعة" : "hrs"}
                         </p>
-                        <p className="text-[10px] text-black/30">{(d.recentRecords || []).filter((r: any) => r.checkOut).length} يوم هذا الأسبوع</p>
+                        <p className="text-[10px] text-black/30">{(d.recentRecords || []).filter((r: any) => r.checkOut).length} {L ? "يوم هذا الأسبوع" : "days this week"}</p>
                       </div>
                     </div>
                     <div className="flex gap-1.5 flex-wrap">
@@ -350,8 +351,8 @@ export default function AdminAttendance() {
                         <div key={i}
                           onClick={() => setSelectedRecord({ ...d, att: rec })}
                           className={`flex-1 min-w-[60px] text-center p-2 rounded-xl cursor-pointer transition-colors ${rec.checkOut ? "bg-green-50 hover:bg-green-100" : rec.checkIn ? "bg-yellow-50 hover:bg-yellow-100" : "bg-black/[0.02] hover:bg-black/[0.04]"}`}>
-                          <p className="text-[9px] text-black/40">{new Date(rec.checkIn || rec.createdAt).toLocaleDateString("ar-SA", { weekday: "short" })}</p>
-                          <p className="text-xs font-bold text-black/70">{rec.workHours ? `${rec.workHours.toFixed(1)}س` : "--"}</p>
+                          <p className="text-[9px] text-black/40">{new Date(rec.checkIn || rec.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short" })}</p>
+                          <p className="text-xs font-bold text-black/70">{rec.workHours ? `${rec.workHours.toFixed(1)}${L ? "س" : "h"}` : "--"}</p>
                         </div>
                       ))}
                     </div>
@@ -364,7 +365,7 @@ export default function AdminAttendance() {
           {filtered.length === 0 && !isLoading && (
             <div className="py-20 text-center">
               <Users className="w-10 h-10 text-black/10 mx-auto mb-3" />
-              <p className="text-sm text-black/30">لا توجد بيانات</p>
+              <p className="text-sm text-black/30">{L ? "لا توجد بيانات" : "No data found"}</p>
             </div>
           )}
         </div>
@@ -372,30 +373,30 @@ export default function AdminAttendance() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedRecord} onOpenChange={open => !open && setSelectedRecord(null)}>
-        <DialogContent className="sm:max-w-lg" dir="rtl">
+        <DialogContent className="sm:max-w-lg" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold">تفاصيل الحضور — {selectedRecord?.user?.fullName}</DialogTitle>
+            <DialogTitle className="text-sm font-bold">{L ? "تفاصيل الحضور" : "Attendance Details"} — {selectedRecord?.user?.fullName}</DialogTitle>
           </DialogHeader>
           {selectedRecord?.att && (
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-black/[0.02] rounded-xl p-3">
-                  <p className="text-[10px] text-black/40 mb-1">وقت الحضور</p>
-                  <p className="font-bold text-sm">{formatTime(selectedRecord.att.checkIn)}</p>
+                  <p className="text-[10px] text-black/40 mb-1">{L ? "وقت الحضور" : "Check-in Time"}</p>
+                  <p className="font-bold text-sm">{formatTime(selectedRecord.att.checkIn, L)}</p>
                 </div>
                 <div className="bg-black/[0.02] rounded-xl p-3">
-                  <p className="text-[10px] text-black/40 mb-1">وقت الانصراف</p>
-                  <p className="font-bold text-sm">{selectedRecord.att.checkOut ? formatTime(selectedRecord.att.checkOut) : "لم يُسجّل"}</p>
+                  <p className="text-[10px] text-black/40 mb-1">{L ? "وقت الانصراف" : "Check-out Time"}</p>
+                  <p className="font-bold text-sm">{selectedRecord.att.checkOut ? formatTime(selectedRecord.att.checkOut, L) : (L ? "لم يُسجّل" : "Not recorded")}</p>
                 </div>
                 {selectedRecord.att.workHours && (
                   <div className="bg-green-50 rounded-xl p-3">
-                    <p className="text-[10px] text-green-600 mb-1">ساعات العمل</p>
-                    <p className="font-bold text-sm text-green-700">{selectedRecord.att.workHours.toFixed(2)} ساعة</p>
+                    <p className="text-[10px] text-green-600 mb-1">{L ? "ساعات العمل" : "Work Hours"}</p>
+                    <p className="font-bold text-sm text-green-700">{selectedRecord.att.workHours.toFixed(2)} {L ? "ساعة" : "hours"}</p>
                   </div>
                 )}
                 {selectedRecord.att.ipAddress && (
                   <div className="bg-black/[0.02] rounded-xl p-3">
-                    <p className="text-[10px] text-black/40 mb-1">عنوان IP</p>
+                    <p className="text-[10px] text-black/40 mb-1">{L ? "عنوان IP" : "IP Address"}</p>
                     <p className="font-mono text-xs text-black/60">{selectedRecord.att.ipAddress}</p>
                   </div>
                 )}
@@ -403,13 +404,13 @@ export default function AdminAttendance() {
 
               {selectedRecord.att.checkInNotes && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                  <p className="text-[10px] text-blue-600 font-bold mb-1">ملاحظات الحضور</p>
+                  <p className="text-[10px] text-blue-600 font-bold mb-1">{L ? "ملاحظات الحضور" : "Check-in Notes"}</p>
                   <p className="text-sm text-blue-800">{selectedRecord.att.checkInNotes}</p>
                 </div>
               )}
               {selectedRecord.att.achievements && (
                 <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                  <p className="text-[10px] text-green-600 font-bold mb-1">الإنجازات</p>
+                  <p className="text-[10px] text-green-600 font-bold mb-1">{L ? "الإنجازات" : "Achievements"}</p>
                   <p className="text-sm text-green-800">{selectedRecord.att.achievements}</p>
                 </div>
               )}
@@ -418,7 +419,7 @@ export default function AdminAttendance() {
               {selectedRecord.att.locationHistory?.length > 0 && (
                 <div>
                   <p className="text-[10px] text-black/40 font-bold uppercase tracking-wider mb-2">
-                    مسار التحركات ({selectedRecord.att.locationHistory.length} نقطة)
+                    {L ? "مسار التحركات" : "Movement Trail"} ({selectedRecord.att.locationHistory.length} {L ? "نقطة" : "points"})
                   </p>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
                     {selectedRecord.att.locationHistory.map((loc: any, i: number) => (
@@ -431,7 +432,7 @@ export default function AdminAttendance() {
                       >
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span className="font-mono">{loc.lat?.toFixed(5)}, {loc.lng?.toFixed(5)}</span>
-                        <span className="text-black/30">{new Date(loc.timestamp).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}</span>
+                        <span className="text-black/30">{new Date(loc.timestamp).toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                       </a>
                     ))}
                   </div>
@@ -449,7 +450,7 @@ export default function AdminAttendance() {
                     className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
                   >
                     <Navigation className="w-3.5 h-3.5" />
-                    فتح آخر موقع في خرائط جوجل
+                    {L ? "فتح آخر موقع في خرائط جوجل" : "Open Last Location in Google Maps"}
                   </a>
                 );
               })()}
@@ -463,7 +464,7 @@ export default function AdminAttendance() {
                   disabled={editMutation.isPending}
                 >
                   {editMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5 ml-1" />}
-                  تسجيل انصراف يدوي
+                  {L ? "تسجيل انصراف يدوي" : "Manual Check-out"}
                 </Button>
               )}
             </div>

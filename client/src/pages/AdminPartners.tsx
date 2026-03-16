@@ -14,6 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Partner } from "@shared/schema";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
 
 const SERVICES = [
@@ -71,6 +72,8 @@ const emptyForm: FormData = {
 
 export default function AdminPartners() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
@@ -105,11 +108,11 @@ export default function AdminPartners() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
-      toast({ title: "✅ تم إضافة الشريك بنجاح" });
+      toast({ title: L ? "✅ تم إضافة الشريك بنجاح" : "✅ Partner added successfully" });
       setOpen(false);
       setFormData(emptyForm);
     },
-    onError: () => toast({ title: "خطأ في إضافة الشريك", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في إضافة الشريك" : "Error adding partner", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -120,12 +123,12 @@ export default function AdminPartners() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
-      toast({ title: "✅ تم تحديث الشريك بنجاح" });
+      toast({ title: L ? "✅ تم تحديث الشريك بنجاح" : "✅ Partner updated successfully" });
       setOpen(false);
       setEditingId(null);
       setFormData(emptyForm);
     },
-    onError: () => toast({ title: "خطأ في تحديث الشريك", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في تحديث الشريك" : "Error updating partner", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -133,7 +136,7 @@ export default function AdminPartners() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
-      toast({ title: "تم حذف الشريك بنجاح" });
+      toast({ title: L ? "تم حذف الشريك بنجاح" : "Partner deleted successfully" });
     },
   });
 
@@ -151,7 +154,7 @@ export default function AdminPartners() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.logoUrl) {
-      toast({ title: "يرجى ملء الاسم واللوجو", variant: "destructive" });
+      toast({ title: L ? "يرجى ملء الاسم واللوجو" : "Please fill in name and logo", variant: "destructive" });
       return;
     }
     if (editingId) updateMutation.mutate(formData);
@@ -216,7 +219,7 @@ export default function AdminPartners() {
   );
 
   return (
-    <div className="relative overflow-hidden space-y-6 p-4 md:p-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6 p-4 md:p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -226,23 +229,23 @@ export default function AdminPartners() {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Handshake className="w-5 h-5 text-white" />
             </div>
-            إدارة الشركاء
+            {L ? "إدارة الشركاء" : "Partners Management"}
           </h1>
           <p className="text-sm text-black/40 dark:text-white/40 mt-1 mr-13">
-            {(partners || []).length} شريك إجمالاً · {activeCount} نشط · {inactiveCount} مخفي
+            {(partners || []).length} {L ? "شريك إجمالاً" : "total"} · {activeCount} {L ? "نشط" : "active"} · {inactiveCount} {L ? "مخفي" : "hidden"}
           </p>
         </div>
         <Button onClick={() => { setEditingId(null); setFormData(emptyForm); setOpen(true); }} className="gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20" data-testid="button-add-partner">
-          <Plus className="w-4 h-4" /> إضافة شريك
+          <Plus className="w-4 h-4" /> {L ? "إضافة شريك" : "Add Partner"}
         </Button>
       </div>
 
       {/* Filter tabs */}
       <div className="flex gap-2">
         {[
-          { key: "all", label: `الكل (${(partners || []).length})` },
-          { key: "active", label: `نشط (${activeCount})` },
-          { key: "inactive", label: `مخفي (${inactiveCount})` },
+          { key: "all", label: `${L ? "الكل" : "All"} (${(partners || []).length})` },
+          { key: "active", label: `${L ? "نشط" : "Active"} (${activeCount})` },
+          { key: "inactive", label: `${L ? "مخفي" : "Hidden"} (${inactiveCount})` },
         ].map(tab => (
           <button key={tab.key} onClick={() => setFilterActive(tab.key as any)}
             className={`px-4 py-1.5 rounded-xl text-sm font-medium border transition-all ${filterActive === tab.key ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
@@ -256,7 +259,7 @@ export default function AdminPartners() {
       {filteredPartners.length === 0 ? (
         <div className="text-center py-16 text-black/30 dark:text-white/30">
           <Handshake className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>لا يوجد شركاء</p>
+          <p>{L ? "لا يوجد شركاء" : "No partners found"}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -268,8 +271,8 @@ export default function AdminPartners() {
               {/* Active badge */}
               <div className="absolute top-3 left-3 z-10">
                 {partner.isActive
-                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />نشط</span>
-                  : <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full"><EyeOff className="w-3 h-3" />مخفي</span>
+                  ? <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{L ? "نشط" : "Active"}</span>
+                  : <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full"><EyeOff className="w-3 h-3" />{L ? "مخفي" : "Hidden"}</span>
                 }
               </div>
 
@@ -314,7 +317,7 @@ export default function AdminPartners() {
                       </div>
                     ))}
                     {(partner.features?.length || 0) > 3 && (
-                      <p className="text-[10px] text-black/30 dark:text-white/30">+{(partner.features?.length || 0) - 3} ميزة أخرى</p>
+                      <p className="text-[10px] text-black/30 dark:text-white/30">+{(partner.features?.length || 0) - 3} {L ? "ميزة أخرى" : "more"}</p>
                     )}
                   </div>
                 ) : null}
@@ -326,16 +329,16 @@ export default function AdminPartners() {
                       <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-1 text-xs text-blue-500 hover:underline" data-testid={`link-partner-site-${partner.id}`}>
                         <Globe className="w-3 h-3" />
-                        {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return "رابط"; } })()}
+                        {(() => { try { return new URL(partner.websiteUrl!).hostname.replace("www.", ""); } catch { return L ? "رابط" : "link"; } })()}
                       </a>
-                    ) : <span className="text-xs text-black/20 dark:text-white/20">لا يوجد موقع</span>}
-                    <span className="text-black/20 dark:text-white/20 text-xs">· ترتيب: {partner.sortOrder}</span>
+                    ) : <span className="text-xs text-black/20 dark:text-white/20">{L ? "لا يوجد موقع" : "No website"}</span>}
+                    <span className="text-black/20 dark:text-white/20 text-xs">· {L ? "ترتيب" : "order"}: {partner.sortOrder}</span>
                   </div>
 
                   <div className="flex items-center gap-1">
                     <button onClick={() => toggleActiveMutation.mutate({ id: partner.id, isActive: !partner.isActive })}
                       className={`p-1.5 rounded-lg transition-colors ${partner.isActive ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" : "text-black/30 dark:text-white/30 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
-                      title={partner.isActive ? "إخفاء" : "إظهار"} data-testid={`button-toggle-${partner.id}`}>
+                      title={partner.isActive ? (L ? "إخفاء" : "Hide") : (L ? "إظهار" : "Show")} data-testid={`button-toggle-${partner.id}`}>
                       {partner.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
                     <button onClick={() => handleEdit(partner)}
@@ -343,7 +346,7 @@ export default function AdminPartners() {
                       data-testid={`button-edit-partner-${partner.id}`}>
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => { if (confirm("هل تريد حذف هذا الشريك؟")) deleteMutation.mutate(partner.id); }}
+                    <button onClick={() => { if (confirm(L ? "هل تريد حذف هذا الشريك؟" : "Delete this partner?")) deleteMutation.mutate(partner.id); }}
                       className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       data-testid={`button-delete-partner-${partner.id}`}>
                       <Trash2 className="w-3.5 h-3.5" />
@@ -358,13 +361,13 @@ export default function AdminPartners() {
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) { setEditingId(null); setFormData(emptyForm); } }}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
                 <Handshake className="w-4 h-4 text-white" />
               </div>
-              {editingId ? "تعديل الشريك" : "إضافة شريك جديد"}
+              {editingId ? (L ? "تعديل الشريك" : "Edit Partner") : (L ? "إضافة شريك جديد" : "Add New Partner")}
             </DialogTitle>
           </DialogHeader>
 
@@ -372,41 +375,41 @@ export default function AdminPartners() {
             {/* Names */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="lbl">اسم الشريك (إنجليزي) *</label>
+                <label className="lbl">{L ? "اسم الشريك (إنجليزي) *" : "Partner Name (EN) *"}</label>
                 <Input value={formData.name} onChange={e => set("name", e.target.value)} placeholder="Partner Name" data-testid="input-partner-name" />
               </div>
               <div>
-                <label className="lbl">اسم الشريك (عربي)</label>
+                <label className="lbl">{L ? "اسم الشريك (عربي)" : "Partner Name (AR)"}</label>
                 <Input value={formData.nameAr} onChange={e => set("nameAr", e.target.value)} placeholder="اسم الشريك" data-testid="input-partner-nameAr" />
               </div>
             </div>
 
             {/* Logo */}
-            <ImageUpload label="لوجو الشريك *" value={formData.logoUrl} onChange={url => set("logoUrl", url)} />
+            <ImageUpload label={L ? "لوجو الشريك *" : "Partner Logo *"} value={formData.logoUrl} onChange={url => set("logoUrl", url)} />
 
             {/* Website + Category + Sort */}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="lbl">رابط الموقع الرسمي</label>
+                <label className="lbl">{L ? "رابط الموقع الرسمي" : "Official Website URL"}</label>
                 <Input value={formData.websiteUrl} onChange={e => set("websiteUrl", e.target.value)} placeholder="https://example.com" data-testid="input-partner-website" />
               </div>
               <div>
-                <label className="lbl">الفئة / القطاع</label>
-                <Input value={formData.category} onChange={e => set("category", e.target.value)} placeholder="مطاعم، تعليم، صحة..." data-testid="input-partner-category" />
+                <label className="lbl">{L ? "الفئة / القطاع" : "Category / Sector"}</label>
+                <Input value={formData.category} onChange={e => set("category", e.target.value)} placeholder={L ? "مطاعم، تعليم، صحة..." : "Restaurants, Education, Health..."} data-testid="input-partner-category" />
               </div>
               <div>
-                <label className="lbl">الترتيب في الصفحة</label>
+                <label className="lbl">{L ? "الترتيب في الصفحة" : "Page Sort Order"}</label>
                 <Input type="number" value={formData.sortOrder} onChange={e => set("sortOrder", e.target.value)} placeholder="0" min={0} data-testid="input-partner-sort" />
               </div>
             </div>
 
             {/* Related Service */}
             <div>
-              <label className="lbl">الخدمة المرتبطة</label>
+              <label className="lbl">{L ? "الخدمة المرتبطة" : "Related Service"}</label>
               <select value={formData.relatedService} onChange={e => set("relatedService", e.target.value)}
                 className="w-full h-10 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-transparent text-sm text-black dark:text-white"
                 data-testid="select-related-service">
-                <option value="">اختر الخدمة...</option>
+                <option value="">{L ? "اختر الخدمة..." : "Select service..."}</option>
                 {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -414,11 +417,11 @@ export default function AdminPartners() {
             {/* Description */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="lbl">وصف مختصر (عربي)</label>
-                <Textarea value={formData.descriptionAr} onChange={e => set("descriptionAr", e.target.value)} placeholder="وصف تجربة الشريك مع Qirox..." className="h-20 text-sm" />
+                <label className="lbl">{L ? "وصف مختصر (عربي)" : "Short Description (AR)"}</label>
+                <Textarea value={formData.descriptionAr} onChange={e => set("descriptionAr", e.target.value)} placeholder={L ? "وصف تجربة الشريك مع Qirox..." : "Partner's experience with Qirox..."} className="h-20 text-sm" />
               </div>
               <div>
-                <label className="lbl">وصف مختصر (إنجليزي)</label>
+                <label className="lbl">{L ? "وصف مختصر (إنجليزي)" : "Short Description (EN)"}</label>
                 <Textarea value={formData.description} onChange={e => set("description", e.target.value)} placeholder="Short description..." className="h-20 text-sm" />
               </div>
             </div>
@@ -426,10 +429,10 @@ export default function AdminPartners() {
             {/* Features */}
             <div className="border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
               <label className="text-sm font-bold text-black dark:text-white flex items-center gap-2">
-                <Star className="w-4 h-4 text-amber-500" /> مميزات النظام المقدّم
+                <Star className="w-4 h-4 text-amber-500" /> {L ? "مميزات النظام المقدّم" : "System Features Provided"}
               </label>
               <div className="grid grid-cols-2 gap-2">
-                <Input value={formData.featureArInput} onChange={e => set("featureArInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder="الميزة بالعربي" data-testid="input-feature-ar" />
+                <Input value={formData.featureArInput} onChange={e => set("featureArInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder={L ? "الميزة بالعربي" : "Feature in Arabic"} data-testid="input-feature-ar" />
                 <div className="flex gap-1.5">
                   <Input value={formData.featureInput} onChange={e => set("featureInput", e.target.value)} onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addFeature())} placeholder="Feature in English" data-testid="input-feature-en" />
                   <Button type="button" size="sm" onClick={addFeature} className="shrink-0" data-testid="button-add-feature">+</Button>
@@ -452,15 +455,15 @@ export default function AdminPartners() {
                 </div>
               )}
               {formData.features.length === 0 && (
-                <p className="text-xs text-black/30 dark:text-white/30 text-center py-2">أضف مميزات النظام الذي حصل عليه هذا الشريك</p>
+                <p className="text-xs text-black/30 dark:text-white/30 text-center py-2">{L ? "أضف مميزات النظام الذي حصل عليه هذا الشريك" : "Add features of the system this partner uses"}</p>
               )}
             </div>
 
             {/* Active toggle */}
             <div className="flex items-center justify-between p-4 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl">
               <div>
-                <p className="font-semibold text-sm text-black dark:text-white">ظهور في صفحة الشركاء</p>
-                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">عند الإيقاف، لن يظهر الشريك للزوار</p>
+                <p className="font-semibold text-sm text-black dark:text-white">{L ? "ظهور في صفحة الشركاء" : "Show on Partners Page"}</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "عند الإيقاف، لن يظهر الشريك للزوار" : "When disabled, the partner won't appear to visitors"}</p>
               </div>
               <button type="button" onClick={() => set("isActive", !formData.isActive)}
                 className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? "bg-green-500" : "bg-black/20 dark:bg-white/20"}`}
@@ -473,9 +476,9 @@ export default function AdminPartners() {
               <Button type="submit" className="flex-1 gap-2 bg-gradient-to-l from-blue-600 to-cyan-500 text-white"
                 disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-partner">
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingId ? "تحديث الشريك" : "إضافة الشريك"}
+                {editingId ? (L ? "تحديث الشريك" : "Update Partner") : (L ? "إضافة الشريك" : "Add Partner")}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
             </div>
           </form>
         </DialogContent>

@@ -10,22 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Loader2, Plus, Printer, Mail, Trash2, FileCheck, Search } from "lucide-react";
 import { useLocation } from "wouter";
 
-const PAYMENT_METHODS = [
-  { value: "bank_transfer", label: "تحويل بنكي" },
-  { value: "cash", label: "نقداً" },
+function getPaymentMethods(L: boolean) { return [
+  { value: "bank_transfer", label: L ? "تحويل بنكي" : "Bank Transfer" },
+  { value: "cash", label: L ? "نقداً" : "Cash" },
   { value: "stc_pay", label: "STC Pay" },
   { value: "apple_pay", label: "Apple Pay" },
   { value: "paypal", label: "PayPal" },
-  { value: "other", label: "أخرى" },
-];
+  { value: "other", label: L ? "أخرى" : "Other" },
+]; }
 
-const METHOD_LABELS: Record<string, string> = {
-  bank_transfer: "تحويل بنكي", cash: "نقداً", stc_pay: "STC Pay",
-  apple_pay: "Apple Pay", paypal: "PayPal", other: "أخرى",
-};
+
 
 function numberToArabicWords(n: number): string {
   if (n === 0) return "صفر ريال سعودي";
@@ -58,6 +56,9 @@ interface Invoice { id: string; invoiceNumber: string; totalAmount: number; }
 
 function ReceiptForm({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const PAYMENT_METHODS = getPaymentMethods(L);
   const qc = useQueryClient();
   const [sendEmail, setSendEmail] = useState(true);
 
@@ -114,26 +115,26 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
       if (sendEmail && data?.id) {
         try {
           await fetch(`/api/receipts/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-          toast({ title: "تم إصدار السند وإرساله بالبريد ✅" });
+          toast({ title: L ? "تم إصدار السند وإرساله بالبريد ✅" : "Receipt issued and sent ✅" });
         } catch {
-          toast({ title: "تم إصدار السند، لكن فشل إرسال البريد", variant: "destructive" });
+          toast({ title: L ? "تم إصدار السند، لكن فشل إرسال البريد" : "Receipt issued, but email failed", variant: "destructive" });
         }
       } else {
-        toast({ title: "تم إنشاء سند القبض بنجاح" });
+        toast({ title: L ? "تم إنشاء سند القبض بنجاح" : "Receipt created successfully" });
       }
       onClose();
     },
-    onError: () => toast({ title: "فشل إنشاء السند", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إنشاء السند" : "Failed to create receipt", variant: "destructive" }),
   });
 
   return (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir="rtl">
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">العميل *</Label>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "العميل *" : "Client *"}</Label>
           <Select value={form.userId} onValueChange={v => setForm(p => ({ ...p, userId: v }))}>
             <SelectTrigger className="h-9 text-sm border-black/[0.10]">
-              <SelectValue placeholder="اختر العميل" />
+              <SelectValue placeholder={L ? "اختر العميل" : "Select client"} />
             </SelectTrigger>
             <SelectContent>
               {(clients || []).map((c: Client) => (
@@ -143,16 +144,16 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">ربط بفاتورة (اختياري)</Label>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "ربط بفاتورة (اختياري)" : "Link to Invoice (optional)"}</Label>
           <Select value={form.invoiceId} onValueChange={v => {
             const inv = (invoices || []).find((i: Invoice) => i.id === v);
             setForm(p => ({ ...p, invoiceId: v, amount: inv ? String(inv.totalAmount) : p.amount }));
           }}>
             <SelectTrigger className="h-9 text-sm border-black/[0.10]">
-              <SelectValue placeholder="اختر فاتورة" />
+              <SelectValue placeholder={L ? "اختر فاتورة" : "Select invoice"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">بدون فاتورة</SelectItem>
+              <SelectItem value="none">{L ? "بدون فاتورة" : "No invoice"}</SelectItem>
               {(invoices || []).map((inv: Invoice) => (
                 <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — {inv.totalAmount?.toLocaleString()} <SARIcon size={9} className="opacity-60 inline" /></SelectItem>
               ))}
@@ -162,7 +163,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">المبلغ المستلم (<SARIcon size={9} className="opacity-60" />) *</Label>
+        <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">{L ? "المبلغ المستلم" : "Amount Received"} (<SARIcon size={9} className="opacity-60" />) *</Label>
         <Input
           type="number"
           placeholder="1000"
@@ -178,7 +179,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">طريقة الدفع *</Label>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "طريقة الدفع *" : "Payment Method *"}</Label>
           <Select value={form.paymentMethod} onValueChange={v => setForm(p => ({ ...p, paymentMethod: v }))}>
             <SelectTrigger className="h-9 text-sm border-black/[0.10]">
               <SelectValue />
@@ -189,24 +190,24 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-black/50 mb-1 block">مرجع العملية / رقم التحويل</Label>
-          <Input value={form.paymentRef} onChange={e => setForm(p => ({ ...p, paymentRef: e.target.value }))} className="h-9 text-sm border-black/[0.10]" placeholder="اختياري" dir="ltr" />
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "مرجع العملية / رقم التحويل" : "Transaction Reference / Transfer Number"}</Label>
+          <Input value={form.paymentRef} onChange={e => setForm(p => ({ ...p, paymentRef: e.target.value }))} className="h-9 text-sm border-black/[0.10]" placeholder={L ? "اختياري" : "Optional"} dir="ltr" />
         </div>
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">الوصف / الغرض</Label>
-        <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="h-9 text-sm border-black/[0.10]" placeholder="مثال: دفعة أولى — تصميم موقع" />
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "الوصف / الغرض" : "Description / Purpose"}</Label>
+        <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="h-9 text-sm border-black/[0.10]" placeholder={L ? "مثال: دفعة أولى — تصميم موقع" : "e.g. First payment — website design"} />
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">المستلِم</Label>
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "المستلِم" : "Received By"}</Label>
         <Input value={form.receivedBy} onChange={e => setForm(p => ({ ...p, receivedBy: e.target.value }))} className="h-9 text-sm border-black/[0.10]" />
       </div>
 
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">ملاحظات</Label>
-        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder="اختياري..." />
+        <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
+        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder={L ? "اختياري..." : "Optional..."} />
       </div>
 
       <label className="flex items-center gap-2.5 cursor-pointer select-none" data-testid="checkbox-send-email-receipt">
@@ -216,7 +217,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
           onChange={e => setSendEmail(e.target.checked)}
           className="w-4 h-4 accent-black rounded"
         />
-        <span className="text-xs text-black/60 font-medium">إرسال سند القبض للعميل بالبريد الإلكتروني بعد الإصدار</span>
+        <span className="text-xs text-black/60 font-medium">{L ? "إرسال سند القبض للعميل بالبريد الإلكتروني بعد الإصدار" : "Send receipt to client by email after issuing"}</span>
         <Mail className="w-3.5 h-3.5 text-black/30" />
       </label>
 
@@ -226,7 +227,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
         className="w-full bg-black text-white h-10 rounded-xl font-bold"
         data-testid="button-create-receipt"
       >
-        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? "إصدار وإرسال بالبريد" : "إصدار سند القبض"}
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : sendEmail ? (L ? "إصدار وإرسال بالبريد" : "Issue & Send by Email") : (L ? "إصدار سند القبض" : "Issue Receipt")}
       </Button>
     </div>
   );
@@ -234,6 +235,9 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
 
 export default function AdminReceipts() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const METHOD_LABELS = Object.fromEntries(getPaymentMethods(L).map(m => [m.value, m.label]));
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
@@ -253,8 +257,8 @@ export default function AdminReceipts() {
       const r = await apiRequest("POST", `/api/receipts/${id}/send-email`, {});
       return r.json();
     },
-    onSuccess: () => toast({ title: "تم إرسال السند بالبريد ✅" }),
-    onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
+    onSuccess: () => toast({ title: L ? "تم إرسال السند بالبريد ✅" : "Receipt sent by email ✅" }),
+    onError: () => toast({ title: L ? "فشل إرسال البريد" : "Email failed", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -262,8 +266,8 @@ export default function AdminReceipts() {
       const r = await apiRequest("DELETE", `/api/receipts/${id}`, {});
       return r.json();
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/receipts"] }); toast({ title: "تم حذف السند" }); },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/receipts"] }); toast({ title: L ? "تم حذف السند" : "Receipt deleted" }); },
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const filtered = (receipts || []).filter((r: any) => {
@@ -278,7 +282,7 @@ export default function AdminReceipts() {
   );
 
   return (
-    <div className="relative overflow-hidden space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -287,19 +291,19 @@ export default function AdminReceipts() {
             <FileCheck className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-black">سندات القبض</h1>
-            <p className="text-xs text-black/35">{filtered.length} سند</p>
+            <h1 className="text-xl font-black text-black">{L ? "سندات القبض" : "Receipts"}</h1>
+            <p className="text-xs text-black/35">{filtered.length} {L ? "سند" : "receipts"}</p>
           </div>
         </div>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
             <Button className="bg-black text-white h-9 rounded-xl text-sm font-bold gap-1.5" data-testid="button-new-receipt">
-              <Plus className="w-4 h-4" /> سند قبض جديد
+              <Plus className="w-4 h-4" /> {L ? "سند قبض جديد" : "New Receipt"}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-xl" dir="rtl">
+          <DialogContent className="max-w-xl" dir={dir}>
             <DialogHeader>
-              <DialogTitle className="text-right font-black">إصدار سند قبض جديد</DialogTitle>
+              <DialogTitle className="text-right font-black">{L ? "إصدار سند قبض جديد" : "Issue New Receipt"}</DialogTitle>
             </DialogHeader>
             <ReceiptForm onClose={() => setShowCreate(false)} />
           </DialogContent>
@@ -310,7 +314,7 @@ export default function AdminReceipts() {
       <div className="relative max-w-sm">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/25" />
         <Input
-          placeholder="بحث برقم السند أو اسم العميل..."
+          placeholder={L ? "بحث برقم السند أو اسم العميل..." : "Search by receipt number or client name..."}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="h-9 pr-9 text-sm border-black/[0.10]"
@@ -323,19 +327,19 @@ export default function AdminReceipts() {
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-black/30">
             <FileCheck className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">لا توجد سندات قبض</p>
+            <p className="text-sm">{L ? "لا توجد سندات قبض" : "No receipts found"}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-black/[0.06] bg-black/[0.02]">
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">رقم السند</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">العميل</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">المبلغ</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">طريقة الدفع</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">التاريخ</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">الإجراءات</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "رقم السند" : "Receipt #"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "العميل" : "Client"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "المبلغ" : "Amount"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "طريقة الدفع" : "Payment Method"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "التاريخ" : "Date"}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-black/40">{L ? "الإجراءات" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -361,7 +365,7 @@ export default function AdminReceipts() {
                           <button
                             onClick={() => setLocation(`/admin/receipt-print/${r.id}`)}
                             className="p-1.5 rounded-lg hover:bg-black/[0.06] text-black/40 hover:text-black transition-colors"
-                            title="طباعة"
+                            title={L ? "طباعة" : "Print"}
                             data-testid={`button-print-receipt-${r.id}`}
                           >
                             <Printer className="w-3.5 h-3.5" />
@@ -379,7 +383,7 @@ export default function AdminReceipts() {
                             onClick={() => deleteMutation.mutate(r.id)}
                             disabled={deleteMutation.isPending}
                             className="p-1.5 rounded-lg hover:bg-red-50 text-black/40 hover:text-red-500 transition-colors"
-                            title="حذف"
+                            title={L ? "حذف" : "Delete"}
                             data-testid={`button-delete-receipt-${r.id}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />

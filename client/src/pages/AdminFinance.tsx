@@ -1,5 +1,6 @@
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import SARIcon from "@/components/SARIcon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function AdminFinance() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [testEmail, setTestEmail] = useState("");
   const [emailType, setEmailType] = useState("welcome");
   const [emailResult, setEmailResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -42,13 +45,13 @@ export default function AdminFinance() {
       return r.json();
     },
     onSuccess: (d) => {
-      setEmailResult({ ok: true, msg: d.message || "تم الإرسال" });
-      toast({ title: "تم إرسال البريد التجريبي" });
+      setEmailResult({ ok: true, msg: d.message || (L ? "تم الإرسال" : "Sent") });
+      toast({ title: L ? "تم إرسال البريد التجريبي" : "Test email sent" });
     },
     onError: async (err: any) => {
-      const msg = err?.message || "فشل الإرسال — تحقق من إعدادات SMTP2GO";
+      const msg = err?.message || (L ? "فشل الإرسال — تحقق من إعدادات SMTP2GO" : "Send failed — check SMTP2GO settings");
       setEmailResult({ ok: false, msg });
-      toast({ title: "فشل إرسال البريد", description: msg, variant: "destructive" });
+      toast({ title: L ? "فشل إرسال البريد" : "Email send failed", description: msg, variant: "destructive" });
     },
   });
 
@@ -68,7 +71,8 @@ export default function AdminFinance() {
 
   const cancelledAmount = orders?.filter(o => cancelledStatuses.includes(o.status || "")).reduce((acc, o) => acc + Number(o.totalAmount || 0), 0) || 0;
 
-  const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const monthNames = L ? ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const now = new Date();
   const defaultChart = Array.from({ length: 5 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
@@ -77,24 +81,30 @@ export default function AdminFinance() {
 
   const chartData = summary?.monthlyBreakdown || defaultChart;
 
-  const emailTypes = [
+  const emailTypes = L ? [
     { value: "welcome", label: "ترحيب" },
     { value: "otp", label: "رمز OTP" },
     { value: "order", label: "تأكيد طلب" },
     { value: "status", label: "تحديث حالة" },
     { value: "message", label: "رسالة جديدة" },
+  ] : [
+    { value: "welcome", label: "Welcome" },
+    { value: "otp", label: "OTP Code" },
+    { value: "order", label: "Order Confirmation" },
+    { value: "status", label: "Status Update" },
+    { value: "message", label: "New Message" },
   ];
 
   return (
-    <div className="relative overflow-hidden space-y-8" dir="rtl">
+    <div className="relative overflow-hidden space-y-8" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
           <Wallet className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-black">الإدارة المالية</h1>
-          <p className="text-xs text-black/35">الإيرادات والفواتير ونظام البريد</p>
+          <h1 className="text-xl font-black text-black">{L ? "الإدارة المالية" : "Finance Management"}</h1>
+          <p className="text-xs text-black/35">{L ? "الإيرادات والفواتير ونظام البريد" : "Revenue, invoices and email system"}</p>
         </div>
       </div>
 
@@ -102,45 +112,45 @@ export default function AdminFinance() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-black/60">إجمالي الأرباح</CardTitle>
+            <CardTitle className="text-sm font-medium text-black/60">{L ? "إجمالي الأرباح" : "Total Revenue"}</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-total-revenue">{totalRevenue.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-black/30 mt-1">من الفواتير المدفوعة فقط</p>
+            <p className="text-xs text-black/30 mt-1">{L ? "من الفواتير المدفوعة فقط" : "From paid invoices only"}</p>
           </CardContent>
         </Card>
 
         <Card className="border-black/[0.07] shadow-none rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-black/60">مستحق هذا الشهر</CardTitle>
+            <CardTitle className="text-sm font-medium text-black/60">{L ? "مستحق هذا الشهر" : "This Month's Revenue"}</CardTitle>
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-black flex items-center gap-1" data-testid="text-month-revenue">{(summary?.monthRevenue || 0).toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-black/30 mt-1">{summary?.activeClients || 0} عميل نشط</p>
+            <p className="text-xs text-black/30 mt-1">{summary?.activeClients || 0} {L ? "عميل نشط" : "active clients"}</p>
           </CardContent>
         </Card>
 
         <Card className="border-amber-100 shadow-none rounded-2xl bg-amber-50/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-amber-700">أموال معلقة</CardTitle>
+            <CardTitle className="text-sm font-medium text-amber-700">{L ? "أموال معلقة" : "Pending Amount"}</CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-amber-800 flex items-center gap-1" data-testid="text-pending-amount">{pendingAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-amber-600/70 mt-1">فواتير غير مدفوعة بعد</p>
+            <p className="text-xs text-amber-600/70 mt-1">{L ? "فواتير غير مدفوعة بعد" : "Unpaid invoices"}</p>
           </CardContent>
         </Card>
 
         <Card className="border-red-100 shadow-none rounded-2xl bg-red-50/40">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">ملغاة / مرفوضة</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-600">{L ? "ملغاة / مرفوضة" : "Cancelled / Rejected"}</CardTitle>
             <Ban className="h-4 w-4 text-red-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black text-red-700 flex items-center gap-1" data-testid="text-cancelled-amount">{cancelledAmount.toLocaleString()} <SARIcon size={16} className="opacity-60" /></div>
-            <p className="text-xs text-red-400/70 mt-1">لا تُحتسب في الأرباح</p>
+            <p className="text-xs text-red-400/70 mt-1">{L ? "لا تُحتسب في الأرباح" : "Not counted in revenue"}</p>
           </CardContent>
         </Card>
       </div>
@@ -148,7 +158,7 @@ export default function AdminFinance() {
       {/* Chart */}
       <Card className="border-black/[0.07] shadow-none rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-sm font-bold text-black/70">تحليل الأرباح الشهرية</CardTitle>
+          <CardTitle className="text-sm font-bold text-black/70">{L ? "تحليل الأرباح الشهرية" : "Monthly Revenue Analysis"}</CardTitle>
         </CardHeader>
         <CardContent className="h-[240px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -156,7 +166,7 @@ export default function AdminFinance() {
               <CartesianGrid strokeDasharray="3 3" stroke="#00000008" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#00000050" }} />
               <YAxis tick={{ fontSize: 11, fill: "#00000050" }} />
-              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} ر.س`, "الإيراد"]} />
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} ${L ? "ر.س" : "SAR"}`, L ? "الإيراد" : "Revenue"]} />
               <Bar dataKey="value" fill="#000" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -170,14 +180,14 @@ export default function AdminFinance() {
             <Mail className="w-4 h-4 text-black/50" />
           </div>
           <div>
-            <h2 className="font-black text-black text-sm">اختبار نظام البريد الإلكتروني</h2>
-            <p className="text-[11px] text-black/35">تحقق من عمل SMTP2GO بإرسال بريد تجريبي</p>
+            <h2 className="font-black text-black text-sm">{L ? "اختبار نظام البريد الإلكتروني" : "Email System Test"}</h2>
+            <p className="text-[11px] text-black/35">{L ? "تحقق من عمل SMTP2GO بإرسال بريد تجريبي" : "Verify SMTP2GO by sending a test email"}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-black/50 mb-1.5 block">نوع البريد</label>
+            <label className="text-xs font-medium text-black/50 mb-1.5 block">{L ? "نوع البريد" : "Email Type"}</label>
             <div className="flex flex-wrap gap-2">
               {emailTypes.map(et => (
                 <button
@@ -193,7 +203,7 @@ export default function AdminFinance() {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-black/50 mb-1.5 block">البريد المستهدف (اتركه فارغاً لإرساله لبريدك)</label>
+            <label className="text-xs font-medium text-black/50 mb-1.5 block">{L ? "البريد المستهدف (اتركه فارغاً لإرساله لبريدك)" : "Target Email (leave empty to send to your email)"}</label>
             <Input
               type="email"
               placeholder="test@example.com"
@@ -213,7 +223,7 @@ export default function AdminFinance() {
               data-testid="button-send-test-email"
             >
               {testEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
-              إرسال بريد تجريبي
+              {L ? "إرسال بريد تجريبي" : "Send Test Email"}
             </Button>
 
             {emailResult && (
@@ -225,10 +235,10 @@ export default function AdminFinance() {
           </div>
 
           <div className="bg-black/[0.02] border border-black/[0.06] rounded-xl p-4 text-xs space-y-1">
-            <p className="font-bold text-black/50 mb-2">إعدادات SMTP2GO الحالية:</p>
-            <p className="text-black/35">المرسل: <span className="font-mono text-black/60">noreply@qiroxstudio.online</span></p>
+            <p className="font-bold text-black/50 mb-2">{L ? "إعدادات SMTP2GO الحالية:" : "Current SMTP2GO Settings:"}</p>
+            <p className="text-black/35">{L ? "المرسل" : "Sender"}: <span className="font-mono text-black/60">noreply@qiroxstudio.online</span></p>
             <p className="text-black/35">API: <span className="font-mono text-black/60">api-5CC7...D332 ✓</span></p>
-            <p className="text-black/35 mt-2 text-[10px]">تأكد من أن النطاق qiroxstudio.online معتمد في حساب SMTP2GO تحت Senders → Verified Senders</p>
+            <p className="text-black/35 mt-2 text-[10px]">{L ? "تأكد من أن النطاق qiroxstudio.online معتمد في حساب SMTP2GO تحت Senders → Verified Senders" : "Ensure the domain qiroxstudio.online is verified in SMTP2GO under Senders → Verified Senders"}</p>
           </div>
         </div>
       </div>

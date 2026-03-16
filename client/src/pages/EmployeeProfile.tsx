@@ -15,6 +15,7 @@ import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/A
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 
 interface PortfolioItem {
   _id: string;
@@ -48,8 +49,10 @@ type PhotoTab = "photo" | "avatar";
 
 export default function EmployeeProfile() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { data: user } = useUser();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const queryClient = useQueryClient();
+    const { data: user } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Partial<Profile>>({});
   const [newSkill, setNewSkill] = useState("");
@@ -92,7 +95,7 @@ export default function EmployeeProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "الصورة كبيرة جداً — الحد الأقصى 5 MB", variant: "destructive" });
+      toast({ title: L ? "الصورة كبيرة جداً — الحد الأقصى 5 MB" : "Image too large — max 5 MB", variant: "destructive" });
       return;
     }
     const previewUrl = URL.createObjectURL(file);
@@ -103,13 +106,13 @@ export default function EmployeeProfile() {
       fd.append("file", file);
       const r = await fetch("/api/profile/photo", { method: "POST", body: fd, credentials: "include" });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "فشل الرفع");
+      if (!r.ok) throw new Error(data.error || (L ? "فشل الرفع" : "Upload failed"));
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       if (data.profilePhotoUrl) setPhotoPreview(data.profilePhotoUrl);
-      toast({ title: "✅ تم رفع الصورة" });
+      toast({ title: L ? "✅ تم رفع الصورة" : "✅ Photo uploaded" });
     } catch (err: any) {
-      toast({ title: "فشل رفع الصورة", description: err.message, variant: "destructive" });
+      toast({ title: L ? "فشل رفع الصورة" : "Photo upload failed", description: err.message, variant: "destructive" });
       setPhotoPreview(null);
     } finally { setSavingPhoto(false); }
   };
@@ -120,9 +123,9 @@ export default function EmployeeProfile() {
       await apiRequest("POST", "/api/profile/avatar-config", { avatarConfig: JSON.stringify(avatarCfg) });
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({ title: "✅ تم حفظ الأفاتار" });
+      toast({ title: L ? "✅ تم حفظ الأفاتار" : "✅ Avatar saved" });
     } catch {
-      toast({ title: "فشل الحفظ", variant: "destructive" });
+      toast({ title: L ? "فشل الحفظ" : "Save failed", variant: "destructive" });
     } finally { setSavingAvatar(false); }
   };
 
@@ -130,9 +133,9 @@ export default function EmployeeProfile() {
     mutationFn: () => apiRequest("PATCH", "/api/employee/profile", form).then(r => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
-      toast({ title: "تم حفظ الملف الشخصي" });
+      toast({ title: L ? "تم حفظ الملف الشخصي" : "Profile saved" });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const addSkill = () => {
@@ -151,18 +154,18 @@ export default function EmployeeProfile() {
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
       setNewItem({ title: "", type: "template", url: "", description: "" });
       setAddingItem(false);
-      toast({ title: "✅ تم إضافة العنصر" });
+      toast({ title: L ? "✅ تم إضافة العنصر" : "✅ Item added" });
     },
-    onError: () => toast({ title: "فشل الإضافة", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل الإضافة" : "Failed to add item", variant: "destructive" }),
   });
 
   const deleteItemMutation = useMutation({
     mutationFn: (itemId: string) => apiRequest("DELETE", `/api/employee/portfolio/${itemId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
-      toast({ title: "✅ تم الحذف" });
+      toast({ title: L ? "✅ تم الحذف" : "✅ Deleted" });
     },
-    onError: () => toast({ title: "فشل الحذف", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل الحذف" : "Delete failed", variant: "destructive" }),
   });
 
   const ITEM_TYPE_CONFIG = {
@@ -172,6 +175,8 @@ export default function EmployeeProfile() {
   };
 
   const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const MONTHS = L ? MONTHS_AR : MONTHS_EN;
 
   if (isLoading) return (
     <div className="flex justify-center py-16">
@@ -180,7 +185,7 @@ export default function EmployeeProfile() {
   );
 
   return (
-    <div className="relative overflow-hidden space-y-6 max-w-3xl" dir="rtl">
+    <div className="relative overflow-hidden space-y-6 max-w-3xl" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -193,14 +198,14 @@ export default function EmployeeProfile() {
             showRing
           />
           <div>
-            <h1 className="text-xl font-black text-black dark:text-white">{user?.fullName || "ملفي الشخصي"}</h1>
-            <p className="text-xs text-black/35 dark:text-white/35">{form.jobTitle || "معلوماتي المهنية والبنكية"}</p>
+            <h1 className="text-xl font-black text-black dark:text-white">{user?.fullName || (L ? "ملفي الشخصي" : "My Profile")}</h1>
+            <p className="text-xs text-black/35 dark:text-white/35">{form.jobTitle || (L ? "معلوماتي المهنية والبنكية" : "My Professional & Banking Info")}</p>
           </div>
         </div>
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
           className="bg-black dark:bg-white text-white dark:text-black gap-2" data-testid="button-save-profile">
           {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          حفظ
+          {L ? "حفظ" : "Save"}
         </Button>
       </div>
 
@@ -209,7 +214,7 @@ export default function EmployeeProfile() {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-              <Camera className="w-4 h-4" /> صورتي الشخصية
+              <Camera className="w-4 h-4" /> {L ? "صورتي الشخصية" : "My Profile Photo"}
             </h3>
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} data-testid="input-photo-employee" />
@@ -225,7 +230,7 @@ export default function EmployeeProfile() {
                     : "text-black/50 dark:text-white/40"
                 }`}
               >
-                {tab === "photo" ? <><Camera className="w-3.5 h-3.5" />رفع صورة</> : <><Smile className="w-3.5 h-3.5" />أفاتار</>}
+                {tab === "photo" ? <><Camera className="w-3.5 h-3.5" />{L ? "رفع صورة" : "Photo"}</> : <><Smile className="w-3.5 h-3.5" />{L ? "أفاتار" : "Avatar"}</>}
               </button>
             ))}
           </div>
@@ -255,9 +260,9 @@ export default function EmployeeProfile() {
                   data-testid="btn-upload-photo-employee"
                 >
                   {savingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                  {photoPreview || profile?.profilePhotoUrl ? "تغيير الصورة" : "رفع صورة"}
+                  {photoPreview || profile?.profilePhotoUrl ? (L ? "تغيير الصورة" : "Change Photo") : (L ? "رفع صورة" : "Upload Photo")}
                 </Button>
-                <p className="text-xs text-black/30 dark:text-white/30">JPG أو PNG، الحد الأقصى 5MB</p>
+                <p className="text-xs text-black/30 dark:text-white/30">{L ? "JPG أو PNG، الحد الأقصى 5MB" : "JPG or PNG, max 5MB"}</p>
               </motion.div>
             ) : (
               <motion.div key="avatar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -276,9 +281,9 @@ export default function EmployeeProfile() {
       {/* Vacation Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "إجمالي أيام الإجازة", value: profile?.vacationDays || 21, color: "text-blue-500", icon: Umbrella },
-          { label: "إجازات مستخدمة", value: profile?.vacationUsed || 0, color: "text-yellow-500", icon: Umbrella },
-          { label: "إجازات متبقية", value: (profile?.vacationDays || 21) - (profile?.vacationUsed || 0), color: "text-green-500", icon: Umbrella },
+          { label: L ? "إجمالي أيام الإجازة" : "Total Leave Days", value: profile?.vacationDays || 21, color: "text-blue-500", icon: Umbrella },
+          { label: L ? "إجازات مستخدمة" : "Used Leave", value: profile?.vacationUsed || 0, color: "text-yellow-500", icon: Umbrella },
+          { label: L ? "إجازات متبقية" : "Remaining Leave", value: (profile?.vacationDays || 21) - (profile?.vacationUsed || 0), color: "text-green-500", icon: Umbrella },
         ].map((s, i) => (
           <Card key={i} className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
             <CardContent className="pt-4 pb-3 text-center">
@@ -293,33 +298,33 @@ export default function EmployeeProfile() {
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <Briefcase className="w-4 h-4" /> المعلومات المهنية
+            <Briefcase className="w-4 h-4" /> {L ? "المعلومات المهنية" : "Professional Info"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">المسمى الوظيفي</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "المسمى الوظيفي" : "Job Title"}</label>
               <Input value={form.jobTitle || ""} onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))}
                 placeholder="e.g. Senior Developer" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                 data-testid="input-job-title" />
             </div>
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">تاريخ التعيين</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "تاريخ التعيين" : "Hire Date"}</label>
               <Input type="date" value={form.hireDate ? new Date(form.hireDate).toISOString().split("T")[0] : ""}
                 onChange={e => setForm(p => ({ ...p, hireDate: e.target.value }))}
                 className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
           </div>
           <div>
-            <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">نبذة شخصية</label>
+            <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "نبذة شخصية" : "Bio"}</label>
             <Textarea value={form.bio || ""} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
-              placeholder="اكتب نبذة مختصرة عن نفسك..." rows={3}
+              placeholder={L ? "اكتب نبذة مختصرة عن نفسك..." : "Write a short bio about yourself..."} rows={3}
               className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
               data-testid="input-bio" />
           </div>
           <div>
-            <label className="text-xs text-black/40 dark:text-white/40 mb-2 block">المهارات</label>
+            <label className="text-xs text-black/40 dark:text-white/40 mb-2 block">{L ? "المهارات" : "Skills"}</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {(form.skills || []).map(skill => (
                 <Badge key={skill} className="bg-black/[0.06] dark:bg-white/[0.06] text-black dark:text-white gap-1.5 pr-1.5">
@@ -331,7 +336,7 @@ export default function EmployeeProfile() {
             <div className="flex gap-2">
               <Input value={newSkill} onChange={e => setNewSkill(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && addSkill()}
-                placeholder="أضف مهارة..." className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
+                placeholder={L ? "أضف مهارة..." : "Add a skill..."} className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                 data-testid="input-skill" />
               <Button size="sm" variant="outline" onClick={addSkill} className="dark:border-white/10 dark:text-white">
                 <Plus className="w-4 h-4" />
@@ -346,11 +351,11 @@ export default function EmployeeProfile() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-              <FolderOpen className="w-4 h-4" /> نماذجي وملفاتي
+              <FolderOpen className="w-4 h-4" /> {L ? "نماذجي وملفاتي" : "My Templates & Files"}
             </CardTitle>
             <Button size="sm" variant="outline" onClick={() => setAddingItem(v => !v)}
               className="gap-1.5 text-xs dark:border-white/10 dark:text-white" data-testid="btn-add-portfolio-item">
-              <Plus className="w-3.5 h-3.5" /> إضافة
+              <Plus className="w-3.5 h-3.5" /> {L ? "إضافة" : "Add"}
             </Button>
           </div>
         </CardHeader>
@@ -365,7 +370,7 @@ export default function EmployeeProfile() {
                 className="overflow-hidden"
               >
                 <div className="border border-dashed border-black/15 dark:border-white/15 rounded-xl p-4 space-y-3 bg-black/[0.02] dark:bg-white/[0.02]">
-                  <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-2">إضافة عنصر جديد</p>
+                  <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-2">{L ? "إضافة عنصر جديد" : "Add New Item"}</p>
 
                   {/* Type selector */}
                   <div className="flex gap-2">
@@ -389,7 +394,7 @@ export default function EmployeeProfile() {
                   <Input
                     value={newItem.title}
                     onChange={e => setNewItem(p => ({ ...p, title: e.target.value }))}
-                    placeholder={newItem.type === "video" ? "عنوان الفيديو" : newItem.type === "file" ? "اسم الملف" : "عنوان النموذج"}
+                    placeholder={newItem.type === "video" ? (L ? "عنوان الفيديو" : "Video Title") : newItem.type === "file" ? (L ? "اسم الملف" : "File Name") : (L ? "عنوان النموذج" : "Template Title")}
                     className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white text-sm"
                     data-testid="input-portfolio-title"
                   />
@@ -404,7 +409,7 @@ export default function EmployeeProfile() {
                   <Input
                     value={newItem.description}
                     onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
-                    placeholder="وصف مختصر (اختياري)"
+                    placeholder={L ? "وصف مختصر (اختياري)" : "Short description (optional)"}
                     className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white text-sm"
                     data-testid="input-portfolio-desc"
                   />
@@ -414,11 +419,11 @@ export default function EmployeeProfile() {
                       className="gap-1.5 bg-black dark:bg-white text-white dark:text-black flex-1"
                       data-testid="btn-save-portfolio-item">
                       {addItemMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      حفظ
+                      {L ? "حفظ" : "Save"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setAddingItem(false)}
                       className="dark:border-white/10 dark:text-white">
-                      إلغاء
+                      {L ? "إلغاء" : "Cancel"}
                     </Button>
                   </div>
                 </div>
@@ -429,7 +434,7 @@ export default function EmployeeProfile() {
           {/* Existing items */}
           {(profile?.portfolioItems || []).length === 0 && !addingItem ? (
             <p className="text-xs text-black/30 dark:text-white/30 text-center py-4">
-              لا توجد نماذج بعد — اضغط "إضافة" لإضافة أول نموذج أو ملف
+              {L ? 'لا توجد نماذج بعد — اضغط "إضافة" لإضافة أول نموذج أو ملف' : 'No items yet — click "Add" to add your first template or file'}
             </p>
           ) : (
             <div className="space-y-2">
@@ -473,30 +478,30 @@ export default function EmployeeProfile() {
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <CreditCard className="w-4 h-4" /> معلومات بنكية (سرية)
+            <CreditCard className="w-4 h-4" /> {L ? "معلومات بنكية (سرية)" : "Bank Info (Confidential)"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">اسم البنك</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "اسم البنك" : "Bank Name"}</label>
               <Input value={form.bankName || ""} onChange={e => setForm(p => ({ ...p, bankName: e.target.value }))}
-                placeholder="البنك الأهلي" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
+                placeholder={L ? "البنك الأهلي" : "e.g. National Bank"} className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">رقم الحساب</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "رقم الحساب" : "Account Number"}</label>
               <Input value={form.bankAccount || ""} onChange={e => setForm(p => ({ ...p, bankAccount: e.target.value }))}
                 placeholder="XXXX-XXXX" dir="ltr" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">رقم IBAN</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "رقم IBAN" : "IBAN Number"}</label>
               <Input value={form.bankIBAN || ""} onChange={e => setForm(p => ({ ...p, bankIBAN: e.target.value }))}
                 placeholder="SA..." dir="ltr" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">رقم الهوية</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "رقم الهوية" : "National ID"}</label>
               <Input value={form.nationalId || ""} onChange={e => setForm(p => ({ ...p, nationalId: e.target.value }))}
                 placeholder="1xxxxxxxxx" dir="ltr" className="border-black/10 dark:border-white/10 dark:bg-gray-800 dark:text-white" />
             </div>
@@ -508,7 +513,7 @@ export default function EmployeeProfile() {
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4" /> الأمان والبصمة
+            <ShieldCheck className="w-4 h-4" /> {L ? "الأمان والبصمة" : "Security & Biometrics"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -520,16 +525,16 @@ export default function EmployeeProfile() {
       {(payroll || []).length > 0 && (
         <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60">كشف رواتبي</CardTitle>
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60">{L ? "كشف رواتبي" : "My Payroll"}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {(payroll || []).slice(0, 6).map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between text-sm border-b border-black/[0.04] dark:border-white/[0.04] pb-2 last:border-0">
-                  <span className="text-black/50 dark:text-white/50">{MONTHS_AR[(r.month || 1) - 1]} {r.year}</span>
+                  <span className="text-black/50 dark:text-white/50">{MONTHS[(r.month || 1) - 1]} {r.year}</span>
                   <span className="font-bold text-black dark:text-white flex items-center gap-0.5">{r.netSalary.toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                   <Badge className={r.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
-                    {r.status === "paid" ? "مدفوع" : "معلق"}
+                    {r.status === "paid" ? (L ? "مدفوع" : "Paid") : (L ? "معلق" : "Pending")}
                   </Badge>
                 </div>
               ))}

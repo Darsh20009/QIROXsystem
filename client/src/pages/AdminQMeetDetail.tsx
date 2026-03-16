@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,12 @@ import {
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  scheduled: { label: "مجدول", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  live: { label: "يبث الآن 🔴", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-  completed: { label: "منتهي", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
-  cancelled: { label: "ملغي", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
-};
+function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
+  scheduled: { label: L ? "مجدول" : "Scheduled", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+  live: { label: L ? "يبث الآن 🔴" : "Live Now 🔴", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  completed: { label: L ? "منتهي" : "Completed", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
+}; }
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
@@ -45,6 +46,9 @@ export default function AdminQMeetDetail() {
   const [, navigate] = useLocation();
   const { data: user } = useUser();
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STATUS_MAP = getStatusMap(L);
   const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<"info" | "feedback" | "reports">("info");
@@ -61,7 +65,7 @@ export default function AdminQMeetDetail() {
     queryKey: ["/api/qmeet/meetings", id],
     queryFn: async () => {
       const r = await fetch(`/api/qmeet/meetings/${id}`);
-      if (!r.ok) throw new Error("لم يتم العثور على الاجتماع");
+      if (!r.ok) throw new Error(L ? "لم يتم العثور على الاجتماع" : "Meeting not found");
       return r.json();
     },
     enabled: !!id,
@@ -94,10 +98,10 @@ export default function AdminQMeetDetail() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings", id, "feedback"] });
-      toast({ title: "شكراً على تقييمك!" });
+      toast({ title: L ? "شكراً على تقييمك!" : "Thank you for your feedback!" });
       setFeedbackComment("");
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const reportMutation = useMutation({
@@ -110,27 +114,27 @@ export default function AdminQMeetDetail() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings", id, "reports"] });
-      toast({ title: "تم رفع التقرير بنجاح" });
+      toast({ title: L ? "تم رفع التقرير بنجاح" : "Report uploaded successfully" });
       setReportSummary(""); setReportContent(""); setReportActions([]); setReportAction(""); setReportAttendeesCount(""); setReportDuration("");
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMeetingMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", `/api/qmeet/meetings/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings"] });
-      toast({ title: "تم حذف الاجتماع" });
+      toast({ title: L ? "تم حذف الاجتماع" : "Meeting deleted" });
       navigate("/admin/qmeet");
     },
-    onError: () => toast({ title: "خطأ", description: "تعذّر حذف الاجتماع", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ" : "Error", description: L ? "تعذّر حذف الاجتماع" : "Could not delete the meeting", variant: "destructive" }),
   });
 
   const deleteReportMutation = useMutation({
     mutationFn: (rid: string) => apiRequest("DELETE", `/api/qmeet/reports/${rid}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/qmeet/meetings", id, "reports"] });
-      toast({ title: "تم حذف التقرير" });
+      toast({ title: L ? "تم حذف التقرير" : "Report deleted" });
     },
   });
 
@@ -148,14 +152,14 @@ export default function AdminQMeetDetail() {
       const data = await res.json().catch(() => ({}));
       toast({ title: `تم إرسال ${data.sent ?? 0} دعوة` });
     },
-    onError: () => toast({ title: "فشل إرسال الدعوات", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إرسال الدعوات" : "Failed to send invites", variant: "destructive" }),
   });
 
   function copyLink() {
     if (!meeting) return;
     const link = meeting.meetingLink.startsWith("http") ? meeting.meetingLink : `${window.location.origin}${meeting.meetingLink}`;
     navigator.clipboard.writeText(link);
-    toast({ title: "تم نسخ الرابط" });
+    toast({ title: L ? "تم نسخ الرابط" : "Link copied" });
   }
 
   function addActionItem() {
@@ -179,7 +183,7 @@ export default function AdminQMeetDetail() {
   if (!meeting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">الاجتماع غير موجود</p>
+        <p className="text-gray-500">{L ? "الاجتماع غير موجود" : "Meeting not found"}</p>
       </div>
     );
   }
@@ -252,7 +256,7 @@ export default function AdminQMeetDetail() {
             </button>
             {isManagement && (
               <button
-                onClick={() => { if (confirm("هل تريد حذف هذا الاجتماع نهائياً؟")) deleteMeetingMutation.mutate(); }}
+                onClick={() => { if (confirm(L ? "هل تريد حذف هذا الاجتماع نهائياً؟" : "Are you sure you want to permanently delete this meeting?")) deleteMeetingMutation.mutate(); }}
                 disabled={deleteMeetingMutation.isPending}
                 className="inline-flex items-center gap-2 border border-red-200 text-red-600 font-medium px-4 py-2 rounded-xl hover:bg-red-50 text-sm transition-colors"
                 data-testid="button-delete-meeting-main">
@@ -289,7 +293,7 @@ export default function AdminQMeetDetail() {
             )}
             <Button size="sm" variant="outline" onClick={() => sendInvitesMutation.mutate()} disabled={sendInvitesMutation.isPending} className="gap-1">
               <Send className="w-3.5 h-3.5" />
-              {sendInvitesMutation.isPending ? "جارٍ الإرسال..." : "إعادة إرسال الدعوات"}
+              {sendInvitesMutation.isPending ? (L ? "جارٍ الإرسال..." : "Sending...") : (L ? "إعادة إرسال الدعوات" : "Resend Invites")}
             </Button>
           </div>
         )}
@@ -298,11 +302,11 @@ export default function AdminQMeetDetail() {
       {/* Features badges */}
       <div className="flex flex-wrap gap-2 mb-4">
         {[
-          { label: "فيديو HD", icon: "🎥" },
-          { label: "مشاركة الشاشة", icon: "🖥" },
-          { label: "السبورة التفاعلية", icon: "✏️" },
-          { label: "دردشة نصية", icon: "💬" },
-          { label: "تسجيل الاجتماع", icon: "⏺" },
+          { label: L ? "فيديو HD" : "HD Video", icon: "🎥" },
+          { label: L ? "مشاركة الشاشة" : "Screen Share", icon: "🖥" },
+          { label: L ? "السبورة التفاعلية" : "Interactive Board", icon: "✏️" },
+          { label: L ? "دردشة نصية" : "Text Chat", icon: "💬" },
+          { label: L ? "تسجيل الاجتماع" : "Meeting Recording", icon: "⏺" },
         ].map(f => (
           <span key={f.label} className="inline-flex items-center gap-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1 text-gray-600 dark:text-gray-300 font-medium">
             {f.icon} {f.label}
@@ -313,7 +317,7 @@ export default function AdminQMeetDetail() {
       {/* Tabs */}
       <div className="flex gap-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-1 mb-4 shadow-sm">
         {[
-          { key: "info", label: "التفاصيل", icon: Clipboard },
+          { key: "info", label: L ? "التفاصيل" : "Details", icon: Clipboard },
           { key: "feedback", label: `التقييمات${feedbacks?.length ? ` (${feedbacks.length})` : ""}`, icon: Star },
           { key: "reports", label: `التقارير${reports?.length ? ` (${reports.length})` : ""}`, icon: FileText },
         ].map(tab => {
@@ -342,7 +346,7 @@ export default function AdminQMeetDetail() {
             </CardHeader>
             <CardContent>
               {(meeting.participantEmails || []).length === 0 ? (
-                <p className="text-sm text-gray-400">لا يوجد مشاركون محددون</p>
+                <p className="text-sm text-gray-400">{L ? "لا يوجد مشاركون محددون" : "No participants specified"}</p>
               ) : (
                 <div className="space-y-2">
                   {(meeting.participantEmails || []).map((email: string, i: number) => (
@@ -384,7 +388,7 @@ export default function AdminQMeetDetail() {
                   {meeting.hostName?.[0]?.toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">المضيف</p>
+                  <p className="text-xs text-gray-400">{L ? "المضيف" : "Host"}</p>
                   <p className="font-bold text-black dark:text-white">{meeting.hostName}</p>
                 </div>
               </div>
@@ -398,20 +402,20 @@ export default function AdminQMeetDetail() {
           {/* Submit feedback */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">تقديم تقييم</CardTitle>
+              <CardTitle className="text-base">{L ? "تقديم تقييم" : "Submit Feedback"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="mb-2 block">تقييمك</Label>
+                <Label className="mb-2 block">{L ? "تقييمك" : "Your Rating"}</Label>
                 <StarRating value={feedbackRating} onChange={setFeedbackRating} />
               </div>
               <div>
-                <Label>تعليق (اختياري)</Label>
-                <Textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} placeholder="شاركنا رأيك في الاجتماع..." className="mt-1 h-20" data-testid="input-feedback-comment" />
+                <Label>{L ? "تعليق (اختياري)" : "Comment (optional)"}</Label>
+                <Textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} placeholder={L ? "شاركنا رأيك في الاجتماع..." : "Share your thoughts on the meeting..."} className="mt-1 h-20" data-testid="input-feedback-comment" />
               </div>
               <Button onClick={() => feedbackMutation.mutate()} disabled={feedbackMutation.isPending} className="gap-2" data-testid="button-submit-feedback">
                 <Send className="w-4 h-4" />
-                {feedbackMutation.isPending ? "جارٍ الإرسال..." : "إرسال التقييم"}
+                {feedbackMutation.isPending ? (L ? "جارٍ الإرسال..." : "Sending...") : (L ? "إرسال التقييم" : "Submit Feedback")}
               </Button>
             </CardContent>
           </Card>
@@ -455,7 +459,7 @@ export default function AdminQMeetDetail() {
           ) : (
             <div className="text-center py-12 text-gray-400">
               <Star className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p>لا توجد تقييمات بعد</p>
+              <p>{L ? "لا توجد تقييمات بعد" : "No feedback yet"}</p>
             </div>
           )}
         </div>
@@ -466,29 +470,29 @@ export default function AdminQMeetDetail() {
           {/* Submit report */}
           <Card className="border-0 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">رفع تقرير اجتماع</CardTitle>
+              <CardTitle className="text-base">{L ? "رفع تقرير اجتماع" : "Upload Meeting Report"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label>ملخص الاجتماع *</Label>
-                <Textarea value={reportSummary} onChange={e => setReportSummary(e.target.value)} placeholder="ملخص ما تم مناقشته..." className="mt-1 h-24" data-testid="input-report-summary" />
+                <Label>{L ? "ملخص الاجتماع *" : "Meeting Summary *"}</Label>
+                <Textarea value={reportSummary} onChange={e => setReportSummary(e.target.value)} placeholder={L ? "ملخص ما تم مناقشته..." : "Summary of what was discussed..."} className="mt-1 h-24" data-testid="input-report-summary" />
               </div>
               <div>
-                <Label>محتوى التقرير التفصيلي</Label>
-                <Textarea value={reportContent} onChange={e => setReportContent(e.target.value)} placeholder="تفاصيل إضافية..." className="mt-1 h-20" data-testid="input-report-content" />
+                <Label>{L ? "محتوى التقرير التفصيلي" : "Detailed Report Content"}</Label>
+                <Textarea value={reportContent} onChange={e => setReportContent(e.target.value)} placeholder={L ? "تفاصيل إضافية..." : "Additional details..."} className="mt-1 h-20" data-testid="input-report-content" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>عدد الحاضرين</Label>
+                  <Label>{L ? "عدد الحاضرين" : "Attendees Count"}</Label>
                   <Input type="number" value={reportAttendeesCount} onChange={e => setReportAttendeesCount(e.target.value)} placeholder="0" className="mt-1" data-testid="input-report-attendees" />
                 </div>
                 <div>
-                  <Label>المدة الفعلية (دقيقة)</Label>
+                  <Label>{L ? "المدة الفعلية (دقيقة)" : "Actual Duration (minutes)"}</Label>
                   <Input type="number" value={reportDuration} onChange={e => setReportDuration(e.target.value)} placeholder="60" className="mt-1" data-testid="input-report-duration" />
                 </div>
               </div>
               <div>
-                <Label>بنود العمل (Action Items)</Label>
+                <Label>{L ? "بنود العمل (Action Items)" : "Action Items"}</Label>
                 <div className="flex gap-2 mt-1">
                   <Input value={reportAction} onChange={e => setReportAction(e.target.value)} onKeyDown={e => e.key === "Enter" && addActionItem()} placeholder="أضف بند عمل..." data-testid="input-action-item" />
                   <Button type="button" size="sm" variant="outline" onClick={addActionItem} data-testid="button-add-action">
@@ -508,7 +512,7 @@ export default function AdminQMeetDetail() {
               </div>
               <Button onClick={() => reportMutation.mutate()} disabled={reportMutation.isPending || !reportSummary.trim()} className="gap-2" data-testid="button-submit-report">
                 <FileText className="w-4 h-4" />
-                {reportMutation.isPending ? "جارٍ الرفع..." : "رفع التقرير"}
+                {reportMutation.isPending ? (L ? "جارٍ الرفع..." : "Uploading...") : (L ? "رفع التقرير" : "Upload Report")}
               </Button>
             </CardContent>
           </Card>
@@ -535,14 +539,14 @@ export default function AdminQMeetDetail() {
                       </div>
                     </div>
                     {isManagement && (
-                      <button onClick={() => { if (confirm("حذف هذا التقرير؟")) deleteReportMutation.mutate(r._id) }}
+                      <button onClick={() => { if (confirm(L ? "حذف هذا التقرير؟" : "Delete this report?")) deleteReportMutation.mutate(r._id) }}
                         className="text-red-400 hover:text-red-600 p-1" data-testid={`button-delete-report-${r._id}`}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 mb-3">
-                    <p className="text-xs font-bold text-gray-400 mb-1">الملخص</p>
+                    <p className="text-xs font-bold text-gray-400 mb-1">{L ? "الملخص" : "Summary"}</p>
                     <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{r.summary}</p>
                   </div>
                   {r.content && (
@@ -550,7 +554,7 @@ export default function AdminQMeetDetail() {
                   )}
                   {r.actionItems && r.actionItems.length > 0 && (
                     <div>
-                      <p className="text-xs font-bold text-gray-400 mb-2">بنود العمل:</p>
+                      <p className="text-xs font-bold text-gray-400 mb-2">{L ? "بنود العمل:" : "Action Items:"}</p>
                       <ul className="space-y-1">
                         {r.actionItems.map((a: string, i: number) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
@@ -567,7 +571,7 @@ export default function AdminQMeetDetail() {
           ) : (
             <div className="text-center py-12 text-gray-400">
               <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p>لا توجد تقارير بعد</p>
+              <p>{L ? "لا توجد تقارير بعد" : "No reports yet"}</p>
             </div>
           )}
         </div>

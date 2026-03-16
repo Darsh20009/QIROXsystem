@@ -10,6 +10,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type News } from "@shared/schema";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
 
 interface FormData {
@@ -28,14 +29,20 @@ const emptyForm: FormData = {
   status: "draft",
 };
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  draft: { label: "مسودة", color: "bg-gray-100 text-gray-600" },
-  published: { label: "منشور", color: "bg-green-100 text-green-700" },
-  archived: { label: "مؤرشف", color: "bg-amber-100 text-amber-700" },
-};
+function getStatusMap(L: boolean): Record<string, { label: string; color: string }> {
+  const labels = L ? { draft: "مسودة", published: "منشور", archived: "مؤرشف" } : { draft: "Draft", published: "Published", archived: "Archived" };
+  return {
+    draft: { label: labels.draft, color: "bg-gray-100 text-gray-600" },
+    published: { label: labels.published, color: "bg-green-100 text-green-700" },
+    archived: { label: labels.archived, color: "bg-amber-100 text-amber-700" },
+  };
+}
 
 export default function AdminNews() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const statusMap = getStatusMap(L);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
@@ -51,11 +58,11 @@ export default function AdminNews() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      toast({ title: "تم إضافة المقال بنجاح" });
+      toast({ title: L ? "تم إضافة المقال بنجاح" : "Article added successfully" });
       setOpen(false);
       setFormData(emptyForm);
     },
-    onError: () => toast({ title: "خطأ في إضافة المقال", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في إضافة المقال" : "Error adding article", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -65,12 +72,12 @@ export default function AdminNews() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      toast({ title: "تم تحديث المقال بنجاح" });
+      toast({ title: L ? "تم تحديث المقال بنجاح" : "Article updated successfully" });
       setOpen(false);
       setEditingId(null);
       setFormData(emptyForm);
     },
-    onError: () => toast({ title: "خطأ في تحديث المقال", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في تحديث المقال" : "Error updating article", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -79,15 +86,15 @@ export default function AdminNews() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      toast({ title: "تم حذف المقال" });
+      toast({ title: L ? "تم حذف المقال" : "Article deleted" });
     },
-    onError: () => toast({ title: "خطأ في حذف المقال", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في حذف المقال" : "Error deleting article", variant: "destructive" }),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content) {
-      toast({ title: "يرجى ملء العنوان والمحتوى", variant: "destructive" });
+      toast({ title: L ? "يرجى ملء العنوان والمحتوى" : "Please fill in title and content", variant: "destructive" });
       return;
     }
     if (editingId) {
@@ -141,11 +148,11 @@ export default function AdminNews() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Newspaper className="w-7 h-7 text-black/40" />
-          إدارة الأخبار والمدونة
+          {L ? "إدارة الأخبار والمدونة" : "News & Blog Management"}
         </h1>
         <Button onClick={handleAddNew} className="gap-2 premium-btn" data-testid="button-add-news">
           <Plus className="w-4 h-4" />
-          مقال جديد
+          {L ? "مقال جديد" : "New Article"}
         </Button>
       </div>
 
@@ -163,7 +170,7 @@ export default function AdminNews() {
           <div className="w-2 h-2 rounded-full bg-black/30" />
           <div>
             <p className="text-lg font-bold text-black">{newsList?.length || 0}</p>
-            <p className="text-xs text-black/40">الإجمالي</p>
+            <p className="text-xs text-black/40">{L ? "الإجمالي" : "Total"}</p>
           </div>
         </div>
       </div>
@@ -173,11 +180,11 @@ export default function AdminNews() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-black/[0.06]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">العنوان</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المقتطف</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الحالة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">التاريخ</th>
-                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "العنوان" : "Title"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المقتطف" : "Excerpt"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "التاريخ" : "Date"}</th>
+                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "إجراءات" : "Actions"}</th>
               </tr>
             </thead>
             <tbody>
@@ -204,7 +211,7 @@ export default function AdminNews() {
                       </span>
                     </td>
                     <td className="p-4 text-xs text-black/40">
-                      {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("ar-SA") : "—"}
+                      {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString(L ? "ar-SA" : "en-US") : "—"}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
@@ -222,7 +229,7 @@ export default function AdminNews() {
                           variant="ghost"
                           className={item.status === "published" ? "text-green-600" : "text-black/40"}
                           onClick={() => handleQuickToggle(item)}
-                          title={item.status === "published" ? "إلغاء النشر" : "نشر"}
+                          title={item.status === "published" ? (L ? "إلغاء النشر" : "Unpublish") : (L ? "نشر" : "Publish")}
                           data-testid={`button-toggle-news-${item.id}`}
                         >
                           {item.status === "published" ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -246,7 +253,7 @@ export default function AdminNews() {
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-black/30">
                     <Newspaper className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                    <p>لا توجد مقالات بعد. أضف أول مقال الآن.</p>
+                    <p>{L ? "لا توجد مقالات بعد. أضف أول مقال الآن." : "No articles yet. Add your first article now."}</p>
                   </td>
                 </tr>
               )}
@@ -259,56 +266,56 @@ export default function AdminNews() {
         <DialogContent className="bg-white border-black/[0.06] text-black max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-black">
-              {editingId ? "تعديل المقال" : "مقال جديد"}
+              {editingId ? (L ? "تعديل المقال" : "Edit Article") : (L ? "مقال جديد" : "New Article")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">العنوان *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "العنوان *" : "Title *"}</label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
-                placeholder="عنوان المقال"
+                placeholder={L ? "عنوان المقال" : "Article title"}
                 data-testid="input-news-title"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">مقتطف قصير</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "مقتطف قصير" : "Short Excerpt"}</label>
               <Textarea
                 value={formData.excerpt}
                 onChange={(e) => setFormData(f => ({ ...f, excerpt: e.target.value }))}
-                placeholder="وصف مختصر يظهر في القوائم..."
+                placeholder={L ? "وصف مختصر يظهر في القوائم..." : "Short description shown in lists..."}
                 rows={2}
                 data-testid="input-news-excerpt"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">المحتوى الكامل *</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "المحتوى الكامل *" : "Full Content *"}</label>
               <Textarea
                 value={formData.content}
                 onChange={(e) => setFormData(f => ({ ...f, content: e.target.value }))}
-                placeholder="اكتب محتوى المقال هنا..."
+                placeholder={L ? "اكتب محتوى المقال هنا..." : "Write article content here..."}
                 rows={8}
                 data-testid="input-news-content"
               />
             </div>
             <div>
               <ImageUpload
-                label="صورة المقال"
+                label={L ? "صورة المقال" : "Article Image"}
                 value={formData.imageUrl}
                 onChange={(url) => setFormData(f => ({ ...f, imageUrl: url }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 mb-1.5">الحالة</label>
+              <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "الحالة" : "Status"}</label>
               <Select value={formData.status} onValueChange={(v) => setFormData(f => ({ ...f, status: v }))}>
                 <SelectTrigger data-testid="select-news-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="draft">مسودة</SelectItem>
-                  <SelectItem value="published">منشور</SelectItem>
-                  <SelectItem value="archived">مؤرشف</SelectItem>
+                  <SelectItem value="draft">{L ? "مسودة" : "Draft"}</SelectItem>
+                  <SelectItem value="published">{L ? "منشور" : "Published"}</SelectItem>
+                  <SelectItem value="archived">{L ? "مؤرشف" : "Archived"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,10 +327,10 @@ export default function AdminNews() {
                 data-testid="button-submit-news"
               >
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {editingId ? "تحديث المقال" : "نشر المقال"}
+                {editingId ? (L ? "تحديث المقال" : "Update Article") : (L ? "نشر المقال" : "Publish Article")}
               </Button>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                إلغاء
+                {L ? "إلغاء" : "Cancel"}
               </Button>
             </div>
           </form>

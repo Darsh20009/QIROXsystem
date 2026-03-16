@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,7 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
       </button>
       <div className="flex-1">
         <div className={`h-1 ${trackCls} rounded-full overflow-hidden`}><div className={`h-full ${fillCls} rounded-full transition-all`} style={{ width: `${prog}%` }} /></div>
-        <span className={`text-[9px] mt-0.5 block ${textCls}`}>{dur > 0 ? `${Math.floor(dur)}ث` : "🎙️"}</span>
+        <span className={`text-[9px] mt-0.5 block ${textCls}`}>{dur > 0 ? `${Math.floor(dur)}s` : "🎙️"}</span>
       </div>
     </div>
   );
@@ -114,7 +115,7 @@ function MsgBubble({ msg, isMe }: { msg: any; isMe: boolean }) {
         {msg.attachmentType === "file" && (
           <a href={msg.attachmentUrl} download={msg.attachmentName} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2.5 hover:opacity-80 ${isMe ? "text-white" : "text-black dark:text-white"}`}>
             <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-black/[0.06] dark:bg-white/[0.1]"}`}><FileText className="w-3.5 h-3.5" /></div>
-            <div className="min-w-0"><p className="text-xs font-semibold truncate max-w-[140px]">{msg.attachmentName || "ملف"}</p>{msg.attachmentSize && <p className="text-[9px] opacity-70">{formatSize(msg.attachmentSize)}</p>}</div>
+            <div className="min-w-0"><p className="text-xs font-semibold truncate max-w-[140px]">{msg.attachmentName || "File"}</p>{msg.attachmentSize && <p className="text-[9px] opacity-70">{formatSize(msg.attachmentSize)}</p>}</div>
             <Download className="w-3 h-3 opacity-60 flex-shrink-0" />
           </a>
         )}
@@ -148,7 +149,7 @@ function TypingIndicator({ name }: { name: string }) {
   );
 }
 
-function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك...", onTyping }: {
+function ChatInput({ onSend, disabled, placeholder = "Write your message...", onTyping }: {
   onSend: (data: any) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -220,7 +221,7 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك...",
           const r = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
           if (!r.ok) { const e = await r.json(); console.error("[voice upload]", e); setRecording(false); setRecTime(0); return; }
           const { url } = await r.json();
-          onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: "رسالة صوتية" });
+          onSend({ body: "", attachmentUrl: url, attachmentType: "voice", attachmentName: L ? "رسالة صوتية" : "Voice Message" });
         } catch (e) { console.error("[voice send]", e); }
         setRecording(false); setRecTime(0);
       };
@@ -238,10 +239,10 @@ function ChatInput({ onSend, disabled, placeholder = "اكتب رسالتك...",
         <div className="flex-1 flex items-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5 border border-red-200 dark:border-red-800/30">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-sm font-bold text-red-600">{Math.floor(recTime / 60)}:{String(recTime % 60).padStart(2, "0")}</span>
-          <span className="text-xs text-red-500">جارٍ التسجيل...</span>
+          <span className="text-xs text-red-500">{L ? "جارٍ التسجيل..." : "Recording..."}</span>
         </div>
       ) : (
-        <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
+        <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder || defaultPlaceholder} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
       )}
       <Button size="icon" variant="ghost" className="h-10 w-10 text-black/40 dark:text-white/40 hover:text-black hover:bg-black/[0.05] rounded-xl" onClick={() => fileRef.current?.click()} disabled={uploading || recording} data-testid="button-attach-file">
         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
@@ -343,7 +344,7 @@ function ClientView({ user }: { user: any }) {
 
   const startMutation = useMutation({
     mutationFn: async () => {
-      const r = await apiRequest("POST", "/api/cs/sessions", { subject: subject.trim() || "دردشة عامة" });
+      const r = await apiRequest("POST", "/api/cs/sessions", { subject: subject.trim() || (L ? "دردشة عامة" : "General Chat") });
       if (!r.ok) throw new Error((await r.json()).error);
       return r.json();
     },
@@ -358,7 +359,7 @@ function ClientView({ user }: { user: any }) {
       return r.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions", session?.id, "messages"] }),
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const closeMutation = useMutation({
@@ -374,7 +375,7 @@ function ClientView({ user }: { user: any }) {
       const r = await apiRequest("POST", `/api/cs/sessions/${session.id}/rate`, { rating: ratingVal, ratingNote });
       return r.json();
     },
-    onSuccess: () => { setShowRating(false); queryClient.invalidateQueries({ queryKey: ["/api/cs/my-session"] }); toast({ title: "شكراً على تقييمك!" }); },
+    onSuccess: () => { setShowRating(false); queryClient.invalidateQueries({ queryKey: ["/api/cs/my-session"] }); toast({ title: L ? "شكراً على تقييمك!" : "Thank you for your rating!" }); },
   });
 
   if (loadingSession) {
@@ -383,20 +384,20 @@ function ClientView({ user }: { user: any }) {
 
   if (!session) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6" dir="rtl">
+      <div className="flex-1 flex items-center justify-center p-6" dir={dir}>
         <div className="max-w-sm w-full text-center space-y-6">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
             <Headphones className="w-8 h-8 text-violet-600" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-black dark:text-white mb-2">خدمة العملاء</h2>
-            <p className="text-sm text-black/50 dark:text-white/50">ابدأ محادثة مع فريق الدعم للحصول على مساعدة فورية</p>
+            <h2 className="text-xl font-black text-black dark:text-white mb-2">{L ? "خدمة العملاء" : "Customer Service"}</h2>
+            <p className="text-sm text-black/50 dark:text-white/50">{L ? "ابدأ محادثة مع فريق الدعم للحصول على مساعدة فورية" : "Start a chat with the support team for immediate help"}</p>
           </div>
           <div className="space-y-3">
-            <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="موضوع المحادثة (اختياري)" className="rounded-xl text-center" data-testid="input-cs-subject" />
+            <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder={L ? "موضوع المحادثة (اختياري)" : "Conversation subject (optional)"} className="rounded-xl text-center" data-testid="input-cs-subject" />
             <Button className="w-full bg-black text-white hover:bg-black/80 font-bold rounded-xl h-11 gap-2" onClick={() => startMutation.mutate()} disabled={startMutation.isPending} data-testid="button-start-cs">
               {startMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
-              ابدأ المحادثة
+              {L ? "ابدأ المحادثة" : "Start Chat"}
             </Button>
           </div>
         </div>
@@ -406,10 +407,10 @@ function ClientView({ user }: { user: any }) {
 
   const si = statusInfo(session.status);
   const agent = session.agent;
-  const agentName = agent?.fullName || agent?.username || "خدمة العملاء";
+  const agentName = agent?.fullName || agent?.username || (L ? "خدمة العملاء" : "Customer Support");
 
   return (
-    <div className="flex flex-col flex-1 min-h-0" dir="rtl">
+    <div className="flex flex-col flex-1 min-h-0" dir={dir}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900">
         <div className="relative">
@@ -419,19 +420,19 @@ function ClientView({ user }: { user: any }) {
           <div className={`absolute bottom-0 left-0 w-2.5 h-2.5 rounded-full border-2 border-white ${si.dot}`} />
         </div>
         <div className="flex-1">
-          <p className="font-black text-sm text-black dark:text-white">{session.status === 'waiting' ? 'في الانتظار...' : agentName}</p>
-          <p className="text-[10px] text-black/40 dark:text-white/30">{session.status === 'waiting' ? 'جارٍ البحث عن موظف متاح' : roleLabel(agent?.role || 'support')}</p>
+          <p className="font-black text-sm text-black dark:text-white">{session.status === 'waiting' ? (L ? 'في الانتظار...' : 'Waiting...') : agentName}</p>
+          <p className="text-[10px] text-black/40 dark:text-white/30">{session.status === 'waiting' ? (L ? 'جارٍ البحث عن موظف متاح' : 'Searching for an available agent') : roleLabel(agent?.role || 'support', L)}</p>
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${si.color}`}>{si.label}</span>
         {session.status === 'active' && (
           <Button size="sm" variant="ghost" className="h-7 text-[10px] text-red-500 hover:text-red-600 hover:bg-red-50 gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-session">
-            <XCircle className="w-3.5 h-3.5" /> إنهاء
+            <XCircle className="w-3.5 h-3.5" /> {L ? "إنهاء" : "End"}
           </Button>
         )}
       </div>
 
       {/* Session info banner */}
-      {session.subject && <div className="px-4 py-1.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.04] dark:border-white/[0.04]"><p className="text-[10px] text-black/40 dark:text-white/30">الموضوع: {session.subject}</p></div>}
+      {session.subject && <div className="px-4 py-1.5 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.04] dark:border-white/[0.04]"><p className="text-[10px] text-black/40 dark:text-white/30">{L ? "الموضوع:" : "Subject:"} {session.subject}</p></div>}
 
       {/* Messages */}
       <ScrollArea className="flex-1 px-4 py-4">
@@ -442,9 +443,9 @@ function ClientView({ user }: { user: any }) {
                 <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
                   <span className="text-2xl">😔</span>
                 </div>
-                <p className="text-sm font-bold text-red-500">عذراً، الفريق مشغول حالياً</p>
+                <p className="text-sm font-bold text-red-500">{L ? "عذراً، الفريق مشغول حالياً" : "Sorry, the team is currently busy"}</p>
                 <p className="text-xs text-black/40 dark:text-white/30 text-center max-w-xs">
-                  يرجى التواصل في وقت لاحق أو أرسل رسالتك وسنرد عليك في أقرب وقت ممكن
+                  {L ? "يرجى التواصل في وقت لاحق أو أرسل رسالتك وسنرد عليك في أقرب وقت ممكن" : "Please try again later or send your message and we'll reply as soon as possible"}
                 </p>
               </>
             ) : waitingElapsed >= 120 ? (
@@ -452,16 +453,16 @@ function ClientView({ user }: { user: any }) {
                 <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
                   <span className="text-xl">⏳</span>
                 </div>
-                <p className="text-sm font-bold text-amber-600">جاري التواصل مع الفريق...</p>
-                <p className="text-xs text-black/40 dark:text-white/30 text-center">يتم تنبيه أحد المشرفين، يُرجى الانتظار</p>
+                <p className="text-sm font-bold text-amber-600">{L ? "جاري التواصل مع الفريق..." : "Contacting the team..."}</p>
+                <p className="text-xs text-black/40 dark:text-white/30 text-center">{L ? "يتم تنبيه أحد المشرفين، يُرجى الانتظار" : "Notifying a supervisor, please wait"}</p>
               </>
             ) : (
               <>
                 <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
                   <Clock className="w-6 h-6 text-amber-600 animate-pulse" />
                 </div>
-                <p className="text-sm font-bold text-black/60 dark:text-white/60">جاري التوصيل لأقرب موظف...</p>
-                <p className="text-xs text-black/40 dark:text-white/30 text-center">سيتم تعيين موظف خدمة العملاء قريباً</p>
+                <p className="text-sm font-bold text-black/60 dark:text-white/60">{L ? "جاري التوصيل لأقرب موظف..." : "Connecting to the nearest agent..."}</p>
+                <p className="text-xs text-black/40 dark:text-white/30 text-center">{L ? "سيتم تعيين موظف خدمة العملاء قريباً" : "A customer service agent will be assigned soon"}</p>
               </>
             )}
           </div>
@@ -471,13 +472,13 @@ function ClientView({ user }: { user: any }) {
         ) : (
           <div className="space-y-3">
             {messages.length === 0 && session.status === 'active' && (
-              <div className="text-center py-8 text-sm text-black/30 dark:text-white/20">ابدأ المحادثة...</div>
+              <div className="text-center py-8 text-sm text-black/30 dark:text-white/20">{L ? "ابدأ المحادثة..." : "Start the conversation..."}</div>
             )}
             {messages.map((msg: any) => (
               <MsgBubble key={msg.id} msg={msg} isMe={String(msg.fromUserId?.id || msg.fromUserId) === String(user.id)} />
             ))}
             {agentTyping && session.status === 'active' && (
-              <TypingIndicator name={session?.agent?.fullName || session?.agent?.username || "الموظف"} />
+              <TypingIndicator name={session?.agent?.fullName || session?.agent?.username || (L ? "الموظف" : "Agent")} />
             )}
             <div ref={bottomRef} />
           </div>
@@ -489,15 +490,15 @@ function ClientView({ user }: { user: any }) {
         <ChatInput
           onSend={(data) => sendMutation.mutate(data)}
           disabled={sendMutation.isPending}
-          placeholder={session.status === 'waiting' ? "اكتب رسالتك وسيردّ عليك الموظف فور انضمامه..." : "اكتب رسالتك..."}
+          placeholder={session.status === 'waiting' ? (L ? "اكتب رسالتك وسيردّ عليك الموظف فور انضمامه..." : "Write your message, the agent will reply when they join...") : (L ? "اكتب رسالتك..." : "Write your message...")}
           onTyping={agentId ? (isTyping) => sendTyping(agentId, isTyping) : undefined}
         />
       )}
       {session.status === 'closed' && !showRating && (
         <div className="p-4 border-t border-black/[0.07] dark:border-white/[0.07] flex flex-col gap-2">
-          <p className="text-xs text-center text-black/40 dark:text-white/30">تم إغلاق المحادثة</p>
+          <p className="text-xs text-center text-black/40 dark:text-white/30">{L ? "تم إغلاق المحادثة" : "Conversation closed"}</p>
           <Button variant="outline" className="w-full rounded-xl text-sm gap-2" onClick={() => startMutation.mutate()} disabled={startMutation.isPending} data-testid="button-new-cs-session">
-            <Plus className="w-4 h-4" /> بدء محادثة جديدة
+            <Plus className="w-4 h-4" /> {L ? "بدء محادثة جديدة" : "Start New Chat"}
           </Button>
         </div>
       )}
@@ -505,9 +506,9 @@ function ClientView({ user }: { user: any }) {
       {/* Rating dialog */}
       <Dialog open={showRating} onOpenChange={setShowRating}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
-          <DialogHeader><DialogTitle className="font-black text-center">كيف كانت تجربتك؟</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black text-center">{L ? "كيف كانت تجربتك؟" : "How was your experience?"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2 text-center">
-            <p className="text-sm text-black/50 dark:text-white/40">قيّم جودة الخدمة التي تلقيتها</p>
+            <p className="text-sm text-black/50 dark:text-white/40">{L ? "قيّم جودة الخدمة التي تلقيتها" : "Rate the quality of service you received"}</p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map(i => (
                 <button key={i} onClick={() => setRatingVal(i)} className={`w-10 h-10 rounded-full transition-all ${i <= ratingVal ? "text-amber-500 scale-110" : "text-black/20 dark:text-white/20 hover:text-amber-400"}`} data-testid={`button-rating-${i}`}>
@@ -515,12 +516,12 @@ function ClientView({ user }: { user: any }) {
                 </button>
               ))}
             </div>
-            <Textarea value={ratingNote} onChange={e => setRatingNote(e.target.value)} placeholder="تعليق (اختياري)" rows={2} className="rounded-xl text-sm" data-testid="input-rating-note" />
+            <Textarea value={ratingNote} onChange={e => setRatingNote(e.target.value)} placeholder={L ? "تعليق (اختياري)" : "Comment (optional)"} rows={2} className="rounded-xl text-sm" data-testid="input-rating-note" />
             <div className="flex gap-2">
               <Button className="flex-1 bg-black text-white font-bold rounded-xl" onClick={() => rateMutation.mutate()} disabled={!ratingVal || rateMutation.isPending} data-testid="button-submit-rating">
-                {rateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "إرسال التقييم"}
+                {rateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "إرسال التقييم" : "Submit Rating")}
               </Button>
-              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowRating(false)}>تخطي</Button>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowRating(false)}>{L ? "تخطي" : "Skip"}</Button>
             </div>
           </div>
         </DialogContent>
@@ -624,7 +625,7 @@ function AgentView({ user }: { user: any }) {
       queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions", selectedId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const assignMutation = useMutation({
@@ -636,9 +637,9 @@ function AgentView({ user }: { user: any }) {
     onSuccess: (s: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
       setSelectedId(s.id); setStatusFilter("active"); setShowSessions(false);
-      toast({ title: "تم استلام المحادثة" });
+      toast({ title: L ? "تم استلام المحادثة" : "Conversation accepted" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const transferMutation = useMutation({
@@ -650,7 +651,7 @@ function AgentView({ user }: { user: any }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] });
       setTransferOpen(false); setTransferTarget(""); setTransferNote("");
-      toast({ title: "تم تحويل المحادثة" });
+      toast({ title: L ? "تم تحويل المحادثة" : "Conversation transferred" });
     },
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
@@ -660,7 +661,7 @@ function AgentView({ user }: { user: any }) {
       const r = await apiRequest("PATCH", `/api/cs/sessions/${selectedId}/close`, {});
       return r.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] }); toast({ title: "تم إغلاق المحادثة" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/cs/sessions"] }); toast({ title: L ? "تم إغلاق المحادثة" : "Conversation closed" }); },
   });
 
   const selected = sessions.find((s: any) => s.id === selectedId) || null;
@@ -669,18 +670,18 @@ function AgentView({ user }: { user: any }) {
   const waitingCount = sessions.filter((s: any) => s.status === 'waiting').length;
 
   return (
-    <div className="flex flex-1 min-h-0" dir="rtl">
+    <div className="flex flex-1 min-h-0" dir={dir}>
       {/* ── Left: Sessions List ── */}
       <div className={`${showSessions ? "flex" : "hidden"} md:flex w-full md:w-72 flex-shrink-0 border-l border-black/[0.07] dark:border-white/[0.07] flex-col bg-white dark:bg-gray-900`}>
         <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-black text-sm text-black dark:text-white">المحادثات</h2>
-            {waitingCount > 0 && <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{waitingCount} في الانتظار</span>}
+            <h2 className="font-black text-sm text-black dark:text-white">{L ? "المحادثات" : "Conversations"}</h2>
+            {waitingCount > 0 && <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{waitingCount} {L ? "في الانتظار" : "waiting"}</span>}
           </div>
           <div className="flex gap-1">
             {["waiting", "active", "closed"].map(s => (
               <button key={s} onClick={() => setStatusFilter(s)} className={`flex-1 text-[10px] font-bold py-1.5 rounded-lg transition-all ${statusFilter === s ? "bg-black text-white dark:bg-white dark:text-black" : "text-black/40 dark:text-white/40 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"}`} data-testid={`filter-${s}`}>
-                {s === "waiting" ? "انتظار" : s === "active" ? "نشط" : "مغلق"}
+                {s === "waiting" ? (L ? "انتظار" : "Waiting") : s === "active" ? (L ? "نشط" : "Active") : (L ? "مغلق" : "Closed")}
               </button>
             ))}
           </div>
@@ -689,12 +690,12 @@ function AgentView({ user }: { user: any }) {
           {loadingSessions ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-black/20" /></div>
           ) : sessions.length === 0 ? (
-            <div className="py-10 text-center text-xs text-black/30 dark:text-white/20">لا توجد محادثات</div>
+            <div className="py-10 text-center text-xs text-black/30 dark:text-white/20">{L ? "لا توجد محادثات" : "No conversations"}</div>
           ) : (
             <div className="p-2 space-y-1">
               {sessions.map((s: any) => {
                 const si = statusInfo(s.status);
-                const cName = s.client?.fullName || s.client?.username || "عميل";
+                const cName = s.client?.fullName || s.client?.username || (L ? "عميل" : "Client");
                 const isSelected = s.id === selectedId;
                 return (
                   <div key={s.id} onClick={() => { setSelectedId(s.id); setShowSessions(false); }} className={`rounded-xl p-3 cursor-pointer transition-all border ${isSelected ? "bg-black text-white border-transparent" : "bg-transparent border-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:border-black/[0.06] dark:hover:border-white/[0.06]"}`} data-testid={`session-item-${s.id}`}>
@@ -710,12 +711,12 @@ function AgentView({ user }: { user: any }) {
                           <div className="flex items-center gap-1 min-w-0">
                             <p className={`text-xs font-bold truncate ${isSelected ? "text-white" : "text-black dark:text-white"}`}>{cName}</p>
                             {s.isUrgent && s.status === 'waiting' && (
-                              <span className="shrink-0 text-[8px] font-black px-1 py-0.5 rounded bg-red-500/15 text-red-500 border border-red-500/20">عاجل</span>
+                              <span className="shrink-0 text-[8px] font-black px-1 py-0.5 rounded bg-red-500/15 text-red-500 border border-red-500/20">{L ? "عاجل" : "Urgent"}</span>
                             )}
                           </div>
-                          <span className={`text-[9px] shrink-0 ${isSelected ? "text-white/50" : "text-black/30 dark:text-white/30"}`}>{timeAgo(s.lastMessageAt || s.createdAt)}</span>
+                          <span className={`text-[9px] shrink-0 ${isSelected ? "text-white/50" : "text-black/30 dark:text-white/30"}`}>{timeAgo(s.lastMessageAt || s.createdAt, L)}</span>
                         </div>
-                        <p className={`text-[10px] truncate ${isSelected ? "text-white/60" : "text-black/40 dark:text-white/30"}`}>{s.subject || "دردشة عامة"}</p>
+                        <p className={`text-[10px] truncate ${isSelected ? "text-white/60" : "text-black/40 dark:text-white/30"}`}>{s.subject || (L ? "دردشة عامة" : "General Chat")}</p>
                       </div>
                     </div>
                     {s.status === 'waiting' && (
@@ -757,12 +758,12 @@ function AgentView({ user }: { user: any }) {
             <div className="flex items-center gap-1.5">
               {selected.status === 'active' && (
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-black/10 dark:border-white/10" onClick={() => setTransferOpen(true)} data-testid="button-transfer-session">
-                  <ArrowRightLeft className="w-3.5 h-3.5" /> تحويل
+                  <ArrowRightLeft className="w-3.5 h-3.5" /> {L ? "تحويل" : "Transfer"}
                 </Button>
               )}
               {selected.status !== 'closed' && (
                 <Button size="sm" variant="ghost" className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 gap-1" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending} data-testid="button-close-cs">
-                  <XCircle className="w-3.5 h-3.5" /> إغلاق
+                  <XCircle className="w-3.5 h-3.5" /> {L ? "إغلاق" : "Close"}
                 </Button>
               )}
             </div>
@@ -775,14 +776,14 @@ function AgentView({ user }: { user: any }) {
                 {loadingMsgs ? (
                   <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-black/20" /></div>
                 ) : messages.length === 0 ? (
-                  <div className="text-center py-12 text-sm text-black/25 dark:text-white/20">لا توجد رسائل بعد</div>
+                  <div className="text-center py-12 text-sm text-black/25 dark:text-white/20">{L ? "لا توجد رسائل بعد" : "No messages yet"}</div>
                 ) : (
                   <div className="space-y-3">
                     {messages.map((msg: any) => (
                       <MsgBubble key={msg.id} msg={msg} isMe={String(msg.fromUserId?.id || msg.fromUserId) === String(user.id)} />
                     ))}
                     {clientTyping && selected.status === 'active' && (
-                      <TypingIndicator name={selected.client?.fullName || selected.client?.username || "العميل"} />
+                      <TypingIndicator name={selected.client?.fullName || selected.client?.username || (L ? "العميل" : "Client")} />
                     )}
                     <div ref={bottomRef} />
                   </div>
@@ -792,7 +793,7 @@ function AgentView({ user }: { user: any }) {
                 <ChatInput
                   onSend={(data) => sendMutation.mutate(data)}
                   disabled={sendMutation.isPending || selected.status === 'waiting'}
-                  placeholder={selected.status === 'waiting' ? "في انتظار استلام الجلسة..." : "اكتب ردك..."}
+                  placeholder={selected.status === 'waiting' ? (L ? "في انتظار استلام الجلسة..." : "Waiting to accept session...") : (L ? "اكتب ردك..." : "Type your reply...")}
                   onTyping={selected.client ? (isTyping) => {
                     const clientUserId = selected.client?._id || selected.client?.id;
                     if (clientUserId) sendTyping(clientUserId, isTyping);
@@ -801,8 +802,8 @@ function AgentView({ user }: { user: any }) {
               )}
               {selected.status === 'closed' && (
                 <div className="p-3 border-t border-black/[0.07] dark:border-white/[0.07] text-center text-xs text-black/30 dark:text-white/20">
-                  المحادثة مغلقة
-                  {selected.rating && <span className="mr-2">• تقييم: {"⭐".repeat(selected.rating)}</span>}
+                  {L ? "المحادثة مغلقة" : "Conversation closed"}
+                  {selected.rating && <span className="mr-2">• {L ? "تقييم:" : "Rating:"} {"⭐".repeat(selected.rating)}</span>}
                 </div>
               )}
             </div>
@@ -810,7 +811,7 @@ function AgentView({ user }: { user: any }) {
             {/* Client Profile Sidebar */}
             <div className="w-64 flex-shrink-0 border-r border-black/[0.07] dark:border-white/[0.07] bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
               <div className="p-3 border-b border-black/[0.07] dark:border-white/[0.07]">
-                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2">ملف العميل</p>
+                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2">{L ? "ملف العميل" : "Client Profile"}</p>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-black/30 dark:text-white/30 flex-shrink-0" />
@@ -833,38 +834,38 @@ function AgentView({ user }: { user: any }) {
 
               {/* Orders */}
               <div className="p-3 border-b border-black/[0.07] dark:border-white/[0.07]">
-                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Package className="w-3 h-3" /> الطلبات ({clientData?.orders?.length || 0})</p>
+                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Package className="w-3 h-3" /> {L ? "الطلبات" : "Orders"} ({clientData?.orders?.length || 0})</p>
                 <div className="space-y-1">
                   {(clientData?.orders || []).slice(0, 4).map((o: any) => (
                     <div key={o._id || o.id} className="bg-white dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-black/[0.05] dark:border-white/[0.05]" data-testid={`client-order-${o._id || o.id}`}>
                       <p className="text-[10px] font-bold text-black dark:text-white truncate">{o.businessName || o.serviceType}</p>
                       <div className="flex items-center justify-between mt-0.5">
                         <span className="text-[9px] text-black/40 dark:text-white/30">{o.planTier || "—"}</span>
-                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-green-100 text-green-700" : o.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{o.status === 'approved' ? "موافق" : o.status === 'pending' ? "انتظار" : o.status}</span>
+                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-green-100 text-green-700" : o.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{o.status === 'approved' ? (L ? "موافق" : "Approved") : o.status === 'pending' ? (L ? "انتظار" : "Pending") : o.status}</span>
                       </div>
                     </div>
                   ))}
-                  {!clientData?.orders?.length && <p className="text-[10px] text-black/30 dark:text-white/20">لا توجد طلبات</p>}
+                  {!clientData?.orders?.length && <p className="text-[10px] text-black/30 dark:text-white/20">{L ? "لا توجد طلبات" : "No orders"}</p>}
                 </div>
               </div>
 
               {/* Projects */}
               <div className="p-3 border-b border-black/[0.07] dark:border-white/[0.07]">
-                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Activity className="w-3 h-3" /> المشاريع ({clientData?.projects?.length || 0})</p>
+                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Activity className="w-3 h-3" /> {L ? "المشاريع" : "Projects"} ({clientData?.projects?.length || 0})</p>
                 <div className="space-y-1">
                   {(clientData?.projects || []).slice(0, 3).map((p: any) => (
                     <div key={p._id || p.id} className="bg-white dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-black/[0.05] dark:border-white/[0.05]" data-testid={`client-project-${p._id || p.id}`}>
-                      <p className="text-[10px] font-bold text-black dark:text-white truncate">{p.title || `مشروع #${p._id}`}</p>
+                      <p className="text-[10px] font-bold text-black dark:text-white truncate">{p.title || `${L ? "مشروع" : "Project"} #${p._id}`}</p>
                       <p className="text-[9px] text-black/40 dark:text-white/30">{p.phase || "—"} • {p.progress || 0}%</p>
                     </div>
                   ))}
-                  {!clientData?.projects?.length && <p className="text-[10px] text-black/30 dark:text-white/20">لا توجد مشاريع</p>}
+                  {!clientData?.projects?.length && <p className="text-[10px] text-black/30 dark:text-white/20">{L ? "لا توجد مشاريع" : "No projects"}</p>}
                 </div>
               </div>
 
               {/* Mod requests */}
               <div className="p-3 border-b border-black/[0.07] dark:border-white/[0.07]">
-                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Wrench className="w-3 h-3" /> التعديلات ({clientData?.modRequests?.length || 0})</p>
+                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Wrench className="w-3 h-3" /> {L ? "التعديلات" : "Modifications"} ({clientData?.modRequests?.length || 0})</p>
                 <div className="space-y-1">
                   {(clientData?.modRequests || []).slice(0, 3).map((m: any) => (
                     <div key={m._id || m.id} className="bg-white dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-black/[0.05] dark:border-white/[0.05]" data-testid={`client-mod-${m._id || m.id}`}>
@@ -872,20 +873,20 @@ function AgentView({ user }: { user: any }) {
                       <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${m.status === 'completed' ? "bg-green-100 text-green-700" : m.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{m.status}</span>
                     </div>
                   ))}
-                  {!clientData?.modRequests?.length && <p className="text-[10px] text-black/30 dark:text-white/20">لا توجد تعديلات</p>}
+                  {!clientData?.modRequests?.length && <p className="text-[10px] text-black/30 dark:text-white/20">{L ? "لا توجد تعديلات" : "No modifications"}</p>}
                 </div>
               </div>
 
               {/* Tickets */}
               <div className="p-3">
-                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Ticket className="w-3 h-3" /> التذاكر ({clientData?.tickets?.length || 0})</p>
+                <p className="text-[10px] font-black text-black/40 dark:text-white/30 uppercase tracking-wider mb-2 flex items-center gap-1"><Ticket className="w-3 h-3" /> {L ? "التذاكر" : "Tickets"} ({clientData?.tickets?.length || 0})</p>
                 <div className="space-y-1">
                   {(clientData?.tickets || []).slice(0, 3).map((t: any) => (
                     <div key={t._id || t.id} className="bg-white dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-black/[0.05] dark:border-white/[0.05]" data-testid={`client-ticket-${t._id || t.id}`}>
                       <p className="text-[10px] font-bold text-black dark:text-white truncate">{t.title}</p>
                     </div>
                   ))}
-                  {!clientData?.tickets?.length && <p className="text-[10px] text-black/30 dark:text-white/20">لا توجد تذاكر</p>}
+                  {!clientData?.tickets?.length && <p className="text-[10px] text-black/30 dark:text-white/20">{L ? "لا توجد تذاكر" : "No tickets"}</p>}
                 </div>
               </div>
             </div>
@@ -895,7 +896,7 @@ function AgentView({ user }: { user: any }) {
         <div className="hidden md:flex flex-1 items-center justify-center text-center p-8">
           <div>
             <MessageSquare className="w-12 h-12 mx-auto text-black/10 dark:text-white/10 mb-3" />
-            <p className="text-sm text-black/30 dark:text-white/20">اختر محادثة للبدء</p>
+            <p className="text-sm text-black/30 dark:text-white/20">{L ? "اختر محادثة للبدء" : "Select a conversation to start"}</p>
           </div>
         </div>
       )}
@@ -903,25 +904,25 @@ function AgentView({ user }: { user: any }) {
       {/* Transfer Dialog */}
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
         <DialogContent className="sm:max-w-sm" dir="rtl">
-          <DialogHeader><DialogTitle className="font-black">تحويل المحادثة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black">{L ? "تحويل المحادثة" : "Transfer Conversation"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">تحويل إلى</label>
+              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "تحويل إلى" : "Transfer to"}</label>
               <select value={transferTarget} onChange={e => setTransferTarget(e.target.value)} className="w-full border border-black/10 dark:border-white/10 rounded-xl px-3 py-2 text-sm bg-transparent" data-testid="select-transfer-target">
-                <option value="">اختر موظف...</option>
+                <option value="">{L ? "اختر موظف..." : "Choose agent..."}</option>
                 {allAgents.filter((a: any) => String(a.id || a._id) !== String(user.id)).map((a: any) => (
-                  <option key={a.id || a._id} value={a.id || a._id}>{a.fullName || a.username} ({roleLabel(a.role)})</option>
+                  <option key={a.id || a._id} value={a.id || a._id}>{a.fullName || a.username} ({roleLabel(a.role, L)})</option>
                 ))}
-                {allAgents.length === 0 && <option value={user.id}>المدير</option>}
+                {allAgents.length === 0 && <option value={user.id}>{L ? "المدير" : "Admin"}</option>}
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">ملاحظة للموظف (اختياري)</label>
+              <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "ملاحظة للموظف (اختياري)" : "Note for agent (optional)"}</label>
               <Textarea value={transferNote} onChange={e => setTransferNote(e.target.value)} rows={2} className="rounded-xl text-sm" data-testid="input-transfer-note" />
             </div>
             <Button className="w-full bg-black text-white font-bold rounded-xl gap-2" onClick={() => transferMutation.mutate()} disabled={!transferTarget || transferMutation.isPending} data-testid="button-confirm-transfer">
               {transferMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
-              تحويل المحادثة
+              {L ? "تحويل المحادثة" : "Transfer Conversation"}
             </Button>
           </div>
         </DialogContent>
@@ -948,7 +949,7 @@ export default function CSChat() {
   const isAgent = me?.role && ['support', 'admin', 'manager'].includes(me.role);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="flex flex-col flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950" dir={dir}>
       {/* Page title bar */}
       <div className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-gray-900 border-b border-black/[0.07] dark:border-white/[0.07] flex-shrink-0">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">

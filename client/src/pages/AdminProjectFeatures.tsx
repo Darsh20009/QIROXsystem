@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,36 +19,42 @@ import {
 import { Link } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
-const CATEGORIES = [
-  { value: 'feature', label: 'ميزة عامة' },
-  { value: 'design', label: 'تصميم' },
-  { value: 'development', label: 'تطوير' },
-  { value: 'integration', label: 'تكامل خارجي' },
-  { value: 'security', label: 'أمان' },
-  { value: 'performance', label: 'أداء' },
-  { value: 'content', label: 'محتوى' },
-  { value: 'other', label: 'أخرى' },
-];
-const PRIORITIES = [
-  { value: 'low', label: 'منخفضة', color: 'bg-gray-100 text-gray-600' },
-  { value: 'medium', label: 'متوسطة', color: 'bg-blue-100 text-blue-700' },
-  { value: 'high', label: 'عالية', color: 'bg-amber-100 text-amber-700' },
-  { value: 'critical', label: 'حرجة', color: 'bg-red-100 text-red-700' },
-];
-const STATUSES = [
-  { value: 'pending', label: 'قيد الانتظار', icon: Clock, color: 'text-gray-500 bg-gray-100' },
-  { value: 'in_progress', label: 'جارٍ التنفيذ', icon: Play, color: 'text-amber-600 bg-amber-100' },
-  { value: 'completed', label: 'مكتملة', icon: CheckCircle2, color: 'text-green-700 bg-green-100' },
-  { value: 'cancelled', label: 'ملغاة', icon: XCircle, color: 'text-red-600 bg-red-100' },
-];
+function getCategories(L: boolean) { return [
+  { value: 'feature', label: L ? 'ميزة عامة' : 'General Feature' },
+  { value: 'design', label: L ? 'تصميم' : 'Design' },
+  { value: 'development', label: L ? 'تطوير' : 'Development' },
+  { value: 'integration', label: L ? 'تكامل خارجي' : 'External Integration' },
+  { value: 'security', label: L ? 'أمان' : 'Security' },
+  { value: 'performance', label: L ? 'أداء' : 'Performance' },
+  { value: 'content', label: L ? 'محتوى' : 'Content' },
+  { value: 'other', label: L ? 'أخرى' : 'Other' },
+]; }
+function getPriorities(L: boolean) { return [
+  { value: 'low', label: L ? 'منخفضة' : 'Low', color: 'bg-gray-100 text-gray-600' },
+  { value: 'medium', label: L ? 'متوسطة' : 'Medium', color: 'bg-blue-100 text-blue-700' },
+  { value: 'high', label: L ? 'عالية' : 'High', color: 'bg-amber-100 text-amber-700' },
+  { value: 'critical', label: L ? 'حرجة' : 'Critical', color: 'bg-red-100 text-red-700' },
+]; }
+function getStatuses(L: boolean) { return [
+  { value: 'pending', label: L ? 'قيد الانتظار' : 'Pending', icon: Clock, color: 'text-gray-500 bg-gray-100' },
+  { value: 'in_progress', label: L ? 'جارٍ التنفيذ' : 'In Progress', icon: Play, color: 'text-amber-600 bg-amber-100' },
+  { value: 'completed', label: L ? 'مكتملة' : 'Completed', icon: CheckCircle2, color: 'text-green-700 bg-green-100' },
+  { value: 'cancelled', label: L ? 'ملغاة' : 'Cancelled', icon: XCircle, color: 'text-red-600 bg-red-100' },
+]; }
 
-function statusInfo(s: string) { return STATUSES.find(x => x.value === s) || STATUSES[0]; }
-function priorityInfo(p: string) { return PRIORITIES.find(x => x.value === p) || PRIORITIES[1]; }
-function categoryLabel(c: string) { return CATEGORIES.find(x => x.value === c)?.label || c; }
+
 
 export default function AdminProjectFeatures() {
   const { data: user } = useUser() as any;
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const CATEGORIES = getCategories(L);
+  const PRIORITIES = getPriorities(L);
+  const STATUSES = getStatuses(L);
+  function statusInfo(s: string) { return STATUSES.find(x => x.value === s) || STATUSES[0]; }
+  function priorityInfo(pr: string) { return PRIORITIES.find(x => x.value === pr) || PRIORITIES[1]; }
+  function categoryLabel(c: string) { return CATEGORIES.find(x => x.value === c)?.label || c; }
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editFeature, setEditFeature] = useState<any>(null);
@@ -93,9 +100,9 @@ export default function AdminProjectFeatures() {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "features"] });
       setShowAddDialog(false);
       setFormData({ title: '', description: '', category: 'feature', priority: 'medium', status: 'pending', assignedTo: '' });
-      toast({ title: "تم إضافة الميزة" });
+      toast({ title: L ? "تم إضافة الميزة" : "Feature added" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const editMutation = useMutation({
@@ -106,9 +113,9 @@ export default function AdminProjectFeatures() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "features"] });
       setEditFeature(null);
-      toast({ title: "تم تحديث الميزة" });
+      toast({ title: L ? "تم تحديث الميزة" : "Feature updated" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -117,9 +124,9 @@ export default function AdminProjectFeatures() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "features"] });
-      toast({ title: "تم الحذف" });
+      toast({ title: L ? "تم الحذف" : "Deleted" });
     },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const handleSendEmail = async () => {
@@ -130,9 +137,9 @@ export default function AdminProjectFeatures() {
         projectName: selectedProject?.stagingUrl || `مشروع #${selectedProjectId?.slice(-6)}`,
       });
       const data = await r.json();
-      if (data.ok) toast({ title: "تم إرسال البريد الإلكتروني للعميل" });
-      else toast({ title: "خطأ", description: data.error, variant: "destructive" });
-    } catch { toast({ title: "خطأ", description: "فشل الإرسال", variant: "destructive" }); }
+      if (data.ok) toast({ title: L ? "تم إرسال البريد الإلكتروني للعميل" : "Email sent to client" });
+      else toast({ title: L ? "خطأ" : "Error", description: data.error, variant: "destructive" });
+    } catch { toast({ title: L ? "خطأ" : "Error", description: L ? "فشل الإرسال" : "Send failed", variant: "destructive" }); }
     finally { setSendEmailLoading(false); }
   };
 
@@ -158,25 +165,25 @@ export default function AdminProjectFeatures() {
   };
 
   const FeatureForm = ({ onSubmit, loading }: { onSubmit: () => void; loading: boolean }) => (
-    <div className="space-y-3" dir="rtl">
+    <div className="space-y-3" dir={dir}>
       <div>
-        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">اسم الميزة *</label>
-        <Input value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} placeholder="مثال: نظام تسجيل الدخول" className="rounded-xl" data-testid="input-feature-title" />
+        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "اسم الميزة *" : "Feature Name *"}</label>
+        <Input value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} placeholder={L ? "مثال: نظام تسجيل الدخول" : "e.g. Login System"} className="rounded-xl" data-testid="input-feature-title" />
       </div>
       <div>
-        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">الوصف</label>
-        <Textarea value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} placeholder="وصف تفصيلي للميزة..." rows={2} className="rounded-xl text-sm" data-testid="input-feature-desc" />
+        <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "الوصف" : "Description"}</label>
+        <Textarea value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} placeholder={L ? "وصف تفصيلي للميزة..." : "Detailed feature description..."} rows={2} className="rounded-xl text-sm" data-testid="input-feature-desc" />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">الفئة</label>
+          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "الفئة" : "Category"}</label>
           <Select value={formData.category} onValueChange={v => setFormData(p => ({ ...p, category: v }))}>
             <SelectTrigger className="rounded-xl text-sm h-9" data-testid="select-feature-category"><SelectValue /></SelectTrigger>
             <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">الأولوية</label>
+          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "الأولوية" : "Priority"}</label>
           <Select value={formData.priority} onValueChange={v => setFormData(p => ({ ...p, priority: v }))}>
             <SelectTrigger className="rounded-xl text-sm h-9" data-testid="select-feature-priority"><SelectValue /></SelectTrigger>
             <SelectContent>{PRIORITIES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
@@ -185,18 +192,18 @@ export default function AdminProjectFeatures() {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">الحالة</label>
+          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "الحالة" : "Status"}</label>
           <Select value={formData.status} onValueChange={v => setFormData(p => ({ ...p, status: v }))}>
             <SelectTrigger className="rounded-xl text-sm h-9" data-testid="select-feature-status"><SelectValue /></SelectTrigger>
             <SelectContent>{STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">تعيين لـ</label>
+          <label className="text-xs font-bold text-black/60 dark:text-white/60 mb-1 block">{L ? "تعيين لـ" : "Assign to"}</label>
           <Select value={formData.assignedTo} onValueChange={v => setFormData(p => ({ ...p, assignedTo: v }))}>
-            <SelectTrigger className="rounded-xl text-sm h-9" data-testid="select-feature-assignee"><SelectValue placeholder="اختر موظفاً" /></SelectTrigger>
+            <SelectTrigger className="rounded-xl text-sm h-9" data-testid="select-feature-assignee"><SelectValue placeholder={L ? "اختر موظفاً" : "Choose employee"} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">— بدون تعيين —</SelectItem>
+              <SelectItem value="">{L ? "— بدون تعيين —" : "— Unassigned —"}</SelectItem>
               {employees.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.fullName || e.username}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -320,7 +327,7 @@ export default function AdminProjectFeatures() {
                           )}
                           {f.completedAt && (
                             <span className="text-[10px] text-green-600 dark:text-green-400">
-                              ✓ أنجزت {new Date(f.completedAt).toLocaleDateString('ar-SA')}
+                              ✓ {L ? "أنجزت" : "Completed"} {new Date(f.completedAt).toLocaleDateString(L ? 'ar-SA' : 'en-US')}
                             </span>
                           )}
                         </div>
@@ -345,7 +352,7 @@ export default function AdminProjectFeatures() {
       {/* Add dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="font-black">إضافة ميزة جديدة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black">{L ? "إضافة ميزة جديدة" : "Add New Feature"}</DialogTitle></DialogHeader>
           <FeatureForm onSubmit={() => addMutation.mutate(formData)} loading={addMutation.isPending} />
         </DialogContent>
       </Dialog>
@@ -353,7 +360,7 @@ export default function AdminProjectFeatures() {
       {/* Edit dialog */}
       <Dialog open={!!editFeature} onOpenChange={v => !v && setEditFeature(null)}>
         <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="font-black">تعديل الميزة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-black">{L ? "تعديل الميزة" : "Edit Feature"}</DialogTitle></DialogHeader>
           <FeatureForm onSubmit={() => editMutation.mutate(formData)} loading={editMutation.isPending} />
         </DialogContent>
       </Dialog>

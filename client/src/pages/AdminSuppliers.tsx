@@ -9,19 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Truck, Plus, Search, CheckCircle, XCircle, Clock, Eye, UserPlus, Package, Key } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
-const OFFER_STATUS: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  reviewing: { label: "تحت الدراسة", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  accepted: { label: "مقبول", color: "bg-green-100 text-green-700 border-green-200" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700 border-red-200" },
-};
+function getOfferStatus(L: boolean): Record<string, { label: string; color: string }> { return {
+  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700 border-amber-200" },
+  reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  accepted: { label: L ? "مقبول" : "Accepted", color: "bg-green-100 text-green-700 border-green-200" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 border-red-200" },
+}; }
 
 export default function AdminSuppliers() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const OFFER_STATUS = getOfferStatus(L);
   const [activeTab, setActiveTab] = useState<"suppliers" | "offers">("suppliers");
   const [search, setSearch] = useState("");
   const [inviteDialog, setInviteDialog] = useState(false);
@@ -35,29 +39,29 @@ export default function AdminSuppliers() {
   const inviteMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/admin/suppliers/invite", data),
     onSuccess: (res: any) => { queryClient.invalidateQueries({ queryKey: ["/api/admin/suppliers"] }); setInviteDialog(false); setCreatedSupplier(res); setInviteForm({ fullName: "", email: "", username: "", phone: "" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const respondMutation = useMutation({
     mutationFn: ({ id, status, adminNote }: any) => apiRequest("PATCH", `/api/admin/supplier-offers/${id}`, { status, adminNote }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/admin/supplier-offers"] }); setViewOffer(null); toast({ title: "تم تحديث حالة العرض" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/admin/supplier-offers"] }); setViewOffer(null); toast({ title: L ? "تم تحديث حالة العرض" : "Offer status updated" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const filteredSuppliers = suppliers.filter(s => !search || s.fullName?.includes(search) || s.email?.includes(search));
   const filteredOffers = offers.filter(o => !search || o.title?.includes(search) || o.supplier?.fullName?.includes(search));
 
   return (
-    <div className="p-6 space-y-6 font-sans" dir="rtl">
+    <div className="p-6 space-y-6 font-sans" dir={dir}>
       <PageGraphics />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-black">بوابة الموردين والشركاء</h1>
-          <p className="text-black/50 text-sm">إدارة موردي الخدمات وعروضهم</p>
+          <h1 className="text-2xl font-bold text-black">{L ? "بوابة الموردين والشركاء" : "Suppliers & Partners Portal"}</h1>
+          <p className="text-black/50 text-sm">{L ? "إدارة موردي الخدمات وعروضهم" : "Manage service suppliers and their offers"}</p>
         </div>
         <div className="flex gap-2">
           <Button variant={activeTab === "suppliers" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("suppliers")} className={activeTab === "suppliers" ? "bg-black text-white" : "border-black/20"} data-testid="button-tab-suppliers">
-            الموردون ({suppliers.length})
+            {L ? "الموردون" : "Suppliers"} ({suppliers.length})
           </Button>
           <Button variant={activeTab === "offers" ? "default" : "outline"} size="sm" onClick={() => setActiveTab("offers")} className={activeTab === "offers" ? "bg-black text-white" : "border-black/20"} data-testid="button-tab-offers">
             العروض ({offers.length})
@@ -179,23 +183,23 @@ export default function AdminSuppliers() {
 
       <Dialog open={!!createdSupplier} onOpenChange={() => setCreatedSupplier(null)}>
         <DialogContent className="sm:max-w-sm font-sans" dir="rtl">
-          <DialogHeader><DialogTitle>تم إنشاء حساب المورد</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{L ? "تم إنشاء حساب المورد" : "Supplier Account Created"}</DialogTitle></DialogHeader>
           {createdSupplier && (
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                 <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <p className="text-center text-sm text-green-700">تم إنشاء الحساب بنجاح!</p>
+                <p className="text-center text-sm text-green-700">{L ? "تم إنشاء الحساب بنجاح!" : "Account created successfully!"}</p>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-black/40">اسم المستخدم</span><span className="font-mono font-bold">{createdSupplier.username}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-black/40">كلمة المرور المؤقتة</span>
+                <div className="flex justify-between text-sm"><span className="text-black/40">{L ? "اسم المستخدم" : "Username"}</span><span className="font-mono font-bold">{createdSupplier.username}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-black/40">{L ? "كلمة المرور المؤقتة" : "Temporary Password"}</span>
                   <span className="font-mono font-bold bg-amber-100 px-2 py-0.5 rounded" data-testid="text-temp-password">{createdSupplier.tempPassword}</span>
                 </div>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
-                <Key className="w-3.5 h-3.5 inline ml-1" /> احفظ كلمة المرور المؤقتة وأرسلها للمورد. لن تتمكن من رؤيتها مرة أخرى.
+                <Key className="w-3.5 h-3.5 inline ml-1" /> {L ? "احفظ كلمة المرور المؤقتة وأرسلها للمورد. لن تتمكن من رؤيتها مرة أخرى." : "Save the temporary password and send it to the supplier. You won't be able to see it again."}
               </div>
-              <Button onClick={() => setCreatedSupplier(null)} className="w-full bg-black text-white">تم الاطلاع</Button>
+              <Button onClick={() => setCreatedSupplier(null)} className="w-full bg-black text-white">{L ? "تم الاطلاع" : "Acknowledged"}</Button>
             </div>
           )}
         </DialogContent>
@@ -203,21 +207,21 @@ export default function AdminSuppliers() {
 
       <Dialog open={!!viewOffer} onOpenChange={() => setViewOffer(null)}>
         <DialogContent className="sm:max-w-lg font-sans" dir="rtl">
-          <DialogHeader><DialogTitle>تفاصيل العرض</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{L ? "تفاصيل العرض" : "Offer Details"}</DialogTitle></DialogHeader>
           {viewOffer && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Badge className={`${(OFFER_STATUS[viewOffer.status] || OFFER_STATUS.pending).color} border`}>{(OFFER_STATUS[viewOffer.status] || OFFER_STATUS.pending).label}</Badge>
-                <span className="text-sm text-black/40">{new Date(viewOffer.createdAt).toLocaleDateString("ar-SA")}</span>
+                <span className="text-sm text-black/40">{new Date(viewOffer.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>
               </div>
-              <div><div className="font-bold">{viewOffer.title}</div><div className="text-xs text-black/40">المورد: {viewOffer.supplier?.fullName}</div></div>
+              <div><div className="font-bold">{viewOffer.title}</div><div className="text-xs text-black/40">{L ? "المورد:" : "Supplier:"} {viewOffer.supplier?.fullName}</div></div>
               {viewOffer.description && <p className="text-sm text-black/70 bg-black/5 p-3 rounded-xl">{viewOffer.description}</p>}
-              <div className="flex justify-between"><span className="text-black/50">السعر</span><span className="font-bold text-lg">{viewOffer.price?.toLocaleString()} {viewOffer.currency}</span></div>
-              {viewOffer.category && <div className="flex justify-between text-sm"><span className="text-black/50">الفئة</span><span>{viewOffer.category}</span></div>}
+              <div className="flex justify-between"><span className="text-black/50">{L ? "السعر" : "Price"}</span><span className="font-bold text-lg">{viewOffer.price?.toLocaleString()} {viewOffer.currency}</span></div>
+              {viewOffer.category && <div className="flex justify-between text-sm"><span className="text-black/50">{L ? "الفئة" : "Category"}</span><span>{viewOffer.category}</span></div>}
               {viewOffer.status === "pending" && (
                 <div className="flex gap-2 pt-2">
-                  <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "accepted", adminNote: "" })} data-testid="button-dialog-accept">قبول العرض</Button>
-                  <Button variant="outline" className="flex-1 border-red-200 text-red-500" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "rejected", adminNote: "" })} data-testid="button-dialog-reject">رفض العرض</Button>
+                  <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "accepted", adminNote: "" })} data-testid="button-dialog-accept">{L ? "قبول العرض" : "Accept Offer"}</Button>
+                  <Button variant="outline" className="flex-1 border-red-200 text-red-500" onClick={() => respondMutation.mutate({ id: viewOffer.id, status: "rejected", adminNote: "" })} data-testid="button-dialog-reject">{L ? "رفض العرض" : "Reject Offer"}</Button>
                 </div>
               )}
             </div>

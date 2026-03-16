@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { exportToExcel } from "@/lib/excel";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 interface LogEntry {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminActivityLog() {
   const exportExcel = () => {
     if (!logs) return;
     exportToExcel("activity-log.xlsx", [{
-      name: "سجل النشاط",
+      name: L ? "سجل النشاط" : "Activity Log",
       data: logs.map(l => ({
         التاريخ: new Date(l.createdAt).toLocaleString("ar-SA"),
         المستخدم: l.userId?.fullName || "نظام",
@@ -60,7 +61,7 @@ export default function AdminActivityLog() {
   };
 
   return (
-    <div className="space-y-6 relative overflow-hidden" dir="rtl">
+    <div className="space-y-6 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -68,18 +69,18 @@ export default function AdminActivityLog() {
             <Activity className="w-5 h-5 text-white dark:text-black" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-black dark:text-white">سجل نشاط الأدمن</h1>
-            <p className="text-xs text-black/35 dark:text-white/35">كل الإجراءات المسجلة في النظام</p>
+            <h1 className="text-xl font-black text-black dark:text-white">{L ? "سجل نشاط الأدمن" : "Admin Activity Log"}</h1>
+            <p className="text-xs text-black/35 dark:text-white/35">{L ? "كل الإجراءات المسجلة في النظام" : "All recorded system actions"}</p>
           </div>
         </div>
         <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 border-black/10 dark:border-white/10 dark:text-white">
           <Download className="w-4 h-4" />
-          تصدير Excel
+          {L ? "تصدير Excel" : "Export Excel"}
         </Button>
       </div>
 
       <Input
-        placeholder="بحث في السجل..."
+        placeholder={L ? "بحث في السجل..." : "Search logs..."}
         value={search}
         onChange={e => setSearch(e.target.value)}
         className="max-w-sm border-black/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
@@ -91,7 +92,7 @@ export default function AdminActivityLog() {
           <Loader2 className="w-8 h-8 animate-spin text-black/20 dark:text-white/20" />
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-black/30 dark:text-white/30 py-16">لا يوجد نشاط مسجل بعد</p>
+        <p className="text-center text-black/30 dark:text-white/30 py-16">{L ? "لا يوجد نشاط مسجل بعد" : "No activity logged yet"}</p>
       ) : (
         <div className="space-y-2">
           {filtered.map((log) => {
@@ -106,7 +107,7 @@ export default function AdminActivityLog() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-black dark:text-white">
-                          {log.userId?.fullName || "النظام"}
+                          {log.userId?.fullName || (L ? "النظام" : "System")}
                         </span>
                         <span className="text-xs text-black/30 dark:text-white/30">({log.userId?.role || "system"})</span>
                         <span className="text-xs bg-black/[0.05] dark:bg-white/[0.05] rounded-md px-2 py-0.5 text-black/60 dark:text-white/60">
@@ -116,7 +117,7 @@ export default function AdminActivityLog() {
                       <div className="flex items-center gap-3 mt-0.5 text-[11px] text-black/30 dark:text-white/30">
                         <span>{log.entity}</span>
                         {log.ip && <span>IP: {log.ip}</span>}
-                        <span>{new Date(log.createdAt).toLocaleString("ar-SA")}</span>
+                        <span>{new Date(log.createdAt).toLocaleString(L ? "ar-SA" : "en-US")}</span>
                       </div>
                     </div>
                   </div>

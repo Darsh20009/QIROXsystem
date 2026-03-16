@@ -4,6 +4,7 @@ import { type Partner } from "@shared/schema";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 export default function Customers() {
   const { data: partners, isLoading } = useQuery<Partner[]>({
@@ -11,14 +12,14 @@ export default function Customers() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white" dir={dir}>
       <Navigation />
       <main className="flex-1 pt-24 pb-20 relative overflow-hidden">
         <PageGraphics variant="rings-sides" />
         <div className="container mx-auto px-4 md:px-8 max-w-5xl relative z-10">
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-black font-heading mb-4">عملاؤنا وشركاؤنا</h1>
-            <p className="text-black/40 text-lg">نفخر بثقة عملائنا وشركائنا في منطومة قيروكس</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-black font-heading mb-4">{L ? "عملاؤنا وشركاؤنا" : "Our Clients & Partners"}</h1>
+            <p className="text-black/40 text-lg">{L ? "نفخر بثقة عملائنا وشركائنا في منطومة قيروكس" : "We are proud of the trust our clients and partners place in the Qirox ecosystem"}</p>
           </div>
 
           {isLoading ? (
@@ -27,7 +28,7 @@ export default function Customers() {
             </div>
           ) : !partners || partners.length === 0 ? (
             <div className="text-center py-20 text-black/30">
-              <p>لا يوجد شركاء مضافون بعد</p>
+              <p>{L ? "لا يوجد شركاء مضافون بعد" : "No partners added yet"}</p>
             </div>
           ) : (
             <div className="flex flex-wrap gap-8 justify-center items-center">
@@ -38,7 +39,7 @@ export default function Customers() {
                   data-testid={`partner-logo-${partner.id}`}
                 >
                   {partner.websiteUrl ? (
-                    <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" title={partner.nameAr || partner.name}>
+                    <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" title={L ? (partner.nameAr || partner.name) : (partner.name || partner.nameAr)}>
                       <img src={partner.logoUrl} alt={partner.name} className="h-14 w-auto object-contain max-w-[160px]" />
                     </a>
                   ) : (

@@ -4,6 +4,7 @@ import { Building2, Save, RefreshCw, CreditCard, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 interface BankSettings {
   bankName: string;
@@ -45,10 +46,10 @@ export default function AdminBankSettings() {
       queryClient.invalidateQueries({ queryKey: ["/api/bank-settings"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-      toast({ title: "تم الحفظ بنجاح", description: "تم تحديث إعدادات البنك." });
+      toast({ title: L ? "تم الحفظ بنجاح" : "Saved successfully", description: L ? "تم تحديث إعدادات البنك." : "Bank settings updated." });
     },
     onError: () => {
-      toast({ title: "خطأ", description: "فشل تحديث إعدادات البنك.", variant: "destructive" });
+      toast({ title: L ? "خطأ" : "Error", description: L ? "فشل تحديث إعدادات البنك." : "Failed to update bank settings.", variant: "destructive" });
     },
   });
 
@@ -61,7 +62,7 @@ export default function AdminBankSettings() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f6] p-6 md:p-10 relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f6] p-6 md:p-10 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-2xl mx-auto">
 
@@ -71,8 +72,8 @@ export default function AdminBankSettings() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-black tracking-tight">إعدادات البنك</h1>
-            <p className="text-sm text-black/40 mt-0.5">بيانات التحويل البنكي التي تظهر للعملاء عند الدفع</p>
+            <h1 className="text-2xl font-black text-black tracking-tight">{L ? "إعدادات البنك" : "Bank Settings"}</h1>
+            <p className="text-sm text-black/40 mt-0.5">{L ? "بيانات التحويل البنكي التي تظهر للعملاء عند الدفع" : "Bank transfer details shown to customers during payment"}</p>
           </div>
         </div>
 
@@ -80,7 +81,7 @@ export default function AdminBankSettings() {
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-6">
           <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 leading-relaxed">
-            هذه البيانات تظهر للعميل في خطوة الدفع عند إتمام الطلب. تأكد من صحة رقم IBAN واسم المستفيد قبل الحفظ.
+            {L ? "هذه البيانات تظهر للعميل في خطوة الدفع عند إتمام الطلب. تأكد من صحة رقم IBAN واسم المستفيد قبل الحفظ." : "These details are shown to the customer during payment. Make sure the IBAN and beneficiary name are correct before saving."}
           </p>
         </div>
 
@@ -96,7 +97,7 @@ export default function AdminBankSettings() {
               <div className="bg-black px-6 py-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">معاينة بطاقة الدفع</p>
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest mb-1">{L ? "معاينة بطاقة الدفع" : "Payment Card Preview"}</p>
                     <p className="text-white text-xl font-black">{form.bankName || "—"}</p>
                   </div>
                   <CreditCard className="w-7 h-7 text-white/30" />
@@ -110,7 +111,7 @@ export default function AdminBankSettings() {
                 ].map(r => (
                   <div key={r.label} className="flex justify-between py-1.5 border-b border-black/[0.04] last:border-0">
                     <span className="text-xs text-black/40">{r.label}</span>
-                    <span className="text-xs font-semibold text-black font-mono" dir={r.label === "رقم IBAN" ? "ltr" : undefined}>{r.value || "—"}</span>
+                    <span className="text-xs font-semibold text-black font-mono" dir={r.label === "IBAN" ? "ltr" : undefined}>{r.value || "—"}</span>
                   </div>
                 ))}
               </div>
@@ -118,7 +119,7 @@ export default function AdminBankSettings() {
 
             {/* Form fields */}
             <div className="bg-white rounded-2xl border border-black/[0.07] p-6 space-y-5">
-              <h2 className="text-sm font-black text-black/70 uppercase tracking-widest border-b border-black/[0.06] pb-3">تفاصيل الحساب البنكي</h2>
+              <h2 className="text-sm font-black text-black/70 uppercase tracking-widest border-b border-black/[0.06] pb-3">{L ? "تفاصيل الحساب البنكي" : "Bank Account Details"}</h2>
 
               {[
                 { label: "اسم البنك", field: "bankName" as const, placeholder: "مثال: بنك الراجحي", dir: "rtl" },
@@ -143,11 +144,11 @@ export default function AdminBankSettings() {
               ))}
 
               <div>
-                <label className="block text-[11px] font-bold text-black/50 uppercase tracking-widest mb-1.5">ملاحظات إضافية (اختياري)</label>
+                <label className="block text-[11px] font-bold text-black/50 uppercase tracking-widest mb-1.5">{L ? "ملاحظات إضافية (اختياري)" : "Additional Notes (optional)"}</label>
                 <textarea
                   value={form.notes}
                   onChange={e => handleChange("notes", e.target.value)}
-                  placeholder="أي تعليمات إضافية تريد إظهارها للعميل..."
+                  placeholder={L ? "أي تعليمات إضافية تريد إظهارها للعميل..." : "Any additional instructions you want to show the client..."}
                   rows={3}
                   data-testid="input-bank-notes"
                   className="w-full bg-black/[0.03] border border-black/[0.08] rounded-xl px-4 py-3 text-sm font-medium text-black placeholder:text-black/25 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/20 transition-all resize-none"
@@ -171,7 +172,7 @@ export default function AdminBankSettings() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {saved ? "تم الحفظ ✓" : "حفظ الإعدادات"}
+              {saved ? (L ? "تم الحفظ ✓" : "Saved ✓") : (L ? "حفظ الإعدادات" : "Save Settings")}
             </button>
           </form>
         )}

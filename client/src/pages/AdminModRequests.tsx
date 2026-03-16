@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type ModificationRequest } from "@shared/schema";
 import { useState } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: "قيد الانتظار", color: "bg-amber-100 text-amber-700" },
@@ -43,10 +44,10 @@ export default function AdminModRequests() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/modification-requests"] });
-      toast({ title: "تم تحديث الطلب بنجاح" });
+      toast({ title: L ? "تم تحديث الطلب بنجاح" : "Request updated successfully" });
       setSelected(null);
     },
-    onError: () => toast({ title: "خطأ في تحديث الطلب", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في تحديث الطلب" : "Failed to update request", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -55,9 +56,9 @@ export default function AdminModRequests() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/modification-requests"] });
-      toast({ title: "تم حذف الطلب" });
+      toast({ title: L ? "تم حذف الطلب" : "Request deleted" });
     },
-    onError: () => toast({ title: "خطأ في حذف الطلب", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في حذف الطلب" : "Failed to delete request", variant: "destructive" }),
   });
 
   const openDetail = (req: ModificationRequest) => {
@@ -89,19 +90,19 @@ export default function AdminModRequests() {
   }
 
   return (
-    <div className="space-y-6 relative overflow-hidden">
+    <div className="space-y-6 relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-black flex items-center gap-3">
           <Wrench className="w-7 h-7 text-black/40" />
-          طلبات التعديل
+          {L ? "طلبات التعديل" : "Modification Requests"}
         </h1>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-44" data-testid="select-mod-filter">
-            <SelectValue placeholder="تصفية حسب الحالة" />
+            <SelectValue placeholder={L ? "تصفية حسب الحالة" : "Filter by status"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الطلبات</SelectItem>
+            <SelectItem value="all">{L ? "جميع الطلبات" : "All Requests"}</SelectItem>
             {Object.entries(statusMap).map(([key, val]) => (
               <SelectItem key={key} value={key}>{val.label}</SelectItem>
             ))}
@@ -126,11 +127,11 @@ export default function AdminModRequests() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-black/[0.06]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الطلب</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الأولوية</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الحالة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">التاريخ</th>
-                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الطلب" : "Request"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الأولوية" : "Priority"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "التاريخ" : "Date"}</th>
+                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "إجراءات" : "Actions"}</th>
               </tr>
             </thead>
             <tbody>
@@ -154,7 +155,7 @@ export default function AdminModRequests() {
                       </span>
                     </td>
                     <td className="p-4 text-xs text-black/40">
-                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString("ar-SA") : "—"}
+                      {req.createdAt ? new Date(req.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US") : "—"}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1">
@@ -165,11 +166,11 @@ export default function AdminModRequests() {
                           <>
                             <Button size="sm" variant="ghost" className="text-green-600 h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "in_review")} data-testid={`button-review-mod-${req.id}`}>
                               <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                              مراجعة
+                              {L ? "مراجعة" : "Review"}
                             </Button>
                             <Button size="sm" variant="ghost" className="text-red-500 h-8 text-xs px-2" onClick={() => handleQuickStatus(req.id, "rejected")} data-testid={`button-reject-mod-${req.id}`}>
                               <XCircle className="w-3.5 h-3.5 mr-1" />
-                              رفض
+                              {L ? "رفض" : "Reject"}
                             </Button>
                           </>
                         )}
@@ -182,7 +183,7 @@ export default function AdminModRequests() {
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-black/30">
                     <Wrench className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                    <p>لا توجد طلبات تعديل {filterStatus !== "all" && `بحالة "${statusMap[filterStatus]?.label}"`}</p>
+                    <p>{L ? "لا توجد طلبات تعديل" : "No modification requests"} {filterStatus !== "all" && (L ? `بحالة "${statusMap[filterStatus]?.label}"` : `with status "${statusMap[filterStatus]?.label}"`)}</p>
                   </td>
                 </tr>
               )}
@@ -194,7 +195,7 @@ export default function AdminModRequests() {
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
         <DialogContent className="bg-white border-black/[0.06] text-black max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-black">تفاصيل طلب التعديل</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-black">{L ? "تفاصيل طلب التعديل" : "Modification Request Details"}</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-4 mt-4">
@@ -206,19 +207,19 @@ export default function AdminModRequests() {
                     {priorityMap[selected.priority]?.label}
                   </span>
                   {selected.projectId && (
-                    <span className="text-xs text-black/40">مشروع: #{selected.projectId.slice(-6)}</span>
+                    <span className="text-xs text-black/40">{L ? "مشروع:" : "Project:"} #{selected.projectId.slice(-6)}</span>
                   )}
                   {selected.createdAt && (
                     <span className="text-xs text-black/30 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {new Date(selected.createdAt).toLocaleDateString("ar-SA")}
+                      {new Date(selected.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                     </span>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">تغيير الحالة</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "تغيير الحالة" : "Change Status"}</label>
                 <Select value={editStatus} onValueChange={setEditStatus}>
                   <SelectTrigger data-testid="select-mod-status">
                     <SelectValue />
@@ -232,11 +233,11 @@ export default function AdminModRequests() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-black/60 mb-1.5">ملاحظات الأدمن (تُرسل للعميل)</label>
+                <label className="block text-sm font-medium text-black/60 mb-1.5">{L ? "ملاحظات الأدمن (تُرسل للعميل)" : "Admin Notes (sent to client)"}</label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="اكتب ردك أو ملاحظاتك هنا..."
+                  placeholder={L ? "اكتب ردك أو ملاحظاتك هنا..." : "Write your reply or notes here..."}
                   rows={3}
                   data-testid="input-admin-notes"
                 />
@@ -245,10 +246,10 @@ export default function AdminModRequests() {
               <div className="flex gap-3">
                 <Button onClick={handleSave} className="flex-1 premium-btn" disabled={updateMutation.isPending} data-testid="button-save-mod">
                   {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  حفظ التغييرات
+                  {L ? "حفظ التغييرات" : "Save Changes"}
                 </Button>
                 <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={() => { deleteMutation.mutate(selected.id); setSelected(null); }} disabled={deleteMutation.isPending}>
-                  حذف
+                  {L ? "حذف" : "Delete"}
                 </Button>
               </div>
             </div>

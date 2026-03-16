@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { ImageUpload } from "@/components/ImageUpload";
 import type { QiroxProduct } from "@shared/schema";
@@ -65,15 +66,15 @@ const TIER_COLORS: Record<string, string> = {
   lite: "from-teal-400 to-emerald-500", pro: "from-violet-500 to-purple-600",
   infinite: "from-gray-700 to-black", custom: "from-blue-400 to-indigo-500",
 };
-const TIER_LABELS: Record<string, string> = { lite: "لايت", pro: "برو", infinite: "إنفينتي", custom: "مخصص" };
+function getTierLabels(L: boolean): Record<string, string> { return { lite: L ? "لايت" : "Lite", pro: L ? "برو" : "Pro", infinite: L ? "إنفينتي" : "Infinite", custom: L ? "مخصص" : "Custom" }; }
 
 const categoryLabels: Record<string, { label: string; color: string }> = {
-  device:   { label: "جهاز / معدات",      color: "bg-blue-50 text-blue-700 border-blue-200" },
-  hosting:  { label: "استضافة",           color: "bg-purple-50 text-purple-700 border-purple-200" },
-  domain:   { label: "دومين",             color: "bg-green-50 text-green-700 border-green-200" },
-  email:    { label: "بريد إلكتروني",     color: "bg-orange-50 text-orange-700 border-orange-200" },
-  gift:     { label: "هدية",              color: "bg-pink-50 text-pink-700 border-pink-200" },
-  software: { label: "برمجيات",           color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  device:   { label: L ? "جهاز / معدات" : "Device / Equipment",     color: "bg-blue-50 text-blue-700 border-blue-200" },
+  hosting:  { label: L ? "استضافة" : "Hosting",          color: "bg-purple-50 text-purple-700 border-purple-200" },
+  domain:   { label: L ? "دومين" : "Domain",            color: "bg-green-50 text-green-700 border-green-200" },
+  email:    { label: L ? "بريد إلكتروني" : "Email",    color: "bg-orange-50 text-orange-700 border-orange-200" },
+  gift:     { label: L ? "هدية" : "Gift",             color: "bg-pink-50 text-pink-700 border-pink-200" },
+  software: { label: L ? "برمجيات" : "Software",          color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
   other:    { label: "أخرى",              color: "bg-gray-50 text-gray-600 border-gray-200" },
 };
 
@@ -89,6 +90,10 @@ const emptyForm = {
 
 export default function AdminProducts() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const TIER_LABELS = getTierLabels(L);
+  const TYPE_MAP = getTypeMap(L);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -114,9 +119,9 @@ export default function AdminProducts() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       setDialogOpen(false);
       setForm({ ...emptyForm });
-      toast({ title: "تم إضافة المنتج بنجاح" });
+      toast({ title: L ? "تم إضافة المنتج بنجاح" : "Product added successfully" });
     },
-    onError: () => toast({ title: "خطأ في الإضافة", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في الإضافة" : "Error adding product", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -128,9 +133,9 @@ export default function AdminProducts() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       setDialogOpen(false);
       setEditingId(null);
-      toast({ title: "تم التحديث" });
+      toast({ title: L ? "تم التحديث" : "Updated" });
     },
-    onError: () => toast({ title: "خطأ في التحديث", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في التحديث" : "Error updating product", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -139,7 +144,7 @@ export default function AdminProducts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
-      toast({ title: "تم الحذف" });
+      toast({ title: L ? "تم الحذف" : "Deleted" });
     },
   });
 
@@ -293,17 +298,17 @@ export default function AdminProducts() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="بحث في المنتجات..."
+            placeholder={L ? "بحث في المنتجات..." : "Search products..."}
             className="pr-9 h-9 text-sm"
             data-testid="input-search-products"
           />
         </div>
         <Select value={filterCat} onValueChange={setFilterCat}>
           <SelectTrigger className="w-40 h-9 text-xs" data-testid="select-filter-cat">
-            <SelectValue placeholder="الفئة" />
+            <SelectValue placeholder={L ? "الفئة" : "Category"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الفئات</SelectItem>
+            <SelectItem value="all">{L ? "جميع الفئات" : "All Categories"}</SelectItem>
             {Object.entries(categoryLabels).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label}</SelectItem>
             ))}
@@ -335,7 +340,7 @@ export default function AdminProducts() {
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-black/20 dark:text-white/20">
                       <ImageIcon className="w-10 h-10" />
-                      <span className="text-xs">لا توجد صورة</span>
+                      <span className="text-xs">{L ? "لا توجد صورة" : "No image"}</span>
                     </div>
                   )}
                   {p.featured && (
@@ -350,7 +355,7 @@ export default function AdminProducts() {
                   )}
                   {(p as any).linkedPlanSlug && (
                     <div className="absolute bottom-2 left-2 bg-cyan-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" />باقة
+                      <Sparkles className="w-2.5 h-2.5" />{L ? "باقة" : "Bundle"}
                     </div>
                   )}
                   {shipCount > 0 && (
@@ -360,7 +365,7 @@ export default function AdminProducts() {
                   )}
                   {!p.isActive && (
                     <div className="absolute inset-0 bg-white/70 dark:bg-black/70 flex items-center justify-center">
-                      <span className="text-xs text-black/40 dark:text-white/40 font-medium border border-black/20 dark:border-white/20 px-3 py-1 rounded-full bg-white dark:bg-[#111]">غير نشط</span>
+                      <span className="text-xs text-black/40 dark:text-white/40 font-medium border border-black/20 dark:border-white/20 px-3 py-1 rounded-full bg-white dark:bg-[#111]">{L ? "غير نشط" : "Inactive"}</span>
                     </div>
                   )}
                 </div>
@@ -394,7 +399,7 @@ export default function AdminProducts() {
                         size="icon"
                         variant="ghost"
                         className="w-8 h-8 text-red-400 hover:text-red-600"
-                        onClick={() => { if (confirm("هل أنت متأكد من الحذف؟")) deleteMutation.mutate(p.id); }}
+                        onClick={() => { if (confirm(L ? "هل أنت متأكد من الحذف؟" : "Are you sure you want to delete?")) deleteMutation.mutate(p.id); }}
                         data-testid={`button-delete-${p.id}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -408,7 +413,7 @@ export default function AdminProducts() {
           {filtered.length === 0 && !isLoading && (
             <div className="col-span-full py-20 flex flex-col items-center text-black/30 dark:text-white/30">
               <Package className="w-12 h-12 mb-3 text-black/10 dark:text-white/10" />
-              <p className="text-sm">لا توجد منتجات</p>
+              <p className="text-sm">{L ? "لا توجد منتجات" : "No products"}</p>
               <Button variant="ghost" className="mt-4 text-xs" onClick={openCreate}>إضافة أول منتج</Button>
             </div>
           )}
@@ -418,44 +423,44 @@ export default function AdminProducts() {
       <Dialog open={dialogOpen} onOpenChange={(v) => !v && setDialogOpen(false)}>
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-bold text-lg">{editingId ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
+            <DialogTitle className="font-bold text-lg">{editingId ? (L ? "تعديل المنتج" : "Edit Product") : (L ? "إضافة منتج جديد" : "Add New Product")}</DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue="info" className="mt-2">
             <TabsList className="w-full grid grid-cols-4 h-9 mb-4">
-              <TabsTrigger value="info" className="text-xs gap-1"><Package className="w-3 h-3" />المعلومات</TabsTrigger>
+              <TabsTrigger value="info" className="text-xs gap-1"><Package className="w-3 h-3" />{L ? "المعلومات" : "Info"}</TabsTrigger>
               <TabsTrigger value="bundles" className="text-xs gap-1">
-                <Crown className="w-3 h-3" />الباقات
+                <Crown className="w-3 h-3" />{L ? "الباقات" : "Bundles"}
                 {form.planBundles.length > 0 && (
                   <span className="bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.planBundles.length}</span>
                 )}
               </TabsTrigger>
               <TabsTrigger value="shipping" className="text-xs gap-1">
-                <Truck className="w-3 h-3" />الشحن
+                <Truck className="w-3 h-3" />{L ? "الشحن" : "Shipping"}
                 {form.shippingProviders.length > 0 && (
                   <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{form.shippingProviders.length}</span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="advanced" className="text-xs gap-1"><Sparkles className="w-3 h-3" />متقدم</TabsTrigger>
+              <TabsTrigger value="advanced" className="text-xs gap-1"><Sparkles className="w-3 h-3" />{L ? "متقدم" : "Advanced"}</TabsTrigger>
             </TabsList>
 
             {/* ── TAB: INFO ── */}
             <TabsContent value="info" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">الاسم بالعربي *</label>
-                  <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder="جهاز لاب توب..." data-testid="input-product-name-ar" />
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "الاسم بالعربي *" : "Name (Arabic) *"}</label>
+                  <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} placeholder={L ? "جهاز لاب توب..." : "e.g. Laptop..."} data-testid="input-product-name-ar" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">الاسم بالإنجليزي *</label>
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "الاسم بالإنجليزي *" : "Name (English) *"}</label>
                   <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Laptop..." data-testid="input-product-name" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">الوصف (عربي)</label>
-                  <Textarea value={form.descriptionAr} onChange={e => setForm(f => ({ ...f, descriptionAr: e.target.value }))} placeholder="وصف المنتج..." rows={2} className="resize-none text-sm" />
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "الوصف (عربي)" : "Description (Arabic)"}</label>
+                  <Textarea value={form.descriptionAr} onChange={e => setForm(f => ({ ...f, descriptionAr: e.target.value }))} placeholder={L ? "وصف المنتج..." : "Product description..."} rows={2} className="resize-none text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">الفئة *</label>
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "الفئة *" : "Category *"}</label>
                   <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v as any }))}>
                     <SelectTrigger data-testid="select-product-category"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -464,31 +469,31 @@ export default function AdminProducts() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 flex items-center gap-1">السعر (<SARIcon size={9} className="opacity-60" />) *</label>
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 flex items-center gap-1">{L ? "السعر" : "Price"} (<SARIcon size={9} className="opacity-60" />) *</label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" data-testid="input-product-price" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">بادج</label>
-                  <Input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} placeholder="الأكثر مبيعاً" data-testid="input-product-badge" />
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "بادج" : "Badge"}</label>
+                  <Input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))} placeholder={L ? "الأكثر مبيعاً" : "Best Seller"} data-testid="input-product-badge" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">المخزون (-1 = غير محدود)</label>
+                  <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "المخزون (-1 = غير محدود)" : "Stock (-1 = unlimited)"}</label>
                   <Input type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} data-testid="input-product-stock" />
                 </div>
                 <div className="col-span-2">
                   <ImageUpload
-                    label="صور المنتج"
+                    label={L ? "صور المنتج" : "Product Images"}
                     multiple
                     value={form.images.filter(Boolean)}
                     onChange={(urls) => setForm(f => ({ ...f, images: urls }))}
                   />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
-                  <span className="text-xs font-medium text-black/60 dark:text-white/60">نشط</span>
+                  <span className="text-xs font-medium text-black/60 dark:text-white/60">{L ? "نشط" : "Active"}</span>
                   <Switch checked={form.isActive} onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} data-testid="switch-product-active" />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
-                  <span className="text-xs font-medium text-black/60 dark:text-white/60">مميز</span>
+                  <span className="text-xs font-medium text-black/60 dark:text-white/60">{L ? "مميز" : "Featured"}</span>
                   <Switch checked={form.featured} onCheckedChange={v => setForm(f => ({ ...f, featured: v }))} data-testid="switch-product-featured" />
                 </div>
               </div>
@@ -502,7 +507,7 @@ export default function AdminProducts() {
                     <Crown className="w-4 h-4" />
                     باقات مرفقة بهذا المنتج
                   </p>
-                  <p className="text-[11px] text-violet-600 dark:text-violet-400 mt-0.5">عند شراء المنتج، يختار العميل إحدى الباقات المرفقة ويتم تسعيرها مع المنتج</p>
+                  <p className="text-[11px] text-violet-600 dark:text-violet-400 mt-0.5">{L ? "عند شراء المنتج، يختار العميل إحدى الباقات المرفقة ويتم تسعيرها مع المنتج" : "When purchasing, the client selects an attached bundle which is priced with the product"}</p>
                 </div>
                 <Button size="sm" variant="outline" className="border-violet-300 dark:border-violet-600 text-violet-700 dark:text-violet-300 text-xs shrink-0"
                   onClick={() => setForm(f => ({ ...f, planBundles: [...f.planBundles, { ...emptyBundle }] }))}
@@ -514,8 +519,8 @@ export default function AdminProducts() {
               {form.planBundles.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-black/[0.07] dark:border-white/[0.07] rounded-2xl">
                   <Crown className="w-10 h-10 mx-auto mb-3 text-black/15 dark:text-white/15" />
-                  <p className="text-sm text-black/40 dark:text-white/40 mb-1">لا توجد باقات مرفقة</p>
-                  <p className="text-xs text-black/25 dark:text-white/25">اضغط "إضافة باقة" لإرفاق باقة بهذا المنتج</p>
+                  <p className="text-sm text-black/40 dark:text-white/40 mb-1">{L ? "لا توجد باقات مرفقة" : "No bundles attached"}</p>
+                  <p className="text-xs text-black/25 dark:text-white/25">{L ? 'اضغط "إضافة باقة" لإرفاق باقة بهذا المنتج' : 'Click "Add Bundle" to attach a bundle to this product'}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -589,7 +594,7 @@ export default function AdminProducts() {
                                           <span className="text-[10px] text-black/40 dark:text-white/40">({p.segment})</span>
                                         )}
                                         <span className="text-[10px] font-bold text-black/30 dark:text-white/30 mr-auto">
-                                          {p.lifetimePrice > 0 ? `${p.lifetimePrice?.toLocaleString()} ر.س` : p.monthlyPrice > 0 ? `${p.monthlyPrice?.toLocaleString()}/شهر` : "مجاني"}
+                                          {p.lifetimePrice > 0 ? `${p.lifetimePrice?.toLocaleString()} ${L ? "ر.س" : "SAR"}` : p.monthlyPrice > 0 ? `${p.monthlyPrice?.toLocaleString()}/${L ? "شهر" : "mo"}` : (L ? "مجاني" : "Free")}
                                         </span>
                                       </div>
                                     </SelectItem>
@@ -608,12 +613,12 @@ export default function AdminProducts() {
                           {/* Manual fields (auto-filled from plan, but editable) */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">اسم الباقة (عربي) *</label>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">{L ? "اسم الباقة (عربي) *" : "Bundle Name (Arabic) *"}</label>
                               <Input value={bundle.planNameAr} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planNameAr: e.target.value } : b) }))}
-                                placeholder="باقة المطاعم الأساسية" className="h-9 text-sm" data-testid={`input-bundle-name-${idx}`} />
+                                placeholder={L ? "باقة المطاعم الأساسية" : "Basic Restaurants Bundle"} className="h-9 text-sm" data-testid={`input-bundle-name-${idx}`} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">المستوى</label>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">{L ? "المستوى" : "Tier"}</label>
                               <Select value={bundle.planTier} onValueChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planTier: v } : b) }))}>
                                 <SelectTrigger className="h-9 text-sm" data-testid={`select-bundle-tier-${idx}`}><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -622,7 +627,7 @@ export default function AdminProducts() {
                               </Select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">القطاع (اختياري)</label>
+                              <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">{L ? "القطاع (اختياري)" : "Sector (optional)"}</label>
                               <Input value={bundle.planSegment} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planSegment: e.target.value } : b) }))}
                                 placeholder="restaurant" className="h-9 text-sm" data-testid={`input-bundle-segment-${idx}`} />
                             </div>
@@ -634,8 +639,8 @@ export default function AdminProducts() {
                               <div className="flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-green-500" />
                                 <div>
-                                  <p className="text-xs font-bold text-black/70 dark:text-white/70">الباقة مجانية عند شراء الجهاز</p>
-                                  <p className="text-[10px] text-black/35 dark:text-white/35">سيظهر للعميل "مجاناً" عند اختيار هذه الباقة</p>
+                                  <p className="text-xs font-bold text-black/70 dark:text-white/70">{L ? "الباقة مجانية عند شراء الجهاز" : "Bundle is free with device purchase"}</p>
+                                  <p className="text-[10px] text-black/35 dark:text-white/35">{L ? 'سيظهر للعميل "مجاناً" عند اختيار هذه الباقة' : 'Client will see "Free" when selecting this bundle'}</p>
                                 </div>
                               </div>
                               <Switch checked={bundle.isFree} onCheckedChange={v => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, isFree: v } : b) }))}
@@ -667,17 +672,17 @@ export default function AdminProducts() {
                           </div>
 
                           <div>
-                            <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">وصف الباقة</label>
+                            <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">{L ? "وصف الباقة" : "Bundle Description"}</label>
                             <Input value={bundle.planDescAr} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, planDescAr: e.target.value } : b) }))}
-                              placeholder="باقة متكاملة للمطاعم..." className="h-9 text-sm" data-testid={`input-bundle-desc-${idx}`} />
+                              placeholder={L ? "باقة متكاملة للمطاعم..." : "Integrated restaurant bundle..."} className="h-9 text-sm" data-testid={`input-bundle-desc-${idx}`} />
                           </div>
 
                           <div>
                             <label className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-wide mb-1 block">
-                              <CheckSquare className="w-3 h-3 inline ml-1" />المميزات (افصل بفاصلة أو سطر جديد)
+                              <CheckSquare className="w-3 h-3 inline ml-1" />{L ? "المميزات (افصل بفاصلة أو سطر جديد)" : "Features (separate by comma or newline)"}
                             </label>
                             <Textarea value={bundle.features} onChange={e => setForm(f => ({ ...f, planBundles: f.planBundles.map((b, i) => i === idx ? { ...b, features: e.target.value } : b) }))}
-                              placeholder="نظام طلبات، تطبيق جوال، لوحة تحكم..." rows={2} className="resize-none text-xs"
+                              placeholder={L ? "نظام طلبات، تطبيق جوال، لوحة تحكم..." : "Order system, mobile app, dashboard..."} rows={2} className="resize-none text-xs"
                               data-testid={`textarea-bundle-features-${idx}`} />
                           </div>
                         </div>
@@ -697,7 +702,7 @@ export default function AdminProducts() {
                     <Truck className="w-4 h-4" />
                     هذا المنتج يحتاج شحن
                   </p>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">سيُطلب من العميل عنوان توصيل عند الطلب</p>
+                  <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-0.5">{L ? "سيُطلب من العميل عنوان توصيل عند الطلب" : "Client will be asked for a delivery address when ordering"}</p>
                 </div>
                 <Switch checked={form.requiresShipping} onCheckedChange={v => setForm(f => ({ ...f, requiresShipping: v }))} data-testid="switch-requires-shipping" />
               </div>
@@ -706,8 +711,8 @@ export default function AdminProducts() {
               {!shippingCompanies || shippingCompanies.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-black/[0.08] dark:border-white/[0.08] rounded-2xl">
                   <Truck className="w-10 h-10 mx-auto mb-3 text-black/15 dark:text-white/15" />
-                  <p className="text-sm text-black/40 dark:text-white/40 mb-1">لا توجد شركات شحن</p>
-                  <p className="text-xs text-black/25 dark:text-white/25">اذهب إلى صفحة شركات الشحن لإضافتها أولاً</p>
+                  <p className="text-sm text-black/40 dark:text-white/40 mb-1">{L ? "لا توجد شركات شحن" : "No shipping companies"}</p>
+                  <p className="text-xs text-black/25 dark:text-white/25">{L ? "اذهب إلى صفحة شركات الشحن لإضافتها أولاً" : "Go to the shipping companies page to add them first"}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -827,7 +832,7 @@ export default function AdminProducts() {
             {/* ── TAB: ADVANCED ── */}
             <TabsContent value="advanced" className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">خاص بالخدمة (slug)</label>
+                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "خاص بالخدمة (slug)" : "Service Slug"}</label>
                 <Input value={form.serviceSlug} onChange={e => setForm(f => ({ ...f, serviceSlug: e.target.value }))} placeholder="ecommerce-store" data-testid="input-product-service-slug" />
               </div>
               <div>
@@ -835,9 +840,9 @@ export default function AdminProducts() {
                   <Sparkles className="w-3 h-3 text-cyan-500" /> ربط بباقة نظام (اختياري)
                 </label>
                 <Select value={form.linkedPlanSlug || "none"} onValueChange={v => setForm(f => ({ ...f, linkedPlanSlug: v === "none" ? "" : v }))}>
-                  <SelectTrigger data-testid="select-linked-plan"><SelectValue placeholder="لا توجد باقة مرتبطة" /></SelectTrigger>
+                  <SelectTrigger data-testid="select-linked-plan"><SelectValue placeholder={L ? "لا توجد باقة مرتبطة" : "No linked plan"} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">لا توجد باقة مرتبطة</SelectItem>
+                    <SelectItem value="none">{L ? "لا توجد باقة مرتبطة" : "No linked plan"}</SelectItem>
                     {pricingPlans?.map((plan: any) => (
                       <SelectItem key={plan.id || plan._id} value={plan.slug || plan.nameAr || String(plan.id || plan._id)}>
                         {plan.nameAr || plan.name}
@@ -847,12 +852,12 @@ export default function AdminProducts() {
                 </Select>
                 {form.linkedPlanSlug && (
                   <p className="text-[10px] text-cyan-600 mt-1 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />سيظهر للعميل أن هذا المنتج يشمل باقة نظام
+                    <Sparkles className="w-3 h-3" />{L ? "سيظهر للعميل أن هذا المنتج يشمل باقة نظام" : "Client will see that this product includes a system plan"}
                   </p>
                 )}
               </div>
               <div>
-                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">المواصفات (JSON)</label>
+                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "المواصفات (JSON)" : "Specifications (JSON)"}</label>
                 <Textarea
                   value={form.specs}
                   onChange={e => setForm(f => ({ ...f, specs: e.target.value }))}
@@ -863,7 +868,7 @@ export default function AdminProducts() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">ترتيب العرض</label>
+                <label className="text-xs font-medium text-black/50 dark:text-white/50 mb-1 block">{L ? "ترتيب العرض" : "Display Order"}</label>
                 <Input type="number" value={form.displayOrder} onChange={e => setForm(f => ({ ...f, displayOrder: e.target.value }))} data-testid="input-product-order" />
               </div>
             </TabsContent>
@@ -872,7 +877,7 @@ export default function AdminProducts() {
           <div className="flex gap-3 mt-2 border-t border-black/[0.06] dark:border-white/[0.06] pt-4">
             <Button className="flex-1 premium-btn" onClick={handleSubmit} disabled={isPending || !form.nameAr || !form.name || !form.price} data-testid="button-submit-product">
               {isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-              {editingId ? "حفظ التعديلات" : "إضافة المنتج"}
+              {editingId ? (L ? "حفظ التعديلات" : "Save Changes") : (L ? "إضافة المنتج" : "Add Product")}
             </Button>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
           </div>

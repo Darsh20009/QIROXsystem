@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { useI18n } from "@/lib/i18n";
 
 interface Employee {
   id: string;
@@ -62,26 +63,26 @@ interface OrderData {
   };
 }
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد المراجعة", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  approved: { label: "تمت الموافقة", color: "bg-green-500/10 text-green-600 border-green-500/20" },
-  in_progress: { label: "قيد التنفيذ", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  completed: { label: "مكتمل", color: "bg-black/[0.06] text-black/60 border-black/[0.08]" },
-  cancelled: { label: "ملغي", color: "bg-red-500/10 text-red-600 border-red-500/20" },
-  rejected: { label: "مرفوض", color: "bg-red-500/10 text-red-600 border-red-500/20" },
-};
+function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
+  pending: { label: L ? "قيد المراجعة" : "Under Review", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  approved: { label: L ? "تمت الموافقة" : "Approved", color: "bg-green-500/10 text-green-600 border-green-500/20" },
+  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  completed: { label: L ? "مكتمل" : "Completed", color: "bg-black/[0.06] text-black/60 border-black/[0.08]" },
+  cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+}; }
 
-const paymentMethods: Record<string, string> = {
-  bank_transfer: "تحويل بنكي",
+function getPaymentMethods(L: boolean): Record<string, string> { return {
+  bank_transfer: L ? "تحويل بنكي" : "Bank Transfer",
   paypal: "PayPal",
-  cash: "نقدي",
-};
+  cash: L ? "نقدي" : "Cash",
+}; }
 
-const roleLabels: Record<string, string> = {
-  admin: "مدير النظام", manager: "مدير", developer: "مطور",
-  designer: "مصمم", support: "دعم", sales: "مبيعات",
-  sales_manager: "مدير مبيعات", accountant: "محاسب",
-};
+function getRoleLabels(L: boolean): Record<string, string> { return {
+  admin: L ? "مدير النظام" : "System Admin", manager: L ? "مدير" : "Manager", developer: L ? "مطور" : "Developer",
+  designer: L ? "مصمم" : "Designer", support: L ? "دعم" : "Support", sales: L ? "مبيعات" : "Sales",
+  sales_manager: L ? "مدير مبيعات" : "Sales Manager", accountant: L ? "محاسب" : "Accountant",
+}; }
 
 const EMPTY_SPECS = {
   projectName: "", clientEmail: "", totalBudget: "", paidAmount: "",
@@ -97,6 +98,11 @@ const EMPTY_SPECS = {
 
 export default function AdminOrders() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const statusMap = getStatusMap(L);
+  const paymentMethods = getPaymentMethods(L);
+  const roleLabels = getRoleLabels(L);
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [editStatus, setEditStatus] = useState("");
@@ -205,9 +211,9 @@ export default function AdminOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      toast({ title: "تم تحديث الطلب بنجاح" });
+      toast({ title: L ? "تم تحديث الطلب بنجاح" : "Order updated successfully" });
     },
-    onError: () => toast({ title: "خطأ في تحديث الطلب", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في تحديث الطلب" : "Error updating order", variant: "destructive" }),
   });
 
   const saveSpecsMutation = useMutation({
@@ -217,9 +223,9 @@ export default function AdminOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
-      toast({ title: "تم حفظ المواصفات التقنية ✓" });
+      toast({ title: L ? "تم حفظ المواصفات التقنية ✓" : "Technical specs saved ✓" });
     },
-    onError: () => toast({ title: "خطأ في حفظ المواصفات", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في حفظ المواصفات" : "Error saving specs", variant: "destructive" }),
   });
 
   const { data: orderExpenses, isLoading: isLoadingExpenses } = useQuery<any[]>({
@@ -234,15 +240,15 @@ export default function AdminOrders() {
   const addExpenseMutation = useMutation({
     mutationFn: async (data: { category: string; description: string; amount: number }) => {
       const res = await apiRequest("POST", `/api/admin/orders/${selectedOrder!.id}/expenses`, data);
-      if (!res.ok) throw new Error("فشل إضافة المصروف");
+      if (!res.ok) throw new Error(L ? "فشل إضافة المصروف" : "Failed to add expense");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'expenses'] });
       setNewExpense({ category: "other", description: "", amount: "" });
-      toast({ title: "تم إضافة المصروف" });
+      toast({ title: L ? "تم إضافة المصروف" : "Expense added" });
     },
-    onError: () => toast({ title: "خطأ في إضافة المصروف", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ في إضافة المصروف" : "Error adding expense", variant: "destructive" }),
   });
 
   const deleteExpenseMutation = useMutation({
@@ -251,7 +257,7 @@ export default function AdminOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'expenses'] });
-      toast({ title: "تم حذف المصروف" });
+      toast({ title: L ? "تم حذف المصروف" : "Expense deleted" });
     },
   });
 
@@ -266,21 +272,21 @@ export default function AdminOrders() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "تم إنشاء المشروع بنجاح" });
+      toast({ title: L ? "تم إنشاء المشروع بنجاح" : "Project created successfully" });
       setSelectedOrder(null);
     },
-    onError: () => toast({ title: "فشل إنشاء المشروع", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إنشاء المشروع" : "Failed to create project", variant: "destructive" }),
   });
 
   const phoneReqMutation = useMutation({
     mutationFn: (data: { clientId: string; notes: string }) =>
       apiRequest("POST", "/api/phone-requests", data),
     onSuccess: () => {
-      toast({ title: "تم رفع طلب تصحيح الرقم", description: "سيتم مراجعته من المسؤول قريباً" });
+      toast({ title: L ? "تم رفع طلب تصحيح الرقم" : "Phone correction request submitted", description: L ? "سيتم مراجعته من المسؤول قريباً" : "It will be reviewed by the admin shortly" });
       setPhoneReqOpen(false);
       setPhoneReqNotes("");
     },
-    onError: (err: any) => toast({ title: "فشل رفع الطلب", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "فشل رفع الطلب" : "Failed to submit request", description: err.message, variant: "destructive" }),
   });
 
   const saveGuideMutation = useMutation({
@@ -291,9 +297,9 @@ export default function AdminOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      toast({ title: "✅ تم حفظ شرح الاستخدام" });
+      toast({ title: L ? "✅ تم حفظ شرح الاستخدام" : "✅ Usage guide saved" });
     },
-    onError: () => toast({ title: "فشل حفظ الشرح", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل حفظ الشرح" : "Failed to save guide", variant: "destructive" }),
   });
 
   const saveDeliveryMutation = useMutation({
@@ -304,13 +310,13 @@ export default function AdminOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      toast({ title: "✅ تم حفظ بيانات التسليم" });
+      toast({ title: L ? "✅ تم حفظ بيانات التسليم" : "✅ Delivery data saved" });
     },
-    onError: () => toast({ title: "فشل حفظ بيانات التسليم", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل حفظ بيانات التسليم" : "Failed to save delivery data", variant: "destructive" }),
   });
 
   const handleSaveGuide = () => {
-    if (!orderProject?.id) { toast({ title: "لا يوجد مشروع مرتبط بهذا الطلب", variant: "destructive" }); return; }
+    if (!orderProject?.id) { toast({ title: L ? "لا يوجد مشروع مرتبط بهذا الطلب" : "No project linked to this order", variant: "destructive" }); return; }
     saveGuideMutation.mutate({
       projectId: orderProject.id,
       guide: {
@@ -322,7 +328,7 @@ export default function AdminOrders() {
   };
 
   const handleSaveDelivery = () => {
-    if (!orderProject?.id) { toast({ title: "لا يوجد مشروع مرتبط بهذا الطلب", variant: "destructive" }); return; }
+    if (!orderProject?.id) { toast({ title: L ? "لا يوجد مشروع مرتبط بهذا الطلب" : "No project linked to this order", variant: "destructive" }); return; }
     const parsedFiles = deliveryForm.files
       .split("\n")
       .map(line => line.trim())
@@ -385,23 +391,23 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="relative overflow-hidden space-y-5" dir="rtl">
+    <div className="relative overflow-hidden space-y-5" dir={dir}>
       <PageGraphics variant="dashboard" />
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-xl font-bold text-black flex items-center gap-2.5">
             <FileText className="w-6 h-6 text-black/40" />
-            إدارة الطلبات
+            {L ? "إدارة الطلبات" : "Orders Management"}
           </h1>
-          <p className="text-xs text-black/35 mt-0.5">عرض وإدارة وملء بيانات جميع الطلبات</p>
+          <p className="text-xs text-black/35 mt-0.5">{L ? "عرض وإدارة وملء بيانات جميع الطلبات" : "View, manage, and fill in all order data"}</p>
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-40 h-9 text-xs" data-testid="select-filter-status">
-            <SelectValue placeholder="تصفية الحالة" />
+            <SelectValue placeholder={L ? "تصفية الحالة" : "Filter Status"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل ({orders?.length || 0})</SelectItem>
+            <SelectItem value="all">{L ? "الكل" : "All"} ({orders?.length || 0})</SelectItem>
             {Object.entries(statusMap).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label} ({orders?.filter(o => o.status === k).length || 0})</SelectItem>
             ))}
@@ -412,11 +418,11 @@ export default function AdminOrders() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { key: "pending", label: "قيد المراجعة", color: "text-yellow-600 bg-yellow-50" },
-          { key: "approved", label: "موافق عليه", color: "text-green-600 bg-green-50" },
-          { key: "in_progress", label: "قيد التنفيذ", color: "text-blue-600 bg-blue-50" },
-          { key: "completed", label: "مكتمل", color: "text-black/60 bg-black/[0.04]" },
-          { key: "cancelled", label: "ملغي", color: "text-red-600 bg-red-50" },
+          { key: "pending", label: L ? "قيد المراجعة" : "Under Review", color: "text-yellow-600 bg-yellow-50" },
+          { key: "approved", label: L ? "موافق عليه" : "Approved", color: "text-green-600 bg-green-50" },
+          { key: "in_progress", label: L ? "قيد التنفيذ" : "In Progress", color: "text-blue-600 bg-blue-50" },
+          { key: "completed", label: L ? "مكتمل" : "Completed", color: "text-black/60 bg-black/[0.04]" },
+          { key: "cancelled", label: L ? "ملغي" : "Cancelled", color: "text-red-600 bg-red-50" },
         ].map((stat) => (
           <button
             key={stat.key}
@@ -438,13 +444,13 @@ export default function AdminOrders() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-black/[0.06] bg-black/[0.01]">
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">رقم الطلب</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">النشاط</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">الحالة</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المسؤول</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">المبلغ</th>
-                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">التاريخ</th>
-                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">إجراءات</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "رقم الطلب" : "Order #"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "النشاط" : "Activity"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "الحالة" : "Status"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المسؤول" : "Assignee"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "المبلغ" : "Amount"}</th>
+                <th className="text-right p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "التاريخ" : "Date"}</th>
+                <th className="text-left p-4 text-xs font-semibold text-black/40 uppercase tracking-wider">{L ? "إجراءات" : "Actions"}</th>
               </tr>
             </thead>
             <tbody>
@@ -459,7 +465,7 @@ export default function AdminOrders() {
                     <td className="p-4">
                       <p className="text-sm font-medium text-black">{order.projectType || order.sector || "—"}</p>
                       {order.sectorFeatures && order.sectorFeatures.length > 0 && (
-                        <p className="text-[10px] text-black/30 mt-0.5">{order.sectorFeatures.length} ميزة</p>
+                        <p className="text-[10px] text-black/30 mt-0.5">{order.sectorFeatures.length} {L ? "ميزة" : "features"}</p>
                       )}
                     </td>
                     <td className="p-4">
@@ -476,14 +482,14 @@ export default function AdminOrders() {
                           <span className="text-xs text-black/60 font-medium">{assigneeName}</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-black/20 italic">غير معين</span>
+                        <span className="text-xs text-black/20 italic">{L ? "غير معين" : "Unassigned"}</span>
                       )}
                     </td>
                     <td className="p-4 text-sm font-semibold text-black/70">
                       {order.totalAmount ? <span className="flex items-center gap-1">{Number(order.totalAmount).toLocaleString()} <SARIcon size={11} className="opacity-60" /></span> : "—"}
                     </td>
                     <td className="p-4 text-xs text-black/30">
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }) : "—"}
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' }) : "—"}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-1 justify-end">
@@ -493,10 +499,10 @@ export default function AdminOrders() {
                         {order.status === "pending" && (
                           <>
                             <Button size="sm" variant="ghost" className="text-green-600 h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "approved")} disabled={updateMutation.isPending} data-testid={`button-approve-${order.id}`}>
-                              <CheckCircle className="w-3.5 h-3.5 mr-1" />قبول
+                              <CheckCircle className="w-3.5 h-3.5 mr-1" />{L ? "قبول" : "Approve"}
                             </Button>
                             <Button size="sm" variant="ghost" className="text-red-500 h-8 text-xs px-2" onClick={() => handleQuickStatus(order.id, "cancelled")} disabled={updateMutation.isPending} data-testid={`button-reject-${order.id}`}>
-                              <XCircle className="w-3.5 h-3.5 mr-1" />رفض
+                              <XCircle className="w-3.5 h-3.5 mr-1" />{L ? "رفض" : "Reject"}
                             </Button>
                           </>
                         )}
@@ -509,7 +515,7 @@ export default function AdminOrders() {
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-black/30">
                     <FileText className="w-10 h-10 mx-auto mb-3 text-black/10" />
-                    <p className="text-sm">لا توجد طلبات</p>
+                    <p className="text-sm">{L ? "لا توجد طلبات" : "No orders found"}</p>
                   </td>
                 </tr>
               )}
@@ -520,13 +526,13 @@ export default function AdminOrders() {
 
       {/* Full Order Sheet */}
       <Sheet open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <SheetContent side="left" className="w-full sm:max-w-3xl p-0 overflow-hidden" dir="rtl">
+        <SheetContent side="left" className="w-full sm:max-w-3xl p-0 overflow-hidden" dir={dir}>
           {selectedOrder && (
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="px-6 py-5 border-b border-black/[0.06] bg-white flex-shrink-0">
                 <SheetTitle className="text-base font-bold text-black">
-                  طلب #{selectedOrder.id?.toString().slice(-8)}
+                  {L ? "طلب" : "Order"} #{selectedOrder.id?.toString().slice(-8)}
                   {selectedOrder.businessName && <span className="text-black/40 font-normal mr-2">— {selectedOrder.businessName}</span>}
                 </SheetTitle>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -545,16 +551,16 @@ export default function AdminOrders() {
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
                 <TabsList className="w-full rounded-none border-b border-black/[0.06] bg-white h-10 justify-start px-6 gap-0 flex-shrink-0">
                   <TabsTrigger value="details" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
-                    تفاصيل الطلب
+                    {L ? "تفاصيل الطلب" : "Order Details"}
                   </TabsTrigger>
                   <TabsTrigger value="specs" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
-                    المواصفات التقنية
+                    {L ? "المواصفات التقنية" : "Technical Specs"}
                   </TabsTrigger>
                   <TabsTrigger value="manage" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent h-10 px-4">
-                    إدارة الطلب
+                    {L ? "إدارة الطلب" : "Manage Order"}
                   </TabsTrigger>
                   <TabsTrigger value="profit" className="text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-green-600 data-[state=active]:text-green-700 data-[state=active]:bg-transparent h-10 px-4 gap-1">
-                    <DollarSign className="w-3 h-3" />التكاليف والأرباح
+                    <DollarSign className="w-3 h-3" />{L ? "التكاليف والأرباح" : "Costs & Profits"}
                   </TabsTrigger>
                 </TabsList>
 
@@ -565,7 +571,7 @@ export default function AdminOrders() {
                       <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
                         <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
                           <CreditCard className="w-3.5 h-3.5" />
-                          إيصال الدفع البنكي
+                          {L ? "إيصال الدفع البنكي" : "Bank Payment Receipt"}
                         </p>
                         <div 
                           className="border-2 border-dashed border-black/[0.08] rounded-2xl p-8 text-center cursor-pointer hover:border-black/25 hover:bg-black/[0.01] transition-all group relative"
@@ -576,15 +582,15 @@ export default function AdminOrders() {
                               <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
                                 <CheckCircle className="w-6 h-6" />
                               </div>
-                              <p className="text-xs font-bold text-green-700">تم رفع الإيصال بنجاح</p>
-                              <p className="text-[10px] text-black/30">اضغط لتغيير الملف</p>
+                              <p className="text-xs font-bold text-green-700">{L ? "تم رفع الإيصال بنجاح" : "Receipt uploaded successfully"}</p>
+                              <p className="text-[10px] text-black/30">{L ? "اضغط لتغيير الملف" : "Click to change file"}</p>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-2 py-1">
                               <div className="w-10 h-10 rounded-xl bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.07] transition-colors">
                                 <Upload className="w-4 h-4 text-black/25" />
                               </div>
-                              <span className="text-xs text-black/35">اضغط لرفع إيصال التحويل</span>
+                              <span className="text-xs text-black/35">{L ? "اضغط لرفع إيصال التحويل" : "Click to upload transfer receipt"}</span>
                             </div>
                           )}
                         </div>
@@ -605,10 +611,10 @@ export default function AdminOrders() {
                                 await apiRequest("PATCH", `/api/admin/orders/${selectedOrder.id}`, { paymentProofUrl: data.url, isDepositPaid: true });
                                 queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
                                 setSelectedOrder({ ...selectedOrder, paymentProofUrl: data.url, isDepositPaid: true });
-                                toast({ title: "تم رفع الإيصال وتحديث حالة الدفع" });
+                                toast({ title: L ? "تم رفع الإيصال وتحديث حالة الدفع" : "Receipt uploaded and payment status updated" });
                               }
                             } catch (err) {
-                              toast({ title: "فشل رفع الملف", variant: "destructive" });
+                              toast({ title: L ? "فشل رفع الملف" : "File upload failed", variant: "destructive" });
                             }
                           }}
                         />
@@ -620,7 +626,7 @@ export default function AdminOrders() {
                               onClick={() => window.open(selectedOrder.paymentProofUrl, "_blank")}
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
-                              عرض الإيصال الحالي
+                              {L ? "عرض الإيصال الحالي" : "View Current Receipt"}
                             </Button>
                             {selectedOrder.paymentStatus !== "approved" && (
                               <div className="grid grid-cols-2 gap-2">
@@ -634,12 +640,12 @@ export default function AdminOrders() {
                                       await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/approve-transfer`, {});
                                       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
                                       setSelectedOrder({ ...selectedOrder, paymentStatus: "approved", isDepositPaid: true });
-                                      toast({ title: "تمت الموافقة على التحويل" });
-                                    } catch { toast({ title: "فشل", variant: "destructive" }); }
+                                      toast({ title: L ? "تمت الموافقة على التحويل" : "Transfer approved" });
+                                    } catch { toast({ title: L ? "فشل" : "Failed", variant: "destructive" }); }
                                   }}
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
-                                  قبول التحويل
+                                  {L ? "قبول التحويل" : "Approve Transfer"}
                                 </Button>
                                 <Button
                                   variant="outline"
@@ -649,21 +655,21 @@ export default function AdminOrders() {
                                   onClick={() => setRejectTransferOpen(true)}
                                 >
                                   <XCircle className="w-3.5 h-3.5" />
-                                  رفض التحويل
+                                  {L ? "رفض التحويل" : "Reject Transfer"}
                                 </Button>
                               </div>
                             )}
                             {selectedOrder.paymentStatus === "approved" && (
                               <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
                                 <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                <p className="text-xs font-semibold text-green-700">تم قبول التحويل</p>
+                                <p className="text-xs font-semibold text-green-700">{L ? "تم قبول التحويل" : "Transfer approved"}</p>
                               </div>
                             )}
                             {selectedOrder.paymentStatus === "rejected" && (
                               <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
                                 <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                                 <div>
-                                  <p className="text-xs font-semibold text-red-700">تم رفض التحويل</p>
+                                  <p className="text-xs font-semibold text-red-700">{L ? "تم رفض التحويل" : "Transfer rejected"}</p>
                                   {selectedOrder.paymentRejectionReason && (
                                     <p className="text-[10px] text-red-600 mt-0.5">{selectedOrder.paymentRejectionReason}</p>
                                   )}
@@ -677,7 +683,7 @@ export default function AdminOrders() {
                       {/* Client Info */}
                       {selectedOrder.client && (
                         <div>
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات العميل</p>
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "بيانات العميل" : "Client Information"}</p>
                           <div className="bg-black/[0.02] rounded-xl p-4 space-y-2.5 border border-black/[0.04]">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
@@ -722,7 +728,7 @@ export default function AdminOrders() {
                                     data-testid="button-wrong-phone-order"
                                   >
                                     <PhoneOff className="w-3 h-3" />
-                                    الرقم خطأ؟
+                                    {L ? "الرقم خطأ؟" : "Wrong number?"}
                                   </button>
                                 </div>
                               </div>
@@ -733,7 +739,7 @@ export default function AdminOrders() {
 
                       {/* Project Details from questionnaire */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">تفاصيل المشروع</p>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "تفاصيل المشروع" : "Project Details"}</p>
                         <div className="space-y-1.5">
                           {[
                             { label: "اسم النشاط", value: selectedOrder.businessName },
@@ -756,7 +762,7 @@ export default function AdminOrders() {
                       {/* Features */}
                       {selectedOrder.sectorFeatures && selectedOrder.sectorFeatures.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">المميزات المطلوبة</p>
+                          <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "المميزات المطلوبة" : "Required Features"}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {selectedOrder.sectorFeatures.map((f: string) => (
                               <span key={f} className="text-[10px] px-2.5 py-1 rounded-full bg-black text-white font-medium">{f}</span>
@@ -780,25 +786,25 @@ export default function AdminOrders() {
 
                       {/* Payment */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">بيانات الدفع</p>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "بيانات الدفع" : "Payment Details"}</p>
                         <div className="bg-black/[0.02] rounded-xl p-4 border border-black/[0.04] space-y-2">
-                          <div className="flex justify-between"><p className="text-xs text-black/50">طريقة الدفع</p><p className="text-xs font-bold text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</p></div>
-                          <div className="flex justify-between"><p className="text-xs text-black/50">الإجمالي</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></> : "—"}</p></div>
+                          <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "طريقة الدفع" : "Payment Method"}</p><p className="text-xs font-bold text-black">{paymentMethods[selectedOrder.paymentMethod || ""] || "—"}</p></div>
+                          <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "الإجمالي" : "Total"}</p><p className="text-xs font-bold text-black flex items-center gap-1">{selectedOrder.totalAmount ? <>{Number(selectedOrder.totalAmount).toLocaleString()} <SARIcon size={10} className="opacity-70" /></> : "—"}</p></div>
                           {selectedOrder.shippingCompanyName && (
-                            <div className="flex justify-between"><p className="text-xs text-black/50">شركة الشحن</p><p className="text-xs font-bold text-black">{selectedOrder.shippingCompanyName}</p></div>
+                            <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "شركة الشحن" : "Shipping Company"}</p><p className="text-xs font-bold text-black">{selectedOrder.shippingCompanyName}</p></div>
                           )}
                           {!!selectedOrder.shippingFee && (
-                            <div className="flex justify-between"><p className="text-xs text-black/50">رسوم الشحن</p><p className="text-xs font-bold text-black flex items-center gap-1">{Number(selectedOrder.shippingFee).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p></div>
+                            <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "رسوم الشحن" : "Shipping Fee"}</p><p className="text-xs font-bold text-black flex items-center gap-1">{Number(selectedOrder.shippingFee).toLocaleString()} <SARIcon size={10} className="opacity-70" /></p></div>
                           )}
-                          <div className="flex justify-between"><p className="text-xs text-black/50">الدفعة الأولى</p>
+                          <div className="flex justify-between"><p className="text-xs text-black/50">{L ? "الدفعة الأولى" : "First Payment"}</p>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOrder.isDepositPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {selectedOrder.isDepositPaid ? "مدفوعة ✓" : "لم تُدفع"}
+                              {selectedOrder.isDepositPaid ? (L ? "مدفوعة ✓" : "Paid ✓") : (L ? "لم تُدفع" : "Not paid")}
                             </span>
                           </div>
                           {selectedOrder.paymentProofUrl && (
                             <a href={selectedOrder.paymentProofUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-black/50 hover:text-black transition-colors mt-1">
                               <Link2 className="w-3.5 h-3.5" />
-                              عرض إيصال الدفع
+                              {L ? "عرض إيصال الدفع" : "View Payment Receipt"}
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
@@ -809,10 +815,10 @@ export default function AdminOrders() {
                       {(() => {
                         const files = (selectedOrder as any).files || {};
                         const fileCategories = [
-                          { key: "logo",          label: "الشعار",           color: "bg-violet-500" },
-                          { key: "brandIdentity", label: "الهوية البصرية",   color: "bg-blue-500" },
-                          { key: "content",       label: "المحتوى والصور",   color: "bg-emerald-500" },
-                          { key: "paymentProof",  label: "إثبات الدفع",      color: "bg-amber-500" },
+                          { key: "logo",          label: L ? "الشعار" : "Logo",           color: "bg-violet-500" },
+                          { key: "brandIdentity", label: L ? "الهوية البصرية" : "Brand Identity",   color: "bg-blue-500" },
+                          { key: "content",       label: L ? "المحتوى والصور" : "Content & Images",   color: "bg-emerald-500" },
+                          { key: "paymentProof",  label: L ? "إثبات الدفع" : "Payment Proof",      color: "bg-amber-500" },
                         ];
                         const allDocs: { label: string; url: string; color: string }[] = [];
                         fileCategories.forEach(({ key, label, color }) => {
@@ -822,7 +828,7 @@ export default function AdminOrders() {
                         if (!allDocs.length) return null;
                         return (
                           <div>
-                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">مستندات العميل</p>
+                            <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-3">{L ? "مستندات العميل" : "Client Documents"}</p>
                             <div className="space-y-2">
                               {allDocs.map((doc, i) => (
                                 <a key={i} href={doc.url} target="_blank" rel="noreferrer"
@@ -848,70 +854,70 @@ export default function AdminOrders() {
                     {isLoadingSpecs ? (
                       <div className="flex items-center justify-center py-16">
                         <Loader2 className="w-6 h-6 animate-spin text-black/20" />
-                        <p className="text-xs text-black/30 mr-2">جاري تحميل المواصفات...</p>
+                        <p className="text-xs text-black/30 mr-2">{L ? "جاري تحميل المواصفات..." : "Loading specs..."}</p>
                       </div>
                     ) : (
                       <div className="px-6 py-5 space-y-5">
                         {/* Project Info */}
                         <div className="bg-black rounded-2xl p-5">
                           <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Briefcase className="w-3.5 h-3.5" />معلومات المشروع
+                            <Briefcase className="w-3.5 h-3.5" />{L ? "معلومات المشروع" : "Project Info"}
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">اسم المشروع</label>
-                              <Input placeholder="مثال: نظام إدارة مطعم الروضة" value={specsForm.projectName}
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "اسم المشروع" : "Project Name"}</label>
+                              <Input placeholder={L ? "مثال: نظام إدارة مطعم الروضة" : "E.g. Restaurant Management System"} value={specsForm.projectName}
                                 onChange={e => setSpecsForm(f => ({ ...f, projectName: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-specs-projectname" />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">بريد العميل الرسمي</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "بريد العميل الرسمي" : "Official Client Email"}</label>
                               <Input type="email" placeholder="client@example.com" value={specsForm.clientEmail}
                                 onChange={e => setSpecsForm(f => ({ ...f, clientEmail: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white placeholder:text-white/30" data-testid="input-specs-email" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">الميزانية الكلية (<SARIcon size={8} className="opacity-60" />)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">{L ? "الميزانية الكلية" : "Total Budget"} (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.totalBudget}
                                 onChange={e => setSpecsForm(f => ({ ...f, totalBudget: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-budget" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">المدفوع حالياً (<SARIcon size={8} className="opacity-60" />)</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 flex items-center gap-1">{L ? "المدفوع حالياً" : "Amount Paid"} (<SARIcon size={8} className="opacity-60" />)</label>
                               <Input type="number" value={specsForm.paidAmount}
                                 onChange={e => setSpecsForm(f => ({ ...f, paidAmount: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-paid" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">تاريخ البداية</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "تاريخ البداية" : "Start Date"}</label>
                               <Input type="date" value={specsForm.startDate}
                                 onChange={e => setSpecsForm(f => ({ ...f, startDate: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-start" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">تاريخ التسليم</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "تاريخ التسليم" : "Delivery Date"}</label>
                               <Input type="date" value={specsForm.deadline}
                                 onChange={e => setSpecsForm(f => ({ ...f, deadline: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-deadline" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">الساعات المقدّرة</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "الساعات المقدّرة" : "Estimated Hours"}</label>
                               <Input type="number" placeholder="120" value={specsForm.estimatedHours}
                                 onChange={e => setSpecsForm(f => ({ ...f, estimatedHours: e.target.value }))}
                                 className="text-sm bg-white/10 border-white/20 text-white" data-testid="input-specs-hours" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-white/50 mb-1 block">حالة المشروع</label>
+                              <label className="text-[10px] font-bold text-white/50 mb-1 block">{L ? "حالة المشروع" : "Project Status"}</label>
                               <Select value={specsForm.projectStatus} onValueChange={v => setSpecsForm(f => ({ ...f, projectStatus: v }))}>
                                 <SelectTrigger className="text-sm bg-white/10 border-white/20 text-white" data-testid="select-specs-status">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="planning">تخطيط</SelectItem>
-                                  <SelectItem value="in_dev">قيد التطوير</SelectItem>
-                                  <SelectItem value="testing">اختبار</SelectItem>
-                                  <SelectItem value="delivery">تسليم</SelectItem>
-                                  <SelectItem value="closed">مغلق</SelectItem>
+                                  <SelectItem value="planning">{L ? "تخطيط" : "Planning"}</SelectItem>
+                                  <SelectItem value="in_dev">{L ? "قيد التطوير" : "In Development"}</SelectItem>
+                                  <SelectItem value="testing">{L ? "اختبار" : "Testing"}</SelectItem>
+                                  <SelectItem value="delivery">{L ? "تسليم" : "Delivery"}</SelectItem>
+                                  <SelectItem value="closed">{L ? "مغلق" : "Closed"}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -921,11 +927,11 @@ export default function AdminOrders() {
                         {/* Tech Stack */}
                         <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
                           <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Layers className="w-3.5 h-3.5" />البنية التقنية
+                            <Layers className="w-3.5 h-3.5" />{L ? "البنية التقنية" : "Technical Architecture"}
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">Stack التقني الكامل</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "Stack التقني الكامل" : "Full Tech Stack"}</label>
                               <Input placeholder="React 18, Node.js, MongoDB..." value={specsForm.techStack}
                                 onChange={e => setSpecsForm(f => ({ ...f, techStack: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-techstack" />
@@ -937,9 +943,9 @@ export default function AdminOrders() {
                                 className="text-sm" data-testid="input-specs-framework" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">لغة البرمجة</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "لغة البرمجة" : "Programming Language"}</label>
                               <Select value={specsForm.language} onValueChange={v => setSpecsForm(f => ({ ...f, language: v }))}>
-                                <SelectTrigger className="text-sm" data-testid="select-specs-lang"><SelectValue placeholder="اختر اللغة" /></SelectTrigger>
+                                <SelectTrigger className="text-sm" data-testid="select-specs-lang"><SelectValue placeholder={L ? "اختر اللغة" : "Select Language"} /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="TypeScript">TypeScript</SelectItem>
                                   <SelectItem value="JavaScript">JavaScript</SelectItem>
@@ -950,9 +956,9 @@ export default function AdminOrders() {
                               </Select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">قاعدة البيانات</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "قاعدة البيانات" : "Database"}</label>
                               <Select value={specsForm.database} onValueChange={v => setSpecsForm(f => ({ ...f, database: v }))}>
-                                <SelectTrigger className="text-sm" data-testid="select-specs-db"><SelectValue placeholder="اختر قاعدة البيانات" /></SelectTrigger>
+                                <SelectTrigger className="text-sm" data-testid="select-specs-db"><SelectValue placeholder={L ? "اختر قاعدة البيانات" : "Select Database"} /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="MongoDB Atlas M0">MongoDB Atlas (Free)</SelectItem>
                                   <SelectItem value="MongoDB Atlas M10">MongoDB Atlas M10</SelectItem>
@@ -964,9 +970,9 @@ export default function AdminOrders() {
                               </Select>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الاستضافة</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "الاستضافة" : "Hosting"}</label>
                               <Select value={specsForm.hosting} onValueChange={v => setSpecsForm(f => ({ ...f, hosting: v }))}>
-                                <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder="اختر الاستضافة" /></SelectTrigger>
+                                <SelectTrigger className="text-sm" data-testid="select-specs-hosting"><SelectValue placeholder={L ? "اختر الاستضافة" : "Select Hosting"} /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="Vercel">Vercel</SelectItem>
                                   <SelectItem value="Netlify">Netlify</SelectItem>
@@ -990,7 +996,7 @@ export default function AdminOrders() {
                         {/* Deployment */}
                         <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
                           <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Server className="w-3.5 h-3.5" />بيانات النشر
+                            <Server className="w-3.5 h-3.5" />{L ? "بيانات النشر" : "Deployment Data"}
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -1012,19 +1018,19 @@ export default function AdminOrders() {
                                 className="text-sm" data-testid="input-specs-ip" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">الدومين المخصص</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "الدومين المخصص" : "Custom Domain"}</label>
                               <Input placeholder="project.com" value={specsForm.customDomain}
                                 onChange={e => setSpecsForm(f => ({ ...f, customDomain: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-domain" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">اسم المستخدم للنشر</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "اسم المستخدم للنشر" : "Deployment Username"}</label>
                               <Input value={specsForm.deploymentUsername}
                                 onChange={e => setSpecsForm(f => ({ ...f, deploymentUsername: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-deploy-user" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">كلمة مرور النشر</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "كلمة مرور النشر" : "Deployment Password"}</label>
                               <Input type="password" value={specsForm.deploymentPassword}
                                 onChange={e => setSpecsForm(f => ({ ...f, deploymentPassword: e.target.value }))}
                                 className="text-sm" data-testid="input-specs-deploy-pass" />
@@ -1047,31 +1053,31 @@ export default function AdminOrders() {
                         {/* Design Notes */}
                         <div className="border border-black/[0.07] rounded-2xl p-5 bg-white">
                           <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Globe className="w-3.5 h-3.5" />ملاحظات التصميم والتسليم
+                            <Globe className="w-3.5 h-3.5" />{L ? "ملاحظات التصميم والتسليم" : "Design & Delivery Notes"}
                           </p>
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">مفهوم المشروع</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "مفهوم المشروع" : "Project Concept"}</label>
                               <Textarea value={specsForm.projectConcept}
                                 onChange={e => setSpecsForm(f => ({ ...f, projectConcept: e.target.value }))}
                                 className="text-sm h-16 resize-none" data-testid="input-specs-concept" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">لوحة الألوان</label>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "لوحة الألوان" : "Color Palette"}</label>
                                 <Input placeholder="#000000, #FFFFFF..." value={specsForm.colorPalette}
                                   onChange={e => setSpecsForm(f => ({ ...f, colorPalette: e.target.value }))}
                                   className="text-sm" data-testid="input-specs-colors" />
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-black/50 mb-1 block">روابط مرجعية</label>
+                                <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "روابط مرجعية" : "Reference Links"}</label>
                                 <Input placeholder="behance.net/..." value={specsForm.referenceLinks}
                                   onChange={e => setSpecsForm(f => ({ ...f, referenceLinks: e.target.value }))}
                                   className="text-sm" data-testid="input-specs-refs" />
                               </div>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-black/50 mb-1 block">ملاحظات الفريق</label>
+                              <label className="text-[10px] font-bold text-black/50 mb-1 block">{L ? "ملاحظات الفريق" : "Team Notes"}</label>
                               <Textarea value={specsForm.teamNotes}
                                 onChange={e => setSpecsForm(f => ({ ...f, teamNotes: e.target.value }))}
                                 className="text-sm h-16 resize-none" data-testid="input-specs-team-notes" />
@@ -1086,30 +1092,30 @@ export default function AdminOrders() {
                           data-testid="button-save-specs"
                         >
                           {saveSpecsMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                          حفظ المواصفات التقنية
+                          {L ? "حفظ المواصفات التقنية" : "Save Technical Specs"}
                         </Button>
 
                         {/* ─── Usage Guide Section ─── */}
                         <div className="border border-blue-200 rounded-2xl p-5 bg-blue-50">
                           <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <FileText className="w-3.5 h-3.5" />شرح استخدام النظام
+                            <FileText className="w-3.5 h-3.5" />{L ? "شرح استخدام النظام" : "System Usage Guide"}
                           </p>
                           {!orderProject && (
-                            <p className="text-xs text-blue-600/60 mb-3">⚠️ لا يوجد مشروع مرتبط بهذا الطلب بعد. أنشئ المشروع أولاً لتتمكن من إضافة شرح الاستخدام.</p>
+                            <p className="text-xs text-blue-600/60 mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط بهذا الطلب بعد. أنشئ المشروع أولاً لتتمكن من إضافة شرح الاستخدام." : "No project linked to this order yet. Create the project first to add the usage guide."}</p>
                           )}
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">عنوان الدليل</label>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "عنوان الدليل" : "Guide Title"}</label>
                               <Input value={guideForm.title} onChange={e => setGuideForm(f => ({ ...f, title: e.target.value }))}
-                                placeholder="شرح استخدام النظام" className="text-sm bg-white" data-testid="input-guide-title" disabled={!orderProject} />
+                                placeholder={L ? "شرح استخدام النظام" : "System Usage Guide"} className="text-sm bg-white" data-testid="input-guide-title" disabled={!orderProject} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">محتوى الشرح (يظهر للعميل في لوحة التحكم)</label>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "محتوى الشرح (يظهر للعميل في لوحة التحكم)" : "Guide Content (shown to client in dashboard)"}</label>
                               <Textarea value={guideForm.description} onChange={e => setGuideForm(f => ({ ...f, description: e.target.value }))}
-                                placeholder="اكتب شرحاً مفصّلاً لكيفية استخدام النظام، خطوة بخطوة..." className="text-sm h-28 resize-none bg-white" data-testid="textarea-guide-desc" disabled={!orderProject} />
+                                placeholder={L ? "اكتب شرحاً مفصّلاً لكيفية استخدام النظام، خطوة بخطوة..." : "Write a detailed guide on how to use the system, step by step..."} className="text-sm h-28 resize-none bg-white" data-testid="textarea-guide-desc" disabled={!orderProject} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">روابط ملفات مرفقة (رابط في كل سطر)</label>
+                              <label className="text-[10px] font-bold text-blue-700 mb-1 block">{L ? "روابط ملفات مرفقة (رابط في كل سطر)" : "Attached file links (one link per line)"}</label>
                               <Textarea value={guideForm.files} onChange={e => setGuideForm(f => ({ ...f, files: e.target.value }))}
                                 placeholder="https://docs.example.com/guide.pdf&#10;https://example.com/video.mp4" className="text-sm h-16 resize-none font-mono bg-white text-xs" data-testid="textarea-guide-files" disabled={!orderProject} dir="ltr" />
                             </div>
@@ -1117,7 +1123,7 @@ export default function AdminOrders() {
                               className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-xl text-xs font-bold"
                               data-testid="button-save-guide">
                               {saveGuideMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                              حفظ شرح الاستخدام
+                              {L ? "حفظ شرح الاستخدام" : "Save Usage Guide"}
                             </Button>
                           </div>
                         </div>
@@ -1125,23 +1131,23 @@ export default function AdminOrders() {
                         {/* ─── Delivery Data Section ─── */}
                         <div className="border border-green-200 rounded-2xl p-5 bg-green-50">
                           <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Package className="w-3.5 h-3.5" />تسليم المشروع — فيديو وملفات
+                            <Package className="w-3.5 h-3.5" />{L ? "تسليم المشروع — فيديو وملفات" : "Project Delivery — Video & Files"}
                           </p>
                           {!orderProject && (
-                            <p className="text-xs text-green-600/60 mb-3">⚠️ لا يوجد مشروع مرتبط. أنشئ المشروع أولاً.</p>
+                            <p className="text-xs text-green-600/60 mb-3">⚠️ {L ? "لا يوجد مشروع مرتبط. أنشئ المشروع أولاً." : "No project linked. Create the project first."}</p>
                           )}
                           <div className="space-y-3">
                             <div>
-                              <label className="text-[10px] font-bold text-green-700 mb-1 block">رابط فيديو التسليم / الشرح (YouTube أو أي رابط)</label>
+                              <label className="text-[10px] font-bold text-green-700 mb-1 block">{L ? "رابط فيديو التسليم / الشرح (YouTube أو أي رابط)" : "Delivery video / guide link (YouTube or any URL)"}</label>
                               <Input value={deliveryForm.videoUrl} onChange={e => setDeliveryForm(f => ({ ...f, videoUrl: e.target.value }))}
                                 placeholder="https://youtube.com/watch?v=..." className="text-sm bg-white font-mono" dir="ltr" disabled={!orderProject} data-testid="input-delivery-video" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-green-700 mb-1 block">ملفات التسليم (سطر لكل ملف: اسم|رابط|إيموجي)</label>
+                              <label className="text-[10px] font-bold text-green-700 mb-1 block">{L ? "ملفات التسليم (سطر لكل ملف: اسم|رابط|إيموجي)" : "Delivery files (one per line: name|url|emoji)"}</label>
                               <Textarea value={deliveryForm.files} onChange={e => setDeliveryForm(f => ({ ...f, files: e.target.value }))}
                                 placeholder={"دليل الاستخدام|https://drive.google.com/...|📄\nشرح الكود المصدري|https://github.com/...|💻"}
                                 className="text-sm h-24 resize-none font-mono bg-white text-xs" data-testid="textarea-delivery-files" disabled={!orderProject} dir="ltr" />
-                              <p className="text-[10px] text-green-600/60 mt-1">صيغة كل سطر: اسم الملف | رابط التحميل | إيموجي (اختياري)</p>
+                              <p className="text-[10px] text-green-600/60 mt-1">{L ? "صيغة كل سطر: اسم الملف | رابط التحميل | إيموجي (اختياري)" : "Each line format: filename | download URL | emoji (optional)"}</p>
                             </div>
                             <Button onClick={handleSaveDelivery} disabled={saveDeliveryMutation.isPending || !orderProject}
                               className="w-full h-9 bg-green-600 hover:bg-green-700 text-white gap-2 rounded-xl text-xs font-bold"
@@ -1162,7 +1168,7 @@ export default function AdminOrders() {
                     <div className="px-6 py-5 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-black/50 mb-1.5">الحالة</label>
+                          <label className="block text-xs font-medium text-black/50 mb-1.5">{L ? "الحالة" : "Status"}</label>
                           <Select value={editStatus} onValueChange={setEditStatus}>
                             <SelectTrigger className="h-10" data-testid="select-order-status">
                               <SelectValue />
@@ -1175,7 +1181,7 @@ export default function AdminOrders() {
                           </Select>
                         </div>
                         <div>
-                          <label className="flex items-center gap-1 text-xs font-medium text-black/50 mb-1.5">المبلغ (<SARIcon size={9} className="opacity-60" />)</label>
+                          <label className="flex items-center gap-1 text-xs font-medium text-black/50 mb-1.5">{L ? "المبلغ" : "Amount"} (<SARIcon size={9} className="opacity-60" />)</label>
                           <Input type="number" value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
                             className="h-10" data-testid="input-order-amount" />
@@ -1184,14 +1190,14 @@ export default function AdminOrders() {
 
                       <div>
                         <label className="block text-xs font-medium text-black/50 mb-1.5 flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5" />تعيين لموظف
+                          <UserCheck className="w-3.5 h-3.5" />{L ? "تعيين لموظف" : "Assign to Employee"}
                         </label>
                         <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
                           <SelectTrigger className="h-10" data-testid="select-assign-employee">
-                            <SelectValue placeholder="اختر موظفاً..." />
+                            <SelectValue placeholder={L ? "اختر موظفاً..." : "Choose an employee..."} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">غير معين</SelectItem>
+                            <SelectItem value="none">{L ? "غير معين" : "Unassigned"}</SelectItem>
                             {employees?.map(emp => (
                               <SelectItem key={emp.id} value={emp.id}>
                                 {emp.fullName} — {roleLabels[emp.role] || emp.role}
@@ -1202,11 +1208,11 @@ export default function AdminOrders() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-black/50 mb-1.5">ملاحظات داخلية للفريق</label>
+                        <label className="block text-xs font-medium text-black/50 mb-1.5">{L ? "ملاحظات داخلية للفريق" : "Internal Team Notes"}</label>
                         <Textarea
                           value={editAdminNotes}
                           onChange={(e) => setEditAdminNotes(e.target.value)}
-                          placeholder="ملاحظات للفريق الداخلي..."
+                          placeholder={L ? "ملاحظات للفريق الداخلي..." : "Notes for the internal team..."}
                           rows={4}
                           className="text-sm resize-none"
                           data-testid="input-admin-notes"
@@ -1221,7 +1227,7 @@ export default function AdminOrders() {
                       >
                         {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                         <Save className="w-4 h-4" />
-                        حفظ التغييرات
+                        {L ? "حفظ التغييرات" : "Save Changes"}
                       </Button>
 
                       {["approved", "in_progress"].includes(selectedOrder.status) && (
@@ -1256,21 +1262,21 @@ export default function AdminOrders() {
                         return (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                              <p className="text-[10px] text-blue-500 font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />إجمالي الإيراد</p>
+                              <p className="text-[10px] text-blue-500 font-bold mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />{L ? "إجمالي الإيراد" : "Total Revenue"}</p>
                               <p className="text-xl font-black text-blue-700">{revenue.toLocaleString()}</p>
                               <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
                             <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-                              <p className="text-[10px] text-red-500 font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />إجمالي التكاليف</p>
+                              <p className="text-[10px] text-red-500 font-bold mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" />{L ? "إجمالي التكاليف" : "Total Costs"}</p>
                               <p className="text-xl font-black text-red-700">{totalCosts.toLocaleString()}</p>
                               <SARIcon size={11} className="opacity-40 mt-0.5" />
                             </div>
                             <div className={`border rounded-2xl p-4 ${isProfit ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
                               <p className={`text-[10px] font-bold mb-1 flex items-center gap-1 ${isProfit ? "text-green-600" : "text-orange-600"}`}>
-                                {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}صافي الربح
+                                {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}{L ? "صافي الربح" : "Net Profit"}
                               </p>
                               <p className={`text-xl font-black ${isProfit ? "text-green-700" : "text-orange-700"}`}>{netProfit.toLocaleString()}</p>
-                              <p className={`text-[10px] ${isProfit ? "text-green-500" : "text-orange-500"}`}>هامش {margin}%</p>
+                              <p className={`text-[10px] ${isProfit ? "text-green-500" : "text-orange-500"}`}>{L ? "هامش" : "Margin"} {margin}%</p>
                             </div>
                           </div>
                         );
@@ -1285,16 +1291,16 @@ export default function AdminOrders() {
                         return revenue > 0 ? (
                           <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
                             <div className="flex justify-between text-[10px] text-black/40 mb-2">
-                              <span>التكاليف {costPct.toFixed(0)}%</span>
-                              <span>الربح {(100 - costPct).toFixed(0)}%</span>
+                              <span>{L ? "التكاليف" : "Costs"} {costPct.toFixed(0)}%</span>
+                              <span>{L ? "الربح" : "Profit"} {(100 - costPct).toFixed(0)}%</span>
                             </div>
                             <div className="h-3 bg-black/[0.04] rounded-full overflow-hidden flex">
                               <div className="h-full bg-red-400 rounded-full transition-all duration-500" style={{ width: `${costPct}%` }} />
                               <div className="h-full bg-green-400 flex-1 transition-all duration-500" />
                             </div>
                             <div className="flex gap-4 mt-2 text-[10px]">
-                              <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />تكاليف</span>
-                              <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />ربح صافي</span>
+                              <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />{L ? "تكاليف" : "Costs"}</span>
+                              <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
                             </div>
                           </div>
                         ) : null;
@@ -1303,30 +1309,30 @@ export default function AdminOrders() {
                       {/* Add Expense */}
                       <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
                         <p className="text-[10px] font-bold text-black/50 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                          <PlusCircle className="w-3.5 h-3.5" />إضافة مصروف جديد
+                          <PlusCircle className="w-3.5 h-3.5" />{L ? "إضافة مصروف جديد" : "Add New Expense"}
                         </p>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div>
-                            <Label className="text-[10px] text-black/40 mb-1 block">الفئة</Label>
+                            <Label className="text-[10px] text-black/40 mb-1 block">{L ? "الفئة" : "Category"}</Label>
                             <Select value={newExpense.category} onValueChange={v => setNewExpense(p => ({ ...p, category: v }))}>
                               <SelectTrigger className="h-8 text-xs border-black/[0.08]" data-testid="select-expense-category">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="hosting">استضافة</SelectItem>
-                                <SelectItem value="domain">دومين</SelectItem>
-                                <SelectItem value="freelancer">مستقل / مقاول</SelectItem>
-                                <SelectItem value="license">ترخيص / اشتراك</SelectItem>
-                                <SelectItem value="ads">إعلانات</SelectItem>
-                                <SelectItem value="design">تصميم</SelectItem>
-                                <SelectItem value="salary">راتب / أجر</SelectItem>
-                                <SelectItem value="commission">عمولة</SelectItem>
-                                <SelectItem value="other">أخرى</SelectItem>
+                                <SelectItem value="hosting">{L ? "استضافة" : "Hosting"}</SelectItem>
+                                <SelectItem value="domain">{L ? "دومين" : "Domain"}</SelectItem>
+                                <SelectItem value="freelancer">{L ? "مستقل / مقاول" : "Freelancer / Contractor"}</SelectItem>
+                                <SelectItem value="license">{L ? "ترخيص / اشتراك" : "License / Subscription"}</SelectItem>
+                                <SelectItem value="ads">{L ? "إعلانات" : "Ads"}</SelectItem>
+                                <SelectItem value="design">{L ? "تصميم" : "Design"}</SelectItem>
+                                <SelectItem value="salary">{L ? "راتب / أجر" : "Salary / Wage"}</SelectItem>
+                                <SelectItem value="commission">{L ? "عمولة" : "Commission"}</SelectItem>
+                                <SelectItem value="other">{L ? "أخرى" : "Other"}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-[10px] text-black/40 mb-1 flex items-center gap-1">المبلغ (<SARIcon size={8} className="opacity-50" />)</Label>
+                            <Label className="text-[10px] text-black/40 mb-1 flex items-center gap-1">{L ? "المبلغ" : "Amount"} (<SARIcon size={8} className="opacity-50" />)</Label>
                             <Input
                               type="number"
                               placeholder="0"
@@ -1339,7 +1345,7 @@ export default function AdminOrders() {
                         </div>
                         <div className="flex gap-2">
                           <Input
-                            placeholder="وصف المصروف (مثال: استضافة Cloudflare لمدة سنة)"
+                            placeholder={L ? "وصف المصروف (مثال: استضافة Cloudflare لمدة سنة)" : "Expense description (e.g., Cloudflare hosting for 1 year)"}
                             value={newExpense.description}
                             onChange={e => setNewExpense(p => ({ ...p, description: e.target.value }))}
                             className="h-8 text-xs border-black/[0.08] flex-1"
@@ -1362,27 +1368,27 @@ export default function AdminOrders() {
 
                       {/* Expenses List */}
                       <div>
-                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-2">قائمة المصروفات ({(orderExpenses || []).length})</p>
+                        <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-2">{L ? "قائمة المصروفات" : "Expenses List"} ({(orderExpenses || []).length})</p>
                         {isLoadingExpenses ? (
                           <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-black/20" /></div>
                         ) : (orderExpenses || []).length === 0 ? (
                           <div className="py-8 text-center bg-black/[0.01] border border-black/[0.04] rounded-2xl">
                             <BarChart3 className="w-8 h-8 text-black/10 mx-auto mb-2" />
-                            <p className="text-xs text-black/25">لا توجد مصروفات مسجّلة لهذا الطلب</p>
+                            <p className="text-xs text-black/25">{L ? "لا توجد مصروفات مسجّلة لهذا الطلب" : "No expenses recorded for this order"}</p>
                           </div>
                         ) : (
                           <div className="space-y-2">
                             {(orderExpenses || []).map((exp: any) => {
                               const catLabels: Record<string, { label: string; color: string }> = {
-                                hosting: { label: "استضافة", color: "bg-blue-50 text-blue-700" },
-                                domain: { label: "دومين", color: "bg-purple-50 text-purple-700" },
-                                freelancer: { label: "مستقل", color: "bg-orange-50 text-orange-700" },
-                                license: { label: "ترخيص", color: "bg-amber-50 text-amber-700" },
-                                ads: { label: "إعلانات", color: "bg-pink-50 text-pink-700" },
-                                design: { label: "تصميم", color: "bg-violet-50 text-violet-700" },
-                                salary: { label: "راتب", color: "bg-teal-50 text-teal-700" },
-                                commission: { label: "عمولة", color: "bg-cyan-50 text-cyan-700" },
-                                other: { label: "أخرى", color: "bg-black/[0.04] text-black/50" },
+                                hosting: { label: L ? "استضافة" : "Hosting", color: "bg-blue-50 text-blue-700" },
+                                domain: { label: L ? "دومين" : "Domain", color: "bg-purple-50 text-purple-700" },
+                                freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-orange-50 text-orange-700" },
+                                license: { label: L ? "ترخيص" : "License", color: "bg-amber-50 text-amber-700" },
+                                ads: { label: L ? "إعلانات" : "Ads", color: "bg-pink-50 text-pink-700" },
+                                design: { label: L ? "تصميم" : "Design", color: "bg-violet-50 text-violet-700" },
+                                salary: { label: L ? "راتب" : "Salary", color: "bg-teal-50 text-teal-700" },
+                                commission: { label: L ? "عمولة" : "Commission", color: "bg-cyan-50 text-cyan-700" },
+                                other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
                               };
                               const cat = catLabels[exp.category] || catLabels.other;
                               return (
@@ -1415,14 +1421,14 @@ export default function AdminOrders() {
 
       {/* ── Phone correction request dialog ── */}
       <Dialog open={phoneReqOpen} onOpenChange={open => { setPhoneReqOpen(open); if (!open) setPhoneReqNotes(""); }}>
-        <DialogContent dir="rtl" className="max-w-md">
+        <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PhoneOff className="w-4 h-4 text-rose-500" />
-              رفع طلب تصحيح الرقم
+              {L ? "رفع طلب تصحيح الرقم" : "Submit Phone Correction Request"}
             </DialogTitle>
             <DialogDescription>
-              العميل: <span className="font-semibold text-foreground">{selectedOrder?.client?.fullName || selectedOrder?.client?.username}</span>
+              {L ? "العميل:" : "Client:"} <span className="font-semibold text-foreground">{selectedOrder?.client?.fullName || selectedOrder?.client?.username}</span>
               {selectedOrder?.client?.phone && (
                 <span className="mr-2 text-foreground/50 font-mono text-xs">{selectedOrder.client.phone}</span>
               )}
@@ -1430,18 +1436,18 @@ export default function AdminOrders() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">سبب الطلب أو الملاحظات</label>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">{L ? "سبب الطلب أو الملاحظات" : "Request Reason or Notes"}</label>
               <Textarea
                 value={phoneReqNotes}
                 onChange={e => setPhoneReqNotes(e.target.value)}
-                placeholder="مثال: العميل أفاد أن الرقم لا يعمل، أو تم تغيير الرقم..."
+                placeholder={L ? "مثال: العميل أفاد أن الرقم لا يعمل، أو تم تغيير الرقم..." : "E.g. Client said the number doesn't work, or number was changed..."}
                 className="resize-none text-sm"
                 rows={3}
                 data-testid="textarea-phone-request-notes-order"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setPhoneReqOpen(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setPhoneReqOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
                 className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
                 onClick={() => selectedOrder?.userId && phoneReqMutation.mutate({ clientId: selectedOrder.userId, notes: phoneReqNotes })}
@@ -1449,7 +1455,7 @@ export default function AdminOrders() {
                 data-testid="button-submit-phone-request-order"
               >
                 {phoneReqMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                رفع الطلب
+                {L ? "رفع الطلب" : "Submit Request"}
               </Button>
             </div>
           </div>
@@ -1458,47 +1464,47 @@ export default function AdminOrders() {
 
       {/* Reject Bank Transfer Dialog */}
       <Dialog open={rejectTransferOpen} onOpenChange={open => { setRejectTransferOpen(open); if (!open) setRejectTransferReason(""); }}>
-        <DialogContent dir="rtl" className="max-w-md">
+        <DialogContent dir={dir} className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <XCircle className="w-4 h-4 text-red-500" />
-              رفض إيصال التحويل
+              {L ? "رفض إيصال التحويل" : "Reject Transfer Receipt"}
             </DialogTitle>
             <DialogDescription>
-              سيتم إرسال إشعار للعميل بسبب الرفض وطلب إعادة رفع إيصال صحيح
+              {L ? "سيتم إرسال إشعار للعميل بسبب الرفض وطلب إعادة رفع إيصال صحيح" : "The client will be notified of the rejection and asked to upload a correct receipt"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">سبب الرفض</label>
+              <label className="text-xs font-semibold text-foreground/60 mb-1.5 block">{L ? "سبب الرفض" : "Rejection Reason"}</label>
               <Textarea
                 value={rejectTransferReason}
                 onChange={e => setRejectTransferReason(e.target.value)}
-                placeholder="مثال: الإيصال غير واضح، المبلغ غير متطابق، تاريخ منتهي..."
+                placeholder={L ? "مثال: الإيصال غير واضح، المبلغ غير متطابق، تاريخ منتهي..." : "E.g. Receipt unclear, amount doesn't match, expired date..."}
                 className="resize-none text-sm"
                 rows={3}
                 data-testid="textarea-reject-transfer-reason"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setRejectTransferOpen(false)}>إلغاء</Button>
+              <Button variant="outline" onClick={() => setRejectTransferOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
               <Button
                 className="bg-red-500 hover:bg-red-600 text-white gap-2"
                 data-testid="button-confirm-reject-transfer"
                 onClick={async () => {
                   if (!selectedOrder) return;
                   try {
-                    await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/reject-transfer`, { reason: rejectTransferReason || "إيصال التحويل غير صحيح" });
+                    await apiRequest("POST", `/api/admin/orders/${selectedOrder.id}/reject-transfer`, { reason: rejectTransferReason || (L ? "إيصال التحويل غير صحيح" : "Transfer receipt is incorrect") });
                     queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-                    setSelectedOrder({ ...selectedOrder, paymentStatus: "rejected", paymentRejectionReason: rejectTransferReason || "إيصال التحويل غير صحيح" });
+                    setSelectedOrder({ ...selectedOrder, paymentStatus: "rejected", paymentRejectionReason: rejectTransferReason || (L ? "إيصال التحويل غير صحيح" : "Transfer receipt is incorrect") });
                     setRejectTransferOpen(false);
                     setRejectTransferReason("");
-                    toast({ title: "تم رفض التحويل وإرسال إشعار للعميل" });
-                  } catch { toast({ title: "فشل الرفض", variant: "destructive" }); }
+                    toast({ title: L ? "تم رفض التحويل وإرسال إشعار للعميل" : "Transfer rejected and client notified" });
+                  } catch { toast({ title: L ? "فشل الرفض" : "Rejection failed", variant: "destructive" }); }
                 }}
               >
                 <XCircle className="w-4 h-4" />
-                تأكيد الرفض وإرسال إشعار
+                {L ? "تأكيد الرفض وإرسال إشعار" : "Confirm Rejection & Notify Client"}
               </Button>
             </div>
           </div>

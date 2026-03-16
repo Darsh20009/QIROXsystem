@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Mail, MailOpen, Send, Trash2, Download, CheckCircle, Archive } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { exportToExcel } from "@/lib/excel";
 
 interface ContactMessage {
@@ -31,12 +32,16 @@ const STATUS_COLORS: Record<string, string> = {
   replied: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   archived: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
 };
-const STATUS_LABELS: Record<string, string> = {
-  new: "جديدة", read: "مقروءة", replied: "تم الرد", archived: "مؤرشفة",
-};
+function getStatusLabels(L: boolean): Record<string, string> {
+  return L ? { new: "جديدة", read: "مقروءة", replied: "تم الرد", archived: "مؤرشفة" }
+           : { new: "New", read: "Read", replied: "Replied", archived: "Archived" };
+}
 
 export default function AdminContactMessages() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STATUS_LABELS = getStatusLabels(L);
   const queryClient = useQueryClient();
   const [replyMap, setReplyMap] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState("all");
@@ -60,19 +65,19 @@ export default function AdminContactMessages() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/contact-messages"] });
       if (vars.adminReply) {
         setReplyMap(p => { const n = { ...p }; delete n[vars.id]; return n; });
-        toast({ title: "تم إرسال الرد" });
+        toast({ title: L ? "تم إرسال الرد" : "Reply sent" });
       }
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/contact-messages/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/contact-messages"] });
-      toast({ title: "تم حذف الرسالة" });
+      toast({ title: L ? "تم حذف الرسالة" : "Message deleted" });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const filtered = (messages || []).filter(m => {
@@ -86,7 +91,7 @@ export default function AdminContactMessages() {
   const exportExcel = () => {
     if (!messages) return;
     exportToExcel("contact-messages.xlsx", [{
-      name: "رسائل التواصل",
+      name: L ? "رسائل التواصل" : "Contact Messages",
       data: messages.map(m => ({
         التاريخ: new Date(m.createdAt).toLocaleString("ar-SA"),
         الاسم: m.name,
@@ -112,7 +117,7 @@ export default function AdminContactMessages() {
   };
 
   return (
-    <div className="relative overflow-hidden space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -120,21 +125,21 @@ export default function AdminContactMessages() {
             <Mail className="w-5 h-5 text-white dark:text-black" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-black dark:text-white" data-testid="text-page-title">رسائل التواصل</h1>
+            <h1 className="text-xl font-black text-black dark:text-white" data-testid="text-page-title">{L ? "رسائل التواصل" : "Contact Messages"}</h1>
             <p className="text-xs text-black/35 dark:text-white/35">
-              {(messages || []).length} رسالة — {unreadCount} غير مقروءة
+              {(messages || []).length} {L ? "رسالة" : "messages"} — {unreadCount} {L ? "غير مقروءة" : "unread"}
             </p>
           </div>
         </div>
         <Button onClick={exportExcel} variant="outline" size="sm" className="gap-2 dark:text-white dark:border-white/10" data-testid="button-export">
           <Download className="w-4 h-4" />
-          تصدير
+          {L ? "تصدير" : "Export"}
         </Button>
       </div>
 
       <div className="flex gap-3 flex-wrap">
         <Input
-          placeholder="بحث بالاسم أو البريد أو الموضوع..."
+          placeholder={L ? "بحث بالاسم أو البريد أو الموضوع..." : "Search by name, email or subject..."}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="max-w-xs border-black/10 dark:border-white/10 dark:bg-gray-900 dark:text-white"
@@ -145,7 +150,7 @@ export default function AdminContactMessages() {
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === s ? "bg-black dark:bg-white text-white dark:text-black" : "bg-black/[0.04] dark:bg-white/[0.04] text-black/50 dark:text-white/50"}`}
               data-testid={`button-filter-${s}`}>
-              {s === "all" ? "الكل" : STATUS_LABELS[s]}
+              {s === "all" ? (L ? "الكل" : "All") : STATUS_LABELS[s]}
             </button>
           ))}
         </div>
@@ -155,11 +160,11 @@ export default function AdminContactMessages() {
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-black/20 dark:text-white/20" /></div>
       ) : isError ? (
         <div className="text-center py-16">
-          <p className="text-black/40 dark:text-white/40 mb-3">حدث خطأ في تحميل الرسائل</p>
-          <Button variant="outline" onClick={() => refetch()} className="dark:text-white dark:border-white/10" data-testid="button-retry">إعادة المحاولة</Button>
+          <p className="text-black/40 dark:text-white/40 mb-3">{L ? "حدث خطأ في تحميل الرسائل" : "Error loading messages"}</p>
+          <Button variant="outline" onClick={() => refetch()} className="dark:text-white dark:border-white/10" data-testid="button-retry">{L ? "إعادة المحاولة" : "Retry"}</Button>
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-black/30 dark:text-white/30 py-16">لا توجد رسائل</p>
+        <p className="text-center text-black/30 dark:text-white/30 py-16">{L ? "لا توجد رسائل" : "No messages"}</p>
       ) : (
         <div className="space-y-4">
           {filtered.map(msg => (
@@ -189,7 +194,7 @@ export default function AdminContactMessages() {
                     </div>
                   </div>
                   <span className="text-[11px] text-black/25 dark:text-white/25 shrink-0">
-                    {new Date(msg.createdAt).toLocaleDateString("ar-SA")}
+                    {new Date(msg.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
                   </span>
                 </div>
 
@@ -201,8 +206,8 @@ export default function AdminContactMessages() {
                       <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-1">
                           <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                          <span className="text-xs font-bold text-green-700 dark:text-green-400">الرد</span>
-                          {msg.repliedAt && <span className="text-[10px] text-green-500">{new Date(msg.repliedAt).toLocaleDateString("ar-SA")}</span>}
+                          <span className="text-xs font-bold text-green-700 dark:text-green-400">{L ? "الرد" : "Reply"}</span>
+                          {msg.repliedAt && <span className="text-[10px] text-green-500">{new Date(msg.repliedAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</span>}
                         </div>
                         <p className="text-sm text-green-800 dark:text-green-300">{msg.adminReply}</p>
                       </div>
@@ -216,23 +221,23 @@ export default function AdminContactMessages() {
                         data-testid={`button-archive-${msg.id}`}
                       >
                         <Archive className="w-3.5 h-3.5" />
-                        أرشفة
+                        {L ? "أرشفة" : "Archive"}
                       </Button>
                       <Button
                         size="sm" variant="outline"
                         className="gap-1 text-xs text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
-                        onClick={() => { if (confirm("هل أنت متأكد من حذف هذه الرسالة؟")) deleteMutation.mutate(msg.id); }}
+                        onClick={() => { if (confirm(L ? "هل أنت متأكد من حذف هذه الرسالة؟" : "Delete this message?")) deleteMutation.mutate(msg.id); }}
                         data-testid={`button-delete-${msg.id}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        حذف
+                        {L ? "حذف" : "Delete"}
                       </Button>
                     </div>
 
                     {msg.status !== "replied" && (
                       <div className="flex gap-2">
                         <Textarea
-                          placeholder="اكتب ردك على الرسالة..."
+                          placeholder={L ? "اكتب ردك على الرسالة..." : "Write your reply..."}
                           value={replyMap[msg.id] || ""}
                           onChange={e => setReplyMap(p => ({ ...p, [msg.id]: e.target.value }))}
                           rows={2}
@@ -247,7 +252,7 @@ export default function AdminContactMessages() {
                           data-testid={`button-reply-${msg.id}`}
                         >
                           <Send className="w-3.5 h-3.5" />
-                          رد
+                          {L ? "رد" : "Reply"}
                         </Button>
                       </div>
                     )}

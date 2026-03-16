@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type Job, type Application } from "@shared/schema";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 
 interface JobQuestion {
   text: string;
@@ -46,34 +47,40 @@ const emptyForm: JobFormData = {
   questions: [],
 };
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  open:   { label: "مفتوح",   color: "bg-green-100 text-green-700 border-green-200" },
-  closed: { label: "مغلق",   color: "bg-red-100 text-red-600 border-red-200" },
-  paused: { label: "متوقف",  color: "bg-amber-100 text-amber-700 border-amber-200" },
-};
+function getStatusMap(L: boolean): Record<string, { label: string; color: string }> { return {
+  open:   { label: L ? "مفتوح" : "Open",   color: "bg-green-100 text-green-700 border-green-200" },
+  closed: { label: L ? "مغلق" : "Closed",   color: "bg-red-100 text-red-600 border-red-200" },
+  paused: { label: L ? "متوقف" : "Paused",  color: "bg-amber-100 text-amber-700 border-amber-200" },
+}; }
 
-const typeMap: Record<string, string> = {
-  "full-time": "دوام كامل", "part-time": "دوام جزئي",
-  "remote": "عن بُعد", "freelance": "مستقل", "internship": "تدريب",
-};
+function getTypeMap(L: boolean): Record<string, string> { return {
+  "full-time": L ? "دوام كامل" : "Full-time", "part-time": L ? "دوام جزئي" : "Part-time",
+  "remote": L ? "عن بُعد" : "Remote", "freelance": L ? "مستقل" : "Freelance", "internship": L ? "تدريب" : "Internship",
+}; }
 
-const appStatusMap: Record<string, { label: string; color: string; icon: any }> = {
-  new:       { label: "جديد",          color: "bg-blue-100 text-blue-700 border-blue-200",     icon: Star },
-  reviewing: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200",  icon: Eye },
-  interview: { label: "مقابلة",        color: "bg-purple-100 text-purple-700 border-purple-200", icon: Users },
-  accepted:  { label: "مقبول ✓",      color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
-  hired:     { label: "موظف ✓✓",       color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: Shield },
-  rejected:  { label: "مرفوض",         color: "bg-red-100 text-red-600 border-red-200",        icon: X },
-};
+function getAppStatusMap(L: boolean): Record<string, { label: string; color: string; icon: any }> { return {
+  new:       { label: L ? "جديد" : "New",          color: "bg-blue-100 text-blue-700 border-blue-200",     icon: Star },
+  reviewing: { label: L ? "قيد المراجعة" : "Reviewing", color: "bg-amber-100 text-amber-700 border-amber-200",  icon: Eye },
+  interview: { label: L ? "مقابلة" : "Interview",        color: "bg-purple-100 text-purple-700 border-purple-200", icon: Users },
+  accepted:  { label: L ? "مقبول ✓" : "Accepted ✓",      color: "bg-green-100 text-green-700 border-green-200",  icon: CheckCircle },
+  hired:     { label: L ? "موظف ✓✓" : "Hired ✓✓",       color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: Shield },
+  rejected:  { label: L ? "مرفوض" : "Rejected",         color: "bg-red-100 text-red-600 border-red-200",        icon: X },
+}; }
 
-const roleLabels: Record<string, string> = {
-  manager: "مدير", accountant: "محاسب", sales_manager: "مدير مبيعات",
-  sales: "موظف مبيعات", developer: "مطور برمجيات", designer: "مصمم",
-  support: "دعم فني", merchant: "توصيل وتسليم",
-};
+function getRoleLabels(L: boolean): Record<string, string> { return {
+  manager: L ? "مدير" : "Manager", accountant: L ? "محاسب" : "Accountant", sales_manager: L ? "مدير مبيعات" : "Sales Manager",
+  sales: L ? "موظف مبيعات" : "Sales", developer: L ? "مطور برمجيات" : "Developer", designer: L ? "مصمم" : "Designer",
+  support: L ? "دعم فني" : "Support", merchant: L ? "توصيل وتسليم" : "Delivery",
+}; }
 
 export default function AdminJobs() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const statusMap = getStatusMap(L);
+  const typeMap = getTypeMap(L);
+  const appStatusMap = getAppStatusMap(L);
+  const roleLabels = getRoleLabels(L);
   const [activeTab, setActiveTab] = useState<"jobs" | "applications">("jobs");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,8 +104,8 @@ export default function AdminJobs() {
       const res = await apiRequest("POST", "/api/admin/jobs", payload);
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: "تم إضافة الوظيفة بنجاح" }); setOpen(false); setFormData(emptyForm); },
-    onError: () => toast({ title: "خطأ في إضافة الوظيفة", variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: L ? "تم إضافة الوظيفة بنجاح" : "Job added successfully" }); setOpen(false); setFormData(emptyForm); },
+    onError: () => toast({ title: L ? "خطأ في إضافة الوظيفة" : "Error adding job", variant: "destructive" }),
   });
 
   const updateMutation = useMutation({
@@ -107,13 +114,13 @@ export default function AdminJobs() {
       const res = await apiRequest("PATCH", `/api/admin/jobs/${editingId}`, payload);
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: "تم تحديث الوظيفة" }); setOpen(false); setEditingId(null); setFormData(emptyForm); },
-    onError: () => toast({ title: "خطأ في تحديث الوظيفة", variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: L ? "تم تحديث الوظيفة" : "Job updated" }); setOpen(false); setEditingId(null); setFormData(emptyForm); },
+    onError: () => toast({ title: L ? "خطأ في تحديث الوظيفة" : "Error updating job", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { await apiRequest("DELETE", `/api/admin/jobs/${id}`); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: "تم حذف الوظيفة" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }); toast({ title: L ? "تم حذف الوظيفة" : "Job deleted" }); },
   });
 
   const updateAppMutation = useMutation({
@@ -121,13 +128,13 @@ export default function AdminJobs() {
       const res = await apiRequest("PATCH", `/api/admin/applications/${id}`, { status });
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] }); toast({ title: "تم تحديث حالة الطلب" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] }); toast({ title: L ? "تم تحديث حالة الطلب" : "Application status updated" }); },
   });
 
   const hireMutation = useMutation({
     mutationFn: async ({ appId, body }: { appId: string; body: any }) => {
       const res = await apiRequest("POST", `/api/admin/applications/${appId}/hire`, body);
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "خطأ"); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || (L ? "خطأ" : "Error")); }
       return res.json();
     },
     onSuccess: (data) => {
@@ -135,12 +142,12 @@ export default function AdminJobs() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setHired({ username: data.username, password: data.rawPassword, email: data.email });
     },
-    onError: (err: any) => toast({ title: "فشل التعيين", description: err.message, variant: "destructive" }),
+    onError: (err: any) => toast({ title: L ? "فشل التعيين" : "Hire failed", description: err.message, variant: "destructive" }),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description) { toast({ title: "يرجى ملء عنوان الوظيفة والوصف", variant: "destructive" }); return; }
+    if (!formData.title || !formData.description) { toast({ title: L ? "يرجى ملء عنوان الوظيفة والوصف" : "Please fill in job title and description", variant: "destructive" }); return; }
     if (editingId) updateMutation.mutate(formData);
     else createMutation.mutate(formData);
   };
@@ -197,7 +204,7 @@ export default function AdminJobs() {
   };
 
   const handleHire = () => {
-    if (!hireApp || !hireForm.username || !hireForm.role) { toast({ title: "يرجى ملء جميع الحقول", variant: "destructive" }); return; }
+    if (!hireApp || !hireForm.username || !hireForm.role) { toast({ title: L ? "يرجى ملء جميع الحقول" : "Please fill in all fields", variant: "destructive" }); return; }
     hireMutation.mutate({ appId: hireApp.id?.toString(), body: { role: hireForm.role, username: hireForm.username, email: hireApp.email, fullName: hireApp.fullName, phone: hireApp.phone || "" } });
   };
 
@@ -224,18 +231,18 @@ export default function AdminJobs() {
   );
 
   return (
-    <div className="relative overflow-hidden space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-2xl font-bold text-black dark:text-white flex items-center gap-3">
           <Briefcase className="w-7 h-7 text-black/40 dark:text-white/40" />
-          إدارة الوظائف والتوظيف
+          {L ? "إدارة الوظائف والتوظيف" : "Jobs & Recruitment Management"}
         </h1>
         {activeTab === "jobs" && (
           <Button onClick={() => { setEditingId(null); setFormData(emptyForm); setOpen(true); }} className="gap-2 premium-btn" data-testid="button-add-job">
-            <Plus className="w-4 h-4" />وظيفة جديدة
+            <Plus className="w-4 h-4" />{L ? "وظيفة جديدة" : "New Job"}
           </Button>
         )}
       </div>
@@ -243,10 +250,10 @@ export default function AdminJobs() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { icon: Briefcase, val: jobs?.filter(j => j.status === "open").length || 0, label: "وظائف مفتوحة",  color: "text-green-500" },
-          { icon: Users,     val: appStats.total,                                      label: "إجمالي الطلبات", color: "text-blue-500" },
-          { icon: Star,      val: appStats.new,                                         label: "طلبات جديدة",  color: "text-amber-500" },
-          { icon: Shield,    val: appStats.hired,                                       label: "تم تعيينهم",    color: "text-emerald-500" },
+          { icon: Briefcase, val: jobs?.filter(j => j.status === "open").length || 0, label: L ? "وظائف مفتوحة" : "Open Jobs",  color: "text-green-500" },
+          { icon: Users,     val: appStats.total,                                      label: L ? "إجمالي الطلبات" : "Total Applications", color: "text-blue-500" },
+          { icon: Star,      val: appStats.new,                                         label: L ? "طلبات جديدة" : "New Applications",  color: "text-amber-500" },
+          { icon: Shield,    val: appStats.hired,                                       label: L ? "تم تعيينهم" : "Hired",    color: "text-emerald-500" },
         ].map(({ icon: Icon, val, label, color }, i) => (
           <div key={i} className="border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 rounded-xl p-4 flex items-center gap-3">
             <Icon className={`w-5 h-5 ${color}`} />
@@ -261,8 +268,8 @@ export default function AdminJobs() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-black/[0.06] dark:border-white/[0.06] pb-0">
         {[
-          { key: "jobs",         label: "الوظائف",         count: jobs?.length || 0 },
-          { key: "applications", label: "طلبات التوظيف",  count: appStats.total },
+          { key: "jobs",         label: L ? "الوظائف" : "Jobs",         count: jobs?.length || 0 },
+          { key: "applications", label: L ? "طلبات التوظيف" : "Applications",  count: appStats.total },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
             className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 -mb-px
@@ -287,7 +294,7 @@ export default function AdminJobs() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                      {["الوظيفة", "النوع", "الراتب", "الطلبات", "الحالة", ""].map(h => (
+                      {[L ? "الوظيفة" : "Job", L ? "النوع" : "Type", L ? "الراتب" : "Salary", L ? "الطلبات" : "Applications", L ? "الحالة" : "Status", ""].map(h => (
                         <th key={h} className="text-right p-4 text-xs font-semibold text-black/40 dark:text-white/40 uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
@@ -310,7 +317,7 @@ export default function AdminJobs() {
                               className="flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
                               data-testid={`button-view-apps-${job.id}`}>
                               <Users className="w-3.5 h-3.5" />{appCount}
-                              {newCount > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{newCount} جديد</span>}
+                              {newCount > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{newCount} {L ? "جديد" : "new"}</span>}
                             </button>
                           </td>
                           <td className="p-4">
@@ -332,7 +339,7 @@ export default function AdminJobs() {
                     {(!jobs || jobs.length === 0) && (
                       <tr><td colSpan={6} className="p-12 text-center text-black/30 dark:text-white/30">
                         <Briefcase className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                        <p>لا توجد وظائف بعد. أضف أول وظيفة الآن.</p>
+                        <p>{L ? "لا توجد وظائف بعد. أضف أول وظيفة الآن." : "No jobs yet. Add the first one now."}</p>
                       </td></tr>
                     )}
                   </tbody>
@@ -350,30 +357,30 @@ export default function AdminJobs() {
               <div className="relative flex-1 min-w-48">
                 <Search className="absolute top-2.5 right-3 w-4 h-4 text-black/30 dark:text-white/30" />
                 <Input value={searchApp} onChange={e => setSearchApp(e.target.value)}
-                  placeholder="بحث بالاسم أو البريد..." className="pr-9 rounded-xl h-10 text-sm" data-testid="input-search-apps" />
+                  placeholder={L ? "بحث بالاسم أو البريد..." : "Search by name or email..."} className="pr-9 rounded-xl h-10 text-sm" data-testid="input-search-apps" />
               </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-44 rounded-xl h-10 text-sm" data-testid="select-filter-status">
                   <Filter className="w-3.5 h-3.5 text-black/30 dark:text-white/30 ml-1" />
-                  <SelectValue placeholder="كل الحالات" />
+                  <SelectValue placeholder={L ? "كل الحالات" : "All Statuses"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">كل الحالات</SelectItem>
+                  <SelectItem value="all">{L ? "كل الحالات" : "All Statuses"}</SelectItem>
                   {Object.entries(appStatusMap).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filterJob} onValueChange={setFilterJob}>
                 <SelectTrigger className="w-48 rounded-xl h-10 text-sm" data-testid="select-filter-job">
-                  <SelectValue placeholder="كل الوظائف" />
+                  <SelectValue placeholder={L ? "كل الوظائف" : "All Jobs"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">كل الوظائف</SelectItem>
+                  <SelectItem value="all">{L ? "كل الوظائف" : "All Jobs"}</SelectItem>
                   {jobs?.map(j => <SelectItem key={j.id?.toString()} value={j.id?.toString()}>{j.title}</SelectItem>)}
                 </SelectContent>
               </Select>
               {(filterStatus !== "all" || filterJob !== "all" || searchApp) && (
                 <Button variant="ghost" size="sm" onClick={() => { setFilterStatus("all"); setFilterJob("all"); setSearchApp(""); }} className="text-xs text-black/40 dark:text-white/40 h-10 rounded-xl">
-                  <X className="w-3.5 h-3.5 ml-1" />مسح الفلاتر
+                  <X className="w-3.5 h-3.5 ml-1" />{L ? "مسح الفلاتر" : "Clear Filters"}
                 </Button>
               )}
             </div>
@@ -381,7 +388,7 @@ export default function AdminJobs() {
             {filteredApps.length === 0 ? (
               <div className="text-center py-16 text-black/30 dark:text-white/30">
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                <p>{searchApp || filterStatus !== "all" || filterJob !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد طلبات توظيف بعد"}</p>
+                <p>{searchApp || filterStatus !== "all" || filterJob !== "all" ? (L ? "لا توجد نتائج مطابقة" : "No matching results") : (L ? "لا توجد طلبات توظيف بعد" : "No job applications yet")}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -435,12 +442,12 @@ export default function AdminJobs() {
                                   className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline font-semibold"
                                   data-testid={`link-resume-${app.id}`}>
                                   <Download className="w-3.5 h-3.5" />
-                                  {app.resumeUrl.startsWith("/uploads") ? "تحميل السيرة الذاتية" : "عرض السيرة الذاتية"}
+                                  {app.resumeUrl.startsWith("/uploads") ? (L ? "تحميل السيرة الذاتية" : "Download Resume") : (L ? "عرض السيرة الذاتية" : "View Resume")}
                                 </a>
                               )}
                               <span className="text-[10px] text-black/25 dark:text-white/25 flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {new Date(app.appliedAt || "").toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}
+                                {new Date(app.appliedAt || "").toLocaleDateString(L ? "ar-SA" : "en-US", { month: "short", day: "numeric" })}
                               </span>
                             </div>
                           </div>
@@ -468,12 +475,12 @@ export default function AdminJobs() {
                               {isAccepted && !isHired && (
                                 <Button size="sm" className="premium-btn gap-1.5 text-xs h-8 px-3 rounded-xl"
                                   onClick={() => openHireDialog(app)} data-testid={`button-hire-${app.id}`}>
-                                  <UserPlus className="w-3.5 h-3.5" />تعيين
+                                  <UserPlus className="w-3.5 h-3.5" />{L ? "تعيين" : "Hire"}
                                 </Button>
                               )}
                               {isHired && (
                                 <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl">
-                                  <Shield className="w-3.5 h-3.5" />موظف
+                                  <Shield className="w-3.5 h-3.5" />{L ? "موظف" : "Employee"}
                                 </div>
                               )}
                             </div>
@@ -491,49 +498,49 @@ export default function AdminJobs() {
 
       {/* Job Form Dialog */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setEditingId(null); } }}>
-        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">{editingId ? "تعديل الوظيفة" : "وظيفة جديدة"}</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{editingId ? (L ? "تعديل الوظيفة" : "Edit Job") : (L ? "وظيفة جديدة" : "New Job")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">المسمى الوظيفي *</label>
-              <Input value={formData.title} onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))} placeholder="مطور واجهات أمامية" data-testid="input-job-title" />
+              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "المسمى الوظيفي *" : "Job Title *"}</label>
+              <Input value={formData.title} onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))} placeholder={L ? "مطور واجهات أمامية" : "Frontend Developer"} data-testid="input-job-title" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">وصف الوظيفة *</label>
-              <Textarea value={formData.description} onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))} placeholder="وصف تفصيلي للوظيفة والمهام..." rows={4} data-testid="input-job-description" />
+              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "وصف الوظيفة *" : "Job Description *"}</label>
+              <Textarea value={formData.description} onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))} placeholder={L ? "وصف تفصيلي للوظيفة والمهام..." : "Detailed description of the job and responsibilities..."} rows={4} data-testid="input-job-description" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">المتطلبات (كل متطلب في سطر)</label>
+              <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "المتطلبات (كل متطلب في سطر)" : "Requirements (one per line)"}</label>
               <Textarea value={formData.requirements} onChange={(e) => setFormData(f => ({ ...f, requirements: e.target.value }))} placeholder="خبرة 2+ سنة في React&#10;إتقان TypeScript" rows={4} data-testid="input-job-requirements" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">الموقع</label>
-                <Input value={formData.location} onChange={(e) => setFormData(f => ({ ...f, location: e.target.value }))} placeholder="الرياض، السعودية" data-testid="input-job-location" />
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "الموقع" : "Location"}</label>
+                <Input value={formData.location} onChange={(e) => setFormData(f => ({ ...f, location: e.target.value }))} placeholder={L ? "الرياض، السعودية" : "Riyadh, Saudi Arabia"} data-testid="input-job-location" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">نطاق الراتب</label>
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "نطاق الراتب" : "Salary Range"}</label>
                 <Input value={formData.salaryRange} onChange={(e) => setFormData(f => ({ ...f, salaryRange: e.target.value }))} placeholder="5,000 - 10,000 ر.س" data-testid="input-job-salary" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">نوع الدوام</label>
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "نوع الدوام" : "Job Type"}</label>
                 <Select value={formData.type} onValueChange={(v) => setFormData(f => ({ ...f, type: v }))}>
                   <SelectTrigger data-testid="select-job-type"><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(typeMap).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">الحالة</label>
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "الحالة" : "Status"}</label>
                 <Select value={formData.status} onValueChange={(v) => setFormData(f => ({ ...f, status: v }))}>
                   <SelectTrigger data-testid="select-job-status"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="open">مفتوح</SelectItem>
-                    <SelectItem value="paused">متوقف</SelectItem>
-                    <SelectItem value="closed">مغلق</SelectItem>
+                    <SelectItem value="open">{L ? "مفتوح" : "Open"}</SelectItem>
+                    <SelectItem value="paused">{L ? "متوقف" : "Paused"}</SelectItem>
+                    <SelectItem value="closed">{L ? "مغلق" : "Closed"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -545,21 +552,21 @@ export default function AdminJobs() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ListChecks className="w-4 h-4 text-black/40 dark:text-white/40" />
-                  <label className="text-sm font-semibold text-black/70 dark:text-white/70">أسئلة الطلب</label>
+                  <label className="text-sm font-semibold text-black/70 dark:text-white/70">{L ? "أسئلة الطلب" : "Application Questions"}</label>
                   {formData.questions.length > 0 && (
                     <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">{formData.questions.length}</span>
                   )}
                 </div>
                 <Button type="button" size="sm" variant="outline" onClick={addQuestion}
                   className="h-8 text-xs gap-1.5 rounded-xl" data-testid="button-add-question">
-                  <Plus className="w-3.5 h-3.5" />إضافة سؤال
+                  <Plus className="w-3.5 h-3.5" />{L ? "إضافة سؤال" : "Add Question"}
                 </Button>
               </div>
 
               {formData.questions.length === 0 ? (
                 <div className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl p-6 text-center">
                   <HelpCircle className="w-6 h-6 mx-auto mb-2 text-black/20 dark:text-white/20" />
-                  <p className="text-xs text-black/30 dark:text-white/30">لا توجد أسئلة. أضف أسئلة مخصصة للمتقدمين.</p>
+                  <p className="text-xs text-black/30 dark:text-white/30">{L ? "لا توجد أسئلة. أضف أسئلة مخصصة للمتقدمين." : "No questions. Add custom questions for applicants."}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -575,7 +582,7 @@ export default function AdminJobs() {
                           <Input
                             value={q.text}
                             onChange={e => updateQuestion(qIdx, { text: e.target.value })}
-                            placeholder="نص السؤال..."
+                            placeholder={L ? "نص السؤال..." : "Question text..."}
                             className="h-8 text-sm"
                             data-testid={`question-text-${qIdx}`}
                           />
@@ -593,11 +600,11 @@ export default function AdminJobs() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="text">نص قصير</SelectItem>
-                            <SelectItem value="textarea">نص طويل</SelectItem>
-                            <SelectItem value="select">قائمة منسدلة</SelectItem>
-                            <SelectItem value="radio">اختيار واحد</SelectItem>
-                            <SelectItem value="checkbox">اختيارات متعددة</SelectItem>
+                            <SelectItem value="text">{L ? "نص قصير" : "Short Text"}</SelectItem>
+                            <SelectItem value="textarea">{L ? "نص طويل" : "Long Text"}</SelectItem>
+                            <SelectItem value="select">{L ? "قائمة منسدلة" : "Dropdown"}</SelectItem>
+                            <SelectItem value="radio">{L ? "اختيار واحد" : "Single Choice"}</SelectItem>
+                            <SelectItem value="checkbox">{L ? "اختيارات متعددة" : "Multiple Choice"}</SelectItem>
                           </SelectContent>
                         </Select>
 
@@ -606,14 +613,14 @@ export default function AdminJobs() {
                           className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all flex-shrink-0 ${q.required ? "bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40"}`}
                           data-testid={`question-required-${qIdx}`}>
                           {q.required ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
-                          {q.required ? "إجباري" : "اختياري"}
+                          {q.required ? (L ? "إجباري" : "Required") : (L ? "اختياري" : "Optional")}
                         </button>
                       </div>
 
                       {/* Options (for select/radio/checkbox) */}
                       {["select", "radio", "checkbox"].includes(q.type) && (
                         <div className="space-y-2 pr-6">
-                          <p className="text-[10px] text-black/40 dark:text-white/40 font-semibold">الخيارات:</p>
+                          <p className="text-[10px] text-black/40 dark:text-white/40 font-semibold">{L ? "الخيارات:" : "Options:"}</p>
                           {q.options.map((opt, oIdx) => (
                             <div key={oIdx} className="flex items-center gap-2">
                               <div className={`w-3 h-3 flex-shrink-0 border border-black/20 dark:border-white/20 ${q.type === "checkbox" ? "rounded" : "rounded-full"}`} />
@@ -633,7 +640,7 @@ export default function AdminJobs() {
                           <button type="button" onClick={() => addOption(qIdx)}
                             className="text-xs text-blue-600 hover:underline flex items-center gap-1 pr-5"
                             data-testid={`button-add-option-${qIdx}`}>
-                            <Plus className="w-3 h-3" />إضافة خيار
+                            <Plus className="w-3 h-3" />{L ? "إضافة خيار" : "Add Option"}
                           </button>
                         </div>
                       )}
@@ -646,9 +653,9 @@ export default function AdminJobs() {
             <div className="flex gap-3 pt-2">
               <Button type="submit" className="flex-1 premium-btn" disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-job">
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-                {editingId ? "تحديث الوظيفة" : "إضافة الوظيفة"}
+                {editingId ? (L ? "تحديث الوظيفة" : "Update Job") : (L ? "إضافة الوظيفة" : "Add Job")}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
             </div>
           </form>
         </DialogContent>
@@ -656,7 +663,7 @@ export default function AdminJobs() {
 
       {/* View Application Dialog */}
       <Dialog open={!!viewApp} onOpenChange={v => !v && setViewApp(null)}>
-        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-lg" dir="rtl">
+        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-lg" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-sm font-black">
@@ -669,10 +676,10 @@ export default function AdminJobs() {
             <div className="space-y-4 mt-2">
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  ["البريد الإلكتروني", viewApp.email, "ltr"],
-                  ["رقم الهاتف", viewApp.phone || "—", "ltr"],
-                  ["الوظيفة", jobs?.find(j => j.id?.toString() === viewApp.jobId?.toString())?.title || "—", "rtl"],
-                  ["تاريخ التقديم", new Date(viewApp.appliedAt || "").toLocaleDateString("ar-SA"), "rtl"],
+                  [L ? "البريد الإلكتروني" : "Email", viewApp.email, "ltr"],
+                  [L ? "رقم الهاتف" : "Phone", viewApp.phone || "—", "ltr"],
+                  [L ? "الوظيفة" : "Job", jobs?.find(j => j.id?.toString() === viewApp.jobId?.toString())?.title || "—", "rtl"],
+                  [L ? "تاريخ التقديم" : "Applied", new Date(viewApp.appliedAt || "").toLocaleDateString(L ? "ar-SA" : "en-US"), "rtl"],
                 ].map(([label, val, dir]) => (
                   <div key={label} className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3">
                     <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">{label}</p>
@@ -685,14 +692,14 @@ export default function AdminJobs() {
                   className="flex items-center gap-2 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-sm font-semibold hover:bg-blue-100 transition-colors"
                   data-testid="link-view-resume">
                   <FileText className="w-4 h-4" />
-                  {viewApp.resumeUrl.startsWith("/uploads") ? "تحميل السيرة الذاتية" : "عرض السيرة الذاتية على الرابط"}
+                  {viewApp.resumeUrl.startsWith("/uploads") ? (L ? "تحميل السيرة الذاتية" : "Download Resume") : (L ? "عرض السيرة الذاتية على الرابط" : "View Resume Link")}
                 </a>
               )}
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setViewApp(null)} className="flex-1 rounded-xl">إغلاق</Button>
+                <Button variant="outline" onClick={() => setViewApp(null)} className="flex-1 rounded-xl">{L ? "إغلاق" : "Close"}</Button>
                 {viewApp.status === "accepted" && (
                   <Button className="flex-1 premium-btn rounded-xl gap-2" onClick={() => { setViewApp(null); openHireDialog(viewApp); }}>
-                    <UserPlus className="w-4 h-4" />تعيين كموظف
+                    <UserPlus className="w-4 h-4" />{L ? "تعيين كموظف" : "Hire as Employee"}
                   </Button>
                 )}
               </div>
@@ -703,10 +710,10 @@ export default function AdminJobs() {
 
       {/* Hire Dialog */}
       <Dialog open={hireOpen} onOpenChange={(v) => { if (!v) { setHireOpen(false); setHired(null); } }}>
-        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-lg" dir="rtl">
+        <DialogContent className="bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.06] max-w-lg" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-black/40 dark:text-white/40" />تعيين موظف جديد
+              <UserPlus className="w-5 h-5 text-black/40 dark:text-white/40" />{L ? "تعيين موظف جديد" : "Hire New Employee"}
             </DialogTitle>
           </DialogHeader>
           {hired ? (
@@ -715,37 +722,37 @@ export default function AdminJobs() {
                 <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Shield className="w-7 h-7 text-emerald-600" />
                 </div>
-                <h3 className="font-bold text-lg mb-1">تم التعيين بنجاح!</h3>
-                <p className="text-black/40 dark:text-white/40 text-sm">احتفظ ببيانات الدخول — تم إرسالها بالبريد أيضاً</p>
+                <h3 className="font-bold text-lg mb-1">{L ? "تم التعيين بنجاح!" : "Hired successfully!"}</h3>
+                <p className="text-black/40 dark:text-white/40 text-sm">{L ? "احتفظ ببيانات الدخول — تم إرسالها بالبريد أيضاً" : "Keep the credentials — they were also sent by email"}</p>
               </div>
               <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2">بيانات دخول الموظف</p>
-                {[["البريد الإلكتروني", hired.email], ["اسم المستخدم", hired.username]].map(([label, val]) => (
+                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2">{L ? "بيانات دخول الموظف" : "Employee Login Credentials"}</p>
+                {[[L ? "البريد الإلكتروني" : "Email", hired.email], [L ? "اسم المستخدم" : "Username", hired.username]].map(([label, val]) => (
                   <div key={label} className="bg-white dark:bg-gray-800 rounded-xl p-3 flex items-center justify-between gap-2">
                     <div>
                       <p className="text-[10px] text-black/40 dark:text-white/40 font-medium mb-0.5">{label}</p>
                       <p className="text-sm font-bold font-mono" dir="ltr">{val}</p>
                     </div>
-                    <button onClick={() => { navigator.clipboard.writeText(val); toast({ title: "تم النسخ" }); }} className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/10 flex items-center justify-center transition-colors">
+                    <button onClick={() => { navigator.clipboard.writeText(val); toast({ title: L ? "تم النسخ" : "Copied" }); }} className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/10 flex items-center justify-center transition-colors">
                       <Copy className="w-3.5 h-3.5 text-black/50 dark:text-white/50" />
                     </button>
                   </div>
                 ))}
                 <div className="bg-black dark:bg-white rounded-xl p-3 flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-[10px] text-white/40 dark:text-black/40 font-medium mb-0.5">كلمة المرور</p>
+                    <p className="text-[10px] text-white/40 dark:text-black/40 font-medium mb-0.5">{L ? "كلمة المرور" : "Password"}</p>
                     <p className="text-sm font-black text-white dark:text-black font-mono tracking-wider" dir="ltr">{hired.password}</p>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(hired.password); toast({ title: "تم نسخ كلمة المرور" }); }} className="w-7 h-7 rounded-lg bg-white/10 dark:bg-black/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                  <button onClick={() => { navigator.clipboard.writeText(hired.password); toast({ title: L ? "تم نسخ كلمة المرور" : "Password copied" }); }} className="w-7 h-7 rounded-lg bg-white/10 dark:bg-black/10 hover:bg-white/20 flex items-center justify-center transition-colors">
                     <Copy className="w-3.5 h-3.5 text-white/60 dark:text-black/60" />
                   </button>
                 </div>
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-2.5 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-amber-600 shrink-0" />
-                <p className="text-amber-700 dark:text-amber-400 text-xs">تم إرسال هذه البيانات إلى بريد الموظف تلقائياً</p>
+                <p className="text-amber-700 dark:text-amber-400 text-xs">{L ? "تم إرسال هذه البيانات إلى بريد الموظف تلقائياً" : "These credentials were automatically sent to the employee's email"}</p>
               </div>
-              <Button className="w-full premium-btn rounded-xl" onClick={() => { setHireOpen(false); setHired(null); }}>إغلاق</Button>
+              <Button className="w-full premium-btn rounded-xl" onClick={() => { setHireOpen(false); setHired(null); }}>{L ? "إغلاق" : "Close"}</Button>
             </div>
           ) : (
             <div className="space-y-5 mt-4">
@@ -759,12 +766,12 @@ export default function AdminJobs() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">اسم المستخدم في النظام *</label>
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "اسم المستخدم في النظام *" : "System Username *"}</label>
                 <Input value={hireForm.username} onChange={(e) => setHireForm({ ...hireForm, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })} placeholder="ahmed_developer" dir="ltr" data-testid="input-hire-username" />
-                <p className="text-xs text-black/30 dark:text-white/30 mt-1">أحرف إنجليزية وأرقام وشرطة سفلية فقط</p>
+                <p className="text-xs text-black/30 dark:text-white/30 mt-1">{L ? "أحرف إنجليزية وأرقام وشرطة سفلية فقط" : "English letters, numbers, and underscores only"}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">دور الموظف في النظام *</label>
+                <label className="block text-sm font-medium text-black/60 dark:text-white/60 mb-1.5">{L ? "دور الموظف في النظام *" : "Employee Role in System *"}</label>
                 <Select value={hireForm.role} onValueChange={(v) => setHireForm({ ...hireForm, role: v })}>
                   <SelectTrigger data-testid="select-hire-role"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -777,9 +784,9 @@ export default function AdminJobs() {
               <div className="flex gap-3">
                 <Button className="flex-1 premium-btn gap-2 rounded-xl" onClick={handleHire} disabled={hireMutation.isPending} data-testid="button-confirm-hire">
                   {hireMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                  تأكيد التعيين
+                  {L ? "تأكيد التعيين" : "Confirm Hire"}
                 </Button>
-                <Button variant="outline" className="rounded-xl" onClick={() => setHireOpen(false)}>إلغاء</Button>
+                <Button variant="outline" className="rounded-xl" onClick={() => setHireOpen(false)}>{L ? "إلغاء" : "Cancel"}</Button>
               </div>
             </div>
           )}

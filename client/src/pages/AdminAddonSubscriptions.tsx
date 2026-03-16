@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 const STATUS_MAP: Record<string, { label: string; icon: any; color: string }> = {
   active:    { label: "نشط",         icon: CheckCircle,   color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200" },
@@ -63,33 +64,33 @@ export default function AdminAddonSubscriptions() {
   const addMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/admin/client-addon-subs", data),
     onSuccess: () => {
-      toast({ title: "تمت الإضافة بنجاح" });
+      toast({ title: L ? "تمت الإضافة بنجاح" : "Added successfully" });
       setShowAddForm(false);
       setSelectedClient(null);
       setClientSearch("");
       setNewForm({ addonNameAr: "", quotaTotal: "", billingType: "one_time", expiresAt: "" });
       qc.invalidateQueries({ queryKey: ["/api/admin/addon-subscriptions"] });
     },
-    onError: (err: any) => toast({ title: err.message || "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/admin/client-addon-subs/${id}`, data),
     onSuccess: () => {
-      toast({ title: "تم التحديث" });
+      toast({ title: L ? "تم التحديث" : "Updated" });
       setEditingId(null);
       qc.invalidateQueries({ queryKey: ["/api/admin/addon-subscriptions"] });
     },
-    onError: (err: any) => toast({ title: err.message || "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
   const renewMutation = useMutation({
     mutationFn: (id: string) => apiRequest("PATCH", `/api/admin/client-addon-subs/${id}`, { status: "active", quotaUsed: 0 }),
     onSuccess: () => {
-      toast({ title: "تم التجديد بنجاح" });
+      toast({ title: L ? "تم التجديد بنجاح" : "Renewed successfully" });
       qc.invalidateQueries({ queryKey: ["/api/admin/addon-subscriptions"] });
     },
-    onError: (err: any) => toast({ title: err.message || "حدث خطأ", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" }),
   });
 
   const counts = {
@@ -111,15 +112,15 @@ export default function AdminAddonSubscriptions() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5 max-w-6xl mx-auto" dir="rtl">
+    <div className="p-4 md:p-6 space-y-5 max-w-6xl mx-auto" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-black text-black dark:text-white flex items-center gap-2">
             <Package className="w-5 h-5" />
-            اشتراكات المميزات الجانبية
+            {L ? "اشتراكات المميزات الجانبية" : "Addon Subscriptions"}
           </h1>
-          <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">إدارة الحصص وتجديد الخدمات المضافة للعملاء</p>
+          <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "إدارة الحصص وتجديد الخدمات المضافة للعملاء" : "Manage quotas and renew addon services for clients"}</p>
         </div>
         <Button
           onClick={() => setShowAddForm(v => !v)}
@@ -127,7 +128,7 @@ export default function AdminAddonSubscriptions() {
           data-testid="btn-add-addon-sub"
         >
           <Plus className="w-4 h-4" />
-          إضافة اشتراك ميزة
+          {L ? "إضافة اشتراك ميزة" : "Add Addon Subscription"}
         </Button>
       </div>
 
@@ -135,7 +136,7 @@ export default function AdminAddonSubscriptions() {
       {showAddForm && (
         <div className="bg-white dark:bg-gray-900 border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between mb-1">
-            <p className="font-bold text-black dark:text-white">إضافة اشتراك ميزة جانبية</p>
+            <p className="font-bold text-black dark:text-white">{L ? "إضافة اشتراك ميزة جانبية" : "Add Addon Subscription"}</p>
             <button onClick={() => setShowAddForm(false)} className="text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white">
               <X className="w-4 h-4" />
             </button>
@@ -143,12 +144,12 @@ export default function AdminAddonSubscriptions() {
 
           {/* Client Search */}
           <div>
-            <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">اختر العميل</label>
+            <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">{L ? "اختر العميل" : "Select Client"}</label>
             <div className="relative">
               <Search className="absolute right-3 top-2.5 w-4 h-4 text-black/30 dark:text-white/30" />
               <input
                 type="text"
-                placeholder="ابحث بالاسم أو الإيميل..."
+                placeholder={L ? "ابحث بالاسم أو الإيميل..." : "Search by name or email..."}
                 value={clientSearch}
                 onChange={e => setClientSearch(e.target.value)}
                 className="w-full pr-10 pl-4 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-sm focus:outline-none"
@@ -184,10 +185,10 @@ export default function AdminAddonSubscriptions() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">اسم الميزة</label>
+              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">{L ? "اسم الميزة" : "Addon Name"}</label>
               <input
                 type="text"
-                placeholder="مثال: خدمة البريد الإلكتروني"
+                placeholder={L ? "مثال: خدمة البريد الإلكتروني" : "e.g. Email Service"}
                 value={newForm.addonNameAr}
                 onChange={e => setNewForm(p => ({ ...p, addonNameAr: e.target.value }))}
                 className="w-full px-3 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-sm focus:outline-none"
@@ -195,11 +196,11 @@ export default function AdminAddonSubscriptions() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">الحصة الإجمالية</label>
+              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">{L ? "الحصة الإجمالية" : "Total Quota"}</label>
               <input
                 type="number"
                 min="0"
-                placeholder="0 = بلا حد"
+                placeholder={L ? "0 = بلا حد" : "0 = unlimited"}
                 value={newForm.quotaTotal}
                 onChange={e => setNewForm(p => ({ ...p, quotaTotal: e.target.value }))}
                 className="w-full px-3 py-2.5 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-sm focus:outline-none"
@@ -207,7 +208,7 @@ export default function AdminAddonSubscriptions() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">نوع الفوترة</label>
+              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">{L ? "نوع الفوترة" : "Billing Type"}</label>
               <select
                 value={newForm.billingType}
                 onChange={e => setNewForm(p => ({ ...p, billingType: e.target.value }))}
@@ -217,7 +218,7 @@ export default function AdminAddonSubscriptions() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">تاريخ الانتهاء (اختياري)</label>
+              <label className="text-xs font-bold text-black/50 dark:text-white/50 mb-1.5 block">{L ? "تاريخ الانتهاء (اختياري)" : "Expiry Date (optional)"}</label>
               <input
                 type="date"
                 value={newForm.expiresAt}
@@ -241,7 +242,7 @@ export default function AdminAddonSubscriptions() {
             data-testid="btn-confirm-add-addon"
           >
             {addMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
-            إضافة الاشتراك
+            {L ? "إضافة الاشتراك" : "Add Subscription"}
           </Button>
         </div>
       )}
@@ -270,7 +271,7 @@ export default function AdminAddonSubscriptions() {
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>
       ) : subs.length === 0 ? (
-        <div className="text-center py-12 text-sm text-black/30 dark:text-white/30">لا توجد اشتراكات</div>
+        <div className="text-center py-12 text-sm text-black/30 dark:text-white/30">{L ? "لا توجد اشتراكات" : "No subscriptions found"}</div>
       ) : (
         <div className="space-y-3">
           {subs.map((sub: any) => {
@@ -295,7 +296,7 @@ export default function AdminAddonSubscriptions() {
                       </span>
                       {needsRenewal && (
                         <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full border border-orange-200">
-                          ⚠ يحتاج تجديد
+                          ⚠ {L ? "يحتاج تجديد" : "Needs Renewal"}
                         </span>
                       )}
                     </div>
@@ -323,7 +324,7 @@ export default function AdminAddonSubscriptions() {
                   )}
 
                   <div className="text-[11px] text-black/40 dark:text-white/40 flex-shrink-0">
-                    {sub.expiresAt ? formatDate(sub.expiresAt) : "—"}
+                    {sub.expiresAt ? formatDate(sub.expiresAt, L) : "—"}
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -336,7 +337,7 @@ export default function AdminAddonSubscriptions() {
                         data-testid={`btn-renew-${subId}`}
                       >
                         <RotateCcw className="w-3 h-3" />
-                        تجديد
+                        {L ? "تجديد" : "Renew"}
                       </Button>
                     )}
                     <button
@@ -354,7 +355,7 @@ export default function AdminAddonSubscriptions() {
                   <div className="border-t border-black/[0.05] dark:border-white/[0.05] p-4 bg-black/[0.01] dark:bg-white/[0.01]">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                       <div>
-                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">اسم الميزة</label>
+                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "اسم الميزة" : "Addon Name"}</label>
                         <input
                           type="text"
                           value={editForm.addonNameAr}
@@ -363,7 +364,7 @@ export default function AdminAddonSubscriptions() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">الحصة الإجمالية</label>
+                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "الحصة الإجمالية" : "Total Quota"}</label>
                         <input
                           type="number" min="0"
                           value={editForm.quotaTotal}
@@ -372,7 +373,7 @@ export default function AdminAddonSubscriptions() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">الحصة المستهلكة</label>
+                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "الحصة المستهلكة" : "Used Quota"}</label>
                         <input
                           type="number" min="0"
                           value={editForm.quotaUsed}
@@ -381,7 +382,7 @@ export default function AdminAddonSubscriptions() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">الحالة</label>
+                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "الحالة" : "Status"}</label>
                         <select
                           value={editForm.status}
                           onChange={e => setEditForm((p: any) => ({ ...p, status: e.target.value }))}
@@ -393,7 +394,7 @@ export default function AdminAddonSubscriptions() {
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">تاريخ الانتهاء</label>
+                        <label className="text-[10px] font-bold text-black/40 dark:text-white/40 mb-1 block">{L ? "تاريخ الانتهاء" : "Expiry Date"}</label>
                         <input
                           type="date"
                           value={editForm.expiresAt}
@@ -416,7 +417,7 @@ export default function AdminAddonSubscriptions() {
                       data-testid={`btn-save-edit-${subId}`}
                     >
                       {editMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                      حفظ التعديلات
+                      {L ? "حفظ التعديلات" : "Save Changes"}
                     </Button>
                   </div>
                 )}

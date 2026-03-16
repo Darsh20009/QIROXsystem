@@ -5,22 +5,28 @@ import { Loader2, LayoutGrid, RefreshCw, User, Calendar, Tag, ChevronRight } fro
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Link } from "wouter";
 
-const STAGES = [
-  { key: "new",             label: "جديد",            color: "bg-slate-100 dark:bg-slate-800",   border: "border-slate-300 dark:border-slate-600",   dot: "bg-slate-400" },
-  { key: "under_study",     label: "قيد الدراسة",     color: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-300 dark:border-amber-700",    dot: "bg-amber-400" },
-  { key: "pending_payment", label: "انتظار الدفع",    color: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-300 dark:border-orange-700", dot: "bg-orange-400" },
-  { key: "in_progress",     label: "قيد التنفيذ",     color: "bg-blue-50 dark:bg-blue-900/30",   border: "border-blue-300 dark:border-blue-700",     dot: "bg-blue-500" },
-  { key: "testing",         label: "اختبار",          color: "bg-purple-50 dark:bg-purple-900/30", border: "border-purple-300 dark:border-purple-700", dot: "bg-purple-500" },
-  { key: "review",          label: "مراجعة",          color: "bg-pink-50 dark:bg-pink-900/30",   border: "border-pink-300 dark:border-pink-700",     dot: "bg-pink-500" },
-  { key: "delivery",        label: "تسليم",           color: "bg-teal-50 dark:bg-teal-900/30",   border: "border-teal-300 dark:border-teal-700",     dot: "bg-teal-500" },
-  { key: "closed",          label: "مغلق",            color: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-500" },
+function getStages(L: boolean) {
+  return [
+  { key: "new",             label: L ? "جديد" : "New",                 color: "bg-slate-100 dark:bg-slate-800",   border: "border-slate-300 dark:border-slate-600",   dot: "bg-slate-400" },
+  { key: "under_study",     label: L ? "قيد الدراسة" : "Under Study",  color: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-300 dark:border-amber-700",    dot: "bg-amber-400" },
+  { key: "pending_payment", label: L ? "انتظار الدفع" : "Pending Payment", color: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-300 dark:border-orange-700", dot: "bg-orange-400" },
+  { key: "in_progress",     label: L ? "قيد التنفيذ" : "In Progress",  color: "bg-blue-50 dark:bg-blue-900/30",   border: "border-blue-300 dark:border-blue-700",     dot: "bg-blue-500" },
+  { key: "testing",         label: L ? "اختبار" : "Testing",           color: "bg-purple-50 dark:bg-purple-900/30", border: "border-purple-300 dark:border-purple-700", dot: "bg-purple-500" },
+  { key: "review",          label: L ? "مراجعة" : "Review",            color: "bg-pink-50 dark:bg-pink-900/30",   border: "border-pink-300 dark:border-pink-700",     dot: "bg-pink-500" },
+  { key: "delivery",        label: L ? "تسليم" : "Delivery",           color: "bg-teal-50 dark:bg-teal-900/30",   border: "border-teal-300 dark:border-teal-700",     dot: "bg-teal-500" },
+  { key: "closed",          label: L ? "مغلق" : "Closed",              color: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-500" },
 ];
+}
 
 function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, status: string) => void }) {
   const [showMove, setShowMove] = useState(false);
-  const currentStage = STAGES.find(s => s.key === project.status) || STAGES[0];
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const stages = getStages(L);
+  const currentStage = stages.find(s => s.key === project.status) || stages[0];
 
   return (
     <motion.div
@@ -35,7 +41,7 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
         <div className="flex-1 min-w-0">
           <span className="font-mono text-[9px] font-bold text-black/30 dark:text-white/30 bg-black/[0.05] dark:bg-white/[0.07] px-1.5 py-0.5 rounded inline-block mb-0.5">{`#${String(project._id)?.slice(-6).toUpperCase()}`}</span>
           <p className="text-sm font-bold text-black dark:text-white truncate">
-            {project.order?.businessName || project.order?.serviceType || "مشروع"}
+            {project.order?.businessName || project.order?.serviceType || (L ? "مشروع" : "Project")}
           </p>
           {project.order?.sector && (
             <span className="inline-flex items-center gap-1 text-[10px] text-black/40 dark:text-white/40 mt-0.5">
@@ -48,7 +54,7 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
           onClick={() => setShowMove(v => !v)}
           className="shrink-0 p-1 rounded-lg hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors opacity-0 group-hover:opacity-100"
           data-testid={`button-move-${project._id}`}
-          title="نقل المرحلة"
+          title={L ? "نقل المرحلة" : "Move stage"}
         >
           <ChevronRight className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
         </button>
@@ -68,7 +74,7 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
       {project.deadline && (
         <div className="flex items-center gap-1 text-[10px] text-black/35 dark:text-white/35 mb-2">
           <Calendar className="w-2.5 h-2.5" />
-          {new Date(project.deadline).toLocaleDateString("ar-SA")}
+          {new Date(project.deadline).toLocaleDateString(L ? "ar-SA" : "en-US")}
         </div>
       )}
 
@@ -78,7 +84,7 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
           <span className="text-[10px] text-black/40 dark:text-white/40">{project.progress || 0}%</span>
         </div>
         <Link href={`/projects/${project._id}`} className="text-[10px] text-blue-500 hover:underline">
-          فتح
+          {L ? "فتح" : "Open"}
         </Link>
       </div>
 
@@ -90,9 +96,9 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]"
           >
-            <p className="text-[10px] text-black/40 dark:text-white/40 mb-1.5">نقل إلى:</p>
+            <p className="text-[10px] text-black/40 dark:text-white/40 mb-1.5">{L ? "نقل إلى:" : "Move to:"}</p>
             <div className="flex flex-wrap gap-1">
-              {STAGES.filter(s => s.key !== project.status).map(s => (
+              {stages.filter(s => s.key !== project.status).map(s => (
                 <button
                   key={s.key}
                   onClick={() => { onMove(project._id, s.key); setShowMove(false); }}
@@ -111,6 +117,9 @@ function ProjectCard({ project, onMove }: { project: any; onMove: (id: string, s
 
 export default function AdminKanban() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STAGES = getStages(L);
   const qc = useQueryClient();
 
   const { data: projects = [], isLoading, refetch } = useQuery<any[]>({
@@ -121,7 +130,7 @@ export default function AdminKanban() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiRequest("PATCH", `/api/admin/kanban/${id}/status`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/admin/kanban"] }),
-    onError: () => toast({ title: "فشل التحديث", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -138,14 +147,14 @@ export default function AdminKanban() {
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="p-4 space-y-4" dir="rtl">
+    <div className="p-4 space-y-4" dir={dir}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-black dark:text-white flex items-center gap-2">
             <LayoutGrid className="w-5 h-5" />
-            لوحة المشاريع
+            {L ? "لوحة المشاريع" : "Projects Board"}
           </h1>
-          <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{projects.length} مشروع</p>
+          <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{projects.length} {L ? "مشروع" : "projects"}</p>
         </div>
         <Button variant="ghost" size="sm" onClick={() => refetch()} data-testid="button-refresh-kanban">
           <RefreshCw className="w-3.5 h-3.5" />
@@ -177,7 +186,7 @@ export default function AdminKanban() {
                   </AnimatePresence>
                   {cols.length === 0 && (
                     <div className="text-center py-8 text-[11px] text-black/25 dark:text-white/25">
-                      لا توجد مشاريع
+                      {L ? "لا توجد مشاريع" : "No projects"}
                     </div>
                   )}
                 </div>

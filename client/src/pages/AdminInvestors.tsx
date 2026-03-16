@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 import {
   TrendingUp, DollarSign, Users, Plus, Loader2, CheckCircle2,
   XCircle, Eye, Edit2, Search, Wallet, Percent, FileText,
@@ -31,16 +32,19 @@ type Payment = {
 
 type AllUsersResp = { users: { id: string; _id?: string; fullName: string; username: string; email: string; role: string }[] };
 
-const STATUS_CONFIG = {
-  pending: { label: "بانتظار المراجعة", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
-  approved: { label: "موافق", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: XCircle },
-};
+function getStatusConfig(L: boolean) { return {
+  pending: { label: L ? "بانتظار المراجعة" : "Under Review", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: Clock },
+  approved: { label: L ? "موافق" : "Approved", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: CheckCircle2 },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: XCircle },
+}; }
 
 type Tab = "investors" | "payments";
 
 export default function AdminInvestors() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STATUS_CONFIG = getStatusConfig(L);
   const [tab, setTab] = useState<Tab>("investors");
   const [addOpen, setAddOpen] = useState(false);
   const [editInvestor, setEditInvestor] = useState<InvestorProfile | null>(null);
@@ -76,9 +80,9 @@ export default function AdminInvestors() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/investors"] });
       setAddOpen(false); setSelectedUserId(""); setNewStake("0"); setNewNotes("");
-      toast({ title: "✅ تم إنشاء ملف المستثمر وتعيين الدور" });
+      toast({ title: L ? "✅ تم إنشاء ملف المستثمر وتعيين الدور" : "✅ Investor profile created and role assigned" });
     },
-    onError: (e: any) => toast({ title: e?.message || "فشل الإنشاء", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e?.message || (L ? "فشل الإنشاء" : "Creation failed"), variant: "destructive" }),
   });
 
   const updateInvestorMutation = useMutation({
@@ -88,9 +92,9 @@ export default function AdminInvestors() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/investors"] });
       setEditInvestor(null);
-      toast({ title: "✅ تم تحديث ملف المستثمر" });
+      toast({ title: L ? "✅ تم تحديث ملف المستثمر" : "✅ Investor profile updated" });
     },
-    onError: () => toast({ title: "فشل التحديث", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
   });
 
   const approvePaymentMutation = useMutation({
@@ -99,9 +103,9 @@ export default function AdminInvestors() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/investment-payments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/investors"] });
-      toast({ title: "✅ تم تحديث حالة الدفعة" });
+      toast({ title: L ? "✅ تم تحديث حالة الدفعة" : "✅ Payment status updated" });
     },
-    onError: () => toast({ title: "فشل التحديث", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل التحديث" : "Update failed", variant: "destructive" }),
   });
 
   const totalInvested = investors.reduce((s, i) => s + i.totalInvested, 0);
@@ -114,7 +118,7 @@ export default function AdminInvestors() {
   const existingUserIds = new Set(investors.map(i => i.userId?._id));
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-5xl mx-auto space-y-6">
 
@@ -127,22 +131,22 @@ export default function AdminInvestors() {
                 <TrendingUp className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-black dark:text-white">إدارة المستثمرين</h1>
-                <p className="text-black/40 dark:text-white/40 text-sm">تتبع حصص الاستثمار والمدفوعات</p>
+                <h1 className="text-2xl font-black text-black dark:text-white">{L ? "إدارة المستثمرين" : "Investor Management"}</h1>
+                <p className="text-black/40 dark:text-white/40 text-sm">{L ? "تتبع حصص الاستثمار والمدفوعات" : "Track investment stakes and payments"}</p>
               </div>
             </div>
             <Button onClick={() => setAddOpen(true)} className="gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white shadow-lg shadow-amber-500/20" data-testid="btn-add-investor">
-              <Plus className="w-4 h-4" /> إضافة مستثمر
+              <Plus className="w-4 h-4" /> {L ? "إضافة مستثمر" : "Add Investor"}
             </Button>
           </div>
 
           {/* Stats */}
           <div className="relative mt-5 grid grid-cols-4 gap-3">
             {[
-              { label: "المستثمرون", value: investors.length, icon: Users, color: "text-amber-500" },
-              { label: "إجمالي الاستثمارات", value: totalInvested.toLocaleString("ar-SA"), hasSAR: true, icon: Wallet, color: "text-green-500" },
-              { label: "مجموع الحصص", value: `${totalStake}%`, icon: Percent, color: "text-blue-500" },
-              { label: "دفعات معلقة", value: pendingPayments, icon: AlertCircle, color: "text-red-500" },
+              { label: L ? "المستثمرون" : "Investors", value: investors.length, icon: Users, color: "text-amber-500" },
+              { label: L ? "إجمالي الاستثمارات" : "Total Invested", value: totalInvested.toLocaleString(L ? "ar-SA" : "en-US"), hasSAR: true, icon: Wallet, color: "text-green-500" },
+              { label: L ? "مجموع الحصص" : "Total Stakes", value: `${totalStake}%`, icon: Percent, color: "text-blue-500" },
+              { label: L ? "دفعات معلقة" : "Pending Payments", value: pendingPayments, icon: AlertCircle, color: "text-red-500" },
             ].map(stat => (
               <div key={stat.label} className="bg-white/50 dark:bg-gray-900/50 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
                 <stat.icon className={`w-4 h-4 ${stat.color} mb-1.5`} />
@@ -156,8 +160,8 @@ export default function AdminInvestors() {
         {/* Tabs */}
         <div className="flex gap-2 border-b border-black/[0.06] dark:border-white/[0.06]">
           {([
-            { id: "investors" as Tab, label: "المستثمرون", icon: Users },
-            { id: "payments" as Tab, label: "الدفعات", icon: DollarSign },
+            { id: "investors" as Tab, label: L ? "المستثمرون" : "Investors", icon: Users },
+            { id: "payments" as Tab, label: L ? "الدفعات" : "Payments", icon: DollarSign },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${tab === t.id ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-transparent text-black/40 dark:text-white/40"}`}
@@ -173,7 +177,7 @@ export default function AdminInvestors() {
           <div className="space-y-3">
             {isLoading ? <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div> : (
               investors.length === 0
-                ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><TrendingUp className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />لا يوجد مستثمرون — اضغط "إضافة مستثمر"</div>
+                ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><TrendingUp className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />{L ? 'لا يوجد مستثمرون — اضغط "إضافة مستثمر"' : 'No investors — click "Add Investor"'}</div>
                 : investors.map(inv => (
                   <motion.div key={inv.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center gap-4 p-5 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"
@@ -184,22 +188,22 @@ export default function AdminInvestors() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-black dark:text-white">{inv.userId?.fullName}</span>
-                        {inv.isVerified && <Badge className="text-[10px] px-2 py-0 border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">✓ موثق</Badge>}
-                        {!inv.isActive && <Badge className="text-[10px] px-2 py-0 border-0 bg-red-100 text-red-700">غير نشط</Badge>}
+                        {inv.isVerified && <Badge className="text-[10px] px-2 py-0 border-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{L ? "✓ موثق" : "✓ Verified"}</Badge>}
+                        {!inv.isActive && <Badge className="text-[10px] px-2 py-0 border-0 bg-red-100 text-red-700">{L ? "غير نشط" : "Inactive"}</Badge>}
                       </div>
                       <p className="text-xs text-black/30 dark:text-white/30">{inv.userId?.email}</p>
                       {inv.userId?.jobTitle && <p className="text-xs text-cyan-600 dark:text-cyan-400">{inv.userId.jobTitle}</p>}
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{inv.stakePercentage}%</p>
-                      <p className="text-xs text-black/30 dark:text-white/30">حصة</p>
+                      <p className="text-xs text-black/30 dark:text-white/30">{L ? "حصة" : "Stake"}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-base font-bold text-green-600 dark:text-green-400">{inv.totalInvested.toLocaleString("ar-SA")}</p>
-                      <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-60" /> مستثمر</p>
+                      <p className="text-base font-bold text-green-600 dark:text-green-400">{inv.totalInvested.toLocaleString(L ? "ar-SA" : "en-US")}</p>
+                      <p className="text-xs text-black/30 dark:text-white/30 flex items-center gap-0.5"><SARIcon size={9} className="opacity-60" /> {L ? "مستثمر" : "invested"}</p>
                     </div>
                     <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditInvestor(inv); setNewStake(String(inv.stakePercentage)); setNewNotes(inv.notes || ""); }} data-testid={`btn-edit-${inv.id}`}>
-                      <Edit2 className="w-3.5 h-3.5" /> تعديل
+                      <Edit2 className="w-3.5 h-3.5" /> {L ? "تعديل" : "Edit"}
                     </Button>
                   </motion.div>
                 ))
@@ -215,13 +219,13 @@ export default function AdminInvestors() {
                 <button key={s} onClick={() => setPaymentFilter(s)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${paymentFilter === s ? "bg-black dark:bg-white text-white dark:text-black border-transparent" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50"}`}
                   data-testid={`filter-${s}`}>
-                  {s === "all" ? "الكل" : STATUS_CONFIG[s as keyof typeof STATUS_CONFIG]?.label}
+                  {s === "all" ? (L ? "الكل" : "All") : STATUS_CONFIG[s as keyof typeof STATUS_CONFIG]?.label}
                 </button>
               ))}
             </div>
             {payLoading ? <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div> : (
               payments.length === 0
-                ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><DollarSign className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />لا توجد دفعات</div>
+                ? <div className="text-center py-16 text-sm text-black/30 dark:text-white/30"><DollarSign className="w-10 h-10 mx-auto mb-3 text-black/10 dark:text-white/10" />{L ? "لا توجد دفعات" : "No payments"}</div>
                 : payments.map(p => {
                   const cfg = STATUS_CONFIG[p.status];
                   return (
@@ -232,26 +236,26 @@ export default function AdminInvestors() {
                             <span className="font-bold text-black dark:text-white">{p.userId?.fullName}</span>
                             <Badge className={`text-[10px] px-2 py-0 border-0 ${cfg.color}`}><cfg.icon className="w-3 h-3 ml-1" />{cfg.label}</Badge>
                           </div>
-                          <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">{new Date(p.createdAt).toLocaleDateString("ar-SA")} · {p.paymentMethod}</p>
+                          <p className="text-xs text-black/30 dark:text-white/30 mt-0.5">{new Date(p.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")} · {p.paymentMethod}</p>
                           {p.description && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 italic">"{p.description}"</p>}
                         </div>
                         <div className="text-left">
-                          <p className="text-xl font-black text-green-600 dark:text-green-400">{p.amount.toLocaleString("ar-SA")} {p.currency}</p>
-                          {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 underline flex items-center gap-1"><Eye className="w-3 h-3" /> عرض الإيصال</a>}
+                          <p className="text-xl font-black text-green-600 dark:text-green-400">{p.amount.toLocaleString(L ? "ar-SA" : "en-US")} {p.currency}</p>
+                          {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 underline flex items-center gap-1"><Eye className="w-3 h-3" /> {L ? "عرض الإيصال" : "View Receipt"}</a>}
                         </div>
                       </div>
-                      {p.signatureText && <p className="text-xs text-black/40 dark:text-white/40">التوقيع النصي: {p.signatureText}</p>}
+                      {p.signatureText && <p className="text-xs text-black/40 dark:text-white/40">{L ? "التوقيع النصي:" : "Text Signature:"} {p.signatureText}</p>}
                       {p.status === "pending" && (
                         <div className="flex gap-2 pt-1">
                           <Button size="sm" className="gap-1.5 bg-green-500 hover:bg-green-600 text-white" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "approved" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-approve-${p.id}`}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> موافقة
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {L ? "موافقة" : "Approve"}
                           </Button>
                           <Button size="sm" variant="outline" className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50" onClick={() => approvePaymentMutation.mutate({ id: p.id, status: "rejected" })} disabled={approvePaymentMutation.isPending} data-testid={`btn-reject-${p.id}`}>
-                            <XCircle className="w-3.5 h-3.5" /> رفض
+                            <XCircle className="w-3.5 h-3.5" /> {L ? "رفض" : "Reject"}
                           </Button>
                         </div>
                       )}
-                      {p.adminNote && <p className="text-xs text-black/40 dark:text-white/40 border-t border-black/[0.05] dark:border-white/[0.05] pt-2">ملاحظة الأدمن: {p.adminNote}</p>}
+                      {p.adminNote && <p className="text-xs text-black/40 dark:text-white/40 border-t border-black/[0.05] dark:border-white/[0.05] pt-2">{L ? "ملاحظة الأدمن:" : "Admin note:"} {p.adminNote}</p>}
                     </div>
                   );
                 })
@@ -262,12 +266,12 @@ export default function AdminInvestors() {
 
       {/* Add Investor Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><UserCheck className="w-5 h-5 text-amber-500" />إضافة مستثمر جديد</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><UserCheck className="w-5 h-5 text-amber-500" />{L ? "إضافة مستثمر جديد" : "Add New Investor"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">بحث واختيار المستخدم</label>
-              <Input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="ابحث بالاسم أو البريد..." data-testid="input-user-search" />
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "بحث واختيار المستخدم" : "Search & Select User"}</label>
+              <Input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={L ? "ابحث بالاسم أو البريد..." : "Search by name or email..."} data-testid="input-user-search" />
               <div className="mt-2 max-h-48 overflow-y-auto space-y-1 rounded-xl border border-black/[0.07] dark:border-white/[0.07] p-1">
                 {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).slice(0, 10).map(u => (
                   <button key={u.id || u._id} onClick={() => setSelectedUserId(String(u.id || u._id || ""))}
@@ -276,19 +280,19 @@ export default function AdminInvestors() {
                     <span className="font-medium">{u.fullName}</span> <span className="text-xs text-black/40 dark:text-white/40">({u.role}) — {u.email}</span>
                   </button>
                 ))}
-                {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).length === 0 && <p className="text-center text-sm py-3 text-black/30 dark:text-white/30">لا توجد نتائج</p>}
+                {filteredUsers.filter(u => !existingUserIds.has(String(u.id || u._id || ""))).length === 0 && <p className="text-center text-sm py-3 text-black/30 dark:text-white/30">{L ? "لا توجد نتائج" : "No results"}</p>}
               </div>
             </div>
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">نسبة الحصة %</label>
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "نسبة الحصة %" : "Stake %"}</label>
               <Input type="number" min={0} max={100} value={newStake} onChange={e => setNewStake(e.target.value)} data-testid="input-new-stake" />
             </div>
             <div>
-              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">ملاحظات</label>
-              <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="ملاحظات للأدمن..." data-testid="input-notes" />
+              <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
+              <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder={L ? "ملاحظات للأدمن..." : "Admin notes..."} data-testid="input-notes" />
             </div>
             <Button className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white" onClick={() => addInvestorMutation.mutate()} disabled={!selectedUserId || addInvestorMutation.isPending} data-testid="btn-confirm-add-investor">
-              {addInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إضافة المستثمر
+              {addInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {L ? "إضافة المستثمر" : "Add Investor"}
             </Button>
           </div>
         </DialogContent>
@@ -296,30 +300,30 @@ export default function AdminInvestors() {
 
       {/* Edit Investor Dialog */}
       <Dialog open={!!editInvestor} onOpenChange={v => !v && setEditInvestor(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><Edit2 className="w-5 h-5 text-amber-500" />تعديل: {editInvestor?.userId?.fullName}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader><DialogTitle className="text-right font-black flex items-center gap-2"><Edit2 className="w-5 h-5 text-amber-500" />{L ? "تعديل:" : "Edit:"} {editInvestor?.userId?.fullName}</DialogTitle></DialogHeader>
           {editInvestor && (
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">نسبة الحصة %</label>
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "نسبة الحصة %" : "Stake %"}</label>
                 <Input type="number" min={0} max={100} value={newStake} onChange={e => setNewStake(e.target.value)} data-testid="input-edit-stake" />
               </div>
               <div className="flex gap-3">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={editInvestor.isVerified} onChange={e => setEditInvestor(prev => prev ? { ...prev, isVerified: e.target.checked } : prev)} data-testid="check-verified" />
-                  <span className="text-black dark:text-white">موثق</span>
+                  <span className="text-black dark:text-white">{L ? "موثق" : "Verified"}</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={editInvestor.isActive} onChange={e => setEditInvestor(prev => prev ? { ...prev, isActive: e.target.checked } : prev)} data-testid="check-active" />
-                  <span className="text-black dark:text-white">نشط</span>
+                  <span className="text-black dark:text-white">{L ? "نشط" : "Active"}</span>
                 </label>
               </div>
               <div>
-                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">ملاحظات</label>
+                <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "ملاحظات" : "Notes"}</label>
                 <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} data-testid="input-edit-notes" />
               </div>
               <Button className="w-full gap-2 bg-gradient-to-l from-amber-500 to-yellow-400 text-white" onClick={() => updateInvestorMutation.mutate()} disabled={updateInvestorMutation.isPending} data-testid="btn-confirm-edit">
-                {updateInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} حفظ التعديلات
+                {updateInvestorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} {L ? "حفظ التعديلات" : "Save Changes"}
               </Button>
             </div>
           )}

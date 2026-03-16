@@ -5,27 +5,28 @@ import SARIcon from "@/components/SARIcon";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { Loader2, TrendingUp, TrendingDown, DollarSign, BarChart3, Search, ChevronDown, ChevronUp, Percent } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 
-const categoryLabels: Record<string, { label: string; color: string }> = {
-  hosting: { label: "استضافة", color: "bg-blue-50 text-blue-700" },
-  domain: { label: "دومين", color: "bg-purple-50 text-purple-700" },
-  freelancer: { label: "مستقل", color: "bg-orange-50 text-orange-700" },
-  license: { label: "ترخيص", color: "bg-amber-50 text-amber-700" },
-  ads: { label: "إعلانات", color: "bg-pink-50 text-pink-700" },
-  design: { label: "تصميم", color: "bg-violet-50 text-violet-700" },
-  salary: { label: "راتب", color: "bg-teal-50 text-teal-700" },
-  commission: { label: "عمولة", color: "bg-cyan-50 text-cyan-700" },
-  other: { label: "أخرى", color: "bg-black/[0.04] text-black/50" },
-};
+function getCategoryLabels(L: boolean): Record<string, { label: string; color: string }> { return {
+  hosting: { label: L ? "استضافة" : "Hosting", color: "bg-blue-50 text-blue-700" },
+  domain: { label: L ? "دومين" : "Domain", color: "bg-purple-50 text-purple-700" },
+  freelancer: { label: L ? "مستقل" : "Freelancer", color: "bg-orange-50 text-orange-700" },
+  license: { label: L ? "ترخيص" : "License", color: "bg-amber-50 text-amber-700" },
+  ads: { label: L ? "إعلانات" : "Ads", color: "bg-pink-50 text-pink-700" },
+  design: { label: L ? "تصميم" : "Design", color: "bg-violet-50 text-violet-700" },
+  salary: { label: L ? "راتب" : "Salary", color: "bg-teal-50 text-teal-700" },
+  commission: { label: L ? "عمولة" : "Commission", color: "bg-cyan-50 text-cyan-700" },
+  other: { label: L ? "أخرى" : "Other", color: "bg-black/[0.04] text-black/50" },
+}; }
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد المراجعة", color: "text-amber-600 bg-amber-50 border-amber-100" },
-  approved: { label: "موافق عليه", color: "text-blue-600 bg-blue-50 border-blue-100" },
-  in_progress: { label: "قيد التنفيذ", color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
-  completed: { label: "مكتمل", color: "text-green-600 bg-green-50 border-green-100" },
-  rejected: { label: "مرفوض", color: "text-red-600 bg-red-50 border-red-100" },
-};
+function getStatusLabels(L: boolean): Record<string, { label: string; color: string }> { return {
+  pending: { label: L ? "قيد المراجعة" : "Pending", color: "text-amber-600 bg-amber-50 border-amber-100" },
+  approved: { label: L ? "موافق عليه" : "Approved", color: "text-blue-600 bg-blue-50 border-blue-100" },
+  in_progress: { label: L ? "قيد التنفيذ" : "In Progress", color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
+  completed: { label: L ? "مكتمل" : "Completed", color: "text-green-600 bg-green-50 border-green-100" },
+  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-600 bg-red-50 border-red-100" },
+}; }
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -37,6 +38,10 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 }
 
 export default function AdminProfitReport() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const categoryLabels = getCategoryLabels(L);
+  const statusLabels = getStatusLabels(L);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"profit" | "revenue" | "margin">("profit");
@@ -75,7 +80,7 @@ export default function AdminProfitReport() {
   const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="relative overflow-hidden space-y-5" dir="rtl">
+    <div className="relative overflow-hidden space-y-5" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -85,9 +90,9 @@ export default function AdminProfitReport() {
             <div className="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-4.5 h-4.5 text-white" />
             </div>
-            تقرير التكاليف والأرباح
+            {L ? "تقرير التكاليف والأرباح" : "Cost & Profit Report"}
           </h1>
-          <p className="text-xs text-black/35 mt-0.5">تحليل شامل لإيرادات ومصروفات وصافي أرباح كل الطلبات</p>
+          <p className="text-xs text-black/35 mt-0.5">{L ? "تحليل شامل لإيرادات ومصروفات وصافي أرباح كل الطلبات" : "Comprehensive revenue, expenses & net profit analysis"}</p>
         </div>
       </div>
 
@@ -102,34 +107,34 @@ export default function AdminProfitReport() {
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-blue-500" />
-                <p className="text-[11px] text-blue-500 font-bold">إجمالي الإيرادات</p>
+                <p className="text-[11px] text-blue-500 font-bold">{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
               </div>
               <p className="text-2xl font-black text-blue-700">{totals.revenue.toLocaleString()}</p>
-              <p className="text-[10px] text-blue-400 flex items-center gap-1"><SARIcon size={10} /> من {orders.length} طلب</p>
+              <p className="text-[10px] text-blue-400 flex items-center gap-1"><SARIcon size={10} /> {L ? "من" : "from"} {orders.length} {L ? "طلب" : "orders"}</p>
             </div>
             <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown className="w-4 h-4 text-red-500" />
-                <p className="text-[11px] text-red-500 font-bold">إجمالي التكاليف</p>
+                <p className="text-[11px] text-red-500 font-bold">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
               </div>
               <p className="text-2xl font-black text-red-700">{totals.expenses.toLocaleString()}</p>
-              <p className="text-[10px] text-red-400 flex items-center gap-1"><SARIcon size={10} /> مصروف</p>
+              <p className="text-[10px] text-red-400 flex items-center gap-1"><SARIcon size={10} /> {L ? "مصروف" : "expenses"}</p>
             </div>
             <div className={`border rounded-2xl p-5 ${totals.netProfit >= 0 ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className={`w-4 h-4 ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`} />
-                <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`}>صافي الربح</p>
+                <p className={`text-[11px] font-bold ${totals.netProfit >= 0 ? "text-green-600" : "text-orange-600"}`}>{L ? "صافي الربح" : "Net Profit"}</p>
               </div>
               <p className={`text-2xl font-black ${totals.netProfit >= 0 ? "text-green-700" : "text-orange-700"}`}>{totals.netProfit.toLocaleString()}</p>
-              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-green-500" : "text-orange-500"}`}><SARIcon size={10} /> صافي</p>
+              <p className={`text-[10px] flex items-center gap-1 ${totals.netProfit >= 0 ? "text-green-500" : "text-orange-500"}`}><SARIcon size={10} /> {L ? "صافي" : "net"}</p>
             </div>
             <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <Percent className="w-4 h-4 text-black/40" />
-                <p className="text-[11px] text-black/50 font-bold">هامش الربح الكلي</p>
+                <p className="text-[11px] text-black/50 font-bold">{L ? "هامش الربح الكلي" : "Overall Profit Margin"}</p>
               </div>
               <p className="text-2xl font-black text-black/70">{overallMargin}%</p>
-              <p className="text-[10px] text-black/30">متوسط الهامش</p>
+              <p className="text-[10px] text-black/30">{L ? "متوسط الهامش" : "Average margin"}</p>
             </div>
           </div>
 
@@ -137,16 +142,16 @@ export default function AdminProfitReport() {
           {totals.revenue > 0 && (
             <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
               <div className="flex justify-between text-[10px] text-black/40 mb-2">
-                <span>التكاليف {((totals.expenses / totals.revenue) * 100).toFixed(1)}%</span>
-                <span>صافي الربح {overallMargin}%</span>
+                <span>{L ? "التكاليف" : "Expenses"} {((totals.expenses / totals.revenue) * 100).toFixed(1)}%</span>
+                <span>{L ? "صافي الربح" : "Net Profit"} {overallMargin}%</span>
               </div>
               <div className="h-4 bg-black/[0.04] rounded-full overflow-hidden flex">
                 <div className="h-full bg-red-400 transition-all" style={{ width: `${Math.min((totals.expenses / totals.revenue) * 100, 100)}%` }} />
                 <div className="h-full bg-green-400 flex-1" />
               </div>
               <div className="flex gap-4 mt-2 text-[10px]">
-                <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />تكاليف</span>
-                <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />ربح صافي</span>
+                <span className="flex items-center gap-1 text-red-500"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />{L ? "تكاليف" : "Expenses"}</span>
+                <span className="flex items-center gap-1 text-green-600"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />{L ? "ربح صافي" : "Net Profit"}</span>
               </div>
             </div>
           )}
@@ -154,7 +159,7 @@ export default function AdminProfitReport() {
           {/* Category Breakdown */}
           {sortedCategories.length > 0 && (
             <div className="bg-white border border-black/[0.06] rounded-2xl p-4">
-              <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-3">توزيع التكاليف حسب الفئة</p>
+              <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider mb-3">{L ? "توزيع التكاليف حسب الفئة" : "Cost Breakdown by Category"}</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {sortedCategories.map(([cat, amt]) => {
                   const { label, color } = categoryLabels[cat] || categoryLabels.other;
@@ -163,7 +168,7 @@ export default function AdminProfitReport() {
                     <div key={cat} className="bg-black/[0.02] rounded-xl p-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${color}`}>{label}</span>
                       <p className="text-sm font-bold text-black/70 mt-1.5 flex items-center gap-1">{amt.toLocaleString()} <SARIcon size={11} /></p>
-                      <p className="text-[10px] text-black/30">{pct}% من التكاليف</p>
+                      <p className="text-[10px] text-black/30">{pct}% {L ? "من التكاليف" : "of expenses"}</p>
                     </div>
                   );
                 })}
@@ -176,7 +181,7 @@ export default function AdminProfitReport() {
             <div className="flex items-center gap-3 p-4 border-b border-black/[0.05]">
               <div className="relative flex-1 max-w-xs">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/25" />
-                <Input placeholder="بحث..." value={search} onChange={e => setSearch(e.target.value)}
+                <Input placeholder={L ? "بحث..." : "Search..."} value={search} onChange={e => setSearch(e.target.value)}
                   className="h-8 text-xs pr-9 border-black/[0.08]" />
               </div>
               <div className="flex gap-1">
@@ -184,7 +189,7 @@ export default function AdminProfitReport() {
                   <Button key={s} size="sm" variant={sortBy === s ? "default" : "outline"}
                     onClick={() => setSortBy(s)}
                     className={`text-[10px] h-7 px-2 ${sortBy === s ? "bg-black text-white" : "border-black/10 text-black/50"}`}>
-                    {s === "profit" ? "الربح" : s === "revenue" ? "الإيراد" : "الهامش"}
+                    {L ? (s === "profit" ? "الربح" : s === "revenue" ? "الإيراد" : "الهامش") : (s === "profit" ? "Profit" : s === "revenue" ? "Revenue" : "Margin")}
                   </Button>
                 ))}
               </div>
@@ -193,8 +198,8 @@ export default function AdminProfitReport() {
             {filtered.length === 0 ? (
               <div className="py-16 text-center">
                 <BarChart3 className="w-10 h-10 text-black/10 mx-auto mb-3" />
-                <p className="text-sm text-black/30">لا توجد بيانات</p>
-                <p className="text-xs text-black/20 mt-1">أضف مصروفات للطلبات من صفحة إدارة الطلبات</p>
+                <p className="text-sm text-black/30">{L ? "لا توجد بيانات" : "No data"}</p>
+                <p className="text-xs text-black/20 mt-1">{L ? "أضف مصروفات للطلبات من صفحة إدارة الطلبات" : "Add expenses from the orders management page"}</p>
               </div>
             ) : (
               <div className="divide-y divide-black/[0.04]">
@@ -218,21 +223,21 @@ export default function AdminProfitReport() {
                             <MiniBar value={order.revenue} max={maxRevenue} color="bg-blue-400" />
                             <span className="text-[10px] text-black/30">#{order.orderId?.slice(-8)}</span>
                             {order.expenseCount > 0 && (
-                              <span className="text-[10px] text-black/30">{order.expenseCount} مصروف</span>
+                              <span className="text-[10px] text-black/30">{order.expenseCount} {L ? "مصروف" : "expenses"}</span>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-left flex-shrink-0">
                           <div className="text-left">
-                            <p className="text-[10px] text-black/30">إيراد</p>
+                            <p className="text-[10px] text-black/30">{L ? "إيراد" : "Revenue"}</p>
                             <p className="text-xs font-bold text-blue-600">{order.revenue.toLocaleString()}</p>
                           </div>
                           <div className="text-left">
-                            <p className="text-[10px] text-black/30">تكاليف</p>
+                            <p className="text-[10px] text-black/30">{L ? "تكاليف" : "Expenses"}</p>
                             <p className="text-xs font-bold text-red-500">{order.totalExpenses.toLocaleString()}</p>
                           </div>
                           <div className="text-left">
-                            <p className="text-[10px] text-black/30">صافي</p>
+                            <p className="text-[10px] text-black/30">{L ? "صافي" : "Net"}</p>
                             <p className={`text-xs font-black ${isProfit ? "text-green-600" : "text-orange-600"}`}>{order.netProfit.toLocaleString()}</p>
                           </div>
                           <div className="w-12 text-left">
@@ -244,7 +249,7 @@ export default function AdminProfitReport() {
 
                       {isExpanded && order.expenses?.length > 0 && (
                         <div className="bg-black/[0.01] border-t border-black/[0.04] px-6 py-3 space-y-1.5">
-                          <p className="text-[10px] font-bold text-black/30 uppercase tracking-wider mb-2">تفاصيل المصروفات</p>
+                          <p className="text-[10px] font-bold text-black/30 uppercase tracking-wider mb-2">{L ? "تفاصيل المصروفات" : "Expense Details"}</p>
                           {order.expenses.map((e: any, i: number) => {
                             const cat = categoryLabels[e.category] || categoryLabels.other;
                             return (
@@ -256,14 +261,14 @@ export default function AdminProfitReport() {
                             );
                           })}
                           <div className="pt-1.5 mt-1.5 border-t border-black/[0.06] flex justify-between">
-                            <p className="text-[10px] text-black/30">إجمالي التكاليف</p>
+                            <p className="text-[10px] text-black/30">{L ? "إجمالي التكاليف" : "Total Expenses"}</p>
                             <p className="text-xs font-black text-red-600 flex items-center gap-1">{order.totalExpenses.toLocaleString()} <SARIcon size={10} /></p>
                           </div>
                         </div>
                       )}
                       {isExpanded && order.expenses?.length === 0 && (
                         <div className="bg-black/[0.01] border-t border-black/[0.04] px-6 py-3 text-center">
-                          <p className="text-xs text-black/25">لا توجد مصروفات لهذا الطلب — أضفها من صفحة الطلبات</p>
+                          <p className="text-xs text-black/25">{L ? "لا توجد مصروفات لهذا الطلب — أضفها من صفحة الطلبات" : "No expenses for this order — add them from the orders page"}</p>
                         </div>
                       )}
                     </div>

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, LifeBuoy, CheckCircle, Send, Download } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { exportToExcel } from "@/lib/excel";
 
 interface Ticket {
@@ -29,19 +30,24 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-yellow-100 text-yellow-700", in_review: "bg-blue-100 text-blue-700",
   resolved: "bg-green-100 text-green-700", closed: "bg-gray-100 text-gray-500",
 };
-const STATUS_LABELS: Record<string, string> = {
-  open: "مفتوحة", in_review: "قيد المراجعة", resolved: "تم الحل", closed: "مغلقة",
-};
+function getStatusLabels(L: boolean): Record<string, string> { return {
+  open: L ? "مفتوحة" : "Open", in_review: L ? "قيد المراجعة" : "Under Review", resolved: L ? "تم الحل" : "Resolved", closed: L ? "مغلقة" : "Closed",
+}; }
 const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-gray-100 text-gray-500", medium: "bg-yellow-100 text-yellow-700", high: "bg-red-100 text-red-700",
 };
-const PRIORITY_LABELS: Record<string, string> = { low: "منخفض", medium: "متوسط", high: "عالي" };
-const CAT_LABELS: Record<string, string> = {
-  technical: "مشكلة تقنية", billing: "مالية", general: "استفسار عام", complaint: "شكوى",
-};
+function getPriorityLabels(L: boolean): Record<string, string> { return { low: L ? "منخفض" : "Low", medium: L ? "متوسط" : "Medium", high: L ? "عالي" : "High" }; }
+function getCatLabels(L: boolean): Record<string, string> { return {
+  technical: L ? "مشكلة تقنية" : "Technical Issue", billing: L ? "مالية" : "Billing", general: L ? "استفسار عام" : "General Inquiry", complaint: L ? "شكوى" : "Complaint",
+}; }
 
 export default function AdminSupportTickets() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+  const STATUS_LABELS = getStatusLabels(L);
+  const PRIORITY_LABELS = getPriorityLabels(L);
+  const CAT_LABELS = getCatLabels(L);
   const queryClient = useQueryClient();
   const [replyMap, setReplyMap] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState("all");
@@ -63,9 +69,9 @@ export default function AdminSupportTickets() {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/support-tickets"] });
       setReplyMap(p => { const n = { ...p }; delete n[vars.id]; return n; });
-      toast({ title: "تم تحديث التذكرة" });
+      toast({ title: L ? "تم تحديث التذكرة" : "Ticket updated" });
     },
-    onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
+    onError: () => toast({ title: L ? "حدث خطأ" : "An error occurred", variant: "destructive" }),
   });
 
   const filtered = (tickets || []).filter(t => {
@@ -79,7 +85,7 @@ export default function AdminSupportTickets() {
     exportToExcel("support-tickets.xlsx", [{
       name: "تذاكر الدعم",
       data: tickets.map(t => ({
-        التاريخ: new Date(t.createdAt).toLocaleString("ar-SA"),
+        التاريخ: new Date(t.createdAt).toLocaleString(L ? "ar-SA" : "en-US"),
         العميل: t.userId?.fullName || "-",
         البريد: t.userId?.email || "-",
         الموضوع: t.subject,
@@ -92,7 +98,7 @@ export default function AdminSupportTickets() {
   };
 
   return (
-    <div className="relative overflow-hidden space-y-6" dir="rtl">
+    <div className="relative overflow-hidden space-y-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -153,7 +159,7 @@ export default function AdminSupportTickets() {
                   <div className="mb-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                      <span className="text-xs font-bold text-green-700 dark:text-green-400">ردك على التذكرة</span>
+                      <span className="text-xs font-bold text-green-700 dark:text-green-400">{L ? "ردك على التذكرة" : "Your reply to this ticket"}</span>
                     </div>
                     <p className="text-sm text-green-800 dark:text-green-300">{ticket.adminReply}</p>
                   </div>
@@ -165,17 +171,17 @@ export default function AdminSupportTickets() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="open">مفتوحة</SelectItem>
-                      <SelectItem value="in_review">قيد المراجعة</SelectItem>
-                      <SelectItem value="resolved">تم الحل</SelectItem>
-                      <SelectItem value="closed">مغلقة</SelectItem>
+                      <SelectItem value="open">{L ? "مفتوحة" : "Open"}</SelectItem>
+                      <SelectItem value="in_review">{L ? "قيد المراجعة" : "Under Review"}</SelectItem>
+                      <SelectItem value="resolved">{L ? "تم الحل" : "Resolved"}</SelectItem>
+                      <SelectItem value="closed">{L ? "مغلقة" : "Closed"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="mt-3 flex gap-2">
                   <Textarea
-                    placeholder="اكتب ردك على التذكرة..."
+                    placeholder={L ? "اكتب ردك على التذكرة..." : "Write your reply to this ticket..."}
                     value={replyMap[ticket.id] || ""}
                     onChange={e => setReplyMap(p => ({ ...p, [ticket.id]: e.target.value }))}
                     rows={2}
@@ -190,7 +196,7 @@ export default function AdminSupportTickets() {
                     data-testid={`button-reply-${ticket.id}`}
                   >
                     <Send className="w-3.5 h-3.5" />
-                    رد
+                    {L ? "رد" : "Reply"}
                   </Button>
                 </div>
               </CardContent>

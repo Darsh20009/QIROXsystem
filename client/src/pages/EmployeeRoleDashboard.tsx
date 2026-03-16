@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import {
   Package, Truck, CheckCircle2, Clock, AlertCircle, Loader2,
   DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle,
@@ -27,6 +28,8 @@ function fade(delay = 0) {
 // ── DELIVERY DASHBOARD ────────────────────────────────────────────────────────
 function DeliveryDashboard() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
 
   const pending = orders?.filter(o => o.status === "pending") || [];
@@ -40,7 +43,7 @@ function DeliveryDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-      toast({ title: "تم تحديث حالة الطلب" });
+      toast({ title: L ? "تم تحديث حالة الطلب" : "Order status updated" });
     },
   });
 
@@ -60,21 +63,21 @@ function DeliveryDashboard() {
               <Truck className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-black font-heading">لوحة التوصيل والتسليم</h1>
-              <p className="text-white/40 text-sm">إدارة طلبات الاستلام والتسليم</p>
+              <h1 className="text-xl font-black font-heading">{L ? "لوحة التوصيل والتسليم" : "Delivery Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "إدارة طلبات الاستلام والتسليم" : "Manage pickup and delivery orders"}</p>
             </div>
             <Link href="/employee/new-order">
               <button className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors" data-testid="btn-delivery-new-order">
                 <Package className="w-3.5 h-3.5" />
-                طلب جديد
+                {L ? "طلب جديد" : "New Order"}
               </button>
             </Link>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "انتظار الاستلام", val: pending.length, color: "text-amber-400" },
-              { label: "جاري التوصيل", val: inProgress.length, color: "text-blue-400" },
-              { label: "مُسلّمة اليوم", val: completed.length, color: "text-green-400" },
+              { label: L ? "انتظار الاستلام" : "Awaiting Pickup", val: pending.length, color: "text-amber-400" },
+              { label: L ? "جاري التوصيل" : "In Delivery", val: inProgress.length, color: "text-blue-400" },
+              { label: L ? "مُسلّمة اليوم" : "Delivered Today", val: completed.length, color: "text-green-400" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -86,8 +89,8 @@ function DeliveryDashboard() {
       </motion.div>
 
       {[
-        { title: "طلبات جديدة — بانتظار الاستلام", items: pending, nextStatus: "in_progress", nextLabel: "ابدأ التوصيل", icon: Package, iconColor: "text-amber-500" },
-        { title: "طلبات جاري توصيلها", items: inProgress, nextStatus: "completed", nextLabel: "تم التسليم ✓", icon: Truck, iconColor: "text-blue-500" },
+        { title: L ? "طلبات جديدة — بانتظار الاستلام" : "New Orders — Awaiting Pickup", items: pending, nextStatus: "in_progress", nextLabel: L ? "ابدأ التوصيل" : "Start Delivery", icon: Package, iconColor: "text-amber-500" },
+        { title: L ? "طلبات جاري توصيلها" : "Orders in Transit", items: inProgress, nextStatus: "completed", nextLabel: L ? "تم التسليم ✓" : "Delivered ✓", icon: Truck, iconColor: "text-blue-500" },
       ].map(({ title, items, nextStatus, nextLabel, icon: Icon, iconColor }, si) => (
         <motion.div key={si} {...fade(0.1 + si * 0.1)}>
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -98,7 +101,7 @@ function DeliveryDashboard() {
           {items.length === 0 ? (
             <div className="border border-black/[0.06] rounded-2xl p-8 text-center text-black/30">
               <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">لا توجد طلبات في هذه المرحلة</p>
+              <p className="text-sm">{L ? "لا توجد طلبات في هذه المرحلة" : "No orders at this stage"}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -107,12 +110,12 @@ function DeliveryDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${statusStyle[order.status] || ""}`}>
-                        {order.status === "pending" ? "انتظار" : "جاري التوصيل"}
+                        {order.status === "pending" ? (L ? "انتظار" : "Pending") : (L ? "جاري التوصيل" : "In Transit")}
                       </span>
                       <span className="text-xs text-black/30 font-mono">#{order.id?.toString().slice(-6)}</span>
                     </div>
                     <p className="font-bold text-black text-sm">{order.projectType || order.sector || "طلب"}</p>
-                    {order.clientName && <p className="text-xs text-black/40 mt-0.5">العميل: {order.clientName}</p>}
+                    {order.clientName && <p className="text-xs text-black/40 mt-0.5">{L ? "العميل:" : "Client:"} {order.clientName}</p>}
                     {order.address && <p className="text-xs text-black/30 mt-0.5 flex items-center gap-1"><Globe className="w-3 h-3" />{order.address}</p>}
                   </div>
                   <Button
@@ -137,6 +140,8 @@ function DeliveryDashboard() {
 
 // ── DEVELOPER DASHBOARD ────────────────────────────────────────────────────────
 function DeveloperDashboard() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: modRequests } = useQuery<any[]>({ queryKey: ["/api/modification-requests"] });
   const { data: checklist } = useQuery<any>({ queryKey: ["/api/checklist"] });
 
@@ -159,15 +164,15 @@ function DeveloperDashboard() {
               <Code2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-heading">لوحة المطور</h1>
-              <p className="text-white/40 text-sm">مهامك وطلبات التعديل المُعيّنة لك</p>
+              <h1 className="text-xl font-black font-heading">{L ? "لوحة المطور" : "Developer Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "مهامك وطلبات التعديل المُعيّنة لك" : "Your tasks and assigned modification requests"}</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "انتظار المراجعة", val: pending.length, color: "text-amber-400" },
-              { label: "قيد التنفيذ", val: inProgress.length, color: "text-blue-400" },
-              { label: "مكتملة", val: done.length, color: "text-green-400" },
+              { label: L ? "انتظار المراجعة" : "Awaiting Review", val: pending.length, color: "text-amber-400" },
+              { label: L ? "قيد التنفيذ" : "In Progress", val: inProgress.length, color: "text-blue-400" },
+              { label: L ? "مكتملة" : "Completed", val: done.length, color: "text-green-400" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -182,18 +187,18 @@ function DeveloperDashboard() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
             <Wrench className="w-4 h-4 text-blue-500" />
-            طلبات التعديل المطلوبة
+            {L ? "طلبات التعديل المطلوبة" : "Required Modification Requests"}
           </h2>
           <Link href="/admin/mod-requests">
             <Button variant="ghost" size="sm" className="text-xs text-black/40 hover:text-black gap-1">
-              عرض الكل <ChevronRight className="w-3.5 h-3.5" />
+              {L ? "عرض الكل" : "View All"} <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </Link>
         </div>
         {[...pending, ...inProgress].length === 0 ? (
           <div className="border border-black/[0.06] rounded-2xl p-8 text-center text-black/30">
             <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">لا توجد طلبات تعديل معلّقة</p>
+            <p className="text-sm">{L ? "لا توجد طلبات تعديل معلّقة" : "No pending modification requests"}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -202,16 +207,16 @@ function DeveloperDashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${priorityColor[mod.priority] || "bg-gray-100 text-gray-600"}`}>
-                      {mod.priority === "urgent" ? "عاجل" : mod.priority === "high" ? "عالي" : mod.priority === "medium" ? "متوسط" : "منخفض"}
+                      {mod.priority === "urgent" ? (L ? "عاجل" : "Urgent") : mod.priority === "high" ? (L ? "عالي" : "High") : mod.priority === "medium" ? (L ? "متوسط" : "Medium") : (L ? "منخفض" : "Low")}
                     </span>
                     <span className="text-[10px] text-black/30 font-mono">#{mod.id?.toString().slice(-5)}</span>
                   </div>
-                  <p className="font-semibold text-black text-sm">{mod.title || "طلب تعديل"}</p>
+                  <p className="font-semibold text-black text-sm">{mod.title || (L ? "طلب تعديل" : "Modification Request")}</p>
                   <p className="text-xs text-black/40 mt-0.5 line-clamp-2">{mod.description}</p>
                 </div>
                 <Link href="/admin/mod-requests">
                   <Button size="sm" variant="outline" className="shrink-0 text-xs gap-1 border-black/10">
-                    فتح <ChevronRight className="w-3 h-3" />
+                    {L ? "فتح" : "Open"} <ChevronRight className="w-3 h-3" />
                   </Button>
                 </Link>
               </div>
@@ -224,17 +229,17 @@ function DeveloperDashboard() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-black/40 uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-purple-500" />
-            قائمة مهامي اليومية
+            {L ? "قائمة مهامي اليومية" : "My Daily Tasks"}
           </h2>
           <Link href="/employee/checklist">
             <Button variant="ghost" size="sm" className="text-xs text-black/40 hover:text-black gap-1">
-              إدارة <ChevronRight className="w-3.5 h-3.5" />
+              {L ? "إدارة" : "Manage"} <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </Link>
         </div>
         <div className="border border-black/[0.06] bg-white rounded-2xl p-4">
           <p className="text-sm text-black/40 text-center">
-            <Link href="/employee/checklist" className="text-blue-600 hover:underline">افتح قائمة المهام</Link> لإدارة مهامك اليومية والتقنية
+            <Link href="/employee/checklist" className="text-blue-600 hover:underline">{L ? "افتح قائمة المهام" : "Open Task List"}</Link> {L ? "لإدارة مهامك اليومية والتقنية" : "to manage your daily and technical tasks"}
           </p>
         </div>
       </motion.div>
@@ -244,6 +249,8 @@ function DeveloperDashboard() {
 
 // ── ACCOUNTANT / ERP DASHBOARD ────────────────────────────────────────────────
 function AccountantDashboard() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: finance } = useQuery<any>({ queryKey: ["/api/admin/finance/summary"] });
   const { data: invoices } = useQuery<any[]>({ queryKey: ["/api/invoices"] });
   const { data: receipts } = useQuery<any[]>({ queryKey: ["/api/receipts"] });
@@ -263,18 +270,18 @@ function AccountantDashboard() {
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-heading">نظام ERP المالي</h1>
-              <p className="text-white/40 text-sm">إدارة الإيرادات والمصروفات والتحصيل</p>
+              <h1 className="text-xl font-black font-heading">{L ? "نظام ERP المالي" : "Financial ERP System"}</h1>
+              <p className="text-white/40 text-sm">{L ? "إدارة الإيرادات والمصروفات والتحصيل" : "Manage revenue, expenses, and collections"}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-green-400" />إجمالي الإيرادات</p>
-              <p className="text-2xl font-black text-green-400 flex items-center gap-1">{totalRevenue.toLocaleString("ar-SA")} <SARIcon size={14} className="opacity-40" /></p>
+              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 text-green-400" />{L ? "إجمالي الإيرادات" : "Total Revenue"}</p>
+              <p className="text-2xl font-black text-green-400 flex items-center gap-1">{totalRevenue.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-red-400" />مستحقات غير محصّلة</p>
-              <p className="text-2xl font-black text-red-400 flex items-center gap-1">{totalPending.toLocaleString("ar-SA")} <SARIcon size={14} className="opacity-40" /></p>
+              <p className="text-white/40 text-xs mb-1 flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 text-red-400" />{L ? "مستحقات غير محصّلة" : "Uncollected Receivables"}</p>
+              <p className="text-2xl font-black text-red-400 flex items-center gap-1">{totalPending.toLocaleString()} <SARIcon size={14} className="opacity-40" /></p>
             </div>
           </div>
         </div>
@@ -282,10 +289,10 @@ function AccountantDashboard() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: FileText, label: "فواتير مسددة", val: paidInvoices, color: "text-green-500", bg: "bg-green-50" },
-          { icon: AlertCircle, label: "فواتير معلّقة", val: unpaidInvoices, color: "text-red-500", bg: "bg-red-50" },
-          { icon: Receipt, label: "إجمالي الوصولات", val: receipts?.length || 0, color: "text-blue-500", bg: "bg-blue-50" },
-          { icon: Wallet, label: "رصيد الخزينة", val: (totalRevenue - totalPending).toLocaleString("ar-SA"), sarVal: true, color: "text-purple-500", bg: "bg-purple-50" },
+          { icon: FileText, label: L ? "فواتير مسددة" : "Paid Invoices", val: paidInvoices, color: "text-green-500", bg: "bg-green-50" },
+          { icon: AlertCircle, label: L ? "فواتير معلّقة" : "Pending Invoices", val: unpaidInvoices, color: "text-red-500", bg: "bg-red-50" },
+          { icon: Receipt, label: L ? "إجمالي الوصولات" : "Total Receipts", val: receipts?.length || 0, color: "text-blue-500", bg: "bg-blue-50" },
+          { icon: Wallet, label: L ? "رصيد الخزينة" : "Treasury Balance", val: (totalRevenue - totalPending).toLocaleString(), sarVal: true, color: "text-purple-500", bg: "bg-purple-50" },
         ].map(({ icon: Icon, label, val, sarVal, color, bg }, i) => (
           <motion.div key={i} {...fade(0.1 + i * 0.05)}>
             <Card className="border border-black/[0.06] shadow-none">
@@ -307,25 +314,25 @@ function AccountantDashboard() {
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-sm font-bold text-black flex items-center gap-2">
                 <TrendingDown className="w-4 h-4 text-red-500" />
-                آخر الفواتير المعلّقة
+                {L ? "آخر الفواتير المعلّقة" : "Latest Pending Invoices"}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {invoices?.filter((i: any) => i.status === "pending").slice(0, 5).map((inv: any) => (
                 <div key={inv.id} className="flex items-center justify-between py-2.5 border-b border-black/[0.04] last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-black">{inv.clientName || "عميل"}</p>
-                    <p className="text-[11px] text-black/30">فاتورة #{inv.id?.toString().slice(-5)}</p>
+                    <p className="text-sm font-medium text-black">{inv.clientName || (L ? "عميل" : "Client")}</p>
+                    <p className="text-[11px] text-black/30">{L ? "فاتورة" : "Invoice"} #{inv.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-red-600 flex items-center gap-0.5">{Number(inv.totalAmount || 0).toLocaleString("ar-SA")} <SARIcon size={9} className="opacity-60" /></span>
+                  <span className="text-sm font-bold text-red-600 flex items-center gap-0.5">{Number(inv.totalAmount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!invoices || invoices.filter((i: any) => i.status === "pending").length === 0) && (
-                <p className="text-center text-black/30 text-sm py-4">لا توجد فواتير معلّقة</p>
+                <p className="text-center text-black/30 text-sm py-4">{L ? "لا توجد فواتير معلّقة" : "No pending invoices"}</p>
               )}
               <Link href="/admin/invoices">
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-xs text-black/40 hover:text-black gap-1">
-                  عرض كل الفواتير <ChevronRight className="w-3.5 h-3.5" />
+                  {L ? "عرض كل الفواتير" : "View All Invoices"} <ChevronRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </CardContent>
@@ -337,25 +344,25 @@ function AccountantDashboard() {
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-sm font-bold text-black flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-green-500" />
-                آخر الوصولات المحصّلة
+                {L ? "آخر الوصولات المحصّلة" : "Latest Collected Receipts"}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {receipts?.slice(0, 5).map((rec: any) => (
                 <div key={rec.id} className="flex items-center justify-between py-2.5 border-b border-black/[0.04] last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-black">{rec.clientName || "عميل"}</p>
-                    <p className="text-[11px] text-black/30">وصل #{rec.id?.toString().slice(-5)}</p>
+                    <p className="text-sm font-medium text-black">{rec.clientName || (L ? "عميل" : "Client")}</p>
+                    <p className="text-[11px] text-black/30">{L ? "وصل" : "Receipt"} #{rec.id?.toString().slice(-5)}</p>
                   </div>
-                  <span className="text-sm font-bold text-green-600 flex items-center gap-0.5">+{Number(rec.amount || 0).toLocaleString("ar-SA")} <SARIcon size={9} className="opacity-60" /></span>
+                  <span className="text-sm font-bold text-green-600 flex items-center gap-0.5">+{Number(rec.amount || 0).toLocaleString()} <SARIcon size={9} className="opacity-60" /></span>
                 </div>
               ))}
               {(!receipts || receipts.length === 0) && (
-                <p className="text-center text-black/30 text-sm py-4">لا توجد وصولات بعد</p>
+                <p className="text-center text-black/30 text-sm py-4">{L ? "لا توجد وصولات بعد" : "No receipts yet"}</p>
               )}
               <Link href="/admin/receipts">
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-xs text-black/40 hover:text-black gap-1">
-                  عرض كل الوصولات <ChevronRight className="w-3.5 h-3.5" />
+                  {L ? "عرض كل الوصولات" : "View All Receipts"} <ChevronRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </CardContent>
@@ -365,9 +372,9 @@ function AccountantDashboard() {
 
       <motion.div {...fade(0.35)}>
         <div className="flex gap-3 flex-wrap">
-          <Link href="/admin/finance"><Button className="premium-btn gap-2"><Wallet className="w-4 h-4" />لوحة المالية الكاملة</Button></Link>
-          <Link href="/admin/payroll"><Button variant="outline" className="gap-2 border-black/10"><Banknote className="w-4 h-4" />كشف الرواتب</Button></Link>
-          <Link href="/admin/invoices"><Button variant="outline" className="gap-2 border-black/10"><FileText className="w-4 h-4" />الفواتير</Button></Link>
+          <Link href="/admin/finance"><Button className="premium-btn gap-2"><Wallet className="w-4 h-4" />{L ? "لوحة المالية الكاملة" : "Full Finance Dashboard"}</Button></Link>
+          <Link href="/admin/payroll"><Button variant="outline" className="gap-2 border-black/10"><Banknote className="w-4 h-4" />{L ? "كشف الرواتب" : "Payroll"}</Button></Link>
+          <Link href="/admin/invoices"><Button variant="outline" className="gap-2 border-black/10"><FileText className="w-4 h-4" />{L ? "الفواتير" : "Invoices"}</Button></Link>
         </div>
       </motion.div>
     </div>
@@ -376,6 +383,8 @@ function AccountantDashboard() {
 
 // ── SALES DASHBOARD ────────────────────────────────────────────────────────────
 function SalesDashboard() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: orders } = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
   const { data: customers } = useQuery<any[]>({ queryKey: ["/api/admin/customers"] });
 
@@ -397,15 +406,15 @@ function SalesDashboard() {
               <Target className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-black font-heading">لوحة المبيعات والتسويق</h1>
-              <p className="text-white/40 text-sm">متابعة الطلبات والعملاء والمواد التسويقية</p>
+              <h1 className="text-xl font-black font-heading">{L ? "لوحة المبيعات والتسويق" : "Sales & Marketing Dashboard"}</h1>
+              <p className="text-white/40 text-sm">{L ? "متابعة الطلبات والعملاء والمواد التسويقية" : "Track orders, clients, and marketing materials"}</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "طلبات جديدة", val: newOrders, color: "text-amber-400" },
-              { label: "طلبات الشهر", val: thisMonthOrders, color: "text-blue-400" },
-              { label: "إجمالي العملاء", val: customers?.length || 0, color: "text-green-400" },
+              { label: L ? "طلبات جديدة" : "New Orders", val: newOrders, color: "text-amber-400" },
+              { label: L ? "طلبات الشهر" : "This Month's Orders", val: thisMonthOrders, color: "text-blue-400" },
+              { label: L ? "إجمالي العملاء" : "Total Clients", val: customers?.length || 0, color: "text-green-400" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded-2xl p-3 text-center">
                 <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -426,8 +435,8 @@ function SalesDashboard() {
                     <Palette className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-black">أدوات التسويق والبوسترات</p>
-                    <p className="text-xs text-black/40 mt-0.5">تصميم ورفع المواد التسويقية</p>
+                    <p className="font-bold text-black">{L ? "أدوات التسويق والبوسترات" : "Marketing Tools & Posters"}</p>
+                    <p className="text-xs text-black/40 mt-0.5">{L ? "تصميم ورفع المواد التسويقية" : "Design and upload marketing materials"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>
@@ -445,8 +454,8 @@ function SalesDashboard() {
                     <Users className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-black">إدارة العملاء</p>
-                    <p className="text-xs text-black/40 mt-0.5">قاعدة بيانات العملاء والمتابعة</p>
+                    <p className="font-bold text-black">{L ? "إدارة العملاء" : "Client Management"}</p>
+                    <p className="text-xs text-black/40 mt-0.5">{L ? "قاعدة بيانات العملاء والمتابعة" : "Client database and follow-ups"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>
@@ -464,8 +473,8 @@ function SalesDashboard() {
                     <Zap className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-black">إضافة عميل وطلب جديد</p>
-                    <p className="text-xs text-black/40 mt-0.5">تسجيل عميل وإنشاء طلب مباشرة</p>
+                    <p className="font-bold text-black">{L ? "إضافة عميل وطلب جديد" : "Add Client & New Order"}</p>
+                    <p className="text-xs text-black/40 mt-0.5">{L ? "تسجيل عميل وإنشاء طلب مباشرة" : "Register a client and create an order directly"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>
@@ -483,8 +492,8 @@ function SalesDashboard() {
                     <Activity className="w-6 h-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-black">متابعة الطلبات</p>
-                    <p className="text-xs text-black/40 mt-0.5">حالة الطلبات والمراحل</p>
+                    <p className="font-bold text-black">{L ? "متابعة الطلبات" : "Track Orders"}</p>
+                    <p className="text-xs text-black/40 mt-0.5">{L ? "حالة الطلبات والمراحل" : "Order statuses and stages"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>
@@ -502,8 +511,8 @@ function SalesDashboard() {
                     <Calendar className="w-6 h-6 text-violet-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-black">اشتراكات العملاء</p>
-                    <p className="text-xs text-black/40 mt-0.5">تفعيل وإدارة اشتراكات العملاء</p>
+                    <p className="font-bold text-black">{L ? "اشتراكات العملاء" : "Client Subscriptions"}</p>
+                    <p className="text-xs text-black/40 mt-0.5">{L ? "تفعيل وإدارة اشتراكات العملاء" : "Activate and manage client subscriptions"}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-black/20 mr-auto" />
                 </div>
@@ -518,6 +527,8 @@ function SalesDashboard() {
 
 // ── UPCOMING MEETINGS WIDGET ───────────────────────────────────────────────────
 function UpcomingMeetingsWidget() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: meetings = [] } = useQuery<any[]>({
     queryKey: ["/api/qmeet/upcoming"],
     refetchInterval: 60000,
@@ -532,26 +543,26 @@ function UpcomingMeetingsWidget() {
           <div className="w-7 h-7 bg-violet-600 rounded-xl flex items-center justify-center">
             <Video className="w-3.5 h-3.5 text-white" />
           </div>
-          <h2 className="text-sm font-bold text-black dark:text-white">اجتماعاتك القادمة</h2>
-          <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{meetings.length} اجتماع</span>
+          <h2 className="text-sm font-bold text-black dark:text-white">{L ? "اجتماعاتك القادمة" : "Upcoming Meetings"}</h2>
+          <span className="text-[11px] text-black/30 dark:text-white/30 font-medium">{meetings.length} {L ? "اجتماع" : "meetings"}</span>
         </div>
         <a href="/meet/join" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 border border-violet-200 dark:border-violet-700/50 px-3 py-1.5 rounded-xl transition-colors" data-testid="employee-join-meeting-btn">
           <KeyRound className="w-3.5 h-3.5" />
-          انضم بكود
+          {L ? "انضم بكود" : "Join by Code"}
         </a>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {meetings.map((m: any) => {
           const scheduledDate = new Date(m.scheduledAt);
           const isLive = m.status === "live";
-          const dateStr = scheduledDate.toLocaleDateString("ar-SA", { weekday: "short", month: "short", day: "numeric" });
-          const timeStr = scheduledDate.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+          const dateStr = scheduledDate.toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" });
+          const timeStr = scheduledDate.toLocaleTimeString(L ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
           return (
             <div key={m._id} data-testid={`employee-card-meeting-${m._id}`} className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${isLive ? "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-700" : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08]"}`}>
               {isLive && (
                 <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-100 dark:bg-violet-900/60 dark:text-violet-300 px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
-                  مباشر الآن
+                  {L ? "مباشر الآن" : "Live Now"}
                 </span>
               )}
               <div className="flex items-start gap-3 mb-3">
@@ -569,7 +580,7 @@ function UpcomingMeetingsWidget() {
               </div>
               <button onClick={() => window.open(m.meetingLink, "_blank")} className={`w-full flex items-center justify-center gap-1.5 rounded-xl h-8 text-xs font-bold transition-colors ${isLive ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-black hover:bg-black/80 text-white"}`} data-testid={`employee-join-meeting-btn-${m._id}`}>
                 <Video className="w-3 h-3" />
-                {isLive ? "انضم الآن" : "انضم للاجتماع"}
+                {isLive ? (L ? "انضم الآن" : "Join Now") : (L ? "انضم للاجتماع" : "Join Meeting")}
               </button>
             </div>
           );
@@ -581,6 +592,8 @@ function UpcomingMeetingsWidget() {
 
 // ── ABANDONED CARTS WIDGET ──────────────────────────────────────────────────────
 function AbandonedCartsWidget() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: carts, isLoading } = useQuery<any[]>({ queryKey: ["/api/employee/abandoned-carts"] });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -595,7 +608,7 @@ function AbandonedCartsWidget() {
         <Card className="border border-black/[0.06] shadow-none">
           <CardContent className="p-5 flex items-center gap-3">
             <Loader2 className="w-4 h-4 animate-spin text-black/30" />
-            <span className="text-sm text-black/40">جارٍ تحميل العربات...</span>
+            <span className="text-sm text-black/40">{L ? "جارٍ تحميل العربات..." : "Loading carts..."}</span>
           </CardContent>
         </Card>
       </motion.div>
@@ -613,8 +626,8 @@ function AbandonedCartsWidget() {
               <ShoppingCart className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <CardTitle className="text-base font-bold text-black dark:text-white">عربات التسوق المهجورة</CardTitle>
-              <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{carts.length} عميل لديه منتجات في العربة</p>
+              <CardTitle className="text-base font-bold text-black dark:text-white">{L ? "عربات التسوق المهجورة" : "Abandoned Shopping Carts"}</CardTitle>
+              <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{carts.length} {L ? "عميل لديه منتجات في العربة" : "clients have items in cart"}</p>
             </div>
             <Badge className="mr-auto bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-0">
               {carts.length}
@@ -632,9 +645,9 @@ function AbandonedCartsWidget() {
               const diff = Date.now() - new Date(cart.updatedAt).getTime();
               const hrs = Math.floor(diff / 3600000);
               const days = Math.floor(hrs / 24);
-              if (days > 0) return `منذ ${days} يوم`;
-              if (hrs > 0) return `منذ ${hrs} ساعة`;
-              return "منذ قليل";
+              if (days > 0) return L ? `منذ ${days} يوم` : `${days}d ago`;
+              if (hrs > 0) return L ? `منذ ${hrs} ساعة` : `${hrs}h ago`;
+              return L ? "منذ قليل" : "just now";
             })();
             return (
               <div key={cart.cartId} data-testid={`abandoned-cart-${cart.cartId}`} className="border border-black/[0.06] dark:border-white/[0.08] rounded-2xl overflow-hidden">
@@ -644,23 +657,23 @@ function AbandonedCartsWidget() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-black dark:text-white truncate">{cart.client.name}</p>
-                    <p className="text-[11px] text-black/40 dark:text-white/40">{cart.itemsCount} منتج · {cart.total.toFixed(0)} ر.س · {timeAgo}</p>
+                    <p className="text-[11px] text-black/40 dark:text-white/40">{cart.itemsCount} {L ? "منتج" : "items"} · {cart.total.toFixed(0)} {L ? "ر.س" : "SAR"} · {timeAgo}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {waLink && (
                       <a href={waLink} target="_blank" rel="noopener noreferrer" data-testid={`wa-btn-${cart.cartId}`}
-                        className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors" title="واتساب">
+                        className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center hover:bg-green-200 transition-colors" title={L ? "واتساب" : "WhatsApp"}>
                         <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                       </a>
                     )}
                     {telLink && (
                       <a href={telLink} data-testid={`tel-btn-${cart.cartId}`}
-                        className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center hover:bg-blue-200 transition-colors" title="اتصل">
+                        className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center hover:bg-blue-200 transition-colors" title={L ? "اتصل" : "Call"}>
                         <Phone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </a>
                     )}
                     {!phone && (
-                      <span className="text-[11px] text-black/30 dark:text-white/30 px-1">لا يوجد رقم</span>
+                      <span className="text-[11px] text-black/30 dark:text-white/30 px-1">{L ? "لا يوجد رقم" : "No number"}</span>
                     )}
                     <button onClick={() => setExpandedId(isExpanded ? null : cart.cartId)} data-testid={`expand-cart-${cart.cartId}`}
                       className="w-8 h-8 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl flex items-center justify-center hover:bg-black/[0.08] transition-colors">
@@ -689,7 +702,7 @@ function AbandonedCartsWidget() {
                       ))}
                     </div>
                     <div className="pt-2 flex items-center justify-between border-t border-black/[0.06] dark:border-white/[0.06]">
-                      <span className="text-xs text-black/40 dark:text-white/40">الإجمالي</span>
+                      <span className="text-xs text-black/40 dark:text-white/40">{L ? "الإجمالي" : "Total"}</span>
                       <span className="text-sm font-bold text-black dark:text-white flex items-center gap-1">
                         {cart.total.toFixed(2)} <SARIcon className="w-3.5 h-3.5" />
                       </span>
@@ -707,6 +720,8 @@ function AbandonedCartsWidget() {
 
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: user } = useUser();
 
   if (!user) {
@@ -728,7 +743,7 @@ export default function EmployeeRoleDashboard() {
     return (
       <div className="text-center py-12 text-black/40">
         <Star className="w-12 h-12 mx-auto mb-4 opacity-20" />
-        <p className="font-medium">هذا الدور ليس له لوحة متخصصة بعد</p>
+        <p className="font-medium">{L ? "هذا الدور ليس له لوحة متخصصة بعد" : "This role does not have a specialized dashboard yet"}</p>
       </div>
     );
   }
@@ -749,8 +764,8 @@ export default function EmployeeRoleDashboard() {
                   <Wand2 className="w-6 h-6 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <p className="font-bold text-black dark:text-white">أدواتي ومميزاتي ⚡</p>
-                  <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">أدوات PDF والتقنية والاختصارات المتاحة لك</p>
+                  <p className="font-bold text-black dark:text-white">{L ? "أدواتي ومميزاتي ⚡" : "My Tools & Features ⚡"}</p>
+                  <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{L ? "أدوات PDF والتقنية والاختصارات المتاحة لك" : "PDF, technical tools, and shortcuts available to you"}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 mr-auto" />
               </div>

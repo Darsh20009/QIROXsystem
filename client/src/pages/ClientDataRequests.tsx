@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -31,13 +32,27 @@ const PRIORITY_META: Record<string, { label: string; color: string }> = {
 };
 const TYPE_ICONS: Record<string, any> = { file: Paperclip, image: ImageIcon, text: Type, link: Link2 };
 
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" });
+function fmt(date: string, ar = true) {
+  return new Date(date).toLocaleDateString(ar ? "ar-SA" : "en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 /* ── Main Component ──────────────────────────────────── */
-export default function ClientDataRequests() {
-  const { toast } = useToast();
+  export default function ClientDataRequests() {
+    const { toast } = useToast();
+    const { lang, dir } = useI18n();
+    const L = lang === "ar";
+    const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
+      pending:         { label: L ? "في الانتظار" : "Pending",          color: "text-amber-700",  bg: "bg-amber-50",    border: "border-amber-200", icon: Clock3 },
+      submitted:       { label: L ? "تم الإرسال" : "Submitted",         color: "text-blue-700",   bg: "bg-blue-50",     border: "border-blue-200",  icon: CheckCircle2 },
+      approved:        { label: L ? "مقبول ✓" : "Approved ✓",           color: "text-emerald-700",bg: "bg-emerald-50",  border: "border-emerald-200",icon: CheckCircle2 },
+      revision_needed: { label: L ? "تحتاج مراجعة" : "Revision Needed", color: "text-red-700",    bg: "bg-red-50",      border: "border-red-200",   icon: RotateCcw },
+    };
+    const PRIORITY_META: Record<string, { label: string; color: string }> = {
+      low:    { label: L ? "منخفضة" : "Low",        color: "text-slate-500" },
+      normal: { label: L ? "عادية" : "Normal",       color: "text-blue-600" },
+      high:   { label: L ? "عالية ⚠️" : "High ⚠️",  color: "text-amber-600" },
+      urgent: { label: L ? "عاجل 🔴" : "Urgent 🔴", color: "text-red-600" },
+    };
   const [activeId, setActiveId] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "submitted" | "all">("pending");
 
@@ -55,7 +70,7 @@ export default function ClientDataRequests() {
   const pendingCount = requests.filter(r => r.status === "pending" || r.status === "revision_needed").length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-950" dir={dir}>
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
@@ -65,12 +80,12 @@ export default function ClientDataRequests() {
               <ClipboardList className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white">طلبات البيانات</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">ملفات ومعلومات يحتاجها فريق العمل منك</p>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white">{L ? "طلبات البيانات" : "Data Requests"}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{L ? "ملفات ومعلومات يحتاجها فريق العمل منك" : "Files and information the team needs from you"}</p>
             </div>
             {pendingCount > 0 && (
               <div className="mr-auto bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full animate-pulse">
-                {pendingCount} بانتظارك
+                {pendingCount} {L ? "بانتظارك" : "pending"}
               </div>
             )}
           </div>
@@ -79,9 +94,9 @@ export default function ClientDataRequests() {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-1.5">
           {([
-            { key: "pending",   label: "بانتظار ردك", badge: pendingCount },
-            { key: "submitted", label: "تم الإرسال",  badge: 0 },
-            { key: "all",       label: "الكل",         badge: 0 },
+            { key: "pending",   label: L ? "بانتظار ردك" : "Awaiting Reply", badge: pendingCount },
+            { key: "submitted", label: L ? "تم الإرسال" : "Submitted",  badge: 0 },
+            { key: "all",       label: L ? "الكل" : "All",         badge: 0 },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === t.key
@@ -103,13 +118,13 @@ export default function ClientDataRequests() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800">
             <ClipboardList className="w-14 h-14 mx-auto mb-4 text-gray-200 dark:text-gray-700" />
-            <p className="text-gray-400 dark:text-gray-500 font-medium">لا توجد طلبات في هذا القسم</p>
+            <p className="text-gray-400 dark:text-gray-500 font-medium">{L ? "لا توجد طلبات في هذا القسم" : "No requests in this section"}</p>
           </motion.div>
         ) : (
           <div className="space-y-4">
             <AnimatePresence>
               {filtered.map((req, i) => (
-                <RequestCard key={req.id} req={req} index={i} onOpen={() => setActiveId(req.id)} />
+                <RequestCard key={req.id} req={req} index={i} onOpen={() => setActiveId(req.id)} statusMeta={STATUS_META} priorityMeta={PRIORITY_META} L={L} />
               ))}
             </AnimatePresence>
           </div>
@@ -123,6 +138,8 @@ export default function ClientDataRequests() {
             req={active}
             onClose={() => setActiveId(null)}
             onSubmitted={() => { setActiveId(null); queryClient.invalidateQueries({ queryKey: ["/api/data-requests/mine"] }); }}
+            statusMeta={STATUS_META}
+            L={L}
           />
         )}
       </AnimatePresence>
@@ -131,9 +148,9 @@ export default function ClientDataRequests() {
 }
 
 /* ── Request Card ──────────────────────────────────────── */
-function RequestCard({ req, index, onOpen }: { req: any; index: number; onOpen: () => void }) {
-  const meta = STATUS_META[req.status] || STATUS_META.pending;
-  const pri  = PRIORITY_META[req.priority] || PRIORITY_META.normal;
+function RequestCard({ req, index, onOpen, statusMeta, priorityMeta, L }: { req: any; index: number; onOpen: () => void; statusMeta: any; priorityMeta: any; L: boolean }) {
+  const meta = statusMeta[req.status] || statusMeta.pending;
+  const pri  = priorityMeta[req.priority] || priorityMeta.normal;
   const StatusIcon = meta.icon;
   const isPending = req.status === "pending" || req.status === "revision_needed";
 
@@ -179,7 +196,7 @@ function RequestCard({ req, index, onOpen }: { req: any; index: number; onOpen: 
               )}
               {req.requestItems?.length > 0 && (
                 <span className="text-[11px] text-gray-400 flex items-center gap-1">
-                  <Paperclip className="w-3 h-3" /> {req.requestItems.length} عنصر
+                  <Paperclip className="w-3 h-3" /> {req.requestItems.length} {L ? "عنصر" : "items"}
                 </span>
               )}
             </div>
@@ -194,7 +211,7 @@ function RequestCard({ req, index, onOpen }: { req: any; index: number; onOpen: 
 }
 
 /* ── Request Dialog ─────────────────────────────────────── */
-function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () => void; onSubmitted: () => void }) {
+function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any; onClose: () => void; onSubmitted: () => void; statusMeta: any; L: boolean }) {
   const { toast } = useToast();
   const [responses, setResponses] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -206,7 +223,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
 
-  const meta = STATUS_META[req.status] || STATUS_META.pending;
+  const meta = statusMeta[req.status] || statusMeta.pending;
   const isReadonly = req.status === "submitted" || req.status === "approved";
 
   const submitMutation = useMutation({
@@ -219,10 +236,10 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
       notes,
     }),
     onSuccess: () => {
-      toast({ title: "تم الإرسال بنجاح", description: "سيراجع الفريق ردك قريباً" });
+      toast({ title: L ? "تم الإرسال بنجاح" : "Submitted Successfully", description: L ? "سيراجع الفريق ردك قريباً" : "The team will review your response shortly" });
       onSubmitted();
     },
-    onError: () => toast({ title: "خطأ", description: "لم يتم الإرسال، حاول مجدداً", variant: "destructive" }),
+    onError: () => toast({ title: L ? "خطأ" : "Error", description: L ? "لم يتم الإرسال، حاول مجدداً" : "Submission failed, please try again", variant: "destructive" }),
   });
 
   async function handleFileUpload(itemKey: string, e: React.ChangeEvent<HTMLInputElement>) {
@@ -236,7 +253,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
       const data = await res.json();
       setResponses(prev => ({ ...prev, [itemKey]: data.url }));
     } catch {
-      toast({ title: "خطأ في الرفع", variant: "destructive" });
+      toast({ title: L ? "خطأ في الرفع" : "Upload Error", variant: "destructive" });
     } finally {
       setUploading(null);
     }
@@ -249,7 +266,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
 
   return (
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-xl max-h-[92vh]" dir="rtl">
+      <DialogContent className="max-w-xl max-h-[92vh]" dir={dir}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${meta.bg} ${meta.border} border`}>
@@ -278,7 +295,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
               <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 flex gap-3">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-1">ملاحظة الفريق</p>
+                  <p className="text-xs font-bold text-red-600 dark:text-red-400 mb-1">{L ? "ملاحظة الفريق" : "Team Note"}</p>
                   <p className="text-sm text-red-700 dark:text-red-300">{req.adminNote}</p>
                 </div>
               </div>
@@ -287,7 +304,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
             {/* Request Items */}
             {req.requestItems?.length > 0 && (
               <div className="space-y-4">
-                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">العناصر المطلوبة</p>
+                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{L ? "العناصر المطلوبة" : "Required Items"}</p>
                 {req.requestItems.map((item: any) => {
                   const key = item._id || item.label;
                   const TypeIcon = TYPE_ICONS[item.type] || Paperclip;
@@ -301,7 +318,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
                           <TypeIcon className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                         </div>
                         <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{item.label}</p>
-                        {item.required && <span className="text-[10px] text-red-500 font-bold bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded-md">مطلوب</span>}
+                        {item.required && <span className="text-[10px] text-red-500 font-bold bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded-md">{L ? "مطلوب" : "Required"}</span>}
                       </div>
 
                       {item.hint && <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{item.hint}</p>}
@@ -312,13 +329,13 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
                             existingVal.startsWith("/uploads/") || existingVal.startsWith("http") ? (
                               <a href={existingVal} target="_blank" rel="noopener noreferrer"
                                 className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-sm font-medium hover:underline">
-                                <Paperclip className="w-4 h-4" /> عرض الملف المرفق
+                                <Paperclip className="w-4 h-4" /> {L ? "عرض الملف المرفق" : "View Attached File"}
                               </a>
                             ) : (
                               <p className="text-sm text-gray-700 dark:text-gray-300">{existingVal}</p>
                             )
                           ) : (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 italic">لم يتم الرد على هذا العنصر</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 italic">{L ? "لم يتم الرد على هذا العنصر" : "No response for this item"}</p>
                           )}
                         </div>
                       ) : item.type === "text" ? (
@@ -337,7 +354,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
                               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                               <a href={val} target="_blank" rel="noopener noreferrer"
                                 className="text-cyan-600 dark:text-cyan-400 text-sm font-medium hover:underline flex-1 truncate">
-                                تم الرفع — عرض الملف
+                                {L ? "تم الرفع — عرض الملف" : "Uploaded — View File"}
                               </a>
                               <button onClick={() => setResponses(p => ({ ...p, [key]: "" }))}
                                 className="w-6 h-6 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all">
@@ -356,7 +373,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
                                 <>
                                   <Upload className="w-6 h-6 mx-auto mb-1.5 text-gray-300 dark:text-gray-600 group-hover:text-cyan-500 transition-colors" />
                                   <p className="text-xs text-gray-400 dark:text-gray-500 group-hover:text-cyan-500 transition-colors">
-                                    {item.accept ? `يُقبل: ${item.accept}` : "اضغط لرفع الملف"}
+                                    {item.accept ? (L ? `يُقبل: ${item.accept}` : `Accepts: ${item.accept}`) : (L ? "اضغط لرفع الملف" : "Click to upload file")}
                                   </p>
                                 </>
                               )}
@@ -373,9 +390,9 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
             {/* Notes */}
             {!isReadonly && (
               <div>
-                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">ملاحظات إضافية <span className="font-normal text-gray-300">(اختياري)</span></p>
+                <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{L ? "ملاحظات إضافية" : "Additional Notes"} <span className="font-normal text-gray-300">{L ? "(اختياري)" : "(optional)"}</span></p>
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)}
-                  placeholder="أي ملاحظات أو تعليقات إضافية للفريق..."
+                  placeholder={L ? "أي ملاحظات أو تعليقات إضافية للفريق..." : "Any additional notes or comments for the team..."}
                   className="resize-none rounded-xl text-sm h-20"
                   data-testid="textarea-dr-notes" />
               </div>
@@ -384,7 +401,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
             {/* Submitted response summary */}
             {isReadonly && req.response?.notes && (
               <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
-                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-1">ملاحظاتك</p>
+                <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mb-1">{L ? "ملاحظاتك" : "Your Notes"}</p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">{req.response.notes}</p>
               </div>
             )}
@@ -398,7 +415,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
         {/* Footer */}
         <div className="flex gap-3 pt-2">
           <Button variant="outline" className="rounded-xl h-11" onClick={onClose} data-testid="button-dr-close">
-            إغلاق
+            {L ? "إغلاق" : "Close"}
           </Button>
           {!isReadonly && (
             <Button
@@ -407,7 +424,7 @@ function RequestDialog({ req, onClose, onSubmitted }: { req: any; onClose: () =>
               disabled={!canSubmit || submitMutation.isPending}
               data-testid="button-dr-submit">
               {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {submitMutation.isPending ? "جاري الإرسال..." : "إرسال الرد"}
+              {submitMutation.isPending ? (L ? "جاري الإرسال..." : "Sending...") : (L ? "إرسال الرد" : "Submit Response")}
             </Button>
           )}
         </div>
