@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Zap, FileText, Bell, BarChart3, Bot } from "lucide-react";
+import { Sparkles, X, Zap, FileText, Bell, BarChart3 } from "lucide-react";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 const STORAGE_KEY = (uid: string) => `qirox_ai_intro_v2_${uid}`;
 const AUTO_DISMISS_SEC = 9;
@@ -57,7 +58,7 @@ function AIOrb() {
         animate={{ boxShadow: ["0 0 20px rgba(14,165,233,0.4)", "0 0 40px rgba(124,58,237,0.6)", "0 0 20px rgba(14,165,233,0.4)"] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       >
-        <Bot className="w-8 h-8 text-white" />
+        <img src={qiroxLogoPath} alt="QIROX AI" className="w-10 h-10 object-contain invert" />
       </motion.div>
     </div>
   );

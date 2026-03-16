@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIPanel } from "@/components/QiroxAI";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 type ToolId = "estimate" | "proposal" | "website" | "sentiment" | "assignment" | "delay" | "social" | "meeting";
 
@@ -656,8 +657,8 @@ export default function AIStudio() {
   const chatPanel = (
     <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col h-full">
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.07] bg-gradient-to-r from-cyan-950/40 to-purple-950/30 flex-shrink-0">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
-          <Sparkles className="w-3.5 h-3.5 text-white" />
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
+          <img src={qiroxLogoPath} alt="QIROX AI" className="w-5 h-5 object-contain invert" />
         </div>
         <div>
           <div className="text-white text-sm font-bold">{L ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}</div>
@@ -677,8 +678,8 @@ export default function AIStudio() {
       {/* ── Header ── */}
       <div className="bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-slate-900/60 border-b border-white/[0.06] px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={qiroxLogoPath} alt="QIROX AI" className="h-6 w-6 sm:h-7 sm:w-7 object-contain invert" />
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-base sm:text-xl font-bold text-white leading-tight">QIROX AI Studio</h1>

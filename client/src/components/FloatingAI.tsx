@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Minimize2 } from "lucide-react";
+import { X, Minimize2 } from "lucide-react";
 import { AIPanel } from "@/components/QiroxAI";
 import { useUser } from "@/hooks/use-auth";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export function FloatingAI() {
   const [open, setOpen] = useState(false);
@@ -62,7 +63,7 @@ export function FloatingAI() {
               </motion.div>
             ) : (
               <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                <Sparkles className="w-5 h-5 text-white" />
+                <img src={qiroxLogoPath} alt="QIROX AI" className="w-6 h-6 object-contain invert" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -102,7 +103,7 @@ export function FloatingAI() {
                 style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-white/80" />
+                  <img src={qiroxLogoPath} alt="QIROX" className="w-5 h-5 object-contain invert opacity-90" />
                   <span className="text-white text-xs font-bold">مساعد QIROX الذكي</span>
                 </div>
                 <button

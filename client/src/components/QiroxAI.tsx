@@ -10,6 +10,7 @@ import {
   FileText, Users, Clock, CheckCircle2, XCircle, AlertCircle,
   ChevronRight, Briefcase, Bell, Search, CreditCard, Mic, MicOff,
 } from "lucide-react";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -468,9 +469,9 @@ export function AIPanel({ className = "" }: { className?: string }) {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} gap-2`}
             >
               {msg.role === "ai" && (
-                <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5"
+                <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5 overflow-hidden"
                   style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
-                  <Sparkles className="w-3 h-3 text-white" />
+                  <img src={qiroxLogoPath} alt="QIROX AI" className="w-5 h-5 object-contain invert" />
                 </div>
               )}
 
@@ -521,9 +522,15 @@ export function AIPanel({ className = "" }: { className?: string }) {
               </div>
 
               {msg.role === "user" && (
-                <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5 text-xs"
-                  style={{ background: "rgba(255,255,255,0.1)" }}>
-                  {cfg.icon}
+                <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5 overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.12)" }}>
+                  {user?.photoUrl ? (
+                    <img src={user.photoUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white text-[11px] font-bold leading-none">
+                      {user?.fullName?.charAt(0) || user?.username?.charAt(0) || cfg.icon}
+                    </span>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -532,9 +539,9 @@ export function AIPanel({ className = "" }: { className?: string }) {
 
         {loading && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center"
+            <div className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden"
               style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
-              <Sparkles className="w-3 h-3 text-white" />
+              <img src={qiroxLogoPath} alt="QIROX AI" className="w-5 h-5 object-contain invert" />
             </div>
             <div className="px-3 py-1 rounded-2xl rounded-tl-sm" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}>
               <TypingDots />
