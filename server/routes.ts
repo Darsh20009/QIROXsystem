@@ -39,13 +39,25 @@ const contactLimiter = rateLimit({
   message: { error: "رسائل كثيرة جداً، حاول مجدداً لاحقاً" },
 });
 import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOtpEmail, sendOrderConfirmationEmail, sendOrderStatusEmail, sendMessageNotificationEmail, sendProjectUpdateEmail, sendTaskAssignedEmail, sendTaskCompletedEmail, sendDirectEmail, sendTestEmail, sendAdminNewClientEmail, sendAdminNewOrderEmail, sendWelcomeWithCredentialsEmail, sendConsultationConfirmationEmail, sendConsultationNotificationEmail, sendShipmentUpdateEmail, sendFeaturesEmail } from "./email";
-import { pushNotification, broadcastNotification } from "./ws";
+import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 
 const pending2FA = new Map<string, { userId: string; methods: string[]; expiresAt: number }>();
+
+// Push Approval challenges (Google Prompt style)
+const pushChallenges = new Map<string, {
+  userId: string;
+  number: number;
+  status: "pending" | "approved" | "denied";
+  tempToken: string;
+  expiresAt: number;
+  deviceInfo?: string;
+}>();
+
 setInterval(() => {
   const now = Date.now();
   for (const [k, v] of pending2FA) { if (v.expiresAt < now) pending2FA.delete(k); }
+  for (const [k, v] of pushChallenges) { if (v.expiresAt < now) pushChallenges.delete(k); }
 }, 60_000);
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -708,6 +720,10 @@ export async function registerRoutes(
           if (dbUser?.totpEnabled) methods.push("totp");
           if (dbUser?.emailOtpEnabled) methods.push("email");
           if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
+          // Push Approval method — available when user has active push subscriptions
+          const { PushSubscriptionModel } = await import("./models");
+          const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
+          if (pushSubCount > 0) methods.unshift("push"); // put push first as it's most convenient
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
             pending2FA.set(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
@@ -788,6 +804,129 @@ export async function registerRoutes(
       await OtpModel.create({ email: user.email, code, expiresAt, type: "2fa_email" });
       sendLoginOtpEmail(user.email, user.fullName || user.username, code, req.headers["user-agent"] as string).catch(console.error);
       res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  /* ─── Push Approval 2FA (Google Prompt style) ─── */
+
+  // Device B calls this to start a push challenge
+  app.post("/api/auth/push-challenge/request", async (req, res) => {
+    try {
+      const { tempToken } = req.body;
+      if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const session = pending2FA.get(tempToken);
+      if (!session || !session.methods.includes("push")) return res.status(400).json({ error: "الجلسة غير صالحة" });
+      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة" }); }
+
+      // Generate random 2-digit number for user to confirm (like Google Prompt)
+      const challengeNumber = Math.floor(10 + Math.random() * 90); // 10-99
+      const challengeId = crypto.randomBytes(16).toString("hex");
+      const deviceInfo = req.headers["user-agent"] || "جهاز غير معروف";
+
+      pushChallenges.set(challengeId, {
+        userId: session.userId,
+        number: challengeNumber,
+        status: "pending",
+        tempToken,
+        expiresAt: Date.now() + 5 * 60 * 1000, // 5 min
+        deviceInfo: String(deviceInfo).slice(0, 120),
+      });
+
+      // Send push notification to all of user's trusted devices
+      const { UserModel } = await import("./models");
+      const user = await UserModel.findById(session.userId);
+      const userName = user?.fullName || user?.username || "المستخدم";
+
+      sendPushToUser(session.userId, {
+        title: "🔐 محاولة تسجيل دخول جديدة",
+        body: `انقر لتأكيد الدخول — الرمز: ${challengeNumber}`,
+        icon: "/icons/icon-192x192.png",
+        tag: `push-auth-${challengeId}`,
+        data: { url: `/auth/push-approve?id=${challengeId}`, challengeId, number: challengeNumber },
+      }).catch(() => {});
+
+      // Also send in-app notification via WebSocket
+      pushToUser(session.userId, {
+        type: "push_auth_challenge",
+        challengeId,
+        number: challengeNumber,
+        deviceInfo: String(deviceInfo).slice(0, 80),
+      });
+
+      res.json({ challengeId, number: challengeNumber });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Device B polls this to know if approved/denied
+  app.get("/api/auth/push-challenge/status/:id", (req, res) => {
+    const challenge = pushChallenges.get(req.params.id);
+    if (!challenge) return res.status(404).json({ error: "Challenge not found or expired" });
+    if (challenge.expiresAt < Date.now()) { pushChallenges.delete(req.params.id); return res.status(410).json({ error: "انتهت صلاحية الرمز" }); }
+    res.json({ status: challenge.status, number: challenge.number });
+  });
+
+  // Device A (authenticated) calls this to approve/deny
+  app.post("/api/auth/push-challenge/respond", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "يجب تسجيل الدخول" });
+    const { challengeId, action } = req.body; // action: "approve" | "deny"
+    if (!challengeId || !["approve", "deny"].includes(action)) return res.status(400).json({ error: "بيانات ناقصة" });
+
+    const challenge = pushChallenges.get(challengeId);
+    if (!challenge) return res.status(404).json({ error: "الرمز غير موجود أو منتهي الصلاحية" });
+    if (challenge.expiresAt < Date.now()) { pushChallenges.delete(challengeId); return res.status(410).json({ error: "انتهت الصلاحية" }); }
+
+    // Only the owner can respond
+    const responderId = String((req.user as any)._id || (req.user as any).id);
+    if (challenge.userId !== responderId) return res.status(403).json({ error: "غير مخوّل" });
+
+    challenge.status = action === "approve" ? "approved" : "denied";
+
+    // If approved: complete the login on Device B via WebSocket
+    if (action === "approve") {
+      pushToUser(challenge.userId, {
+        type: "push_auth_approved",
+        challengeId,
+        tempToken: challenge.tempToken,
+      });
+
+      // Also complete the session — mark pending2FA as verified
+      const session = pending2FA.get(challenge.tempToken);
+      if (session) {
+        try {
+          const { UserModel } = await import("./models");
+          const user = await UserModel.findById(session.userId);
+          if (user) {
+            // We mark it specially so verify-2fa can complete the login
+            (session as any).pushApproved = true;
+          }
+        } catch {}
+      }
+    }
+
+    res.json({ ok: true, status: challenge.status });
+  });
+
+  // Device B calls this to actually complete login after push approval
+  app.post("/api/auth/push-challenge/complete", async (req, res, next) => {
+    try {
+      const { challengeId, tempToken } = req.body;
+      if (!challengeId || !tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
+      const challenge = pushChallenges.get(challengeId);
+      if (!challenge || challenge.tempToken !== tempToken) return res.status(400).json({ error: "بيانات غير صالحة" });
+      if (challenge.expiresAt < Date.now()) { pushChallenges.delete(challengeId); return res.status(410).json({ error: "انتهت الصلاحية" }); }
+      if (challenge.status !== "approved") return res.status(400).json({ error: challenge.status === "denied" ? "تم رفض طلب الدخول" : "لم تتم الموافقة بعد" });
+
+      const { UserModel } = await import("./models");
+      const user = await UserModel.findById(challenge.userId);
+      if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
+
+      pending2FA.delete(tempToken);
+      pushChallenges.delete(challengeId);
+
+      req.login(user, (loginErr: any) => {
+        if (loginErr) return next(loginErr);
+        res.status(200).json(sanitizeUser(user));
+      });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, User, Mail, Lock, Building2, ChevronLeft, ShieldCheck, Shield, RefreshCw, CheckCircle2, Sparkles, ArrowRight, Star, Phone, AtSign, Smartphone, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -133,6 +133,47 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [isRegister]);
 
+  // Push Approval: poll for status when waiting
+  useEffect(() => {
+    if (pushStatus !== "waiting" || !pushChallengeId) return;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/auth/push-challenge/status/${pushChallengeId}`, { credentials: "include" });
+        if (cancelled) return;
+        if (r.status === 410 || r.status === 404) { setPushStatus("expired"); return; }
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data.status === "approved") {
+          setPushStatus("approved");
+          // Complete login
+          const r2 = await fetch("/api/auth/push-challenge/complete", {
+            method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ challengeId: pushChallengeId, tempToken: twoFA?.tempToken }),
+          });
+          if (!r2.ok) { const err = await r2.json().catch(() => ({})); setTwoFAError(err.error || "فشل إكمال تسجيل الدخول"); return; }
+          const user = await r2.json();
+          queryClient.setQueryData(["/api/user"], user);
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          setTwoFA(null);
+          if (user.role === "client") {
+            const returnUrl = sessionStorage.getItem("returnAfterLogin");
+            if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+            else setLocation("/dashboard");
+          } else { setLocation("/admin"); }
+        } else if (data.status === "denied") {
+          setPushStatus("denied");
+          setTwoFAError("تم رفض طلب تسجيل الدخول من الجهاز الآخر");
+        }
+      } catch {}
+    };
+
+    poll();
+    const interval = setInterval(poll, 2500);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [pushStatus, pushChallengeId]);
+
   const [verifyStep, setVerifyStep] = useState<{ email: string; name: string } | null>(null);
   const verifyMode = "email" as const;
   const [verifySuccess, setVerifySuccess] = useState<{ name: string } | null>(null);
@@ -150,6 +191,11 @@ export default function Login() {
   const [is2FAResending, setIs2FAResending] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
+
+  // Push Approval states
+  const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
+  const [pushNumber, setPushNumber] = useState<number | null>(null);
+  const [pushStatus, setPushStatus] = useState<"idle" | "requesting" | "waiting" | "approved" | "denied" | "expired">("idle");
 
   const { mutate: login, isPending: isLoginPending, error: loginError } = useLogin();
   const { mutate: register, isPending: isRegisterPending, error: registerError } = useRegister();
@@ -587,15 +633,19 @@ export default function Login() {
             </div>
 
             {twoFA.methods.length > 1 && (
-              <div className="flex gap-2 mb-5 p-1 bg-black/[0.03] rounded-xl">
+              <div className="flex gap-2 mb-5 p-1 bg-black/[0.03] rounded-xl overflow-x-auto">
                 {twoFA.methods.map(m => (
                   <button
                     key={m}
-                    onClick={() => { setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); if (m !== "email") setEmailOtpSent(false); }}
-                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
+                    onClick={() => {
+                      setTwoFAMethod(m); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError("");
+                      if (m !== "email") setEmailOtpSent(false);
+                      if (m !== "push") { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }
+                    }}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${twoFAMethod === m ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black/70"}`}
                     data-testid={`tab-2fa-${m}`}
                   >
-                    {m === "totp" ? "تطبيق المصادقة" : m === "email" ? "البريد الإلكتروني" : "كلمة الاسترداد"}
+                    {m === "totp" ? "تطبيق المصادقة" : m === "email" ? "البريد الإلكتروني" : m === "push" ? "🔔 إشعار الجهاز" : "كلمة الاسترداد"}
                   </button>
                 ))}
               </div>
@@ -692,6 +742,83 @@ export default function Login() {
               </div>
             )}
 
+            {/* Push Approval method UI */}
+            {twoFAMethod === "push" && (
+              <div className="space-y-4">
+                {pushStatus === "idle" && (
+                  <div className="text-center space-y-4 py-2">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black/[0.05] mx-auto">
+                      <Smartphone className="w-8 h-8 text-black/50" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-black/70 font-medium mb-1">تأكيد عبر جهازك الموثوق</p>
+                      <p className="text-xs text-black/40">سيُرسَل إشعار لأجهزتك المسجّلة تُؤكّد فيه تسجيل الدخول</p>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        setPushStatus("requesting");
+                        setTwoFAError("");
+                        try {
+                          const r = await fetch("/api/auth/push-challenge/request", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA?.tempToken }) });
+                          const d = await r.json();
+                          if (!r.ok) { setTwoFAError(d.error || "فشل إرسال الإشعار"); setPushStatus("idle"); return; }
+                          setPushChallengeId(d.challengeId);
+                          setPushNumber(d.number);
+                          setPushStatus("waiting");
+                        } catch { setTwoFAError("تعذّر الاتصال بالخادم"); setPushStatus("idle"); }
+                      }}
+                      disabled={pushStatus === "requesting"}
+                      className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm"
+                      data-testid="button-send-push-challenge"
+                    >
+                      {pushStatus === "requesting" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Smartphone className="w-4 h-4 ml-2" />إرسال إشعار التأكيد</>}
+                    </Button>
+                  </div>
+                )}
+
+                {pushStatus === "waiting" && pushNumber !== null && (
+                  <div className="text-center space-y-4 py-2">
+                    <p className="text-xs text-black/40">تأكد أن هذا الرمز يطابق ما يظهر على جهازك الآخر:</p>
+                    {/* Big animated number */}
+                    <motion.div
+                      className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center border-2 border-black/10 bg-black/[0.03]"
+                      animate={{ borderColor: ["rgba(0,0,0,0.1)", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.1)"] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <span className="text-5xl font-black text-black tabular-nums" dir="ltr">{pushNumber}</span>
+                    </motion.div>
+                    <div className="flex items-center justify-center gap-2 text-black/40">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs">في انتظار الموافقة...</span>
+                    </div>
+                    <button
+                      onClick={() => { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); setTwoFAError(""); }}
+                      className="text-xs text-black/30 hover:text-black/60 transition-colors underline"
+                    >
+                      لم يصل الإشعار؟ أعد الإرسال
+                    </button>
+                  </div>
+                )}
+
+                {pushStatus === "denied" && (
+                  <div className="text-center py-4">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-3">
+                      <X className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-sm text-red-600 font-medium mb-3">تم رفض طلب تسجيل الدخول</p>
+                    <button onClick={() => { setPushStatus("idle"); setTwoFAError(""); }} className="text-xs text-black/40 hover:text-black/70 underline">المحاولة مجدداً</button>
+                  </div>
+                )}
+
+                {pushStatus === "expired" && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-amber-600 mb-3">انتهت صلاحية الرمز</p>
+                    <button onClick={() => { setPushStatus("idle"); setTwoFAError(""); }} className="text-xs text-black/40 hover:text-black/70 underline">المحاولة مجدداً</button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {twoFAError && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
                 <Alert variant="destructive" className="bg-red-50 border-red-200/70 text-red-600 rounded-xl">
@@ -701,42 +828,44 @@ export default function Login() {
               </motion.div>
             )}
 
-            <Button
-              onClick={async () => {
-                const codeVal = twoFAMethod === "passphrase" ? twoFAPassphrase : twoFACode;
-                if (!codeVal) { setTwoFAError(twoFAMethod === "passphrase" ? "أدخل كلمة الاسترداد" : "أدخل رمز التحقق"); return; }
-                if (twoFAMethod !== "passphrase" && codeVal.length !== 6) { setTwoFAError("أدخل الرمز المكون من 6 أرقام"); return; }
-                setIs2FAVerifying(true); setTwoFAError("");
-                try {
-                  const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
-                  const data = await r.json().catch(() => ({}));
-                  if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
-                  setTwoFA(null);
-                  if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {
-                    setVerifyStep({ email: data.email, name: data.fullName || data.username || "" });
-                  } else {
-                    queryClient.setQueryData(["/api/user"], data);
-                    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-                    if (data.role === "client") {
-                      const returnUrl = sessionStorage.getItem("returnAfterLogin");
-                      if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
-                      else setLocation("/dashboard");
-                    } else { setLocation("/admin"); }
-                  }
-                } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
-                setIs2FAVerifying(false);
-              }}
-              disabled={is2FAVerifying || (twoFAMethod === "email" && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
-              className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
-              data-testid="button-verify-2fa"
-            >
-              {is2FAVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                <><ShieldCheck className="w-4 h-4 ml-2" />تحقق وادخل</>
-              )}
-            </Button>
+            {twoFAMethod !== "push" && (
+              <Button
+                onClick={async () => {
+                  const codeVal = twoFAMethod === "passphrase" ? twoFAPassphrase : twoFACode;
+                  if (!codeVal) { setTwoFAError(twoFAMethod === "passphrase" ? "أدخل كلمة الاسترداد" : "أدخل رمز التحقق"); return; }
+                  if (twoFAMethod !== "passphrase" && codeVal.length !== 6) { setTwoFAError("أدخل الرمز المكون من 6 أرقام"); return; }
+                  setIs2FAVerifying(true); setTwoFAError("");
+                  try {
+                    const r = await fetch("/api/auth/verify-2fa", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tempToken: twoFA.tempToken, method: twoFAMethod, code: codeVal }) });
+                    const data = await r.json().catch(() => ({}));
+                    if (!r.ok) { setTwoFAError(data.error || "فشل التحقق"); setIs2FAVerifying(false); return; }
+                    setTwoFA(null);
+                    if (data.role === "client" && data.email && (data.needsVerification || !data.emailVerified)) {
+                      setVerifyStep({ email: data.email, name: data.fullName || data.username || "" });
+                    } else {
+                      queryClient.setQueryData(["/api/user"], data);
+                      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                      if (data.role === "client") {
+                        const returnUrl = sessionStorage.getItem("returnAfterLogin");
+                        if (returnUrl) { sessionStorage.removeItem("returnAfterLogin"); setLocation(returnUrl); }
+                        else setLocation("/dashboard");
+                      } else { setLocation("/admin"); }
+                    }
+                  } catch { setTwoFAError("تعذّر الاتصال بالخادم"); }
+                  setIs2FAVerifying(false);
+                }}
+                disabled={is2FAVerifying || (twoFAMethod === "email" && !emailOtpSent) || (twoFAMethod !== "passphrase" ? twoFACode.length !== 6 : !twoFAPassphrase)}
+                className="w-full h-12 bg-black hover:bg-black/80 text-white rounded-xl font-bold text-sm mt-5"
+                data-testid="button-verify-2fa"
+              >
+                {is2FAVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                  <><ShieldCheck className="w-4 h-4 ml-2" />تحقق وادخل</>
+                )}
+              </Button>
+            )}
 
             <div className="text-center mt-4">
-              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
+              <button onClick={() => { setTwoFA(null); setTwoFACode(""); setTwoFAPassphrase(""); setTwoFAError(""); setEmailOtpSent(false); setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); }} className="text-xs text-black/30 hover:text-black/60 transition-colors" data-testid="button-back-from-2fa">
                 العودة لتسجيل الدخول
               </button>
             </div>

@@ -166,13 +166,20 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - `POST /api/2fa/passphrase/disable` — disable recovery passphrase
 - `GET /api/totp/status` — now returns all 3 method statuses: `{ enabled, totp, emailOtp, passphrase }`
 - In-memory `pending2FA` map stores temp sessions (10min TTL, auto-cleanup)
+- **Push Approval 2FA (Google Prompt style):** login adds "push" method when user has PushSubscriptionModel entries. 4 endpoints added:
+  - `POST /api/auth/push-challenge/request` — creates challenge (2-digit number), sends push + WS notification to trusted devices
+  - `GET /api/auth/push-challenge/status/:id` — Device B polls this for approval/denial
+  - `POST /api/auth/push-challenge/respond` — Device A (authenticated) approves/denies (checks userId ownership)
+  - `POST /api/auth/push-challenge/complete` — Device B completes login after approval
+- In-memory `pushChallenges` map (5min TTL) stores `{ userId, number, status, tempToken, expiresAt }`
 
 **Models (server/models.ts):**
 - Added `emailOtpEnabled: Boolean`, `recoveryPassphrase: String (select:false)`, `recoveryPassphraseEnabled: Boolean` to UserSchema
 
 **Frontend:**
-- `Login.tsx` — new 2FA verification step with method tabs (TOTP/email/passphrase), auto-sends email OTP at login
+- `Login.tsx` — new 2FA verification step with method tabs (TOTP/email/passphrase/push), auto-sends email OTP at login. Push tab shows animated 2-digit number + polling (2.5s interval) for auto-redirect on approval.
 - `TwoFactorSetup.tsx` — redesigned with 3 method cards: TOTP (QR+verify), Email OTP (one-click toggle), Recovery Passphrase (set+confirm)
+- `PushApproval.tsx` — `/auth/push-approve?id=` page for the trusted device. Shows challenge number with approve/deny buttons. Requires authenticated session.
 - `use-auth.ts` — `useLogin` hook now handles `requires2FA` response without navigation
 
 ---

@@ -67,6 +67,7 @@ const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 const Inbox = lazy(() => import("@/pages/Inbox"));
 const GroupChat = lazy(() => import("@/pages/GroupChat"));
 const AIStudio = lazy(() => import("@/pages/AIStudio"));
+const PushApproval = lazy(() => import("@/pages/PushApproval"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const AdminActivityLog = lazy(() => import("@/pages/AdminActivityLog"));
 const AdminSupportTickets = lazy(() => import("@/pages/AdminSupportTickets"));
@@ -206,6 +207,7 @@ function AdminRouter() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/onboarding" component={ClientOnboarding} />
         <Route path="/authenticator" component={QiroxAuthenticator} />
+        <Route path="/auth/push-approve" component={PushApproval} />
         <Route path="/order-setup/:orderId" component={ProjectDetailsSetup} />
         <Route path="/phone-verify" component={PhoneVerify} />
         <Route path="/projects/:id" component={ProjectDetails} />
@@ -679,7 +681,7 @@ function AppInner() {
     }
   });
   const [location, navigate] = useLocation();
-  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
