@@ -706,6 +706,254 @@ async function handleCustomOrder(req: any, res: any) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   AI STUDIO TOOLS — 7 specialized endpoints
+═══════════════════════════════════════════════════════ */
+
+/* ── 1. Project Estimation ── */
+async function handleEstimateProject(req: any, res: any) {
+  const { description } = req.body;
+  if (!description) return res.json({ error: "الرجاء وصف المشروع" });
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت خبير تقدير مشاريع تقنية في QIROX Studio. الباقات: لايت (5-12k ريال، 2-4 أسابيع)، برو (10-25k ريال، 4-8 أسابيع)، إنفينيت (20k+ ريال، 8-16 أسبوع).
+أعطِ تقديراً دقيقاً وإجابتك يجب أن تكون JSON فقط بالصيغة التالية (لا تضع أي نص خارج الـ JSON):
+{"minPrice":5000,"maxPrice":12000,"duration":"2-4 أسابيع","package":"lite","team":{"developer":1,"designer":1,"pm":0,"devops":0},"breakdown":{"design":"30%","frontend":"40%","backend":"20%","testing":"10%"},"complexity":"low|medium|high","confidence":85,"notes":"ملاحظة مختصرة عن أبرز متطلبات المشروع"}`
+      }, {
+        role: "user",
+        content: `قدّر هذا المشروع: ${description}`
+      }],
+      temperature: 0.3, max_tokens: 600,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.json({ error: "تعذّر تقدير المشروع" });
+  }
+}
+
+/* ── 2. Proposal/Contract Writer ── */
+async function handleGenerateProposal(req: any, res: any) {
+  const { clientName, projectType, package: pkg, budget, features, language = "ar" } = req.body;
+  try {
+    const prompt = language === "ar"
+      ? `اكتب عرض سعر احترافي كامل بالعربية لـ QIROX Studio. العميل: ${clientName}، نوع المشروع: ${projectType}، الباقة: ${pkg}، الميزانية: ${budget} ريال، المميزات المطلوبة: ${features}. يجب أن يكون مفصّلاً ويشمل: المقدمة، نطاق العمل، المخرجات، الجدول الزمني، السعر، شروط الدفع، والخاتمة.`
+      : `Write a professional proposal in English for QIROX Studio. Client: ${clientName}, Project: ${projectType}, Package: ${pkg}, Budget: ${budget} SAR, Features: ${features}. Include: intro, scope, deliverables, timeline, pricing, payment terms, and conclusion.`;
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.6, max_tokens: 1200,
+    });
+    res.json({ success: true, proposal: comp.choices[0].message.content });
+  } catch {
+    res.json({ error: "تعذّر إنشاء المقترح" });
+  }
+}
+
+/* ── 3. Website Analyzer ── */
+async function handleAnalyzeWebsite(req: any, res: any) {
+  const { url } = req.body;
+  if (!url) return res.json({ error: "الرجاء إدخال رابط الموقع" });
+  try {
+    const searchData = await searchWeb(`site:${url} OR "${url}" speed performance SEO review`);
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت خبير تحليل مواقع ويب. حلّل الموقع وأعطِ تقريراً. أجب بـ JSON فقط:
+{"seoScore":75,"speedScore":60,"designScore":80,"mobileScore":70,"overallScore":71,"issues":["مشكلة 1","مشكلة 2","مشكلة 3"],"strengths":["ميزة 1","ميزة 2"],"suggestions":["اقتراح 1","اقتراح 2","اقتراح 3"],"urgentFix":"أهم شيء يجب إصلاحه فوراً","salesPitch":"جملة مقنعة لماذا QIROX ستحل هذه المشاكل"}`
+      }, {
+        role: "user",
+        content: `حلّل موقع: ${url}\nمعلومات من البحث: ${searchData || "لا توجد بيانات إضافية"}`
+      }],
+      temperature: 0.4, max_tokens: 700,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ success: true, url, ...result });
+  } catch {
+    res.json({ error: "تعذّر تحليل الموقع" });
+  }
+}
+
+/* ── 4. Sentiment Analyzer ── */
+async function handleAnalyzeSentiment(req: any, res: any) {
+  const { text, clientName } = req.body;
+  if (!text) return res.json({ error: "الرجاء إدخال النص" });
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت محلل مشاعر عملاء. حلّل النص وأجب بـ JSON فقط:
+{"sentiment":"positive|neutral|negative|urgent","score":0.85,"emoji":"😊","alert":false,"alertLevel":"none|warning|critical","summary":"ملخص مشاعر العميل","recommendation":"توصية للفريق","suggestedResponse":"مقترح رد مناسب للعميل"}`
+      }, {
+        role: "user",
+        content: `حلّل هذه الرسالة${clientName ? ` من العميل ${clientName}` : ""}: "${text}"`
+      }],
+      temperature: 0.3, max_tokens: 400,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ success: true, text: text.slice(0, 100), ...result });
+  } catch {
+    res.json({ error: "تعذّر تحليل المشاعر" });
+  }
+}
+
+/* ── 5. Smart Task Assignment ── */
+async function handleSuggestAssignment(req: any, res: any) {
+  const { taskDescription, skills, orderId } = req.body;
+  try {
+    const { UserModel, OrderModel, TaskModel } = await import("./models");
+    const employees = await UserModel.find({ role: { $nin: ["client", "guest"] }, isActive: { $ne: false } })
+      .select("fullName role username").lean();
+
+    // Get task count per employee as a simple workload proxy
+    const taskCounts = await Promise.all(
+      employees.map(async (e) => {
+        const count = await TaskModel.countDocuments({ assignee: String(e._id), status: { $ne: "done" } }).catch(() => 0);
+        return { id: String(e._id), count };
+      })
+    );
+    const workloadMap: Record<string, number> = {};
+    taskCounts.forEach(t => { workloadMap[t.id] = t.count; });
+
+    const employeeList = employees.map(e => ({
+      id: String(e._id), name: e.fullName || e.username, role: e.role,
+      activeTasks: workloadMap[String(e._id)] || 0,
+    }));
+
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت مدير مشاريع ذكي. بناء على المهمة والموظفين المتاحين، اقترح أفضل 3 موظفين للتنفيذ. أجب بـ JSON فقط:
+{"suggestions":[{"employeeId":"id","name":"الاسم","role":"الدور","reason":"سبب الاختيار","score":90,"workloadRisk":"low|medium|high"}]}`
+      }, {
+        role: "user",
+        content: `المهمة: ${taskDescription}\nالمهارات المطلوبة: ${skills || "عامة"}\nالموظفون المتاحون: ${JSON.stringify(employeeList)}`
+      }],
+      temperature: 0.4, max_tokens: 500,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : { suggestions: [] };
+    res.json({ success: true, ...result, employees: employeeList });
+  } catch (err: any) {
+    res.json({ error: err.message || "تعذّر اقتراح التعيين" });
+  }
+}
+
+/* ── 6. Delay Prediction ── */
+async function handlePredictDelay(req: any, res: any) {
+  const { projectId } = req.body;
+  try {
+    const { ProjectModel, TaskModel, OrderModel } = await import("./models");
+    const project = await ProjectModel.findById(projectId).lean();
+    if (!project) return res.json({ error: "المشروع غير موجود" });
+
+    const tasks = await TaskModel.find({ projectId }).lean();
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter((t: any) => t.status === "done").length;
+    const blockedTasks = tasks.filter((t: any) => t.status === "blocked").length;
+    const overdueTasks = tasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "done").length;
+    const progress = (project as any).progress || (totalTasks ? Math.round(doneTasks / totalTasks * 100) : 0);
+
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت محلل مخاطر مشاريع تقنية. حلّل بيانات المشروع وتنبأ بالتأخيرات. أجب بـ JSON فقط:
+{"riskLevel":"low|medium|high|critical","delayProbability":45,"estimatedDelay":"3 أيام","reasons":["سبب 1","سبب 2"],"suggestions":["اقتراح 1","اقتراح 2"],"verdict":"جملة واحدة تلخّص الوضع"}`
+      }, {
+        role: "user",
+        content: `المشروع: ${(project as any).name}\nالتقدم: ${progress}%\nالمهام الكلية: ${totalTasks}\nالمنجزة: ${doneTasks}\nالمتأخرة: ${overdueTasks}\nالمحجوبة: ${blockedTasks}\nتاريخ الإنشاء: ${(project as any).createdAt}`
+      }],
+      temperature: 0.3, max_tokens: 400,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ success: true, project: { name: (project as any).name, progress, totalTasks, doneTasks, overdueTasks }, ...result });
+  } catch (err: any) {
+    res.json({ error: err.message || "تعذّر توقع التأخير" });
+  }
+}
+
+/* ── 7. Social Media Content Generator ── */
+async function handleGenerateSocial(req: any, res: any) {
+  const { projectName, clientName, service, result: outcome, language = "both" } = req.body;
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت مسؤول تسويق رقمي إبداعي في QIROX Studio. أنشئ محتوى سوشيال ميديا احترافياً. أجب بـ JSON فقط:
+{"arabic":{"caption":"نص المنشور بالعربية","hashtags":["#هاشتاج1","#هاشتاج2","#هاشتاج3","#هاشتاج4","#هاشتاج5"]},"english":{"caption":"Post caption in English","hashtags":["#hashtag1","#hashtag2","#hashtag3","#hashtag4","#hashtag5"]},"emoji":"🚀","type":"celebration"}`
+      }, {
+        role: "user",
+        content: `مشروع مكتمل: ${projectName}\nالعميل: ${clientName}\nالخدمة: ${service}\nالنتيجة: ${outcome || "تم تسليم المشروع بنجاح"}`
+      }],
+      temperature: 0.75, max_tokens: 700,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ success: true, ...result });
+  } catch {
+    res.json({ error: "تعذّر توليد المحتوى" });
+  }
+}
+
+/* ── 8. Meeting Summary & Task Extractor ── */
+async function handleMeetingSummary(req: any, res: any) {
+  const { transcript, projectId, meetingTitle } = req.body;
+  if (!transcript) return res.json({ error: "الرجاء إدخال محتوى الاجتماع" });
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "system",
+        content: `أنت سكرتير ذكي متخصص في تلخيص الاجتماعات. حلّل النص وأجب بـ JSON فقط:
+{"summary":"ملخص الاجتماع في فقرة","keyDecisions":["قرار 1","قرار 2"],"actionItems":[{"task":"المهمة","assignee":"المسؤول","priority":"high|medium|low","dueDate":"خلال أسبوع"}],"nextMeeting":"موعد الاجتماع التالي إن ذُكر","followUp":"ملاحظات متابعة"}`
+      }, {
+        role: "user",
+        content: `اجتماع: ${meetingTitle || "اجتماع"}\n\nالمحتوى:\n${transcript}`
+      }],
+      temperature: 0.4, max_tokens: 800,
+    });
+    const raw = comp.choices[0].message.content || "{}";
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+
+    // Auto-create tasks in project if projectId provided
+    if (projectId && result.actionItems?.length) {
+      try {
+        const { TaskModel } = await import("./models");
+        const priorityMap: Record<string, string> = { high: "high", medium: "medium", low: "low" };
+        for (const item of result.actionItems) {
+          await TaskModel.create({
+            projectId, title: item.task, description: `مهمة مستخلصة من الاجتماع: ${meetingTitle || ""}`,
+            priority: priorityMap[item.priority] || "medium", status: "todo", createdAt: new Date(),
+          });
+        }
+        result.tasksCreated = result.actionItems.length;
+      } catch {}
+    }
+    res.json({ success: true, ...result });
+  } catch {
+    res.json({ error: "تعذّر تلخيص الاجتماع" });
+  }
+}
+
 /* ─── Package Finder (AI-powered, no hardcoded logic) ─── */
 const finderSessions = new Map<string, Message[]>();
 
@@ -788,6 +1036,14 @@ export function registerAiRoutes(app: Express) {
   app.post("/api/ai/generate", handleGenerate);
   app.post("/api/ai/custom-order", handleCustomOrder);
   app.post("/api/ai/package-finder", handlePackageFinder);
+  app.post("/api/ai/estimate-project", handleEstimateProject);
+  app.post("/api/ai/generate-proposal", handleGenerateProposal);
+  app.post("/api/ai/analyze-website", handleAnalyzeWebsite);
+  app.post("/api/ai/analyze-sentiment", handleAnalyzeSentiment);
+  app.post("/api/ai/suggest-assignment", handleSuggestAssignment);
+  app.post("/api/ai/predict-delay", handlePredictDelay);
+  app.post("/api/ai/generate-social", handleGenerateSocial);
+  app.post("/api/ai/meeting-summary", handleMeetingSummary);
   app.delete("/api/ai/session/:id", (req, res) => {
     sessions.delete(req.params.id);
     finderSessions.delete(req.params.id);

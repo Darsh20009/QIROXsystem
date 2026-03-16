@@ -348,6 +348,28 @@ export default function Prices() {
   const { data: user } = useUser();
   const { toast } = useToast();
   const [addingPlanId, setAddingPlanId] = useState<string | null>(null);
+  const [salesOffer, setSalesOffer] = useState<{ title: string; body: string; cta: string } | null>(null);
+  const [showSalesOffer, setShowSalesOffer] = useState(false);
+
+  useEffect(() => {
+    if (user) return;
+    const timer = setTimeout(async () => {
+      try {
+        const data = await apiRequest("POST", "/api/ai/analyze", {
+          text: `أنت مساعد مبيعات ذكي لـ QIROX Studio. مستخدم جديد يتصفح صفحة الأسعار منذ 15 ثانية ولم يختر باقة بعد. اكتب رسالة مقنعة قصيرة جداً (3 أسطر) لتشجيعه على التواصل أو اختيار الباقة المناسبة. اجعلها ودية ومُلحّة بلطف. أجب بـ JSON فقط: {"title":"عنوان قصير","body":"رسالة قصيرة 2-3 جمل","cta":"نص زر الدعوة للفعل"}`
+        });
+        if (data?.result) {
+          const jsonMatch = data.result.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const offer = JSON.parse(jsonMatch[0]);
+            setSalesOffer(offer);
+            setShowSalesOffer(true);
+          }
+        }
+      } catch {}
+    }, 18000);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   const addToCartMutation = useMutation({
     mutationFn: async ({ plan, price, period }: { plan: any; price: number; period: BillingPeriod }) => {
@@ -780,6 +802,40 @@ export default function Prices() {
       </section>
 
       <PackageFinderModal open={finderOpen} onClose={() => setFinderOpen(false)} />
+
+      {/* Smart Sales Assistant Popup */}
+      <AnimatePresence>
+        {showSalesOffer && salesOffer && (
+          <motion.div
+            initial={{ opacity: 0, y: 80, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 80, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 end-6 z-50 w-80 bg-gradient-to-br from-[#1a1b2e] to-[#0f1020] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
+            data-testid="card-sales-assistant"
+          >
+            <div className="p-4">
+              <button onClick={() => setShowSalesOffer(false)} className="absolute top-3 end-3 text-white/30 hover:text-white transition-colors" data-testid="button-close-sales">
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-white font-semibold text-sm">{salesOffer.title}</span>
+              </div>
+              <p className="text-white/60 text-sm leading-relaxed mb-4">{salesOffer.body}</p>
+              <Button
+                onClick={() => { setShowSalesOffer(false); setFinderOpen(true); }}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white h-9 text-sm font-semibold"
+                data-testid="button-sales-cta"
+              >
+                {salesOffer.cta || "ابدأ الآن"}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Footer />
     </div>

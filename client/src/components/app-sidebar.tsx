@@ -137,6 +137,7 @@ export function AppSidebar() {
     // Admin — main
     { title: ar ? "لوحة الإدارة" : "Admin Panel", icon: LayoutDashboard, url: "/admin", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "التحليلات المتقدمة" : "Analytics", icon: BarChart3, url: "/admin/analytics", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "AI Studio" : "AI Studio", icon: Sparkles, url: "/ai-studio", group: "admin", section: "main", allowedRoles: MANAGEMENT_ROLES },
     // Admin — products & services (core catalog)
     { title: ar ? "القوالب" : "Templates", icon: Layers, url: "/admin/templates", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الخدمات" : "Services", icon: Briefcase, url: "/admin/services", group: "admin", section: "operations", allowedRoles: MANAGEMENT_ROLES },

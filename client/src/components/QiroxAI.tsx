@@ -8,7 +8,7 @@ import {
   Zap, MessageSquare, Star, Globe, Lightbulb, BookOpen,
   TrendingUp, Bot, ArrowLeft, BarChart2, Wallet, ShoppingCart,
   FileText, Users, Clock, CheckCircle2, XCircle, AlertCircle,
-  ChevronRight, Briefcase, Bell, Search, CreditCard,
+  ChevronRight, Briefcase, Bell, Search, CreditCard, Mic, MicOff,
 } from "lucide-react";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -379,6 +379,34 @@ export function AIPanel({ className = "" }: { className?: string }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId] = useState(() => uid());
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const startVoice = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const rec = new SpeechRecognition();
+    rec.lang = "ar-SA";
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onstart = () => setIsListening(true);
+    rec.onresult = (e: any) => {
+      const text = e.results[0][0].transcript;
+      setInput(text);
+      setIsListening(false);
+      setTimeout(() => sendMessage(text), 200);
+    };
+    rec.onerror = () => setIsListening(false);
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+  }, []);
+
+  const stopVoice = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
   const [location, navigate] = useLocation();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -625,6 +653,17 @@ export function AIPanel({ className = "" }: { className?: string }) {
             className="flex-1 bg-transparent text-white text-[12.5px] outline-none placeholder:text-white/25 min-w-0"
             data-testid="input-ai-message"
           />
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={isListening ? stopVoice : startVoice}
+            disabled={loading}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${isListening ? "bg-red-500/30" : "hover:bg-white/10"}`}
+            data-testid="button-ai-voice"
+            title={isListening ? "إيقاف التسجيل" : "تحدث بصوتك"}>
+            {isListening
+              ? <MicOff className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+              : <Mic className="w-3.5 h-3.5 text-white/40 hover:text-white/70" />}
+          </motion.button>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => sendMessage(input)}
