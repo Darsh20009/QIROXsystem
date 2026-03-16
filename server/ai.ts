@@ -706,6 +706,80 @@ async function handleCustomOrder(req: any, res: any) {
   }
 }
 
+/* ─── Package Finder (AI-powered, no hardcoded logic) ─── */
+const finderSessions = new Map<string, Message[]>();
+
+const PACKAGE_FINDER_SYSTEM = `أنت **مستشار باقات QIROX Studio** — متخصص فقط في مساعدة العملاء على اختيار الباقة الأنسب.
+
+== الباقات المتاحة ==
+1. **باقة لايت** (من 5,000 ريال | 2-4 أسابيع)
+   - موقع إلكتروني احترافي + لوحة تحكم + نظام طلبات + إدارة المنتجات + دعم فني أساسي
+   - مثالية لـ: المطاعم الصغيرة، المتاجر الناشئة، الأفراد والمستقلين، المشاريع البسيطة
+   - لا تشمل: تطبيق جوال، ذكاء اصطناعي، دفع إلكتروني متقدم
+
+2. **باقة برو** (من 10,000 ريال | 4-8 أسابيع)
+   - كل ميزات لايت + تطبيق جوال (iOS & Android) + بوابة دفع إلكتروني + CRM + تقارير متقدمة + ذكاء اصطناعي مدمج
+   - مثالية لـ: المطاعم المتوسطة والكبيرة، المتاجر الإلكترونية، شركات الخدمات، المنصات التعليمية
+   - لا تشمل: خادم مخصص، دعم 24/7 حصري
+
+3. **باقة إنفينيت** (من 20,000 ريال | 8-16 أسبوع)
+   - تخصيص كامل بلا حدود + خادم مخصص حصري + API غير محدودة + فريق دعم مخصص 24/7 + أولوية في التسليم + تكاملات متقدمة
+   - مثالية لـ: السلاسل الكبيرة، الشركات المؤسسية، منصات SaaS، المشاريع الحكومية
+
+== أسلوب المحادثة ==
+- تحدّث بالعربية الخليجية الودّية
+- اسأل سؤالاً واحداً فقط في كل رسالة
+- بعد 2-3 أسئلة (أو إذا كان الوصف كافياً من أول رسالة) أعطِ توصيتك
+- الأسئلة الذكية التي تسألها: نوع النشاط، هل يحتاج تطبيق جوال، الميزانية التقريبية، الحجم والطموح
+
+== قاعدة الإنهاء ==
+عندما تكون متأكداً من التوصية، أنهِ ردّك بالسطر التالي بالضبط (JSON مضغوط):
+RECOMMEND:{"tier":"lite|pro|infinite","reasoning":"سبب واضح ومختصر بـ 2-3 جمل بالعربية"}
+
+لا تضع RECOMMEND إلا مرة واحدة وعندما تكون واثقاً 100%.`;
+
+async function handlePackageFinder(req: any, res: any) {
+  const { message, sessionId } = req.body;
+  if (!message?.trim() || !sessionId) return res.json({ reply: "الرجاء إدخال رسالة." });
+
+  if (!finderSessions.has(sessionId)) {
+    finderSessions.set(sessionId, []);
+  }
+  const history = finderSessions.get(sessionId)!;
+  history.push({ role: "user", content: message.trim() });
+  if (history.length > 20) history.splice(0, history.length - 20);
+
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        { role: "system", content: PACKAGE_FINDER_SYSTEM },
+        ...history,
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const raw = comp.choices[0].message.content || "";
+    history.push({ role: "assistant", content: raw });
+
+    // Check if it contains a recommendation
+    const recMatch = raw.match(/RECOMMEND:\s*(\{[^}]+\})/);
+    if (recMatch) {
+      try {
+        const rec = JSON.parse(recMatch[1]);
+        const reply = raw.replace(/RECOMMEND:\s*\{[^}]+\}/, "").trim();
+        return res.json({ reply: reply || "إليك توصيتي لك!", done: true, tier: rec.tier, reasoning: rec.reasoning });
+      } catch {}
+    }
+
+    return res.json({ reply: raw.trim() });
+  } catch (err: any) {
+    console.error("[Package Finder Error]", err.message);
+    return res.json({ reply: "عذراً، حدث خطأ مؤقت. حاول مجدداً." });
+  }
+}
+
 /* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
   app.post("/api/ai/message", handleChat);
@@ -713,8 +787,10 @@ export function registerAiRoutes(app: Express) {
   app.post("/api/ai/analyze", handleAnalyze);
   app.post("/api/ai/generate", handleGenerate);
   app.post("/api/ai/custom-order", handleCustomOrder);
+  app.post("/api/ai/package-finder", handlePackageFinder);
   app.delete("/api/ai/session/:id", (req, res) => {
     sessions.delete(req.params.id);
+    finderSessions.delete(req.params.id);
     res.json({ success: true });
   });
 }
