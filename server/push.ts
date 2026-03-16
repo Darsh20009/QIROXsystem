@@ -44,9 +44,18 @@ export async function sendWebPush(subscription: { endpoint: string; keys: { p256
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  if (!userId || userId === "undefined" || userId === "null") {
+    console.error("[PUSH] sendPushToUser called with invalid userId:", userId);
+    return;
+  }
   try {
     const { PushSubscriptionModel } = await import("./models");
-    const subs = await PushSubscriptionModel.find({ userId });
+    const mongoose = await import("mongoose");
+    let queryId: any = userId;
+    if (mongoose.default.Types.ObjectId.isValid(userId)) {
+      queryId = new mongoose.default.Types.ObjectId(userId);
+    }
+    const subs = await PushSubscriptionModel.find({ userId: queryId });
     const expired: string[] = [];
     await Promise.all(
       subs.map(async (sub: any) => {

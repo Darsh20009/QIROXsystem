@@ -91,13 +91,29 @@ export function useRegister() {
   });
 }
 
+async function getCurrentPushEndpoint(): Promise<string | null> {
+  try {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub ? sub.endpoint : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
   return useMutation({
     mutationFn: async () => {
-      await fetch(api.auth.logout.path, { method: api.auth.logout.method });
+      const endpoint = await getCurrentPushEndpoint();
+      await fetch(api.auth.logout.path, {
+        method: api.auth.logout.method,
+        headers: { "Content-Type": "application/json" },
+        body: endpoint ? JSON.stringify({ endpoint }) : undefined,
+      });
     },
     onSuccess: () => {
       queryClient.setQueryData([api.auth.user.path], null);

@@ -981,7 +981,16 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  app.post(api.auth.logout.path, (req, res, next) => {
+  app.post(api.auth.logout.path, async (req, res, next) => {
+    try {
+      const { endpoint } = req.body || {};
+      if (endpoint && req.isAuthenticated()) {
+        const { PushSubscriptionModel } = await import("./models");
+        const user = req.user as any;
+        const userId = user._id || user.id;
+        await PushSubscriptionModel.deleteOne({ endpoint, userId });
+      }
+    } catch {}
     req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
@@ -7194,10 +7203,18 @@ export async function registerRoutes(
       const user = req.user as any;
       const { endpoint, keys, userAgent } = req.body;
       if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: "بيانات الاشتراك غير كاملة" });
+      const userId = user._id || user.id;
+      if (!userId) return res.status(400).json({ error: "معرّف المستخدم مفقود" });
+
+      const existing = await PushSubscriptionModel.findOne({ endpoint });
+      if (existing && String(existing.userId) !== String(userId)) {
+        await PushSubscriptionModel.deleteOne({ endpoint });
+      }
+
       await PushSubscriptionModel.findOneAndUpdate(
         { endpoint },
-        { userId: user._id || user.id, endpoint, keys, userAgent: userAgent || req.headers["user-agent"] || "" },
-        { upsert: true, returnDocument: "after" }
+        { $set: { userId, keys, userAgent: userAgent || req.headers["user-agent"] || "" } },
+        { upsert: true, setDefaultsOnInsert: true }
       );
       res.json({ ok: true });
     } catch (err) {
@@ -7209,11 +7226,33 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const { PushSubscriptionModel } = await import("./models");
+      const user = req.user as any;
+      const userId = user._id || user.id;
       const { endpoint } = req.body;
-      if (endpoint) await PushSubscriptionModel.deleteOne({ endpoint });
+      if (endpoint && userId) {
+        await PushSubscriptionModel.deleteOne({ endpoint, userId });
+      }
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: "فشل إلغاء الاشتراك" });
+    }
+  });
+
+  app.get("/api/push/my-subscriptions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PushSubscriptionModel } = await import("./models");
+      const mongoose = await import("mongoose");
+      const user = req.user as any;
+      const userId = user._id || user.id;
+      let queryId: any = userId;
+      if (userId && mongoose.default.Types.ObjectId.isValid(String(userId))) {
+        queryId = new mongoose.default.Types.ObjectId(String(userId));
+      }
+      const subs = await PushSubscriptionModel.find({ userId: queryId }, { endpoint: 1, userAgent: 1, createdAt: 1 });
+      res.json({ count: subs.length, subscriptions: subs });
+    } catch (err) {
+      res.status(500).json({ error: "فشل جلب الاشتراكات" });
     }
   });
 
