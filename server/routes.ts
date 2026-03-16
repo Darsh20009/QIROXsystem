@@ -1394,6 +1394,11 @@ export async function registerRoutes(
       if (key in req.body) safeBody[key] = req.body[key];
     }
 
+    // Reject wallet/mixed orders if walletAmountUsed is missing or zero
+    if (safeBody.paymentMethod === "wallet" && (Number(safeBody.walletAmountUsed || 0) <= 0)) {
+      return res.status(400).json({ error: "يجب تحديد المبلغ المخصوم من المحفظة عند الدفع بمحفظة كيروكس باي" });
+    }
+
     // Auto-mark deposit as paid for instant payment methods (PayPal captured, wallet, mixed wallet+paypal)
     const instantPayMethods = ["paypal", "wallet", "mixed"];
     if (instantPayMethods.includes(safeBody.paymentMethod as string)) {
@@ -9831,14 +9836,40 @@ export async function registerRoutes(
         }
         return res.json({ method: "telegram", expiresAt, phone: normPhone, sent: true });
       } else {
-        const { NotificationModel } = await import("./models");
+        const { NotificationModel, UserModel: UModel } = await import("./models");
+        const clientName = dbUser?.fullName || dbUser?.username || "عميل";
         await (NotificationModel as any).create({
           forAdmins: true,
           type: "info",
-          title: `📞 طلب توثيق جوال — ${dbUser?.fullName || dbUser?.username || "عميل"}`,
-          body: `العميل ${dbUser?.fullName || dbUser?.username} يطلب التحقق من رقمه ${normPhone} عبر اتصال هاتفي.`,
+          title: `📞 طلب توثيق جوال — ${clientName}`,
+          body: `العميل ${clientName} يطلب التحقق من رقمه ${normPhone} عبر اتصال هاتفي.`,
           link: `/admin/phone-verifications`,
         });
+        // Push live notification to all admin/manager/employee staff
+        (async () => {
+          try {
+            const staff = await (UModel as any).find({ role: { $in: ["admin", "manager", "employee"] } }).select("_id").lean();
+            const { pushToUser } = await import("./ws");
+            for (const s of staff) {
+              pushToUser(String(s._id), {
+                type: "notification",
+                notification: {
+                  type: "info",
+                  title: `📞 طلب توثيق جوال`,
+                  body: `${clientName} — ${normPhone}`,
+                  link: "/admin/phone-verifications",
+                },
+              });
+              sendPushToUser(String(s._id), {
+                title: `📞 طلب توثيق جوال`,
+                body: `${clientName} يطلب التحقق من ${normPhone}`,
+                icon: "/icon-192.png", badge: "/favicon-32.png",
+                tag: `phone-verify-${uid}`,
+                data: { url: "/admin/phone-verifications" },
+              }).catch(() => {});
+            }
+          } catch {}
+        })();
         return res.json({ method: "call", expiresAt, phone: normPhone });
       }
     } catch (err: any) { res.status(500).json({ error: err.message }); }

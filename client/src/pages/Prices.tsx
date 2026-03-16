@@ -705,7 +705,7 @@ export default function Prices() {
               <Plus className="w-4 h-4 text-gray-600 dark:text-slate-300" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">{lang === "ar" ? "الإضافات" : "Add-ons"}</h2>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">{lang === "ar" ? "المميزات الإضافية" : "Additional Features"}</h2>
               <p className="text-xs text-gray-400 dark:text-slate-600">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
             </div>
           </div>

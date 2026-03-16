@@ -60,22 +60,6 @@ interface SubServiceRequest {
   createdAt: string;
 }
 
-const periodLabels: Record<string, string> = {
-  monthly: L ? "شهري" : "Monthly",
-  "6months": "6 أشهر",
-  annual: L ? "سنوي" : "Annual",
-  renewal: L ? "تجديد سنوي" : "Annual Renewal",
-};
-
-const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  active: { label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-  expired: { label: L ? "منتهي" : "Expired", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
-  none: { label: L ? "بدون اشتراك" : "No Subscription", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
-  pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-  reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
-  approved: { label: L ? "مقبول" : "Approved", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
-  rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
-};
 
 const emptySegment: Partial<SegmentPricing> = {
   segmentKey: "",
@@ -93,6 +77,25 @@ export default function AdminSubscriptionPlans() {
   const { data: currentUser } = useUser();
   const isAdmin = (currentUser as any)?.role === "admin";
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
+
+  const periodLabels: Record<string, string> = {
+    monthly: L ? "شهري" : "Monthly",
+    "6months": "6 أشهر",
+    annual: L ? "سنوي" : "Annual",
+    renewal: L ? "تجديد سنوي" : "Annual Renewal",
+  };
+
+  const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+    active: { label: L ? "نشط" : "Active", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
+    expired: { label: L ? "منتهي" : "Expired", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+    none: { label: L ? "بدون اشتراك" : "No Subscription", color: "text-gray-500", bg: "bg-gray-50 border-gray-200", icon: Clock },
+    pending: { label: L ? "قيد المراجعة" : "Pending Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
+    reviewing: { label: L ? "جاري المراجعة" : "Under Review", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: RefreshCcw },
+    approved: { label: L ? "مقبول" : "Approved", color: "text-green-700", bg: "bg-green-50 border-green-200", icon: CheckCircle2 },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: AlertCircle },
+  };
   const [segmentDialog, setSegmentDialog] = useState(false);
   const [editingSegment, setEditingSegment] = useState<Partial<SegmentPricing>>(emptySegment);
   const [isEditMode, setIsEditMode] = useState(false);
