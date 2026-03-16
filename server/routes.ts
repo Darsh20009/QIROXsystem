@@ -9795,7 +9795,8 @@ export async function registerRoutes(
 
       const otp       = genOtp();
       const token     = genPhoneToken();
-      const requestId = `qirox-${(me._id || me.id).toString()}-${Date.now()}`;
+      const uid = (me._id || me.id).toString();
+      const requestId = (uid.slice(-6) + Date.now().toString().slice(-9)).toUpperCase();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
       await (PhoneVerifyOtpModel as any).create({
