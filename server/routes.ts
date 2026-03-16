@@ -10444,11 +10444,24 @@ export async function registerRoutes(
   app.post("/api/admin/push/broadcast", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { PushSubscriptionModel } = await import("./models");
+      const { PushSubscriptionModel, UserModel } = await import("./models");
       const { sendWebPush } = await import("./push");
       const { title, body, url, targetRole } = req.body;
       if (!title || !body) return res.status(400).json({ error: "العنوان والرسالة مطلوبان" });
-      const subs = await (PushSubscriptionModel as any).find().lean();
+
+      let subs: any[];
+      if (!targetRole || targetRole === "all") {
+        subs = await (PushSubscriptionModel as any).find().lean();
+      } else {
+        let userQuery: any = {};
+        if (targetRole === "clients") userQuery.role = "client";
+        else if (targetRole === "employees") userQuery.role = { $ne: "client" };
+        else userQuery.role = targetRole;
+        const users = await (UserModel as any).find(userQuery, "_id").lean();
+        const userIds = users.map((u: any) => String(u._id));
+        subs = await (PushSubscriptionModel as any).find({ userId: { $in: userIds } }).lean();
+      }
+
       let sent = 0; let failed = 0;
       for (const sub of subs) {
         if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) { failed++; continue; }
@@ -10462,9 +10475,89 @@ export async function registerRoutes(
   app.get("/api/admin/push/subscribers", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { PushSubscriptionModel } = await import("./models");
-      const count = await (PushSubscriptionModel as any).countDocuments();
-      res.json({ count });
+      const { PushSubscriptionModel, UserModel } = await import("./models");
+      const { targetRole } = req.query as { targetRole?: string };
+      let count: number;
+      if (!targetRole || targetRole === "all") {
+        count = await (PushSubscriptionModel as any).countDocuments();
+      } else {
+        let userQuery: any = {};
+        if (targetRole === "clients") userQuery.role = "client";
+        else if (targetRole === "employees") userQuery.role = { $ne: "client" };
+        else userQuery.role = targetRole;
+        const users = await (UserModel as any).find(userQuery, "_id").lean();
+        const userIds = users.map((u: any) => String(u._id));
+        count = await (PushSubscriptionModel as any).countDocuments({ userId: { $in: userIds } });
+      }
+      const registeredCount = await (UserModel as any).countDocuments();
+      res.json({ count, registeredCount });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/notifications/broadcast", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { NotificationModel, UserModel } = await import("./models");
+      const { broadcastToAll, broadcastToUsers, pushNotification } = await import("./ws");
+      const { title, body, link, icon, targetRole } = req.body;
+      if (!title) return res.status(400).json({ error: "العنوان مطلوب" });
+
+      let userQuery: any = {};
+      if (targetRole === "clients") userQuery.role = "client";
+      else if (targetRole === "employees") userQuery.role = { $ne: "client" };
+      else if (targetRole && targetRole !== "all") userQuery.role = targetRole;
+
+      const users = await (UserModel as any).find(userQuery, "_id email role").lean();
+
+      const notifs = users.map((u: any) => ({
+        userId: u._id,
+        type: "info",
+        title,
+        body: body || "",
+        link: link || "/",
+        icon: icon || "📢",
+        read: false,
+      }));
+      await NotificationModel.insertMany(notifs);
+
+      const payload = { type: "notification", title, body: body || "", link: link || "/", icon: icon || "📢" };
+      if (!targetRole || targetRole === "all") {
+        broadcastToAll(payload);
+      } else {
+        const userIds = users.map((u: any) => String(u._id));
+        broadcastToUsers(userIds, payload);
+      }
+
+      res.json({ ok: true, count: notifs.length });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/admin/email/broadcast", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const { sendDirectEmail } = await import("./email");
+      const { subject, body, targetRole } = req.body;
+      if (!subject || !body) return res.status(400).json({ error: "الموضوع والرسالة مطلوبان" });
+
+      let userQuery: any = { email: { $exists: true, $ne: "" } };
+      if (targetRole === "clients") userQuery.role = "client";
+      else if (targetRole === "employees") userQuery.role = { $ne: "client" };
+      else if (targetRole && targetRole !== "all") userQuery.role = targetRole;
+
+      const users = await (UserModel as any).find(userQuery, "email fullName username").lean();
+
+      let sent = 0; let failed = 0;
+      const BATCH = 10;
+      for (let i = 0; i < users.length; i += BATCH) {
+        const batch = users.slice(i, i + BATCH);
+        await Promise.all(batch.map(async (u: any) => {
+          if (!u.email) return;
+          const ok = await sendDirectEmail(u.email, u.fullName || u.username || u.email, subject, body);
+          if (ok) sent++; else failed++;
+        }));
+      }
+      res.json({ ok: true, sent, failed, total: users.length });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
