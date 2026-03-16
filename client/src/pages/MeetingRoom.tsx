@@ -864,8 +864,17 @@ export default function MeetingRoom() {
 
   const stopScreenShare = useCallback(async () => {
     const _ua2 = navigator.userAgent;
-    const _isMobile = /iPad|iPhone|iPod|Android/.test(_ua2) ||
+    const _isIOS2 = /iPad|iPhone|iPod/.test(_ua2) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const _isMobile = _isIOS2 || /Android/.test(_ua2);
+
+    // ── CRITICAL for iOS: stop screen capture BEFORE calling getUserMedia ──
+    // iOS cannot run getDisplayMedia and getUserMedia video streams simultaneously.
+    // Calling getUserMedia while screen capture is active causes NotReadableError,
+    // which falls through to the catch-block and disables video entirely.
+    if (_isIOS2) {
+      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+    }
 
     try {
       const cam = await navigator.mediaDevices.getUserMedia({
@@ -877,8 +886,6 @@ export default function MeetingRoom() {
       pcsRef.current.forEach((pc, peerId) => {
         const sender = pc.getSenders().find(s => s.track?.kind === "video");
         if (_isMobile) {
-          // Mobile: remove+addTrack+renegotiate — replaceTrack unreliable when switching
-          // from screen back to camera
           if (sender) { try { pc.removeTrack(sender); } catch {} }
           try { pc.addTrack(camTrack, new MediaStream([camTrack])); } catch {}
           peersNeedingRenegotiation.push(peerId);
@@ -886,7 +893,10 @@ export default function MeetingRoom() {
           if (sender) { sender.replaceTrack(camTrack).catch(() => {}); }
         }
       });
-      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      // Non-iOS: stop screen tracks after getUserMedia succeeds
+      if (!_isIOS2) {
+        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      }
       const audio = localStreamRef.current?.getAudioTracks()[0];
       const newStream = new MediaStream([...(audio ? [audio] : []), camTrack]);
       localStreamRef.current = newStream;
@@ -896,9 +906,9 @@ export default function MeetingRoom() {
       if (_isMobile) {
         for (const peerId of peersNeedingRenegotiation) {
           const pc = pcsRef.current.get(peerId);
-          if (!pc) continue;
+          if (!pc || pc.signalingState !== "stable") continue;
           try {
-            const offer = await pc.createOffer();
+            const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
             await pc.setLocalDescription(offer);
             sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
           } catch {}
@@ -914,7 +924,9 @@ export default function MeetingRoom() {
           peersNeedingRenegotiation.push(peerId);
         }
       });
-      localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      if (!_isIOS2) {
+        localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
+      }
       const audio = localStreamRef.current?.getAudioTracks()[0];
       const newStream = new MediaStream(audio ? [audio] : []);
       localStreamRef.current = newStream;
@@ -923,9 +935,9 @@ export default function MeetingRoom() {
       sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: false });
       for (const peerId of peersNeedingRenegotiation) {
         const pc = pcsRef.current.get(peerId);
-        if (!pc) continue;
+        if (!pc || pc.signalingState !== "stable") continue;
         try {
-          const offer = await pc.createOffer();
+          const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
           sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
         } catch {}
@@ -1094,11 +1106,19 @@ export default function MeetingRoom() {
     for (const [peerId, pc] of pcsRef.current) {
       const sender = pc.getSenders().find(s => s.track?.kind === "video");
       if (sender) {
-        // iOS/Android: replaceTrack often silently fails for screen tracks due to codec
-        // mismatch — always remove+addTrack+renegotiate on mobile for reliability
-        if (isIOSDevice || isAndroidDevice) {
+        if (isIOSDevice) {
+          // iOS: replaceTrack fails silently for screen tracks — must removeTrack+addTrack
           try { pc.removeTrack(sender); } catch {}
           try { pc.addTrack(screenTrack, newStream); } catch {}
+          peersNeedingRenegotiation.push(peerId);
+        } else if (isAndroidDevice) {
+          // Android Chrome: try replaceTrack first — it avoids renegotiation entirely
+          // and is more reliable. Fall back to removeTrack+addTrack only if it fails.
+          const replaced = await sender.replaceTrack(screenTrack).then(() => true).catch(() => false);
+          if (!replaced) {
+            try { pc.removeTrack(sender); } catch {}
+            try { pc.addTrack(screenTrack, newStream); } catch {}
+          }
           peersNeedingRenegotiation.push(peerId);
         } else {
           await sender.replaceTrack(screenTrack).catch(() => {
@@ -1124,9 +1144,9 @@ export default function MeetingRoom() {
 
     for (const peerId of peersNeedingRenegotiation) {
       const pc = pcsRef.current.get(peerId);
-      if (!pc) continue;
+      if (!pc || pc.signalingState !== "stable") continue;
       try {
-        const offer = await pc.createOffer();
+        const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await pc.setLocalDescription(offer);
         sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
       } catch {}
