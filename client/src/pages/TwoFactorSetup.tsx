@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap } from "lucide-react";
+import { Shield, Smartphone, Check, X, Loader2, Copy, KeyRound, AlertTriangle, Mail, Lock, Eye, EyeOff, RefreshCw, Zap, Bell } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { useI18n } from "@/lib/i18n";
 
-type Status = { enabled: boolean; totp: boolean; emailOtp: boolean; passphrase: boolean };
+type Status = { enabled: boolean; totp: boolean; emailOtp: boolean; passphrase: boolean; pushApproval: boolean; hasPushSubscriptions: boolean };
 
 export default function TwoFactorSetup() {
   const { toast } = useToast();
@@ -93,16 +93,29 @@ export default function TwoFactorSetup() {
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
+  const pushEnableMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/push-approval/enable"); return await res.json(); },
+    onSuccess: () => { invalidate(); toast({ title: L ? "تم تفعيل تأكيد الإشعارات" : "Push approval enabled" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message || (L ? "تأكد من تفعيل الإشعارات أولاً" : "Enable notifications first"), variant: "destructive" }),
+  });
+
+  const pushDisableMutation = useMutation({
+    mutationFn: async () => { const res = await apiRequest("POST", "/api/2fa/push-approval/disable"); return await res.json(); },
+    onSuccess: () => { setDisabling(null); invalidate(); toast({ title: L ? "تم إلغاء تأكيد الإشعارات" : "Push approval disabled" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
+  });
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" /></div>;
   }
 
-  const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase;
+  const anyEnabled = status?.totp || status?.emailOtp || status?.passphrase || status?.pushApproval;
 
   const methods = [
     { id: "totp", label: L ? "تطبيق المصادقة" : "Authenticator App", desc: L ? "Qirox Authenticator أو Google Authenticator" : "Qirox Authenticator or Google Authenticator", icon: Smartphone, enabled: status?.totp },
     { id: "email", label: L ? "رمز عبر البريد" : "Email Code", desc: L ? "إرسال رمز تحقق لبريدك عند الدخول" : "A verification code is sent to your email at login", icon: Mail, enabled: status?.emailOtp },
     { id: "passphrase", label: L ? "كلمة الاسترداد" : "Recovery Phrase", desc: L ? "كلمة سرية تستخدمها كخيار بديل" : "A secret phrase used as a backup option", icon: Lock, enabled: status?.passphrase },
+    { id: "push", label: L ? "تأكيد عبر الإشعارات" : "Push Approval", desc: L ? "يُرسَل إشعار لجهازك عند محاولة تسجيل الدخول — تؤكد أو ترفض من الجهاز" : "A notification is sent to your device when someone logs in — approve or deny from the device", icon: Bell, enabled: status?.pushApproval },
   ];
 
   return (
@@ -125,7 +138,7 @@ export default function TwoFactorSetup() {
           <p className="font-bold text-sm text-black dark:text-white">{anyEnabled ? (L ? "مفعّل" : "Enabled") : (L ? "غير مفعّل" : "Not Enabled")}</p>
           <p className="text-xs text-black/50 dark:text-white/45">
             {anyEnabled
-              ? `${[status?.totp && (L ? "تطبيق المصادقة" : "Authenticator"), status?.emailOtp && (L ? "البريد" : "Email"), status?.passphrase && (L ? "كلمة الاسترداد" : "Recovery Phrase")].filter(Boolean).join(" · ")}`
+              ? `${[status?.totp && (L ? "تطبيق المصادقة" : "Authenticator"), status?.emailOtp && (L ? "البريد" : "Email"), status?.passphrase && (L ? "كلمة الاسترداد" : "Recovery Phrase"), status?.pushApproval && (L ? "تأكيد الإشعارات" : "Push Approval")].filter(Boolean).join(" · ")}`
               : (L ? "يُنصح بتفعيل طريقة واحدة على الأقل لحماية حسابك" : "Enable at least one method to protect your account")}
           </p>
         </div>
@@ -177,16 +190,22 @@ export default function TwoFactorSetup() {
                   onClick={() => {
                     if (m.id === "totp") totpSetupMutation.mutate();
                     else if (m.id === "email") emailSetupMutation.mutate();
+                    else if (m.id === "push") pushEnableMutation.mutate();
                     else setPassphraseStep("setup");
                   }}
-                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending}
+                  disabled={totpSetupMutation.isPending || emailSetupMutation.isPending || pushEnableMutation.isPending}
                   className="shrink-0 text-xs"
                   data-testid={`button-enable-${m.id}`}
                 >
-                  {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending)
+                  {(m.id === "totp" && totpSetupMutation.isPending) || (m.id === "email" && emailSetupMutation.isPending) || (m.id === "push" && pushEnableMutation.isPending)
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : L ? "تفعيل" : "Enable"}
                 </Button>
+              )}
+              {m.id === "push" && !m.enabled && !status?.hasPushSubscriptions && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 text-center">
+                  {L ? "فعّل الإشعارات في المتصفح أولاً" : "Enable browser notifications first"}
+                </p>
               )}
               {m.enabled && disabling !== m.id && (
                 <Button size="sm" variant="outline"
@@ -211,12 +230,13 @@ export default function TwoFactorSetup() {
                         onClick={() => {
                           if (m.id === "totp") totpDisableMutation.mutate();
                           else if (m.id === "email") emailDisableMutation.mutate();
+                          else if (m.id === "push") pushDisableMutation.mutate();
                           else passphraseDisableMutation.mutate();
                         }}
-                        disabled={totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending}
+                        disabled={totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending || pushDisableMutation.isPending}
                         data-testid={`button-confirm-disable-${m.id}`}
                       >
-                        {(totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending)
+                        {(totpDisableMutation.isPending || emailDisableMutation.isPending || passphraseDisableMutation.isPending || pushDisableMutation.isPending)
                           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           : L ? "نعم، إلغاء" : "Yes, Disable"}
                       </Button>

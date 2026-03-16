@@ -54,6 +54,7 @@ const userSchema = new mongoose.Schema({
   emailOtpEnabled: { type: Boolean, default: false },
   recoveryPassphrase: { type: String, select: false },
   recoveryPassphraseEnabled: { type: Boolean, default: false },
+  pushApprovalEnabled: { type: Boolean, default: false },
   // ── Phone Verification ──
   phoneVerified: { type: Boolean, default: false },
   // ── Referral ──

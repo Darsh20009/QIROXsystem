@@ -783,16 +783,18 @@ export async function registerRoutes(
         if (!user) return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
         try {
           const { UserModel } = await import("./models");
-          const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled email fullName username");
+          const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled email fullName username");
           const methods: string[] = [];
           if (dbUser?.totpEnabled) methods.push("totp");
           if (dbUser?.emailOtpEnabled) methods.push("email");
           if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
-          // Push Approval method — available when user has active push subscriptions
-          const { PushSubscriptionModel } = await import("./models");
-          const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
-          if (pushSubCount > 0) {
-            methods.unshift("push"); // put push first as most convenient
+          // Push Approval — only if user explicitly enabled it AND has active subscriptions
+          if (dbUser?.pushApprovalEnabled) {
+            const { PushSubscriptionModel } = await import("./models");
+            const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
+            if (pushSubCount > 0) {
+              methods.unshift("push"); // put push first as most convenient
+            }
           }
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
@@ -9743,17 +9745,21 @@ export async function registerRoutes(
   app.get("/api/totp/status", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { UserModel } = await import("./models");
+      const { UserModel, PushSubscriptionModel } = await import("./models");
       const user = req.user as any;
-      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled emailOtpEnabled recoveryPassphraseEnabled");
+      const dbUser = await UserModel.findById(user._id || user.id).select("totpEnabled emailOtpEnabled recoveryPassphraseEnabled pushApprovalEnabled");
       const totp = dbUser?.totpEnabled || false;
       const emailOtp = dbUser?.emailOtpEnabled || false;
       const passphrase = dbUser?.recoveryPassphraseEnabled || false;
+      const pushApproval = dbUser?.pushApprovalEnabled || false;
+      const pushSubCount = pushApproval ? await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) }) : 0;
       res.json({
-        enabled: totp || emailOtp || passphrase,
+        enabled: totp || emailOtp || passphrase || pushApproval,
         totp,
         emailOtp,
         passphrase,
+        pushApproval,
+        hasPushSubscriptions: pushSubCount > 0,
       });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -9823,6 +9829,30 @@ export async function registerRoutes(
       const { UserModel } = await import("./models");
       const user = req.user as any;
       await UserModel.findByIdAndUpdate(user._id || user.id, { recoveryPassphrase: null, recoveryPassphraseEnabled: false });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Push Approval 2FA — enable
+  app.post("/api/2fa/push-approval/enable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel, PushSubscriptionModel } = await import("./models");
+      const user = req.user as any;
+      const subCount = await PushSubscriptionModel.countDocuments({ userId: String(user._id || user.id) });
+      if (subCount === 0) return res.status(400).json({ error: "لا يوجد جهاز مسجّل لاستقبال الإشعارات. فعّل الإشعارات أولاً." });
+      await UserModel.findByIdAndUpdate(user._id || user.id, { pushApprovalEnabled: true });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Push Approval 2FA — disable
+  app.post("/api/2fa/push-approval/disable", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { UserModel } = await import("./models");
+      const user = req.user as any;
+      await UserModel.findByIdAndUpdate(user._id || user.id, { pushApprovalEnabled: false });
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
