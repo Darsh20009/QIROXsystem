@@ -1,44 +1,28 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Video, Zap, Copy, Check, ExternalLink, Calendar, Clock,
-  Loader2, Users, CheckCircle2, ArrowRight, Link2, Hash,
+  Video, Copy, Check, Calendar, Clock,
+  Loader2, CheckCircle2, ArrowRight, Hash,
 } from "lucide-react";
 
 export default function ClientQMeet() {
   const { data: user } = useUser();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const { lang, dir } = useI18n();
   const L = lang === "ar";
 
-  const [instantResult, setInstantResult] = useState<any>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const { data: meetings = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/qmeet/upcoming"],
     enabled: !!user,
     refetchInterval: 30000,
-  });
-
-  const instantMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/qmeet/instant", {}),
-    onSuccess: async (res: any) => {
-      const data = await res.json();
-      queryClient.invalidateQueries({ queryKey: ["/api/qmeet/upcoming"] });
-      setInstantResult(data);
-    },
-    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const copy = (text: string, key: string) => {
@@ -54,27 +38,14 @@ export default function ClientQMeet() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={dir}>
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-4 py-5">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-2xl flex items-center justify-center">
-              <Video className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div>
-              <h1 className="text-base font-black text-black dark:text-white">QMeet</h1>
-              <p className="text-xs text-black/40 dark:text-white/40">{L ? "اجتماعاتي المرئية" : "My Video Meetings"}</p>
-            </div>
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 bg-violet-100 dark:bg-violet-900/30 rounded-2xl flex items-center justify-center">
+            <Video className="w-5 h-5 text-violet-600 dark:text-violet-400" />
           </div>
-          <Button
-            onClick={() => instantMutation.mutate()}
-            disabled={instantMutation.isPending}
-            className="h-10 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-bold gap-2 text-sm"
-            data-testid="btn-client-instant-meet"
-          >
-            {instantMutation.isPending
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <><Zap className="w-4 h-4" /> {L ? "اجتماع سريع" : "Quick Meeting"}</>
-            }
-          </Button>
+          <div>
+            <h1 className="text-base font-black text-black dark:text-white">QMeet</h1>
+            <p className="text-xs text-black/40 dark:text-white/40">{L ? "اجتماعاتي المرئية" : "My Video Meetings"}</p>
+          </div>
         </div>
       </div>
 
@@ -84,6 +55,7 @@ export default function ClientQMeet() {
         <div
           onClick={() => navigate("/meet/join")}
           className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-4 flex items-center justify-between shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          data-testid="btn-join-by-code"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
@@ -121,7 +93,7 @@ export default function ClientQMeet() {
                 {L ? "لا توجد اجتماعات قادمة" : "No upcoming meetings"}
               </p>
               <p className="text-xs text-black/30 dark:text-white/30 mt-1">
-                {L ? "أنشئ اجتماعاً سريعاً أو انتظر دعوة من الفريق" : "Start a quick meeting or wait for a team invite"}
+                {L ? "ستصلك دعوة من الفريق عند جدولة اجتماع" : "You will receive an invite when a meeting is scheduled"}
               </p>
             </div>
           ) : (
@@ -225,59 +197,6 @@ export default function ClientQMeet() {
           </div>
         )}
       </div>
-
-      {/* Instant Meeting Result Dialog */}
-      <Dialog open={!!instantResult} onOpenChange={v => { if (!v) setInstantResult(null); }}>
-        <DialogContent className="max-w-sm rounded-3xl p-0 overflow-hidden border-0" dir={dir}>
-          <div className="bg-gradient-to-br from-violet-600 to-purple-700 p-6 text-white text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-3">
-              <Video className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-xl font-black">{L ? "الاجتماع جاهز!" : "Meeting Ready!"}</h2>
-            <p className="text-white/70 text-sm mt-1">{instantResult?.title}</p>
-          </div>
-          {instantResult && (
-            <div className="p-5 space-y-3">
-              {/* Join Code */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
-                <p className="text-xs font-bold text-black/40 dark:text-white/40 mb-2">{L ? "رمز الانضمام" : "Join Code"}</p>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-black text-2xl tracking-[0.3em] text-black dark:text-white">{instantResult.joinCode}</span>
-                  <button onClick={() => copy(instantResult.joinCode, "code")} className="p-2 rounded-xl bg-black/5 dark:bg-white/5">
-                    {copied === "code" ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-black/40 dark:text-white/40" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Link */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Link2 className="w-4 h-4 text-black/30 dark:text-white/30 shrink-0" />
-                  <span className="text-xs text-black/50 dark:text-white/50 truncate">{`${window.location.origin}/meet/join?code=${instantResult.joinCode}`}</span>
-                </div>
-                <button onClick={() => copy(`${window.location.origin}/meet/join?code=${instantResult.joinCode}`, "link")} className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 shrink-0">
-                  {copied === "link" ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />}
-                </button>
-              </div>
-
-              <Button
-                onClick={() => { navigate(`/meet/${instantResult.roomName}`); setInstantResult(null); }}
-                className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black gap-2"
-                data-testid="btn-enter-instant-meet"
-              >
-                <ExternalLink className="w-4 h-4" />
-                {L ? "ادخل الاجتماع" : "Enter Meeting"}
-              </Button>
-              <button
-                onClick={() => setInstantResult(null)}
-                className="w-full text-center text-xs text-black/30 dark:text-white/30 hover:text-black/50 py-1"
-              >
-                {L ? "إغلاق" : "Close"}
-              </button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

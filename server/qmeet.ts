@@ -814,7 +814,7 @@ export function registerQMeetRoutes(app: Express) {
 
   // ── Instant / Quick Meeting ───────────────────────────────────────────────
 
-  app.post("/api/qmeet/instant", requireAuth, async (req: any, res) => {
+  app.post("/api/qmeet/instant", requireManagement, async (req: any, res) => {
     try {
       const userName = req.user.fullName || req.user.username;
       const userId = String(req.user._id || req.user.id);
