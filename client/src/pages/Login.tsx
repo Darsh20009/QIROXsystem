@@ -524,7 +524,7 @@ export default function Login() {
       </div>
 
       {/* Right form area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center px-6 py-12 overflow-y-auto" style={{ justifyContent: "safe center" }}>
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 text-center">
           <Link href="/">

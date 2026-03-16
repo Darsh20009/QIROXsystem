@@ -74,6 +74,10 @@
         background: #000;
         overflow-x: hidden;
         max-width: 100%;
+        /* Safari iOS: allow html to use fill-available so 100vh works correctly */
+        height: -webkit-fill-available;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
       html.dark {
         background: hsl(222, 47%, 6%);
@@ -83,9 +87,14 @@
         overflow-x: hidden;
         max-width: 100vw;
         width: 100%;
+        /* Safari iOS: min-height fix so content is never clipped by address bar */
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
       }
       #root {
+        /* dvh = dynamic viewport height — accounts for Safari address bar */
         min-height: 100vh;
+        min-height: 100dvh;
         overflow-x: hidden;
         width: 100%;
         max-width: 100vw;

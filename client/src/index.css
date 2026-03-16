@@ -106,11 +106,20 @@
     overflow-x: hidden;
     max-width: 100%;
     width: 100%;
+    /* Fix Safari iOS 100vh bug — html must stretch to fill-available */
+    height: -webkit-fill-available;
+    /* Prevent Safari from auto-adjusting font size on orientation change */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
     @apply font-bold tracking-tight;
+    /* Prevent text clipping in Safari */
+    -webkit-font-smoothing: antialiased;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   body {
@@ -120,6 +129,17 @@
     position: relative;
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
+    /* Fix Safari iOS min-height — fall back gracefully */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    /* Smooth momentum scrolling in Safari */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #root {
+    /* Fix Safari iOS — use dvh with 100vh fallback */
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   img, video, iframe, embed, object, svg {
@@ -130,6 +150,19 @@
   * {
     min-width: 0;
     box-sizing: border-box;
+  }
+
+  /* Smooth scrollable containers for Safari iOS */
+  [class*="overflow-y-auto"],
+  [class*="overflow-y-scroll"],
+  [class*="overflow-auto"],
+  [class*="overflow-scroll"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text from being clipped inside flex containers in Safari */
+  p, span, div, a, button, label {
+    -webkit-font-smoothing: antialiased;
   }
 }
 
@@ -142,6 +175,24 @@
   }
   .mobile-touch-target {
     @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Safari iOS fix: replaces min-h-screen to avoid address-bar clipping */
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Safari iOS: safe flex centering — prevents overflow clipping at top */
+  .flex-center-safe {
+    display: flex;
+    align-items: center;
+    justify-content: safe center;
+  }
+
+  /* Fix for Safari text rendering in RTL containers */
+  [dir="rtl"] * {
+    -webkit-font-smoothing: antialiased;
   }
 }
 
