@@ -16,7 +16,6 @@ import { useQuery } from "@tanstack/react-query";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { FloatingClientChat } from "@/components/FloatingClientChat";
 import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
@@ -736,7 +735,6 @@ function AppInner() {
           <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
             <PublicRouter />
             {location === "/" && <FloatingBrandPulse />}
-            <FloatingClientChat />
             <Toaster />
           </div>
         </TooltipProvider>
@@ -807,7 +805,6 @@ function AppInner() {
               )}
             </main>
             <MobileBottomNav />
-            <FloatingClientChat />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
             <Toaster />
