@@ -37,15 +37,95 @@ async function searchWeb(query: string): Promise<string> {
 
 /* ─── Session store ─── */
 interface Message { role: "user" | "assistant" | "tool"; content: string; tool_call_id?: string; name?: string }
-interface Session { history: Message[]; userId?: string; userRole?: string; }
+interface Session {
+  history: Message[];
+  userId?: string;
+  userRole?: string;
+  userName?: string;
+  lastReportedAt?: number;   // timestamp of last admin notification
+  toolCallCount?: number;    // total tool calls in session
+  startedAt?: number;        // session start time
+}
 const sessions = new Map<string, Session>();
 
-function getSession(id: string, userId?: string, role?: string): Session {
-  if (!sessions.has(id)) sessions.set(id, { history: [], userId, userRole: role });
+function getSession(id: string, userId?: string, role?: string, name?: string): Session {
+  if (!sessions.has(id)) sessions.set(id, { history: [], userId, userRole: role, userName: name, startedAt: Date.now(), toolCallCount: 0 });
   const s = sessions.get(id)!;
   if (userId) s.userId = userId;
   if (role) s.userRole = role;
+  if (name) s.userName = name;
   return s;
+}
+
+/* ─── Admin AI Digest: notify admins about important AI sessions ─── */
+const ADMIN_REPORT_COOLDOWN = 10 * 60 * 1000; // 10 minutes per session
+const NON_REPORT_ROLES = ["admin", "manager", "guest"];
+
+async function notifyAdminsOfAIActivity(
+  session: Session,
+  userMessage: string,
+  aiReply: string,
+  toolNames: string[]
+): Promise<void> {
+  try {
+    const now = Date.now();
+    if (session.lastReportedAt && now - session.lastReportedAt < ADMIN_REPORT_COOLDOWN) return;
+    if (NON_REPORT_ROLES.includes(session.userRole || "guest")) return;
+    session.lastReportedAt = now;
+
+    // Build a one-line summary via GPT
+    const recentCtx = session.history.slice(-6).map(m =>
+      `${m.role === "user" ? "👤 المستخدم" : "🤖 AI"}: ${String(m.content).slice(0, 200)}`
+    ).join("\n");
+
+    const summaryResp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "user",
+        content: `ملخّص قصير جداً (جملة واحدة بالعربية، بدون مقدمات) لهذه المحادثة مع ${session.userName || "مستخدم"} (${session.userRole}):\n${recentCtx}\n\nاكتب فقط الملخص بدون أي شرح.`,
+      }],
+      temperature: 0.3,
+      max_tokens: 120,
+    });
+
+    const summary = summaryResp.choices[0]?.message?.content?.trim() || `يتحدث ${session.userName || "مستخدم"} مع QIROX AI`;
+
+    const { UserModel, NotificationModel } = await import("./models");
+    const { pushToUser } = await import("./ws");
+
+    const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id");
+
+    const roleLabel: Record<string, string> = {
+      client: "عميل", developer: "مطور", designer: "مصمم", support: "دعم",
+      sales: "مبيعات", sales_manager: "مدير مبيعات", accountant: "محاسب", merchant: "تاجر",
+    };
+    const roleName = roleLabel[session.userRole || ""] || session.userRole || "مستخدم";
+    const toolLabel = toolNames.length > 0
+      ? `• الأدوات: ${toolNames.join("، ")}`
+      : "";
+
+    const notifBody = `${summary}${toolLabel ? "\n" + toolLabel : ""}`;
+
+    for (const admin of admins) {
+      await NotificationModel.create({
+        userId: String(admin._id),
+        type: "ai_digest",
+        title: `💬 ${session.userName || roleName} مع QIROX AI`,
+        body: notifBody,
+        link: "/admin/ai-sessions",
+        icon: "🤖",
+        read: false,
+      });
+      pushToUser(String(admin._id), {
+        type: "notification",
+        title: `💬 ${session.userName || roleName} مع QIROX AI`,
+        body: summary,
+      });
+    }
+  } catch (err) {
+    // Non-critical — don't throw
+    console.warn("[AI Digest] Failed to notify admins:", (err as any)?.message);
+  }
 }
 
 /* ─── QIROX Tools (function calling) ─── */
@@ -626,7 +706,7 @@ async function handleChat(req: any, res: any) {
   const userRole = req.user?.role || "guest";
   const userName = req.user?.fullName || req.user?.username || context?.name;
 
-  const session = getSession(sessionId || "anon", userId, userRole);
+  const session = getSession(sessionId || "anon", userId, userRole, userName);
   session.history.push({ role: "user", content: message.trim() });
   if (session.history.length > 40) session.history = session.history.slice(-40);
 
@@ -692,6 +772,10 @@ async function handleChat(req: any, res: any) {
       // Build the primary display from first tool result with a display type
       const displayResult = toolResults.find(t => t.result?.display?.type);
 
+      // ── Admin Digest: notify after tool execution (non-admin users) ──
+      session.toolCallCount = (session.toolCallCount || 0) + toolResults.length;
+      notifyAdminsOfAIActivity(session, message.trim(), finalReply, toolResults.map(t => t.name)).catch(() => {});
+
       return res.json({
         reply: finalReply.replace(/\[اقتراح:[^\]]+\]/g, "").trim(),
         suggestions,
@@ -710,6 +794,12 @@ async function handleChat(req: any, res: any) {
     const suggestions: string[] = [];
     const sugMatch = textReply.match(/\[اقتراح:([^\]]+)\]/g);
     if (sugMatch) sugMatch.forEach(m => suggestions.push(m.replace(/\[اقتراح:|]/g, "").trim()));
+
+    // ── Admin Digest: also notify on longer text conversations (every 5th user msg) ──
+    const userMsgCount = session.history.filter(m => m.role === "user").length;
+    if (userMsgCount >= 3 && userMsgCount % 5 === 0) {
+      notifyAdminsOfAIActivity(session, message.trim(), textReply, []).catch(() => {});
+    }
 
     // Check for navigate action
     const navMatch = textReply.match(/\[انتقال:([^|]+)\|([^\]]+)\]/);
