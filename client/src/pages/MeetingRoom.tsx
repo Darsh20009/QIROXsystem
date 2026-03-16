@@ -203,8 +203,8 @@ type PanelTab = 'chat' | 'participants' | 'whiteboard' | 'page' | 'actions' | 'r
 
 const SYSTEM_PAGES = [
   { label: "لوحة التحكم", path: "/dashboard" },
-  { label: "الطلبات", path: "/orders" },
-  { label: "المشاريع", path: "/projects" },
+  { label: "الطلبات", path: "/admin/orders" },
+  { label: "لوحة المشاريع", path: "/admin/kanban" },
   { label: "الدعم الفني", path: "/support" },
   { label: "الاستشارات", path: "/consultation" },
   { label: "الخدمات والأسعار", path: "/prices" },
