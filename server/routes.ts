@@ -42,23 +42,51 @@ import { sendWelcomeEmail, sendOtpEmail, sendEmailVerificationEmail, sendLoginOt
 import { pushNotification, broadcastNotification, pushToUser } from "./ws";
 import { sendPushToUser, VAPID_PUBLIC } from "./push";
 
-const pending2FA = new Map<string, { userId: string; methods: string[]; expiresAt: number }>();
+// ── MongoDB-backed 2FA session helpers ────────────────────────────────────────
+async function getPending2FA(tempToken: string) {
+  const { Pending2FAModel } = await import("./models");
+  const doc = await Pending2FAModel.findOne({ tempToken });
+  if (!doc) return null;
+  if (doc.expiresAt < new Date()) { await Pending2FAModel.deleteOne({ tempToken }); return null; }
+  return { userId: doc.userId, methods: doc.methods as string[], expiresAt: doc.expiresAt.getTime(), pushApproved: doc.pushApproved };
+}
+async function setPending2FA(tempToken: string, data: { userId: string; methods: string[]; expiresAt: number }) {
+  const { Pending2FAModel } = await import("./models");
+  await Pending2FAModel.findOneAndUpdate(
+    { tempToken },
+    { tempToken, userId: data.userId, methods: data.methods, expiresAt: new Date(data.expiresAt), pushApproved: false },
+    { upsert: true, new: true }
+  );
+}
+async function deletePending2FA(tempToken: string) {
+  const { Pending2FAModel } = await import("./models");
+  await Pending2FAModel.deleteOne({ tempToken });
+}
 
-// Push Approval challenges (Google Prompt style)
-const pushChallenges = new Map<string, {
-  userId: string;
-  number: number;
-  status: "pending" | "approved" | "denied";
-  tempToken: string;
-  expiresAt: number;
-  deviceInfo?: string;
-}>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of pending2FA) { if (v.expiresAt < now) pending2FA.delete(k); }
-  for (const [k, v] of pushChallenges) { if (v.expiresAt < now) pushChallenges.delete(k); }
-}, 60_000);
+// ── MongoDB-backed push challenge helpers ─────────────────────────────────────
+async function getPushChallenge(challengeId: string) {
+  const { PushChallengeModel } = await import("./models");
+  const doc = await PushChallengeModel.findOne({ challengeId });
+  if (!doc) return null;
+  if (doc.expiresAt < new Date()) { await PushChallengeModel.deleteOne({ challengeId }); return null; }
+  return { userId: doc.userId, number: doc.number, status: doc.status as "pending"|"approved"|"denied", tempToken: doc.tempToken, expiresAt: doc.expiresAt.getTime(), deviceInfo: doc.deviceInfo };
+}
+async function setPushChallenge(challengeId: string, data: { userId: string; number: number; status: "pending"|"approved"|"denied"; tempToken: string; expiresAt: number; deviceInfo?: string }) {
+  const { PushChallengeModel } = await import("./models");
+  await PushChallengeModel.findOneAndUpdate(
+    { challengeId },
+    { challengeId, ...data, expiresAt: new Date(data.expiresAt) },
+    { upsert: true, new: true }
+  );
+}
+async function updatePushChallengeStatus(challengeId: string, status: "approved"|"denied") {
+  const { PushChallengeModel } = await import("./models");
+  await PushChallengeModel.updateOne({ challengeId }, { status });
+}
+async function deletePushChallenge(challengeId: string) {
+  const { PushChallengeModel } = await import("./models");
+  await PushChallengeModel.deleteOne({ challengeId });
+}
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -726,7 +754,7 @@ export async function registerRoutes(
           if (pushSubCount > 0) methods.unshift("push"); // put push first as it's most convenient
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
-            pending2FA.set(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
+            await setPending2FA(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
             return res.status(200).json({ requires2FA: true, methods, tempToken });
           }
           req.login(user, (loginErr: any) => {
@@ -745,9 +773,8 @@ export async function registerRoutes(
     try {
       const { tempToken, method, code } = req.body;
       if (!tempToken || !method) return res.status(400).json({ error: "بيانات ناقصة" });
-      const session = pending2FA.get(tempToken);
+      const session = await getPending2FA(tempToken);
       if (!session) return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" });
-      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" }); }
       if (!session.methods.includes(method)) return res.status(400).json({ error: "طريقة التحقق غير متوفرة" });
 
       const { UserModel, OtpModel } = await import("./models");
@@ -776,7 +803,7 @@ export async function registerRoutes(
 
       if (!verified) return res.status(400).json({ error: "رمز التحقق غير صحيح" });
 
-      pending2FA.delete(tempToken);
+      await deletePending2FA(tempToken);
       const safeUser = await UserModel.findById(session.userId);
       if (!safeUser) return res.status(400).json({ error: "المستخدم غير موجود" });
       req.login(safeUser, (loginErr: any) => {
@@ -792,9 +819,8 @@ export async function registerRoutes(
     try {
       const { tempToken } = req.body;
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
-      const session = pending2FA.get(tempToken);
+      const session = await getPending2FA(tempToken);
       if (!session || !session.methods.includes("email")) return res.status(400).json({ error: "الجلسة غير صالحة" });
-      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة، أعد تسجيل الدخول" }); }
       const { UserModel, OtpModel } = await import("./models");
       const user = await UserModel.findById(session.userId);
       if (!user?.email) return res.status(400).json({ error: "البريد غير متوفر" });
@@ -814,28 +840,24 @@ export async function registerRoutes(
     try {
       const { tempToken } = req.body;
       if (!tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
-      const session = pending2FA.get(tempToken);
+      const session = await getPending2FA(tempToken);
       if (!session || !session.methods.includes("push")) return res.status(400).json({ error: "الجلسة غير صالحة" });
-      if (session.expiresAt < Date.now()) { pending2FA.delete(tempToken); return res.status(400).json({ error: "انتهت صلاحية الجلسة" }); }
 
-      // Generate random 2-digit number for user to confirm (like Google Prompt)
-      const challengeNumber = Math.floor(10 + Math.random() * 90); // 10-99
+      const challengeNumber = Math.floor(10 + Math.random() * 90);
       const challengeId = crypto.randomBytes(16).toString("hex");
       const deviceInfo = req.headers["user-agent"] || "جهاز غير معروف";
 
-      pushChallenges.set(challengeId, {
+      await setPushChallenge(challengeId, {
         userId: session.userId,
         number: challengeNumber,
         status: "pending",
         tempToken,
-        expiresAt: Date.now() + 5 * 60 * 1000, // 5 min
+        expiresAt: Date.now() + 15 * 60 * 1000, // 15 min
         deviceInfo: String(deviceInfo).slice(0, 120),
       });
 
-      // Send push notification to all of user's trusted devices
       const { UserModel } = await import("./models");
       const user = await UserModel.findById(session.userId);
-      const userName = user?.fullName || user?.username || "المستخدم";
 
       sendPushToUser(session.userId, {
         title: "🔐 محاولة تسجيل دخول جديدة",
@@ -845,7 +867,6 @@ export async function registerRoutes(
         data: { url: `/auth/push-approve?id=${challengeId}`, challengeId, number: challengeNumber },
       }).catch(() => {});
 
-      // Also send in-app notification via WebSocket
       pushToUser(session.userId, {
         type: "push_auth_challenge",
         challengeId,
@@ -858,52 +879,43 @@ export async function registerRoutes(
   });
 
   // Device B polls this to know if approved/denied
-  app.get("/api/auth/push-challenge/status/:id", (req, res) => {
-    const challenge = pushChallenges.get(req.params.id);
-    if (!challenge) return res.status(404).json({ error: "Challenge not found or expired" });
-    if (challenge.expiresAt < Date.now()) { pushChallenges.delete(req.params.id); return res.status(410).json({ error: "انتهت صلاحية الرمز" }); }
-    res.json({ status: challenge.status, number: challenge.number });
+  app.get("/api/auth/push-challenge/status/:id", async (req, res) => {
+    try {
+      const challenge = await getPushChallenge(req.params.id);
+      if (!challenge) return res.status(410).json({ error: "انتهت صلاحية الرمز" });
+      res.json({ status: challenge.status, number: challenge.number });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // Device A (authenticated) calls this to approve/deny
   app.post("/api/auth/push-challenge/respond", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "يجب تسجيل الدخول" });
-    const { challengeId, action } = req.body; // action: "approve" | "deny"
-    if (!challengeId || !["approve", "deny"].includes(action)) return res.status(400).json({ error: "بيانات ناقصة" });
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      const { challengeId, action } = req.body;
+      if (!challengeId || !["approve", "deny"].includes(action)) return res.status(400).json({ error: "بيانات ناقصة" });
 
-    const challenge = pushChallenges.get(challengeId);
-    if (!challenge) return res.status(404).json({ error: "الرمز غير موجود أو منتهي الصلاحية" });
-    if (challenge.expiresAt < Date.now()) { pushChallenges.delete(challengeId); return res.status(410).json({ error: "انتهت الصلاحية" }); }
+      const challenge = await getPushChallenge(challengeId);
+      if (!challenge) return res.status(410).json({ error: "انتهت صلاحية الرمز أو غير موجود" });
 
-    // Only the owner can respond
-    const responderId = String((req.user as any)._id || (req.user as any).id);
-    if (challenge.userId !== responderId) return res.status(403).json({ error: "غير مخوّل" });
+      const responderId = String((req.user as any)._id || (req.user as any).id);
+      if (challenge.userId !== responderId) return res.status(403).json({ error: "غير مخوّل" });
 
-    challenge.status = action === "approve" ? "approved" : "denied";
+      const newStatus: "approved" | "denied" = action === "approve" ? "approved" : "denied";
+      await updatePushChallengeStatus(challengeId, newStatus);
 
-    // If approved: complete the login on Device B via WebSocket
-    if (action === "approve") {
-      pushToUser(challenge.userId, {
-        type: "push_auth_approved",
-        challengeId,
-        tempToken: challenge.tempToken,
-      });
+      if (action === "approve") {
+        pushToUser(challenge.userId, {
+          type: "push_auth_approved",
+          challengeId,
+          tempToken: challenge.tempToken,
+        });
 
-      // Also complete the session — mark pending2FA as verified
-      const session = pending2FA.get(challenge.tempToken);
-      if (session) {
-        try {
-          const { UserModel } = await import("./models");
-          const user = await UserModel.findById(session.userId);
-          if (user) {
-            // We mark it specially so verify-2fa can complete the login
-            (session as any).pushApproved = true;
-          }
-        } catch {}
+        const { Pending2FAModel } = await import("./models");
+        await Pending2FAModel.updateOne({ tempToken: challenge.tempToken }, { pushApproved: true });
       }
-    }
 
-    res.json({ ok: true, status: challenge.status });
+      res.json({ ok: true, status: newStatus });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // Device B calls this to actually complete login after push approval
@@ -911,17 +923,16 @@ export async function registerRoutes(
     try {
       const { challengeId, tempToken } = req.body;
       if (!challengeId || !tempToken) return res.status(400).json({ error: "بيانات ناقصة" });
-      const challenge = pushChallenges.get(challengeId);
+      const challenge = await getPushChallenge(challengeId);
       if (!challenge || challenge.tempToken !== tempToken) return res.status(400).json({ error: "بيانات غير صالحة" });
-      if (challenge.expiresAt < Date.now()) { pushChallenges.delete(challengeId); return res.status(410).json({ error: "انتهت الصلاحية" }); }
       if (challenge.status !== "approved") return res.status(400).json({ error: challenge.status === "denied" ? "تم رفض طلب الدخول" : "لم تتم الموافقة بعد" });
 
       const { UserModel } = await import("./models");
       const user = await UserModel.findById(challenge.userId);
       if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
 
-      pending2FA.delete(tempToken);
-      pushChallenges.delete(challengeId);
+      await deletePending2FA(tempToken);
+      await deletePushChallenge(challengeId);
 
       req.login(user, (loginErr: any) => {
         if (loginErr) return next(loginErr);

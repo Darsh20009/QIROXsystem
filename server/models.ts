@@ -1689,3 +1689,25 @@ const loyaltyConfigSchema = new mongoose.Schema({
 }, { timestamps: true });
 loyaltyConfigSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const LoyaltyConfigModel = mongoose.models.LoyaltyConfig || mongoose.model("LoyaltyConfig", loyaltyConfigSchema);
+
+// ── Pending2FA Sessions (جلسات التحقق الثنائي) ──────────────────────────────
+const pending2FASchema = new mongoose.Schema({
+  tempToken:   { type: String, required: true, unique: true, index: true },
+  userId:      { type: String, required: true },
+  methods:     { type: [String], default: [] },
+  pushApproved:{ type: Boolean, default: false },
+  expiresAt:   { type: Date, required: true, index: { expires: 0 } },
+});
+export const Pending2FAModel = mongoose.models.Pending2FA || mongoose.model("Pending2FA", pending2FASchema);
+
+// ── Push Challenges (تحديات تسجيل الدخول بالإشعار) ──────────────────────────
+const pushChallengeSchema = new mongoose.Schema({
+  challengeId: { type: String, required: true, unique: true, index: true },
+  userId:      { type: String, required: true },
+  number:      { type: Number, required: true },
+  status:      { type: String, enum: ["pending", "approved", "denied"], default: "pending" },
+  tempToken:   { type: String, required: true },
+  deviceInfo:  { type: String, default: "" },
+  expiresAt:   { type: Date, required: true, index: { expires: 0 } },
+});
+export const PushChallengeModel = mongoose.models.PushChallenge || mongoose.model("PushChallenge", pushChallengeSchema);
