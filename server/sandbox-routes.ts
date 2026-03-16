@@ -258,7 +258,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const { SandboxProjectModel } = await import("./models");
       const { isRunning } = await import("./sandbox-runner");
       const isAdmin = ["admin", "manager"].includes(user.role);
-      const query: any = isAdmin ? {} : { ownerId: user._id };
+      const query: any = isAdmin ? {} : { ownerId: user._id || user.id };
       const projects = await SandboxProjectModel.find(query).sort({ updatedAt: -1 }).lean();
       const result = projects.map((p: any) => ({
         ...p,
@@ -284,7 +284,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       const tmpl = TEMPLATES[template || "blank"] || TEMPLATES.blank;
       const project = await SandboxProjectModel.create({
-        ownerId: user._id,
+        ownerId: user._id || user.id,
         name,
         nameAr: nameAr || "",
         description: description || "",
@@ -1178,7 +1178,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       const { SandboxDeploymentModel } = await import("./models");
       const deployment = await SandboxDeploymentModel.create({
         projectId: ctx.project._id,
-        deployedBy: ctx.user._id,
+        deployedBy: ctx.user._id || ctx.user.id,
         version: req.body.version || "1.0.0",
         status: "pending",
       });
