@@ -83,8 +83,6 @@ export default function Home() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
-  const [isIOSDevice, setIsIOSDevice] = useState(false);
-  const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
 
   const { data: discountCodes } = useQuery<any[]>({
     queryKey: ["/api/discount-codes/public"],
@@ -158,13 +156,6 @@ export default function Home() {
     };
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const ua = navigator.userAgent;
-    const isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isStandalone = (navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-    setIsIOSDevice(isIOS && !isStandalone);
   }, []);
 
   const cafeFeatures = lang === "ar" ? [
@@ -900,69 +891,56 @@ export default function Home() {
                         <Download className="w-4 h-4" />
                         {lang === "ar" ? "تحميل الآن" : "Download Now"}
                       </a>
-                    ) : store.key === "appStore" && isIOSDevice ? (
-                      <div className="space-y-3">
-                        <button
-                          data-testid="button-ios-pwa-install"
-                          onClick={() => setShowIOSInstallGuide(v => !v)}
-                          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/10 hover:bg-white/18 border border-white/15 text-white text-sm font-bold transition-all duration-200 active:scale-95"
-                        >
-                          <Smartphone className="w-4 h-4 text-white/80" />
-                          {lang === "ar" ? "ثبّت كتطبيق" : "Install as App"}
-                        </button>
+                    ) : store.key === "appStore" ? (
+                      <div className="rounded-xl bg-white/[0.06] border border-white/[0.08] p-4 space-y-3" dir={lang === "ar" ? "rtl" : "ltr"} data-testid="ios-install-guide">
+                        <p className="text-[11px] text-white/50 font-semibold uppercase tracking-wider">
+                          {lang === "ar" ? "ثبّت كتطبيق على iPhone" : "Install as iPhone App"}
+                        </p>
 
-                        {showIOSInstallGuide && (
-                          <div className="rounded-xl bg-white/[0.06] border border-white/[0.08] p-4 space-y-3 text-right" dir={lang === "ar" ? "rtl" : "ltr"}>
-                            <p className="text-[11px] text-white/50 font-semibold uppercase tracking-wider mb-2">
-                              {lang === "ar" ? "خطوات التثبيت" : "Installation Steps"}
-                            </p>
-
-                            <div className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-black flex items-center justify-center">1</span>
-                              <div className="flex items-start gap-2 flex-1 min-w-0">
-                                <Share2 className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                                <span className="text-[12px] text-white/80 leading-snug">
-                                  {lang === "ar"
-                                    ? <>اضغط زر <strong className="text-blue-300">المشاركة</strong> ⬆ في الشريط السفلي</>
-                                    : <>Tap the <strong className="text-blue-300">Share</strong> ⬆ button at the bottom</>}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-300 text-[11px] font-black flex items-center justify-center">2</span>
-                              <div className="flex items-start gap-2 flex-1 min-w-0">
-                                <PlusSquare className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                                <span className="text-[12px] text-white/80 leading-snug">
-                                  {lang === "ar"
-                                    ? <>اختر <strong className="text-green-300">إضافة إلى الشاشة الرئيسية</strong></>
-                                    : <>Select <strong className="text-green-300">Add to Home Screen</strong></>}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-300 text-[11px] font-black flex items-center justify-center">3</span>
-                              <div className="flex items-start gap-2 flex-1 min-w-0">
-                                <Bell className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                                <span className="text-[12px] text-white/80 leading-snug">
-                                  {lang === "ar"
-                                    ? <>اضغط <strong className="text-yellow-300">إضافة</strong> — ستصلك جميع الإشعارات!</>
-                                    : <>Tap <strong className="text-yellow-300">Add</strong> — you'll receive all notifications!</>}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="mt-2 pt-2 border-t border-white/[0.07] flex items-center gap-2">
-                              <Bell className="w-3 h-3 text-yellow-400 flex-shrink-0" />
-                              <p className="text-[11px] text-white/40 leading-snug">
-                                {lang === "ar"
-                                  ? "بعد التثبيت ستصلك إشعارات العقود والفواتير والتحديثات فوراً"
-                                  : "After installing, you'll get instant contract, invoice & update notifications"}
-                              </p>
-                            </div>
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-black flex items-center justify-center">1</span>
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <Share2 className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-[12px] text-white/80 leading-snug">
+                              {lang === "ar"
+                                ? <>اضغط زر <strong className="text-blue-300">المشاركة</strong> ⬆ في الشريط السفلي</>
+                                : <>Tap the <strong className="text-blue-300">Share</strong> ⬆ button at the bottom</>}
+                            </span>
                           </div>
-                        )}
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 text-green-300 text-[11px] font-black flex items-center justify-center">2</span>
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <PlusSquare className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-[12px] text-white/80 leading-snug">
+                              {lang === "ar"
+                                ? <>اختر <strong className="text-green-300">إضافة إلى الشاشة الرئيسية</strong></>
+                                : <>Select <strong className="text-green-300">Add to Home Screen</strong></>}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-300 text-[11px] font-black flex items-center justify-center">3</span>
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <Bell className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-[12px] text-white/80 leading-snug">
+                              {lang === "ar"
+                                ? <>اضغط <strong className="text-yellow-300">إضافة</strong> — ستصلك جميع الإشعارات!</>
+                                : <>Tap <strong className="text-yellow-300">Add</strong> — you'll receive all notifications!</>}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/[0.07] flex items-center gap-2">
+                          <Bell className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                          <p className="text-[11px] text-white/40 leading-snug">
+                            {lang === "ar"
+                              ? "ستصلك إشعارات العقود والفواتير والتحديثات فوراً"
+                              : "Get instant contract, invoice & update notifications"}
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] cursor-default">
