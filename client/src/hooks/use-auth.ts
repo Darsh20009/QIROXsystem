@@ -46,10 +46,14 @@ export function useLogin() {
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("اسم المستخدم أو كلمة المرور غير صحيحة");
-        throw new Error("حدث خطأ أثناء تسجيل الدخول");
+        const body = await res.json().catch(() => null);
+        if (res.status === 401) throw new Error(body?.error || "اسم المستخدم أو كلمة المرور غير صحيحة");
+        throw new Error(body?.error || body?.message || "حدث خطأ أثناء تسجيل الدخول");
       }
-      return await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error("حدث خطأ أثناء تسجيل الدخول، حاول مجدداً");
+      });
+      return data;
     },
     onSuccess: (user) => {
       if (user.requires2FA) return;
@@ -83,9 +87,12 @@ export function useRegister() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error || "فشل إنشاء الحساب");
+        throw new Error(body?.error || body?.message || "فشل إنشاء الحساب، حاول مجدداً");
       }
-      return await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error("فشل إنشاء الحساب، حاول مجدداً");
+      });
+      return data;
     },
     // onSuccess handled by Login.tsx to show OTP verification step
   });

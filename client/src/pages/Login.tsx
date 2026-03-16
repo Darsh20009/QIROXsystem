@@ -41,6 +41,17 @@ export default function Login() {
   const isRegister = location === "/register" || location === "/employee/register-secret";
   const isEmployeeRegister = location === "/employee/register-secret";
 
+  // Read ?redirect= param from URL and save to sessionStorage for post-login redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirect");
+    if (redirectTo && redirectTo.startsWith("/")) {
+      try { sessionStorage.setItem("returnAfterLogin", redirectTo); } catch {}
+      // Clean the param from URL without reload
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   // Check if Google OAuth is enabled on the server
   useEffect(() => {
     fetch("/api/auth/google/status", { credentials: "include" })
@@ -1242,7 +1253,7 @@ export default function Login() {
                       <FormItem>
                         <FormLabel className="text-black/50 text-xs font-semibold flex items-center gap-1">
                           رقم الواتساب / الهاتف
-                          {!isEmployeeRegister && <span className="text-red-500">*</span>}
+                          <span className="text-black/30 text-[10px] font-normal">(اختياري)</span>
                         </FormLabel>
                         <FormControl>
                           <CountryPhoneInput

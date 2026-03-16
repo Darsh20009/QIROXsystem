@@ -689,7 +689,7 @@ function AppInner() {
   });
   const [location, navigate] = useLocation();
   const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location.startsWith("/project/") && location.endsWith("/workspace");
-  const { data: user } = useUser();
+  const { data: user, isLoading: userLoading } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
 
@@ -745,6 +745,13 @@ function AppInner() {
 
   const isPublicRoute = publicRoutes.some(r => location === r)
     || location.startsWith("/templates/");
+
+  // Guard: redirect unauthenticated users to /login and save the return URL
+  if (!isPublicRoute && !userLoading && user === null) {
+    try { sessionStorage.setItem("returnAfterLogin", location); } catch {}
+    navigate(`/login?redirect=${encodeURIComponent(location)}`);
+    return null;
+  }
 
   if (isPublicRoute) {
     return (

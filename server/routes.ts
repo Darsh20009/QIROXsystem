@@ -780,7 +780,7 @@ export async function registerRoutes(
     import("passport").then((passport) => {
       passport.default.authenticate("local", async (err: any, user: any) => {
         if (err) return next(err);
-        if (!user) return res.status(401).send("اسم المستخدم أو كلمة المرور غير صحيحة");
+        if (!user) return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
         try {
           const { UserModel } = await import("./models");
           const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret +recoveryPassphrase totpEnabled emailOtpEnabled recoveryPassphraseEnabled email fullName username");
