@@ -12,6 +12,29 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 
 ## Latest Changes (Mar 16, 2026 - Session 53)
 
+### System Builder Frontend IDE — صانع الأنظمة (Cloud IDE UI)
+
+**New Frontend Files:**
+- `client/src/pages/SystemBuilder.tsx` — Project dashboard page (card grid, create dialog with template selection, delete)
+- `client/src/pages/SystemBuilderIDE.tsx` — IDE route wrapper (param extraction)
+- `client/src/components/sandbox/SandboxIDE.tsx` — Full-screen IDE layout (file tree, Monaco editor, right panel, logs, preview)
+- `client/src/components/sandbox/FileTree.tsx` — Hierarchical file tree with context menu (new/rename/delete)
+- `client/src/components/sandbox/CodeEditor.tsx` — Monaco editor with multi-tab support, autosave, Ctrl+S, external content sync
+- `client/src/components/sandbox/AIPanel.tsx` — AI code generation (create/edit/explain/full-project modes)
+- `client/src/components/sandbox/EnvVarsPanel.tsx` — Encrypted env var management (add/toggle visibility/delete)
+- `client/src/components/sandbox/GitHubPanel.tsx` — Import repo / push to GitHub / git status display
+
+**Routes:** `/employee/system-builder` (dashboard), `/employee/system-builder/:id` (IDE)
+**Sidebar:** "صانع الأنظمة" added under employee personal section
+**Dependencies Added:** `@monaco-editor/react`
+
+**Key features:**
+- Real-time WebSocket logs (sandbox-log events, color-coded stdout/stderr)
+- Live preview iframe with refresh/external-open buttons
+- Download ZIP export, deploy panel with Vercel/Netlify links
+- Full Arabic RTL interface, dark mode compatible
+- Data-testid attributes on all interactive elements
+
 ### System Builder Backend — صانع الأنظمة (Cloud IDE Engine)
 
 **New Backend Files:**

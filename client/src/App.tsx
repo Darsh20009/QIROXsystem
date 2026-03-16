@@ -133,6 +133,8 @@ const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
 const InvestorPortal = lazy(() => import("@/pages/InvestorPortal"));
 const EmployeeChangelog = lazy(() => import("@/pages/EmployeeChangelog"));
 const AdminKanban = lazy(() => import("@/pages/AdminKanban"));
+const SystemBuilder = lazy(() => import("@/pages/SystemBuilder"));
+const SystemBuilderIDE = lazy(() => import("@/pages/SystemBuilderIDE"));
 const TwoFactorSetup = lazy(() => import("@/pages/TwoFactorSetup"));
 const ClientReferral = lazy(() => import("@/pages/ClientReferral"));
 const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
@@ -279,6 +281,8 @@ function AdminRouter() {
         <Route path="/employee/checklist" component={DevChecklist} />
         <Route path="/employee/role-dashboard" component={EmployeeRoleDashboard} />
         <Route path="/employee/changelog" component={EmployeeChangelog} />
+        <Route path="/employee/system-builder/:id" component={SystemBuilderIDE} />
+        <Route path="/employee/system-builder" component={SystemBuilder} />
         <Route path="/admin/kanban" component={AdminKanban} />
         <Route path="/ai-studio" component={AIStudio} />
         <Route path="/admin/referrals" component={AdminReferrals} />
@@ -340,6 +344,7 @@ const ALL_PAGES = [
   { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
   { title: "رسائل التواصل", titleEn: "Contact Messages", url: "/admin/contact-messages", group: "employee" },
   { title: "مركز المساعدة", titleEn: "Help Center", url: "/help", group: "client" },
+  { title: "صانع الأنظمة", titleEn: "System Builder", url: "/employee/system-builder", group: "employee" },
 ];
 
 function GlobalSearch() {
