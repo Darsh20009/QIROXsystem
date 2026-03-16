@@ -50,12 +50,19 @@ function decrypt(encrypted: string, ivHex: string): string {
   return decrypted;
 }
 
+const SANDBOX_ALLOWED_ROLES = ["admin", "manager", "employee"];
+
 function requireAuth(req: Request, res: Response): any {
   if (!req.isAuthenticated?.() || !(req as any).user) {
     res.status(401).json({ error: "يجب تسجيل الدخول" });
     return null;
   }
-  return (req as any).user;
+  const user = (req as any).user;
+  if (!SANDBOX_ALLOWED_ROLES.includes(user.role)) {
+    res.status(403).json({ error: "صانع الأنظمة متاح للموظفين والمدراء فقط" });
+    return null;
+  }
+  return user;
 }
 
 function requireAdmin(req: Request, res: Response): any {
@@ -127,13 +134,14 @@ async function syncDbToDisk(projectId: string, objectId: any): Promise<number> {
   ensureProjectDir(projectId);
   const files = await SandboxFileModel.find({ projectId: objectId }).lean();
   let count = 0;
-  for (const f of files as any[]) {
-    if (f.type === "directory") {
-      createFolder(projectId, f.path);
-    } else if (f.type === "file" && f.content) {
-      writeFile(projectId, f.path, f.content);
-      count++;
-    }
+  const dirs = (files as any[]).filter((f) => f.type === "directory");
+  const regularFiles = (files as any[]).filter((f) => f.type === "file");
+  for (const d of dirs) {
+    createFolder(projectId, d.path);
+  }
+  for (const f of regularFiles) {
+    writeFile(projectId, f.path, f.content ?? "");
+    count++;
   }
   return count;
 }
@@ -972,31 +980,41 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
     let git: any = null;
     let patApplied = false;
     try {
-      const { message, commitMessage, pat } = req.body;
+      const { message, commitMessage, pat, repoUrl, branch } = req.body;
       const msg = commitMessage || message;
+      const targetRepo = repoUrl || ctx.project.githubRepo;
+      const targetBranch = branch || ctx.project.githubBranch || "main";
+      if (!targetRepo) return res.status(400).json({ error: "رابط المستودع مطلوب" });
+
       const simpleGit = (await import("simple-git")).default;
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
       git = simpleGit(dir);
 
-      if (pat && ctx.project.githubRepo) {
-        const url = new URL(ctx.project.githubRepo);
+      let pushUrl = targetRepo;
+      if (pat) {
+        const url = new URL(targetRepo);
         url.username = pat;
         url.password = "x-oauth-basic";
-        await git.remote(["set-url", "origin", url.toString()]);
-        patApplied = true;
+        pushUrl = url.toString();
       }
+
+      await git.remote(["set-url", "origin", pushUrl]);
+      patApplied = !!pat;
 
       await git.add(".");
       await git.commit(msg || "Update from QIROX Sandbox");
-      await git.push("origin", ctx.project.githubBranch || "main");
+      await git.push("origin", targetBranch);
 
       res.json({ success: true, pushed: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     } finally {
-      if (patApplied && git && ctx.project.githubRepo) {
-        try { await git.remote(["set-url", "origin", ctx.project.githubRepo]); } catch { /* ensure PAT removed */ }
+      if (git) {
+        const safeUrl = (req.body.repoUrl || ctx.project.githubRepo || "");
+        if (safeUrl) {
+          try { await git.remote(["set-url", "origin", safeUrl]); } catch { /* ensure PAT removed */ }
+        }
       }
     }
   });
