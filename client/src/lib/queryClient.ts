@@ -5,7 +5,7 @@ async function throwIfResNotOk(res: Response) {
     const text = await res.text();
     try {
       const json = JSON.parse(text);
-      throw new Error(json.error || json.message || "حدث خطأ غير متوقع، حاول مجدداً");
+      throw new Error(json.message || json.error || "حدث خطأ غير متوقع، حاول مجدداً");
     } catch (e) {
       if (e instanceof SyntaxError) {
         throw new Error(text || res.statusText || "حدث خطأ غير متوقع، حاول مجدداً");
@@ -31,7 +31,7 @@ export async function apiRequest(
     const text = await res.text();
     try {
       const json = JSON.parse(text);
-      throw new Error(json.error || json.message || "حدث خطأ غير متوقع، حاول مجدداً");
+      throw new Error(json.message || json.error || "حدث خطأ غير متوقع، حاول مجدداً");
     } catch (e) {
       if (e instanceof SyntaxError) {
         throw new Error(text || res.statusText || "حدث خطأ غير متوقع، حاول مجدداً");

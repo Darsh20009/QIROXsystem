@@ -78,7 +78,19 @@ export default function PhoneVerify() {
         setStage("call-wait");
       }
     },
-    onError: (e: any) => toast({ title: e?.message || "حدث خطأ", variant: "destructive" }),
+    onError: (e: any) => {
+      const msg: string = e?.message || "";
+      if (msg.includes("gateway_not_configured") || msg.includes("غير مُفعّلة") || msg.includes("Telegram Gateway")) {
+        toast({
+          title: "تيليجرام غير متاح",
+          description: "سيتم التحقق عبر اتصال هاتفي بدلاً من ذلك.",
+          variant: "destructive",
+        });
+        setMethod("call");
+        return;
+      }
+      toast({ title: msg || "حدث خطأ", variant: "destructive" });
+    },
   });
 
   const confirmMutation = useMutation({
