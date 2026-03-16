@@ -5258,7 +5258,7 @@ export async function registerRoutes(
     const cacheKey = `badges:${me.id}`;
     try {
       const result = await cache.getOrFetch(cacheKey, async () => {
-        const { InboxMessageModel, SupportTicketModel, OrderModel, ModificationRequestModel, ConsultationBookingModel, ClientDataRequestModel, ContactMessageModel, PhoneRequestModel } = await import("./models");
+        const { InboxMessageModel, SupportTicketModel, OrderModel, ModificationRequestModel, ConsultationBookingModel, ClientDataRequestModel, ContactMessageModel, PhoneRequestModel, PhoneVerifyOtpModel } = await import("./models");
         const isEmployee = me.role !== "client";
         const [messages, tickets, orders, modRequests, consultations, dataRequests, contactMessages, phoneRequests] = await Promise.all([
           InboxMessageModel.countDocuments({ toUserId: me.id, read: false }),
@@ -5274,7 +5274,12 @@ export async function registerRoutes(
             ? ClientDataRequestModel.countDocuments({ status: { $in: ["pending", "submitted"] } })
             : ClientDataRequestModel.countDocuments({ userId: me.id, status: { $in: ["pending", "submitted"] } }),
           isEmployee ? ContactMessageModel.countDocuments({ status: "new" }) : Promise.resolve(0),
-          isEmployee ? (PhoneRequestModel as any).countDocuments({ status: "pending" }) : Promise.resolve(0),
+          isEmployee
+            ? Promise.all([
+                (PhoneRequestModel as any).countDocuments({ status: "pending" }),
+                (PhoneVerifyOtpModel as any).countDocuments({ method: "call", callStatus: "pending", verified: false, expiresAt: { $gt: new Date() } }),
+              ]).then(([a, b]) => a + b)
+            : Promise.resolve(0),
         ]);
         return {
           messages, tickets, orders, modRequests, consultations,
@@ -9859,7 +9864,7 @@ export async function registerRoutes(
         // Push live notification to all admin/manager/employee staff
         (async () => {
           try {
-            const staff = await (UModel as any).find({ role: { $in: ["admin", "manager", "employee"] } }).select("_id").lean();
+            const staff = await (UModel as any).find({ role: { $ne: "client" } }).select("_id").lean();
             const { pushToUser } = await import("./ws");
             for (const s of staff) {
               pushToUser(String(s._id), {
