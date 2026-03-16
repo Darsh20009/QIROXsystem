@@ -12,6 +12,29 @@ if (!ENC_KEY_RAW && process.env.NODE_ENV === "production") {
 const ENC_KEY = (ENC_KEY_RAW || "qirox-sandbox-default-key-32ch").padEnd(32, "0").slice(0, 32);
 const ENC_ALGO = "aes-256-cbc" as const;
 
+const PREVIEW_TOKEN_TTL = 15 * 60 * 1000;
+
+function generatePreviewToken(userId: string, projectId: string): string {
+  const payload = JSON.stringify({ userId, projectId, exp: Date.now() + PREVIEW_TOKEN_TTL });
+  const hmac = crypto.createHmac("sha256", ENC_KEY).update(payload).digest("hex");
+  return Buffer.from(payload).toString("base64url") + "." + hmac;
+}
+
+function verifyPreviewToken(token: string): { userId: string; projectId: string } | null {
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  try {
+    const payload = Buffer.from(parts[0], "base64url").toString("utf8");
+    const hmac = crypto.createHmac("sha256", ENC_KEY).update(payload).digest("hex");
+    if (hmac !== parts[1]) return null;
+    const data = JSON.parse(payload);
+    if (data.exp < Date.now()) return null;
+    return { userId: data.userId, projectId: data.projectId };
+  } catch {
+    return null;
+  }
+}
+
 function encrypt(text: string): { encrypted: string; iv: string } {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ENC_ALGO, Buffer.from(ENC_KEY), iv);
@@ -949,7 +972,8 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
     let git: any = null;
     let patApplied = false;
     try {
-      const { message, pat } = req.body;
+      const { message, commitMessage, pat } = req.body;
+      const msg = commitMessage || message;
       const simpleGit = (await import("simple-git")).default;
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
@@ -964,7 +988,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       }
 
       await git.add(".");
-      await git.commit(message || "Update from QIROX Sandbox");
+      await git.commit(msg || "Update from QIROX Sandbox");
       await git.push("origin", ctx.project.githubBranch || "main");
 
       res.json({ success: true, pushed: true });
@@ -1105,6 +1129,31 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
     res.json(list);
   });
 
+  // ── Preview Token ──────────────────────────────────────────────────────────
+
+  app.post("/api/sandbox/projects/:id/preview-token", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    const token = generatePreviewToken(String(ctx.user._id), String(ctx.project._id));
+    res.json({ token, expiresIn: PREVIEW_TOKEN_TTL });
+  });
+
+  // ── Route Aliases (/api/sandbox/:id/... → same handler as /api/sandbox/projects/:id/...) ──
+  const aliasEndpoints = [
+    "file", "folder", "rename", "tree", "sync", "sync-from-db",
+    "start", "stop", "restart", "status", "logs",
+    "env", "env/:key", "download", "import-zip",
+    "github/clone", "github/import", "github/pull", "github/push", "github/status",
+    "deployments", "preview-token",
+  ];
+  for (const ep of aliasEndpoints) {
+    app.all(`/api/sandbox/:id/${ep}`, (req: Request, res: Response, next: any) => {
+      req.url = `/api/sandbox/projects/${req.params.id}/${ep.replace(":key", req.params.key || "")}`;
+      req.originalUrl = req.url;
+      (app as any)._router.handle(req, res, next);
+    });
+  }
+
   // ── WebSocket upgrade for sandbox preview ─────────────────────────────────
   if (httpServer) {
     httpServer.on("upgrade", async (req: any, socket: any, head: any) => {
@@ -1121,11 +1170,14 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
             const token = new URL(req.url, "http://localhost").searchParams.get("token");
             if (!token) { socket.destroy(); return; }
 
+            const decoded = verifyPreviewToken(token);
+            if (!decoded || decoded.projectId !== projectId) { socket.destroy(); return; }
+
             const { UserModel } = await import("./models");
-            const user = await UserModel.findById(token);
+            const user = await UserModel.findById(decoded.userId);
             if (!user) { socket.destroy(); return; }
             const uid = String(user._id);
-            const ownerId = String(project.owner);
+            const ownerId = String(project.ownerId);
             const isOwner = uid === ownerId;
             const isAdmin = user.role === "admin" || user.role === "manager";
             if (!isOwner && !isAdmin) { socket.destroy(); return; }

@@ -115,7 +115,7 @@ wss.on("connection", (ws) => {
             const { UserModel } = await import("./models");
             const project = await SandboxProjectModel.findById(msg.projectId);
             if (!project) { ws.send(JSON.stringify({ type: "sandbox_error", error: "المشروع غير موجود" })); return; }
-            const ownerId = String(project.owner);
+            const ownerId = String(project.ownerId);
             if (ownerId !== userId) {
               const user = await UserModel.findById(userId);
               if (!user || (user.role !== "admin" && user.role !== "manager")) {
