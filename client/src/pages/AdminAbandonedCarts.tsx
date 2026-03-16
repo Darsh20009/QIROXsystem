@@ -30,6 +30,8 @@ function formatDate(d: string) {
 
 function EmailModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => void }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [subject, setSubject] = useState("نرحب بعودتك — أكمل طلبك الآن");
   const [message, setMessage] = useState(`مرحباً ${cart.client.name}،\n\nلاحظنا أن لديك منتجات في عربة التسوق الخاصة بك. نحن هنا لمساعدتك في إتمام طلبك.\n\nهل تحتاج مساعدة؟ تواصل معنا في أي وقت.\n\nمع تحيات فريق QIROX`);
   const mutation = useMutation({
@@ -72,7 +74,7 @@ function EmailModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => voi
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> {L ? "إرسال" : "Send"}</>}
           </button>
-          <button onClick={onClose} className="px-5 h-11 bg-white/5 hover:bg-white/10 text-white/70 rounded-xl text-sm transition-colors">إلغاء</button>
+          <button onClick={onClose} className="px-5 h-11 bg-white/5 hover:bg-white/10 text-white/70 rounded-xl text-sm transition-colors">{L ? "إلغاء" : "Cancel"}</button>
         </div>
       </div>
     </div>
@@ -81,6 +83,8 @@ function EmailModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => voi
 
 function DiscountModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => void }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [percent, setPercent] = useState("15");
   const [note, setNote] = useState("");
   const [generated, setGenerated] = useState("");
@@ -155,6 +159,8 @@ function DiscountModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => 
 }
 
 function CartRow({ cart }: { cart: AbandonedCart }) {
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const [expanded, setExpanded] = useState(false);
   const [emailModal, setEmailModal] = useState(false);
   const [discountModal, setDiscountModal] = useState(false);
@@ -172,12 +178,9 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
       <div className="bg-[#131c2e] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-white/15 transition-colors">
         <div className="p-4 md:p-5">
           <div className="flex items-start gap-4">
-            {/* Avatar */}
             <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
               <User className="w-5 h-5 text-white/40" />
             </div>
-
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
@@ -185,7 +188,7 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
                   {cart.client.email && <p className="text-xs text-white/40 mt-0.5 truncate">{cart.client.email}</p>}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] text-white/30">{formatDate(cart.updatedAt, L)}</span>
+                  <span className="text-[10px] text-white/30">{formatDate(cart.updatedAt)}</span>
                   {!cart.client.hasContact && (
                     <span className="flex items-center gap-1 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full px-2 py-0.5">
                       <AlertCircle className="w-3 h-3" /> {L ? "بلا تواصل" : "No contact"}
@@ -194,7 +197,6 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
                 </div>
               </div>
 
-              {/* Stats row */}
               <div className="flex items-center gap-4 mt-3 flex-wrap">
                 <div className="flex items-center gap-1.5 text-xs text-white/50">
                   <ShoppingCart className="w-3.5 h-3.5" />
@@ -205,7 +207,6 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
                 </div>
               </div>
 
-              {/* Contact + Actions */}
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {whatsappLink && (
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer"
@@ -232,7 +233,7 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
                   <button onClick={() => setDiscountModal(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded-lg text-xs font-semibold transition-colors">
                     <Tag className="w-3.5 h-3.5" />
-                    خصم خاص
+                    {L ? "خصم خاص" : "Special Discount"}
                   </button>
                 )}
                 <button onClick={() => setExpanded(p => !p)}
@@ -244,7 +245,6 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
           </div>
         </div>
 
-        {/* Expanded items */}
         {expanded && (
           <div className="border-t border-white/[0.06] bg-white/[0.02] p-4 space-y-2">
             {cart.items.map((item, idx) => (
@@ -278,6 +278,8 @@ function CartRow({ cart }: { cart: AbandonedCart }) {
 }
 
 export default function AdminAbandonedCarts() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: carts = [], isLoading, refetch } = useQuery<AbandonedCart[]>({
     queryKey: ["/api/employee/abandoned-carts"],
   });
@@ -297,7 +299,6 @@ export default function AdminAbandonedCarts() {
 
   return (
     <div className="min-h-screen bg-[#0c1322] p-4 md:p-6" dir={dir}>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2">
@@ -311,12 +312,11 @@ export default function AdminAbandonedCarts() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { label: L ? "إجمالي العربات" : "Total Carts", value: carts.length, color: "text-white" },
           { label: L ? "يمكن التواصل معهم" : "Contactable", value: withContact, color: "text-green-400" },
-          { label: L ? "قيمة العربات" : "Cart Value", value: `${totalValue.toLocaleString(L ? "ar-SA" : "en-US")}`, color: "text-blue-400" },
+          { label: L ? "قيمة العربات" : "Cart Value", value: totalValue.toLocaleString(L ? "ar-SA" : "en-US"), color: "text-blue-400" },
         ].map(s => (
           <div key={s.label} className="bg-[#131c2e] border border-white/[0.08] rounded-2xl p-4 text-center">
             <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
@@ -325,7 +325,6 @@ export default function AdminAbandonedCarts() {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <input
           value={search}
@@ -343,7 +342,6 @@ export default function AdminAbandonedCarts() {
         </div>
       </div>
 
-      {/* List */}
       {isLoading ? (
         <div className="flex items-center justify-center h-40">
           <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
