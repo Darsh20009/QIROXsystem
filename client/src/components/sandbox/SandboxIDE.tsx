@@ -133,8 +133,8 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const { data: user } = useUser();
 
-  const leftPanel = useResizer(220, "horizontal", 150, 400);
-  const rightPanel = useResizer(300, "horizontal", 200, 500);
+  const leftPanel = useResizer(240, "horizontal", 150, 400);
+  const rightPanel = useResizer(320, "horizontal", 200, 500);
   const logsPanel = useResizer(200, "vertical", 100, 400);
 
   const { data: project, isLoading: projectLoading } = useQuery<SandboxProjectDetail>({

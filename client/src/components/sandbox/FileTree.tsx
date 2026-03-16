@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown, ChevronLeft, File, Folder, FolderOpen,
   FileCode, FileJson, FileText, Image, FileType,
-  Plus, FolderPlus, Pencil, Trash2, Loader2
+  Plus, FolderPlus, Pencil, Trash2, Loader2,
+  type LucideIcon
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ interface FileTreeProps {
   isLoading?: boolean;
 }
 
-const EXT_ICONS: Record<string, any> = {
+const EXT_ICONS: Record<string, LucideIcon> = {
   js: FileCode, jsx: FileCode, ts: FileCode, tsx: FileCode,
   json: FileJson, html: FileCode, css: FileCode, md: FileText,
   png: Image, jpg: Image, jpeg: Image, svg: Image, gif: Image,
