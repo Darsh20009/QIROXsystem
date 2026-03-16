@@ -110,6 +110,45 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#x27;");
 }
 
+// ── Universal notification helper: internal DB + real-time WS + external web-push ──
+async function fireNotify(
+  userId: string,
+  title: string,
+  body: string,
+  opts: { type?: string; link?: string; icon?: string; tag?: string } = {}
+) {
+  const link = opts.link || "/dashboard";
+  try {
+    const { NotificationModel } = await import("./models");
+    await NotificationModel.create({ userId, type: opts.type || "info", title, body, link, icon: opts.icon || "🔔" });
+  } catch (_) {}
+  pushToUser(userId, { type: "notification", title, body, link });
+  sendPushToUser(userId, {
+    title, body,
+    icon: "/icons/icon-192x192.png",
+    tag: opts.tag || `notif-${Date.now()}`,
+    data: { url: link },
+  }).catch(() => {});
+}
+
+async function fireNotifyAdmins(
+  title: string,
+  body: string,
+  opts: { type?: string; link?: string; icon?: string } = {}
+) {
+  try {
+    const { UserModel, NotificationModel } = await import("./models");
+    const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }, { _id: 1 }).lean();
+    const link = opts.link || "/admin";
+    await Promise.all(admins.map(async (a: any) => {
+      const uid = String(a._id);
+      try { await NotificationModel.create({ userId: uid, type: opts.type || "info", title, body, link, icon: opts.icon || "🔔" }); } catch (_) {}
+      pushToUser(uid, { type: "notification", title, body, link });
+      sendPushToUser(uid, { title, body, icon: "/icons/icon-192x192.png", tag: `admin-notif-${Date.now()}`, data: { url: link } }).catch(() => {});
+    }));
+  } catch (_) {}
+}
+
 function translateError(err: any): string {
   const msg: string = err?.message || err?.toString() || "";
   if (msg.includes("E11000") || msg.includes("duplicate key")) {
@@ -554,6 +593,7 @@ export async function registerRoutes(
           console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
           sendAdminNewClientEmail("info@qiroxstudio.online", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
           sendAdminNewClientEmail("qiroxsystem@gmail.com", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
+          fireNotifyAdmins(`🆕 عميل جديد انضم إلى المنصة`, `${user.fullName || user.username} (${user.email}) — ${(user as any).businessType || 'تسجيل ذاتي'}`, { type: 'info', link: '/admin/customers', icon: '🆕' });
         }
         res.status(201).json({ ...sanitizeUser(user), emailVerified: false, needsVerification: true });
       });
@@ -1989,12 +2029,31 @@ export async function registerRoutes(
 
   app.post(api.messages.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
+    const sender = req.user as User;
     const input = api.messages.create.input.parse(req.body);
     const message = await storage.createMessage({ 
       ...input, 
       projectId: req.params.projectId, 
-      senderId: String((req.user as User).id) 
+      senderId: String(sender.id) 
     });
+    // Notify project owner/members who are not the sender
+    try {
+      const { ProjectModel } = await import("./models");
+      const project = await (ProjectModel as any).findById(req.params.projectId).select("clientId members name");
+      if (project) {
+        const recipients = new Set<string>();
+        if (String(project.clientId) !== String(sender.id)) recipients.add(String(project.clientId));
+        (project.members || []).forEach((m: any) => {
+          const mid = String(m._id || m);
+          if (mid !== String(sender.id)) recipients.add(mid);
+        });
+        const senderName = (sender as any).fullName || (sender as any).username || "شخص";
+        const preview = (input.content || "").substring(0, 60);
+        for (const uid of recipients) {
+          fireNotify(uid, `💬 رسالة جديدة في ${project.name || 'المشروع'}`, `${senderName}: ${preview}`, { type: 'message', link: `/projects/${req.params.projectId}`, icon: '💬', tag: `msg-${req.params.projectId}` });
+        }
+      }
+    } catch (_) {}
     res.status(201).json(message);
   });
 
@@ -2358,6 +2417,7 @@ export async function registerRoutes(
     await atomicWalletCredit(String(topup.userId), topup.amount);
     const owner = await UserModel.findById(topup.userId);
     if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'approved');
+    fireNotify(String(topup.userId), `💰 تمت الموافقة على شحن المحفظة`, `تمت إضافة ${topup.amount.toLocaleString('ar-SA')} ريال لمحفظتك بنجاح`, { type: 'payment', link: '/wallet', icon: '💰', tag: `wallet-topup-${topup._id}` });
     res.json({ success: true });
   });
 
@@ -2375,6 +2435,7 @@ export async function registerRoutes(
     });
     const owner = await UserModel.findById(topup.userId);
     if (owner) await sendWalletTopupStatusEmail(owner.email, owner.fullName, topup.amount, 'rejected', req.body.reason);
+    fireNotify(String(topup.userId), `❌ رُفض طلب شحن المحفظة`, `تم رفض طلب شحن ${topup.amount.toLocaleString('ar-SA')} ريال${req.body.reason ? ' — السبب: ' + req.body.reason : ''}`, { type: 'error', link: '/wallet', icon: '❌', tag: `wallet-reject-${topup._id}` });
     res.json({ success: true });
   });
 
@@ -2408,15 +2469,9 @@ export async function registerRoutes(
     if (type === 'credit') await atomicWalletCredit(String(userId), Number(amount));
     else if (type === 'debit') await atomicWalletDebit(String(userId), Number(amount));
     // Notify client about wallet change
-    try {
-      const { NotificationModel } = await import("./models");
-      await NotificationModel.create({
-        userId: String(userId), type: 'payment',
-        title: type === 'credit' ? `💰 تم إضافة رصيد للمحفظة` : `📤 تم خصم رصيد من المحفظة`,
-        body: `${type === 'credit' ? '+' : '-'}${Number(amount).toLocaleString('ar-SA')} ريال — ${description}`,
-        link: '/wallet', icon: type === 'credit' ? '💰' : '📤',
-      });
-    } catch (_) {}
+    const walletTitle = type === 'credit' ? `💰 تم إضافة رصيد للمحفظة` : `📤 تم خصم رصيد من المحفظة`;
+    const walletBody = `${type === 'credit' ? '+' : '-'}${Number(amount).toLocaleString('ar-SA')} ريال — ${description}`;
+    fireNotify(String(userId), walletTitle, walletBody, { type: 'payment', link: '/wallet', icon: type === 'credit' ? '💰' : '📤', tag: `wallet-tx-${Date.now()}` });
     res.status(201).json(tx);
   });
 
@@ -2662,6 +2717,7 @@ export async function registerRoutes(
     const topup = await WalletTopupModel.create({
       userId: String(user.id), amount: Number(amount), bankName, bankRef, note,
     });
+    fireNotifyAdmins(`📥 طلب شحن محفظة جديد`, `${user.fullName || user.username} يطلب شحن ${Number(amount).toLocaleString('ar-SA')} ريال عبر ${bankName || 'تحويل بنكي'}`, { type: 'payment', link: '/admin/wallet', icon: '📥' });
     res.status(201).json(topup);
   });
 
@@ -3869,15 +3925,7 @@ export async function registerRoutes(
         ...(modificationTypeId ? { modificationTypeId } : {}),
       });
       // Notify admins about new modification request
-      try {
-        const { NotificationModel } = await import("./models");
-        await NotificationModel.create({
-          forAdmins: true, type: 'modification',
-          title: `طلب تعديل جديد: ${title}`,
-          body: `أرسل ${user.fullName || user.username} طلب تعديل جديد — الأولوية: ${priority || 'عادية'}`,
-          link: '/admin/mod-requests', icon: '✏️',
-        });
-      } catch (_) {}
+      fireNotifyAdmins(`✏️ طلب تعديل جديد: ${title}`, `أرسل ${user.fullName || user.username} طلب تعديل — الأولوية: ${priority || 'عادية'}`, { type: 'modification', link: '/admin/mod-requests', icon: '✏️' });
       res.status(201).json(request);
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
@@ -3891,18 +3939,11 @@ export async function registerRoutes(
       if (user.role === "admin") {
         const updated = await storage.updateModificationRequest(req.params.id, req.body);
         // Notify client if status changed
-        try {
-          if (req.body.status && updated) {
-            const { NotificationModel } = await import("./models");
-            const statusLabels: Record<string, string> = { approved: 'تمت الموافقة', rejected: 'مرفوض', in_progress: 'قيد التنفيذ', completed: 'مكتمل' };
-            await NotificationModel.create({
-              userId: String((updated as any).userId), type: 'modification',
-              title: `تحديث طلب التعديل`,
-              body: `طلبك "${(updated as any).title}" — ${statusLabels[req.body.status] || req.body.status}`,
-              link: '/modification-requests', icon: '✏️',
-            });
-          }
-        } catch (_) {}
+        if (req.body.status && updated) {
+          const statusLabels: Record<string, string> = { approved: 'تمت الموافقة ✅', rejected: 'مرفوض ❌', in_progress: 'قيد التنفيذ 🔧', completed: 'مكتمل 🎉' };
+          const statusLabel = statusLabels[req.body.status] || req.body.status;
+          fireNotify(String((updated as any).userId), `✏️ تحديث طلب التعديل`, `طلبك "${(updated as any).title}" — ${statusLabel}`, { type: 'modification', link: '/modification-requests', icon: '✏️', tag: `mod-${req.params.id}` });
+        }
         return res.json(updated);
       }
       const existing = await storage.getModificationRequests(String(user.id));
@@ -7711,6 +7752,7 @@ export async function registerRoutes(
           }).catch(console.error);
         }
       }
+      fireNotifyAdmins(`📅 حجز استشارة جديدة`, `${clientName} — ${consultationType || 'هاتفية'}: ${topic || 'استشارة عامة'}`, { type: 'info', link: '/admin/consultation', icon: '📅' });
 
       res.status(201).json(booking);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
@@ -7727,17 +7769,26 @@ export async function registerRoutes(
       const booking = await ConsultationBookingModel.findByIdAndUpdate(req.params.id, { $set: update }, { returnDocument: "after" });
       if (!booking) return res.status(404).json({ error: "غير موجود" });
 
-      // If confirmed, send email to client
-      if (req.body.status === "confirmed" && booking.clientEmail) {
-        const dateStr = new Date(booking.date).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        sendConsultationConfirmationEmail(booking.clientEmail, booking.clientName, {
-          bookingId: String(booking._id || booking.id),
-          date: dateStr, startTime: booking.startTime, endTime: booking.endTime,
-          employeeName: booking.employeeName,
-          consultationType: booking.consultationType,
-          topic: booking.topic || "استشارة عامة",
-          meetingLink: booking.meetingLink,
-        }).catch(console.error);
+      // If confirmed, send email + push to client
+      if (req.body.status === "confirmed") {
+        if (booking.clientEmail) {
+          const dateStr = new Date(booking.date).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          sendConsultationConfirmationEmail(booking.clientEmail, booking.clientName, {
+            bookingId: String(booking._id || booking.id),
+            date: dateStr, startTime: booking.startTime, endTime: booking.endTime,
+            employeeName: booking.employeeName,
+            consultationType: booking.consultationType,
+            topic: booking.topic || "استشارة عامة",
+            meetingLink: booking.meetingLink,
+          }).catch(console.error);
+        }
+        if (booking.clientId) {
+          fireNotify(String(booking.clientId), `✅ تم تأكيد موعد استشارتك`, `${booking.topic || 'استشارة عامة'} — ${booking.startTime || ''}`, { type: 'info', link: '/dashboard', icon: '📅', tag: `consult-${booking._id}` });
+        }
+      } else if (req.body.status === "cancelled" && booking.clientId) {
+        fireNotify(String(booking.clientId), `❌ تم إلغاء موعد الاستشارة`, `${booking.topic || 'الموعد'} تم إلغاؤه — يمكنك حجز موعد جديد`, { type: 'error', link: '/dashboard', icon: '❌', tag: `consult-cancel-${booking._id}` });
+      } else if (req.body.status === "completed" && booking.clientId) {
+        fireNotify(String(booking.clientId), `🎉 اكتملت جلسة الاستشارة`, `شكراً على وقتك — ${booking.topic || ''}`, { type: 'success', link: '/dashboard', icon: '🎉', tag: `consult-done-${booking._id}` });
       }
 
       res.json(booking);
@@ -9559,9 +9610,14 @@ export async function registerRoutes(
         attachmentUrl: attachmentUrl || "",
       });
       const populated = await (ProjectCommentModel as any).findById(comment._id).populate("userId", "fullName username profilePhotoUrl role");
+      const commentPreview = body.trim().substring(0, 80);
+      const commenterName = (user.fullName || user.username || "شخص");
       if (isStaff) {
-        await NotificationModel.create({ userId: project.clientId, type: "project", title: "تعليق جديد على مشروعك", body: body.trim().substring(0, 80), link: `/projects/${req.params.projectId}` }).catch(() => {});
-        pushToUser(String(project.clientId), { type: "notification", title: "تعليق جديد", body: body.trim().substring(0, 60) });
+        // Staff commented → notify client
+        fireNotify(String(project.clientId), `💬 تعليق جديد على مشروعك`, `${commenterName}: ${commentPreview}`, { type: 'project', link: `/projects/${req.params.projectId}`, icon: '💬', tag: `comment-${req.params.projectId}` });
+      } else {
+        // Client commented → notify all admins/managers
+        fireNotifyAdmins(`💬 تعليق من العميل على المشروع`, `${commenterName}: ${commentPreview}`, { type: 'project', link: `/admin`, icon: '💬' });
       }
       res.status(201).json(populated);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -9633,6 +9689,7 @@ export async function registerRoutes(
         { returnDocument: "after" }
       );
       if (!contract) return res.status(404).json({ error: "لا يوجد عقد معلّق" });
+      fireNotifyAdmins(`✅ العميل وافق على العقد`, `تمت الموافقة على عقد الطلب #${req.params.orderId}`, { type: 'contract', link: '/admin/contracts', icon: '✅' });
       res.json(contract);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -9955,6 +10012,13 @@ export async function registerRoutes(
         await (UserModel as any).findByIdAndUpdate((doc as any).clientId, { phone: newPhone });
       }
       await doc.save();
+      const newStatus = (doc as any).status;
+      const phoneClientId = String((doc as any).clientId);
+      if (newStatus === "resolved") {
+        fireNotify(phoneClientId, `✅ تم معالجة طلب تغيير رقم الجوال`, newPhone ? `تم تحديث رقم جوالك إلى ${newPhone}` : `تمت معالجة طلبك بنجاح`, { type: 'info', link: '/profile', icon: '📱', tag: `phone-req-${req.params.id}` });
+      } else if (newStatus === "rejected") {
+        fireNotify(phoneClientId, `❌ رُفض طلب تغيير رقم الجوال`, `تعذّر قبول الطلب، يرجى التواصل مع الدعم`, { type: 'error', link: '/cs-chat', icon: '❌', tag: `phone-req-${req.params.id}` });
+      }
       res.json(doc);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10336,6 +10400,8 @@ export async function registerRoutes(
       const { rating, comment, isPublic } = req.body;
       if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
       const review = await (ReviewModel as any).create({ orderId: req.params.orderId, clientId: me._id || me.id, rating, comment: comment || "", isPublic: isPublic !== false, serviceTitle: order.serviceTitle || order.title || "" });
+      const stars = '⭐'.repeat(Math.max(1, Math.min(5, rating)));
+      fireNotifyAdmins(`${stars} تقييم جديد من عميل`, `${me.fullName || me.username || 'عميل'}: "${(comment || '').substring(0, 60)}"`, { type: 'review', link: '/admin/reviews', icon: '⭐' });
       res.status(201).json(review);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10382,6 +10448,9 @@ export async function registerRoutes(
       const { adminReply, isPublic } = req.body;
       const review = await (ReviewModel as any).findByIdAndUpdate(req.params.id, { adminReply: adminReply || "", isPublic: isPublic !== false, repliedAt: adminReply ? new Date() : null }, { returnDocument: "after" });
       if (!review) return res.status(404).json({ error: "غير موجود" });
+      if (adminReply && review.clientId) {
+        fireNotify(String(review.clientId), `💬 رد إداري على تقييمك`, adminReply.substring(0, 100), { type: 'review', link: '/dashboard', icon: '💬', tag: `review-reply-${review._id}` });
+      }
       res.json(review);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -11516,13 +11585,7 @@ export async function registerInstallmentRoutes(app: Express) {
     }
 
     // Notify client
-    await NotificationModel.create({
-      userId: (appl as any).clientId,
-      title: "تمت الموافقة على طلب التقسيط",
-      body: `تمت الموافقة على طلب التقسيط الخاص بك. يمكنك الآن دفع القسط الأول لتفعيل الباقة.`,
-      type: "success",
-      link: "/installments",
-    });
+    fireNotify(String((appl as any).clientId), `✅ تمت الموافقة على طلب التقسيط`, `يمكنك الآن دفع القسط الأول لتفعيل خدمتك`, { type: 'success', link: '/installments', icon: '✅', tag: `installment-approve-${appl._id}` });
 
     res.json({ success: true, application: appl });
   });
@@ -11537,13 +11600,7 @@ export async function registerInstallmentRoutes(app: Express) {
     (appl as any).rejectedAt = new Date();
     await appl.save();
 
-    await NotificationModel.create({
-      userId: (appl as any).clientId,
-      title: "رفض طلب التقسيط",
-      body: `نأسف، تم رفض طلب التقسيط الخاص بك. السبب: ${rejectionReason || "لم يُحدد"}`,
-      type: "error",
-      link: "/installments",
-    });
+    fireNotify(String((appl as any).clientId), `❌ رُفض طلب التقسيط`, `السبب: ${rejectionReason || "لم يُحدد"} — تواصل مع الدعم لمزيد من المعلومات`, { type: 'error', link: '/installments', icon: '❌', tag: `installment-reject-${appl._id}` });
 
     res.json({ success: true });
   });
@@ -11556,13 +11613,7 @@ export async function registerInstallmentRoutes(app: Express) {
     (appl as any).lockedAt = new Date();
     await appl.save();
     await UserModel.findByIdAndUpdate((appl as any).clientId, { $set: { subscriptionStatus: "suspended" } });
-    await NotificationModel.create({
-      userId: (appl as any).clientId,
-      title: "تم تعليق خدمتك",
-      body: "تم تعليق خدمتك بسبب التأخر في سداد أقساط التقسيط. يرجى السداد لاستعادة الخدمة.",
-      type: "error",
-      link: "/installments",
-    });
+    fireNotify(String((appl as any).clientId), `⚠️ تم تعليق خدمتك`, `يرجى سداد الأقساط المستحقة لاستعادة الخدمة`, { type: 'error', link: '/installments', icon: '⚠️', tag: `installment-lock-${appl._id}` });
     res.json({ success: true });
   });
 
@@ -11574,13 +11625,7 @@ export async function registerInstallmentRoutes(app: Express) {
     (appl as any).lockedAt = undefined;
     await appl.save();
     await UserModel.findByIdAndUpdate((appl as any).clientId, { $set: { subscriptionStatus: "active" } });
-    await NotificationModel.create({
-      userId: (appl as any).clientId,
-      title: "تم رفع تعليق خدمتك",
-      body: "تم استعادة خدمتك بنجاح. شكراً لسدادك.",
-      type: "success",
-      link: "/installments",
-    });
+    fireNotify(String((appl as any).clientId), `✅ تم استعادة خدمتك`, `شكراً لسدادك — خدمتك الآن نشطة`, { type: 'success', link: '/installments', icon: '✅', tag: `installment-unlock-${appl._id}` });
     res.json({ success: true });
   });
 
@@ -11626,14 +11671,7 @@ export async function registerInstallmentRoutes(app: Express) {
     });
 
     // Notify admins
-    await NotificationModel.create({
-      userId: null,
-      forAdmins: true,
-      title: "طلب تقسيط جديد",
-      body: `قدّم العميل ${user.fullName} طلب تقسيط جديد بقيمة ${grandTotal} ريال على ${installmentCount} أقساط`,
-      type: "info",
-      link: "/admin/installments",
-    });
+    fireNotifyAdmins(`📋 طلب تقسيط جديد`, `${user.fullName || user.username} — ${grandTotal} ريال على ${installmentCount} أقساط`, { type: 'info', link: '/admin/installments', icon: '📋' });
 
     res.json({ success: true, application: appl });
   });
@@ -11707,13 +11745,7 @@ export async function registerInstallmentRoutes(app: Express) {
       (appl as any).status = "completed";
       (appl as any).completedAt = new Date();
       await UserModel.findByIdAndUpdate(user._id, { $set: { subscriptionStatus: "active" } });
-      await NotificationModel.create({
-        userId: user._id,
-        title: "اكتمل التقسيط",
-        body: "مبروك! لقد أتممت سداد جميع الأقساط. شكراً لثقتك بنا.",
-        type: "success",
-        link: "/installments",
-      });
+      fireNotify(String(user._id), `🎉 اكتمل التقسيط`, `مبروك! أتممت سداد جميع الأقساط. شكراً لثقتك بنا.`, { type: 'success', link: '/installments', icon: '🎉', tag: `installment-done-${appl._id}` });
     } else {
       if (isFirstPayment || (appl as any).status === "approved") {
         (appl as any).status = "active";
@@ -11731,6 +11763,11 @@ export async function registerInstallmentRoutes(app: Express) {
     }
 
     await appl.save();
+    // Notify client of partial payment receipt
+    if ((appl as any).status !== "completed") {
+      const remaining = totalInstallments - ((appl as any).paidInstallments || 0);
+      fireNotify(String(user._id), `💳 تم سداد القسط بنجاح`, `القسط رقم ${(payment as any).installmentNumber} — المتبقي: ${remaining} قسط`, { type: 'success', link: '/installments', icon: '💳', tag: `installment-pay-${payment._id}` });
+    }
     res.json({ success: true, paidAmount: amountDue });
   });
 
