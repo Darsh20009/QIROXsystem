@@ -22,12 +22,21 @@ function sanitizeCommand(cmd: string): string {
   return cmd.trim();
 }
 
+const MAX_LOG_LINES = 500;
+
+interface LogEntry {
+  stream: "stdout" | "stderr";
+  text: string;
+  ts: number;
+}
+
 interface RunningProcess {
   process: ChildProcess;
   projectId: string;
   ownerId: string;
   port: number;
   startedAt: number;
+  logs: LogEntry[];
 }
 
 const runningProcesses = new Map<string, RunningProcess>();
@@ -50,13 +59,19 @@ function releasePort(port: number): void {
 }
 
 function broadcastLog(ownerId: string, projectId: string, stream: "stdout" | "stderr", text: string): void {
+  const entry: LogEntry = { stream, text, ts: Date.now() };
+  const proc = runningProcesses.get(projectId);
+  if (proc) {
+    proc.logs.push(entry);
+    if (proc.logs.length > MAX_LOG_LINES) proc.logs.splice(0, proc.logs.length - MAX_LOG_LINES);
+  }
   broadcastSandboxLog(projectId, stream, text);
   pushToUser(ownerId, {
     type: "sandbox-log",
     projectId,
     stream,
     text,
-    ts: Date.now(),
+    ts: entry.ts,
   });
 }
 
@@ -128,6 +143,7 @@ export async function startProcess(
     ownerId,
     port,
     startedAt: Date.now(),
+    logs: [],
   });
 
   return { port, pid: child.pid || 0 };
@@ -166,10 +182,10 @@ export async function stopProcess(projectId: string): Promise<void> {
   runningProcesses.delete(projectId);
 }
 
-export function getProcessInfo(projectId: string): { port: number; pid: number; startedAt: number } | null {
+export function getProcessInfo(projectId: string): { port: number; pid: number; startedAt: number; logs: LogEntry[] } | null {
   const entry = runningProcesses.get(projectId);
   if (!entry) return null;
-  return { port: entry.port, pid: entry.process.pid || 0, startedAt: entry.startedAt };
+  return { port: entry.port, pid: entry.process.pid || 0, startedAt: entry.startedAt, logs: entry.logs };
 }
 
 export function isRunning(projectId: string): boolean {

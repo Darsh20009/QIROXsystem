@@ -5,7 +5,7 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 const ENC_KEY_RAW = process.env.SANDBOX_ENC_KEY;
 if (!ENC_KEY_RAW && process.env.NODE_ENV === "production") {
-  console.error("[Sandbox] SANDBOX_ENC_KEY is required in production!");
+  throw new Error("[Sandbox] SANDBOX_ENC_KEY is required in production! Set this environment variable before starting.");
 } else if (!ENC_KEY_RAW) {
   console.warn("[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)");
 }
@@ -360,11 +360,18 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const { path: filePath, content } = req.body;
       if (!filePath) return res.status(400).json({ error: "مسار الملف مطلوب" });
       const { writeFile } = await import("./sandbox-fs");
-      writeFile(String(ctx.project._id), filePath, content || "");
+      const fileContent = content || "";
+      writeFile(String(ctx.project._id), filePath, fileContent);
       const { SandboxFileModel } = await import("./models");
       await SandboxFileModel.findOneAndUpdate(
         { projectId: ctx.project._id, path: filePath },
-        { type: "file", size: Buffer.byteLength(content || ""), syncedAt: new Date() },
+        {
+          type: "file",
+          content: fileContent,
+          size: Buffer.byteLength(fileContent),
+          hash: crypto.createHash("md5").update(fileContent).digest("hex"),
+          syncedAt: new Date(),
+        },
         { upsert: true }
       );
       res.json({ success: true, path: filePath });
@@ -534,6 +541,45 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       });
 
       res.json({ success: true, port: result.port, pid: result.pid });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Running Status & Logs ────────────────────────────────────────────────
+
+  app.get("/api/sandbox/projects/:id/status", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { isRunning, getProcessInfo } = await import("./sandbox-runner");
+      const pid = String(ctx.project._id);
+      const running = isRunning(pid);
+      const proc = getProcessInfo(pid);
+      res.json({
+        projectId: pid,
+        isRunning: running,
+        port: running ? ctx.project.port : null,
+        pid: proc?.pid || null,
+        uptime: proc ? Date.now() - proc.startedAt : 0,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/sandbox/projects/:id/logs", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { getProcessInfo } = await import("./sandbox-runner");
+      const proc = getProcessInfo(String(ctx.project._id));
+      if (!proc) return res.json({ logs: [], message: "لا توجد عملية قيد التشغيل" });
+      res.json({
+        logs: proc.logs || [],
+        pid: proc.pid,
+        startedAt: proc.startedAt,
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -712,7 +758,13 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
         const { SandboxFileModel } = await import("./models");
         await SandboxFileModel.findOneAndUpdate(
           { projectId: ctx.project._id, path: targetFile },
-          { type: "file", size: Buffer.byteLength(code), syncedAt: new Date() },
+          {
+            type: "file",
+            content: code,
+            size: Buffer.byteLength(code),
+            hash: crypto.createHash("md5").update(code).digest("hex"),
+            syncedAt: new Date(),
+          },
           { upsert: true }
         );
       }
@@ -1059,11 +1111,22 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       if (req.url?.startsWith("/sandbox/") && req.url?.includes("/preview")) {
         try {
           const match = req.url.match(/^\/sandbox\/([^/]+)\/preview/);
-          if (!match) return;
+          if (!match) { socket.destroy(); return; }
           const projectId = match[1];
           const { SandboxProjectModel } = await import("./models");
           const project = await SandboxProjectModel.findById(projectId);
           if (!project || !project.port) { socket.destroy(); return; }
+
+          if (project.visibility !== "public") {
+            const cookies = (req.headers.cookie || "").split(";").reduce((acc: Record<string, string>, c: string) => {
+              const [k, ...v] = c.trim().split("=");
+              if (k) acc[k] = v.join("=");
+              return acc;
+            }, {} as Record<string, string>);
+            const sessionId = cookies["connect.sid"];
+            if (!sessionId) { socket.destroy(); return; }
+          }
+
           const proxy = getOrCreateProxy(project.port, String(project._id));
           (proxy as any).upgrade(req, socket, head);
         } catch {
