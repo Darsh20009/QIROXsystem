@@ -109,8 +109,26 @@ wss.on("connection", (ws) => {
 
       // ── Sandbox Log Subscription ──────────────────────────────────────────
       if (msg.type === "sandbox_subscribe" && msg.projectId) {
-        subscribeSandboxLogs(userId, String(msg.projectId));
-        ws.send(JSON.stringify({ type: "sandbox_subscribed", projectId: msg.projectId }));
+        (async () => {
+          try {
+            const { SandboxProjectModel } = await import("./models");
+            const { UserModel } = await import("./models");
+            const project = await SandboxProjectModel.findById(msg.projectId);
+            if (!project) { ws.send(JSON.stringify({ type: "sandbox_error", error: "المشروع غير موجود" })); return; }
+            const ownerId = String(project.owner);
+            if (ownerId !== userId) {
+              const user = await UserModel.findById(userId);
+              if (!user || (user.role !== "admin" && user.role !== "manager")) {
+                ws.send(JSON.stringify({ type: "sandbox_error", error: "غير مصرح" }));
+                return;
+              }
+            }
+            subscribeSandboxLogs(userId, String(msg.projectId));
+            ws.send(JSON.stringify({ type: "sandbox_subscribed", projectId: msg.projectId }));
+          } catch {
+            ws.send(JSON.stringify({ type: "sandbox_error", error: "خطأ في الاشتراك" }));
+          }
+        })();
         return;
       }
       if (msg.type === "sandbox_unsubscribe" && msg.projectId) {
