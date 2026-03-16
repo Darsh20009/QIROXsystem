@@ -215,6 +215,25 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "submit_consultation_request",
+      description: "إرسال طلب استشارة أو تواصل باسم زائر أو عميل. يجمع الذكاء الاصطناعي الاسم ورقم الهاتف والموضوع من المحادثة ثم يُرسل الطلب للفريق. يعمل بدون تسجيل دخول. استخدم هذه الأداة عندما يطلب الزائر التواصل أو الاستشارة أو المتابعة.",
+      parameters: {
+        type: "object",
+        required: ["clientName", "clientPhone", "topic"],
+        properties: {
+          clientName: { type: "string", description: "اسم العميل أو الزائر الكامل" },
+          clientPhone: { type: "string", description: "رقم هاتف العميل (مع رمز الدولة إن أمكن)" },
+          topic: { type: "string", description: "موضوع الاستشارة أو الطلب (مثال: تطوير متجر إلكتروني، استفسار عن الأسعار، إلخ)" },
+          clientEmail: { type: "string", description: "البريد الإلكتروني (اختياري)" },
+          message: { type: "string", description: "تفاصيل إضافية أو ملاحظات" },
+          consultationType: { type: "string", enum: ["phone", "video", "any"], description: "نوع التواصل المفضّل (افتراضي: phone)" },
+        },
+      },
+    },
+  },
 ];
 
 /* ─── Tool Executor ─── */
@@ -482,6 +501,59 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
       return { success: true, data: { results: result }, display: { type: "web_results" } };
     }
 
+    /* ── submit_consultation_request ── */
+    if (name === "submit_consultation_request") {
+      if (!args.clientName?.trim()) return { success: false, error: "اسم العميل مطلوب" };
+      if (!args.clientPhone?.trim()) return { success: false, error: "رقم الهاتف مطلوب" };
+      if (!args.topic?.trim()) return { success: false, error: "موضوع الاستشارة مطلوب" };
+
+      const { ConsultationBookingModel, UserModel } = await import("./models");
+
+      const booking = await ConsultationBookingModel.create({
+        clientName: args.clientName.trim(),
+        clientEmail: args.clientEmail?.trim() || "",
+        clientPhone: args.clientPhone.trim(),
+        clientId: userId || null,
+        consultationType: args.consultationType || "phone",
+        topic: args.topic.trim(),
+        notes: args.message?.trim() || "طلب وارد عبر مساعد QIROX الذكي",
+        status: "pending",
+        source: "ai_assistant",
+      });
+
+      // Notify admins/managers
+      try {
+        const { sendConsultationNotificationEmail } = await import("./email");
+        const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }, { email: 1, fullName: 1 });
+        for (const staff of admins) {
+          if (staff.email) {
+            sendConsultationNotificationEmail(staff.email, staff.fullName || staff.email, {
+              bookingId: String((booking as any)._id || (booking as any).id),
+              clientName: args.clientName.trim(),
+              clientEmail: args.clientEmail?.trim() || "غير محدد",
+              clientPhone: args.clientPhone.trim(),
+              date: "سيتم التواصل في أقرب وقت",
+              startTime: "", endTime: "",
+              consultationType: args.consultationType || "phone",
+              topic: args.topic.trim(),
+            }).catch(() => {});
+          }
+        }
+      } catch {}
+
+      return {
+        success: true,
+        data: {
+          bookingId: String((booking as any)._id || (booking as any).id),
+          clientName: args.clientName,
+          clientPhone: args.clientPhone,
+          topic: args.topic,
+          status: "pending",
+        },
+        display: { type: "consultation_submitted" },
+      };
+    }
+
     return { success: false, error: `أداة غير معروفة: ${name}` };
   } catch (err: any) {
     console.error(`[AI Tool Error] ${name}:`, err.message);
@@ -505,7 +577,7 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
     sales_manager: "يمكنك عرض العملاء والطلبات وإرسال الإشعارات.",
     accountant: "يمكنك عرض التحليلات المالية والطلبات والمحافظ.",
     client: "يمكنك عرض طلباتك ومشاريعك ورصيد محفظتك، وإلغاء الطلبات المعلّقة، وإرسال تذاكر دعم.",
-    guest: "أنت زائر — يمكنني مساعدتك في فهم المنصة واختيار الباقة المناسبة.",
+    guest: "أنت زائر — يمكنني مساعدتك في فهم المنصة واختيار الباقة المناسبة وإرسال طلب تواصل أو استشارة مجانية نيابةً عنك.",
   };
 
   return `أنت **QIROX AI** — المساعد الذكي الرسمي والعامل لمنصة QIROX Studio.
@@ -522,6 +594,13 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
 - ✏️ **تعديل البيانات**: تغيير حالة الطلبات، إنشاء المهام، تحديث الملاحظات
 - 📩 **الإرسال**: إشعارات فورية، تذاكر دعم، بريد إلكتروني
 - 🗑️ **الإلغاء**: إلغاء الطلبات المعلّقة (للعملاء فقط)
+- 📅 **للزوار بدون حساب**: إرسال طلب استشارة أو تواصل باسم الزائر ورقمه مباشرةً (أداة submit_consultation_request)
+
+== تعليمات لمعالجة طلبات الاستشارة من الزوار ==
+- إذا طلب زائر (guest) التواصل أو الاستشارة أو أراد أن "يتواصل الفريق معه"، لا تقل له سجّل دخول!
+- بدلاً من ذلك: اطلب منه اسمه الكريم ورقم هاتفه وما يريده.
+- بمجرد حصولك على هذه المعلومات من المحادثة، استخدم أداة submit_consultation_request فوراً لإرسال الطلب للفريق.
+- أكّد للزائر أن الفريق سيتواصل معه قريباً على رقمه.
 
 == تعليمات مهمة ==
 1. **استخدم الأدوات بذكاء**: عندما يطلب المستخدم أي بيانات أو عملية، استخدم الأداة المناسبة مباشرة ولا تسأل كثيراً.

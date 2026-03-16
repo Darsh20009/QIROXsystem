@@ -785,7 +785,7 @@ const consultationBookingSchema = new mongoose.Schema({
   slotId: { type: mongoose.Schema.Types.ObjectId, ref: 'ConsultationSlot' },
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   clientName: { type: String, required: true },
-  clientEmail: { type: String, required: true },
+  clientEmail: { type: String, default: "" },
   clientPhone: String,
   employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   employeeName: String,
