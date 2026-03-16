@@ -196,10 +196,11 @@ async function getOpenAIClient() {
   });
 }
 
-const proxyCache = new Map<number, ReturnType<typeof createProxyMiddleware>>();
+const proxyCache = new Map<string, ReturnType<typeof createProxyMiddleware>>();
 
 function getOrCreateProxy(port: number, projectId: string) {
-  if (proxyCache.has(port)) return proxyCache.get(port)!;
+  const cacheKey = `${projectId}:${port}`;
+  if (proxyCache.has(cacheKey)) return proxyCache.get(cacheKey)!;
   const proxy = createProxyMiddleware({
     target: `http://127.0.0.1:${port}`,
     changeOrigin: true,
@@ -213,8 +214,12 @@ function getOrCreateProxy(port: number, projectId: string) {
       },
     },
   });
-  proxyCache.set(port, proxy);
+  proxyCache.set(cacheKey, proxy);
   return proxy;
+}
+
+function invalidateProxy(projectId: string, port: number): void {
+  proxyCache.delete(`${projectId}:${port}`);
 }
 
 export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): void {
@@ -343,6 +348,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const { deleteProjectDir } = await import("./sandbox-fs");
       const { SandboxProjectModel, SandboxEnvVarModel, SandboxFileModel, SandboxDeploymentModel } = await import("./models");
       const pid = String(ctx.project._id);
+      if (ctx.project.port) invalidateProxy(pid, ctx.project.port);
       await stopProcess(pid);
       deleteProjectDir(pid);
       await SandboxEnvVarModel.deleteMany({ projectId: ctx.project._id });
@@ -532,7 +538,9 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     try {
       const { stopProcess } = await import("./sandbox-runner");
       const { SandboxProjectModel } = await import("./models");
+      const oldPort = ctx.project.port;
       await stopProcess(String(ctx.project._id));
+      if (oldPort) invalidateProxy(String(ctx.project._id), oldPort);
       await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, {
         status: "stopped",
         port: null,
