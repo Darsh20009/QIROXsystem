@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import SARIcon from "@/components/SARIcon";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 import {
   Loader2, Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowUpRight, ArrowDownLeft,
   Clock, CreditCard, Eye, EyeOff, Copy, Share2, Lock, Plus, Building2,
@@ -144,6 +145,8 @@ function QiroxPayCard({ card, showNumber, onToggle }: {
 
 export default function ClientWallet() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [showNumber, setShowNumber] = useState(false);
   const [activeTab, setActiveTab] = useState<"card" | "transactions" | "topup">("card");
 
@@ -246,7 +249,7 @@ export default function ClientWallet() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/card"] });
       toast({ title: "تم إنشاء بطاقة Qirox Pay بنجاح!" });
     },
-    onError: () => toast({ title: "فشل إنشاء البطاقة", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إنشاء البطاقة" : "Failed to create card", variant: "destructive" }),
   });
 
   // Set payment password
@@ -331,17 +334,17 @@ export default function ClientWallet() {
   function copyCardNumber() {
     if (!cardData?.cardNumber) return;
     navigator.clipboard.writeText(fmtCard(cardData.cardNumber));
-    toast({ title: "تم نسخ رقم البطاقة" });
+    toast({ title: L ? "تم نسخ رقم البطاقة" : "Card number copied" });
   }
 
   const tabs = [
-    { id: "card", label: "بطاقتي" },
-    { id: "transactions", label: "المعاملات" },
-    { id: "topup", label: "طلبات الشحن" },
+    { id: "card", label: L ? "بطاقتي" : "My Card" },
+    { id: "transactions", label: L ? "المعاملات" : "Transactions" },
+    { id: "topup", label: L ? "طلبات الشحن" : "Top-up Requests" },
   ] as const;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Header */}
@@ -430,7 +433,7 @@ export default function ClientWallet() {
                   <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-300/60 dark:border-amber-700/40 p-4 flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">البطاقة تحتاج تفعيل</p>
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-300">{L ? "البطاقة تحتاج تفعيل" : "Card Needs Activation"}</p>
                       <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
                         لاستخدام البطاقة في الدفع أو السماح للآخرين بالدفع منها، يجب تعيين كلمة مرور الدفع أولاً.
                       </p>
@@ -452,9 +455,9 @@ export default function ClientWallet() {
                   </div>
                   <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                     {[
-                      { label: "رقم البطاقة", value: fmtCard(cardData.cardNumber!), mono: true },
-                      { label: "اسم حامل البطاقة", value: cardData.holderName },
-                      { label: "تاريخ الانتهاء", value: "12/99" },
+                      { label: L ? "رقم البطاقة" : "Card Number", value: fmtCard(cardData.cardNumber!), mono: true },
+                      { label: L ? "اسم حامل البطاقة" : "Holder Name", value: cardData.holderName },
+                      { label: L ? "تاريخ الانتهاء" : "Expiry Date", value: "12/99" },
                       { label: "كلمة مرور الدفع", value: cardData.hasPin ? "••••••••  (مُفعَّلة ✓)" : "⚠ غير مُعيَّنة — البطاقة غير مفعّلة" },
                       { label: "حالة البطاقة", value: (cardData.cardActive && cardData.hasPin) ? "نشطة ومفعّلة ✓" : cardData.cardActive ? "البطاقة موجودة — تحتاج تعيين كلمة المرور" : "غير نشطة" },
                     ].map(({ label, value, mono }) => (
@@ -633,7 +636,7 @@ export default function ClientWallet() {
 
       {/* === Payment Password Modal === */}
       <Dialog open={pinModal} onOpenChange={setPinModal}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Lock className="w-4 h-4 text-cyan-500" />
@@ -690,7 +693,7 @@ export default function ClientWallet() {
 
       {/* === PayPal Topup Modal === */}
       <Dialog open={paypalTopupModal} onOpenChange={v => { setPaypalTopupModal(v); if (!v) setPaypalAmount(""); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Zap className="w-4 h-4 text-[#FFC439]" />
@@ -753,7 +756,7 @@ export default function ClientWallet() {
 
       {/* === Topup Modal === */}
       <Dialog open={topupModal} onOpenChange={setTopupModal}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Building2 className="w-4 h-4 text-cyan-500" />
@@ -819,7 +822,7 @@ export default function ClientWallet() {
 
       {/* === Pay with another's card (OTP) Modal === */}
       <Dialog open={payOtpModal} onOpenChange={v => { setPayOtpModal(v); if (!v) { setShareStep("form"); setShareResult(null); setShareOtp(""); } }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-cyan-500" />

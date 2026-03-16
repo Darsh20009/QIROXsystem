@@ -17,7 +17,8 @@ export default function VerifyEmail() {
   const { data: user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { dir } = useI18n();
+  const { dir, lang } = useI18n();
+  const L = lang === "ar";
 
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -164,10 +165,10 @@ export default function VerifyEmail() {
           <div className="w-full max-w-md mb-6">
             <div className="flex items-center justify-between mb-2">
               {[
-                { n: 1, label: "البيانات", done: true },
-                { n: 2, label: "البريد", done: false, active: true },
-                { n: 3, label: "الجوال", done: false },
-                { n: 4, label: "الترحيب", done: false },
+                { n: 1, label: L ? "البيانات" : "Info", done: true },
+                { n: 2, label: L ? "البريد" : "Email", done: false, active: true },
+                { n: 3, label: L ? "الجوال" : "Phone", done: false },
+                { n: 4, label: L ? "الترحيب" : "Welcome", done: false },
               ].map((step, i) => (
                 <div key={step.n} className="flex items-center gap-1">
                   <div className={`flex items-center gap-1.5 ${step.active ? "text-black" : step.done ? "text-emerald-600" : "text-black/25"}`}>
@@ -217,14 +218,14 @@ export default function VerifyEmail() {
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }}>
                 <h1 className="text-3xl font-black text-black font-heading mb-2">
-                  أهلاً بك{verifySuccess.name ? `، ${verifySuccess.name.split(" ")[0]}` : ""}!
+                  {L ? `أهلاً بك${verifySuccess.name ? `، ${verifySuccess.name.split(" ")[0]}` : ""}!` : `Welcome${verifySuccess.name ? `, ${verifySuccess.name.split(" ")[0]}` : ""}!`}
                 </h1>
-                <p className="text-black/40 text-sm mb-6 leading-relaxed">تم تفعيل حسابك بنجاح — لوحة تحكمك جاهزة الآن</p>
+                <p className="text-black/40 text-sm mb-6 leading-relaxed">{L ? "تم تفعيل حسابك بنجاح — لوحة تحكمك جاهزة الآن" : "Your account has been verified — your dashboard is ready"}</p>
                 <div className="space-y-2.5 mb-8">
                   {[
-                    { icon: Star, text: "تقديم طلبك الأول ومتابعة مراحل التنفيذ" },
-                    { icon: Sparkles, text: "التواصل المباشر مع فريق QIROX Studio" },
-                    { icon: ArrowRight, text: "متابعة مشاريعك ونسبة الإتمام" },
+                    { icon: Star, text: L ? "تقديم طلبك الأول ومتابعة مراحل التنفيذ" : "Place your first order and track execution stages" },
+                    { icon: Sparkles, text: L ? "التواصل المباشر مع فريق QIROX Studio" : "Direct communication with the QIROX Studio team" },
+                    { icon: ArrowRight, text: L ? "متابعة مشاريعك ونسبة الإتمام" : "Track your projects and completion rate" },
                   ].map(({ icon: Icon, text }, idx) => (
                     <motion.div
                       key={idx}
@@ -242,7 +243,7 @@ export default function VerifyEmail() {
                 </div>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="flex items-center justify-center gap-2 text-xs text-black/30">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>جارٍ الانتقال للوحة التحكم...</span>
+                  <span>{L ? "جارٍ الانتقال للوحة التحكم..." : "Redirecting to your dashboard..."}</span>
                 </motion.div>
               </motion.div>
             </motion.div>
@@ -260,9 +261,9 @@ export default function VerifyEmail() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black mb-4">
                   <ShieldCheck className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-black font-heading text-black mb-2">تأكيد البريد الإلكتروني</h1>
+                <h1 className="text-2xl font-black font-heading text-black mb-2">{L ? "تأكيد البريد الإلكتروني" : "Verify Your Email"}</h1>
                 <p className="text-black/40 text-sm leading-relaxed">
-                  أرسلنا رمز التحقق المكوّن من 6 أرقام إلى<br />
+                  {L ? "أرسلنا رمز التحقق المكوّن من 6 أرقام إلى" : "We sent a 6-digit verification code to"}<br />
                   <span className="text-black font-semibold" dir="ltr">{(user as any).email}</span>
                 </p>
               </div>
@@ -271,9 +272,9 @@ export default function VerifyEmail() {
               <div className="bg-red-50 border border-red-200/60 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-red-800 text-xs font-semibold mb-0.5">حسابك مقفل مؤقتاً</p>
+                  <p className="text-red-800 text-xs font-semibold mb-0.5">{L ? "حسابك مقفل مؤقتاً" : "Account Temporarily Locked"}</p>
                   <p className="text-red-700 text-[11px] leading-relaxed">
-                    يجب تفعيل البريد الإلكتروني قبل الوصول للوحة التحكم. أدخل الرمز المُرسل إليك لإلغاء القفل.
+                    {L ? "يجب تفعيل البريد الإلكتروني قبل الوصول للوحة التحكم. أدخل الرمز المُرسل إليك لإلغاء القفل." : "You must verify your email before accessing the dashboard. Enter the code sent to you to unlock."}
                   </p>
                 </div>
               </div>
@@ -282,9 +283,9 @@ export default function VerifyEmail() {
               <div className="bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
                 <span className="text-amber-500 text-base mt-0.5 flex-shrink-0">⚠️</span>
                 <div>
-                  <p className="text-amber-800 text-xs font-semibold mb-0.5">لم يصل البريد؟</p>
+                  <p className="text-amber-800 text-xs font-semibold mb-0.5">{L ? "لم يصل البريد؟" : "Didn't receive the email?"}</p>
                   <p className="text-amber-700 text-[11px] leading-relaxed">
-                    تحقق من مجلد <strong>الإسبام / Spam</strong> — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.
+                    {L ? <>تحقق من مجلد <strong>الإسبام / Spam</strong> — أحياناً تصل الرسائل هناك. إذا لم تجده، اضغط "إعادة إرسال الرمز" أدناه.</> : <>Check your <strong>Spam</strong> folder — emails sometimes land there. If not found, click "Resend Code" below.</>}
                   </p>
                 </div>
               </div>
@@ -326,7 +327,7 @@ export default function VerifyEmail() {
                 data-testid="button-verify-email-page"
               >
                 {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                  <><CheckCircle2 className="w-4 h-4 ml-2" />تأكيد وتفعيل الحساب</>
+                  <><CheckCircle2 className="w-4 h-4 ml-2" />{L ? "تأكيد وتفعيل الحساب" : "Verify & Activate Account"}</>
                 )}
               </Button>
 
@@ -339,9 +340,9 @@ export default function VerifyEmail() {
                   data-testid="button-resend-otp-page"
                 >
                   {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                  إعادة إرسال الرمز
+                  {L ? "إعادة إرسال الرمز" : "Resend Code"}
                 </button>
-                <p className="text-[11px] text-black/25">الرمز صالح لمدة 30 دقيقة</p>
+                <p className="text-[11px] text-black/25">{L ? "الرمز صالح لمدة 30 دقيقة" : "Code valid for 30 minutes"}</p>
               </div>
             </motion.div>
           )}

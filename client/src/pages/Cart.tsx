@@ -25,6 +25,7 @@ import { Link, useLocation } from "wouter";
 import type { Cart, CartItem } from "@shared/schema";
 import { useUser } from "@/hooks/use-auth";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 /* ─── Bank info fallback ─────────────────────────────────────────── */
 const BANK_FALLBACK = {
@@ -89,6 +90,8 @@ export default function Cart() {
   const { data: user } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
 
   /* add-on dialog states */
   const [coupon, setCoupon] = useState("");
@@ -435,7 +438,7 @@ export default function Cart() {
 
   /* ─── Checkout Done Screen ─── */
   if (checkoutDone) return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-x-hidden" dir={dir}>
       <div className="max-w-xl mx-auto px-4 pt-10 pb-28 space-y-5">
 
         {/* Success hero */}
@@ -447,9 +450,9 @@ export default function Cart() {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h2 className="text-3xl font-black text-black mb-2">تم استلام طلبك!</h2>
+          <h2 className="text-3xl font-black text-black mb-2">{L ? "تم استلام طلبك!" : "Order Received!"}</h2>
           {savedOrderId && (
-            <p className="text-black/40 text-sm">رقم الطلب: <span className="font-mono font-black text-black">{savedOrderId}</span></p>
+            <p className="text-black/40 text-sm">{L ? "رقم الطلب:" : "Order #:"} <span className="font-mono font-black text-black">{savedOrderId}</span></p>
           )}
         </motion.div>
 
@@ -612,7 +615,7 @@ export default function Cart() {
 
   /* ─── Main Cart ─── */
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative" dir={dir}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="minimal" /></div>
 
       {/* Sticky Header */}
@@ -626,18 +629,18 @@ export default function Cart() {
             </Link>
             <div>
               <h1 className="text-base font-black text-black flex items-center gap-2">
-                سلة التسوق
+                {L ? "سلة التسوق" : "Shopping Cart"}
                 {items.length > 0 && (
                   <span className="w-5 h-5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">{items.length}</span>
                 )}
               </h1>
-              <p className="text-[10px] text-black/35 mt-0.5">راجع طلبك قبل الإتمام</p>
+              <p className="text-[10px] text-black/35 mt-0.5">{L ? "راجع طلبك قبل الإتمام" : "Review your order before completing"}</p>
             </div>
           </div>
           {items.length > 0 && (
             <Button variant="ghost" className="text-red-400 hover:text-red-600 text-xs gap-1.5 h-8" onClick={() => clearMutation.mutate()} disabled={clearMutation.isPending} data-testid="button-clear-cart">
               <Trash2 className="w-3.5 h-3.5" />
-              إفراغ السلة
+              {L ? "إفراغ السلة" : "Clear Cart"}
             </Button>
           )}
         </div>
@@ -649,8 +652,8 @@ export default function Cart() {
           <div className="w-24 h-24 bg-white border border-black/[0.07] rounded-3xl flex items-center justify-center mx-auto mb-6">
             <ShoppingCart className="w-11 h-11 text-black/15" />
           </div>
-          <h3 className="text-xl font-black text-black mb-2">السلة فارغة</h3>
-          <p className="text-black/40 text-sm mb-10 leading-relaxed">لم تضف أي خدمات بعد. تصفح خدماتنا واختر ما يناسب مشروعك</p>
+          <h3 className="text-xl font-black text-black mb-2">{L ? "السلة فارغة" : "Your Cart is Empty"}</h3>
+          <p className="text-black/40 text-sm mb-10 leading-relaxed">{L ? "لم تضف أي خدمات بعد. تصفح خدماتنا واختر ما يناسب مشروعك" : "You haven't added any services yet. Browse our services and choose what suits your project"}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/prices">
               <Button className="premium-btn gap-2 px-6" data-testid="button-browse-services">
@@ -958,7 +961,7 @@ export default function Cart() {
 
       {/* ═══════ Pre-Checkout Dialog ═══════ */}
       <Dialog open={preCheckoutOpen} onOpenChange={open => { if (!checkoutMutation.isPending) setPreCheckoutOpen(open); }}>
-        <DialogContent className="w-[95vw] max-w-lg max-h-[92dvh] p-0 overflow-hidden rounded-2xl" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[92dvh] p-0 overflow-hidden rounded-2xl" dir={dir}>
 
           {/* Gradient Header */}
           <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black px-6 pt-6 pb-5 relative overflow-hidden">
@@ -1369,7 +1372,7 @@ export default function Cart() {
 
       {/* ═══════ Extra Addon Confirm Dialog ═══════ */}
       <Dialog open={!!extraAddonConfirm} onOpenChange={() => setExtraAddonConfirm(null)}>
-        <DialogContent className="w-[95vw] max-w-sm" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -1411,7 +1414,7 @@ export default function Cart() {
 
       {/* MongoDB */}
       <Dialog open={addOnDialog === 'db'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
@@ -1447,7 +1450,7 @@ export default function Cart() {
 
       {/* AWS */}
       <Dialog open={addOnDialog === 'aws'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir="rtl">
+        <DialogContent className="w-[95vw] max-w-md max-h-[88dvh]" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -1483,7 +1486,7 @@ export default function Cart() {
 
       {/* Domain */}
       <Dialog open={addOnDialog === 'domain'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -1535,7 +1538,7 @@ export default function Cart() {
 
       {/* Email */}
       <Dialog open={addOnDialog === 'email'} onOpenChange={() => setAddOnDialog(null)}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center">
@@ -1566,7 +1569,7 @@ export default function Cart() {
 
       {/* ═══════ Wallet PIN Confirmation Modal ═══════ */}
       <Dialog open={walletPinModal} onOpenChange={v => { setWalletPinModal(v); if (!v) setWalletPinInput(""); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Lock className="w-4 h-4 text-cyan-500" />

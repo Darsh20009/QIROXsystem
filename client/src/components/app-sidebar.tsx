@@ -71,6 +71,7 @@ export function AppSidebar() {
     { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client", section: "shopping" },
     // Client — services
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client", section: "services" },
+    { title: ar ? "اجتماعاتي" : "My Meetings", icon: Video, url: "/qmeet", group: "client", section: "services" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client", section: "services" },
     { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client", section: "services" },
     { title: ar ? "تذكيرني قبل انتهاء اشتراكي" : "Renewal Reminder", icon: Bell, url: "/switch-reminder", group: "client", section: "services" },

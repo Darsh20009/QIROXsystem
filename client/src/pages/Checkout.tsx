@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -45,13 +46,14 @@ interface AddressData {
 
 interface UpFile { url: string; filename: string; }
 
-const STEP_LABELS = [
-  { id: 1, label: "عنوان الاستلام", icon: MapPin },
-  { id: 2, label: "طريقة الدفع",   icon: CreditCard },
-  { id: 3, label: "تأكيد الطلب",   icon: CheckCircle2 },
-];
-
 function StepBar({ step }: { step: Step }) {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+  const STEP_LABELS = [
+    { id: 1, label: L ? "عنوان الاستلام" : "Delivery Address", icon: MapPin },
+    { id: 2, label: L ? "طريقة الدفع" : "Payment Method",   icon: CreditCard },
+    { id: 3, label: L ? "تأكيد الطلب" : "Confirm Order",   icon: CheckCircle2 },
+  ];
   return (
     <div className="flex items-center justify-center gap-0 mb-8 select-none">
       {STEP_LABELS.map((s, i) => {
@@ -115,6 +117,8 @@ export default function Checkout() {
   const { data: user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const proofRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>(1);
@@ -408,7 +412,7 @@ export default function Checkout() {
     // OTP verification sub-step
     if (pendingVerifyEmail) {
       return (
-        <div className="min-h-screen flex flex-col bg-gray-50/50" dir="rtl">
+        <div className="min-h-screen flex flex-col bg-gray-50/50" dir={dir}>
           <Navigation />
           <div className="flex-1 flex items-center justify-center px-4 py-12">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-black/[0.06] dark:border-white/[0.06] p-8 text-center">
@@ -434,7 +438,7 @@ export default function Checkout() {
 
     // Login / Register tabs
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50/50" dir="rtl">
+      <div className="min-h-screen flex flex-col bg-gray-50/50" dir={dir}>
         <Navigation />
         <div className="flex-1 flex items-center justify-center px-4 py-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
@@ -531,7 +535,7 @@ export default function Checkout() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50/50" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-gray-50/50" dir={dir}>
       <Navigation />
       <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-8">
         {step < 3 && <StepBar step={step} />}
@@ -545,8 +549,8 @@ export default function Checkout() {
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 mb-3">
                     <MapPin className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-black text-black">عنوان الاستلام</h2>
-                  <p className="text-black/40 text-sm mt-1">أدخل بيانات المستلم والعنوان</p>
+                  <h2 className="text-2xl font-black text-black">{L ? "عنوان الاستلام" : "Delivery Address"}</h2>
+                  <p className="text-black/40 text-sm mt-1">{L ? "أدخل بيانات المستلم والعنوان" : "Enter recipient details and address"}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -693,7 +697,7 @@ export default function Checkout() {
                   className="w-full h-13 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base gap-2 shadow-lg shadow-blue-600/20"
                   data-testid="button-next-payment"
                 >
-                  التالي: طريقة الدفع
+                  {L ? "التالي: طريقة الدفع" : "Next: Payment Method"}
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </div>
@@ -747,7 +751,7 @@ export default function Checkout() {
                       </div>
                     )}
                     <div className="px-5 py-4 flex justify-between items-center bg-gray-50">
-                      <span className="font-black text-black">الإجمالي</span>
+                      <span className="font-black text-black">{L ? "الإجمالي" : "Total"}</span>
                       <span className="font-black text-xl text-black flex items-center gap-1.5">
                         {total.toLocaleString()} <SARIcon size={13} className="opacity-70" />
                       </span>
@@ -781,7 +785,7 @@ export default function Checkout() {
                 {/* Payment Methods */}
                 <div className="bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
                   <div className="px-5 py-4 bg-gray-50 border-b border-black/[0.05]">
-                    <span className="text-xs font-black text-black/40 uppercase tracking-wider">اختر طريقة الدفع</span>
+                    <span className="text-xs font-black text-black/40 uppercase tracking-wider">{L ? "اختر طريقة الدفع" : "Choose Payment Method"}</span>
                   </div>
                   <div className="p-4 space-y-3">
 
@@ -954,7 +958,7 @@ export default function Checkout() {
 
                 <div className="flex gap-3">
                   <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12 rounded-2xl gap-2" data-testid="button-back-address">
-                    <ArrowRight className="w-4 h-4" /> السابق
+                    <ArrowRight className="w-4 h-4" /> {L ? "السابق" : "Back"}
                   </Button>
                   <Button
                     onClick={() => submitMutation.mutate()}

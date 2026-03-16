@@ -143,6 +143,7 @@ const ClientContracts = lazy(() => import("@/pages/ClientContracts"));
 const AdminSLA = lazy(() => import("@/pages/AdminSLA"));
 const AdminLoyalty = lazy(() => import("@/pages/AdminLoyalty"));
 const ClientLoyalty = lazy(() => import("@/pages/ClientLoyalty"));
+const ClientQMeet = lazy(() => import("@/pages/ClientQMeet"));
 const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
@@ -285,6 +286,7 @@ function AdminRouter() {
         <Route path="/admin/push-notifications" component={AdminPushNotifications} />
         <Route path="/client/contracts" component={ClientContracts} />
         <Route path="/client/loyalty" component={ClientLoyalty} />
+        <Route path="/qmeet" component={ClientQMeet} />
         <Route path="/supplier/dashboard" component={SupplierDashboard} />
         <Route path="/security/2fa" component={TwoFactorSetup} />
         <Route path="/referral" component={ClientReferral} />

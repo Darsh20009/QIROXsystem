@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,8 @@ const BADGE_DEFS = [
 
 export default function ClientProfile() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -112,7 +115,7 @@ export default function ClientProfile() {
       qc.invalidateQueries({ queryKey: ["/api/profile/me"] });
       qc.invalidateQueries({ queryKey: ["/api/user"] });
       setEditing(false);
-      toast({ title: "✅ تم حفظ الملف الشخصي" });
+      toast({ title: L ? "✅ تم حفظ الملف الشخصي" : "✅ Profile saved" });
     },
     onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
   });
@@ -177,7 +180,7 @@ export default function ClientProfile() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pb-16 space-y-5" dir="rtl">
+    <div className="max-w-2xl mx-auto px-4 pb-16 space-y-5" dir={dir}>
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-indigo-600/10 to-pink-500/10 dark:from-violet-900/30 dark:via-indigo-900/20 dark:to-pink-900/20" />
@@ -217,7 +220,7 @@ export default function ClientProfile() {
                   <Input
                     value={form.jobTitle ?? ""}
                     onChange={e => setForm(p => ({ ...p, jobTitle: e.target.value }))}
-                    placeholder="المسمى الوظيفي / نوع العمل..."
+                    placeholder={L ? "المسمى الوظيفي / نوع العمل..." : "Job title / Business type..."}
                     className="mt-1 text-sm bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10"
                     data-testid="input-jobtitle"
                   />
@@ -239,7 +242,7 @@ export default function ClientProfile() {
                       data-testid="btn-save-profile"
                     >
                       {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      حفظ
+                      {L ? "حفظ" : "Save"}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditing(false)} data-testid="btn-cancel-edit">
                       <X className="w-3.5 h-3.5" />
@@ -252,7 +255,7 @@ export default function ClientProfile() {
                     className="gap-1 border-black/10 dark:border-white/10 dark:text-white"
                     data-testid="btn-edit-profile"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />تعديل
+                    <Edit3 className="w-3.5 h-3.5" />{L ? "تعديل" : "Edit"}
                   </Button>
                 )}
               </div>
@@ -391,19 +394,19 @@ export default function ClientProfile() {
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <User className="w-4 h-4 text-violet-500" />
-                <h3 className="font-bold text-sm text-gray-900 dark:text-white">معلومات الاتصال</h3>
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white">{L ? "معلومات الاتصال" : "Contact Info"}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">رقم الجوال</label>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "رقم الجوال" : "Phone Number"}</label>
                   <Input value={form.phone ?? ""} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+966..." className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10" data-testid="input-phone" />
                 </div>
                 <div>
-                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">الدولة</label>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "الدولة" : "Country"}</label>
                   <Input value={form.country ?? ""} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} placeholder="المملكة العربية السعودية" className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10" data-testid="input-country" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">نوع العمل / الشركة</label>
+                  <label className="text-xs text-black/40 dark:text-white/40 mb-1 block">{L ? "نوع العمل / الشركة" : "Business / Company"}</label>
                   <Input value={form.businessType ?? ""} onChange={e => setForm(p => ({ ...p, businessType: e.target.value }))} placeholder="تجارة إلكترونية، مطعم، خدمات..." className="bg-white/50 dark:bg-white/5 border-black/10 dark:border-white/10" data-testid="input-business" />
                 </div>
               </div>
@@ -411,7 +414,7 @@ export default function ClientProfile() {
               <div className="border-t border-black/5 dark:border-white/5 pt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Link2 className="w-4 h-4 text-violet-500" />
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">روابط التواصل الاجتماعي</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{L ? "روابط التواصل الاجتماعي" : "Social Media Links"}</h4>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -446,7 +449,7 @@ export default function ClientProfile() {
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-4 h-4 text-violet-500" />
-              <h3 className="font-bold text-sm text-gray-900 dark:text-white">التواصل الاجتماعي</h3>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white">{L ? "التواصل الاجتماعي" : "Social Media"}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {profile?.instagram && (
@@ -492,7 +495,7 @@ export default function ClientProfile() {
                 </a>
               )}
               {!profile?.instagram && !profile?.twitter && !profile?.snapchat && !profile?.tiktok && !profile?.youtube && !profile?.linktree && (
-                <p className="text-xs text-black/30 dark:text-white/30">لا توجد روابط — اضغط تعديل لإضافتها</p>
+                <p className="text-xs text-black/30 dark:text-white/30">{L ? "لا توجد روابط — اضغط تعديل لإضافتها" : "No links — tap Edit to add them"}</p>
               )}
             </div>
 
