@@ -5258,9 +5258,9 @@ export async function registerRoutes(
     const cacheKey = `badges:${me.id}`;
     try {
       const result = await cache.getOrFetch(cacheKey, async () => {
-        const { InboxMessageModel, SupportTicketModel, OrderModel } = await import("./models");
+        const { InboxMessageModel, SupportTicketModel, OrderModel, ModificationRequestModel, ConsultationBookingModel, ClientDataRequestModel, ContactMessageModel, PhoneRequestModel } = await import("./models");
         const isEmployee = me.role !== "client";
-        const [messages, tickets, orders] = await Promise.all([
+        const [messages, tickets, orders, modRequests, consultations, dataRequests, contactMessages, phoneRequests] = await Promise.all([
           InboxMessageModel.countDocuments({ toUserId: me.id, read: false }),
           isEmployee
             ? SupportTicketModel.countDocuments({ status: { $in: ["open", "in_progress"] } })
@@ -5268,12 +5268,23 @@ export async function registerRoutes(
           isEmployee
             ? OrderModel.countDocuments({ status: "pending" })
             : OrderModel.countDocuments({ userId: me.id, status: "pending" }),
+          isEmployee ? ModificationRequestModel.countDocuments({ status: "pending" }) : Promise.resolve(0),
+          isEmployee ? ConsultationBookingModel.countDocuments({ status: "pending" }) : Promise.resolve(0),
+          isEmployee
+            ? ClientDataRequestModel.countDocuments({ status: { $in: ["pending", "submitted"] } })
+            : ClientDataRequestModel.countDocuments({ userId: me.id, status: { $in: ["pending", "submitted"] } }),
+          isEmployee ? ContactMessageModel.countDocuments({ status: "new" }) : Promise.resolve(0),
+          isEmployee ? (PhoneRequestModel as any).countDocuments({ status: "pending" }) : Promise.resolve(0),
         ]);
-        return { messages, tickets, orders, total: messages + tickets + orders };
+        return {
+          messages, tickets, orders, modRequests, consultations,
+          dataRequests, contactMessages, phoneRequests,
+          total: messages + tickets + orders + modRequests + consultations + dataRequests + contactMessages + phoneRequests,
+        };
       }, CACHE_TTL.BADGES);
       res.json(result);
     } catch {
-      res.json({ messages: 0, tickets: 0, orders: 0, total: 0 });
+      res.json({ messages: 0, tickets: 0, orders: 0, modRequests: 0, consultations: 0, dataRequests: 0, contactMessages: 0, phoneRequests: 0, total: 0 });
     }
   });
 

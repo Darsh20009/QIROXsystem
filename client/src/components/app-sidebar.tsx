@@ -99,9 +99,18 @@ export function AppSidebar() {
     // Employee — work
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
     { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "work" },
-    { title: ar ? "طلبات التعديل" : "Modification Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
+    { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
+    { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "work" },
     { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "work" },
+    { title: ar ? "العربات المهجورة" : "Abandoned Carts", icon: ShoppingCart, url: "/employee/abandoned-carts", group: "employee", section: "work" },
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
+    // Employee — communication
+    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
+    { title: ar ? "مجموعات الفريق" : "Team Groups", icon: Users, url: "/groups", group: "employee", section: "communication" },
+    { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication" },
+    { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "employee", section: "communication" },
+    { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "employee", section: "communication" },
+    { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "employee", section: "communication" },
     // Employee — sales
     { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
@@ -112,9 +121,6 @@ export function AppSidebar() {
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: STAFF_ROLES },
-    // Employee — communication
-    { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
-    { title: ar ? "مجموعات الفريق" : "Team Groups", icon: Users, url: "/groups", group: "employee", section: "communication" },
     // Employee — personal
     { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "personal" },
     { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "personal" },
@@ -203,7 +209,11 @@ export function AppSidebar() {
     { key: "linktree",   Icon: SiLinktree,   color: "#25a244", darkColor: "#43e97b", label: "Linktree" },
   ].filter(s => publicSettings?.[s.key]);
 
-  const { data: badges } = useQuery<{ messages: number; tickets: number; orders: number; total: number }>({
+  const { data: badges } = useQuery<{
+    messages: number; tickets: number; orders: number;
+    modRequests: number; consultations: number; dataRequests: number;
+    contactMessages: number; phoneRequests: number; total: number;
+  }>({
     queryKey: ["/api/badges"],
     enabled: !!user,
     refetchInterval: 30000,
@@ -214,6 +224,11 @@ export function AppSidebar() {
     if (url === "/inbox") return badges.messages;
     if (url === "/support" || url === "/admin/support-tickets") return badges.tickets;
     if (url === "/admin/orders" || url === "/dashboard") return badges.orders;
+    if (url === "/admin/mod-requests") return badges.modRequests || 0;
+    if (url === "/admin/consultations") return badges.consultations || 0;
+    if (url === "/admin/data-requests" || url === "/my-requests") return badges.dataRequests || 0;
+    if (url === "/admin/contact-messages") return badges.contactMessages || 0;
+    if (url === "/admin/phone-verifications") return badges.phoneRequests || 0;
     return 0;
   }
 
@@ -292,8 +307,8 @@ export function AppSidebar() {
     main:          { ar: "",               en: "",                       accent: "" },
     shopping:      { ar: "التسوق",         en: "Shopping",               accent: "text-cyan-600 dark:text-cyan-400" },
     services:      { ar: "خدماتي",        en: "My Services",            accent: "text-[#06b6d4] dark:text-cyan-400" },
-    work:          { ar: "العمل",          en: "Work",                   accent: "text-[#06b6d4] dark:text-cyan-400" },
-    communication: { ar: "التواصل",        en: "Communication",          accent: "text-green-600 dark:text-green-400" },
+    work:          { ar: "العمل والمهام",   en: "Work & Tasks",           accent: "text-[#06b6d4] dark:text-cyan-400" },
+    communication: { ar: "التواصل والخدمات", en: "Communication",        accent: "text-green-600 dark:text-green-400" },
     account:       { ar: "حسابي",          en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
     finance:       { ar: "المالية",        en: "Finance",                accent: "text-amber-600 dark:text-amber-400" },
     sales:         { ar: "المبيعات",       en: "Sales",                  accent: "text-pink-600 dark:text-pink-400" },
