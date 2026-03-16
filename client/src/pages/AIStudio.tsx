@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Sparkles, Calculator, FileText, Globe, Heart, Users, TrendingUp,
   Share2, Video, Copy, Check, Loader2, AlertTriangle, ChevronRight,
-  BarChart3, Clock, DollarSign, Zap, Shield, Star, Wand2, Bot
+  BarChart3, Clock, DollarSign, Zap, Shield, Star, Wand2, Bot, MessageSquare, Wrench
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AIPanel } from "@/components/QiroxAI";
 
 type ToolId = "estimate" | "proposal" | "website" | "sentiment" | "assignment" | "delay" | "social" | "meeting";
 
@@ -613,93 +614,185 @@ function MeetingPanel({ L }: { L: boolean }) {
 export default function AIStudio() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
-  const { user } = useUser();
+  const { data: user } = useUser();
   const [activeTool, setActiveTool] = useState<ToolId>("estimate");
+  // Mobile view: "tools" | "chat"
+  const [mobileView, setMobileView] = useState<"tools" | "chat">("tools");
 
   const activeDef = TOOLS.find(t => t.id === activeTool)!;
 
+  const toolPanel = (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activeTool}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 sm:p-6 h-full"
+      >
+        {/* Tool header */}
+        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06]">
+          <div className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${activeDef.gradient}`}>
+            <activeDef.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${activeDef.color}`} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{L ? activeDef.titleAr : activeDef.titleEn}</h2>
+            <p className="text-white/40 text-xs sm:text-sm truncate">{L ? activeDef.descAr : activeDef.descEn}</p>
+          </div>
+        </div>
+        {activeTool === "estimate" && <EstimatePanel L={L} />}
+        {activeTool === "proposal" && <ProposalPanel L={L} />}
+        {activeTool === "website" && <WebsitePanel L={L} />}
+        {activeTool === "sentiment" && <SentimentPanel L={L} />}
+        {activeTool === "assignment" && <AssignmentPanel L={L} />}
+        {activeTool === "delay" && <DelayPanel L={L} />}
+        {activeTool === "social" && <SocialPanel L={L} />}
+        {activeTool === "meeting" && <MeetingPanel L={L} />}
+      </motion.div>
+    </AnimatePresence>
+  );
+
+  const chatPanel = (
+    <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col h-full">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.07] bg-gradient-to-r from-cyan-950/40 to-purple-950/30 flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}>
+          <Sparkles className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div>
+          <div className="text-white text-sm font-bold">{L ? "مساعد QIROX الذكي" : "QIROX AI Assistant"}</div>
+          <div className="text-white/40 text-[11px]">{L ? "اسألني أي شيء عن المشاريع والطلبات" : "Ask me anything about projects & orders"}</div>
+        </div>
+        <div className="ms-auto w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+      </div>
+      <div className="flex-1 min-h-0">
+        <AIPanel className="h-full" />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#0a0b0f] text-white" dir={dir}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-slate-900/60 border-b border-white/[0.06] px-6 py-5">
-        <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-            <Bot className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-[#0a0b0f] text-white flex flex-col" dir={dir}>
+
+      {/* ── Header ── */}
+      <div className="bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-slate-900/60 border-b border-white/[0.06] px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center gap-3">
+          <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+            <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">{L ? "QIROX AI Studio" : "QIROX AI Studio"}</h1>
-            <p className="text-white/50 text-sm">{L ? "8 أدوات ذكاء اصطناعي متقدمة لتحسين الأداء وتوفير الوقت" : "8 advanced AI tools to boost performance and save time"}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-xl font-bold text-white leading-tight">QIROX AI Studio</h1>
+            <p className="text-white/50 text-xs sm:text-sm truncate">
+              {L ? "8 أدوات ذكاء اصطناعي متقدمة لتحسين الأداء" : "8 advanced AI tools to boost performance"}
+            </p>
           </div>
-          <div className="ms-auto">
-            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-xs">
-              <Sparkles className="h-3 w-3 me-1" />
-              GPT-4o
-            </Badge>
-          </div>
+          <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-xs flex-shrink-0">
+            <Sparkles className="h-3 w-3 me-1" /> GPT-4o
+          </Badge>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 flex gap-6">
-        {/* Sidebar — tool list */}
-        <aside className="w-64 flex-shrink-0 space-y-1">
+      {/* ── Mobile tool tabs (scrollable horizontal) ── */}
+      <div className="lg:hidden border-b border-white/[0.06] bg-[#0d0f14] overflow-x-auto flex-shrink-0">
+        <div className="flex gap-1 px-3 py-2 min-w-max">
+          {TOOLS.map(tool => (
+            <button
+              key={tool.id}
+              onClick={() => { setActiveTool(tool.id); setMobileView("tools"); }}
+              data-testid={`tool-tab-${tool.id}`}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[60px] ${
+                activeTool === tool.id && mobileView === "tools"
+                  ? "bg-white/10 border border-white/10"
+                  : "hover:bg-white/5 border border-transparent"
+              }`}
+            >
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${activeTool === tool.id && mobileView === "tools" ? `bg-gradient-to-br ${tool.gradient}` : "bg-white/5"}`}>
+                <tool.icon className={`h-4 w-4 ${activeTool === tool.id && mobileView === "tools" ? tool.color : "text-white/30"}`} />
+              </div>
+              <span className={`text-[10px] font-medium leading-tight text-center ${activeTool === tool.id && mobileView === "tools" ? "text-white" : "text-white/40"}`}>
+                {L ? tool.titleAr.split(" ")[0] : tool.titleEn.split(" ")[0]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Body ── */}
+      <div className="flex-1 flex min-h-0 max-w-7xl mx-auto w-full">
+
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex w-56 xl:w-64 flex-shrink-0 flex-col gap-1 p-4 border-e border-white/[0.06] overflow-y-auto">
           {TOOLS.map(tool => (
             <motion.button
               key={tool.id}
-              whileHover={{ x: L ? -3 : 3 }}
+              whileHover={{ x: L ? -2 : 2 }}
               onClick={() => setActiveTool(tool.id)}
               data-testid={`tool-tab-${tool.id}`}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-start transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-start transition-all ${
                 activeTool === tool.id
                   ? "bg-white/10 border border-white/10"
                   : "hover:bg-white/5 border border-transparent"
               }`}
             >
-              <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${activeTool === tool.id ? `bg-gradient-to-br ${tool.gradient}` : "bg-white/5"}`}>
-                <tool.icon className={`h-4.5 w-4.5 ${activeTool === tool.id ? tool.color : "text-white/30"}`} />
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${activeTool === tool.id ? `bg-gradient-to-br ${tool.gradient}` : "bg-white/5"}`}>
+                <tool.icon className={`h-4 w-4 ${activeTool === tool.id ? tool.color : "text-white/30"}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className={`text-sm font-medium truncate ${activeTool === tool.id ? "text-white" : "text-white/50"}`}>{L ? tool.titleAr : tool.titleEn}</div>
-                <div className="text-xs text-white/30 truncate">{L ? tool.descAr : tool.descEn}</div>
+                <div className={`text-xs font-semibold truncate ${activeTool === tool.id ? "text-white" : "text-white/50"}`}>{L ? tool.titleAr : tool.titleEn}</div>
+                <div className="text-[10px] text-white/30 truncate">{L ? tool.descAr : tool.descEn}</div>
               </div>
-              {activeTool === tool.id && <ChevronRight className={`h-4 w-4 text-white/30 flex-shrink-0 ${L ? "rotate-180" : ""}`} />}
             </motion.button>
           ))}
         </aside>
 
-        {/* Main panel */}
-        <main className="flex-1 min-w-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTool}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6"
-            >
-              {/* Tool header */}
-              <div className="flex items-center gap-3 mb-6 pb-5 border-b border-white/[0.06]">
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${activeDef.gradient}`}>
-                  <activeDef.icon className={`h-5 w-5 ${activeDef.color}`} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">{L ? activeDef.titleAr : activeDef.titleEn}</h2>
-                  <p className="text-white/40 text-sm">{L ? activeDef.descAr : activeDef.descEn}</p>
-                </div>
-              </div>
+        {/* Desktop: tool + chat side by side */}
+        <div className="hidden lg:flex flex-1 min-w-0 gap-4 p-4">
+          <main className="flex-1 min-w-0 overflow-y-auto">{toolPanel}</main>
+          <div className="w-80 xl:w-96 flex-shrink-0 flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
+            {chatPanel}
+          </div>
+        </div>
 
-              {/* Tool content */}
-              {activeTool === "estimate" && <EstimatePanel L={L} />}
-              {activeTool === "proposal" && <ProposalPanel L={L} />}
-              {activeTool === "website" && <WebsitePanel L={L} />}
-              {activeTool === "sentiment" && <SentimentPanel L={L} />}
-              {activeTool === "assignment" && <AssignmentPanel L={L} />}
-              {activeTool === "delay" && <DelayPanel L={L} />}
-              {activeTool === "social" && <SocialPanel L={L} />}
-              {activeTool === "meeting" && <MeetingPanel L={L} />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+        {/* Mobile: show either tool or chat */}
+        <div className="lg:hidden flex-1 flex flex-col min-h-0">
+          {mobileView === "tools" ? (
+            <div className="flex-1 overflow-y-auto p-3">{toolPanel}</div>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0 p-3" style={{ height: "calc(100vh - 180px)" }}>
+              {chatPanel}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Mobile bottom toggle bar ── */}
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 flex justify-center pb-2 pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto bg-[#0d0f14]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-2xl">
+          <button
+            onClick={() => setMobileView("tools")}
+            data-testid="button-view-tools"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              mobileView === "tools"
+                ? "bg-white/10 text-white"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <Wrench className="w-4 h-4" />
+            {L ? "الأدوات" : "Tools"}
+          </button>
+          <button
+            onClick={() => setMobileView("chat")}
+            data-testid="button-view-chat"
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              mobileView === "chat"
+                ? "bg-gradient-to-r from-cyan-600/30 to-purple-600/30 text-white border border-cyan-500/20"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            {L ? "المساعد الذكي" : "AI Chat"}
+          </button>
+        </div>
       </div>
     </div>
   );

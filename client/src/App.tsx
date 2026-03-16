@@ -679,7 +679,7 @@ function AppInner() {
     }
   });
   const [location, navigate] = useLocation();
-  const isFullBleed = location === "/cs-chat" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();
