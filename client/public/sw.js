@@ -1,4 +1,4 @@
-const CACHE_NAME = "qirox-v10";
+const CACHE_NAME = "qirox-v11";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/browserconfig.xml",
@@ -17,6 +17,10 @@ const STATIC_ASSETS = [
   "/icon-310x150.png",
   "/icon-512.png",
   "/icon-512-maskable.png",
+  "/apple-touch-icon.png",
+  "/apple-touch-icon-120.png",
+  "/apple-touch-icon-152.png",
+  "/apple-touch-icon-180.png",
   "/logo.png",
 ];
 
