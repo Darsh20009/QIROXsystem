@@ -37,6 +37,8 @@ const EMPTY: Omit<Country, "id"> = {
 
 export default function AdminCountries() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [search, setSearch] = useState("");
   const [filterContinent, setFilterContinent] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");

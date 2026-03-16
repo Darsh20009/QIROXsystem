@@ -66,6 +66,8 @@ function isMeetingOpen(meeting: any): boolean {
 
 export default function ProjectWorkspace() {
   const [, params] = useRoute("/project/:id/workspace");
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const projectId = params?.id;
   const { data: user } = useUser() as any;
   const { toast } = useToast();

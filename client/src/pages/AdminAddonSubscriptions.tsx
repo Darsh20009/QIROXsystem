@@ -30,6 +30,8 @@ function formatDate(d: string | Date | null) {
 
 export default function AdminAddonSubscriptions() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);

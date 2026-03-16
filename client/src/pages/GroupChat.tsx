@@ -45,6 +45,8 @@ const EMOJI_OPTIONS = ["💬", "🚀", "🔥", "💡", "🎯", "🛠️", "📊"
 
 export default function GroupChat() {
   const { user } = useUser();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, navigate] = useLocation();

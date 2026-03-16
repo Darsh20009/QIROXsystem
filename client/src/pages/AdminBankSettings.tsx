@@ -28,6 +28,8 @@ const DEFAULT: BankSettings = {
 
 export default function AdminBankSettings() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<BankSettings>({ queryKey: ["/api/bank-settings"] });

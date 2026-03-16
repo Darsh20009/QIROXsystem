@@ -30,6 +30,8 @@ const ENTITY_ICONS: Record<string, any> = {
 
 export default function AdminActivityLog() {
   const [search, setSearch] = useState("");
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
 
   const { data: logs, isLoading } = useQuery<LogEntry[]>({
     queryKey: ["/api/admin/activity-log"],

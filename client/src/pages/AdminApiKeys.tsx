@@ -46,6 +46,8 @@ const SCOPE_LABELS: Record<string, string> = {
 
 export default function AdminApiKeys() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState<ApiKey | null>(null);

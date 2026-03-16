@@ -936,6 +936,8 @@ function AgentView({ user }: { user: any }) {
 // ══════════════════════════════════════════════
 export default function CSChat() {
   const { data: user, isLoading } = useUser();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const me = user as any;
 
   if (isLoading) {

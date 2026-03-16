@@ -1101,6 +1101,8 @@ DevEco Studio → Open → اختر هذا المجلد
 // ─── Main Component ──────────────────────────────────────────
 export default function AdminAppPublish() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
 
   const { data: cfg, isLoading } = useQuery<any>({ queryKey: ["/api/admin/store-publish-config"] });

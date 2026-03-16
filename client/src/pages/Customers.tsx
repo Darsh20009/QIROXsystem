@@ -10,6 +10,8 @@ export default function Customers() {
   const { data: partners, isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/partners"],
   });
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
 
   return (
     <div className="min-h-screen flex flex-col bg-white" dir={dir}>

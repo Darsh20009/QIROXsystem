@@ -55,6 +55,8 @@ function AvatarInitial({ name, role }: { name: string; role: string }) {
 
 export default function AdminAttendance() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);

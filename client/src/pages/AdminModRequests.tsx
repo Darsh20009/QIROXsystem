@@ -28,6 +28,8 @@ const priorityMap: Record<string, { label: string; color: string }> = {
 
 export default function AdminModRequests() {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [selected, setSelected] = useState<ModificationRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
