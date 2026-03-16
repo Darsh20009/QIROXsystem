@@ -61,12 +61,13 @@ async function requireProjectAccess(req: Request, res: Response): Promise<{ user
   return { user, project };
 }
 
-async function syncFilesToDb(projectId: string, objectId: any): Promise<number> {
+async function syncDiskToDb(projectId: string, objectId: any): Promise<number> {
   const { SandboxFileModel } = await import("./models");
-  const { listTree } = await import("./sandbox-fs");
+  const { listTree, readFile } = await import("./sandbox-fs");
   const tree = listTree(projectId, "", 10);
 
-  function flatten(entries: any[], result: any[] = []): any[] {
+  interface FlatEntry { path: string; type: string; size: number }
+  function flatten(entries: any[], result: FlatEntry[] = []): FlatEntry[] {
     for (const e of entries) {
       result.push({ path: e.path, type: e.type, size: e.size || 0 });
       if (e.children) flatten(e.children, result);
@@ -77,18 +78,41 @@ async function syncFilesToDb(projectId: string, objectId: any): Promise<number> 
   const files = flatten(tree);
   await SandboxFileModel.deleteMany({ projectId: objectId });
   if (files.length > 0) {
-    await SandboxFileModel.insertMany(
-      files.map((f: any) => ({
+    const docs = files.map((f) => {
+      let content = "";
+      if (f.type === "file" && f.size < 512 * 1024) {
+        try { content = readFile(projectId, f.path); } catch { content = ""; }
+      }
+      return {
         projectId: objectId,
         path: f.path,
         type: f.type,
+        content,
         size: f.size,
+        hash: content ? crypto.createHash("md5").update(content).digest("hex") : "",
         syncedAt: new Date(),
-      })),
-      { ordered: false }
-    );
+      };
+    });
+    await SandboxFileModel.insertMany(docs, { ordered: false });
   }
   return files.length;
+}
+
+async function syncDbToDisk(projectId: string, objectId: any): Promise<number> {
+  const { SandboxFileModel } = await import("./models");
+  const { writeFile, createFolder, ensureProjectDir } = await import("./sandbox-fs");
+  ensureProjectDir(projectId);
+  const files = await SandboxFileModel.find({ projectId: objectId }).lean();
+  let count = 0;
+  for (const f of files as any[]) {
+    if (f.type === "directory") {
+      createFolder(projectId, f.path);
+    } else if (f.type === "file" && f.content) {
+      writeFile(projectId, f.path, f.content);
+      count++;
+    }
+  }
+  return count;
 }
 
 const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: string; startCmd: string; installCmd: string }> = {
@@ -219,7 +243,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         fsWrite(projectId, filePath, content);
       }
 
-      await syncFilesToDb(projectId, project._id);
+      await syncDiskToDb(projectId, project._id);
 
       res.status(201).json({ id: projectId, ...project.toJSON() });
     } catch (err: any) {
@@ -232,9 +256,22 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     if (!ctx) return;
     try {
       const { isRunning, getProcessInfo } = await import("./sandbox-runner");
-      const { getDiskUsage } = await import("./sandbox-fs");
+      const { getDiskUsage, ensureProjectDir } = await import("./sandbox-fs");
+      const { SandboxFileModel } = await import("./models");
       const pid = String(ctx.project._id);
       const proc = getProcessInfo(pid);
+
+      const fs = await import("fs");
+      const dir = (await import("./sandbox-fs")).getProjectDir(pid);
+      const dirExists = fs.existsSync(dir);
+      if (!dirExists) {
+        const dbFileCount = await SandboxFileModel.countDocuments({ projectId: ctx.project._id });
+        if (dbFileCount > 0) {
+          ensureProjectDir(pid);
+          await syncDbToDisk(pid, ctx.project._id);
+        }
+      }
+
       res.json({
         ...ctx.project.toJSON(),
         id: pid,
@@ -395,8 +432,19 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
     try {
-      const count = await syncFilesToDb(String(ctx.project._id), ctx.project._id);
+      const count = await syncDiskToDb(String(ctx.project._id), ctx.project._id);
       res.json({ success: true, filesSynced: count });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/sync-from-db", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const count = await syncDbToDisk(String(ctx.project._id), ctx.project._id);
+      res.json({ success: true, filesRestored: count });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -610,7 +658,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
           await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, updates);
         }
 
-        await syncFilesToDb(pid, ctx.project._id);
+        await syncDiskToDb(pid, ctx.project._id);
 
         return res.json({ success: true, mode: "full-project", filesCreated, tokens: completion.usage?.total_tokens || 0 });
       }
@@ -737,7 +785,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
           }
         }
 
-        await syncFilesToDb(pid, ctx.project._id);
+        await syncDiskToDb(pid, ctx.project._id);
 
         res.json({ success: true, filesImported: count });
       });
@@ -771,7 +819,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
         githubBranch: branch || "main",
       });
 
-      await syncFilesToDb(pid, ctx.project._id);
+      await syncDiskToDb(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
@@ -793,10 +841,14 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
 
       let cloneUrl = repoUrl;
       if (pat) {
-        const url = new URL(repoUrl);
-        url.username = pat;
-        url.password = "x-oauth-basic";
-        cloneUrl = url.toString();
+        try {
+          const url = new URL(repoUrl);
+          url.username = pat;
+          url.password = "x-oauth-basic";
+          cloneUrl = url.toString();
+        } catch {
+          return res.status(400).json({ error: "رابط المستودع غير صالح" });
+        }
       }
 
       deleteProjectDir(pid);
@@ -805,12 +857,17 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       const git = simpleGit();
       await git.clone(cloneUrl, dir, ["--branch", branch || "main", "--depth", "1"]);
 
+      if (pat) {
+        const localGit = simpleGit(dir);
+        await localGit.remote(["set-url", "origin", repoUrl]);
+      }
+
       await SandboxProjectModel.findByIdAndUpdate(ctx.project._id, {
         githubRepo: repoUrl,
         githubBranch: branch || "main",
       });
 
-      await syncFilesToDb(pid, ctx.project._id);
+      await syncDiskToDb(pid, ctx.project._id);
 
       res.json({ success: true });
     } catch (err: any) {
@@ -827,7 +884,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
       const dir = getProjectDir(String(ctx.project._id));
       const git = simpleGit(dir);
       const result = await git.pull();
-      await syncFilesToDb(String(ctx.project._id), ctx.project._id);
+      await syncDiskToDb(String(ctx.project._id), ctx.project._id);
       res.json({ success: true, summary: result.summary });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -837,31 +894,34 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
   app.post("/api/sandbox/projects/:id/github/push", async (req: Request, res: Response) => {
     const ctx = await requireProjectAccess(req, res);
     if (!ctx) return;
+    let git: any = null;
+    let patApplied = false;
     try {
       const { message, pat } = req.body;
       const simpleGit = (await import("simple-git")).default;
       const { getProjectDir } = await import("./sandbox-fs");
       const dir = getProjectDir(String(ctx.project._id));
-      const git = simpleGit(dir);
+      git = simpleGit(dir);
 
       if (pat && ctx.project.githubRepo) {
         const url = new URL(ctx.project.githubRepo);
         url.username = pat;
         url.password = "x-oauth-basic";
         await git.remote(["set-url", "origin", url.toString()]);
+        patApplied = true;
       }
 
       await git.add(".");
       await git.commit(message || "Update from QIROX Sandbox");
-      const pushResult = await git.push("origin", ctx.project.githubBranch || "main");
-
-      if (pat && ctx.project.githubRepo) {
-        await git.remote(["set-url", "origin", ctx.project.githubRepo]);
-      }
+      await git.push("origin", ctx.project.githubBranch || "main");
 
       res.json({ success: true, pushed: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    } finally {
+      if (patApplied && git && ctx.project.githubRepo) {
+        try { await git.remote(["set-url", "origin", ctx.project.githubRepo]); } catch { /* ensure PAT removed */ }
+      }
     }
   });
 

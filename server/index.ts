@@ -5,7 +5,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
-import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms } from "./ws";
+import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
@@ -104,6 +104,17 @@ wss.on("connection", (ws) => {
 
       if (msg.type === "ping") {
         ws.send(JSON.stringify({ type: "pong" }));
+        return;
+      }
+
+      // ── Sandbox Log Subscription ──────────────────────────────────────────
+      if (msg.type === "sandbox_subscribe" && msg.projectId) {
+        subscribeSandboxLogs(userId, String(msg.projectId));
+        ws.send(JSON.stringify({ type: "sandbox_subscribed", projectId: msg.projectId }));
+        return;
+      }
+      if (msg.type === "sandbox_unsubscribe" && msg.projectId) {
+        unsubscribeSandboxLogs(userId, String(msg.projectId));
         return;
       }
 

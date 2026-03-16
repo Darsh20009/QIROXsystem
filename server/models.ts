@@ -1781,11 +1781,12 @@ const sandboxEnvVarSchema = new mongoose.Schema({
 sandboxEnvVarSchema.index({ projectId: 1, key: 1 }, { unique: true });
 export const SandboxEnvVarModel = mongoose.models.SandboxEnvVar || mongoose.model("SandboxEnvVar", sandboxEnvVarSchema);
 
-// ── Sandbox File Metadata (فهرس الملفات في الساندبوكس) ──────────────────────
+// ── Sandbox File (ملفات الساندبوكس — محتوى + بيانات وصفية) ─────────────────
 const sandboxFileSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
   path:      { type: String, required: true },
   type:      { type: String, enum: ["file", "directory"], default: "file" },
+  content:   { type: String, default: "" },
   size:      { type: Number, default: 0 },
   mimeType:  { type: String, default: "" },
   hash:      { type: String, default: "" },

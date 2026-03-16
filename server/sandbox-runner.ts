@@ -1,7 +1,7 @@
 import { ChildProcess, spawn, execSync } from "child_process";
 import path from "path";
 import { getProjectDir } from "./sandbox-fs";
-import { pushToUser } from "./ws";
+import { pushToUser, broadcastSandboxLog } from "./ws";
 
 const ALLOWED_COMMANDS = [
   "node", "npm", "npx", "python", "python3", "pip", "pip3",
@@ -50,6 +50,7 @@ function releasePort(port: number): void {
 }
 
 function broadcastLog(ownerId: string, projectId: string, stream: "stdout" | "stderr", text: string): void {
+  broadcastSandboxLog(projectId, stream, text);
   pushToUser(ownerId, {
     type: "sandbox-log",
     projectId,

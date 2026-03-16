@@ -105,6 +105,34 @@ export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: str
   return [...room.values()];
 }
 
+// ── Sandbox Log Channels ────────────────────────────────────────────────────
+const sandboxSubscriptions = new Map<string, Set<string>>();
+
+export function subscribeSandboxLogs(userId: string, projectId: string): void {
+  const key = `sandbox-logs:${projectId}`;
+  if (!sandboxSubscriptions.has(key)) sandboxSubscriptions.set(key, new Set());
+  sandboxSubscriptions.get(key)!.add(userId);
+}
+
+export function unsubscribeSandboxLogs(userId: string, projectId: string): void {
+  const key = `sandbox-logs:${projectId}`;
+  const subs = sandboxSubscriptions.get(key);
+  if (subs) {
+    subs.delete(userId);
+    if (subs.size === 0) sandboxSubscriptions.delete(key);
+  }
+}
+
+export function broadcastSandboxLog(projectId: string, stream: "stdout" | "stderr", text: string): void {
+  const key = `sandbox-logs:${projectId}`;
+  const subs = sandboxSubscriptions.get(key);
+  if (!subs) return;
+  const payload = { type: "sandbox-log", projectId, stream, text, ts: Date.now() };
+  for (const userId of subs) {
+    sendToUser(userId, payload);
+  }
+}
+
 export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: string[] }[] {
   const left: { roomId: string; remaining: string[] }[] = [];
   for (const [roomId, room] of meetRooms.entries()) {
