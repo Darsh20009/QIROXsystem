@@ -10,7 +10,7 @@ function projectDir(projectId: string): string {
   return path.join(SANDBOXES_ROOT, safe);
 }
 
-function safePath(projectId: string, relativePath: string): string {
+export function safePath(projectId: string, relativePath: string): string {
   const base = projectDir(projectId);
   const resolved = path.resolve(base, relativePath);
   if (!resolved.startsWith(base + path.sep) && resolved !== base) {
