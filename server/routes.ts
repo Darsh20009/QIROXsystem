@@ -55,7 +55,7 @@ async function setPending2FA(tempToken: string, data: { userId: string; methods:
   await Pending2FAModel.findOneAndUpdate(
     { tempToken },
     { tempToken, userId: data.userId, methods: data.methods, expiresAt: new Date(data.expiresAt), pushApproved: false },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 }
 async function deletePending2FA(tempToken: string) {
@@ -76,7 +76,7 @@ async function setPushChallenge(challengeId: string, data: { userId: string; num
   await PushChallengeModel.findOneAndUpdate(
     { challengeId },
     { challengeId, ...data, expiresAt: new Date(data.expiresAt) },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 }
 async function updatePushChallengeStatus(challengeId: string, status: "approved"|"denied") {
@@ -1059,7 +1059,7 @@ export async function registerRoutes(
     const me = req.user as any;
     if (!['admin', 'manager'].includes(me.role)) return res.sendStatus(403);
     const { AttendanceModel } = await import("./models");
-    const updated = await AttendanceModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    const updated = await AttendanceModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" });
     res.json(updated);
   });
 
@@ -1176,7 +1176,7 @@ export async function registerRoutes(
         update.repliedAt = new Date();
         update.status = "replied";
       }
-      const doc = await ContactMessageModel.findByIdAndUpdate(req.params.id, update, { new: true });
+      const doc = await ContactMessageModel.findByIdAndUpdate(req.params.id, update, { returnDocument: "after" });
       if (!doc) return res.status(404).json({ error: "الرسالة غير موجودة" });
       res.json(doc);
     } catch (err) { res.status(500).json({ error: translateError(err) }); }
@@ -1268,7 +1268,7 @@ export async function registerRoutes(
       const order = await OrderModel.findByIdAndUpdate(
         req.params.id,
         { $set: { paymentStatus: "rejected", paymentRejectionReason: reason || "إيصال التحويل غير صحيح" } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       const clientUser = await UserModel.findById(order.userId).select("email fullName username");
@@ -1306,7 +1306,7 @@ export async function registerRoutes(
       const order = await OrderModel.findByIdAndUpdate(
         req.params.id,
         { $set: { paymentStatus: "approved", isDepositPaid: true } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       const notifTitle = "تمت الموافقة على إيصال التحويل";
@@ -1862,7 +1862,7 @@ export async function registerRoutes(
     const project = await ProjectModel.findByIdAndUpdate(
       req.params.id,
       { $set: { usageGuide: { ...guide } } },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
     if (!project) return res.sendStatus(404);
     res.json({ success: true, usageGuide: (project as any).usageGuide });
@@ -1884,7 +1884,7 @@ export async function registerRoutes(
     const project = await ProjectModel.findByIdAndUpdate(
       req.params.id,
       { $set: update },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
     if (!project) return res.sendStatus(404);
     res.json({ success: true, project });
@@ -2065,7 +2065,7 @@ export async function registerRoutes(
         updates.completedAt = new Date();
         updates.completedBy = me.id;
       }
-      const updated = await ProjectFeatureModel.findByIdAndUpdate(req.params.fid, updates, { new: true })
+      const updated = await ProjectFeatureModel.findByIdAndUpdate(req.params.fid, updates, { returnDocument: "after" })
         .populate('assignedTo', 'fullName username role')
         .populate('startedBy', 'fullName username')
         .populate('completedBy', 'fullName username');
@@ -2238,7 +2238,7 @@ export async function registerRoutes(
     try {
       const updates: any = { ...req.body };
       if (updates.status === 'resolved') updates.resolvedAt = new Date();
-      const updated = await ProjectIssueModel.findByIdAndUpdate(req.params.iid, updates, { new: true })
+      const updated = await ProjectIssueModel.findByIdAndUpdate(req.params.iid, updates, { returnDocument: "after" })
         .populate('fromUserId', 'fullName username role profilePhotoUrl avatarConfig')
         .populate('toUserId', 'fullName username role profilePhotoUrl avatarConfig');
       res.json(updated);
@@ -2285,7 +2285,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { MeetingRequestModel } = await import("./models");
     try {
-      const updated = await MeetingRequestModel.findByIdAndUpdate(req.params.mid, req.body, { new: true })
+      const updated = await MeetingRequestModel.findByIdAndUpdate(req.params.mid, req.body, { returnDocument: "after" })
         .populate('clientId', 'fullName username email')
         .populate('employeeId', 'fullName username role');
       res.json(updated);
@@ -2425,7 +2425,7 @@ export async function registerRoutes(
     const me = req.user as User;
     if ((me as any).role === 'client') return res.sendStatus(403);
     const { WalletTransactionModel } = await import("./models");
-    const tx = await WalletTransactionModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const tx = await WalletTransactionModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
     if (!tx) return res.sendStatus(404);
     res.json(tx);
   });
@@ -2809,7 +2809,7 @@ export async function registerRoutes(
     const { status, adminNote } = req.body;
     const allowed = ['pending', 'submitted', 'approved', 'revision_needed'];
     if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
-    const dr = await ClientDataRequestModel.findByIdAndUpdate(req.params.id, { status, adminNote }, { new: true });
+    const dr = await ClientDataRequestModel.findByIdAndUpdate(req.params.id, { status, adminNote }, { returnDocument: "after" });
     if (!dr) return res.sendStatus(404);
     res.json(dr);
   });
@@ -3345,7 +3345,7 @@ export async function registerRoutes(
       const allowed = ["nameAr","name","descriptionAr","description","category","demoUrl","heroColor","featuresAr","features","estimatedDuration","howToUseAr","howToUseVideoUrl","templateFiles","status"];
       const update: any = {};
       allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
-      const updated = await (SectorTemplateModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+      const updated = await (SectorTemplateModel as any).findByIdAndUpdate(req.params.id, update, { returnDocument: "after" });
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل تحديث الديمو" }); }
   });
@@ -4131,7 +4131,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     const { ModPlanConfigModel } = await import("./models");
     try {
-      const updated = await ModPlanConfigModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const updated = await ModPlanConfigModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!updated) return res.sendStatus(404);
       res.json(updated);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
@@ -4168,7 +4168,7 @@ export async function registerRoutes(
     const { ModTypePriceModel } = await import("./models");
     if (req.body.price !== undefined && req.body.price > 50) return res.status(400).json({ error: "الحد الأقصى للسعر هو 50 ريال" });
     try {
-      const updated = await ModTypePriceModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const updated = await ModTypePriceModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!updated) return res.sendStatus(404);
       res.json(updated);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
@@ -4307,7 +4307,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !ALLOWED_SHIPPING_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { ShippingCompanyModel } = await import("./models");
-      const company = await ShippingCompanyModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      const company = await ShippingCompanyModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" });
       if (!company) return res.status(404).json({ error: "غير موجودة" });
       res.json(company);
     } catch (err: any) { res.status(500).json({ error: err.message || "فشل التحديث" }); }
@@ -4375,7 +4375,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !ALLOWED_COUNTRY_ROLES.includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { CountryModel } = await import("./models");
-      const country = await CountryModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const country = await CountryModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!country) return res.sendStatus(404);
       res.json(country);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -4610,7 +4610,7 @@ export async function registerRoutes(
       const user = await UserModel.findOneAndUpdate(
         { email: cleanEmail },
         { $set: { emailVerified: true } },
-        { new: true }
+        { returnDocument: "after" }
       );
 
       if (!user) {
@@ -4694,7 +4694,7 @@ export async function registerRoutes(
       const order = await OrderModel.findOneAndUpdate(
         { _id: req.params.id, userId: (req.user as any).id },
         { $set: { paymentProofUrl, status: "pending" } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
       res.json(order);
@@ -5904,7 +5904,7 @@ export async function registerRoutes(
   app.patch("/api/invoices/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel } = await import("./models");
-    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) }, { new: true });
+    const invoice = await InvoiceModel.findByIdAndUpdate(req.params.id, { ...req.body, ...(req.body.status === 'paid' ? { paidAt: new Date() } : {}) }, { returnDocument: "after" });
     res.json(invoice);
   });
 
@@ -5999,7 +5999,7 @@ export async function registerRoutes(
   app.patch("/api/receipts/:id", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { ReceiptVoucherModel } = await import("./models");
-    const receipt = await ReceiptVoucherModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const receipt = await ReceiptVoucherModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
     res.json(receipt);
   });
 
@@ -6626,7 +6626,7 @@ export async function registerRoutes(
     if (status) update.status = status;
     if (adminReply) { update.adminReply = adminReply; update.repliedAt = new Date(); }
     if (status === 'closed' || status === 'resolved') update.closedAt = new Date();
-    const ticket = await (SupportTicketModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+    const ticket = await (SupportTicketModel as any).findByIdAndUpdate(req.params.id, update, { returnDocument: "after" });
     await logActivity((req.user as any)._id, 'update_ticket', 'support_ticket', req.params.id, { status, hasReply: !!adminReply }, req.ip);
     // Notify client about reply or status change
     try {
@@ -6680,7 +6680,7 @@ export async function registerRoutes(
     const allowed = ['bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
     const update: any = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
-    const profile = await (EmployeeProfileModel as any).findOneAndUpdate({ userId: uid }, update, { new: true, upsert: true });
+    const profile = await (EmployeeProfileModel as any).findOneAndUpdate({ userId: uid }, update, { returnDocument: "after", upsert: true });
     res.json(profile);
   });
 
@@ -6694,7 +6694,7 @@ export async function registerRoutes(
     const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
       { userId: uid },
       { $push: { portfolioItems: { title, type: type || 'template', url, description: description || '' } } },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
     res.json(profile);
   });
@@ -6706,7 +6706,7 @@ export async function registerRoutes(
     const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
       { userId: uid },
       { $pull: { portfolioItems: { _id: req.params.itemId } } },
-      { new: true }
+      { returnDocument: "after" }
     );
     res.json(profile);
   });
@@ -6724,7 +6724,7 @@ export async function registerRoutes(
     const allowed = ['hourlyRate', 'salaryType', 'fixedSalary', 'commissionRate', 'managerId', 'vacationDays', 'vacationUsed', 'bio', 'skills', 'bankName', 'bankAccount', 'bankIBAN', 'nationalId', 'hireDate', 'jobTitle'];
     const update: any = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
-    const profile = await (EmployeeProfileModel as any).findByIdAndUpdate(req.params.id, update, { new: true });
+    const profile = await (EmployeeProfileModel as any).findByIdAndUpdate(req.params.id, update, { returnDocument: "after" });
     await logActivity((req.user as any)._id, 'update_employee_profile', 'employee_profile', req.params.id, update, req.ip);
     res.json(profile);
   });
@@ -6738,7 +6738,7 @@ export async function registerRoutes(
     const profile = await (EmployeeProfileModel as any).findOneAndUpdate(
       { userId: req.params.userId },
       { $set: update },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
     res.json(profile);
   });
@@ -6898,7 +6898,7 @@ export async function registerRoutes(
     const { status } = req.body;
     if (!["active", "expired", "none", "suspended"].includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
     const { UserModel } = await import("./models");
-    const client = await UserModel.findByIdAndUpdate(req.params.clientId, { $set: { subscriptionStatus: status } }, { new: true });
+    const client = await UserModel.findByIdAndUpdate(req.params.clientId, { $set: { subscriptionStatus: status } }, { returnDocument: "after" });
     if (!client) return res.status(404).json({ error: "العميل غير موجود" });
     res.json({ success: true });
   });
@@ -7008,7 +7008,7 @@ export async function registerRoutes(
     if (expiresAt) update.expiresAt = new Date(expiresAt);
     if (addonNameAr) update.addonNameAr = addonNameAr;
     if (status === "active") update.renewalRequestedAt = null;
-    const sub = await (ProjectAddonSubscriptionModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    const sub = await (ProjectAddonSubscriptionModel as any).findByIdAndUpdate(req.params.id, { $set: update }, { returnDocument: "after" });
     if (!sub) return res.status(404).json({ error: "الاشتراك غير موجود" });
     if (status === "active" && sub.clientId) {
       try {
@@ -7156,7 +7156,7 @@ export async function registerRoutes(
       await PushSubscriptionModel.findOneAndUpdate(
         { endpoint },
         { userId: user._id || user.id, endpoint, keys, userAgent: userAgent || req.headers["user-agent"] || "" },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
       res.json({ ok: true });
     } catch (err) {
@@ -7268,7 +7268,7 @@ export async function registerRoutes(
       const item = await (ChecklistItemModel as any).findOneAndUpdate(
         { _id: req.params.id, $or: [{ userId: uid }, { assignedTo: uid }] },
         { $set: req.body },
-        { new: true }
+        { returnDocument: "after" }
       )
         .populate("assignedTo", "fullName username")
         .populate("assignedBy", "fullName username");
@@ -7359,7 +7359,7 @@ export async function registerRoutes(
       const settings = await BankSettingsModel.findOneAndUpdate(
         { key: "main" },
         { $set: { bankName, beneficiaryName, iban, accountNumber, swiftCode, currency, notes } },
-        { new: true, upsert: true }
+        { returnDocument: "after", upsert: true }
       );
       await logActivity(user._id, 'update_bank_settings', 'bank_settings', 'main', req.body, req.ip);
       res.json(settings);
@@ -7413,7 +7413,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
       const { SegmentPricingModel } = await import("./models");
-      const plan = await SegmentPricingModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      const plan = await SegmentPricingModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" });
       if (!plan) return res.status(404).json({ error: "غير موجود" });
       res.json(plan);
     } catch (err) {
@@ -7449,7 +7449,7 @@ export async function registerRoutes(
           subscriptionExpiresAt: new Date(expiresAt),
           subscriptionStatus: "active",
         }},
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!user) return res.status(404).json({ error: "المستخدم غير موجود" });
       res.json(sanitizeUser(user));
@@ -7586,7 +7586,7 @@ export async function registerRoutes(
       const request = await SubServiceRequestModel.findByIdAndUpdate(
         req.params.id,
         { $set: { status: req.body.status, adminNotes: req.body.adminNotes || "" } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!request) return res.status(404).json({ error: "غير موجود" });
       res.json(request);
@@ -7640,7 +7640,7 @@ export async function registerRoutes(
     const user = req.user as any;
     try {
       const { ConsultationSlotModel } = await import("./models");
-      const slot = await ConsultationSlotModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+      const slot = await ConsultationSlotModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" });
       if (!slot) return res.status(404).json({ error: "غير موجود" });
       res.json(slot);
     } catch { res.status(500).json({ error: "فشل التحديث" }); }
@@ -7724,7 +7724,7 @@ export async function registerRoutes(
     try {
       const { ConsultationBookingModel } = await import("./models");
       const update = { ...req.body };
-      const booking = await ConsultationBookingModel.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+      const booking = await ConsultationBookingModel.findByIdAndUpdate(req.params.id, { $set: update }, { returnDocument: "after" });
       if (!booking) return res.status(404).json({ error: "غير موجود" });
 
       // If confirmed, send email to client
@@ -7794,7 +7794,7 @@ export async function registerRoutes(
       const { DiscountCodeModel } = await import("./models");
       const update = { ...req.body };
       if (update.code) update.code = String(update.code).toUpperCase();
-      const code = await DiscountCodeModel.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+      const code = await DiscountCodeModel.findByIdAndUpdate(req.params.id, { $set: update }, { returnDocument: "after" });
       if (!code) return res.status(404).json({ error: "غير موجود" });
       res.json(code);
     } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
@@ -7944,7 +7944,7 @@ export async function registerRoutes(
   app.put("/api/admin/system-features/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const f = await SystemFeatureModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const f = await SystemFeatureModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(f);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -7989,7 +7989,7 @@ export async function registerRoutes(
   app.put("/api/admin/extra-addons/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const a = await ExtraAddonModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const a = await ExtraAddonModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(a);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -8092,7 +8092,7 @@ export async function registerRoutes(
   app.patch("/api/admin/cron-jobs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const job = await CronJobModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const job = await CronJobModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!job) return res.status(404).json({ error: "غير موجود" });
       if (job.isActive) scheduleCronJob(String(job._id), job.schedule);
       else stopCronJob(String(job._id));
@@ -8160,7 +8160,7 @@ export async function registerRoutes(
     try {
       const { isDefault, ...rest } = req.body;
       if (isDefault) await AtlasConfigModel.updateMany({}, { isDefault: false });
-      const c = await AtlasConfigModel.findByIdAndUpdate(req.params.id, { ...rest, ...(isDefault !== undefined ? { isDefault } : {}) }, { new: true });
+      const c = await AtlasConfigModel.findByIdAndUpdate(req.params.id, { ...rest, ...(isDefault !== undefined ? { isDefault } : {}) }, { returnDocument: "after" });
       res.json({ ...c?.toJSON(), privateKey: "***" });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -8437,7 +8437,7 @@ export async function registerRoutes(
   app.put("/api/admin/app-configs/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager","developer"].includes((req.user as any).role)) return res.sendStatus(403);
     try {
-      const config = await AppPublishConfigModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const config = await AppPublishConfigModel.findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       res.json(config);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -8585,7 +8585,7 @@ export async function registerRoutes(
         doc = await HtmlPublishModel.findOneAndUpdate(
           { _id: id, ownerId: uid },
           { title: title || "صفحتي", content },
-          { new: true }
+          { returnDocument: "after" }
         );
         if (!doc) return res.status(404).json({ error: "الصفحة غير موجودة" });
       } else {
@@ -8710,7 +8710,7 @@ export async function registerRoutes(
       const link = await ShortUrlModel.findOneAndUpdate(
         { shortCode: req.params.code },
         { $inc: { clicks: 1 } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!link) return res.status(404).send("<h1>الرابط غير موجود</h1>");
       res.redirect(301, link.originalUrl);
@@ -8784,7 +8784,7 @@ export async function registerRoutes(
       const settings = await QiroxSystemSettingsModel.findOneAndUpdate(
         { key: "main" },
         { $set: { ...req.body, lastModifiedBy: uid } },
-        { new: true, upsert: true }
+        { returnDocument: "after", upsert: true }
       );
       res.json(settings);
     } catch (e) { res.status(500).json({ error: "فشل حفظ الإعدادات" }); }
@@ -8802,7 +8802,7 @@ export async function registerRoutes(
       const user = req.user as any;
       const uid = user._id || user.id;
       const { jobTitle, bio, profilePhotoUrl } = req.body;
-      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { jobTitle, bio, profilePhotoUrl } }, { new: true }).select("-password");
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { jobTitle, bio, profilePhotoUrl } }, { returnDocument: "after" }).select("-password");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });
@@ -8817,7 +8817,7 @@ export async function registerRoutes(
       const { jobTitle, bio, profilePhotoUrl, additionalRoles } = req.body;
       const updated = await UserModel.findByIdAndUpdate(req.params.id, {
         $set: { ...(jobTitle !== undefined && { jobTitle }), ...(bio !== undefined && { bio }), ...(profilePhotoUrl !== undefined && { profilePhotoUrl }), ...(additionalRoles !== undefined && { additionalRoles }) }
-      }, { new: true }).select("-password");
+      }, { returnDocument: "after" }).select("-password");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });
@@ -8830,7 +8830,7 @@ export async function registerRoutes(
       const uid = (req.user as any)._id || (req.user as any).id;
       const { avatarConfig } = req.body;
       if (!avatarConfig || typeof avatarConfig !== "string") return res.status(400).json({ error: "avatarConfig مطلوب" });
-      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { avatarConfig } }, { new: true }).select("-password");
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: { avatarConfig } }, { returnDocument: "after" }).select("-password");
       res.json({ success: true, avatarConfig: updated?.avatarConfig });
     } catch (e) { res.status(500).json({ error: "فشل الحفظ" }); }
   });
@@ -8860,7 +8860,7 @@ export async function registerRoutes(
         const { UserModel } = await import("./models");
         const uid = (req.user as any)._id || (req.user as any).id;
         const profilePhotoUrl = `/uploads/${req.file.filename}`;
-        const updated = await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl } }, { new: true }).select("-password");
+        const updated = await UserModel.findByIdAndUpdate(uid, { $set: { profilePhotoUrl } }, { returnDocument: "after" }).select("-password");
         res.json({ success: true, profilePhotoUrl: updated?.profilePhotoUrl });
       } catch (e) { res.status(500).json({ error: "فشل رفع الصورة" }); }
     });
@@ -8900,7 +8900,7 @@ export async function registerRoutes(
       for (const key of allowed) {
         if (req.body[key] !== undefined) update[key] = req.body[key];
       }
-      const updated = await UserModel.findByIdAndUpdate(uid, { $set: update }, { new: true }).select("-password -walletPin -walletCardNumber -quickPin");
+      const updated = await UserModel.findByIdAndUpdate(uid, { $set: update }, { returnDocument: "after" }).select("-password -walletPin -walletCardNumber -quickPin");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });
@@ -8984,7 +8984,7 @@ export async function registerRoutes(
       const { UserModel } = await import("./models");
       const { additionalRoles } = req.body;
       if (!Array.isArray(additionalRoles)) return res.status(400).json({ error: "أرسل مصفوفة من الأدوار" });
-      const updated = await UserModel.findByIdAndUpdate(req.params.id, { $set: { additionalRoles } }, { new: true }).select("-password");
+      const updated = await UserModel.findByIdAndUpdate(req.params.id, { $set: { additionalRoles } }, { returnDocument: "after" }).select("-password");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
   });
@@ -9060,7 +9060,7 @@ export async function registerRoutes(
     if (user.role !== "admin") return res.sendStatus(403);
     try {
       const { InvestorProfileModel } = await import("./models");
-      const updated = await InvestorProfileModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
+      const updated = await InvestorProfileModel.findByIdAndUpdate(req.params.id, { $set: req.body }, { returnDocument: "after" })
         .populate("userId", "fullName username email jobTitle profilePhotoUrl");
       res.json(updated);
     } catch (e) { res.status(500).json({ error: "فشل التحديث" }); }
@@ -9096,7 +9096,7 @@ export async function registerRoutes(
       if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "الحالة غير صحيحة" });
       const payment = await InvestmentPaymentModel.findByIdAndUpdate(req.params.id, {
         $set: { status, adminNote: adminNote || "", approvedBy: user._id || user.id, approvedAt: new Date() }
-      }, { new: true });
+      }, { returnDocument: "after" });
       if (!payment) return res.status(404).json({ error: "الدفعة غير موجودة" });
       if (status === "approved") {
         await InvestorProfileModel.findByIdAndUpdate(payment.investorId, { $inc: { totalInvested: payment.amount } });
@@ -9433,7 +9433,7 @@ export async function registerRoutes(
       let dbUser = await UserModel.findById(uid).select("referralCode referralCreditsEarned");
       if (!dbUser?.referralCode) {
         const code = `QRX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        dbUser = await UserModel.findByIdAndUpdate(uid, { referralCode: code }, { new: true }).select("referralCode referralCreditsEarned");
+        dbUser = await UserModel.findByIdAndUpdate(uid, { referralCode: code }, { returnDocument: "after" }).select("referralCode referralCreditsEarned");
       }
       const referrals = await (ReferralModel as any).find({ referrerId: uid }).sort({ createdAt: -1 }).limit(20);
       res.json({ code: dbUser?.referralCode, creditsEarned: dbUser?.referralCreditsEarned || 0, referrals });
@@ -9630,7 +9630,7 @@ export async function registerRoutes(
       const contract = await (ContractModel as any).findOneAndUpdate(
         { orderId: req.params.orderId, status: "pending" },
         { status: "acknowledged", acknowledgedAt: new Date() },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!contract) return res.status(404).json({ error: "لا يوجد عقد معلّق" });
       res.json(contract);
@@ -9899,7 +9899,7 @@ export async function registerRoutes(
       const { status } = req.body;
       const allowed = ["new","under_study","pending_payment","in_progress","testing","review","delivery","closed"];
       if (!allowed.includes(status)) return res.status(400).json({ error: "حالة غير صالحة" });
-      const project = await (ProjectModel as any).findByIdAndUpdate(req.params.projectId, { status }, { new: true });
+      const project = await (ProjectModel as any).findByIdAndUpdate(req.params.projectId, { status }, { returnDocument: "after" });
       res.json(project);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10272,7 +10272,7 @@ export async function registerRoutes(
       const dbUser = await (UserModel as any).findByIdAndUpdate(
         record.userId,
         { phone: record.phone, phoneVerified: true },
-        { new: true }
+        { returnDocument: "after" }
       ).select("fullName username").lean();
       const clientName = (dbUser as any)?.fullName || (dbUser as any)?.username || "العميل";
       // Persist in-app notification for the client
@@ -10380,7 +10380,7 @@ export async function registerRoutes(
     try {
       const { ReviewModel } = await import("./models");
       const { adminReply, isPublic } = req.body;
-      const review = await (ReviewModel as any).findByIdAndUpdate(req.params.id, { adminReply: adminReply || "", isPublic: isPublic !== false, repliedAt: adminReply ? new Date() : null }, { new: true });
+      const review = await (ReviewModel as any).findByIdAndUpdate(req.params.id, { adminReply: adminReply || "", isPublic: isPublic !== false, repliedAt: adminReply ? new Date() : null }, { returnDocument: "after" });
       if (!review) return res.status(404).json({ error: "غير موجود" });
       res.json(review);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10434,7 +10434,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { ContractModel } = await import("./models");
-      const contract = await (ContractModel as any).findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const contract = await (ContractModel as any).findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!contract) return res.status(404).json({ error: "غير موجود" });
       res.json(contract);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10614,7 +10614,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { SlaConfigModel } = await import("./models");
-      const config = await (SlaConfigModel as any).findByIdAndUpdate(req.params.id, req.body, { new: true });
+      const config = await (SlaConfigModel as any).findByIdAndUpdate(req.params.id, req.body, { returnDocument: "after" });
       if (!config) return res.status(404).json({ error: "غير موجود" });
       res.json(config);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -10788,7 +10788,7 @@ export async function registerRoutes(
     try {
       const { SupplierOfferModel } = await import("./models");
       const { status, adminNote } = req.body;
-      const offer = await (SupplierOfferModel as any).findByIdAndUpdate(req.params.id, { status, adminNote, respondedAt: new Date() }, { new: true });
+      const offer = await (SupplierOfferModel as any).findByIdAndUpdate(req.params.id, { status, adminNote, respondedAt: new Date() }, { returnDocument: "after" });
       if (!offer) return res.status(404).json({ error: "غير موجود" });
       res.json(offer);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -11442,7 +11442,7 @@ export async function registerInstallmentRoutes(app: Express) {
     const { title, titleAr, description, descriptionAr, planTier, planPeriod, planSegment, installmentCount, serviceFee, penaltyAmount, gracePeriodDays, isActive } = req.body;
     const offer = await InstallmentOfferModel.findByIdAndUpdate(req.params.id, {
       $set: { title, titleAr, description, descriptionAr, planTier, planPeriod, planSegment, installmentCount, serviceFee, penaltyAmount, gracePeriodDays, isActive }
-    }, { new: true });
+    }, { returnDocument: "after" });
     if (!offer) return res.status(404).json({ error: "العرض غير موجود" });
     res.json(offer);
   });
