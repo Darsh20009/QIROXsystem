@@ -108,26 +108,26 @@ export default function About() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white" dir={dir}>
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950" dir={dir}>
       <Navigation />
 
       {/* Hero */}
       <section className="pt-40 pb-36 relative overflow-hidden">
         <PageGraphics variant="full-light" />
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div initial="hidden" animate="visible" variants={stagger}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-6">
-                <Info className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">{t("about.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-6">
+                <Info className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.badge")}</span>
               </motion.div>
-              <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-black leading-[1.05] mb-8 tracking-tight">
+              <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-black dark:text-white leading-[1.05] mb-8 tracking-tight">
                 {t("about.hero.title1")}
                 <br />
-                <span className="text-gray-400">{t("about.hero.title2")}</span>
+                <span className="text-gray-400 dark:text-gray-500">{t("about.hero.title2")}</span>
               </motion.h1>
-              <motion.p variants={fadeUp} custom={2} className="text-lg text-black/40 leading-relaxed max-w-2xl mx-auto">
+              <motion.p variants={fadeUp} custom={2} className="text-lg text-black/40 dark:text-white/40 leading-relaxed max-w-2xl mx-auto">
                 {t("about.hero.subtitle")}
               </motion.p>
             </motion.div>
@@ -136,28 +136,28 @@ export default function About() {
       </section>
 
       {/* Features */}
-      <section className="py-28 bg-[#fafafa] relative">
+      <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">
         <div className="container mx-auto px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
             <div className="text-center mb-16">
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-6">
-                <Zap className="w-3.5 h-3.5 text-black/40" />
-                <span className="text-black/40 text-xs tracking-wider uppercase">{t("about.features.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 mb-6">
+                <Zap className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.features.badge")}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black mb-4">
-                {t("about.features.title")} <span className="text-gray-400">{t("about.features.titleHighlight")}</span>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
+                {t("about.features.title")} <span className="text-gray-400 dark:text-gray-500">{t("about.features.titleHighlight")}</span>
               </motion.h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
               {features.map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
-                  <div className="bg-white border border-black/[0.06] p-7 rounded-2xl h-full group hover:shadow-lg hover:shadow-black/[0.04] transition-all">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-black/[0.04]">
-                      <item.icon className="w-5 h-5 text-black/40" />
+                  <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-7 rounded-2xl h-full group hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-black/[0.04] dark:bg-white/[0.04]">
+                      <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                     </div>
-                    <h3 className="text-base font-bold font-heading text-black mb-3">{item.title[lang]}</h3>
-                    <p className="text-sm text-black/40 leading-relaxed">{item.desc[lang]}</p>
+                    <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title[lang]}</h3>
+                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">{item.desc[lang]}</p>
                   </div>
                 </motion.div>
               ))}
@@ -170,12 +170,12 @@ export default function About() {
       <section className="py-28 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-6">
-              <Globe className="w-3.5 h-3.5 text-black/40" />
-              <span className="text-black/40 text-xs tracking-wider uppercase">{t("about.sectors.badge")}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-6">
+              <Globe className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.sectors.badge")}</span>
             </div>
-            <h2 className="text-3xl font-bold font-heading text-black mb-4">{t("about.sectors.title")}</h2>
-            <p className="text-black/35">{templates?.length || 8} {t("about.systems.count")}</p>
+            <h2 className="text-3xl font-bold font-heading text-black dark:text-white mb-4">{t("about.sectors.title")}</h2>
+            <p className="text-black/35 dark:text-white/35">{templates?.length || 8} {t("about.systems.count")}</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl mx-auto">
@@ -190,12 +190,12 @@ export default function About() {
                   variants={fadeUp}
                   custom={idx}
                 >
-                  <div className="border border-black/[0.06] bg-white text-center p-6 rounded-2xl group hover:shadow-lg hover:shadow-black/[0.04] transition-all" data-testid={`about-sector-${tmpl.slug}`}>
-                    <div className="w-12 h-12 mx-auto rounded-xl bg-black/[0.04] flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5 text-black/35" />
+                  <div className="border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 text-center p-6 rounded-2xl group hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all" data-testid={`about-sector-${tmpl.slug}`}>
+                    <div className="w-12 h-12 mx-auto rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4">
+                      <Icon className="w-5 h-5 text-black/35 dark:text-white/35" />
                     </div>
-                    <h3 className="font-bold text-sm text-black mb-1">{lang === "ar" ? tmpl.nameAr : tmpl.name}</h3>
-                    <p className="text-[10px] text-black/25">{tmpl.category}</p>
+                    <h3 className="font-bold text-sm text-black dark:text-white mb-1">{lang === "ar" ? tmpl.nameAr : tmpl.name}</h3>
+                    <p className="text-[10px] text-black/25 dark:text-white/25">{tmpl.category}</p>
                   </div>
                 </motion.div>
               );
@@ -206,16 +206,16 @@ export default function About() {
 
       {/* Team */}
       {team.length > 0 && (
-        <section className="py-28 bg-[#fafafa] relative">
+        <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">
           <div className="container mx-auto px-4">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
               <div className="text-center mb-16">
-                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-6">
-                  <Users className="w-3.5 h-3.5 text-black/40" />
-                  <span className="text-black/40 text-xs tracking-wider uppercase">OUR TEAM</span>
+                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 mb-6">
+                  <Users className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                  <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">OUR TEAM</span>
                 </motion.div>
-                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black mb-4">
-                  {lang === "ar" ? "الفريق" : "Team"} <span className="text-gray-400">{lang === "ar" ? "المتخصص" : "Members"}</span>
+                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
+                  {lang === "ar" ? "الفريق" : "Team"} <span className="text-gray-400 dark:text-gray-500">{lang === "ar" ? "المتخصص" : "Members"}</span>
                 </motion.h2>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
@@ -223,22 +223,22 @@ export default function About() {
                   const hasSocials = socialLinks.some(s => !!member[s.key]);
                   return (
                     <motion.div key={member._id || idx} variants={fadeUp} custom={idx}>
-                      <div className="bg-white border border-black/[0.06] p-6 rounded-2xl text-center group hover:shadow-lg hover:shadow-black/[0.04] transition-all" data-testid={`card-team-${idx}`}>
-                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-black/[0.04] flex items-center justify-center mb-4">
+                      <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-6 rounded-2xl text-center group hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all" data-testid={`card-team-${idx}`}>
+                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4">
                           {member.avatarUrl ? (
                             <img src={member.avatarUrl} alt={member.fullName} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-xl font-black text-black/20">{member.fullName?.charAt(0)}</span>
+                            <span className="text-xl font-black text-black/20 dark:text-white/20">{member.fullName?.charAt(0)}</span>
                           )}
                         </div>
-                        <h3 className="font-bold text-sm text-black mb-1">{member.fullName}</h3>
-                        <p className="text-[11px] text-black/40 mb-1">{member.jobTitle || roleLabelsAr[member.role] || member.role}</p>
-                        {member.bio && <p className="text-[10px] text-black/25 leading-relaxed mb-3 line-clamp-2">{member.bio}</p>}
+                        <h3 className="font-bold text-sm text-black dark:text-white mb-1">{member.fullName}</h3>
+                        <p className="text-[11px] text-black/40 dark:text-white/40 mb-1">{member.jobTitle || roleLabelsAr[member.role] || member.role}</p>
+                        {member.bio && <p className="text-[10px] text-black/25 dark:text-white/25 leading-relaxed mb-3 line-clamp-2">{member.bio}</p>}
                         {hasSocials && (
-                          <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-black/[0.05]">
+                          <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
                             {socialLinks.map(({ key, icon: Icon, color }) =>
                               member[key] ? (
-                                <a key={key} href={member[key]} target="_blank" rel="noopener noreferrer" className={`text-black/20 transition-colors ${color}`} data-testid={`link-${key}-${idx}`}>
+                                <a key={key} href={member[key]} target="_blank" rel="noopener noreferrer" className={`text-black/20 dark:text-white/20 transition-colors ${color}`} data-testid={`link-${key}-${idx}`}>
                                   <Icon size={13} />
                                 </a>
                               ) : null
@@ -256,14 +256,14 @@ export default function About() {
       )}
 
       {/* Tech Stack */}
-      <section className="py-28 bg-[#fafafa] relative">
+      <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-white mb-6">
-              <Code2 className="w-3.5 h-3.5 text-black/40" />
-              <span className="text-black/40 text-xs tracking-wider uppercase">{t("about.tech.badge")}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 mb-6">
+              <Code2 className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.tech.badge")}</span>
             </div>
-            <h2 className="text-3xl font-bold font-heading text-black mb-4">{t("about.tech.title")}</h2>
+            <h2 className="text-3xl font-bold font-heading text-black dark:text-white mb-4">{t("about.tech.title")}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
@@ -271,14 +271,14 @@ export default function About() {
               { title: "Frontend", icon: Code2, items: ["React + TypeScript", "Tailwind CSS", "Framer Motion", "Shadcn/UI + Radix"] },
               { title: "Backend", icon: Cpu, items: ["Node.js + Express", "MongoDB Atlas", "JWT + Role-based Auth", "REST API"] },
             ].map((stack, i) => (
-              <div key={i} className="bg-white border border-black/[0.06] p-8 rounded-2xl">
-                <h3 className="font-bold text-black mb-5 flex items-center gap-2 text-sm">
-                  <stack.icon className="w-4 h-4 text-black/40" /> {stack.title}
+              <div key={i} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-8 rounded-2xl">
+                <h3 className="font-bold text-black dark:text-white mb-5 flex items-center gap-2 text-sm">
+                  <stack.icon className="w-4 h-4 text-black/40 dark:text-white/40" /> {stack.title}
                 </h3>
                 <div className="space-y-3">
                   {stack.items.map(item => (
-                    <div key={item} className="flex items-center gap-3 text-sm text-black/45">
-                      <span className="w-1.5 h-1.5 rounded-full bg-black/20" />
+                    <div key={item} className="flex items-center gap-3 text-sm text-black/45 dark:text-white/45">
+                      <span className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20 flex-shrink-0" />
                       {item}
                     </div>
                   ))}
@@ -293,21 +293,21 @@ export default function About() {
       <section className="py-28 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] mb-6">
-              <TrendingUp className="w-3.5 h-3.5 text-black/40" />
-              <span className="text-black/40 text-xs tracking-wider uppercase">{t("about.business.badge")}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-6">
+              <TrendingUp className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.business.badge")}</span>
             </div>
-            <h2 className="text-3xl font-bold font-heading text-black mb-4">{t("about.business.title")}</h2>
+            <h2 className="text-3xl font-bold font-heading text-black dark:text-white mb-4">{t("about.business.title")}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
             {businessModel.map((item, idx) => (
-              <div key={idx} className="bg-white border border-black/[0.06] p-8 rounded-2xl text-center hover:shadow-lg hover:shadow-black/[0.04] transition-all">
-                <div className="w-14 h-14 mx-auto bg-black/[0.04] rounded-2xl flex items-center justify-center mb-5">
-                  <item.icon className="w-6 h-6 text-black/35" />
+              <div key={idx} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-8 rounded-2xl text-center hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all">
+                <div className="w-14 h-14 mx-auto bg-black/[0.04] dark:bg-white/[0.04] rounded-2xl flex items-center justify-center mb-5">
+                  <item.icon className="w-6 h-6 text-black/35 dark:text-white/35" />
                 </div>
-                <h3 className="font-bold text-black text-base mb-2">{item.title[lang]}</h3>
-                <p className="text-black/40 text-sm">{item.desc[lang]}</p>
+                <h3 className="font-bold text-black dark:text-white text-base mb-2">{item.title[lang]}</h3>
+                <p className="text-black/40 dark:text-white/40 text-sm">{item.desc[lang]}</p>
               </div>
             ))}
           </div>
@@ -315,7 +315,7 @@ export default function About() {
       </section>
 
       {/* CTA */}
-      <section className="py-28 bg-black relative overflow-hidden">
+      <section className="py-28 bg-black dark:bg-gray-900 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">

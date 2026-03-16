@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
 type Lang = "ar" | "en";
 
@@ -378,6 +378,77 @@ export function useI18n() {
   const ctx = useContext(I18nContext);
   if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
+}
+
+/* ─── AI Translation Cache (in-memory + localStorage) ─── */
+const AI_CACHE_KEY = "qirox_ai_translations_v1";
+
+function loadAICache(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(AI_CACHE_KEY) || "{}");
+  } catch { return {}; }
+}
+
+function saveAICache(cache: Record<string, string>) {
+  try { localStorage.setItem(AI_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+const _aiCacheMemory: Record<string, string> = {};
+
+/**
+ * useAITranslate — translate any arbitrary text using the AI endpoint.
+ * Returns { translated, isLoading, translate }.
+ * Results are cached in localStorage to avoid repeated API calls.
+ */
+export function useAITranslate() {
+  const { lang } = useI18n();
+
+  const translate = useCallback(async (
+    text: string,
+    context?: string
+  ): Promise<string> => {
+    if (!text || lang === "ar") return text; // Arabic is default, no translation needed
+    const cacheKey = `${lang}:${text}`;
+    if (_aiCacheMemory[cacheKey]) return _aiCacheMemory[cacheKey];
+    const stored = loadAICache();
+    if (stored[cacheKey]) {
+      _aiCacheMemory[cacheKey] = stored[cacheKey];
+      return stored[cacheKey];
+    }
+    try {
+      const res = await fetch("/api/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, targetLang: lang, context }),
+      });
+      const data = await res.json();
+      const translated = data.translated || text;
+      _aiCacheMemory[cacheKey] = translated;
+      const updatedCache = loadAICache();
+      updatedCache[cacheKey] = translated;
+      saveAICache(updatedCache);
+      return translated;
+    } catch { return text; }
+  }, [lang]);
+
+  return { translate, lang };
+}
+
+/**
+ * useDynamicText — a hook that auto-translates a given Arabic text to the current language.
+ * Pass the Arabic source text; it returns the translated string.
+ */
+export function useDynamicText(arabicText: string, context?: string): string {
+  const { lang } = useI18n();
+  const [translated, setTranslated] = useState(arabicText);
+  const { translate } = useAITranslate();
+
+  useEffect(() => {
+    if (lang === "ar") { setTranslated(arabicText); return; }
+    translate(arabicText, context).then(setTranslated);
+  }, [arabicText, lang, context]);
+
+  return translated;
 }
 
 export { translations, type TranslationKey, type Lang };

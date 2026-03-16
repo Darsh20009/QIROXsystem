@@ -1217,6 +1217,63 @@ async function handlePackageFinder(req: any, res: any) {
   }
 }
 
+/* ─── Translation Handler ─── */
+async function handleTranslate(req: any, res: any) {
+  const { text, targetLang, context } = req.body || {};
+  if (!text || !targetLang) return res.status(400).json({ error: "text and targetLang required" });
+
+  const langName = targetLang === "ar" ? "Arabic (formal Modern Standard Arabic)" : "English (professional, concise)";
+  const contextHint = context ? `\nContext: this text appears in a ${context} interface.` : "";
+
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional translator for a B2B SaaS platform. Translate the given text to ${langName}. ${contextHint}\nRules:\n- Return ONLY the translated text, no explanation\n- Keep technical terms (QIROX, SAR, SaaS) unchanged\n- Use formal register appropriate for business software\n- Preserve any HTML tags or placeholders like {name}, {count}`,
+        },
+        { role: "user", content: text },
+      ],
+    });
+    const translated = comp.choices[0]?.message?.content?.trim() || text;
+    res.json({ translated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, translated: text });
+  }
+}
+
+/* ─── Batch Translation Handler ─── */
+async function handleBatchTranslate(req: any, res: any) {
+  const { texts, targetLang } = req.body || {};
+  if (!Array.isArray(texts) || !targetLang) return res.status(400).json({ error: "texts[] and targetLang required" });
+  if (texts.length > 50) return res.status(400).json({ error: "max 50 texts per request" });
+
+  const langName = targetLang === "ar" ? "Arabic (formal Modern Standard Arabic)" : "English (professional, concise)";
+
+  try {
+    const joined = texts.map((t: string, i: number) => `[${i}] ${t}`).join("\n");
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional translator for a B2B SaaS platform. Translate each numbered item to ${langName}.\nReturn ONLY a JSON array of translated strings in the same order, no explanation. Example: ["translated1","translated2"]\nKeep technical terms (QIROX, SAR, SaaS) unchanged. Use formal register.`,
+        },
+        { role: "user", content: joined },
+      ],
+    });
+    const raw = comp.choices[0]?.message?.content?.trim() || "[]";
+    const match = raw.match(/\[[\s\S]*\]/);
+    const translated = match ? JSON.parse(match[0]) : texts;
+    res.json({ translated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, translated: texts });
+  }
+}
+
 /* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
   app.post("/api/ai/message", handleChat);
@@ -1233,6 +1290,8 @@ export function registerAiRoutes(app: Express) {
   app.post("/api/ai/predict-delay", handlePredictDelay);
   app.post("/api/ai/generate-social", handleGenerateSocial);
   app.post("/api/ai/meeting-summary", handleMeetingSummary);
+  app.post("/api/ai/translate", handleTranslate);
+  app.post("/api/ai/batch-translate", handleBatchTranslate);
   app.delete("/api/ai/session/:id", (req, res) => {
     sessions.delete(req.params.id);
     finderSessions.delete(req.params.id);

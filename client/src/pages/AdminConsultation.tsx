@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useUser } from "@/hooks/use-auth";
 import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { useI18n } from "@/lib/i18n";
 
 const bookingStatusConfig: Record<string, { label: string; color: string }> = {
   pending:   { label: "في انتظار تحديد الموعد", color: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -37,6 +38,7 @@ const emptyAssign = {
 export default function AdminConsultation() {
   const { data: user } = useUser();
   const { toast } = useToast();
+  const { dir } = useI18n();
 
   const [viewBooking, setViewBooking] = useState<any>(null);
   const [assignBooking, setAssignBooking] = useState<any>(null);
@@ -161,7 +163,7 @@ export default function AdminConsultation() {
   };
 
   return (
-    <div dir="rtl">
+    <div dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -304,7 +306,7 @@ export default function AdminConsultation() {
 
       {/* Assign Appointment Dialog */}
       <Dialog open={!!assignBooking} onOpenChange={v => !v && setAssignBooking(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <CalendarClock className="w-5 h-5" />
@@ -393,7 +395,7 @@ export default function AdminConsultation() {
 
       {/* Reject Dialog */}
       <Dialog open={!!rejectBooking} onOpenChange={v => !v && setRejectBooking(null)}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 text-red-500">
               <XCircle className="w-5 h-5" />رفض طلب الاستشارة
@@ -427,7 +429,7 @@ export default function AdminConsultation() {
 
       {/* Switch Reminder Dialog */}
       <Dialog open={!!reminderBooking} onOpenChange={v => !v && setReminderBooking(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Bell className="w-5 h-5 text-amber-500" />
@@ -521,7 +523,7 @@ export default function AdminConsultation() {
 
       {/* View Details Dialog */}
       <Dialog open={!!viewBooking} onOpenChange={v => !v && setViewBooking(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right">تفاصيل طلب الاستشارة</DialogTitle>
           </DialogHeader>

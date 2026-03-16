@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 import {
   Video, Plus, Calendar, Users, Clock, Trash2,
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
@@ -46,6 +47,7 @@ export default function AdminQMeet() {
   const [, navigate] = useLocation();
   const { data: user } = useUser();
   const { toast } = useToast();
+  const { dir } = useI18n();
   const qc = useQueryClient();
   const [openCreate, setOpenCreate] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -253,7 +255,7 @@ export default function AdminQMeet() {
   const filteredClients = clients.filter(c => !clientSearch || (c.fullName || "").toLowerCase().includes(clientSearch.toLowerCase()) || (c.email || "").toLowerCase().includes(clientSearch.toLowerCase()));
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-4 md:p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-4 md:p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-5xl mx-auto space-y-6">
 
@@ -620,7 +622,7 @@ export default function AdminQMeet() {
 
       {/* Quick Meeting Name Dialog */}
       <Dialog open={openInstant} onOpenChange={v => { setOpenInstant(v); if (!v) setInstantForm({ title: "", durationMinutes: "60" }); }}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -671,7 +673,7 @@ export default function AdminQMeet() {
 
       {/* Create API Key Dialog */}
       <Dialog open={openNewKey} onOpenChange={v => { setOpenNewKey(v); if (!v) setNewKeyForm({ name: "", plan: "basic" }); }}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
@@ -733,7 +735,7 @@ export default function AdminQMeet() {
 
       {/* Create Meeting Dialog */}
       <Dialog open={openCreate} onOpenChange={v => { setOpenCreate(v); if (!v) setForm(EMPTY_FORM); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
@@ -861,7 +863,7 @@ export default function AdminQMeet() {
 
       {/* Instant Meeting Result Dialog */}
       <Dialog open={!!instantResult} onOpenChange={v => { if (!v) setInstantResult(null); }}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -934,7 +936,7 @@ export default function AdminQMeet() {
 
       {/* Edit Meeting Dialog */}
       <Dialog open={!!editTarget} onOpenChange={v => { if (!v) setEditTarget(null); }}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 font-black">
               <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">

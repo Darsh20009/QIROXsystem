@@ -10,6 +10,7 @@ import {
   Loader2, ChevronLeft, ExternalLink, Package,
   CheckCircle2, Zap, Star, FileText, Video,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
   lite:     { label: "لايت",    color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
@@ -29,6 +30,8 @@ function getVideoEmbed(url: string): string | null {
 
 export default function TemplateDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
 
   const { data: template, isLoading, isError } = useQuery<SectorTemplate>({
     queryKey: ["/api/templates/slug", slug],
@@ -43,7 +46,7 @@ export default function TemplateDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
         <Navigation />
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="w-10 h-10 animate-spin text-black/20 dark:text-white/20" />
@@ -55,14 +58,16 @@ export default function TemplateDetail() {
 
   if (isError || !template) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
         <Navigation />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Globe className="w-16 h-16 text-black/10 dark:text-white/10" />
-          <p className="text-black/40 dark:text-white/40 font-bold text-xl">النموذج غير موجود</p>
+          <p className="text-black/40 dark:text-white/40 font-bold text-xl">
+            {L ? "النموذج غير موجود" : "Template not found"}
+          </p>
           <Link href="/demos">
             <Button variant="outline" className="gap-2">
-              <ChevronLeft className="w-4 h-4" /> العودة للنماذج
+              <ChevronLeft className="w-4 h-4" /> {L ? "العودة للنماذج" : "Back to Demos"}
             </Button>
           </Link>
         </div>
@@ -72,7 +77,7 @@ export default function TemplateDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
       <Navigation />
 
       {/* Hero Banner */}
@@ -85,11 +90,11 @@ export default function TemplateDetail() {
             <Link href="/demos">
               <button className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors text-sm font-medium" data-testid="btn-back-to-demos">
                 <ChevronLeft className="w-4 h-4" />
-                النماذج
+                {L ? "النماذج" : "Demos"}
               </button>
             </Link>
             <span className="text-white/30">/</span>
-            <span className="text-white/80 text-sm font-medium">{template.nameAr}</span>
+            <span className="text-white/80 text-sm font-medium">{L ? template.nameAr : (template.name || template.nameAr)}</span>
           </div>
 
           <div className="flex flex-col lg:flex-row items-start gap-8">
@@ -97,16 +102,18 @@ export default function TemplateDetail() {
               {/* Status */}
               {template.status === "coming_soon" && (
                 <span className="inline-flex items-center gap-1.5 bg-amber-400/20 border border-amber-400/30 text-amber-300 text-xs font-bold px-3 py-1 rounded-full mb-4">
-                  قريباً
+                  {L ? "قريباً" : "Coming Soon"}
                 </span>
               )}
               {template.status === "active" && (
                 <span className="inline-flex items-center gap-1.5 bg-green-400/20 border border-green-400/30 text-green-300 text-xs font-bold px-3 py-1 rounded-full mb-4">
-                  متاح الآن
+                  {L ? "متاح الآن" : "Available Now"}
                 </span>
               )}
 
-              <h1 className="text-3xl sm:text-4xl font-black text-white mb-3 leading-tight">{template.nameAr}</h1>
+              <h1 className="text-3xl sm:text-4xl font-black text-white mb-3 leading-tight">
+                {L ? template.nameAr : (template.name || template.nameAr)}
+              </h1>
               {template.name !== template.nameAr && (
                 <p className="text-white/40 text-base mb-4">{template.name}</p>
               )}
@@ -130,7 +137,7 @@ export default function TemplateDetail() {
                 {template.demoUrl && template.status === "active" && (
                   <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" data-testid="btn-open-demo">
                     <Button className="h-11 px-6 rounded-2xl font-bold gap-2 bg-white text-black hover:bg-white/90">
-                      <Globe className="w-4 h-4" /> فتح الديمو
+                      <Globe className="w-4 h-4" /> {L ? "فتح الديمو" : "Open Demo"}
                       <ExternalLink className="w-3.5 h-3.5 opacity-50" />
                     </Button>
                   </a>
@@ -138,12 +145,12 @@ export default function TemplateDetail() {
                 {(!template.demoUrl || template.status !== "active") && (
                   <Button disabled className="h-11 px-6 rounded-2xl font-bold gap-2 bg-white/10 text-white/50 cursor-not-allowed">
                     <Globe className="w-4 h-4" />
-                    {template.status === "coming_soon" ? "الديمو قريباً" : "لا يوجد ديمو"}
+                    {template.status === "coming_soon" ? (L ? "الديمو قريباً" : "Demo Coming Soon") : (L ? "لا يوجد ديمو" : "No Demo")}
                   </Button>
                 )}
                 <Link href={`/order?template=${template.slug}`}>
                   <Button variant="outline" className="h-11 px-6 rounded-2xl font-bold gap-2 border-white/20 text-white hover:bg-white/10" data-testid="btn-order-template">
-                    <ArrowRight className="w-4 h-4" /> ابدأ مشروعك
+                    <ArrowRight className="w-4 h-4" /> {L ? "ابدأ مشروعك" : "Start Your Project"}
                   </Button>
                 </Link>
               </div>
@@ -153,20 +160,20 @@ export default function TemplateDetail() {
             <div className="flex flex-row lg:flex-col gap-3 flex-wrap lg:flex-nowrap">
               {template.estimatedDuration && (
                 <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 text-center min-w-[110px]">
-                  <p className="text-white/40 text-[10px] mb-1">مدة التسليم</p>
+                  <p className="text-white/40 text-[10px] mb-1">{L ? "مدة التسليم" : "Delivery Time"}</p>
                   <p className="text-white font-black text-sm">{template.estimatedDuration}</p>
                 </div>
               )}
               {template.featuresAr && template.featuresAr.length > 0 && (
                 <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 text-center min-w-[110px]">
-                  <p className="text-white/40 text-[10px] mb-1">عدد المميزات</p>
-                  <p className="text-white font-black text-sm">{template.featuresAr.length} ميزة</p>
+                  <p className="text-white/40 text-[10px] mb-1">{L ? "عدد المميزات" : "Features"}</p>
+                  <p className="text-white font-black text-sm">{template.featuresAr.length} {L ? "ميزة" : "features"}</p>
                 </div>
               )}
               {template.templateFiles && template.templateFiles.length > 0 && (
                 <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 text-center min-w-[110px]">
-                  <p className="text-white/40 text-[10px] mb-1">ملفات متاحة</p>
-                  <p className="text-white font-black text-sm">{template.templateFiles.length} ملف</p>
+                  <p className="text-white/40 text-[10px] mb-1">{L ? "ملفات متاحة" : "Files"}</p>
+                  <p className="text-white font-black text-sm">{template.templateFiles.length} {L ? "ملف" : "files"}</p>
                 </div>
               )}
             </div>
@@ -185,8 +192,8 @@ export default function TemplateDetail() {
                 <Video className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">فيديو تعريفي</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">شاهد النظام في العمل</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "فيديو تعريفي" : "Demo Video"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "شاهد النظام في العمل" : "Watch the system in action"}</p>
               </div>
             </div>
             <div className="rounded-3xl overflow-hidden border border-black/[0.06] dark:border-white/[0.06] shadow-xl bg-black aspect-video">
@@ -218,8 +225,8 @@ export default function TemplateDetail() {
                 <BookOpen className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">طريقة الاستخدام</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">دليل استخدام النظام خطوة بخطوة</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "طريقة الاستخدام" : "How to Use"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "دليل استخدام النظام خطوة بخطوة" : "Step-by-step guide"}</p>
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl p-6">
@@ -238,8 +245,8 @@ export default function TemplateDetail() {
                 <Package className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">مستوى الباقة</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">يعكس هذا النموذج مستوى الخدمة التالي</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "مستوى الباقة" : "Package Level"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "يعكس هذا النموذج مستوى الخدمة التالي" : "This template reflects the following service level"}</p>
               </div>
             </div>
             <div className={`border-2 ${tier.border} ${tier.bg} rounded-3xl p-6 flex items-center gap-5`}>
@@ -247,11 +254,11 @@ export default function TemplateDetail() {
                 <Package className={`w-8 h-8 ${tier.color}`} />
               </div>
               <div>
-                <p className={`text-2xl font-black ${tier.color}`}>باقة {tier.label}</p>
+                <p className={`text-2xl font-black ${tier.color}`}>{L ? "باقة" : "Plan:"} {tier.label}</p>
                 <p className="text-sm text-black/50 dark:text-black/50 mt-1">{tier.desc}</p>
                 <Link href="/pricing">
                   <button className={`mt-2 text-xs font-bold ${tier.color} flex items-center gap-1 hover:underline`} data-testid="btn-view-pricing">
-                    عرض الأسعار والمقارنة <ArrowRight className="w-3.5 h-3.5" />
+                    {L ? "عرض الأسعار والمقارنة" : "View Pricing & Comparison"} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </Link>
               </div>
@@ -267,8 +274,8 @@ export default function TemplateDetail() {
                 <Globe className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">موقع الديمو</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">جرّب النظام مباشرة</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "موقع الديمو" : "Demo Website"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "جرّب النظام مباشرة" : "Try the system live"}</p>
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl p-6">
@@ -278,13 +285,13 @@ export default function TemplateDetail() {
                     <Globe className="w-5 h-5 text-green-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-black dark:text-white">رابط الديمو الحي</p>
+                    <p className="text-sm font-bold text-black dark:text-white">{L ? "رابط الديمو الحي" : "Live Demo Link"}</p>
                     <p className="text-xs text-black/40 dark:text-white/40 truncate">{template.demoUrl}</p>
                   </div>
                 </div>
                 <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" data-testid="btn-open-demo-link">
                   <Button className="h-10 px-5 rounded-xl gap-2 font-bold" style={{ backgroundColor: color }}>
-                    <Play className="w-3.5 h-3.5" /> فتح الديمو
+                    <Play className="w-3.5 h-3.5" /> {L ? "فتح الديمو" : "Open Demo"}
                     <ExternalLink className="w-3 h-3 opacity-70" />
                   </Button>
                 </a>
@@ -311,8 +318,8 @@ export default function TemplateDetail() {
                 <Download className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">الملفات والموارد</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">{template.templateFiles.length} ملف متاح للتحميل</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "الملفات والموارد" : "Files & Resources"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{template.templateFiles.length} {L ? "ملف متاح للتحميل" : "files available"}</p>
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl overflow-hidden divide-y divide-black/[0.05] dark:divide-white/[0.05]">
@@ -322,12 +329,12 @@ export default function TemplateDetail() {
                     <div className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
                       <FileText className="w-4 h-4 text-black/40 dark:text-white/40" />
                     </div>
-                    <p className="text-sm font-bold text-black dark:text-white truncate">{file.nameAr}</p>
+                    <p className="text-sm font-bold text-black dark:text-white truncate">{L ? file.nameAr : (file.name || file.nameAr)}</p>
                   </div>
                   {file.url && (
                     <a href={file.url} target="_blank" rel="noopener noreferrer" download data-testid={`btn-download-file-${i}`}>
                       <Button variant="outline" size="sm" className="h-8 px-3 rounded-xl gap-1.5 text-xs font-bold flex-shrink-0">
-                        <Download className="w-3.5 h-3.5" /> تحميل
+                        <Download className="w-3.5 h-3.5" /> {L ? "تحميل" : "Download"}
                       </Button>
                     </a>
                   )}
@@ -345,8 +352,8 @@ export default function TemplateDetail() {
                 <Zap className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">مميزات النظام</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">{template.featuresAr.length} ميزة مدمجة</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "مميزات النظام" : "System Features"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{template.featuresAr.length} {L ? "ميزة مدمجة" : "built-in features"}</p>
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-3xl p-6">
@@ -370,8 +377,8 @@ export default function TemplateDetail() {
                 <BookOpen className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black dark:text-white">دليل المميزات التفصيلي</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">شرح كامل لكل ميزة في النظام</p>
+                <h2 className="text-lg font-black text-black dark:text-white">{L ? "دليل المميزات التفصيلي" : "Detailed Feature Guide"}</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">{L ? "شرح كامل لكل ميزة في النظام" : "Full breakdown of every feature"}</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -397,17 +404,21 @@ export default function TemplateDetail() {
           className="rounded-3xl p-8 text-center" style={{ backgroundColor: color }}>
           <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
           <Star className="w-10 h-10 text-white/60 mx-auto mb-3" />
-          <h3 className="text-2xl font-black text-white mb-2">أعجبك هذا النموذج؟</h3>
-          <p className="text-white/50 text-sm mb-6">ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام لك</p>
+          <h3 className="text-2xl font-black text-white mb-2">
+            {L ? "أعجبك هذا النموذج؟" : "Like what you see?"}
+          </h3>
+          <p className="text-white/50 text-sm mb-6">
+            {L ? "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام لك" : "Start your project now and our team will set everything up for you"}
+          </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href={`/order?template=${template.slug}`}>
               <Button className="h-12 px-8 rounded-2xl bg-white text-black hover:bg-white/90 font-bold text-base gap-2" data-testid="btn-start-order-cta">
-                <ArrowRight className="w-5 h-5" /> ابدأ مشروعك الآن
+                <ArrowRight className="w-5 h-5" /> {L ? "ابدأ مشروعك الآن" : "Start Your Project"}
               </Button>
             </Link>
             <Link href="/demos">
               <Button variant="outline" className="h-12 px-8 rounded-2xl border-white/20 text-white hover:bg-white/10 font-bold text-base">
-                استعرض نماذج أخرى
+                {L ? "استعرض نماذج أخرى" : "Browse Other Templates"}
               </Button>
             </Link>
           </div>
