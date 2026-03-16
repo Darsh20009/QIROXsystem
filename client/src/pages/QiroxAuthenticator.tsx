@@ -107,6 +107,12 @@ export default function QiroxAuthenticator() {
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight">Qirox Authenticator</h1>
         <p className="text-white/40 text-sm mt-1.5">{L ? `رمز التحقق الثنائي — يتجدد كل ${STEP} ثانية` : `2FA Code — refreshes every ${STEP} seconds`}</p>
+        {user?.phone && (
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.1]">
+            <Smartphone className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+            <span className="text-white/60 text-sm font-mono tracking-wide" dir="ltr">{user.phone}</span>
+          </div>
+        )}
       </motion.div>
 
       {/* Code card */}
@@ -166,8 +172,8 @@ export default function QiroxAuthenticator() {
               </div>
             </div>
 
-            {/* 6-digit code */}
-            <div className="flex items-center justify-center gap-1.5 mb-6">
+            {/* 6-digit code — always LTR so digit order is never reversed */}
+            <div className="flex items-center justify-center gap-1.5 mb-6" dir="ltr">
               {digits.map((d, i) => (
                 <motion.div
                   key={`${code}-${i}`}
@@ -180,7 +186,7 @@ export default function QiroxAuthenticator() {
                       : secondsLeft <= 5
                       ? "bg-red-500/10 border-red-500/20 text-red-300"
                       : "bg-white/[0.08] border-white/[0.12] text-white"
-                  } ${i === 2 ? "ml-2" : ""}`}
+                  } ${i === 2 ? "mr-2" : ""}`}
                 >
                   {loading ? <div className="w-3 h-3 rounded-full bg-white/20 animate-pulse" /> : d}
                 </motion.div>
