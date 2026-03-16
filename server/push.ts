@@ -13,7 +13,9 @@ export interface PushPayload {
   body: string;
   icon?: string;
   badge?: string;
+  image?: string;
   tag?: string;
+  requireInteraction?: boolean;
   data?: { url?: string; [key: string]: any };
 }
 
@@ -27,9 +29,11 @@ export async function sendWebPush(subscription: { endpoint: string; keys: { p256
       JSON.stringify({
         title: payload.title,
         body: payload.body,
-        icon: payload.icon || "/logo.png",
-        badge: payload.badge || "/favicon.png",
+        icon: payload.icon || "/icon-192.png",
+        badge: payload.badge || "/favicon-32.png",
+        ...(payload.image ? { image: payload.image } : {}),
         tag: payload.tag || "qirox",
+        requireInteraction: payload.requireInteraction ?? false,
         data: payload.data || { url: "/dashboard" },
       })
     );

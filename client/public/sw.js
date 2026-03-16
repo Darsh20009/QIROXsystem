@@ -1,4 +1,4 @@
-const CACHE_NAME = "qirox-v11";
+const CACHE_NAME = "qirox-v12";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/browserconfig.xml",
@@ -123,6 +123,8 @@ self.addEventListener("push", (event) => {
     }
   } catch (e) {}
 
+  const isPushAuth = data.tag && data.tag.startsWith("push-auth-");
+
   event.waitUntil(
     self.registration
       .showNotification(data.title, {
@@ -131,13 +133,18 @@ self.addEventListener("push", (event) => {
         badge: data.badge || "/favicon-32.png",
         tag: data.tag || "qirox-notif",
         renotify: true,
-        requireInteraction: false,
-        vibrate: [100, 50, 100],
+        requireInteraction: data.requireInteraction === true || isPushAuth,
+        vibrate: isPushAuth ? [200, 100, 200, 100, 200] : [100, 50, 100],
         data: data.data || { url: "/dashboard" },
-        actions: [
-          { action: "open", title: "فتح التطبيق" },
-          { action: "dismiss", title: "تجاهل" },
-        ],
+        actions: isPushAuth
+          ? [
+              { action: "open", title: "تأكيد / رفض" },
+              { action: "dismiss", title: "تجاهل" },
+            ]
+          : [
+              { action: "open", title: "فتح التطبيق" },
+              { action: "dismiss", title: "تجاهل" },
+            ],
       })
       .then(() => {
         return self.clients

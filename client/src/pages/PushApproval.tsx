@@ -103,8 +103,13 @@ export default function PushApproval() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-        <div className="w-16 h-16 bg-white/[0.08] rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white/[0.12]">
-          <Shield className="w-8 h-8 text-white" />
+        <div className="relative inline-flex mx-auto mb-4">
+          <div className="w-16 h-16 rounded-3xl overflow-hidden border border-white/[0.15] shadow-2xl">
+            <img src="/icon-192.png" alt="QIROX" className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center border-2 border-gray-950 shadow-lg">
+            <Shield className="w-3.5 h-3.5 text-amber-900" />
+          </div>
         </div>
         <h1 className="text-2xl font-black text-white">{L ? "تأكيد تسجيل الدخول" : "Confirm Login"}</h1>
         <p className="text-white/40 text-sm mt-1">{L ? "جهاز جديد يحاول الدخول إلى حسابك" : "A new device is trying to access your account"}</p>

@@ -789,9 +789,17 @@ export async function registerRoutes(
           if (dbUser?.emailOtpEnabled) methods.push("email");
           if (dbUser?.recoveryPassphraseEnabled) methods.push("passphrase");
           // Push Approval method — available when user has active push subscriptions
+          // Push CANNOT be the sole 2FA method; it always needs a secondary fallback.
           const { PushSubscriptionModel } = await import("./models");
           const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
-          if (pushSubCount > 0) methods.unshift("push"); // put push first as it's most convenient
+          if (pushSubCount > 0) {
+            methods.unshift("push"); // put push first as most convenient
+            // Ensure there is always a second method alongside push
+            if (methods.length === 1 && dbUser?.email) {
+              // Automatically add email OTP as fallback when push is the only method
+              methods.push("email");
+            }
+          }
           if (methods.length > 0) {
             const tempToken = crypto.randomBytes(32).toString("hex");
             await setPending2FA(tempToken, { userId: String(dbUser!._id), methods, expiresAt: Date.now() + 10 * 60 * 1000 });
@@ -900,10 +908,12 @@ export async function registerRoutes(
       const user = await UserModel.findById(session.userId);
 
       sendPushToUser(session.userId, {
-        title: "🔐 محاولة تسجيل دخول جديدة",
-        body: `انقر لتأكيد الدخول — الرمز: ${challengeNumber}`,
-        icon: "/icons/icon-192x192.png",
+        title: "🔐 QIROX — محاولة تسجيل دخول",
+        body: `جهاز جديد يحاول الدخول لحسابك — الرقم: ${challengeNumber} · انقر للتأكيد أو الرفض`,
+        icon: "/icon-192.png",
+        badge: "/favicon-32.png",
         tag: `push-auth-${challengeId}`,
+        requireInteraction: true,
         data: { url: `/auth/push-approve?id=${challengeId}`, challengeId, number: challengeNumber },
       }).catch(() => {});
 

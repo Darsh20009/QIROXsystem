@@ -757,12 +757,18 @@ export default function Login() {
               <div className="space-y-4">
                 {pushStatus === "idle" && (
                   <div className="text-center space-y-4 py-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-black/[0.05] mx-auto">
-                      <Smartphone className="w-8 h-8 text-black/50" />
+                    {/* App logo + phone icon */}
+                    <div className="relative inline-flex mx-auto">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-black/10 shadow-sm">
+                        <img src="/icon-192.png" alt="QIROX" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 rounded-full bg-black flex items-center justify-center border-2 border-white">
+                        <Smartphone className="w-3 h-3 text-white" />
+                      </div>
                     </div>
                     <div>
                       <p className="text-sm text-black/70 font-medium mb-1">تأكيد عبر جهازك الموثوق</p>
-                      <p className="text-xs text-black/40">سيُرسَل إشعار لأجهزتك المسجّلة تُؤكّد فيه تسجيل الدخول</p>
+                      <p className="text-xs text-black/40">سيُرسَل إشعار من QIROX لأجهزتك المسجّلة تُؤكّد فيه تسجيل الدخول</p>
                     </div>
                     <Button
                       onClick={async () => {
@@ -788,18 +794,27 @@ export default function Login() {
 
                 {pushStatus === "waiting" && pushNumber !== null && (
                   <div className="text-center space-y-4 py-2">
-                    <p className="text-xs text-black/40">تأكد أن هذا الرمز يطابق ما يظهر على جهازك الآخر:</p>
+                    {/* Push notification preview */}
+                    <div className="bg-black/[0.04] rounded-2xl p-3 border border-black/[0.06] text-right flex items-start gap-3">
+                      <img src="/icon-192.png" alt="QIROX" className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-black/10" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-black/80 mb-0.5">QIROX — محاولة تسجيل دخول</p>
+                        <p className="text-[11px] text-black/50 leading-snug">جهاز جديد يحاول الدخول لحسابك · انقر للتأكيد أو الرفض</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-black/50 font-medium">تأكد أن هذا الرقم يطابق ما يظهر على جهازك الآخر:</p>
                     {/* Big animated number */}
                     <motion.div
-                      className="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center border-2 border-black/10 bg-black/[0.03]"
-                      animate={{ borderColor: ["rgba(0,0,0,0.1)", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.1)"] }}
+                      className="w-28 h-28 mx-auto rounded-3xl flex flex-col items-center justify-center border-2 border-black/10 bg-black/[0.02] gap-1"
+                      animate={{ borderColor: ["rgba(0,0,0,0.08)", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.08)"] }}
                       transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <span className="text-5xl font-black text-black tabular-nums" dir="ltr">{pushNumber}</span>
+                      <span className="text-5xl font-black text-black tabular-nums leading-none" dir="ltr">{pushNumber}</span>
+                      <span className="text-[10px] text-black/30 font-medium">الرمز</span>
                     </motion.div>
                     <div className="flex items-center justify-center gap-2 text-black/40">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-xs">في انتظار الموافقة...</span>
+                      <span className="text-xs">في انتظار موافقتك على الجهاز الآخر...</span>
                     </div>
                     <button
                       onClick={() => { setPushStatus("idle"); setPushChallengeId(null); setPushNumber(null); setTwoFAError(""); }}
