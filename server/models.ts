@@ -1711,3 +1711,36 @@ const pushChallengeSchema = new mongoose.Schema({
   expiresAt:   { type: Date, required: true, index: { expires: 0 } },
 });
 export const PushChallengeModel = mongoose.models.PushChallenge || mongoose.model("PushChallenge", pushChallengeSchema);
+
+// ── QiroxAuth External App (تطبيقات الربط الخارجي) ───────────────────────────
+const authAppSchema = new mongoose.Schema({
+  ownerId:       { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:          { type: String, required: true },
+  description:   { type: String, default: "" },
+  domain:        { type: String, default: "" },
+  logoUrl:       { type: String, default: "" },
+  clientId:      { type: String, required: true, unique: true, index: true },
+  clientSecretHash: { type: String, required: true, select: false },
+  isActive:      { type: Boolean, default: true },
+  allowedOrigins:{ type: [String], default: [] },
+  webhookUrl:    { type: String, default: "" },
+  callCount:     { type: Number, default: 0 },
+  lastUsedAt:    { type: Date, default: null },
+}, { timestamps: true });
+authAppSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.clientSecretHash; ret.id = ret._id?.toString(); return ret; } });
+export const AuthAppModel = mongoose.models.AuthApp || mongoose.model("AuthApp", authAppSchema);
+
+// ── QiroxAuth Enrollment (اشتراكات المستخدمين الخارجيين) ─────────────────────
+const authAppEnrollmentSchema = new mongoose.Schema({
+  appId:          { type: mongoose.Schema.Types.ObjectId, ref: "AuthApp", required: true, index: true },
+  externalUserId: { type: String, required: true },
+  totpSecret:     { type: String, required: true, select: false },
+  confirmed:      { type: Boolean, default: false },
+  confirmedAt:    { type: Date, default: null },
+  lastVerifiedAt: { type: Date, default: null },
+  failCount:      { type: Number, default: 0 },
+  lockedUntil:    { type: Date, default: null },
+}, { timestamps: true });
+authAppEnrollmentSchema.index({ appId: 1, externalUserId: 1 }, { unique: true });
+authAppEnrollmentSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.totpSecret; ret.id = ret._id?.toString(); return ret; } });
+export const AuthAppEnrollmentModel = mongoose.models.AuthAppEnrollment || mongoose.model("AuthAppEnrollment", authAppEnrollmentSchema);

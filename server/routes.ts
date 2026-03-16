@@ -13,7 +13,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import crypto from "crypto";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { cache, CACHE_TTL } from "./cache";
 
 // ── Rate limiters ────────────────────────────────────────────────
@@ -9306,6 +9306,319 @@ export async function registerRoutes(
 
   // Initialize seed data
   await seedDatabase();
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ══ QiroxAuth — TOTP-as-a-Service for External Websites ═══════════
+  // ═══════════════════════════════════════════════════════════════════
+  // Middleware: verify external API credentials (client_id + client_secret)
+  async function verifyAuthApp(
+    req: any, res: any
+  ): Promise<{ app: any } | null> {
+    const { AuthAppModel } = await import("./models");
+    const clientId = req.headers["x-client-id"] || req.body?.client_id;
+    const clientSecret = req.headers["x-client-secret"] || req.body?.client_secret;
+    if (!clientId || !clientSecret) {
+      res.status(401).json({ error: "client_id و client_secret مطلوبان", code: "MISSING_CREDENTIALS" });
+      return null;
+    }
+    const app = await AuthAppModel.findOne({ clientId, isActive: true }).select("+clientSecretHash");
+    if (!app) {
+      res.status(401).json({ error: "التطبيق غير موجود أو معطّل", code: "INVALID_CLIENT" });
+      return null;
+    }
+    const bcrypt = await import("bcryptjs");
+    const valid = await bcrypt.compare(String(clientSecret), app.clientSecretHash);
+    if (!valid) {
+      res.status(401).json({ error: "بيانات الاعتماد غير صحيحة", code: "INVALID_SECRET" });
+      return null;
+    }
+    // Track usage
+    await AuthAppModel.updateOne({ _id: app._id }, { $inc: { callCount: 1 }, lastUsedAt: new Date() });
+    return { app };
+  }
+
+  const authApiVerifyLimiter = rateLimit({
+    windowMs: 60 * 1000, max: 60,
+    keyGenerator: (req: any) => {
+      const clientId = req.headers["x-client-id"] || req.body?.client_id;
+      if (clientId) return String(clientId);
+      return ipKeyGenerator(req.ip || "127.0.0.1");
+    },
+    message: { error: "تجاوزت حد الطلبات المسموح به (60 طلب/دقيقة)", code: "RATE_LIMITED" },
+  });
+
+  // ── App Management (QIROX authenticated users) ─────────────────────
+  // GET /api/auth-api/apps — list my apps
+  app.get("/api/auth-api/apps", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { AuthAppModel } = await import("./models");
+    const ownerId = (req.user as any)._id || (req.user as any).id;
+    const apps = await AuthAppModel.find({ ownerId }).sort({ createdAt: -1 });
+    res.json(apps);
+  });
+
+  // POST /api/auth-api/apps — create app
+  app.post("/api/auth-api/apps", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { AuthAppModel } = await import("./models");
+      const bcrypt = await import("bcryptjs");
+      const { name, description, domain, logoUrl, allowedOrigins, webhookUrl } = req.body;
+      if (!name) return res.status(400).json({ error: "اسم التطبيق مطلوب" });
+      const ownerId = (req.user as any)._id || (req.user as any).id;
+      // Generate client_id and client_secret
+      const clientId = "qa_" + crypto.randomBytes(12).toString("hex");
+      const rawSecret = "qs_" + crypto.randomBytes(24).toString("hex");
+      const clientSecretHash = await bcrypt.hash(rawSecret, 10);
+      const authApp = await AuthAppModel.create({
+        ownerId, name, description: description || "",
+        domain: domain || "", logoUrl: logoUrl || "",
+        allowedOrigins: allowedOrigins || [],
+        webhookUrl: webhookUrl || "",
+        clientId, clientSecretHash,
+      });
+      // Return the raw secret once — never shown again
+      res.status(201).json({ ...authApp.toJSON(), clientSecret: rawSecret });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // PATCH /api/auth-api/apps/:id — update app settings
+  app.patch("/api/auth-api/apps/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { AuthAppModel } = await import("./models");
+      const ownerId = (req.user as any)._id || (req.user as any).id;
+      const { name, description, domain, logoUrl, allowedOrigins, webhookUrl, isActive } = req.body;
+      const app = await AuthAppModel.findOneAndUpdate(
+        { _id: req.params.id, ownerId },
+        { $set: { name, description, domain, logoUrl, allowedOrigins, webhookUrl, isActive } },
+        { returnDocument: "after", runValidators: true }
+      );
+      if (!app) return res.status(404).json({ error: "التطبيق غير موجود" });
+      res.json(app);
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // DELETE /api/auth-api/apps/:id
+  app.delete("/api/auth-api/apps/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { AuthAppModel, AuthAppEnrollmentModel } = await import("./models");
+      const ownerId = (req.user as any)._id || (req.user as any).id;
+      const app = await AuthAppModel.findOneAndDelete({ _id: req.params.id, ownerId });
+      if (!app) return res.status(404).json({ error: "التطبيق غير موجود" });
+      await AuthAppEnrollmentModel.deleteMany({ appId: req.params.id });
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // POST /api/auth-api/apps/:id/regenerate-secret — new secret
+  app.post("/api/auth-api/apps/:id/regenerate-secret", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { AuthAppModel } = await import("./models");
+      const bcrypt = await import("bcryptjs");
+      const ownerId = (req.user as any)._id || (req.user as any).id;
+      const app = await AuthAppModel.findOne({ _id: req.params.id, ownerId });
+      if (!app) return res.status(404).json({ error: "التطبيق غير موجود" });
+      const rawSecret = "qs_" + crypto.randomBytes(24).toString("hex");
+      const clientSecretHash = await bcrypt.hash(rawSecret, 10);
+      await AuthAppModel.updateOne({ _id: app._id }, { clientSecretHash });
+      res.json({ clientId: app.clientId, clientSecret: rawSecret, warning: "احفظ هذا المفتاح الآن — لن يُعرض مرة أخرى" });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // GET /api/auth-api/apps/:id/stats — enrollment stats
+  app.get("/api/auth-api/apps/:id/stats", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { AuthAppModel, AuthAppEnrollmentModel } = await import("./models");
+      const ownerId = (req.user as any)._id || (req.user as any).id;
+      const authApp = await AuthAppModel.findOne({ _id: req.params.id, ownerId });
+      if (!authApp) return res.status(404).json({ error: "التطبيق غير موجود" });
+      const total = await AuthAppEnrollmentModel.countDocuments({ appId: req.params.id });
+      const confirmed = await AuthAppEnrollmentModel.countDocuments({ appId: req.params.id, confirmed: true });
+      res.json({ callCount: authApp.callCount, lastUsedAt: authApp.lastUsedAt, enrollments: { total, confirmed, pending: total - confirmed } });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── External Integration API (client_id + client_secret) ───────────
+  // All routes under /api/auth-api/v1/* are called from external websites
+
+  // POST /api/auth-api/v1/enroll
+  // Start enrollment: generate TOTP secret for a user, return QR URL
+  app.post("/api/auth-api/v1/enroll", authApiVerifyLimiter, async (req, res) => {
+    try {
+      const ctx = await verifyAuthApp(req, res);
+      if (!ctx) return;
+      const { AuthAppEnrollmentModel } = await import("./models");
+      const speakeasy = await import("speakeasy");
+      const { external_user_id, display_name } = req.body;
+      if (!external_user_id) return res.status(400).json({ error: "external_user_id مطلوب", code: "MISSING_USER_ID" });
+
+      // Check if already enrolled
+      const existing = await AuthAppEnrollmentModel.findOne({ appId: ctx.app._id, externalUserId: String(external_user_id) }).select("+totpSecret");
+      if (existing && (existing as any).confirmed) {
+        return res.status(409).json({ error: "المستخدم مسجّل بالفعل", code: "ALREADY_ENROLLED", enrolled: true });
+      }
+
+      // Generate new TOTP secret (period=15 for QiroxAuthenticator compatibility)
+      const label = display_name ? `${ctx.app.name}:${display_name}` : `${ctx.app.name}:${external_user_id}`;
+      const secret = speakeasy.default.generateSecret({ name: label, length: 20 });
+      const otpauthUrl = `otpauth://totp/${encodeURIComponent(label)}?secret=${secret.base32}&issuer=${encodeURIComponent(ctx.app.name)}&period=15`;
+
+      // Upsert enrollment record (unconfirmed)
+      await AuthAppEnrollmentModel.findOneAndUpdate(
+        { appId: ctx.app._id, externalUserId: String(external_user_id) },
+        { $set: { totpSecret: secret.base32, confirmed: false, confirmedAt: null, failCount: 0, lockedUntil: null } },
+        { upsert: true }
+      );
+
+      // Generate QR image URL (Google Charts API — no server dependency)
+      const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=${encodeURIComponent(otpauthUrl)}`;
+      res.json({
+        enrolled: false,
+        secret: secret.base32,
+        otpauth_url: otpauthUrl,
+        qr_url: qrUrl,
+        period: 15,
+        digits: 6,
+        algorithm: "SHA1",
+        issuer: ctx.app.name,
+        message: "أرسل qr_url أو otpauth_url للمستخدم ليمسحه بتطبيق QiroxAuthenticator، ثم استدعِ /enroll/confirm",
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message, code: "SERVER_ERROR" }); }
+  });
+
+  // POST /api/auth-api/v1/enroll/confirm
+  // Confirm enrollment with first valid TOTP code
+  app.post("/api/auth-api/v1/enroll/confirm", authApiVerifyLimiter, async (req, res) => {
+    try {
+      const ctx = await verifyAuthApp(req, res);
+      if (!ctx) return;
+      const { AuthAppEnrollmentModel } = await import("./models");
+      const speakeasy = await import("speakeasy");
+      const { external_user_id, code } = req.body;
+      if (!external_user_id || !code) return res.status(400).json({ error: "external_user_id و code مطلوبان", code: "MISSING_FIELDS" });
+
+      const enrollment = await AuthAppEnrollmentModel.findOne({ appId: ctx.app._id, externalUserId: String(external_user_id) }).select("+totpSecret");
+      if (!enrollment) return res.status(404).json({ error: "المستخدم غير مسجّل، استدعِ /enroll أولاً", code: "NOT_ENROLLED" });
+      if ((enrollment as any).confirmed) return res.status(409).json({ error: "التسجيل مؤكّد بالفعل", code: "ALREADY_CONFIRMED" });
+
+      const valid = speakeasy.default.totp.verify({
+        secret: (enrollment as any).totpSecret,
+        encoding: "base32",
+        token: String(code),
+        step: 15,
+        window: 3,
+      });
+      if (!valid) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية", code: "INVALID_CODE", confirmed: false });
+
+      await AuthAppEnrollmentModel.updateOne(
+        { _id: (enrollment as any)._id },
+        { confirmed: true, confirmedAt: new Date(), failCount: 0, lockedUntil: null }
+      );
+      res.json({ confirmed: true, external_user_id, message: "تم تفعيل QiroxAuthenticator لهذا المستخدم بنجاح" });
+    } catch (err: any) { res.status(500).json({ error: err.message, code: "SERVER_ERROR" }); }
+  });
+
+  // POST /api/auth-api/v1/verify
+  // Verify a TOTP code during login — main endpoint called from external website
+  app.post("/api/auth-api/v1/verify", authApiVerifyLimiter, async (req, res) => {
+    try {
+      const ctx = await verifyAuthApp(req, res);
+      if (!ctx) return;
+      const { AuthAppEnrollmentModel } = await import("./models");
+      const speakeasy = await import("speakeasy");
+      const { external_user_id, code } = req.body;
+      if (!external_user_id || !code) return res.status(400).json({ error: "external_user_id و code مطلوبان", code: "MISSING_FIELDS" });
+
+      const enrollment = await AuthAppEnrollmentModel.findOne({
+        appId: ctx.app._id,
+        externalUserId: String(external_user_id),
+        confirmed: true,
+      }).select("+totpSecret");
+
+      if (!enrollment) return res.status(404).json({ valid: false, error: "المستخدم غير مسجّل أو لم يكتمل التفعيل", code: "NOT_ENROLLED" });
+
+      // Brute-force lockout
+      const now = new Date();
+      if ((enrollment as any).lockedUntil && (enrollment as any).lockedUntil > now) {
+        const secsLeft = Math.ceil(((enrollment as any).lockedUntil.getTime() - now.getTime()) / 1000);
+        return res.status(429).json({ valid: false, error: `الحساب مقفل مؤقتاً، انتظر ${secsLeft} ثانية`, code: "LOCKED", lockedSeconds: secsLeft });
+      }
+
+      const valid = speakeasy.default.totp.verify({
+        secret: (enrollment as any).totpSecret,
+        encoding: "base32",
+        token: String(code),
+        step: 15,
+        window: 3,
+      });
+
+      if (!valid) {
+        const failCount = ((enrollment as any).failCount || 0) + 1;
+        const lockedUntil = failCount >= 5 ? new Date(now.getTime() + 5 * 60 * 1000) : null;
+        await AuthAppEnrollmentModel.updateOne({ _id: (enrollment as any)._id }, { failCount, lockedUntil });
+        return res.status(400).json({
+          valid: false,
+          code: "INVALID_CODE",
+          attemptsRemaining: Math.max(0, 5 - failCount),
+          ...(lockedUntil ? { locked: true, lockedSeconds: 300 } : {}),
+        });
+      }
+
+      // Success — reset fail counter
+      await AuthAppEnrollmentModel.updateOne({ _id: (enrollment as any)._id }, { failCount: 0, lockedUntil: null, lastVerifiedAt: now });
+      res.json({ valid: true, external_user_id, verifiedAt: now.toISOString() });
+    } catch (err: any) { res.status(500).json({ error: err.message, code: "SERVER_ERROR" }); }
+  });
+
+  // GET /api/auth-api/v1/status?external_user_id=xxx
+  // Check enrollment status for a user
+  app.get("/api/auth-api/v1/status", authApiVerifyLimiter, async (req, res) => {
+    try {
+      const ctx = await verifyAuthApp(req, res);
+      if (!ctx) return;
+      const { AuthAppEnrollmentModel } = await import("./models");
+      const external_user_id = req.query.external_user_id as string;
+      if (!external_user_id) return res.status(400).json({ error: "external_user_id مطلوب في query string", code: "MISSING_USER_ID" });
+
+      const enrollment = await AuthAppEnrollmentModel.findOne({ appId: ctx.app._id, externalUserId: external_user_id });
+      if (!enrollment) return res.json({ enrolled: false, confirmed: false });
+
+      res.json({
+        enrolled: true,
+        confirmed: (enrollment as any).confirmed,
+        confirmedAt: (enrollment as any).confirmedAt,
+        lastVerifiedAt: (enrollment as any).lastVerifiedAt,
+        locked: !!(enrollment as any).lockedUntil && (enrollment as any).lockedUntil > new Date(),
+      });
+    } catch (err: any) { res.status(500).json({ error: err.message, code: "SERVER_ERROR" }); }
+  });
+
+  // DELETE /api/auth-api/v1/unenroll
+  // Remove a user's TOTP enrollment (e.g., when user disables 2FA on external site)
+  app.delete("/api/auth-api/v1/unenroll", authApiVerifyLimiter, async (req, res) => {
+    try {
+      const ctx = await verifyAuthApp(req, res);
+      if (!ctx) return;
+      const { AuthAppEnrollmentModel } = await import("./models");
+      const external_user_id = req.body.external_user_id || req.query.external_user_id;
+      if (!external_user_id) return res.status(400).json({ error: "external_user_id مطلوب", code: "MISSING_USER_ID" });
+
+      const result = await AuthAppEnrollmentModel.findOneAndDelete({ appId: ctx.app._id, externalUserId: String(external_user_id) });
+      if (!result) return res.status(404).json({ error: "المستخدم غير مسجّل", code: "NOT_FOUND" });
+      res.json({ ok: true, unenrolled: true, external_user_id });
+    } catch (err: any) { res.status(500).json({ error: err.message, code: "SERVER_ERROR" }); }
+  });
+
+  // GET /api/auth-api/v1/ping — health check for external integrations
+  app.get("/api/auth-api/v1/ping", async (req, res) => {
+    const ctx = await verifyAuthApp(req, res);
+    if (!ctx) return;
+    res.json({ ok: true, app: ctx.app.name, domain: ctx.app.domain, time: new Date().toISOString() });
+  });
 
   // ═══════════════════════════════════════════════════════════════════
   // ══════════════ 2FA TOTP ════════════════════════════════════════════
