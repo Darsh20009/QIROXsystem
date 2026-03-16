@@ -10017,9 +10017,9 @@ export async function registerRoutes(
 
   // POST /api/admin/phone-verifications/:token/resolve  — employee marks call verified
   app.post("/api/admin/phone-verifications/:token/resolve", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { PhoneVerifyOtpModel, UserModel } = await import("./models");
+      const { PhoneVerifyOtpModel, UserModel, NotificationModel } = await import("./models");
       const me = req.user as any;
       const record = await (PhoneVerifyOtpModel as any).findOne({ token: req.params.token });
       if (!record) return res.status(404).json({ error: "الطلب غير موجود" });
@@ -10029,17 +10029,47 @@ export async function registerRoutes(
       record.resolvedBy = me._id || me.id;
       record.resolvedAt = new Date();
       await record.save();
-      await (UserModel as any).findByIdAndUpdate(record.userId, {
-        phone: record.phone,
-        phoneVerified: true,
+      const dbUser = await (UserModel as any).findByIdAndUpdate(
+        record.userId,
+        { phone: record.phone, phoneVerified: true },
+        { new: true }
+      ).select("fullName username").lean();
+      const clientName = (dbUser as any)?.fullName || (dbUser as any)?.username || "العميل";
+      // Persist in-app notification for the client
+      await (NotificationModel as any).create({
+        userId: record.userId,
+        forAdmins: false,
+        type: "success",
+        title: "✅ تم توثيق رقم جوالك",
+        body: `تم التحقق من رقمك ${record.phone} بنجاح. شكراً لاستخدام خدماتنا!`,
+        link: "/dashboard",
       });
-      res.json({ success: true, phone: record.phone });
+      // Push real-time WebSocket notification to the client immediately
+      (async () => {
+        try {
+          const { pushToUser } = await import("./ws");
+          pushToUser(String(record.userId), {
+            type: "phone_verified",
+            phone: record.phone,
+          });
+          pushToUser(String(record.userId), {
+            type: "notification",
+            notification: {
+              type: "success",
+              title: "✅ تم توثيق رقم جوالك",
+              body: `تم التحقق من رقمك ${record.phone} بنجاح. شكراً لاستخدام خدماتنا!`,
+              link: "/dashboard",
+            },
+          });
+        } catch {}
+      })();
+      res.json({ success: true, phone: record.phone, clientName });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // POST /api/admin/phone-verifications/:token/cancel  — cancel a call request
   app.post("/api/admin/phone-verifications/:token/cancel", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { PhoneVerifyOtpModel } = await import("./models");
       const record = await (PhoneVerifyOtpModel as any).findOne({ token: req.params.token });

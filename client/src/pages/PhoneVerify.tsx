@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Phone, CheckCircle2, Loader2, ShieldCheck,
-  Clock, PhoneCall, Info
+  Clock, PhoneCall, Info, Star
 } from "lucide-react";
 
 type Stage = "enter-phone" | "call-wait" | "done";
@@ -30,6 +30,7 @@ export default function PhoneVerify() {
   const [phone, setPhone] = useState((user as any)?.phone || "");
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [remaining, setRemaining] = useState("");
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -43,6 +44,54 @@ export default function PhoneVerify() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [expiresAt]);
+
+  // ── Polling: check verification status every 5s while waiting for call ──
+  useQuery({
+    queryKey: ["/api/phone-verify/status", "poll"],
+    queryFn: () => apiRequest("GET", "/api/phone-verify/status").then(r => r.json()),
+    refetchInterval: stage === "call-wait" ? 5000 : false,
+    enabled: stage === "call-wait",
+    select: (data: any) => data,
+    staleTime: 0,
+  });
+
+  // Watch verification status changes to auto-transition to "done"
+  const { data: verifyStatus } = useQuery({
+    queryKey: ["/api/phone-verify/status"],
+    enabled: stage === "call-wait",
+    refetchInterval: stage === "call-wait" ? 5000 : false,
+    staleTime: 0,
+  }) as { data: any };
+
+  useEffect(() => {
+    if (stage === "call-wait" && verifyStatus?.phoneVerified) {
+      setStage("done");
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
+    }
+  }, [verifyStatus, stage]);
+
+  // ── WebSocket: listen for "phone_verified" push for instant response ──
+  useEffect(() => {
+    if (stage !== "call-wait" || !(user as any)?.id) return;
+    const uid = String((user as any).id || (user as any)._id);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    wsRef.current = ws;
+    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", userId: uid }));
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "phone_verified") {
+          setStage("done");
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/phone-verify/status"] });
+        }
+      } catch {}
+    };
+    ws.onerror = () => {};
+    return () => { ws.close(); wsRef.current = null; };
+  }, [stage, (user as any)?.id]);
 
   const initMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/phone-verify/init", { phone, method: "call" }).then(r => r.json()),
@@ -78,8 +127,8 @@ export default function PhoneVerify() {
           </div>
           <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{L ? "رقمك موثّق" : "Phone Already Verified"}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">{L ? "رقم جوالك تم توثيقه مسبقاً." : "Your phone number has already been verified."}</p>
-          <Button onClick={() => navigate(nextAfterVerify)} className="rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white h-11">
-            {isRegisterFlow ? "متابعة ←" : "لوحة التحكم"}
+          <Button onClick={() => navigate("/dashboard")} className="rounded-2xl px-8 h-12 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black">
+            {L ? "لوحة التحكم" : "Go to Dashboard"}
           </Button>
         </div>
       </div>
@@ -87,16 +136,15 @@ export default function PhoneVerify() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={dir}>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-violet-950 flex flex-col" dir={dir}>
       {/* Header */}
-      <div className="bg-gray-900 dark:bg-gray-950 border-b border-white/5 px-5 pb-6">
-        <div className="max-w-lg mx-auto pt-10">
+      <div className="px-5 pt-6 pb-4">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
           {isRegisterFlow && (
-            <div className="flex items-center gap-1 mb-5">
+            <div className="flex items-center gap-2">
               {[
-                { n: 1, label: L ? "البيانات" : "Info", done: true },
-                { n: 2, label: L ? "البريد" : "Email", done: true },
+                { n: 1, label: L ? "الحساب" : "Account", done: true },
+                { n: 2, label: L ? "الملف" : "Profile", done: true },
                 { n: 3, label: L ? "الجوال" : "Phone", done: false, active: true },
                 { n: 4, label: L ? "الترحيب" : "Welcome", done: false },
               ].map((step, i) => (
@@ -126,7 +174,7 @@ export default function PhoneVerify() {
       </div>
 
       {/* Body */}
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-lg mx-auto px-4 py-6 w-full">
         <AnimatePresence mode="wait">
 
           {/* ── STAGE: Enter Phone ── */}
@@ -225,22 +273,38 @@ export default function PhoneVerify() {
           {/* ── STAGE: Done ── */}
           {stage === "done" && (
             <motion.div key="done" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }} className="text-center">
-              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-8 shadow-sm">
+              <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 p-8 shadow-sm space-y-4">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.1, stiffness: 250 }}
-                  className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                  className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto">
                   <ShieldCheck className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
                 </motion.div>
-                <h2 className="font-black text-gray-900 dark:text-white text-2xl mb-2">{L ? "تم التوثيق!" : "Verified!"}</h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{L ? "رقم جوالك موثّق بنجاح" : "Your phone number has been verified successfully"}</p>
-                <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl px-4 py-2 mb-6">
+                <div>
+                  <h2 className="font-black text-gray-900 dark:text-white text-2xl mb-1">{L ? "تم التوثيق بنجاح! 🎉" : "Verified Successfully! 🎉"}</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{L ? "رقم جوالك موثّق الآن" : "Your phone number is now verified"}</p>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl px-4 py-2">
                   <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400" dir="ltr">{phone}</span>
+                </div>
+                {/* Service rating prompt */}
+                <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800/30 rounded-2xl p-4">
+                  <div className="flex items-center justify-center gap-1 mb-2">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className="w-5 h-5 text-violet-400 fill-violet-400" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-violet-700 dark:text-violet-300 font-semibold">
+                    {L ? "شكراً لاستخدام خدمات QIROX Studio!" : "Thank you for using QIROX Studio services!"}
+                  </p>
+                  <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5">
+                    {L ? "يسعدنا خدمتك دائماً" : "We're always happy to serve you"}
+                  </p>
                 </div>
                 <Button onClick={() => navigate(nextAfterVerify)}
                   className="w-full h-12 rounded-2xl bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-black gap-2"
                   data-testid="btn-done">
                   <CheckCircle2 className="w-4 h-4" />
-                  {isRegisterFlow ? "متابعة ←" : "لوحة التحكم"}
+                  {isRegisterFlow ? (L ? "متابعة ←" : "Continue →") : (L ? "لوحة التحكم" : "Dashboard")}
                 </Button>
               </div>
             </motion.div>
