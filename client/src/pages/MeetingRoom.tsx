@@ -863,15 +863,28 @@ export default function MeetingRoom() {
   }, [videoOn, screenSharing, cameraFacing, toast]);
 
   const stopScreenShare = useCallback(async () => {
+    const _ua2 = navigator.userAgent;
+    const _isMobile = /iPad|iPhone|iPod|Android/.test(_ua2) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
     try {
       const cam = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: cameraFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
       const camTrack = cam.getVideoTracks()[0];
-      pcsRef.current.forEach(pc => {
+      const peersNeedingRenegotiation: string[] = [];
+      pcsRef.current.forEach((pc, peerId) => {
         const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) sender.replaceTrack(camTrack);
+        if (_isMobile) {
+          // Mobile: remove+addTrack+renegotiate — replaceTrack unreliable when switching
+          // from screen back to camera
+          if (sender) { try { pc.removeTrack(sender); } catch {} }
+          try { pc.addTrack(camTrack, new MediaStream([camTrack])); } catch {}
+          peersNeedingRenegotiation.push(peerId);
+        } else {
+          if (sender) { sender.replaceTrack(camTrack).catch(() => {}); }
+        }
       });
       localStreamRef.current?.getVideoTracks().forEach(t => t.stop());
       const audio = localStreamRef.current?.getAudioTracks()[0];
@@ -880,6 +893,17 @@ export default function MeetingRoom() {
       setLocalStream(newStream);
       setVideoOn(true);
       sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: true });
+      if (_isMobile) {
+        for (const peerId of peersNeedingRenegotiation) {
+          const pc = pcsRef.current.get(peerId);
+          if (!pc) continue;
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
+          } catch {}
+        }
+      }
     } catch {
       // Camera unavailable — remove video senders and renegotiate
       const peersNeedingRenegotiation: string[] = [];
@@ -897,7 +921,6 @@ export default function MeetingRoom() {
       setLocalStream(newStream);
       setVideoOn(false);
       sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: false });
-      // Renegotiate to inform peers video is gone
       for (const peerId of peersNeedingRenegotiation) {
         const pc = pcsRef.current.get(peerId);
         if (!pc) continue;
@@ -1071,11 +1094,16 @@ export default function MeetingRoom() {
     for (const [peerId, pc] of pcsRef.current) {
       const sender = pc.getSenders().find(s => s.track?.kind === "video");
       if (sender) {
-        await sender.replaceTrack(screenTrack).catch(() => {
-          pc.addTrack(screenTrack, newStream);
-        });
-        // Mobile (iOS/Android): always renegotiate — codec must adapt to screen content
+        // iOS/Android: replaceTrack often silently fails for screen tracks due to codec
+        // mismatch — always remove+addTrack+renegotiate on mobile for reliability
         if (isIOSDevice || isAndroidDevice) {
+          try { pc.removeTrack(sender); } catch {}
+          try { pc.addTrack(screenTrack, newStream); } catch {}
+          peersNeedingRenegotiation.push(peerId);
+        } else {
+          await sender.replaceTrack(screenTrack).catch(() => {
+            pc.addTrack(screenTrack, newStream);
+          });
           peersNeedingRenegotiation.push(peerId);
         }
       } else {
@@ -2254,9 +2282,19 @@ export default function MeetingRoom() {
 
       {/* Screen share approved notification */}
       {screenShareApproved && !screenSharing && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl whitespace-nowrap animate-pulse" style={{ background: "rgba(22,163,74,0.15)", border: "1px solid rgba(74,222,128,0.3)" }}>
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 px-3 py-2 rounded-2xl shadow-2xl backdrop-blur-xl whitespace-nowrap" style={{ background: "rgba(22,163,74,0.15)", border: "1px solid rgba(74,222,128,0.3)" }}>
           <MonitorUp className="w-4 h-4 text-green-300 shrink-0" />
-          <span className="text-green-200 text-sm font-semibold">تمت الموافقة! اضغط على زر مشاركة الشاشة الآن</span>
+          <span className="text-green-200 text-sm font-semibold hidden sm:inline">تمت الموافقة!</span>
+          {/* Direct "Start Now" tap — critical for mobile user gesture */}
+          <button
+            onClick={toggleScreenShare}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold text-white transition-all active:scale-95"
+            style={{ background: "rgba(22,163,74,0.85)", border: "1px solid rgba(74,222,128,0.5)" }}
+            data-testid="button-screen-share-start-now"
+          >
+            <MonitorUp className="w-3.5 h-3.5" />
+            <span>ابدأ الآن</span>
+          </button>
           <button onClick={() => setScreenShareApproved(false)} className="text-green-400/60 hover:text-green-200 transition-colors"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
