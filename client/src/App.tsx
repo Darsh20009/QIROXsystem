@@ -20,6 +20,7 @@ import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
+import { AIWelcomeIntro } from "@/components/AIWelcomeIntro";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -815,6 +816,13 @@ function AppInner() {
             <MobileBottomNav />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
+            {user && user.role !== "client" && (
+              <AIWelcomeIntro
+                userId={user.id}
+                userName={user.fullName || ""}
+                userRole={user.role}
+              />
+            )}
             <Toaster />
           </div>
         </div>

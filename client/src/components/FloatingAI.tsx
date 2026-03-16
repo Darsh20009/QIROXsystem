@@ -14,6 +14,13 @@ export function FloatingAI() {
     return () => clearTimeout(t);
   }, []);
 
+  // Listen for external "open AI" events (from AIWelcomeIntro CTA)
+  useEffect(() => {
+    const handler = () => { setOpen(true); setPulse(false); };
+    window.addEventListener("qirox-open-ai", handler);
+    return () => window.removeEventListener("qirox-open-ai", handler);
+  }, []);
+
   if (!user) return null;
 
   return (
