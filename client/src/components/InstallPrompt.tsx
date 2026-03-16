@@ -3,6 +3,15 @@ import { Download, X, Share, PlusSquare } from 'lucide-react';
 import { Button } from './ui/button';
 import { useI18n } from '@/lib/i18n';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+interface NavigatorStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 const IOS_DISMISS_KEY = 'qirox_ios_install_dismissed';
 const IOS_DISMISS_DAYS = 7;
 
@@ -10,14 +19,14 @@ function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   if (/iphone|ipad|ipod/i.test(ua)) return true;
-  const nav = navigator as any;
-  if (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1) return true;
+  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
   return false;
 }
 
 function isInStandaloneMode(): boolean {
   if (typeof window === 'undefined') return false;
-  return ('standalone' in (navigator as any) && (navigator as any).standalone === true)
+  const nav = navigator as NavigatorStandalone;
+  return (nav.standalone === true)
     || window.matchMedia('(display-mode: standalone)').matches;
 }
 
@@ -134,7 +143,7 @@ export default function InstallPrompt() {
   const { lang } = useI18n();
   const ar = lang === 'ar';
   const [showPrompt, setShowPrompt] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
   useEffect(() => {
@@ -143,9 +152,9 @@ export default function InstallPrompt() {
       return () => clearTimeout(timer);
     }
 
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPrompt(true);
     };
 
