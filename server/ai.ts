@@ -1,176 +1,28 @@
 // @ts-nocheck
 /**
- * QIROX AI — Intelligent assistant backend
- * Uses Serper.dev for web search + built-in platform knowledge
+ * QIROX AI — Powered by OpenAI (via OpenRouter)
+ * Intelligent assistant with full platform knowledge, creative responses,
+ * analytics insights, and multi-role support.
  */
 import type { Express } from "express";
+import OpenAI from "openai";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
-import { PricingPlanModel } from "./models";
 
+/* ─── OpenAI client (OpenRouter compatible) ─── */
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  defaultHeaders: {
+    "HTTP-Referer": "https://qiroxstudio.online",
+    "X-Title": "QIROX Studio AI",
+  },
+});
+
+const AI_MODEL = "openai/gpt-4o-mini";
+
+/* ─── Serper.dev for web search ─── */
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";
-
-/* ─── Session store (in-memory, keyed by sessionId) ─── */
-interface Session {
-  mode: "GENERAL" | "EMAIL" | "PACKAGE_ADVISOR" | "CUSTOM_ORDER" | "PAGE_EXPLAIN";
-  step: number;
-  data: Record<string, any>;
-  history: { role: "user" | "ai"; text: string }[];
-  userId?: string;
-  userRole?: string;
-}
-
-/* ─── System data injected per-request ─── */
-interface SystemData {
-  orders?: { total: number; pending: number; active: number; completed: number; lastOrder?: any };
-  projects?: { total: number; active: number };
-  wallet?: { balance: number };
-  notifications?: { unread: number };
-  stats?: Record<string, any>;
-}
-const sessions = new Map<string, Session>();
-function getSession(id: string, userId?: string, role?: string): Session {
-  if (!sessions.has(id)) {
-    sessions.set(id, { mode: "GENERAL", step: 0, data: {}, history: [], userId, userRole: role });
-  }
-  const s = sessions.get(id)!;
-  if (userId) s.userId = userId;
-  if (role) s.userRole = role;
-  return s;
-}
-
-/* ─── Platform knowledge base ─── */
-const PAGE_KB: Record<string, { ar: string; role: string; desc: string; tips: string[]; keywords?: string[] }> = {
-  dashboard: {
-    ar: "لوحة القيادة",
-    role: "all",
-    desc: "الصفحة الرئيسية التي تعرض ملخصاً شاملاً للأداء: إجمالي الإيرادات، عدد الطلبات النشطة، نمو العملاء، والتنبيهات المهمة. هي نقطة انطلاقك كل يوم.",
-    tips: ["راجع لوحة القيادة أول الصباح لمعرفة المستجدات", "تستطيع تخصيص الويدجت حسب احتياجك", "الرسوم البيانية تُحدَّث في الوقت الفعلي"],
-  },
-  orders: {
-    ar: "إدارة الطلبات",
-    role: "admin,employee",
-    desc: "هنا تُدار جميع طلبات العملاء من البداية للنهاية. تستطيع تغيير حالة الطلب، تعيين الموظف المسؤول، إضافة ملاحظات، وإرسال تحديثات للعميل تلقائياً.",
-    tips: ["استخدم الفلاتر لعرض الطلبات حسب الحالة", "انقر على أي طلب لعرض تفاصيله الكاملة", "التنبيهات الصفراء تعني طلبات تحتاج انتباهاً"],
-  },
-  customers: {
-    ar: "العملاء",
-    role: "admin,employee",
-    desc: "قاعدة بيانات كاملة لجميع العملاء مع تاريخ معاملاتهم، طلباتهم، فواتيرهم، ومراسلاتهم. يمكنك البحث والتصفية وتصدير البيانات.",
-    tips: ["انقر على اسم العميل لرؤية ملفه الكامل", "يمكن إرسال بريد مباشر من ملف العميل", "الفلتر الأحمر يعني عميل متأخر في الدفع"],
-  },
-  employees: {
-    ar: "الموظفون",
-    role: "admin",
-    desc: "إدارة فريق العمل بالكامل: الصلاحيات، الرواتب، الحضور، المهام المُعيّنة، والأداء. كل موظف له لوحة تحكم خاصة.",
-    tips: ["حدد صلاحيات كل موظف بدقة من تبويب الصلاحيات", "تقارير الحضور تُولَّد تلقائياً شهرياً", "يمكن ربط الموظف بمشاريع محددة فقط"],
-  },
-  finance: {
-    ar: "المالية",
-    role: "admin",
-    desc: "مركز التحكم المالي: الإيرادات والمصروفات، تقارير الأرباح، التدفق النقدي، الفواتير المعلّقة، وتحليلات مالية متعمقة.",
-    tips: ["الرسم البياني الشهري يقارن الأداء بالأشهر السابقة", "يمكن تصدير التقارير بصيغة PDF أو Excel", "احرص على مراجعة الفواتير المعلّقة أسبوعياً"],
-  },
-  kanban: {
-    ar: "لوحة كانبان",
-    role: "admin,employee",
-    desc: "لوحة إدارة المشاريع بأسلوب كانبان: تتبع مراحل المشروع من البداية حتى التسليم. يمكن سحب البطاقات وإفلاتها بين الأعمدة.",
-    tips: ["كل بطاقة تمثل مهمة أو مرحلة مشروع", "اللون الأحمر يعني مهمة متأخرة", "يمكن إضافة تعليقات وملفات لكل بطاقة"],
-  },
-  invoices: {
-    ar: "الفواتير",
-    role: "admin,employee",
-    desc: "إنشاء وإرسال فواتير احترافية للعملاء بضغطة واحدة. تتبع حالة كل فاتورة (معلّقة، مدفوعة، متأخرة) مع إمكانية الإرسال التلقائي.",
-    tips: ["الفواتير تُرسَل تلقائياً بالبريد الإلكتروني", "يمكن إضافة لوغو وبيانات الشركة للفاتورة", "التذكيرات التلقائية تُرسَل للفواتير المتأخرة"],
-  },
-  analytics: {
-    ar: "التحليلات",
-    role: "admin",
-    desc: "تقارير وإحصاءات مفصّلة: أكثر الخدمات مبيعاً، معدل التحويل، مصادر العملاء، وأداء كل موظف. بيانات حقيقية لقرارات أفضل.",
-    tips: ["غيّر الفترة الزمنية لمقارنة الأداء", "أقسام التحليل قابلة للتصدير", "ربط التحليلات بالأهداف الشهرية"],
-  },
-  wallet: {
-    ar: "المحفظة",
-    role: "client",
-    desc: "محفظتك الإلكترونية في منصة QIROX: رصيدك الحالي، سجل جميع المعاملات (إيداع وسحب)، ورموز الكاشباك. يمكن استخدام الرصيد في سداد الطلبات.",
-    tips: ["رصيد المحفظة يُستخدم تلقائياً عند الدفع", "كل طلب مكتمل يضيف نقاط ولاء", "يمكن تعبئة الرصيد عبر التحويل البنكي"],
-  },
-  contracts: {
-    ar: "العقود",
-    role: "client,admin",
-    desc: "عرض وتوقيع العقود الرقمية الخاصة بمشاريعك. جميع العقود محفوظة وقابلة للتحميل في أي وقت.",
-    tips: ["العقد يُفعَّل تلقائياً عند توقيعه", "احتفظ بنسخة من كل عقد في جهازك", "التعديلات على العقد تتطلب موافقة الطرفين"],
-  },
-  loyalty: {
-    ar: "الولاء والمكافآت",
-    role: "client",
-    desc: "برنامج ولاء QIROX: اجمع نقاطاً مع كل طلب وحوّلها لخصومات أو خدمات مجانية. كلما زادت مشترياتك، كلما زادت مكافآتك.",
-    tips: ["كل 100 ريال = 10 نقاط ولاء", "يمكن استبدال 500 نقطة بـ 50 ريال خصم", "المستويات الأعلى تحصل على أولوية في الدعم"],
-  },
-  prices: {
-    ar: "الأسعار والباقات",
-    role: "all",
-    desc: "صفحة عرض جميع الباقات والأسعار مع المقارنة التفصيلية. اختر الباقة المناسبة لنشاطك وأضفها للسلة مباشرة.",
-    tips: ["الدفع السنوي يوفر حتى 20%", "الباقة لايت مثالية للبدايات", "الباقة إنفينيت للمشاريع الكبيرة والمعقدة"],
-  },
-  cart: {
-    ar: "سلة التسوق",
-    role: "all",
-    desc: "مراجعة ما اخترته من باقات وخدمات قبل إتمام الطلب. يمكن تعديل الكميات أو حذف العناصر.",
-    tips: ["يمكنك إضافة كوبون خصم في هذه الصفحة", "مراجعة الإجمالي قبل المتابعة للدفع", "الضغط على إتمام الطلب يفتح مساعد المشروع"],
-  },
-  attendance: {
-    ar: "الحضور والانصراف",
-    role: "employee,admin",
-    desc: "نظام تسجيل الحضور والانصراف بالبصمة أو الكود. يحسب ساعات العمل تلقائياً ويولّد تقارير شهرية.",
-    tips: ["سجّل حضورك في بداية يوم العمل", "النظام يحسب الساعات الإضافية تلقائياً", "التقارير الشهرية تُرفَع للمحاسبة مباشرة"],
-  },
-  profile: {
-    ar: "الملف الشخصي",
-    role: "all",
-    desc: "إدارة بياناتك الشخصية، صورة الملف، كلمة المرور، وإعدادات الأمان مثل التحقق الثنائي.",
-    tips: ["فعّل التحقق الثنائي لأمان أعلى", "احرص على رفع صورة احترافية", "تحديث رقم الهاتف يستلزم تأكيد OTP"],
-  },
-  payroll: {
-    ar: "الرواتب",
-    role: "admin",
-    desc: "إدارة رواتب الموظفين: الراتب الأساسي، البدلات، الخصومات، وكشف الرواتب الشهري. إرسال تلقائي لإيصالات الراتب.",
-    tips: ["راتب الشهر يُعالَج في اليوم الأخير تلقائياً", "يمكن إضافة مكافآت استثنائية في أي وقت", "كشف الرواتب يُصدَّر بصيغة Excel"],
-  },
-};
-
-/* ─── Package knowledge ─── */
-const PACKAGES = [
-  {
-    tier: "lite",
-    nameAr: "لايت",
-    price: 5000,
-    desc: "مثالية للمشاريع الصغيرة والناشئة. تشمل الأساسيات الكاملة لإطلاق مشروعك الرقمي.",
-    features: ["موقع إلكتروني", "إدارة المنتجات", "نظام الطلبات", "لوحة تحكم", "دعم فني"],
-    ideal: ["مطعم صغير", "متجر ناشئ", "مؤسسة تعليمية صغيرة", "مقدم خدمة فردي"],
-    notGood: ["شركات كبيرة", "متاجر بآلاف المنتجات", "نظام متعدد الفروع"],
-  },
-  {
-    tier: "pro",
-    nameAr: "برو",
-    price: 10000,
-    desc: "للمشاريع المتنامية التي تحتاج قوة أكبر. تكاملات متقدمة وميزات احترافية.",
-    features: ["كل ميزات لايت", "تطبيق جوال", "بوابة دفع إلكتروني", "CRM", "تقارير متقدمة", "ذكاء اصطناعي"],
-    ideal: ["مطعم أو سلسلة متوسطة", "متجر إلكتروني متنامي", "شركة خدمات", "منصة تعليمية"],
-    notGood: ["تطبيقات تحتاج تخصيص عالي جداً", "أنظمة حكومية"],
-  },
-  {
-    tier: "infinite",
-    nameAr: "إنفينيت",
-    price: 20000,
-    desc: "للمشاريع الكبيرة التي لا حدود لها. تخصيص كامل، خادم مخصص، وأولوية قصوى في الدعم.",
-    features: ["كل ميزات برو", "تخصيص كامل", "خادم مخصص", "API خارجية", "فريق دعم مخصص", "تكاملات غير محدودة"],
-    ideal: ["سلاسل كبيرة", "شركات مؤسسية", "منصات SaaS", "مشاريع حكومية"],
-    notGood: ["مشاريع ذات ميزانية محدودة"],
-  },
-];
-
-/* ─── Serper.dev search ─── */
 async function searchWeb(query: string): Promise<string> {
   try {
     const res = await axios.post(
@@ -179,788 +31,345 @@ async function searchWeb(query: string): Promise<string> {
       { headers: { "X-API-KEY": SERPER_KEY, "Content-Type": "application/json" }, timeout: 8000 }
     );
     const results = res.data?.organic?.slice(0, 3) || [];
-    if (!results.length) return "لم أجد نتائج محددة، يمكنني مساعدتك بطريقة أخرى.";
-    return results.map((r: any, i: number) => `${i + 1}. **${r.title}**: ${r.snippet}`).join("\n\n");
+    if (!results.length) return "";
+    return results.map((r: any, i: number) => `${i + 1}. ${r.title}: ${r.snippet}`).join("\n");
   } catch {
-    return "لم أتمكن من البحث الآن، لكن يمكنني الإجابة من معلوماتي عن المنصة.";
+    return "";
   }
 }
 
-/* ─── Intent detection ─── */
-function detectIntent(msg: string, session: Session): string {
-  const m = msg.toLowerCase();
-  if (session.mode !== "GENERAL") return session.mode;
-  const mNorm = m.replace(/أ|إ|آ/g, "ا").replace(/ة/g, "ه");
-  // System status (admin/employee) — Saudi dialect: وش صاير، ايش الوضع، كيف الشغل
-  if (mNorm.includes("وش صاير") || mNorm.includes("ايش صاير") || mNorm.includes("ايش الوضع") || mNorm.includes("وش الوضع") || mNorm.includes("كيف الشغل") || mNorm.includes("كيف الاوضاع") || mNorm.includes("شو في") || mNorm.includes("وش في جديد") || mNorm.includes("ايش في") || mNorm.includes("الوضع كيف") || mNorm.includes("ايش اخبار النظام") || mNorm.includes("وش اخبار")) return "SYSTEM_STATUS";
-  // My data / real user info — expanded with Saudi dialect
-  if (mNorm.includes("طلباتي") || mNorm.includes("مشاريعي") || mNorm.includes("رصيدي") || mNorm.includes("محفظتي") || mNorm.includes("احصائياتي") || mNorm.includes("احصاءاتي") || mNorm.includes("وضعي") || mNorm.includes("بياناتي") || mNorm.includes("ملخص") || mNorm.includes("حسابي") || mNorm.includes("كم لدي") || mNorm.includes("كم عندي") || mNorm.includes("ايش عندي") || mNorm.includes("ايش لدي") || mNorm.includes("ماذا لدي") || mNorm.includes("show me my") || mNorm.includes("my orders") || mNorm.includes("my balance") || mNorm.includes("وش عندي") || mNorm.includes("ابي اشوف حسابي") || mNorm.includes("حسابي وش فيه") || mNorm.includes("زبايني") || mNorm.includes("كلاينتس")) return "MY_DATA";
-  // Navigate — expanded
-  if (mNorm.includes("روح") || mNorm.includes("روح ل") || mNorm.includes("اذهب") || mNorm.includes("انتقل") || mNorm.includes("افتح") || mNorm.includes("اريد اشوف") || mNorm.includes("خذني") || mNorm.includes("navigate") || mNorm.includes("go to") || mNorm.includes("open page") || mNorm.includes("ودني") || mNorm.includes("وصلني") || mNorm.includes("ابغى اروح")) return "NAVIGATE";
-  // Consultation
-  if (mNorm.includes("استشاره") || mNorm.includes("استشر") || mNorm.includes("نصيحه خاصه") || mNorm.includes("ابغى تتصل") || mNorm.includes("تواصل معي") || mNorm.includes("كلمني") || mNorm.includes("محتاج شخص") || mNorm.includes("consultation") || mNorm.includes("تكلم معي") || mNorm.includes("ابغى احد يتصل")) return "CONSULTATION";
-  // Email
-  if (mNorm.includes("ارسل بريد") || mNorm.includes("بعث ايميل") || mNorm.includes("ارسل ايميل") || mNorm.includes("send email") || mNorm.includes("ارسل رساله") || mNorm.includes("بريد الكتروني") || mNorm.includes("ايميل") || m.includes("mail") || mNorm.includes("ابعث") || mNorm.includes("راسل")) return "EMAIL";
-  // Package advisor — Saudi dialect
-  if (mNorm.includes("انسب باقه") || mNorm.includes("اي باقه") || mNorm.includes("ساعدني تختار") || mNorm.includes("الباقه المناسبه") || mNorm.includes("بدي باقه") || mNorm.includes("اختر لي") || mNorm.includes("انسب خطه") || mNorm.includes("which plan") || mNorm.includes("help me choose") || mNorm.includes("ابغى باقه") || mNorm.includes("وش الباقه") || mNorm.includes("ايش الباقه") || mNorm.includes("اختار لي باقه")) return "PACKAGE_ADVISOR";
-  // Custom order
-  if (mNorm.includes("طلب مخصص") || mNorm.includes("مشروع مخصص") || mNorm.includes("ما فيه باقه") || mNorm.includes("ما في باقه") || mNorm.includes("custom order") || mNorm.includes("احتياج خاص") || mNorm.includes("شي خاص") || mNorm.includes("غير مألوف")) return "CUSTOM_ORDER";
-  // Page explain
-  if (mNorm.includes("ما هي") || mNorm.includes("ما هو") || mNorm.includes("شرح") || mNorm.includes("اشرح") || mNorm.includes("يعمل") || mNorm.includes("وظيفه") || mNorm.includes("صفحه") || mNorm.includes("ايش هي") || mNorm.includes("وش هي") || mNorm.includes("ايش هو") || mNorm.includes("وش هو")) return "PAGE_EXPLAIN";
-  // Web search
-  if (mNorm.includes("ابحث") || mNorm.includes("بحث") || mNorm.includes("search") || mNorm.includes("معلومه عن") || mNorm.includes("ما هو ال") || m.startsWith("ما ")) return "SEARCH";
-  return "GENERAL";
+/* ─── Session store ─── */
+interface Message { role: "user" | "assistant"; content: string }
+interface Session {
+  history: Message[];
+  userId?: string;
+  userRole?: string;
 }
+const sessions = new Map<string, Session>();
 
-/* ─── Navigation URL map ─── */
-const NAV_PAGES: { keywords: string[]; url: string; label: string }[] = [
-  { keywords: ["الطلبات","طلباتي","طلبات","orders"], url: "/dashboard", label: "لوحة التحكم — الطلبات" },
-  { keywords: ["المشاريع","مشاريعي","projects","مشروع"], url: "/project/status", label: "المشاريع" },
-  { keywords: ["الأسعار","الباقات","prices","باقة","أسعار"], url: "/prices", label: "الأسعار والباقات" },
-  { keywords: ["السلة","cart","الكارت","عربة التسوق"], url: "/cart", label: "سلة التسوق" },
-  { keywords: ["الفاتورة","الفواتير","invoice","invoices"], url: "/invoices", label: "الفواتير" },
-  { keywords: ["المحفظة","رصيدي","wallet","محفظتي"], url: "/wallet", label: "المحفظة" },
-  { keywords: ["الملف الشخصي","الحساب","profile","بياناتي"], url: "/profile", label: "الملف الشخصي" },
-  { keywords: ["التواصل","الدعم","المساعدة","help","contact","دعم"], url: "/help", label: "مركز المساعدة" },
-  { keywords: ["الرئيسية","لوحة القيادة","dashboard","الداشبورد"], url: "/dashboard", label: "لوحة القيادة" },
-  { keywords: ["الاجتماعات","اجتماع","meetings","qmeet"], url: "/qmeet", label: "اجتماعات QMeet" },
-  { keywords: ["الطلب الجديد","طلب جديد","اطلب","order"], url: "/order", label: "طلب جديد" },
-  { keywords: ["الاستشارة","استشارة","consultation"], url: "/consultation", label: "الاستشارة" },
-];
-
-/* ─── Find page in KB ─── */
-const PAGE_KEYWORDS: Record<string, string[]> = {
-  dashboard: ["القيادة","لوحة تحكم","الرئيسية","الداشبورد","dashboard","الإحصاءات","النظرة العامة"],
-  orders: ["الطلبات","طلب","أوردر","orders","الأوامر","طلبات العملاء","إدارة الطلبات"],
-  customers: ["العملاء","عميل","customers","الزبائن","الزبون","قاعدة العملاء"],
-  employees: ["الموظفون","موظف","employees","الموظفين","فريق العمل","الموظفين"],
-  finance: ["المالية","مالي","finance","الإيرادات","المصروفات","التمويل","الأرباح"],
-  kanban: ["كانبان","kanban","المهام","تتبع المشاريع","بطاقات","المراحل"],
-  invoices: ["الفواتير","فاتورة","invoices","الإيصالات","فواتير"],
-  analytics: ["التحليلات","إحصاءات","analytics","التقارير","الرسوم البيانية","الأداء"],
-  wallet: ["المحفظة","رصيد","wallet","محفظتي","الكاشباك","النقاط"],
-  contracts: ["العقود","عقد","contracts","الاتفاقيات","توقيع"],
-  loyalty: ["الولاء","نقاط","loyalty","مكافآت","برنامج الولاء"],
-  prices: ["الأسعار","باقات","prices","الخطط","التسعير","الباقة"],
-  cart: ["السلة","الكارت","cart","عربة التسوق","المشتريات"],
-  attendance: ["الحضور","حضور","attendance","الانصراف","الدوام","التوقيع"],
-  profile: ["الملف الشخصي","البروفايل","profile","بياناتي","حسابي","معلوماتي"],
-  payroll: ["الرواتب","راتب","payroll","الأجور","كشف الرواتب","الرواتب"],
-};
-function findPage(msg: string): typeof PAGE_KB[string] | null {
-  const m = msg;
-  for (const [key, keywords] of Object.entries(PAGE_KEYWORDS)) {
-    if (keywords.some(kw => m.includes(kw))) return PAGE_KB[key] || null;
+function getSession(id: string, userId?: string, role?: string): Session {
+  if (!sessions.has(id)) {
+    sessions.set(id, { history: [], userId, userRole: role });
   }
-  return null;
+  const s = sessions.get(id)!;
+  if (userId) s.userId = userId;
+  if (role) s.userRole = role;
+  return s;
 }
 
-/* ─── Package recommendation logic ─── */
-function recommendPackage(data: any): typeof PACKAGES[number] {
-  let score = { lite: 0, pro: 0, infinite: 0 };
-  // Business size
-  if (data.size === "small") score.lite += 3;
-  if (data.size === "medium") { score.pro += 3; score.lite += 1; }
-  if (data.size === "large") { score.infinite += 3; score.pro += 1; }
-  // Needs mobile app
-  if (data.mobileApp) { score.pro += 2; score.infinite += 1; }
-  // Needs AI
-  if (data.ai) { score.pro += 2; score.infinite += 1; }
-  // Needs multi-branch
-  if (data.multiBranch) { score.infinite += 3; score.pro += 1; }
-  // Budget
-  if (data.budget === "low") score.lite += 2;
-  if (data.budget === "medium") score.pro += 2;
-  if (data.budget === "high") score.infinite += 2;
-  // Custom needs
-  if (data.custom) score.infinite += 2;
+/* ─── QIROX Platform System Prompt ─── */
+function buildSystemPrompt(userRole?: string, userName?: string, systemData?: any): string {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeStr = now.toLocaleTimeString("ar-SA");
 
-  const best = Object.entries(score).sort((a, b) => b[1] - a[1])[0][0];
-  return PACKAGES.find(p => p.tier === best) || PACKAGES[1];
+  const userCtx = systemData ? `
+== بيانات المستخدم الحالية ==
+${systemData.orders ? `• الطلبات: ${systemData.orders.total} إجمالي | ${systemData.orders.pending} معلق | ${systemData.orders.active} نشط | ${systemData.orders.completed} مكتمل` : ""}
+${systemData.projects ? `• المشاريع: ${systemData.projects.total} إجمالي | ${systemData.projects.active} نشط` : ""}
+${systemData.wallet ? `• رصيد المحفظة: ${systemData.wallet.balance?.toLocaleString()} ريال` : ""}
+${systemData.notifications ? `• الإشعارات غير المقروءة: ${systemData.notifications.unread}` : ""}
+${systemData.stats ? `• إحصاءات إضافية: ${JSON.stringify(systemData.stats)}` : ""}
+` : "";
+
+  return `أنت **QIROX AI** — المساعد الذكي الرسمي لمنصة QIROX Studio، وكالة تطوير مواقع وتطبيقات سعودية متخصصة.
+
+== هويتك ==
+- اسمك: QIROX AI
+- شخصيتك: ذكي، ودود، إبداعي، محترف، تتحدث بالعربية الفصيحة المبسّطة مع لمسة سعودية خليجية طبيعية
+- أسلوبك: مباشر وواضح، تستخدم الإيموجي باعتدال، تقدم إجابات عملية وقابلة للتطبيق
+- اليوم: ${dateStr} — الساعة: ${timeStr}
+- المستخدم: ${userName || "الزائر"} | الدور: ${userRole || "زائر"}
+
+== معرفتك الكاملة بمنصة QIROX Studio ==
+
+=== الشركة ===
+QIROX Studio وكالة تقنية سعودية متخصصة في تطوير المواقع والتطبيقات وحلول التحول الرقمي.
+الرؤية: تمكين الشركات السعودية والعربية من التحول الرقمي بحلول عالمية المستوى.
+البريد: info@qiroxstudio.online
+المنصة: SaaS متعددة المستأجرين (Multi-tenant) مع صلاحيات متعددة المستويات.
+
+=== الباقات والأسعار ===
+1. **باقة لايت** - من 5,000 ريال
+   - موقع إلكتروني احترافي، لوحة تحكم، نظام طلبات، إدارة منتجات، دعم فني
+   - مثالية لـ: المطاعم الصغيرة، المتاجر الناشئة، مقدمو الخدمات الأفراد
+   - المدة: 2-4 أسابيع
+
+2. **باقة برو** - من 10,000 ريال
+   - كل ميزات لايت + تطبيق جوال، بوابة دفع إلكتروني، CRM، تقارير متقدمة، ذكاء اصطناعي
+   - مثالية لـ: المطاعم المتوسطة، المتاجر المتنامية، شركات الخدمات، المنصات التعليمية
+   - المدة: 4-8 أسابيع
+
+3. **باقة إنفينيت** - من 20,000 ريال
+   - تخصيص كامل، خادم مخصص، API غير محدودة، فريق دعم مخصص، تكاملات متقدمة
+   - مثالية لـ: سلاسل كبيرة، شركات مؤسسية، منصات SaaS، مشاريع حكومية
+   - المدة: 8-16 أسبوع
+
+=== طرق الدفع ===
+1. المحفظة الإلكترونية (Qirox Pay) — شحن ودفع فوري
+2. التحويل البنكي — يُرفع الإيصال في النظام
+3. PayPal — دفع دولي آمن
+4. التقسيط — حسب الاتفاق مع الفريق
+
+=== صفحات النظام (حسب الدور) ===
+
+**لوحة القيادة (Dashboard)**
+- ملخص شامل للأداء: إيرادات، طلبات نشطة، نمو عملاء، تنبيهات
+- الرسوم البيانية تُحدَّث لحظياً
+- الوصول: جميع الأدوار
+
+**إدارة الطلبات (Orders)**
+- إدارة جميع طلبات العملاء من البداية للنهاية
+- تغيير الحالة، تعيين موظف مسؤول، إضافة ملاحظات
+- إرسال تحديثات تلقائية للعميل
+- الوصول: admin, manager, developer, designer, support, sales
+
+**العملاء (Customers)**
+- قاعدة بيانات كاملة: تاريخ المعاملات، الطلبات، الفواتير، المراسلات
+- بحث وتصفية وتصدير البيانات
+- الوصول: admin, manager, sales, sales_manager
+
+**الموظفون (Employees)**
+- إدارة الفريق: صلاحيات، رواتب، حضور، مهام، أداء
+- لكل موظف لوحة تحكم خاصة به
+- الوصول: admin, manager
+
+**المالية (Finance)**
+- إيرادات ومصروفات، تقارير الأرباح، التدفق النقدي
+- فواتير معلّقة، تحليلات مالية متعمقة
+- الوصول: admin, accountant
+
+**لوحة كانبان (Kanban)**
+- تتبع مراحل المشاريع بأسلوب كانبان (سحب وإفلات)
+- كل بطاقة تمثل مهمة أو مرحلة مشروع
+- الوصول: admin, manager, developer, designer
+
+**الفواتير (Invoices)**
+- إنشاء وإرسال فواتير احترافية
+- تتبع حالة الفاتورة (معلّقة، مدفوعة، متأخرة)
+- إرسال تذكيرات تلقائية
+- الوصول: admin, accountant, sales
+
+**التحليلات (Analytics)**
+- تقارير مفصّلة: أكثر الخدمات مبيعاً، معدل التحويل، مصادر العملاء
+- أداء كل موظف، تحليل العقود والمبيعات
+- الوصول: admin, manager
+
+**المحفظة (Wallet)**
+- رصيد المستخدم، سجل المعاملات، رموز الكاشباك
+- Qirox Pay Card للدفع السريع
+- الوصول: client
+
+**العقود (Contracts)**
+- عرض وتوقيع العقود الرقمية
+- محفوظة وقابلة للتحميل دائماً
+- الوصول: client, admin
+
+**برنامج الولاء (Loyalty)**
+- كل 100 ريال = 10 نقاط ولاء
+- 500 نقطة = 50 ريال خصم
+- الوصول: client
+
+**الحضور والانصراف (Attendance)**
+- تسجيل الحضور بالبصمة أو الكود
+- حساب ساعات العمل والإضافية تلقائياً
+- تقارير شهرية للمحاسبة
+- الوصول: admin, manager, موظفون
+
+**الرواتب (Payroll)**
+- راتب أساسي، بدلات، خصومات
+- إرسال إيصالات الراتب تلقائياً
+- الوصول: admin, accountant
+
+**QMeet (اجتماعات فيديو)**
+- منصة مؤتمرات فيديو مدمجة داخل النظام
+- إنشاء غرف اجتماع، تسجيل جلسات
+- الوصول: admin, manager, employee
+
+**مساحة العمل (ProjectWorkspace)**
+- مساحة تعاون للمشاريع مع العملاء
+- ملفات، تعليقات، جدول زمني، تقدم
+- الوصول: admin, employee, client
+
+**الإشعارات (Notifications)**
+- إشعارات فورية عبر WebSocket
+- دعم إشعارات الدفع (Web Push + PWA)
+- نظام قراءة/غير مقروء
+
+**PWA (Progressive Web App)**
+- تثبيت التطبيق على الجهاز مباشرة
+- يعمل بدون إنترنت (محدود)
+- إشعارات دفع على iOS وAndroid
+
+=== الأدوار في النظام ===
+- **admin**: صلاحيات كاملة على كل شيء
+- **manager**: إدارة الفريق والمشاريع والعملاء
+- **developer**: المشاريع والمهام التقنية
+- **designer**: مهام التصميم والملفات الإبداعية
+- **support**: الدعم الفني والتواصل مع العملاء
+- **sales**: إدارة المبيعات والعملاء الجدد
+- **sales_manager**: إدارة فريق المبيعات والتقارير
+- **accountant**: المالية والفواتير والرواتب
+- **merchant**: إدارة المتاجر والمنتجات
+- **client**: العميل — يتابع مشاريعه وطلباته ومحفظته
+
+=== تقنيات المنصة ===
+- Backend: Node.js + Express + TypeScript
+- Frontend: React + Vite + Tailwind CSS
+- Database: MongoDB (Mongoose)
+- Real-time: WebSocket (ws)
+- Auth: Passport.js (محلي + Google OAuth)
+- PWA: Service Worker + Web Push
+- Video: QMeet (WebRTC مدمج)
+- AI: OpenAI GPT عبر OpenRouter
+- Email: SMTP مع قوالب HTML احترافية
+- Payment: PayPal + تحويل بنكي + محفظة إلكترونية
+
+${userCtx}
+
+=== تعليمات الرد ===
+1. **اللغة**: العربية دائماً مع لمسة خليجية طبيعية (هلا، يزاك الله، ما شاء الله)
+2. **الإبداع**: ردودك مخصصة وإبداعية — لا ردوداً متكررة أو مملة
+3. **الدقة**: معلوماتك عن النظام دقيقة 100% — لا تخمّن
+4. **الاقتراحات**: عند الإجابة، أضف 2-3 اقتراحات للمتابعة في نهاية ردك بصيغة: \`[اقتراح: نص الاقتراح]\`
+5. **الإجراءات**: عند الإشارة لصفحة معينة، استخدم صيغة: \`[انتقال: /url | نص الزر]\`
+6. **التحليل**: عند طلب تحليل البيانات، قدّم رؤى قابلة للتطبيق
+7. **الإبداع التصميمي**: عند طلب اقتراحات إبداعية، كن خلاّقاً ومبتكراً
+8. **الطوارئ**: إذا لم تعرف شيئاً، اعترف بذلك بلباقة وأعطِ بديلاً مفيداً`;
 }
 
-/* ─── Build greeting based on role ─── */
-function buildGreeting(role?: string, name?: string): string {
-  const n = name ? ` ${name.split(" ")[0]}` : "";
-  if (role === "admin" || role === "manager")
-    return `هلا والله${n}! 👑 أنا QIROX AI، مساعدك الإداري الشخصي.\n\nأقدر أساعدك في أي شيء — إحصاءات النظام، شرح الصفحات، إرسال بريد، أو حتى تحليل الأداء. بس قول شو تحتاج! 🚀`;
-  if (role === "employee" || role === "employee_manager")
-    return `أهلاً${n}! 💼 أنا QIROX AI، رفيقك في الشغل داخل النظام.\n\nاسألني عن أي صفحة أو مهمة، ومستعد أشرح لك بالتفصيل. تبي شرح الطلبات؟ الكانبان؟ أي شيء ثاني؟ قول!`;
-  if (role === "client")
-    return `هلا${n}! ⭐ أنا QIROX AI، مستشارك الشخصي في QIROX.\n\nأقدر أساعدك في:\n• اختيار الباقة الأنسب لمشروعك\n• شرح خدماتنا بالتفصيل\n• متابعة طلباتك ومشاريعك\n• أي سؤال ثاني يخطر ببالك\n\nقول شو تبي وأنا موجود! 😊`;
-  return `هلا! أنا QIROX AI 🤖\n\nمساعدك الذكي في منصة QIROX Studio. أقدر أساعدك في:\n\n• اختيار الباقة المناسبة\n• شرح خدماتنا\n• الإجابة على أي سؤال\n\nشو تبي تعرف؟`;
-}
+/* ─── Parse AI response for actions and suggestions ─── */
+function parseResponse(text: string): { reply: string; suggestions: string[]; action?: string; data?: any; navigateTo?: string; navigateLabel?: string } {
+  const suggestions: string[] = [];
+  let action: string | undefined;
+  let navigateTo: string | undefined;
+  let navigateLabel: string | undefined;
 
-/* ─── SYSTEM Q&A knowledge base (dialect Arabic) ─── */
-interface QAEntry { patterns: string[]; answer: string; suggestions?: string[] }
-const SYSTEM_QA: QAEntry[] = [
-  {
-    patterns: ["كيف اسوي طلب","كيف أطلب","كيف اطلب","طريقة الطلب","اطلب خدمة","طلب جديد","كيف اشتري","ابغى اطلب"],
-    answer: `زين! إليك خطوات الطلب:\n\n1️⃣ روح لصفحة **الأسعار** واختار الباقة اللي تناسبك (لايت، برو، أو إنفينيت)\n2️⃣ اضغط «أضف للسلة» واكمل بيانات مشروعك\n3️⃣ اختار طريقة الدفع — محفظة، تحويل بنكي، أو تقسيط\n4️⃣ بعد تأكيد الطلب يجيك إشعار وفريقنا يتواصل معك خلال 24 ساعة 🎉\n\nلو ما لقيت باقة مناسبة، قدر تطلب **طلب مخصص** وأساعدك فيه!`,
-    suggestions: ["عرض الأسعار", "أنسب باقة لمشروعي", "طلب مخصص"],
-  },
-  {
-    patterns: ["طرق الدفع","كيف ادفع","كيف أدفع","الدفع","ادفع","فلوس","سداد","الدفعات","تقسيط"],
-    answer: `عندنا ثلاث طرق دفع:\n\n💳 **1. المحفظة الإلكترونية**\nاشحن محفظتك مرة وادفع منها بسهولة في أي وقت.\n\n🏦 **2. التحويل البنكي**\nحوّل المبلغ وارفع إيصال التحويل في النظام، وراح نأكد الدفع خلال ساعات.\n\n📅 **3. التقسيط**\nقسّط المبلغ على دفعات حسب الاتفاق — ندير الجدول الزمني تلقائياً.\n\nكل طريقة تولّد سند قبض رسمي تلقائياً! 📄`,
-    suggestions: ["شحن المحفظة", "رفع سند تحويل", "التقسيط"],
-  },
-  {
-    patterns: ["كيف اشحن المحفظة","شحن المحفظة","اضيف رصيد","رصيد المحفظة","تعبئة رصيد"],
-    answer: `شحن المحفظة سهل:\n\n1️⃣ روح لصفحة **المحفظة** من القائمة الجانبية\n2️⃣ اضغط «إيداع رصيد»\n3️⃣ حوّل المبلغ للحساب البنكي المعروض\n4️⃣ ارفع صورة إيصال التحويل\n5️⃣ الفريق يراجع ويضيف الرصيد خلال ساعات\n\n💡 بعد ما يُشحن الرصيد، تقدر تدفع طلباتك بضغطة واحدة!`,
-    suggestions: ["روح للمحفظة", "طرق الدفع"],
-  },
-  {
-    patterns: ["ايش يصير بعد الطلب","بعد ما اطلب","بعد الطلب","ماذا يحدث","خطوات بعد الطلب","ايش يجي بعدين"],
-    answer: `بعد ما تطلب، هذا اللي يصير:\n\n📬 **1. استلام الطلب** — يجيك إشعار بتأكيد الطلب فور إتمامه\n🔍 **2. مراجعة المتطلبات** — فريقنا يراجع طلبك ويتواصل معك لتأكيد التفاصيل\n📋 **3. إعداد خطة المشروع** — نحضّر لك خطة شاملة مع الجدول الزمني\n⚙️ **4. بداية التنفيذ** — تقدر تتابع التقدم لحظة بلحظة من لوحتك\n✅ **5. التسليم والقبول** — تراجع المشروع وتوافق عليه قبل إغلاق الطلب\n\nكل مرحلة تتغير يجيك إشعار تلقائي! 🔔`,
-    suggestions: ["متابعة طلبي", "روح لمشاريعي"],
-  },
-  {
-    patterns: ["كيف اتابع طلبي","متابعة الطلب","وين طلبي","حالة الطلب","تتبع الطلب","وضع طلبي"],
-    answer: `عشان تتابع طلبك:\n\n1️⃣ من لوحة تحكمك الرئيسية تشوف ملخص كل طلباتك\n2️⃣ اضغط على أي طلب تشوف تفاصيله الكاملة والمرحلة الحالية\n3️⃣ في كل طلب، في «محادثة الدعم» تقدر تتكلم مباشرة مع الفريق\n4️⃣ الإشعارات الجرس 🔔 تنبهك عند أي تحديث\n\nحالات الطلب: قيد المراجعة → قيد التنفيذ → اختبار → تسليم → مكتمل ✅`,
-    suggestions: ["عرض طلباتي", "روح للوحة التحكم"],
-  },
-  {
-    patterns: ["ايش باقة لايت","شرح لايت","ما تشمل لايت","مميزات لايت"],
-    answer: `باقة **لايت** 🥉\n\nالأنسب للمشاريع الصغيرة والناشئة.\n\n**ما تشمل:**\n• موقع إلكتروني احترافي\n• نظام إدارة المنتجات\n• نظام الطلبات والحجوزات\n• لوحة تحكم للأدمن\n• دعم فني أساسي\n• شهادة SSL مجانية\n\n💰 **تبدأ من:** 5,000 ريال\n\n**مثالية لـ:** مطاعم صغيرة، متاجر ناشئة، مقدمي خدمات فردية، مؤسسات تعليمية صغيرة`,
-    suggestions: ["أضف لايت للسلة", "قارن مع برو", "أنسب باقة لمشروعي"],
-  },
-  {
-    patterns: ["ايش باقة برو","شرح برو","مميزات برو","ما تشمل برو"],
-    answer: `باقة **برو** 🥈\n\nللمشاريع المتنامية اللي تبي قوة أكثر.\n\n**ما تشمل (كل لايت +):**\n• تطبيق جوال iOS و Android\n• بوابة دفع إلكتروني متكاملة\n• نظام CRM لإدارة العملاء\n• تقارير وتحليلات متقدمة\n• ذكاء اصطناعي مدمج\n• دعم مميز وأولوية أعلى\n\n💰 **تبدأ من:** 10,000 ريال\n\n**مثالية لـ:** سلاسل مطاعم، متاجر متنامية، شركات خدمات، منصات تعليمية`,
-    suggestions: ["أضف برو للسلة", "قارن مع إنفينيت", "أنسب باقة لمشروعي"],
-  },
-  {
-    patterns: ["ايش باقة انفينيت","ايش باقة إنفينيت","شرح انفينيت","مميزات انفينيت","الباقة الكبيرة"],
-    answer: `باقة **إنفينيت** 🏆\n\nللمشاريع الكبيرة بدون حدود — تخصيص كامل وأولوية قصوى.\n\n**ما تشمل (كل برو +):**\n• تخصيص كامل لكل جزء من النظام\n• خادم مخصص (Dedicated Server)\n• API خارجية وتكاملات غير محدودة\n• فريق دعم مخصص لك وحدك\n• تطوير مستمر بعد التسليم\n• اتفاقية مستوى خدمة (SLA) مضمونة\n\n💰 **تبدأ من:** 20,000 ريال\n\n**مثالية لـ:** سلاسل كبيرة، شركات مؤسسية، منصات SaaS، مشاريع حكومية`,
-    suggestions: ["أضف إنفينيت للسلة", "مقارنة الباقات", "طلب مخصص"],
-  },
-  {
-    patterns: ["كيف اتواصل","تواصل مع الفريق","رقم التواصل","البريد الإلكتروني لكم","خدمة العملاء","الدعم الفني","إيميلكم"],
-    answer: `تقدر تتواصل معنا بأكثر من طريقة:\n\n📧 **البريد الإلكتروني:** info@qiroxstudio.online\n🌐 **الموقع:** qirox.tech\n💬 **المحادثة المباشرة:** من داخل أي طلب في لوحتك\n📞 **الجوال:** متوفر للعملاء المميزين عبر الحساب\n\nأو قل لي «أرسل بريد» وأساعدك ترسل رسالة مباشرة الحين! 📩`,
-    suggestions: ["أرسل بريد إلكتروني", "مركز المساعدة"],
-  },
-  {
-    patterns: ["qmeet","كيو ميت","الاجتماعات","كيف اعقد اجتماع","اجتماع اون لاين","اجتماع فيديو"],
-    answer: `**QMeet** هو نظام الاجتماعات المدمج في QIROX! 🎥\n\n**ايش يقدر يسوي؟**\n• اجتماعات فيديو عالي الجودة\n• مشاركة الشاشة\n• دردشة نصية داخل الاجتماع\n• التحكم في الميكروفون والكاميرا\n• جدولة اجتماعات مستقبلية\n• الانضمام برمز مكوّن من 6 أحرف\n\n**كيف تبدأ؟**\nمن القائمة → QMeet → «اجتماع جديد» أو «اجتماع سريع»\n\nالإدارة فقط تقدر تعقد اجتماعات، لكن أي أحد عنده الرمز يقدر ينضم!`,
-    suggestions: ["روح لـ QMeet", "جدولة اجتماع"],
-  },
-  {
-    patterns: ["كيف اغير كلمة المرور","تغيير الباسورد","نسيت كلمة المرور","كلمة المرور"],
-    answer: `تغيير كلمة المرور سهل:\n\n1️⃣ روح لـ **الملف الشخصي** (من قائمة الجانب أو أيقونة حسابك)\n2️⃣ اضغط «تغيير كلمة المرور»\n3️⃣ أدخل كلمة المرور الحالية ثم الجديدة\n4️⃣ أكّد وحفظ ✅\n\nإذا نسيت كلمة المرور الحالية، من صفحة تسجيل الدخول اضغط «نسيت كلمتي» وراح يجيك رمز على إيميلك!`,
-    suggestions: ["روح للملف الشخصي"],
-  },
-  {
-    patterns: ["برنامج الولاء","نقاط","كاشباك","مكافآت","ايش الكاشباك","نقاط الولاء"],
-    answer: `برنامج **ولاء QIROX** 🌟\n\n**كيف يشتغل؟**\n• كل 100 ريال تدفعها = 10 نقاط ولاء\n• 500 نقطة = 50 ريال خصم على طلبك القادم\n• كلما طلبت أكثر، مستواك الزبون يرتفع وتحصل أولوية في الدعم\n\n**مستويات الولاء:**\n⭐ برونزي: 0-499 نقطة\n🥈 فضي: 500-1999 نقطة\n🥇 ذهبي: 2000+ نقطة (أولوية قصوى)\n\nتشوف نقاطك من لوحة تحكمك أو صفحة المحفظة!`,
-    suggestions: ["روح للمحفظة", "عرض طلباتي"],
-  },
-  {
-    patterns: ["ايش صلاحيات الموظف","موظف يشوف","صفحات الموظف","دور الموظف","ايش يشوف الموظف"],
-    answer: `**صلاحيات الموظف في QIROX:**\n\n📋 **الطلبات** — يشوف ويدير الطلبات المُسنَدة له\n📌 **الكانبان** — متابعة مراحل المشاريع\n🧾 **الفواتير** — إنشاء وإرسال فواتير\n⏰ **الحضور** — تسجيل حضوره وانصرافه\n💬 **محادثة الدعم** — التواصل مع العملاء\n📁 **خزينة المشروع** — رفع ملفات المشروع\n\n**ما يقدر يشوف:**\n❌ البيانات المالية للشركة\n❌ بيانات الموظفين الآخرين\n❌ إعدادات النظام\n\nالأدوار الوظيفية: مطور، مصمم، محاسب، مبيعات، دعم فني، توصيل، مشرف`,
-    suggestions: ["شرح صفحة الطلبات", "شرح الكانبان"],
-  },
-  {
-    patterns: ["ايش صلاحيات الادمن","صلاحيات المدير","ايش يشوف الادمن","دور المدير","admin"],
-    answer: `**صلاحيات المدير/الأدمن — كل شيء!** 👑\n\n✅ إدارة كاملة للعملاء والطلبات والموظفين\n✅ التقارير المالية والتحليلات المتقدمة\n✅ إعدادات النظام والباقات والأسعار\n✅ إدارة الفواتير والرواتب وسندات القبض\n✅ إرسال الإشعارات والبريد الإلكتروني\n✅ QMeet — إنشاء وإدارة الاجتماعات\n✅ الوصول لجميع التقارير والإحصاءات\n✅ إدارة الأذونات والصلاحيات\n\nبكلمة واحدة: الأدمن يملك مفاتيح النظام كله 🔑`,
-    suggestions: ["ملخص النظام", "عرض التحليلات"],
-  },
-  {
-    patterns: ["كيف ارفع ملف","رفع ملف","رفع مستند","رفع صورة","ارفع"],
-    answer: `رفع الملفات في QIROX سهل:\n\n**في الطلب:**\nافتح الطلب ← تبويب «المرفقات» ← اسحب وافلت الملف أو اضغط «رفع»\n\n**في خزينة المشروع:**\nمن القائمة ← مشاريعك ← خزينة المشروع ← ارفع ملفاتك\n\n**الملف الشخصي:**\nتقدر ترفع صورتك الشخصية من الملف الشخصي\n\nالأنواع المدعومة: PDF، Word، Excel، صور، ملفات مضغوطة حتى 50MB`,
-    suggestions: ["روح لمشاريعي"],
-  },
-  {
-    patterns: ["ما هو قيروكس","ايش هو qirox","عن الشركة","من انتم","من أنتم","عن QIROX","QIROX ايش","ايش منصة QIROX"],
-    answer: `**QIROX Studio** — مصنع الأنظمة الرقمية 🏭\n\nنحن شركة متخصصة في بناء **أنظمة رقمية شاملة** للسوق العربي.\n\n**ماذا نبني؟**\n🌐 مواقع ومتاجر إلكترونية احترافية\n📱 تطبيقات جوال (iOS وAndroid)\n⚙️ أنظمة إدارة شاملة (ERP, CRM)\n🤖 حلول ذكاء اصطناعي مدمجة\n🎯 أنظمة تسويق وتحليلات متقدمة\n\n**مميزاتنا:**\n✅ تسليم سريع مع جودة عالية\n✅ دعم فني متواصل بعد التسليم\n✅ تطوير مستمر وتحديثات دورية\n\n**رؤيتنا:** نبني أنظمة، نبقى بشراً 💙`,
-    suggestions: ["استكشف الباقات", "أنسب باقة لمشروعي", "تواصل معنا"],
-  },
-  {
-    patterns: ["كيف الغي طلب","إلغاء طلب","الغي الطلب","اريد الغي"],
-    answer: `إلغاء الطلب يعتمد على مرحلته:\n\n**قيد المراجعة** → تقدر تلغي بنفسك من تفاصيل الطلب\n**بعد الموافقة** → تواصل مع الفريق عبر محادثة الطلب أو البريد الإلكتروني\n**قيد التنفيذ** → الإلغاء ممكن لكن قد تكون هناك رسوم حسب نسبة الإنجاز\n\nالأفضل تتواصل معنا مبكراً بأسرع ما تقدر لتجنب أي رسوم 👌`,
-    suggestions: ["تواصل مع الفريق", "عرض طلباتي"],
-  },
-];
+  let reply = text;
 
-function lookupQA(msg: string): QAEntry | null {
-  const m = msg.replace(/أ|إ|آ/g, "ا").toLowerCase();
-  for (const entry of SYSTEM_QA) {
-    if (entry.patterns.some(p => m.includes(p.replace(/أ|إ|آ/g, "ا").toLowerCase()))) {
-      return entry;
-    }
+  // Extract suggestions [اقتراح: ...]
+  const suggestionRegex = /\[اقتراح:\s*(.+?)\]/g;
+  let match;
+  while ((match = suggestionRegex.exec(text)) !== null) {
+    suggestions.push(match[1].trim());
   }
-  return null;
+  reply = reply.replace(/\[اقتراح:\s*.+?\]/g, "").trim();
+
+  // Extract navigation [انتقال: /url | نص]
+  const navRegex = /\[انتقال:\s*([^\|]+)\|([^\]]+)\]/g;
+  const navMatch = navRegex.exec(text);
+  if (navMatch) {
+    navigateTo = navMatch[1].trim();
+    navigateLabel = navMatch[2].trim();
+    action = "NAVIGATE";
+    reply = reply.replace(/\[انتقال:\s*[^\]]+\]/g, "").trim();
+  }
+
+  return { reply, suggestions, action, navigateTo, navigateLabel };
 }
 
-/* ─── Main AI processor ─── */
+/* ─── Main message processor ─── */
 async function processMessage(
   sessionId: string,
   message: string,
-  context: { userId?: string; role?: string; page?: string; name?: string; systemData?: SystemData }
+  context: {
+    userId?: string;
+    userRole?: string;
+    userName?: string;
+    currentPage?: string;
+    systemData?: any;
+  }
 ): Promise<{ reply: string; suggestions?: string[]; action?: string; data?: any }> {
-  const session = getSession(sessionId, context.userId, context.role);
-  session.history.push({ role: "user", text: message });
-  const sd = context.systemData;
+  const session = getSession(sessionId, context.userId, context.userRole);
+  const systemPrompt = buildSystemPrompt(context.userRole, context.userName, context.systemData);
 
-  // ─── MY DATA — real user information ───
-  if (detectIntent(message, session) === "MY_DATA" && session.mode === "GENERAL") {
-    const role = context.role;
-    if (sd && role === "client") {
-      const o = sd.orders || { total: 0, pending: 0, active: 0, completed: 0 };
-      const p = sd.projects || { total: 0, active: 0 };
-      const w = sd.wallet || { balance: 0 };
-      const reply = `📊 **ملخص حسابك في QIROX**\n\n` +
-        `📦 **الطلبات:** ${o.total} إجمالي\n` +
-        `  • قيد المراجعة: ${o.pending}\n` +
-        `  • نشط / قيد التنفيذ: ${o.active}\n` +
-        `  • مكتمل: ${o.completed}\n\n` +
-        `🚀 **المشاريع:** ${p.active} مشروع نشط${p.total > p.active ? ` (${p.total} إجمالي)` : ""}\n\n` +
-        `💰 **رصيد المحفظة:** ${Number(w.balance).toLocaleString()} ريال\n\n` +
-        (o.pending > 0 ? `⚠️ لديك ${o.pending} طلب ينتظر المراجعة\n\n` : "") +
-        `هل تريد الذهاب لأي قسم؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "SHOW_STATS", data: { orders: o, projects: p, wallet: w }, suggestions: ["عرض طلباتي", "عرض مشاريعي", "شحن المحفظة", "طلب جديد"] };
-    }
-    if (sd && (role === "admin" || role === "manager") && sd.stats) {
-      const s = sd.stats;
-      const reply = `📊 **إحصاءات النظام — لمحة سريعة**\n\n` +
-        `👥 إجمالي العملاء: **${s.totalClients || 0}**\n` +
-        `📦 الطلبات المفتوحة: **${s.openOrders || 0}**` + (s.pendingOrders > 0 ? ` (${s.pendingOrders} تنتظر الموافقة)` : "") + `\n` +
-        `💰 إيرادات اليوم: **${Number(s.todayRevenue || 0).toLocaleString()} ريال**\n` +
-        `💰 إيرادات الشهر: **${Number(s.monthRevenue || 0).toLocaleString()} ريال**\n` +
-        `🆕 طلبات اليوم: **${s.todayNewOrders || 0}** · عملاء جدد هذا الأسبوع: **${s.newClients || 0}**\n` +
-        (s.delayedOrders > 0 ? `⚠️ **تنبيه:** ${s.delayedOrders} طلب متأخر يحتاج متابعة عاجلة!\n` : "") +
-        `\nهل تريد تحليلاً أعمق أو الانتقال لصفحة محددة؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["عرض التحليلات", "الطلبات المعلقة", "تقرير مالي", "الطلبات المتأخرة"] };
-    }
-    if (sd && (role === "employee" || role === "employee_manager") && sd.orders) {
-      const o = sd.orders;
-      const reply = `📋 **ملخص مهامك اليوم**\n\n` +
-        `📦 طلبات معلقة تحتاج متابعة: **${o.pending || 0}**\n` +
-        `⚙️ قيد التنفيذ: **${o.active || 0}**\n` +
-        `✅ مكتملة: **${o.completed || 0}**\n\n` +
-        `هل تريد مراجعة الطلبات أو الانتقال لصفحة أخرى؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "SHOW_STATS", data: { orders: o }, suggestions: ["عرض الطلبات المعلقة", "لوحة الكانبان", "عرض الفواتير"] };
-    }
-    const reply = "لا تتوفر بيانات كافية الآن. يمكنني مساعدتك في شيء آخر؟";
-    session.history.push({ role: "ai", text: reply });
-    return { reply };
+  // Check if web search is needed
+  let searchContext = "";
+  const needsSearch = /ابحث|بحث عن|search|ما هو|معلومة عن/.test(message.toLowerCase());
+  if (needsSearch) {
+    searchContext = await searchWeb(message);
   }
 
-  // ─── NAVIGATE — انتقل لصفحة ───
-  if (detectIntent(message, session) === "NAVIGATE" && session.mode === "GENERAL") {
-    const m = message.toLowerCase();
-    const match = NAV_PAGES.find(p => p.keywords.some(kw => m.includes(kw)));
-    if (match) {
-      const reply = `✅ سأنقلك الآن إلى **${match.label}**`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "NAVIGATE", data: { url: match.url, label: match.label } };
-    }
-    const reply = `أخبرني إلى أي صفحة تريد الانتقال:\n\n• لوحة القيادة\n• طلباتي / مشاريعي\n• الأسعار والباقات\n• المحفظة\n• الفواتير\n• اجتماعات QMeet\n• الملف الشخصي`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["لوحة القيادة", "طلباتي", "الأسعار", "المحفظة", "Qمeet"] };
+  // Build messages array
+  const messages: any[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  // Add conversation history (last 12 messages)
+  const recentHistory = session.history.slice(-12);
+  for (const h of recentHistory) {
+    messages.push({ role: h.role, content: h.content });
   }
 
-  // ─── SYSTEM STATUS — وش صاير / ايش الوضع (admin/employee) ───
-  if (detectIntent(message, session) === "SYSTEM_STATUS" && session.mode === "GENERAL") {
-    if (sd?.stats && (context.role === "admin" || context.role === "manager")) {
-      const s = sd.stats;
-      const hour = new Date().getHours();
-      const greeting = hour < 12 ? "صباح النشاط" : hour < 17 ? "مساك خير" : "مساء النور";
-      let reply = `${greeting}! 👋 إليك لمحة عن وضع النظام الآن:\n\n`;
-      reply += `📊 **الطلبات**\n`;
-      reply += `• مفتوحة: **${s.openOrders || 0}** ${s.pendingOrders > 0 ? `(⚠️ ${s.pendingOrders} تنتظر موافقتك!)` : "✅"}\n`;
-      reply += `• جديدة اليوم: **${s.todayNewOrders || 0}**\n\n`;
-      reply += `💰 **الإيرادات**\n`;
-      reply += `• اليوم: **${Number(s.todayRevenue || 0).toLocaleString()} ريال**\n`;
-      reply += `• هذا الشهر: **${Number(s.monthRevenue || 0).toLocaleString()} ريال**\n\n`;
-      reply += `👥 **العملاء**\n`;
-      reply += `• الإجمالي: **${s.totalClients || 0}**\n`;
-      reply += `• جدد هذا الأسبوع: **${s.newClients || 0}**\n`;
-      if (s.delayedOrders > 0) {
-        reply += `\n🔴 **تنبيه عاجل:** ${s.delayedOrders} طلب متأخر أكثر من أسبوع — يحتاج متابعة!`;
-      } else {
-        reply += `\n✅ لا توجد طلبات متأخرة — الأمور تسير بانتظام!`;
-      }
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "SHOW_STATS", data: sd.stats, suggestions: ["الطلبات المعلقة", "عرض التحليلات", "الطلبات المتأخرة", "تقرير مالي"] };
-    }
-    if (sd?.orders && (context.role === "employee" || context.role === "employee_manager")) {
-      const o = sd.orders;
-      const reply = `👋 هلا! إليك ملخص وضعك الآن:\n\n` +
-        `📋 **طلباتك المسندة:** ${o.total || 0}\n` +
-        `• معلقة: **${o.pending || 0}** ${o.pending > 0 ? "⚠️" : "✅"}\n` +
-        `• قيد التنفيذ: **${o.active || 0}**\n` +
-        `• مكتملة: **${o.completed || 0}**\n\n` +
-        `${o.pending > 0 ? `ابدأ بالطلبات المعلقة أولاً! 💪` : `ما شاء الله، كل شيء تمام! 🎉`}`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["الطلبات المعلقة", "الكانبان", "مشاريعي"] };
-    }
-    const reply = "لا تتوفر بيانات النظام الآن. حاول مرة أخرى.";
-    session.history.push({ role: "ai", text: reply });
-    return { reply };
+  // Add current message with optional search context
+  let userMessage = message;
+  if (searchContext) {
+    userMessage = `${message}\n\n[نتائج بحث من الإنترنت]:\n${searchContext}`;
+  }
+  if (context.currentPage) {
+    userMessage = `[الصفحة الحالية: ${context.currentPage}]\n${userMessage}`;
   }
 
-  // ─── EMAIL flow ───
-  if (session.mode === "EMAIL" || detectIntent(message, session) === "EMAIL") {
-    session.mode = "EMAIL";
-    const d = session.data;
+  messages.push({ role: "user", content: userMessage });
 
-    if (session.step === 0) {
-      // Extract email from message
-      const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
-      if (emailMatch) {
-        d.to = emailMatch[0];
-        session.step = 1;
-        const reply = `ممتاز! سأرسل البريد إلى **${d.to}**\n\nما هو موضوع الرسالة؟`;
-        session.history.push({ role: "ai", text: reply });
-        return { reply, suggestions: ["تذكير بموعد", "متابعة طلب", "شكر وتقدير", "عرض تجاري"] };
-      } else {
-        session.step = 0;
-        const reply = "بكل سرور! أرسل لي **عنوان البريد الإلكتروني** للمستلم:";
-        session.history.push({ role: "ai", text: reply });
-        return { reply };
-      }
-    }
+  // Call OpenAI
+  const completion = await openai.chat.completions.create({
+    model: AI_MODEL,
+    messages,
+    max_tokens: 1000,
+    temperature: 0.75,
+  });
 
-    if (session.step === 1) {
-      // Check if this is a reply to "who to send to"
-      const emailMatch = message.match(/[\w.-]+@[\w.-]+\.[a-z]{2,}/i);
-      if (!d.to && emailMatch) {
-        d.to = emailMatch[0];
-        const reply = `ممتاز! سأرسل البريد إلى **${d.to}**\n\nما هو موضوع الرسالة؟`;
-        session.history.push({ role: "ai", text: reply });
-        return { reply, suggestions: ["تذكير بموعد", "متابعة طلب", "شكر وتقدير", "عرض تجاري"] };
-      }
-      if (!d.to) {
-        d.to = message.trim();
-        const reply = "ما هو موضوع الرسالة؟";
-        session.history.push({ role: "ai", text: reply });
-        return { reply, suggestions: ["متابعة طلب", "تذكير بموعد", "عرض خدمات"] };
-      }
-      d.subject = message.trim();
-      session.step = 2;
-      const reply = `رائع! الآن اكتب **محتوى الرسالة** التي تريد إرسالها:`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply };
-    }
+  const aiText = completion.choices[0]?.message?.content || "عذراً، لم أستطع المعالجة. حاول مرة أخرى.";
 
-    if (session.step === 2) {
-      if (!d.subject) {
-        d.subject = message.trim();
-        const reply = "الآن اكتب **محتوى الرسالة**:";
-        session.history.push({ role: "ai", text: reply });
-        return { reply };
-      }
-      d.body = message.trim();
-      session.step = 3;
-      const reply = `✅ جاهز للإرسال!\n\n📧 **إلى:** ${d.to}\n📌 **الموضوع:** ${d.subject}\n\n${d.body}\n\nهل تأكد الإرسال؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["نعم، أرسل", "تعديل الرسالة", "إلغاء"], action: "CONFIRM_EMAIL", data: d };
-    }
+  // Save to history
+  session.history.push({ role: "user", content: message });
+  session.history.push({ role: "assistant", content: aiText });
 
-    if (session.step === 3) {
-      if (message.includes("نعم") || message.includes("أرسل") || message.includes("ارسل") || message.includes("تأكيد") || message.includes("ok")) {
-        try {
-          await sendDirectEmail(d.to, d.to.split("@")[0], d.subject, d.body);
-          session.mode = "GENERAL"; session.step = 0; session.data = {};
-          const reply = `✅ **تم إرسال البريد بنجاح!**\n\nتم إرسال رسالتك إلى **${d.to}** بعنوان «${d.subject}».\n\nهل تحتاج مساعدة في شيء آخر؟`;
-          session.history.push({ role: "ai", text: reply });
-          return { reply, suggestions: ["إرسال بريد آخر", "العودة للرئيسية", "مساعدة في الطلبات"] };
-        } catch {
-          const reply = "⚠️ حدث خطأ في الإرسال، تأكد من البريد وحاول مجدداً.";
-          session.history.push({ role: "ai", text: reply });
-          session.mode = "GENERAL"; session.step = 0; session.data = {};
-          return { reply };
-        }
-      } else {
-        session.mode = "GENERAL"; session.step = 0; session.data = {};
-        const reply = "تم الإلغاء. كيف يمكنني مساعدتك؟";
-        session.history.push({ role: "ai", text: reply });
-        return { reply };
-      }
-    }
+  // Keep history bounded (last 30 messages)
+  if (session.history.length > 30) {
+    session.history = session.history.slice(-30);
   }
 
-  // ─── PACKAGE ADVISOR flow ───
-  if (session.mode === "PACKAGE_ADVISOR" || detectIntent(message, session) === "PACKAGE_ADVISOR") {
-    session.mode = "PACKAGE_ADVISOR";
-    const d = session.data;
+  // Parse response for actions and suggestions
+  const parsed = parseResponse(aiText);
 
-    if (session.step === 0) {
-      session.step = 1;
-      const reply = "يسعدني مساعدتك في اختيار الباقة المثالية! 🎯\n\nأولاً، **ما نوع نشاطك التجاري؟**";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["مطعم / كافيه", "متجر إلكتروني", "مؤسسة تعليمية", "شركة خدمات", "مشروع آخر"] };
-    }
+  const result: any = { reply: parsed.reply };
+  if (parsed.suggestions.length) result.suggestions = parsed.suggestions;
+  if (parsed.action) result.action = parsed.action;
+  if (parsed.navigateTo) result.data = { url: parsed.navigateTo, label: parsed.navigateLabel };
 
-    if (session.step === 1) {
-      d.businessType = message;
-      session.step = 2;
-      const reply = `رائع! ${d.businessType} مجال واعد.\n\nما **حجم مشروعك** الحالي؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["صغير (يبدأ للتو)", "متوسط (يعمل ولديه عملاء)", "كبير (فروع ومنتجات كثيرة)"] };
-    }
-
-    if (session.step === 2) {
-      const m = message.toLowerCase();
-      d.size = m.includes("صغير") || m.includes("يبدأ") ? "small" : m.includes("كبير") || m.includes("فروع") ? "large" : "medium";
-      session.step = 3;
-      const reply = "هل تحتاج **تطبيق جوال** (iOS / Android) ضمن المشروع؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["نعم، أحتاج تطبيق جوال", "لا، موقع كافٍ الآن"] };
-    }
-
-    if (session.step === 3) {
-      d.mobileApp = message.includes("نعم") || message.includes("أحتاج") || message.includes("احتاج");
-      session.step = 4;
-      const reply = "هل تحتاج **ذكاء اصطناعي** مدمج (توصيات، تحليل بيانات، شات بوت)؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["نعم، أريد الذكاء الاصطناعي", "لا، ليس ضرورياً الآن"] };
-    }
-
-    if (session.step === 4) {
-      d.ai = message.includes("نعم") || message.includes("أريد") || message.includes("اريد");
-      session.step = 5;
-      const reply = "ما **ميزانيتك التقريبية** للمشروع؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["أقل من 8,000 ريال", "8,000 - 15,000 ريال", "أكثر من 15,000 ريال", "مرن حسب الاحتياج"] };
-    }
-
-    if (session.step === 5) {
-      const m = message.toLowerCase();
-      d.budget = m.includes("أقل") || m.includes("اقل") ? "low" : m.includes("15") || m.includes("أكثر") || m.includes("اكثر") ? "high" : "medium";
-      const recommended = recommendPackage(d);
-      const others = PACKAGES.filter(p => p.tier !== recommended.tier);
-
-      session.step = 6;
-      const reply = `🎯 **توصيتي لك: باقة ${recommended.nameAr}**\n\n${recommended.desc}\n\n**✅ ما تشمله:**\n${recommended.features.map(f => `• ${f}`).join("\n")}\n\n**💰 السعر يبدأ من:** ${recommended.price.toLocaleString()} ريال\n\n**مثالية لـ:** ${recommended.ideal.join("، ")}\n\n---\nهل تريد المتابعة بهذه الباقة، أو استكشاف خيار آخر؟`;
-      session.data.recommended = recommended;
-      session.history.push({ role: "ai", text: reply });
-      return {
-        reply,
-        suggestions: [`اختر باقة ${recommended.nameAr}`, `استكشف باقة ${others[0].nameAr}`, `استكشف باقة ${others[1].nameAr}`, "أريد طلباً مخصصاً"],
-        action: "SHOW_PACKAGE",
-        data: { recommended, all: PACKAGES },
-      };
-    }
-
-    if (session.step === 6) {
-      if (message.includes("مخصص") || message.includes("طلب مخصص")) {
-        session.mode = "CUSTOM_ORDER"; session.step = 0; session.data = {};
-        const reply = "ممتاز! سنصمم لك حلاً مخصصاً تماماً. 🛠️\n\nصف لي **مشروعك بالتفصيل**: ما الذي تريد بناءه بالضبط؟";
-        session.history.push({ role: "ai", text: reply });
-        return { reply };
-      }
-      const chosen = PACKAGES.find(p => message.includes(p.nameAr)) || session.data.recommended;
-      session.mode = "GENERAL"; session.step = 0;
-      const reply = `ممتاز! باقة **${chosen.nameAr}** خيار رائع.\n\nانتقل إلى صفحة الأسعار وأضف الباقة للسلة، ثم أكمل الطلب. سيساعدك المساعد في تفاصيل المشروع خلال عملية الطلب.\n\n[انتقل للأسعار ←](/prices)`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, action: "GO_PRICES", data: { tier: chosen.tier } };
-    }
-  }
-
-  // ─── CUSTOM ORDER flow ───
-  if (session.mode === "CUSTOM_ORDER" || detectIntent(message, session) === "CUSTOM_ORDER") {
-    session.mode = "CUSTOM_ORDER";
-    const d = session.data;
-
-    if (session.step === 0) {
-      session.step = 1;
-      const reply = "رائع! سأساعدك في إنشاء طلب مخصص بالضبط لاحتياجاتك. 🛠️\n\nأولاً، **صف مشروعك**: ماذا تريد أن تبني بالضبط؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply };
-    }
-    if (session.step === 1) {
-      d.description = message;
-      session.step = 2;
-      const reply = `مشروع مثير للاهتمام!\n\nما **الميزات الأساسية** التي يجب أن يتضمنها النظام؟ (اذكرها واحدة تلو الأخرى أو قائمة)`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["موقع + متجر + تطبيق", "نظام إدارة داخلي", "منصة حجز مواعيد", "نظام مطعم شامل"] };
-    }
-    if (session.step === 2) {
-      d.features = message;
-      session.step = 3;
-      const reply = "ما هي **ميزانيتك التقريبية** للمشروع؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["أقل من 10,000 ريال", "10,000 - 25,000 ريال", "25,000 - 50,000 ريال", "أكثر من 50,000 ريال", "مفتوحة"] };
-    }
-    if (session.step === 3) {
-      d.budget = message;
-      session.step = 4;
-      const reply = "ما هو **الجدول الزمني** المتوقع للتسليم؟";
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["أسرع ما يمكن (أولوية)", "خلال شهر", "2-3 أشهر", "6 أشهر فأكثر"] };
-    }
-    if (session.step === 4) {
-      d.timeline = message;
-      session.step = 5;
-      // Create order via API
-      const orderSummary = `📋 **ملخص طلبك المخصص:**\n\n🎯 **وصف المشروع:**\n${d.description}\n\n⚙️ **الميزات المطلوبة:**\n${d.features}\n\n💰 **الميزانية:** ${d.budget}\n\n⏱️ **الجدول الزمني:** ${d.timeline}\n\n---\nهل أرسل هذا الطلب لفريق QIROX للمراجعة وتحديد السعر؟`;
-      session.history.push({ role: "ai", text: orderSummary });
-      return {
-        reply: orderSummary,
-        suggestions: ["نعم، أرسل الطلب", "تعديل التفاصيل", "إلغاء"],
-        action: "CONFIRM_CUSTOM_ORDER",
-        data: d,
-      };
-    }
-    if (session.step === 5) {
-      if (message.includes("نعم") || message.includes("أرسل") || message.includes("ارسل")) {
-        session.mode = "GENERAL"; session.step = 0;
-        const reply = `✅ **تم إرسال طلبك المخصص!**\n\nسيتواصل معك فريق QIROX خلال 24 ساعة لمناقشة التفاصيل وتحديد السعر النهائي.\n\nبمجرد الموافقة، ستجد الطلب وسعره في لوحة تحكمك جاهزاً للدفع.`;
-        session.history.push({ role: "ai", text: reply });
-        return { reply, action: "CUSTOM_ORDER_SUBMITTED", data: session.data };
-      } else {
-        session.mode = "GENERAL"; session.step = 0; session.data = {};
-        const reply = "تم الإلغاء. كيف يمكنني مساعدتك؟";
-        session.history.push({ role: "ai", text: reply });
-        return { reply };
-      }
-    }
-  }
-
-  // ─── PAGE EXPLAIN ───
-  if (detectIntent(message, session) === "PAGE_EXPLAIN") {
-    const page = findPage(message) || (context.page ? PAGE_KB[context.page.replace("/", "").split("?")[0]] : null);
-    if (page) {
-      const reply = `📖 **${page.ar}**\n\n${page.desc}\n\n**💡 نصائح:**\n${page.tips.map(t => `• ${t}`).join("\n")}`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["كيف أستخدمها؟", "ما الصلاحيات المطلوبة؟", "هل يمكن شرح صفحة أخرى؟"] };
-    }
-  }
-
-  // ─── SITE IMPROVEMENT / ANALYSIS ───
-  const m = message.toLowerCase();
-  if (m.includes("تحسين") || m.includes("اقتراح") || m.includes("مشكلة") || m.includes("خطأ") || m.includes("ينقص") || m.includes("improve") || m.includes("bug") || m.includes("fix")) {
-    const currentPage = context.page || "الصفحة الحالية";
-    const reply = `🔍 **تحليل صفحة: ${currentPage}**\n\nبناءً على خبرتي في منصة QIROX، إليك بعض الاقتراحات الشائعة للتحسين:\n\n**📊 تحسينات الأداء:**\n• تأكد من وجود نص وصفي واضح في كل قسم\n• أضف عبارات دعوة للتصرف (CTA) واضحة\n• راجع سرعة التحميل\n\n**🎨 تحسينات التصميم:**\n• تناسق الألوان والخطوط\n• مسافات متوازنة بين العناصر\n• أيقونات دالة لكل قسم\n\n**📱 تجربة المستخدم:**\n• سهولة التنقل في الموبايل\n• وضوح الأزرار والنماذج\n• رسائل خطأ واضحة ومفيدة\n\nهل تريد مني التحليل بشكل أعمق لصفحة معينة؟`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["حلل صفحة الأسعار", "حلل لوحة القيادة", "اقتراحات لتحسين المبيعات"] };
-  }
-
-  // ─── GREETINGS ───
-  if (m.includes("مرحب") || m.includes("هلا") || m.includes("السلام") || m.includes("hello") || m.includes("hi ") || m === "hi" || m === "هلا" || m === "مرحبا" || m === "مرحباً") {
-    const reply = buildGreeting(context.role, context.name);
-    session.history.push({ role: "ai", text: reply });
-    const suggestions = context.role === "client"
-      ? ["أنسب باقة لمشروعي", "شرح الخدمات", "طلب مخصص", "التحدث مع الدعم"]
-      : context.role === "employee"
-      ? ["شرح صفحة الطلبات", "كيف أرسل بريد؟", "شرح الكانبان", "نصائح عملية"]
-      : ["استكشف الباقات", "كيف تعمل المنصة", "تواصل مع فريقنا"];
-    return { reply, suggestions };
-  }
-
-  // ─── PACKAGE INFO ───
-  if (m.includes("باقة لايت") || m.includes("باقه لايت")) {
-    const p = PACKAGES[0];
-    const reply = `📦 **باقة ${p.nameAr}**\n\n${p.desc}\n\n**✅ تشمل:**\n${p.features.map(f => `• ${f}`).join("\n")}\n\n**مثالية لـ:** ${p.ideal.join("، ")}\n\n💰 **السعر يبدأ من:** ${p.price.toLocaleString()} ريال`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أضف لايت للسلة", "قارن مع برو", "أحتاج مساعدة أكثر"] };
-  }
-  if (m.includes("باقة برو") || m.includes("باقه برو")) {
-    const p = PACKAGES[1];
-    const reply = `📦 **باقة ${p.nameAr}**\n\n${p.desc}\n\n**✅ تشمل:**\n${p.features.map(f => `• ${f}`).join("\n")}\n\n**مثالية لـ:** ${p.ideal.join("، ")}\n\n💰 **السعر يبدأ من:** ${p.price.toLocaleString()} ريال`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أضف برو للسلة", "قارن مع إنفينيت", "أنسب باقة لي"] };
-  }
-  if (m.includes("باقة إنفينيت") || m.includes("باقه انفينيت") || m.includes("باقة انفينيت")) {
-    const p = PACKAGES[2];
-    const reply = `📦 **باقة ${p.nameAr}**\n\n${p.desc}\n\n**✅ تشمل:**\n${p.features.map(f => `• ${f}`).join("\n")}\n\n**مثالية لـ:** ${p.ideal.join("، ")}\n\n💰 **السعر يبدأ من:** ${p.price.toLocaleString()} ريال`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أضف إنفينيت للسلة", "مقارنة الباقات", "طلب مخصص"] };
-  }
-  if (m.includes("قارن") || m.includes("مقارنة") || m.includes("الفرق بين") || m.includes("فروق") || m.includes("فرق بين") || m.includes("ايش الفرق") || m.includes("ايش فرق") || m.includes("الباقات كلها") || m.includes("compare") || m.includes("difference")) {
-    let liteMonthly = "—", litePriceLifetime = "—", proMonthly = "—", proLifetime = "—", infMonthly = "—", infLifetime = "—";
-    try {
-      const allPlans = await PricingPlanModel.find({ status: "active" }).lean();
-      const slugTier = (slug, nameAr) => {
-        const s = (slug + " " + nameAr).toLowerCase();
-        if (s.includes("infinite") || s.includes("إنفينيت")) return "infinite";
-        if (s.includes("pro") || s.includes("برو")) return "pro";
-        return "lite";
-      };
-      const fmt = (plans, tier, cycle) => {
-        const p = plans.find(x => slugTier(x.slug, x.nameAr) === tier && x.billingCycle === cycle);
-        return p ? `${p.price.toLocaleString()} ر.س` : "—";
-      };
-      liteMonthly = fmt(allPlans, "lite", "monthly");
-      litePriceLifetime = fmt(allPlans, "lite", "one_time");
-      proMonthly = fmt(allPlans, "pro", "monthly");
-      proLifetime = fmt(allPlans, "pro", "one_time");
-      infMonthly = fmt(allPlans, "infinite", "monthly");
-      infLifetime = fmt(allPlans, "infinite", "one_time");
-    } catch {}
-    const reply = `📊 **مقارنة الباقات — الأسعار من النظام:**\n\n| الميزة | ⚡ لايت | 🚀 برو | ♾️ إنفينيت |\n|---|---|---|---|\n| الموقع | ✅ | ✅ | ✅ |\n| تطبيق جوال | ❌ | ✅ | ✅ |\n| ذكاء اصطناعي | ❌ | ✅ | ✅ |\n| خادم مخصص | ❌ | ❌ | ✅ |\n| تخصيص كامل | ❌ | ❌ | ✅ |\n| دعم 24/7 | ❌ | ❌ | ✅ |\n| الدعم | أساسي | مميز | مخصص |\n| شهري | ${liteMonthly} | ${proMonthly} | ${infMonthly} |\n| مدى الحياة | ${litePriceLifetime} | ${proLifetime} | ${infLifetime} |\n\n💡 **متى تختار كل باقة؟**\n• **لايت** — للبدايات والمشاريع الصغيرة\n• **برو** — للمشاريع المتنامية التي تحتاج تطبيق ودفع\n• **إنفينيت** — للشركات الكبيرة والمؤسسات\n\nهل تريد أساعدك في اختيار الأنسب لك؟`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أنسب باقة لمشروعي", "تفاصيل باقة برو", "طلب مخصص"] };
-  }
-
-  // ─── WEB SEARCH ───
-  if (detectIntent(message, session) === "SEARCH" || m.includes("ابحث") || m.includes("بحث عن")) {
-    const searchQuery = message.replace(/^(ابحث عن|بحث عن|ابحث|search for|ما هو|ما هي)/i, "").trim();
-    if (searchQuery.length > 2) {
-      const results = await searchWeb(searchQuery + " " + (context.role === "client" ? "business" : ""));
-      const reply = `🔍 **نتائج البحث عن «${searchQuery}»:**\n\n${results}\n\n---\nهل تريد مزيداً من المعلومات؟`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["بحث أدق", "مساعدة في شيء آخر"] };
-    }
-  }
-
-  // ─── WHAT CAN YOU DO / CAPABILITIES ───
-  if (m.includes("تقدر") || m.includes("ايش تسوي") || m.includes("ما هي قدراتك") || m.includes("help") || m.includes("مساعدة")) {
-    const reply = `🤖 **QIROX AI — قدراتي:**\n\n📧 **البريد الإلكتروني:** أرسل بريدًا لأي شخص مباشرة من هنا\n📦 **استشارة الباقات:** أساعدك تختار الباقة المثالية\n🛠️ **طلبات مخصصة:** أجمع متطلباتك وأرسلها للفريق\n📖 **شرح الصفحات:** اسألني عن أي صفحة وأشرح كيف تعمل\n🔍 **البحث:** أبحث لك في الإنترنت\n💡 **تحسين الموقع:** اقتراحات لتحسين أي صفحة\n\nجرّب أن تقول: «أرسل بريد» أو «أنسب باقة لي» أو «اشرح صفحة الطلبات»`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["أرسل بريد إلكتروني", "أنسب باقة لمشروعي", "اشرح صفحة الطلبات", "ابحث عن شيء"] };
-  }
-
-  // ─── QIROX info ───
-  if (m.includes("qirox") || m.includes("قيروكس") || m.includes("من أنتم") || m.includes("من انتم") || m.includes("الشركة") || m.includes("المنصة")) {
-    const reply = `🏢 **عن QIROX Studio**\n\nQIROX هي منصة «مصنع الأنظمة الرقمية» الرائدة في السوق العربي.\n\n**ما نقدمه:**\n• بناء مواقع ومتاجر احترافية\n• تطبيقات جوال iOS وAndroid\n• أنظمة إدارة متكاملة (ERP, CRM)\n• ذكاء اصطناعي مدمج\n• دعم فني متواصل\n\n**رؤيتنا:** نبني أنظمة، نبقى بشراً.\n\nهل تريد استكشاف ما يمكننا بناؤه لك؟`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["استكشف الباقات", "أنسب باقة لمشروعي", "تواصل مع الفريق"] };
-  }
-
-  // ─── CONSULTATION — continuation first ───
-  if ((session.mode as any) === "CONSULTATION") {
-    if (session.step === 1) {
-      session.data.topic = message;
-      session.step = 2;
-      const reply = `زين! موضوع الاستشارة: «${message}»\n\nعشان يتواصل معك الفريق، أكتب لي اسمك الكامل ورقم جوالك أو إيميلك 📱`;
-      session.history.push({ role: "ai", text: reply });
-      return { reply };
-    }
-    if (session.step === 2) {
-      session.data.contact = message;
-      const reply = `تمام! ✅ سجّلت طلب استشارتك:\n\n📌 **الموضوع:** ${session.data.topic}\n📞 **بياناتك:** ${message}\n\nراح يتواصل معك أحد من فريقنا في أقرب وقت — عادةً خلال ساعات العمل ⏰\n\nفي أي شيء ثاني أقدر أساعدك فيه؟`;
-      session.mode = "GENERAL"; session.step = 0; session.data = {};
-      session.history.push({ role: "ai", text: reply });
-      return { reply, suggestions: ["استكشف الباقات", "روح للوحة التحكم", "شيء آخر"] };
-    }
-  }
-  // ─── CONSULTATION — new request (only when in GENERAL mode) ───
-  if (session.mode === "GENERAL" && detectIntent(message, session) === "CONSULTATION") {
-    session.mode = "CONSULTATION" as any;
-    session.step = 1;
-    const firstName = context.name ? context.name.split(" ")[0] : "";
-    const reply = `بكل سرور${firstName ? " " + firstName : ""}! 📞\n\nأرفع لك طلب استشارة مع فريقنا وراح يتواصلون معك بأسرع وقت.\n\nشو الموضوع اللي تبي تستشير فيه؟`;
-    session.history.push({ role: "ai", text: reply });
-    return { reply, suggestions: ["اختيار الباقة المناسبة", "تفاصيل المشروع", "التسعير والدفع", "شيء آخر"] };
-  }
-
-  // ─── SYSTEM_QA lookup ───
-  const qaMatch = lookupQA(message);
-  if (qaMatch) {
-    session.history.push({ role: "ai", text: qaMatch.answer });
-    return { reply: qaMatch.answer, suggestions: qaMatch.suggestions || ["مساعدة في شيء آخر", "تواصل مع الفريق"] };
-  }
-
-  // ─── FALLBACK: web search then offer consultation ───
-  const webResults = await searchWeb(message + " قيروكس أنظمة رقمية منصة QIROX");
-  let reply: string;
-  if (webResults.includes("لم أجد") || webResults.includes("لم أتمكن")) {
-    reply = `والله ما وصلت لإجابة دقيقة على سؤالك 🤔\n\nلكن ما تقلق! عندي خيارين:\n\n1️⃣ **استشارة مع الفريق** — أرفع لك طلب ويتواصل معك أحد متخصص\n2️⃣ **بحث في المساعدة** — أشرح لك أي صفحة أو ميزة في النظام\n\nشو تبي؟`;
-  } else {
-    reply = `وجدت معلومات مفيدة:\n\n${webResults}\n\n---\nهل هذا ما كنت تبحث عنه؟ لو ما جاوب سؤالك، أقدر أرفع لك استشارة مع فريقنا 👌`;
-  }
-  session.history.push({ role: "ai", text: reply });
-  return { reply, suggestions: ["أبغى استشارة مع الفريق", "شرح صفحة", "مساعدة في شيء آخر"] };
+  return result;
 }
 
-/* ─── Register AI routes ─── */
+/* ─── Register routes ─── */
 export function registerAiRoutes(app: Express) {
-  // POST /api/ai/chat
-  app.post("/api/ai/chat", async (req, res) => {
+
+  // POST /api/ai/message — main chat endpoint
+  app.post("/api/ai/message", async (req, res) => {
     try {
-      const { message, sessionId, context = {} } = req.body;
-      if (!message || !sessionId) return res.status(400).json({ error: "message and sessionId required" });
+      const { sessionId, message, currentPage, systemData } = req.body;
+      if (!sessionId || !message?.trim()) {
+        return res.status(400).json({ error: "sessionId and message are required" });
+      }
 
       const user = (req as any).user;
-      if (user) {
-        context.userId = user._id?.toString() || user.id?.toString();
-        context.role = user.role || "client";
-        context.name = user.fullName || user.username;
-      }
+      const result = await processMessage(sessionId, message.trim(), {
+        userId: user?._id?.toString() || user?.id?.toString(),
+        userRole: user?.role,
+        userName: user?.fullName || user?.username,
+        currentPage,
+        systemData,
+      });
 
-      // ── Inject real system data ──
-      if (user) {
-        try {
-          const { OrderModel, UserModel } = await import("./models");
-          const userId = user._id;
-          const role = context.role;
-
-          if (role === "client") {
-            const [allOrders, walletUser] = await Promise.all([
-              OrderModel.find({ clientId: userId }).lean(),
-              UserModel.findById(userId).select("walletBalance").lean() as any,
-            ]);
-            const orders = {
-              total: allOrders.length,
-              pending: allOrders.filter((o: any) => o.status === "pending").length,
-              active: allOrders.filter((o: any) => ["in_progress", "review", "active"].includes(o.status)).length,
-              completed: allOrders.filter((o: any) => o.status === "completed").length,
-              lastOrder: allOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0],
-            };
-            const projectOrders = allOrders.filter((o: any) => o.type !== "custom" || o.status !== "pending");
-            const projects = { total: projectOrders.length, active: projectOrders.filter((o: any) => o.status !== "completed").length };
-            context.systemData = {
-              orders,
-              projects,
-              wallet: { balance: (walletUser as any)?.walletBalance || 0 },
-            };
-          } else if (role === "admin" || role === "manager") {
-            const [totalClients, allOrders] = await Promise.all([
-              UserModel.countDocuments({ role: "client" }),
-              OrderModel.find({}).lean(),
-            ]);
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
-            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const openOrders = allOrders.filter((o: any) => !["completed", "cancelled", "rejected", "closed"].includes(o.status)).length;
-            const pendingOrders = allOrders.filter((o: any) => o.status === "pending").length;
-            const monthRevenue = allOrders
-              .filter((o: any) => ["completed", "delivered"].includes(o.status) && new Date(o.createdAt) >= startOfMonth)
-              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
-            const todayRevenue = allOrders
-              .filter((o: any) => ["completed", "delivered"].includes(o.status) && new Date(o.updatedAt || o.createdAt) >= startOfToday)
-              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
-            const todayNewOrders = allOrders.filter((o: any) => new Date(o.createdAt) >= startOfToday).length;
-            const delayedOrders = allOrders.filter((o: any) =>
-              ["in_progress", "review", "active", "approved"].includes(o.status) &&
-              new Date(o.updatedAt || o.createdAt) < oneWeekAgo
-            ).length;
-            const newClients = await UserModel.countDocuments({ role: "client", createdAt: { $gte: oneWeekAgo } });
-            const totalRevenue = allOrders
-              .filter((o: any) => ["completed", "delivered"].includes(o.status))
-              .reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
-            context.systemData = { stats: { totalClients, openOrders, pendingOrders, monthRevenue, todayRevenue, todayNewOrders, delayedOrders, newClients, totalRevenue } };
-          } else if (role === "employee" || role === "employee_manager") {
-            const orders = await OrderModel.find({ assignedTo: userId }).lean();
-            context.systemData = {
-              orders: {
-                total: orders.length,
-                pending: orders.filter((o: any) => o.status === "pending").length,
-                active: orders.filter((o: any) => ["in_progress", "review"].includes(o.status)).length,
-                completed: orders.filter((o: any) => o.status === "completed").length,
-              },
-            };
-          }
-        } catch (dbErr) {
-          console.error("[AI] DB context error:", dbErr);
-        }
-      }
-
-      const result = await processMessage(sessionId, message, context);
       res.json(result);
-    } catch (err) {
-      console.error("[AI] Error:", err);
-      res.json({ reply: "عذراً، حدث خطأ مؤقت. حاول مرة أخرى." });
+    } catch (err: any) {
+      console.error("[QIROX AI] Error:", err?.message || err);
+      res.json({ reply: "عذراً، حدث خطأ مؤقت في مساعد الذكاء الاصطناعي. حاول مرة أخرى." });
     }
   });
 
-  // POST /api/ai/custom-order — create custom order in DB
+  // POST /api/ai/custom-order — save custom order from AI conversation
   app.post("/api/ai/custom-order", async (req, res) => {
     try {
       const { description, features, budget, timeline } = req.body;
@@ -973,7 +382,7 @@ export function registerAiRoutes(app: Express) {
         clientEmail: user?.email || "",
         status: "pending",
         type: "custom",
-        notes: `طلب مخصص:\n\nالوصف: ${description}\n\nالميزات: ${features}\n\nالميزانية: ${budget}\n\nالجدول الزمني: ${timeline}`,
+        notes: `طلب مخصص عبر QIROX AI:\n\nالوصف: ${description}\nالميزات: ${features}\nالميزانية: ${budget}\nالجدول الزمني: ${timeline}`,
         totalAmount: 0,
         source: "qirox-ai",
         createdAt: new Date(),
@@ -981,12 +390,11 @@ export function registerAiRoutes(app: Express) {
 
       const order = await OrderModel.create(orderData);
 
-      // Notify admin via email
       sendDirectEmail(
         "info@qiroxstudio.online",
         "QIROX",
-        `طلب مخصص جديد من QIROX AI`,
-        `عميل: ${orderData.clientName}\nالبريد: ${orderData.clientEmail}\n\nالوصف: ${description}\n\nالميزات: ${features}\n\nالميزانية: ${budget}\n\nالجدول الزمني: ${timeline}`
+        `طلب مخصص جديد عبر QIROX AI`,
+        `عميل: ${orderData.clientName}\nالبريد: ${orderData.clientEmail}\n\n${orderData.notes}`
       ).catch(console.error);
 
       res.json({ success: true, orderId: order._id });
@@ -996,7 +404,76 @@ export function registerAiRoutes(app: Express) {
     }
   });
 
-  // GET /api/ai/session — reset session
+  // POST /api/ai/analyze — business analytics insight (admin/manager)
+  app.post("/api/ai/analyze", async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!["admin", "manager"].includes(user?.role)) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+
+      const { data, question } = req.body;
+      const systemPrompt = buildSystemPrompt(user.role, user.fullName || user.username);
+
+      const completion = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: `قم بتحليل هذه البيانات وأجب على السؤال التالي بشكل احترافي وإبداعي:\n\nالسؤال: ${question}\n\nالبيانات:\n${JSON.stringify(data, null, 2)}`,
+          },
+        ],
+        max_tokens: 800,
+        temperature: 0.6,
+      });
+
+      const analysis = completion.choices[0]?.message?.content || "تعذّر تحليل البيانات.";
+      res.json({ analysis });
+    } catch (err) {
+      console.error("[AI Analyze]", err);
+      res.status(500).json({ error: "فشل التحليل" });
+    }
+  });
+
+  // POST /api/ai/generate — creative content generation
+  app.post("/api/ai/generate", async (req, res) => {
+    try {
+      const { type, context: ctx, lang } = req.body;
+      const user = (req as any).user;
+
+      const prompts: Record<string, string> = {
+        project_description: `اكتب وصفاً احترافياً وجذاباً لمشروع برمجي بناءً على هذه المعلومات:\n${ctx}`,
+        email_template: `اكتب قالب بريد إلكتروني احترافي بالعربية لـ:\n${ctx}`,
+        proposal: `اكتب عرض سعر احترافي ومقنع لعميل بناءً على:\n${ctx}`,
+        social_post: `اكتب منشور جذاب لوسائل التواصل الاجتماعي عن:\n${ctx}`,
+        report_summary: `لخّص هذه البيانات في تقرير موجز ومفيد:\n${ctx}`,
+      };
+
+      const prompt = prompts[type] || `اكتب محتوى إبداعياً عن: ${ctx}`;
+
+      const completion = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `أنت كاتب محتوى إبداعي ومحترف لشركة QIROX Studio. ${lang === "en" ? "Respond in English." : "أجب بالعربية."}`,
+          },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 600,
+        temperature: 0.8,
+      });
+
+      const content = completion.choices[0]?.message?.content || "";
+      res.json({ content });
+    } catch (err) {
+      console.error("[AI Generate]", err);
+      res.status(500).json({ error: "فشل إنشاء المحتوى" });
+    }
+  });
+
+  // DELETE /api/ai/session/:sessionId — reset conversation
   app.delete("/api/ai/session/:sessionId", (req, res) => {
     sessions.delete(req.params.sessionId);
     res.json({ ok: true });

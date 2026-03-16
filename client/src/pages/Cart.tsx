@@ -1381,7 +1381,6 @@ export default function Cart() {
                 </>
               )}
             </div>
-          </div>
 
           {/* Checkout footer — fixed at bottom */}
           <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-black/[0.06] dark:border-white/[0.06] px-4 pb-6 pt-3 space-y-3 z-10 max-w-2xl mx-auto">
