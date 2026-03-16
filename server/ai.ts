@@ -231,10 +231,14 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
 
     /* ── READ: get_orders ── */
     if (name === "get_orders") {
+      // ⚠️ SECURITY: only authenticated users can see orders
+      if (!userId) return { success: false, error: "يجب تسجيل الدخول لعرض الطلبات" };
+      // ⚠️ SECURITY: clients can only see their own orders
+      if (isClient && !userId) return { success: false, error: "يجب تسجيل الدخول لعرض طلباتك" };
       const limit = Math.min(args.limit || 10, 20);
       const query: any = {};
       if (args.status && args.status !== "all") query.status = args.status;
-      if (isClient && userId) query.userId = userId;
+      if (isClient) query.userId = userId; // always filter for clients
       if (args.search) query.$or = [
         { "service.nameAr": { $regex: args.search, $options: "i" } },
         { notes: { $regex: args.search, $options: "i" } },
@@ -357,9 +361,13 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
 
     /* ── READ: get_projects ── */
     if (name === "get_projects") {
+      // ⚠️ SECURITY: only authenticated users can see projects
+      if (!userId) return { success: false, error: "يجب تسجيل الدخول لعرض المشاريع" };
+      // ⚠️ SECURITY: clients can only see their own projects
+      if (isClient && !userId) return { success: false, error: "يجب تسجيل الدخول لعرض مشاريعك" };
       const limit = args.limit || 8;
       const query: any = {};
-      if (isClient && userId) {
+      if (isClient) {
         const clientOrders = await OrderModel.find({ userId }).select("_id").lean();
         const orderIds = clientOrders.map(o => o._id);
         query.orderId = { $in: orderIds };
@@ -535,8 +543,9 @@ async function handleChat(req: any, res: any) {
   if (!message?.trim()) return res.json({ reply: "الرجاء إدخال رسالة." });
 
   const userId = req.user?._id ? String(req.user._id) : undefined;
-  const userRole = context?.role || req.user?.role || "guest";
-  const userName = context?.name || req.user?.fullName || req.user?.username;
+  // ⚠️ SECURITY: NEVER trust context.role from the request body — always use the verified session
+  const userRole = req.user?.role || "guest";
+  const userName = req.user?.fullName || req.user?.username || context?.name;
 
   const session = getSession(sessionId || "anon", userId, userRole);
   session.history.push({ role: "user", content: message.trim() });

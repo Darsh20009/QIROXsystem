@@ -78,74 +78,6 @@ const ROLE_CFG = {
   guest:           { label: "زائر", icon: "👋", gradient: "from-slate-500 to-slate-600" },
 };
 
-const QUICK_ACTIONS: Record<string, { label: string; icon: any; msg: string }[]> = {
-  admin: [
-    { label: "إحصاءات النظام", icon: BarChart2, msg: "أعطني إحصاءات النظام الكاملة" },
-    { label: "الطلبات المعلّقة", icon: Clock, msg: "أظهر لي الطلبات المعلّقة" },
-    { label: "قائمة العملاء", icon: Users, msg: "أظهر لي آخر العملاء المنضمين" },
-    { label: "إشعار للجميع", icon: Bell, msg: "أرسل إشعاراً لجميع العملاء" },
-  ],
-  manager: [
-    { label: "إحصاءات النظام", icon: BarChart2, msg: "أعطني إحصاءات النظام الكاملة" },
-    { label: "الطلبات المعلّقة", icon: Clock, msg: "أظهر لي الطلبات المعلّقة" },
-    { label: "قائمة الموظفين", icon: Briefcase, msg: "أظهر لي قائمة الموظفين" },
-    { label: "إشعار للعملاء", icon: Bell, msg: "أرسل إشعاراً لجميع العملاء" },
-  ],
-  developer: [
-    { label: "مهامي", icon: Clock, msg: "أظهر لي الطلبات النشطة المعينة لي" },
-    { label: "المشاريع", icon: BookOpen, msg: "أظهر لي المشاريع الحالية" },
-    { label: "إنشاء مهمة", icon: Zap, msg: "أريد إنشاء مهمة جديدة في مشروع" },
-    { label: "الطلبات الجديدة", icon: Package, msg: "أظهر لي الطلبات الجديدة" },
-  ],
-  designer: [
-    { label: "مهامي", icon: Clock, msg: "أظهر لي الطلبات النشطة" },
-    { label: "المشاريع", icon: BookOpen, msg: "أظهر لي المشاريع الحالية" },
-    { label: "إنشاء مهمة", icon: Zap, msg: "أريد إنشاء مهمة جديدة" },
-    { label: "طلبات التصميم", icon: Package, msg: "أظهر الطلبات النشطة" },
-  ],
-  support: [
-    { label: "طلبات الدعم", icon: Clock, msg: "أظهر الطلبات المعلّقة التي تحتاج دعماً" },
-    { label: "عملاء جدد", icon: Users, msg: "أظهر آخر العملاء المنضمين" },
-    { label: "تغيير حالة طلب", icon: Zap, msg: "أريد تغيير حالة طلب" },
-    { label: "إرسال إشعار", icon: Bell, msg: "أريد إرسال إشعار لعميل" },
-  ],
-  sales: [
-    { label: "العملاء الجدد", icon: Users, msg: "أظهر آخر العملاء" },
-    { label: "طلبات معلّقة", icon: Clock, msg: "أظهر الطلبات المعلّقة" },
-    { label: "بحث عميل", icon: Search, msg: "ابحث عن عميل" },
-    { label: "إرسال دعم", icon: Mail, msg: "أريد إرسال تذكرة دعم" },
-  ],
-  sales_manager: [
-    { label: "إحصاءات المبيعات", icon: BarChart2, msg: "أعطني إحصاءات النظام" },
-    { label: "العملاء", icon: Users, msg: "أظهر قائمة العملاء" },
-    { label: "الطلبات", icon: Package, msg: "أظهر آخر الطلبات" },
-    { label: "إشعار عملاء", icon: Bell, msg: "أرسل إشعاراً للعملاء" },
-  ],
-  accountant: [
-    { label: "الإحصاءات المالية", icon: BarChart2, msg: "أعطني الإحصاءات المالية للنظام" },
-    { label: "الطلبات المكتملة", icon: CheckCircle2, msg: "أظهر الطلبات المكتملة هذا الشهر" },
-    { label: "المشاريع", icon: BookOpen, msg: "أظهر قائمة المشاريع" },
-    { label: "العملاء", icon: Users, msg: "أظهر قائمة العملاء" },
-  ],
-  merchant: [
-    { label: "الطلبات", icon: Package, msg: "أظهر الطلبات الحالية" },
-    { label: "المشاريع", icon: BookOpen, msg: "أظهر المشاريع" },
-    { label: "العملاء", icon: Users, msg: "أظهر العملاء" },
-    { label: "الإحصاءات", icon: BarChart2, msg: "أعطني الإحصاءات" },
-  ],
-  client: [
-    { label: "طلباتي", icon: Package, msg: "أظهر لي طلباتي" },
-    { label: "مشاريعي", icon: BookOpen, msg: "أظهر مشاريعي النشطة" },
-    { label: "رصيد محفظتي", icon: CreditCard, msg: "ما رصيد محفظتي؟" },
-    { label: "تواصل مع الدعم", icon: MessageSquare, msg: "أريد إرسال تذكرة دعم" },
-  ],
-  guest: [
-    { label: "استكشف الباقات", icon: Package, msg: "أخبرني عن الباقات المتاحة" },
-    { label: "أنسب باقة لي", icon: Star, msg: "أنسب باقة لمشروعي" },
-    { label: "كيف تعمل المنصة؟", icon: Globe, msg: "كيف تعمل منصة QIROX؟" },
-    { label: "طلب مخصص", icon: Zap, msg: "أريد طلباً مخصصاً" },
-  ],
-};
 
 /* ─────── Tool Result Cards ─────── */
 
@@ -415,7 +347,6 @@ export function AIPanel({ className = "" }: { className?: string }) {
   const { data: user } = useQuery<any>({ queryKey: ["/api/user"], retry: false });
   const role = user?.role || "guest";
   const cfg = ROLE_CFG[role] || ROLE_CFG.guest;
-  const quickActions = QUICK_ACTIONS[role] || QUICK_ACTIONS.guest;
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, loading]);
 
@@ -525,32 +456,6 @@ export function AIPanel({ className = "" }: { className?: string }) {
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
-
-      {/* ── Quick actions ── */}
-      <AnimatePresence>
-        {msgs.length === 0 && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="px-3 pt-3 grid grid-cols-2 gap-2 flex-shrink-0">
-            {quickActions.map((qa, i) => {
-              const Icon = qa.icon;
-              return (
-                <motion.button key={i}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  onClick={() => sendMessage(qa.msg)}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-right text-[11px] font-semibold text-white/75 hover:text-white transition-all"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  data-testid={`button-ai-quick-${i}`}>
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,rgba(14,165,233,0.25),rgba(124,58,237,0.25))" }}>
-                    <Icon className="w-3 h-3 text-cyan-400" />
-                  </div>
-                  <span className="leading-tight">{qa.label}</span>
-                </motion.button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin scrollbar-thumb-white/10 min-h-0">
