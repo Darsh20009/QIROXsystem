@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Code2, Globe, Server, FileCode, Trash2, Play, Square,
-  MoreVertical, Loader2, FolderOpen
+  MoreVertical, Loader2, FolderOpen, Pencil, type LucideIcon
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -32,11 +32,20 @@ interface SandboxProject {
   updatedAt?: string;
 }
 
-const TEMPLATE_META: Record<string, { icon: any; label: string; labelAr: string; color: string }> = {
-  blank: { icon: Server, label: "Node.js", labelAr: "Node.js", color: "bg-green-600" },
+interface TemplateMeta {
+  icon: LucideIcon;
+  label: string;
+  labelAr: string;
+  color: string;
+}
+
+const TEMPLATE_META: Record<string, TemplateMeta> = {
+  blank: { icon: Server, label: "Node.js API", labelAr: "Node.js API", color: "bg-green-600" },
   express: { icon: Server, label: "Express", labelAr: "Express", color: "bg-gray-600" },
   static: { icon: Globe, label: "HTML/CSS/JS", labelAr: "HTML/CSS/JS", color: "bg-blue-600" },
   react: { icon: Code2, label: "React", labelAr: "React", color: "bg-cyan-600" },
+  vue: { icon: Code2, label: "Vue", labelAr: "Vue", color: "bg-emerald-600" },
+  nextjs: { icon: FileCode, label: "Next.js", labelAr: "Next.js", color: "bg-black" },
 };
 
 export default function SystemBuilder() {
@@ -49,6 +58,8 @@ export default function SystemBuilder() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newTemplate, setNewTemplate] = useState("blank");
+  const [renameDialog, setRenameDialog] = useState<{ id: string; name: string } | null>(null);
+  const [renameName, setRenameName] = useState("");
 
   const { data: projects, isLoading } = useQuery<SandboxProject[]>({
     queryKey: ["/api/sandbox/projects"],
@@ -63,7 +74,7 @@ export default function SystemBuilder() {
       });
       return res.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: SandboxProject) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects"] });
       setDialogOpen(false);
       setNewName("");
@@ -77,6 +88,20 @@ export default function SystemBuilder() {
     },
   });
 
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await apiRequest("PATCH", `/api/sandbox/projects/${id}`, { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects"] });
+      setRenameDialog(null);
+      toast({ title: ar ? "تم التعديل" : "Renamed" });
+    },
+    onError: (err: Error) => {
+      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/sandbox/projects/${id}`);
@@ -84,6 +109,9 @@ export default function SystemBuilder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects"] });
       toast({ title: ar ? "تم حذف المشروع" : "Project deleted" });
+    },
+    onError: (err: Error) => {
+      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
     },
   });
 
@@ -128,10 +156,12 @@ export default function SystemBuilder() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="blank">Node.js</SelectItem>
-                    <SelectItem value="express">Express</SelectItem>
                     <SelectItem value="static">HTML/CSS/JS</SelectItem>
+                    <SelectItem value="blank">Node.js API</SelectItem>
+                    <SelectItem value="express">Express</SelectItem>
                     <SelectItem value="react">React</SelectItem>
+                    <SelectItem value="vue">Vue</SelectItem>
+                    <SelectItem value="nextjs">Next.js</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -194,9 +224,22 @@ export default function SystemBuilder() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={ar ? "start" : "end"}>
-                          <DropdownMenuItem onClick={() => navigate(`/employee/system-builder/${p.id}`)}>
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/employee/system-builder/${p.id}`)}
+                            data-testid={`button-open-${p.id}`}
+                          >
                             <FolderOpen className="w-4 h-4 me-2" />
                             {ar ? "فتح" : "Open"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setRenameDialog({ id: p.id, name: p.name });
+                              setRenameName(p.name);
+                            }}
+                            data-testid={`button-rename-${p.id}`}
+                          >
+                            <Pencil className="w-4 h-4 me-2" />
+                            {ar ? "إعادة تسمية" : "Rename"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
@@ -205,6 +248,7 @@ export default function SystemBuilder() {
                                 deleteMutation.mutate(p.id);
                               }
                             }}
+                            data-testid={`button-delete-${p.id}`}
                           >
                             <Trash2 className="w-4 h-4 me-2" />
                             {ar ? "حذف" : "Delete"}
@@ -236,6 +280,34 @@ export default function SystemBuilder() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!renameDialog} onOpenChange={(open) => { if (!open) setRenameDialog(null); }}>
+        <DialogContent dir={ar ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle>{ar ? "إعادة تسمية المشروع" : "Rename Project"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Input
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              data-testid="input-rename-project"
+            />
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (renameDialog && renameName.trim()) {
+                  renameMutation.mutate({ id: renameDialog.id, name: renameName.trim() });
+                }
+              }}
+              disabled={!renameName.trim() || renameMutation.isPending}
+              data-testid="button-rename-submit"
+            >
+              {renameMutation.isPending && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
+              {ar ? "حفظ" : "Save"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

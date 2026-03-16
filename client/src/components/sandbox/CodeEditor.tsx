@@ -1,5 +1,6 @@
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
 import { X, Circle, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -34,7 +35,7 @@ interface CodeEditorProps {
 export function CodeEditor({ tabs, activeTab, onTabSelect, onTabClose, onChange, onSave }: CodeEditorProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const isExternalUpdate = useRef(false);
 
   const currentTab = tabs.find((t) => t.path === activeTab);

@@ -29,7 +29,22 @@ export function GitHubPanel({ projectId }: GitHubPanelProps) {
   const [pushBranch, setPushBranch] = useState("main");
   const [commitMsg, setCommitMsg] = useState("");
 
-  const { data: gitStatus, isLoading: statusLoading } = useQuery<any>({
+  interface GitCommitInfo {
+    hash: string;
+    message: string;
+    date?: string;
+  }
+
+  interface GitStatusResult {
+    branch: string;
+    isClean: boolean;
+    modified?: string[];
+    created?: string[];
+    deleted?: string[];
+    lastCommits?: GitCommitInfo[];
+  }
+
+  const { data: gitStatus, isLoading: statusLoading } = useQuery<GitStatusResult>({
     queryKey: ["/api/sandbox/projects", projectId, "github", "status"],
     retry: false,
   });

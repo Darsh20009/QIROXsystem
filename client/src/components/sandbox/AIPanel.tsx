@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useI18n } from "@/lib/i18n";
@@ -15,16 +15,46 @@ interface AIPanelProps {
   onCreateFile: (path: string, content: string) => void;
 }
 
+interface AIResult {
+  code?: string;
+  explanation?: string;
+  filesCreated?: number;
+  mode?: string;
+  tokens?: number;
+}
+
+function TypingAnimation({ text }: { text: string }) {
+  const [displayed, setDisplayed] = useState("");
+  const idx = useRef(0);
+
+  useEffect(() => {
+    idx.current = 0;
+    setDisplayed("");
+    const interval = setInterval(() => {
+      if (idx.current < text.length) {
+        setDisplayed(text.slice(0, idx.current + 1));
+        idx.current++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 8);
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return <>{displayed}<span className="animate-pulse">▌</span></>;
+}
+
 export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }: AIPanelProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { toast } = useToast();
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState("create");
-  const [result, setResult] = useState<{ code?: string; explanation?: string; filesCreated?: number } | null>(null);
+  const [result, setResult] = useState<AIResult | null>(null);
+  const [animating, setAnimating] = useState(false);
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<AIResult> => {
       const res = await apiRequest("POST", `/api/sandbox/${projectId}/ai/generate`, {
         prompt,
         targetFile: activeFile || undefined,
@@ -32,9 +62,11 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
       });
       return res.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: AIResult) => {
       setResult(data);
-      if (data.mode === "full-project") {
+      setAnimating(true);
+      setTimeout(() => setAnimating(false), (data.code?.length || data.explanation?.length || 100) * 8 + 500);
+      if (data.mode === "full-project" && data.filesCreated) {
         toast({ title: ar ? `تم إنشاء ${data.filesCreated} ملف` : `Created ${data.filesCreated} files` });
       }
     },
@@ -94,10 +126,23 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
         {ar ? "توليد" : "Generate"}
       </Button>
 
-      {result && (
+      {generateMutation.isPending && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-xs text-muted-foreground font-mono">
+            <span className="animate-pulse">
+              {ar ? "جاري التوليد" : "Generating"}
+              <span className="inline-block w-8">...</span>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {result && !generateMutation.isPending && (
         <div className="flex-1 overflow-y-auto border border-border rounded bg-muted/20">
           {result.explanation ? (
-            <div className="p-3 text-xs whitespace-pre-wrap">{result.explanation}</div>
+            <div className="p-3 text-xs whitespace-pre-wrap">
+              {animating ? <TypingAnimation text={result.explanation} /> : result.explanation}
+            </div>
           ) : result.code ? (
             <div className="flex flex-col">
               <div className="flex items-center gap-1 p-2 border-b border-border">
@@ -141,7 +186,9 @@ export function AIPanel({ projectId, activeFile, onApplyToEditor, onCreateFile }
                   {ar ? "نسخ" : "Copy"}
                 </Button>
               </div>
-              <pre className="p-3 text-xs overflow-x-auto font-mono">{result.code}</pre>
+              <pre className="p-3 text-xs overflow-x-auto font-mono">
+                {animating ? <TypingAnimation text={result.code} /> : result.code}
+              </pre>
             </div>
           ) : result.filesCreated ? (
             <div className="p-3 text-xs text-center text-green-500">

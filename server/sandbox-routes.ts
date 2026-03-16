@@ -146,7 +146,7 @@ async function syncDbToDisk(projectId: string, objectId: any): Promise<number> {
   return count;
 }
 
-const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: string; startCmd: string; installCmd: string }> = {
+const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: string; startCmd: string; installCmd: string; buildCmd?: string }> = {
   blank: {
     files: { "index.js": 'const http = require("http");\nconst PORT = process.env.PORT || 3000;\nhttp.createServer((req, res) => {\n  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });\n  res.end("<h1>مرحباً من QIROX Sandbox!</h1>");\n}).listen(PORT, () => console.log(`Server running on port ${PORT}`));\n' },
     entryFile: "index.js",
@@ -172,7 +172,7 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
   },
   react: {
     files: {
-      "package.json": '{\n  "name": "qirox-react-sandbox",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  },\n  "devDependencies": {\n    "vite": "^5.0.0",\n    "@vitejs/plugin-react": "^4.0.0"\n  },\n  "scripts": {\n    "dev": "vite --host 0.0.0.0 --port $PORT"\n  }\n}',
+      "package.json": '{\n  "name": "qirox-react-sandbox",\n  "version": "1.0.0",\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  },\n  "devDependencies": {\n    "vite": "^5.0.0",\n    "@vitejs/plugin-react": "^4.0.0"\n  },\n  "scripts": {\n    "dev": "vite --host 0.0.0.0 --port $PORT",\n    "build": "vite build"\n  }\n}',
       "index.html": '<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>QIROX React</title>\n</head>\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.jsx"></script>\n</body>\n</html>',
       "src/main.jsx": 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\n\nReactDOM.createRoot(document.getElementById("root")).render(<App />);\n',
       "src/App.jsx": 'export default function App() {\n  return (\n    <div style={{ fontFamily: "sans-serif", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#1a1a2e", color: "#eee" }}>\n      <h1>مرحباً من QIROX React! ⚛️</h1>\n    </div>\n  );\n}\n',
@@ -181,6 +181,31 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
     entryFile: "src/App.jsx",
     startCmd: "npx vite --host 0.0.0.0 --port $PORT",
     installCmd: "npm install",
+    buildCmd: "npm run build",
+  },
+  vue: {
+    files: {
+      "package.json": '{\n  "name": "qirox-vue-sandbox",\n  "version": "1.0.0",\n  "dependencies": {\n    "vue": "^3.4.0"\n  },\n  "devDependencies": {\n    "vite": "^5.0.0",\n    "@vitejs/plugin-vue": "^5.0.0"\n  },\n  "scripts": {\n    "dev": "vite --host 0.0.0.0 --port $PORT",\n    "build": "vite build"\n  }\n}',
+      "index.html": '<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>QIROX Vue</title>\n</head>\n<body>\n  <div id="app"></div>\n  <script type="module" src="/src/main.js"></script>\n</body>\n</html>',
+      "src/main.js": 'import { createApp } from "vue";\nimport App from "./App.vue";\n\ncreateApp(App).mount("#app");\n',
+      "src/App.vue": '<template>\n  <div class="app">\n    <h1>مرحباً من QIROX Vue! 💚</h1>\n  </div>\n</template>\n\n<script setup>\n</script>\n\n<style>\n.app {\n  font-family: sans-serif;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 100vh;\n  background: #1a1a2e;\n  color: #eee;\n}\n</style>\n',
+      "vite.config.js": 'import { defineConfig } from "vite";\nimport vue from "@vitejs/plugin-vue";\n\nexport default defineConfig({\n  plugins: [vue()],\n  server: { host: "0.0.0.0", allowedHosts: true },\n});\n',
+    },
+    entryFile: "src/App.vue",
+    startCmd: "npx vite --host 0.0.0.0 --port $PORT",
+    installCmd: "npm install",
+    buildCmd: "npm run build",
+  },
+  nextjs: {
+    files: {
+      "package.json": '{\n  "name": "qirox-nextjs-sandbox",\n  "version": "1.0.0",\n  "dependencies": {\n    "next": "^14.0.0",\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0"\n  },\n  "scripts": {\n    "dev": "next dev -p $PORT",\n    "build": "next build"\n  }\n}',
+      "pages/index.js": 'export default function Home() {\n  return (\n    <div style={{ fontFamily: "sans-serif", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#1a1a2e", color: "#eee", direction: "rtl" }}>\n      <h1>مرحباً من QIROX Next.js! ▲</h1>\n    </div>\n  );\n}\n',
+      "next.config.js": 'module.exports = {\n  reactStrictMode: true,\n};\n',
+    },
+    entryFile: "pages/index.js",
+    startCmd: "npx next dev -p $PORT",
+    installCmd: "npm install",
+    buildCmd: "npm run build",
   },
 };
 
@@ -268,6 +293,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
         entryFile: tmpl.entryFile,
         startCmd: tmpl.startCmd,
         installCmd: tmpl.installCmd,
+        buildCmd: tmpl.buildCmd || "",
         tags: tags || [],
       });
 
@@ -582,6 +608,47 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       res.json({ success: true, port: result.port, pid: result.pid });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/sandbox/projects/:id/build", async (req: Request, res: Response) => {
+    const ctx = await requireProjectAccess(req, res);
+    if (!ctx) return;
+    try {
+      const { exec } = await import("child_process");
+      const { SandboxEnvVarModel } = await import("./models");
+      const { broadcastSandboxLog } = await import("./ws");
+      const pid = String(ctx.project._id);
+      const projectDir = path.join(SANDBOX_ROOT, pid);
+      const buildCmd = ctx.project.buildCmd;
+
+      if (!buildCmd) {
+        return res.status(400).json({ error: "هذا المشروع لا يدعم البناء" });
+      }
+
+      const envDocs = await SandboxEnvVarModel.find({ projectId: ctx.project._id }).lean();
+      const envVars: Record<string, string> = {};
+      Object.entries(process.env).forEach(([k, v]) => { if (v !== undefined) envVars[k] = v; });
+      for (const doc of envDocs as { key: string; value: string; iv: string }[]) {
+        try { envVars[doc.key] = decrypt(doc.value, doc.iv); } catch {}
+      }
+
+      broadcastSandboxLog(pid, "stdout", `Running build: ${buildCmd}`);
+
+      exec(buildCmd, { cwd: projectDir, env: envVars, timeout: 120000 }, (error, stdout, stderr) => {
+        if (stdout) broadcastSandboxLog(pid, "stdout", stdout);
+        if (stderr) broadcastSandboxLog(pid, "stderr", stderr);
+        if (error) {
+          broadcastSandboxLog(pid, "stderr", `Build failed: ${error.message}`);
+          return;
+        }
+        broadcastSandboxLog(pid, "stdout", "Build completed successfully!");
+      });
+
+      res.json({ success: true, message: "Build started" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ error: message });
     }
   });
 

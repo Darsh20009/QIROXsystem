@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Play, Square, RotateCcw, Download, Eye, ArrowLeft,
-  Terminal, PanelRightClose, PanelRightOpen,
+  Terminal, PanelRightClose, PanelRightOpen, Hammer,
   Sparkles, Settings, Upload, Loader2, ExternalLink, RefreshCw
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
@@ -29,6 +29,91 @@ interface SandboxIDEProps {
   projectId: string;
 }
 
+interface SandboxProjectDetail {
+  id: string;
+  name: string;
+  nameAr?: string;
+  description?: string;
+  template: string;
+  runtime: string;
+  isRunning: boolean;
+  status?: string;
+  port?: number;
+  entryFile?: string;
+  startCmd?: string;
+  installCmd?: string;
+  buildCmd?: string;
+}
+
+interface FileEntry {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  size?: number;
+  children?: FileEntry[];
+}
+
+interface LogEntry {
+  text: string;
+  stream: string;
+}
+
+interface StartResult {
+  success: boolean;
+  port: number;
+  pid: number;
+}
+
+const BUILDABLE_TEMPLATES = ["react", "vue", "nextjs"];
+
+function useResizer(initialSize: number, direction: "horizontal" | "vertical", min = 150, max = 600) {
+  const [size, setSize] = useState(initialSize);
+  const dragging = useRef(false);
+  const startPos = useRef(0);
+  const startSize = useRef(0);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startPos.current = direction === "horizontal" ? e.clientX : e.clientY;
+      startSize.current = size;
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        const delta = (direction === "horizontal" ? ev.clientX : ev.clientY) - startPos.current;
+        const newSize = Math.max(min, Math.min(max, startSize.current + delta));
+        setSize(newSize);
+      };
+
+      const onMouseUp = () => {
+        dragging.current = false;
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+    },
+    [size, direction, min, max]
+  );
+
+  return { size, onMouseDown };
+}
+
+function ResizeHandle({ direction, onMouseDown }: { direction: "horizontal" | "vertical"; onMouseDown: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      className={`${
+        direction === "horizontal"
+          ? "w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
+          : "h-1 cursor-row-resize hover:bg-primary/30 active:bg-primary/50"
+      } bg-border flex-shrink-0 transition-colors`}
+      onMouseDown={onMouseDown}
+    />
+  );
+}
+
 export function SandboxIDE({ projectId }: SandboxIDEProps) {
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -42,17 +127,21 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
   const [rightPanelTab, setRightPanelTab] = useState("ai");
   const [logsOpen, setLogsOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [logs, setLogs] = useState<{ text: string; stream: string }[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const wsRef = useRef<WebSocket | null>(null);
   const { data: user } = useUser();
 
-  const { data: project, isLoading: projectLoading } = useQuery<any>({
+  const leftPanel = useResizer(220, "horizontal", 150, 400);
+  const rightPanel = useResizer(300, "horizontal", 200, 500);
+  const logsPanel = useResizer(200, "vertical", 100, 400);
+
+  const { data: project, isLoading: projectLoading } = useQuery<SandboxProjectDetail>({
     queryKey: ["/api/sandbox/projects", projectId],
   });
 
-  const { data: fileTree, isLoading: filesLoading } = useQuery<any[]>({
+  const { data: fileTree, isLoading: filesLoading } = useQuery<FileEntry[]>({
     queryKey: ["/api/sandbox/projects", projectId, "files"],
   });
 
@@ -76,7 +165,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
             return next.length > 500 ? next.slice(-500) : next;
           });
         }
-      } catch {}
+      } catch { /* ignore malformed WS messages */ }
     };
 
     return () => {
@@ -92,7 +181,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
   }, [logs, logsOpen]);
 
   const startMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<StartResult> => {
       const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/start`, {});
       return res.json();
     },
@@ -122,7 +211,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
   });
 
   const restartMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<StartResult> => {
       const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/restart`, {});
       return res.json();
     },
@@ -141,8 +230,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
       try {
         await apiRequest("PUT", `/api/sandbox/projects/${projectId}/file`, { path, content });
         setTabs((prev) => prev.map((t) => (t.path === path ? { ...t, dirty: false } : t)));
-      } catch (err: any) {
-        toast({ title: ar ? "خطأ في الحفظ" : "Save error", description: err.message, variant: "destructive" });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast({ title: ar ? "خطأ في الحفظ" : "Save error", description: message, variant: "destructive" });
       }
     },
     [projectId, ar, toast]
@@ -161,7 +251,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to load file");
-        const data = await res.json();
+        const data: { path: string; content: string } = await res.json();
         setTabs((prev) => [...prev, { path, content: data.content || "", dirty: false }]);
         setActiveTab(path);
       } catch {
@@ -183,7 +273,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
     (path: string, content: string) => {
       setTabs((prev) => prev.map((t) => (t.path === path ? { ...t, content, dirty: true } : t)));
       if (saveTimerRef.current[path]) clearTimeout(saveTimerRef.current[path]);
-      saveTimerRef.current[path] = setTimeout(() => saveFile(path, content), 1500);
+      saveTimerRef.current[path] = setTimeout(() => saveFile(path, content), 1000);
     },
     [saveFile]
   );
@@ -193,8 +283,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
       await apiRequest("PUT", `/api/sandbox/projects/${projectId}/file`, { path: filePath, content: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "files"] });
       handleFileSelect(filePath);
-    } catch (err: any) {
-      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: ar ? "خطأ" : "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -202,8 +293,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
     try {
       await apiRequest("POST", `/api/sandbox/projects/${projectId}/folder`, { path: folderPath });
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "files"] });
-    } catch (err: any) {
-      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: ar ? "خطأ" : "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -215,8 +307,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
         prev.map((t) => (t.path === oldPath ? { ...t, path: newPath } : t))
       );
       if (activeTab === oldPath) setActiveTab(newPath);
-    } catch (err: any) {
-      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: ar ? "خطأ" : "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -225,8 +318,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
       await apiRequest("DELETE", `/api/sandbox/projects/${projectId}/file?path=${encodeURIComponent(path)}`);
       queryClient.invalidateQueries({ queryKey: ["/api/sandbox/projects", projectId, "files"] });
       handleTabClose(path);
-    } catch (err: any) {
-      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: ar ? "خطأ" : "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -240,8 +334,9 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
         return [...prev, { path: name, content, dirty: false }];
       });
       setActiveTab(name);
-    } catch (err: any) {
-      toast({ title: ar ? "خطأ" : "Error", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: ar ? "خطأ" : "Error", description: message, variant: "destructive" });
     }
   };
 
@@ -256,8 +351,23 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
     window.open(`/api/sandbox/projects/${projectId}/download`, "_blank");
   };
 
+  const buildMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/sandbox/projects/${projectId}/build`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      setLogsOpen(true);
+      toast({ title: ar ? "بدأ البناء" : "Build started" });
+    },
+    onError: (err: Error) => {
+      toast({ title: ar ? "خطأ في البناء" : "Build error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const isRunning = project?.isRunning || project?.status === "running";
   const isProcessing = startMutation.isPending || stopMutation.isPending || restartMutation.isPending;
+  const showBuildButton = project && BUILDABLE_TEMPLATES.includes(project.template);
 
   if (projectLoading) {
     return (
@@ -326,6 +436,24 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
             </Button>
           )}
 
+          {showBuildButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => buildMutation.mutate()}
+              disabled={buildMutation.isPending}
+              data-testid="button-build"
+            >
+              {buildMutation.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 me-1 animate-spin" />
+              ) : (
+                <Hammer className="w-3.5 h-3.5 me-1" />
+              )}
+              {ar ? "بناء" : "Build"}
+            </Button>
+          )}
+
           <Button
             variant={showPreview ? "default" : "outline"}
             size="sm"
@@ -371,7 +499,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
       </div>
 
       <div className="flex-1 flex min-h-0">
-        <div className="w-[220px] border-e border-border flex-shrink-0 overflow-hidden">
+        <div style={{ width: leftPanel.size }} className="border-e border-border flex-shrink-0 overflow-hidden">
           <FileTree
             files={fileTree || []}
             activeFile={activeTab}
@@ -383,6 +511,8 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
             isLoading={filesLoading}
           />
         </div>
+
+        <ResizeHandle direction="horizontal" onMouseDown={leftPanel.onMouseDown} />
 
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 flex min-h-0">
@@ -441,6 +571,7 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
                       size="sm"
                       onClick={() => startMutation.mutate()}
                       disabled={isProcessing}
+                      data-testid="button-start-preview"
                     >
                       <Play className="w-3.5 h-3.5 me-1" />
                       {ar ? "تشغيل" : "Start"}
@@ -452,125 +583,125 @@ export function SandboxIDE({ projectId }: SandboxIDEProps) {
           </div>
 
           {logsOpen && (
-            <div className="h-[200px] border-t border-border flex flex-col">
-              <div className="flex items-center justify-between px-3 py-1 bg-muted/30 border-b border-border">
-                <span className="text-xs font-medium text-muted-foreground">{ar ? "السجلات" : "Logs"}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 text-xs"
-                  onClick={() => setLogs([])}
-                  data-testid="button-clear-logs"
-                >
-                  {ar ? "مسح" : "Clear"}
-                </Button>
+            <>
+              <ResizeHandle direction="vertical" onMouseDown={logsPanel.onMouseDown} />
+              <div style={{ height: logsPanel.size }} className="border-t border-border flex flex-col">
+                <div className="flex items-center justify-between px-3 py-1 bg-muted/30 border-b border-border">
+                  <span className="text-xs font-medium text-muted-foreground">{ar ? "السجلات" : "Logs"}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-xs"
+                    onClick={() => setLogs([])}
+                    data-testid="button-clear-logs"
+                  >
+                    {ar ? "مسح" : "Clear"}
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 font-mono text-xs bg-black/90 text-green-400">
+                  {logs.length === 0 ? (
+                    <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
+                  ) : (
+                    logs.map((log, i) => (
+                      <div
+                        key={i}
+                        className={log.stream === "stderr" ? "text-red-400" : "text-green-400"}
+                      >
+                        {log.text}
+                      </div>
+                    ))
+                  )}
+                  <div ref={logsEndRef} />
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 font-mono text-xs bg-black/90 text-green-400">
-                {logs.length === 0 ? (
-                  <span className="text-muted-foreground">{ar ? "لا توجد سجلات بعد..." : "No logs yet..."}</span>
-                ) : (
-                  logs.map((log, i) => (
-                    <div
-                      key={i}
-                      className={log.stream === "stderr" ? "text-red-400" : "text-green-400"}
-                    >
-                      {log.text}
-                    </div>
-                  ))
-                )}
-                <div ref={logsEndRef} />
-              </div>
-            </div>
+            </>
           )}
         </div>
 
         {rightPanelOpen && (
-          <div className="w-[300px] border-s border-border flex-shrink-0 flex flex-col">
-            <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex flex-col h-full">
-              <TabsList className="w-full rounded-none border-b border-border bg-muted/30 h-auto p-0">
-                <TabsTrigger value="ai" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background">
-                  <Sparkles className="w-3.5 h-3.5 me-1" />
-                  AI
-                </TabsTrigger>
-                <TabsTrigger value="env" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background">
-                  <Settings className="w-3.5 h-3.5 me-1" />
-                  {ar ? "بيئة" : "Env"}
-                </TabsTrigger>
-                <TabsTrigger value="github" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background">
-                  <SiGithub className="w-3.5 h-3.5 me-1" />
-                  Git
-                </TabsTrigger>
-                <TabsTrigger value="deploy" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background">
-                  <Upload className="w-3.5 h-3.5 me-1" />
-                  {ar ? "نشر" : "Deploy"}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="ai" className="flex-1 m-0 overflow-hidden">
-                <AIPanel
-                  projectId={projectId}
-                  activeFile={activeTab}
-                  onApplyToEditor={handleApplyToEditor}
-                  onCreateFile={handleCreateFileFromAI}
-                />
-              </TabsContent>
-              <TabsContent value="env" className="flex-1 m-0 overflow-hidden">
-                <EnvVarsPanel projectId={projectId} />
-              </TabsContent>
-              <TabsContent value="github" className="flex-1 m-0 overflow-hidden">
-                <GitHubPanel projectId={projectId} />
-              </TabsContent>
-              <TabsContent value="deploy" className="flex-1 m-0 overflow-y-auto p-3">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{ar ? "النشر والتصدير" : "Deploy & Export"}</span>
-                  </div>
+          <>
+            <ResizeHandle direction="horizontal" onMouseDown={rightPanel.onMouseDown} />
+            <div style={{ width: rightPanel.size }} className="border-s border-border flex-shrink-0 flex flex-col">
+              <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex flex-col h-full">
+                <TabsList className="w-full rounded-none border-b border-border bg-muted/30 h-auto p-0">
+                  <TabsTrigger value="ai" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-ai">
+                    <Sparkles className="w-3.5 h-3.5 me-1" />
+                    AI
+                  </TabsTrigger>
+                  <TabsTrigger value="env" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-env">
+                    <Settings className="w-3.5 h-3.5 me-1" />
+                    {ar ? "بيئة" : "Env"}
+                  </TabsTrigger>
+                  <TabsTrigger value="github" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-github">
+                    <SiGithub className="w-3.5 h-3.5 me-1" />
+                    Git
+                  </TabsTrigger>
+                  <TabsTrigger value="deploy" className="flex-1 h-8 text-xs rounded-none data-[state=active]:bg-background" data-testid="tab-trigger-deploy">
+                    <Upload className="w-3.5 h-3.5 me-1" />
+                    {ar ? "نشر" : "Deploy"}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="ai" className="flex-1 m-0 overflow-hidden">
+                  <AIPanel
+                    projectId={projectId}
+                    activeFile={activeTab}
+                    onApplyToEditor={handleApplyToEditor}
+                    onCreateFile={handleCreateFileFromAI}
+                  />
+                </TabsContent>
+                <TabsContent value="env" className="flex-1 m-0 overflow-hidden">
+                  <EnvVarsPanel projectId={projectId} />
+                </TabsContent>
+                <TabsContent value="github" className="flex-1 m-0 overflow-hidden">
+                  <GitHubPanel projectId={projectId} />
+                </TabsContent>
+                <TabsContent value="deploy" className="flex-1 m-0 overflow-y-auto p-3">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{ar ? "النشر والتصدير" : "Deploy & Export"}</span>
+                    </div>
 
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={handleDownload}
-                    data-testid="button-download-zip"
-                  >
-                    <Download className="w-4 h-4 me-2" />
-                    {ar ? "تحميل ZIP" : "Download ZIP"}
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={handleDownload}
+                      data-testid="button-download-zip"
+                    >
+                      <Download className="w-4 h-4 me-2" />
+                      {ar ? "تحميل ZIP" : "Download ZIP"}
+                    </Button>
 
-                  <div className="text-xs text-muted-foreground space-y-2 bg-muted/50 rounded p-3">
-                    <p className="font-medium">{ar ? "نشر الموقع:" : "Deploy your site:"}</p>
-                    <p>
-                      {ar
-                        ? "١. حمّل ملف ZIP الخاص بمشروعك"
-                        : "1. Download your project ZIP"}
-                    </p>
-                    <p>
-                      {ar
-                        ? "٢. ارفعه إلى إحدى منصات النشر:"
-                        : "2. Upload to a hosting platform:"}
-                    </p>
-                    <div className="flex flex-col gap-1">
-                      <a
-                        href="https://vercel.com/new"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        Vercel <ExternalLink className="w-3 h-3" />
-                      </a>
-                      <a
-                        href="https://app.netlify.com/drop"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        Netlify <ExternalLink className="w-3 h-3" />
-                      </a>
+                    <div className="text-xs text-muted-foreground space-y-2 bg-muted/50 rounded p-3">
+                      <p className="font-medium">{ar ? "نشر الموقع:" : "Deploy your site:"}</p>
+                      <p>{ar ? "١. حمّل ملف ZIP الخاص بمشروعك" : "1. Download your project ZIP"}</p>
+                      <p>{ar ? "٢. ارفعه إلى إحدى منصات النشر:" : "2. Upload to a hosting platform:"}</p>
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href="https://vercel.com/new"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1"
+                          data-testid="link-vercel"
+                        >
+                          Vercel <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <a
+                          href="https://app.netlify.com/drop"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1"
+                          data-testid="link-netlify"
+                        >
+                          Netlify <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </>
         )}
       </div>
     </div>
