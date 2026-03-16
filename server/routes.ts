@@ -420,7 +420,7 @@ export async function registerRoutes(
 
   app.post("/api/upload/large", (req, res, next) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (!["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    if ((req.user as any).role === "client") return res.sendStatus(403);
     uploadLarge.single("file")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "حجم الملف كبير جداً (الحد الأقصى 500 ميغابايت)" });
@@ -650,7 +650,7 @@ export async function registerRoutes(
   app.delete("/api/admin/users/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const callerRole = (req.user as any).role;
-    const allowedRoles = ["admin", "manager", "employee", "accountant", "support"];
+    const allowedRoles = ["admin", "manager"];
     if (!allowedRoles.includes(callerRole)) return res.sendStatus(403);
     try {
       const targetUser = await storage.getUser(req.params.id);
@@ -2679,7 +2679,7 @@ export async function registerRoutes(
 
   // Admin create reminder (no rate limit — trusted admin/employee context)
   app.post("/api/admin/switch-reminders", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin","manager","employee","sales"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { SwitchReminderModel } = await import("./models");
     const { name, phone, email, currentProvider, serviceType, subscriptionEndDate, notes } = req.body;
     if (!name?.trim() || !currentProvider?.trim() || !subscriptionEndDate) {
@@ -9999,10 +9999,8 @@ export async function registerRoutes(
   });
 
   // GET /api/admin/phone-verifications  — pending call-based verifications
-
-  // GET /api/admin/phone-verifications  — pending call-based verifications
   app.get("/api/admin/phone-verifications", async (req, res) => {
-    if (!req.isAuthenticated() || !["admin", "manager", "employee"].includes((req.user as any).role)) return res.sendStatus(403);
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
       const { PhoneVerifyOtpModel } = await import("./models");
       const docs = await (PhoneVerifyOtpModel as any)

@@ -324,7 +324,7 @@ export default function AdminAddonSubscriptions() {
                   )}
 
                   <div className="text-[11px] text-black/40 dark:text-white/40 flex-shrink-0">
-                    {sub.expiresAt ? formatDate(sub.expiresAt, L) : "—"}
+                    {sub.expiresAt ? formatDate(sub.expiresAt) : "—"}
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-shrink-0">
