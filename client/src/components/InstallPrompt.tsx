@@ -72,15 +72,18 @@ function IOSInstallBanner() {
       <div className="bg-[#1c1c1e] text-white p-5 rounded-2xl shadow-2xl max-w-sm mx-auto border border-white/10">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-2 rounded-xl">
-              <Download className="w-5 h-5 text-[#FFD700]" />
+            <div className="relative">
+              <div className="bg-white/10 p-2 rounded-xl">
+                <Download className="w-5 h-5 text-[#FFD700]" />
+              </div>
+              <span className="absolute -top-1 -end-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1c1c1e] animate-pulse" />
             </div>
             <div>
               <h4 className="font-bold text-sm" data-testid="ios-install-title">
-                {ar ? 'تثبيت التطبيق' : 'Install App'}
+                {ar ? 'ثبّت التطبيق لتصلك الإشعارات' : 'Install App to Get Notifications'}
               </h4>
               <p className="text-[11px] text-white/50 mt-0.5">
-                {ar ? 'أضف التطبيق للشاشة الرئيسية' : 'Add to your home screen'}
+                {ar ? 'عقود • فواتير • تحديثات المشروع' : 'Contracts • Invoices • Project updates'}
               </p>
             </div>
           </div>
