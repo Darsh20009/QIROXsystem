@@ -10,6 +10,35 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 16, 2026 - Session 53)
+
+### System Builder Backend — صانع الأنظمة (Cloud IDE Engine)
+
+**New Backend Files:**
+- `server/sandbox-fs.ts` — File system layer for sandbox projects (CRUD files/folders, tree listing, disk usage, path traversal protection)
+- `server/sandbox-runner.ts` — Process manager (spawn/stop child processes on ports 6100–6999, stdout/stderr streaming via WebSocket)
+- `server/sandbox-routes.ts` — Complete REST API for sandbox system:
+  - **Project CRUD**: `GET/POST /api/sandbox/projects`, `GET/PATCH/DELETE /api/sandbox/projects/:id`
+  - **File Operations**: `GET /api/sandbox/projects/:id/files` (tree), `GET/PUT/DELETE /api/sandbox/projects/:id/file`, rename, create folder
+  - **Process Control**: `POST /api/sandbox/projects/:id/start|stop|restart`
+  - **Env Vars**: `GET/POST /api/sandbox/projects/:id/env`, `DELETE /api/sandbox/projects/:id/env/:key` (AES-256-CBC encrypted)
+  - **AI Code Gen**: `POST /api/sandbox/projects/:id/ai/generate` (single file), `POST /api/sandbox/projects/:id/ai/scaffold` (full project)
+  - **ZIP Export/Import**: `GET /api/sandbox/projects/:id/export`, `POST /api/sandbox/projects/:id/import`
+  - **GitHub**: `POST /api/sandbox/projects/:id/github/clone|pull`
+  - **Preview Proxy**: `/sandbox/:id/preview/*` proxies to sandbox process port
+  - **Admin**: `GET /api/sandbox/admin/running`, `POST /api/sandbox/admin/stop-all`
+  - **Templates**: `GET /api/sandbox/templates` (blank, express, static, react)
+
+**New MongoDB Models (server/models.ts):**
+- `SandboxProject` — project metadata (owner, name, runtime, commands, GitHub, status, port)
+- `SandboxEnvVar` — AES-256 encrypted environment variables per project
+
+**Integration (server/index.ts):**
+- `registerSandboxRoutes(app)` called during startup
+- Graceful shutdown stops all sandbox processes
+
+**Dependencies Added:** `simple-git`, `http-proxy-middleware`
+
 ## Latest Changes (Mar 15, 2026 - Session 52)
 
 ### QIROX AI — Intelligent Platform Assistant

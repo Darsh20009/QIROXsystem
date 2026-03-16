@@ -8,6 +8,7 @@ import { WebSocketServer } from "ws";
 import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
+import { registerSandboxRoutes } from "./sandbox-routes";
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
@@ -339,6 +340,7 @@ app.use((req, res, next) => {
   startQMeetScheduler();
   await registerInstallmentRoutes(app);
   registerAiRoutes(app);
+  registerSandboxRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -372,6 +374,7 @@ app.use((req, res, next) => {
 
   function gracefulShutdown(signal: string) {
     console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
+    import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
     httpServer.close(() => {
       console.log("[Shutdown] HTTP server closed");
       mongoose.connection.close().then(() => {

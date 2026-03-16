@@ -1744,3 +1744,39 @@ const authAppEnrollmentSchema = new mongoose.Schema({
 authAppEnrollmentSchema.index({ appId: 1, externalUserId: 1 }, { unique: true });
 authAppEnrollmentSchema.set('toJSON', { transform: (_, ret: any) => { delete ret.totpSecret; ret.id = ret._id?.toString(); return ret; } });
 export const AuthAppEnrollmentModel = mongoose.models.AuthAppEnrollment || mongoose.model("AuthAppEnrollment", authAppEnrollmentSchema);
+
+// ── Sandbox Project (صانع الأنظمة — مشاريع الساندبوكس) ──────────────────────
+const sandboxProjectSchema = new mongoose.Schema({
+  ownerId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  name:        { type: String, required: true },
+  nameAr:      { type: String, default: "" },
+  description: { type: String, default: "" },
+  template:    { type: String, default: "blank" },
+  runtime:     { type: String, enum: ["node", "static", "python"], default: "node" },
+  port:        { type: Number, default: null },
+  status:      { type: String, enum: ["stopped", "running", "error", "building"], default: "stopped" },
+  entryFile:   { type: String, default: "index.js" },
+  installCmd:  { type: String, default: "npm install" },
+  startCmd:    { type: String, default: "node index.js" },
+  buildCmd:    { type: String, default: "" },
+  githubRepo:  { type: String, default: "" },
+  githubBranch:{ type: String, default: "main" },
+  lastStartedAt: { type: Date, default: null },
+  lastStoppedAt: { type: Date, default: null },
+  diskUsageMB: { type: Number, default: 0 },
+  maxDiskMB:   { type: Number, default: 100 },
+  isPublic:    { type: Boolean, default: false },
+  tags:        { type: [String], default: [] },
+}, { timestamps: true });
+sandboxProjectSchema.index({ ownerId: 1, createdAt: -1 });
+export const SandboxProjectModel = mongoose.models.SandboxProject || mongoose.model("SandboxProject", sandboxProjectSchema);
+
+// ── Sandbox Env Vars (متغيرات البيئة المشفرة) ──────────────────────────────
+const sandboxEnvVarSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "SandboxProject", required: true, index: true },
+  key:       { type: String, required: true },
+  value:     { type: String, required: true },
+  iv:        { type: String, required: true },
+}, { timestamps: true });
+sandboxEnvVarSchema.index({ projectId: 1, key: 1 }, { unique: true });
+export const SandboxEnvVarModel = mongoose.models.SandboxEnvVar || mongoose.model("SandboxEnvVar", sandboxEnvVarSchema);
