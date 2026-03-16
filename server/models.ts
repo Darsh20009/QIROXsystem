@@ -1532,17 +1532,23 @@ export const ProjectCommentModel = mongoose.models.ProjectComment || mongoose.mo
 
 // ── Contract (عقد مشروع إلكتروني) ──────────────────────────────────────────
 const contractSchema = new mongoose.Schema({
-  orderId:       { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
-  projectId:     { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
-  clientId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  terms:         { type: String, required: true },
-  totalAmount:   { type: Number, default: 0 },
-  status:        { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
-  acknowledgedAt:{ type: Date, default: null },
-  rejectedAt:    { type: Date, default: null },
-  notes:         { type: String, default: "" },
-  signatureData: { type: String, default: "" },
-  signatureText: { type: String, default: "" },
+  orderId:         { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+  projectId:       { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+  clientId:        { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  terms:           { type: String, required: true },
+  totalAmount:     { type: Number, default: 0 },
+  status:          { type: String, enum: ["pending", "acknowledged", "rejected"], default: "pending" },
+  acknowledgedAt:  { type: Date, default: null },
+  rejectedAt:      { type: Date, default: null },
+  notes:           { type: String, default: "" },
+  signatureData:   { type: String, default: "" },
+  signatureText:   { type: String, default: "" },
+  signedOtpVerified: { type: Boolean, default: false },
+  signerIp:        { type: String, default: "" },
+  signerUserAgent: { type: String, default: "" },
+  signOtp:         { type: String, default: "" },
+  signOtpExpiresAt:{ type: Date, default: null },
+  contractNumber:  { type: String, default: "" },
 }, { timestamps: true });
 contractSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const ContractModel = mongoose.models.Contract || mongoose.model("Contract", contractSchema);

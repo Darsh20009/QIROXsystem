@@ -2307,6 +2307,33 @@ export async function registerRoutes(
       orderId: orderId || undefined, addedBy: String(user.id), note: 'wallet_payment',
     });
     const newAvailable = await getWalletBalance(String(user.id));
+
+    // Auto-create invoice for wallet payment
+    (async () => {
+      try {
+        const { InvoiceModel, NotificationModel } = await import("./models");
+        const invNum = `INV-${Date.now().toString(36).toUpperCase()}`;
+        const invoice = await (InvoiceModel as any).create({
+          userId: String(user.id),
+          orderId: orderId || undefined,
+          invoiceNumber: invNum,
+          amount: debitAmt,
+          vatAmount: 0,
+          totalAmount: debitAmt,
+          status: "paid",
+          paidAt: new Date(),
+          notes: description || "دفع من المحفظة الإلكترونية — QPay",
+          items: [{ name: description || "خدمة QIROX Studio", qty: 1, unitPrice: debitAmt, total: debitAmt }],
+        });
+        await (NotificationModel as any).create({
+          userId: String(user.id), forAdmins: false, type: "success",
+          title: `🧾 فاتورة دفع — ${invNum}`,
+          body: `تم إصدار فاتورة بقيمة ${debitAmt.toLocaleString()} ريال. اضغط لعرض وتحميل PDF.`,
+          link: `/client/invoice-print/${invoice._id}`,
+        });
+      } catch (e) { console.error("[AutoInvoice]", e); }
+    })();
+
     res.status(201).json({ success: true, amountUsed: debitAmt, remainingBalance: newAvailable, transactionId: tx._id });
   });
 
@@ -9497,6 +9524,71 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // Employee performance analytics
+  app.get("/api/admin/analytics/employees", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel, TaskModel, OrderModel, AttendanceModel } = await import("./models");
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const employees = await (UserModel as any).find({ role: { $ne: "client" } }).select("fullName username role avatar").lean();
+
+      const performance = await Promise.all(employees.map(async (emp: any) => {
+        const empId = emp._id;
+        const [tasksAssigned, tasksCompleted, ordersHandled, attendanceDays] = await Promise.all([
+          (TaskModel as any).countDocuments({ assignedTo: empId }).catch(() => 0),
+          (TaskModel as any).countDocuments({ assignedTo: empId, status: "done" }).catch(() => 0),
+          (OrderModel as any).countDocuments({ assignedTo: empId }).catch(() => 0),
+          (AttendanceModel as any).countDocuments({ userId: empId, createdAt: { $gte: startOfMonth }, checkInTime: { $exists: true } }).catch(() => 0),
+        ]);
+        const completionRate = tasksAssigned > 0 ? Math.round((tasksCompleted / tasksAssigned) * 100) : 0;
+        return {
+          id: empId?.toString(),
+          name: emp.fullName || emp.username,
+          role: emp.role,
+          avatar: emp.avatar || "",
+          tasksAssigned, tasksCompleted, ordersHandled, attendanceDays, completionRate,
+        };
+      }));
+
+      // Sort by tasks completed desc
+      performance.sort((a: any, b: any) => b.tasksCompleted - a.tasksCompleted);
+
+      res.json({ employees: performance });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Contract analytics
+  app.get("/api/admin/analytics/contracts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel } = await import("./models");
+      const now = new Date();
+      const months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        return { year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('ar-SA', { month: 'short', year: '2-digit' }) };
+      });
+      const [total, pending, signed, rejected, otpVerified] = await Promise.all([
+        (ContractModel as any).countDocuments(),
+        (ContractModel as any).countDocuments({ status: "pending" }),
+        (ContractModel as any).countDocuments({ status: "acknowledged" }),
+        (ContractModel as any).countDocuments({ status: "rejected" }),
+        (ContractModel as any).countDocuments({ signedOtpVerified: true }),
+      ]);
+      const monthly = await Promise.all(months.map(async ({ label, year, month }) => {
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0, 23, 59, 59);
+        const [created, signed] = await Promise.all([
+          (ContractModel as any).countDocuments({ createdAt: { $gte: start, $lte: end } }),
+          (ContractModel as any).countDocuments({ acknowledgedAt: { $gte: start, $lte: end } }),
+        ]);
+        return { label, created, signed };
+      }));
+      res.json({ total, pending, signed, rejected, otpVerified, monthly });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ═══════════════════════════════════════════════════════════════════
   // ══════════════ ANALYTICS — EMAIL REPORT ═════════════════════════════
   // ═══════════════════════════════════════════════════════════════════
@@ -10171,10 +10263,19 @@ export async function registerRoutes(
   app.post("/api/admin/contracts", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { ContractModel } = await import("./models");
+      const { ContractModel, NotificationModel, UserModel } = await import("./models");
       const { orderId, clientId, terms, totalAmount, notes } = req.body;
       if (!orderId || !clientId || !terms) return res.status(400).json({ error: "حقول مطلوبة ناقصة" });
-      const contract = await (ContractModel as any).create({ orderId, clientId, terms, totalAmount: totalAmount || 0, notes: notes || "", status: "pending" });
+      const contractNumber = `QRX-${Date.now().toString().slice(-8)}`;
+      const contract = await (ContractModel as any).create({ orderId, clientId, terms, totalAmount: totalAmount || 0, notes: notes || "", status: "pending", contractNumber });
+      // Notify client about new contract
+      await (NotificationModel as any).create({ userId: clientId, forAdmins: false, type: "info", title: "📄 عقد جديد يحتاج توقيعك", body: `رقم العقد: ${contractNumber} — قيمة: ${(totalAmount || 0).toLocaleString()} ريال. يرجى المراجعة والتوقيع.`, link: "/contracts" });
+      (async () => {
+        try {
+          const { pushToUser } = await import("./ws");
+          pushToUser(String(clientId), { type: "notification", notification: { type: "info", title: "📄 عقد جديد يحتاج توقيعك", body: `رقم العقد: ${contractNumber}`, link: "/contracts" } });
+        } catch {}
+      })();
       res.status(201).json(contract);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10198,6 +10299,32 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // Send reminder to client to sign a pending contract
+  app.post("/api/admin/contracts/:id/remind", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { ContractModel, NotificationModel } = await import("./models");
+      const contract = await (ContractModel as any).findById(req.params.id).lean();
+      if (!contract) return res.status(404).json({ error: "العقد غير موجود" });
+      if ((contract as any).status !== "pending") return res.status(400).json({ error: "العقد ليس معلقاً" });
+      await (NotificationModel as any).create({
+        userId: (contract as any).clientId,
+        forAdmins: false,
+        type: "warning",
+        title: "⏰ تذكير: عقد بانتظار توقيعك",
+        body: `العقد رقم ${(contract as any).contractNumber || (contract as any)._id?.toString().slice(-6)} بقيمة ${((contract as any).totalAmount || 0).toLocaleString()} ريال لم يتم توقيعه بعد. يرجى المراجعة والتوقيع في أقرب وقت.`,
+        link: "/contracts",
+      });
+      (async () => {
+        try {
+          const { pushToUser } = await import("./ws");
+          pushToUser(String((contract as any).clientId), { type: "notification", notification: { type: "warning", title: "⏰ عقد بانتظار توقيعك", body: `العقد رقم ${(contract as any).contractNumber || ""}`, link: "/contracts" } });
+        } catch {}
+      })();
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.get("/api/client/contracts", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
@@ -10212,25 +10339,104 @@ export async function registerRoutes(
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // OTP request for contract signing
+  app.post("/api/client/contracts/:id/sign/request-otp", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ContractModel, NotificationModel } = await import("./models");
+      const me = req.user as any;
+      const contract = await (ContractModel as any).findById(req.params.id);
+      if (!contract) return res.status(404).json({ error: "العقد غير موجود" });
+      if (contract.clientId?.toString() !== (me._id || me.id)?.toString()) return res.status(403).json({ error: "غير مصرح" });
+      if (contract.status !== "pending") return res.status(400).json({ error: "العقد غير قابل للتوقيع" });
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+      contract.signOtp = otp;
+      contract.signOtpExpiresAt = expiresAt;
+      await contract.save();
+
+      // Send OTP via in-app notification
+      await (NotificationModel as any).create({
+        userId: me._id || me.id,
+        forAdmins: false,
+        type: "info",
+        title: "🔐 رمز التحقق لتوقيع العقد",
+        body: `رمز التوقيع الخاص بك: ${otp} — صالح لمدة 10 دقائق. لا تشاركه مع أحد.`,
+        link: "/contracts",
+      });
+
+      // Push via WebSocket
+      (async () => {
+        try {
+          const { pushToUser } = await import("./ws");
+          pushToUser(String(me._id || me.id), { type: "contract_otp", otp, contractId: contract._id?.toString() });
+        } catch {}
+      })();
+
+      res.json({ ok: true, message: "تم إرسال رمز التحقق" });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.patch("/api/client/contracts/:id/sign", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { ContractModel } = await import("./models");
+      const { ContractModel, NotificationModel, UserModel } = await import("./models");
       const me = req.user as any;
       const contract = await (ContractModel as any).findById(req.params.id);
       if (!contract) return res.status(404).json({ error: "العقد غير موجود" });
       if (contract.clientId?.toString() !== (me._id || me.id)?.toString()) return res.status(403).json({ error: "غير مصرح" });
       if (contract.status !== "pending") return res.status(400).json({ error: "لا يمكن التوقيع على هذا العقد" });
-      const { signatureData, signatureText, action } = req.body;
+
+      const { signatureData, signatureText, otpCode, action } = req.body;
+
       if (action === "reject") {
-        contract.status = "rejected"; contract.rejectedAt = new Date();
+        contract.status = "rejected";
+        contract.rejectedAt = new Date();
+        contract.signerIp = req.ip || "";
+        contract.signerUserAgent = req.headers["user-agent"] || "";
       } else {
         if (!signatureData && !signatureText) return res.status(400).json({ error: "التوقيع مطلوب" });
-        (contract as any).signatureData = signatureData || "";
-        (contract as any).signatureText = signatureText || "";
-        contract.status = "acknowledged"; contract.acknowledgedAt = new Date();
+        // Verify OTP
+        if (!otpCode) return res.status(400).json({ error: "رمز التحقق مطلوب" });
+        if (contract.signOtp !== String(otpCode)) return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+        if (!contract.signOtpExpiresAt || new Date() > contract.signOtpExpiresAt) return res.status(400).json({ error: "رمز التحقق انتهت صلاحيته" });
+
+        contract.signatureData = signatureData || "";
+        contract.signatureText = signatureText || "";
+        contract.status = "acknowledged";
+        contract.acknowledgedAt = new Date();
+        contract.signedOtpVerified = true;
+        contract.signerIp = req.ip || "";
+        contract.signerUserAgent = req.headers["user-agent"] || "";
+        contract.signOtp = "";
+        contract.signOtpExpiresAt = null;
       }
       await contract.save();
+
+      // Notify all admin/staff about signed contract
+      if (contract.status === "acknowledged") {
+        const admins = await (UserModel as any).find({ role: { $ne: "client" } }).select("_id").lean();
+        const clientUser = await (UserModel as any).findById(me._id || me.id).select("fullName").lean();
+        const clientName = (clientUser as any)?.fullName || "العميل";
+        await Promise.all(admins.map((admin: any) =>
+          (NotificationModel as any).create({
+            userId: admin._id,
+            forAdmins: true,
+            type: "success",
+            title: "✅ تم التوقيع على عقد",
+            body: `وقّع ${clientName} على العقد رقم ${contract.contractNumber || contract._id?.toString().slice(-6)} بتوقيع إلكتروني موثّق بـ OTP.`,
+            link: "/admin/contracts",
+          })
+        ));
+        (async () => {
+          try {
+            const { broadcastToAll } = await import("./ws");
+            broadcastToAll({ type: "contract_signed", contractId: contract._id?.toString(), clientName });
+          } catch {}
+        })();
+      }
+
       res.json(contract);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });

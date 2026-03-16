@@ -10,8 +10,9 @@ import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 
 export default function InvoicePrint() {
   const params = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const isClientView = location.startsWith("/client/");
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ["/api/invoices", params.id],
@@ -61,9 +62,9 @@ export default function InvoicePrint() {
 
       {/* Controls - hidden on print */}
       <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir="rtl">
-        <button onClick={() => setLocation("/admin/invoices")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
+        <button onClick={() => setLocation(isClientView ? "/client/invoices" : "/admin/invoices")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
           <ArrowRight className="w-4 h-4" />
-          رجوع للفواتير
+          {isClientView ? "رجوع لفواتيري" : "رجوع للفواتير"}
         </button>
         <div className="flex gap-2">
           <Button

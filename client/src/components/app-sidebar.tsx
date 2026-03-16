@@ -89,6 +89,7 @@ export function AppSidebar() {
     { title: ar ? "برنامج الإحالات" : "Referral Program", icon: Gift, url: "/referral", group: "client", section: "account" },
     { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/client/loyalty", group: "client", section: "account" },
     { title: ar ? "عقودي" : "My Contracts", icon: FileText, url: "/client/contracts", group: "client", section: "account" },
+    { title: ar ? "فواتيري" : "My Invoices", icon: Receipt, url: "/client/invoices", group: "client", section: "account" },
     { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "client", section: "tools" },
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },

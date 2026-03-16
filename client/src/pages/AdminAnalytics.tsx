@@ -8,7 +8,7 @@ import {
   Loader2, TrendingUp, TrendingDown, Users, ShoppingCart, Clock,
   BarChart3, Download, DollarSign, CheckCircle, Star, CreditCard,
   ArrowUpRight, ArrowDownRight, Building2, Minus, Video, Mail, Send,
-  Flame, Activity, Target,
+  Flame, Activity, Target, FileText, ShieldCheck, UserCheck, ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,26 @@ export default function AdminAnalytics() {
     queryKey: ["/api/admin/analytics/qmeet"],
     queryFn: async () => {
       const r = await fetch("/api/admin/analytics/qmeet", { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    refetchInterval: 120000,
+  });
+
+  const { data: empData } = useQuery<any>({
+    queryKey: ["/api/admin/analytics/employees"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/analytics/employees", { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    refetchInterval: 120000,
+  });
+
+  const { data: contractStats } = useQuery<any>({
+    queryKey: ["/api/admin/analytics/contracts"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/analytics/contracts", { credentials: "include" });
       if (!r.ok) return null;
       return r.json();
     },
@@ -495,6 +515,127 @@ export default function AdminAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Contract Analytics ── */}
+      {contractStats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-blue-500" />
+                {L ? "إحصائيات العقود الإلكترونية" : "Digital Contract Stats"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: L ? "إجمالي العقود" : "Total Contracts",    value: contractStats.total,       color: "text-black dark:text-white",   bg: "bg-black/5 dark:bg-white/5" },
+                  { label: L ? "بانتظار التوقيع" : "Awaiting Sign",    value: contractStats.pending,     color: "text-amber-600",               bg: "bg-amber-50 dark:bg-amber-900/20" },
+                  { label: L ? "موقّعة" : "Signed",                     value: contractStats.signed,      color: "text-green-600",               bg: "bg-green-50 dark:bg-green-900/20" },
+                  { label: L ? "موثّقة بـ OTP" : "OTP Verified",       value: contractStats.otpVerified, color: "text-blue-600",                bg: "bg-blue-50 dark:bg-blue-900/20" },
+                ].map((s, i) => (
+                  <div key={i} className={`rounded-xl p-3 text-center ${s.bg}`}>
+                    <div className={`text-xl font-black ${s.color}`}>{s.value}</div>
+                    <div className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              {contractStats.total > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-green-500" /> {L ? "نسبة التوقيع" : "Signing Rate"}</span>
+                    <span className="font-bold text-black dark:text-white">{Math.round((contractStats.signed / contractStats.total) * 100)}%</span>
+                  </div>
+                  <div className="h-1.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round((contractStats.signed / contractStats.total) * 100)}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1 text-black/50 dark:text-white/50"><ShieldCheck className="w-3 h-3 text-blue-500" /> {L ? "نسبة توثيق OTP" : "OTP Verification Rate"}</span>
+                    <span className="font-bold text-black dark:text-white">{contractStats.signed > 0 ? Math.round((contractStats.otpVerified / contractStats.signed) * 100) : 0}%</span>
+                  </div>
+                  <div className="h-1.5 bg-black/[0.05] dark:bg-white/[0.05] rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${contractStats.signed > 0 ? Math.round((contractStats.otpVerified / contractStats.signed) * 100) : 0}%` }} />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60">{L ? "العقود المنشأة والموقّعة (6 أشهر)" : "Contracts Created & Signed (6 mo)"}</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contractStats.monthly || []} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#00000008" />
+                  <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#888" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: "#888" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid rgba(0,0,0,0.07)" }} />
+                  <Bar dataKey="created" name={L ? "منشأة" : "Created"} fill="#9ca3af" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="signed" name={L ? "موقّعة" : "Signed"} fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Legend formatter={(v) => <span className="text-[11px]">{v}</span>} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Employee Performance ── */}
+      {empData && (empData.employees || []).length > 0 && (
+        <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-purple-500" />
+              {L ? "أداء الفريق" : "Team Performance"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(empData.employees || []).slice(0, 8).map((emp: any, i: number) => (
+                <div key={emp.id || i} className="space-y-1.5" data-testid={`row-employee-${emp.id}`}>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-5 h-5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center text-[9px] font-bold text-black/40 dark:text-white/40 flex-shrink-0">{i + 1}</span>
+                      <div className="min-w-0">
+                        <span className="font-semibold text-black/80 dark:text-white/80 truncate block">{emp.name}</span>
+                        <span className="text-[10px] text-black/30 dark:text-white/30">{emp.role}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 text-[11px]">
+                      <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><ListChecks className="w-3 h-3" /> {emp.tasksCompleted}/{emp.tasksAssigned}</span>
+                      <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> {emp.ordersHandled}</span>
+                      <span className="text-black/40 dark:text-white/40 flex items-center gap-1"><Clock className="w-3 h-3" /> {emp.attendanceDays} {L ? "يوم" : "d"}</span>
+                      <span className={`font-black text-xs ${emp.completionRate >= 80 ? "text-green-600" : emp.completionRate >= 50 ? "text-amber-600" : "text-black/50 dark:text-white/50"}`}>
+                        {emp.completionRate}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-1 bg-black/[0.04] dark:bg-white/[0.04] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${emp.completionRate >= 80 ? "bg-green-500" : emp.completionRate >= 50 ? "bg-amber-400" : "bg-gray-300 dark:bg-gray-600"}`}
+                      style={{ width: `${emp.completionRate}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-black/[0.06] dark:border-white/[0.06] pt-3">
+              {[
+                { label: L ? "إجمالي المهام" : "Total Tasks",     value: (empData.employees || []).reduce((s: number, e: any) => s + e.tasksAssigned, 0) },
+                { label: L ? "مكتملة" : "Completed",             value: (empData.employees || []).reduce((s: number, e: any) => s + e.tasksCompleted, 0) },
+                { label: L ? "أيام حضور (الشهر)" : "Attendance Days (mo)", value: (empData.employees || []).reduce((s: number, e: any) => s + e.attendanceDays, 0) },
+              ].map((s, i) => (
+                <div key={i} className="text-center">
+                  <div className="text-base font-black text-black dark:text-white">{s.value}</div>
+                  <div className="text-[10px] text-black/40 dark:text-white/40">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Year-over-Year Revenue Comparison ── */}
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900">
