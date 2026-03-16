@@ -2,15 +2,34 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import {
   Send, Sparkles, RotateCcw, Loader2, Mail, Package,
-  Zap, MessageSquare, Star, Globe, Lightbulb, BookOpen, TrendingUp, Bot,
-  ArrowLeft, BarChart2, Wallet, ShoppingCart, FileText, Users, Clock
+  Zap, MessageSquare, Star, Globe, Lightbulb, BookOpen,
+  TrendingUp, Bot, ArrowLeft, BarChart2, Wallet, ShoppingCart,
+  FileText, Users, Clock, CheckCircle2, XCircle, AlertCircle,
+  ChevronRight, Briefcase, Bell, Search, CreditCard,
 } from "lucide-react";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
+
+const STATUS_AR: Record<string, string> = {
+  pending: "معلق", active: "نشط", completed: "مكتمل",
+  cancelled: "ملغى", on_hold: "موقوف", todo: "قيد الانتظار",
+  open: "مفتوح", closed: "مغلق",
+};
+const STATUS_COLOR: Record<string, string> = {
+  pending: "text-amber-300 bg-amber-500/15", active: "text-blue-300 bg-blue-500/15",
+  completed: "text-emerald-300 bg-emerald-500/15", cancelled: "text-red-300 bg-red-500/15",
+  on_hold: "text-orange-300 bg-orange-500/15", todo: "text-slate-300 bg-slate-500/15",
+  open: "text-amber-300 bg-amber-500/15", closed: "text-slate-300 bg-slate-500/15",
+};
+const ROLE_AR: Record<string, string> = {
+  admin: "مدير", manager: "مدير", developer: "مطور",
+  designer: "مصمم", support: "دعم", sales: "مبيعات",
+  sales_manager: "مدير مبيعات", accountant: "محاسب",
+  merchant: "تاجر", client: "عميل",
+};
 
 interface Msg {
   id: string;
@@ -19,6 +38,8 @@ interface Msg {
   suggestions?: string[];
   action?: string;
   data?: any;
+  displayType?: string;
+  allTools?: { name: string; success: boolean; displayType?: string; data?: any }[];
   timestamp: Date;
 }
 
@@ -44,44 +65,79 @@ function TypingDots() {
 }
 
 const ROLE_CFG = {
-  admin:    { label: "مدير", icon: "👑", gradient: "from-violet-500 to-indigo-600" },
-  manager:  { label: "مدير", icon: "👑", gradient: "from-violet-500 to-indigo-600" },
-  employee: { label: "موظف", icon: "💼", gradient: "from-blue-500 to-cyan-600" },
-  employee_manager: { label: "مشرف", icon: "🔑", gradient: "from-blue-500 to-cyan-600" },
-  client:   { label: "عميل", icon: "⭐", gradient: "from-emerald-500 to-teal-600" },
-  guest:    { label: "زائر", icon: "👋", gradient: "from-slate-500 to-slate-600" },
+  admin:           { label: "مدير", icon: "👑", gradient: "from-violet-500 to-indigo-600" },
+  manager:         { label: "مدير", icon: "👑", gradient: "from-violet-500 to-indigo-600" },
+  developer:       { label: "مطور", icon: "💻", gradient: "from-blue-500 to-cyan-600" },
+  designer:        { label: "مصمم", icon: "🎨", gradient: "from-pink-500 to-rose-600" },
+  support:         { label: "دعم", icon: "🎧", gradient: "from-teal-500 to-cyan-600" },
+  sales:           { label: "مبيعات", icon: "📊", gradient: "from-green-500 to-emerald-600" },
+  sales_manager:   { label: "مدير مبيعات", icon: "🏆", gradient: "from-amber-500 to-orange-600" },
+  accountant:      { label: "محاسب", icon: "💰", gradient: "from-slate-500 to-gray-600" },
+  merchant:        { label: "تاجر", icon: "🏪", gradient: "from-indigo-500 to-blue-600" },
+  client:          { label: "عميل", icon: "⭐", gradient: "from-emerald-500 to-teal-600" },
+  guest:           { label: "زائر", icon: "👋", gradient: "from-slate-500 to-slate-600" },
 };
 
 const QUICK_ACTIONS: Record<string, { label: string; icon: any; msg: string }[]> = {
   admin: [
-    { label: "ملخص النظام", icon: BarChart2, msg: "ملخص احصاءات النظام" },
-    { label: "شرح الصفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
-    { label: "مقارنة الباقات", icon: Package, msg: "قارن بين الباقات" },
-    { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
+    { label: "إحصاءات النظام", icon: BarChart2, msg: "أعطني إحصاءات النظام الكاملة" },
+    { label: "الطلبات المعلّقة", icon: Clock, msg: "أظهر لي الطلبات المعلّقة" },
+    { label: "قائمة العملاء", icon: Users, msg: "أظهر لي آخر العملاء المنضمين" },
+    { label: "إشعار للجميع", icon: Bell, msg: "أرسل إشعاراً لجميع العملاء" },
   ],
   manager: [
-    { label: "ملخص النظام", icon: BarChart2, msg: "ملخص احصاءات النظام" },
-    { label: "شرح الصفحة", icon: BookOpen, msg: "اشرح لوحة القيادة" },
-    { label: "مقارنة الباقات", icon: Package, msg: "قارن بين الباقات" },
-    { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
+    { label: "إحصاءات النظام", icon: BarChart2, msg: "أعطني إحصاءات النظام الكاملة" },
+    { label: "الطلبات المعلّقة", icon: Clock, msg: "أظهر لي الطلبات المعلّقة" },
+    { label: "قائمة الموظفين", icon: Briefcase, msg: "أظهر لي قائمة الموظفين" },
+    { label: "إشعار للعملاء", icon: Bell, msg: "أرسل إشعاراً لجميع العملاء" },
   ],
-  employee: [
-    { label: "ملخص مهامي", icon: Clock, msg: "ايش عندي من مهام اليوم" },
-    { label: "شرح الطلبات", icon: BookOpen, msg: "اشرح صفحة الطلبات" },
-    { label: "شرح الكانبان", icon: Lightbulb, msg: "اشرح صفحة الكانبان" },
-    { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
+  developer: [
+    { label: "مهامي", icon: Clock, msg: "أظهر لي الطلبات النشطة المعينة لي" },
+    { label: "المشاريع", icon: BookOpen, msg: "أظهر لي المشاريع الحالية" },
+    { label: "إنشاء مهمة", icon: Zap, msg: "أريد إنشاء مهمة جديدة في مشروع" },
+    { label: "الطلبات الجديدة", icon: Package, msg: "أظهر لي الطلبات الجديدة" },
   ],
-  employee_manager: [
-    { label: "ملخص مهامي", icon: Clock, msg: "ايش عندي من مهام اليوم" },
-    { label: "شرح الطلبات", icon: BookOpen, msg: "اشرح صفحة الطلبات" },
-    { label: "شرح الكانبان", icon: Lightbulb, msg: "اشرح صفحة الكانبان" },
-    { label: "إرسال بريد", icon: Mail, msg: "أرسل بريد إلكتروني" },
+  designer: [
+    { label: "مهامي", icon: Clock, msg: "أظهر لي الطلبات النشطة" },
+    { label: "المشاريع", icon: BookOpen, msg: "أظهر لي المشاريع الحالية" },
+    { label: "إنشاء مهمة", icon: Zap, msg: "أريد إنشاء مهمة جديدة" },
+    { label: "طلبات التصميم", icon: Package, msg: "أظهر الطلبات النشطة" },
+  ],
+  support: [
+    { label: "طلبات الدعم", icon: Clock, msg: "أظهر الطلبات المعلّقة التي تحتاج دعماً" },
+    { label: "عملاء جدد", icon: Users, msg: "أظهر آخر العملاء المنضمين" },
+    { label: "تغيير حالة طلب", icon: Zap, msg: "أريد تغيير حالة طلب" },
+    { label: "إرسال إشعار", icon: Bell, msg: "أريد إرسال إشعار لعميل" },
+  ],
+  sales: [
+    { label: "العملاء الجدد", icon: Users, msg: "أظهر آخر العملاء" },
+    { label: "طلبات معلّقة", icon: Clock, msg: "أظهر الطلبات المعلّقة" },
+    { label: "بحث عميل", icon: Search, msg: "ابحث عن عميل" },
+    { label: "إرسال دعم", icon: Mail, msg: "أريد إرسال تذكرة دعم" },
+  ],
+  sales_manager: [
+    { label: "إحصاءات المبيعات", icon: BarChart2, msg: "أعطني إحصاءات النظام" },
+    { label: "العملاء", icon: Users, msg: "أظهر قائمة العملاء" },
+    { label: "الطلبات", icon: Package, msg: "أظهر آخر الطلبات" },
+    { label: "إشعار عملاء", icon: Bell, msg: "أرسل إشعاراً للعملاء" },
+  ],
+  accountant: [
+    { label: "الإحصاءات المالية", icon: BarChart2, msg: "أعطني الإحصاءات المالية للنظام" },
+    { label: "الطلبات المكتملة", icon: CheckCircle2, msg: "أظهر الطلبات المكتملة هذا الشهر" },
+    { label: "المشاريع", icon: BookOpen, msg: "أظهر قائمة المشاريع" },
+    { label: "العملاء", icon: Users, msg: "أظهر قائمة العملاء" },
+  ],
+  merchant: [
+    { label: "الطلبات", icon: Package, msg: "أظهر الطلبات الحالية" },
+    { label: "المشاريع", icon: BookOpen, msg: "أظهر المشاريع" },
+    { label: "العملاء", icon: Users, msg: "أظهر العملاء" },
+    { label: "الإحصاءات", icon: BarChart2, msg: "أعطني الإحصاءات" },
   ],
   client: [
-    { label: "حسابي", icon: BarChart2, msg: "اعطني ملخص حسابي" },
-    { label: "أنسب باقة لي", icon: Star, msg: "أنسب باقة لمشروعي" },
-    { label: "طلب مخصص", icon: Zap, msg: "أريد طلباً مخصصاً" },
-    { label: "تواصل معنا", icon: MessageSquare, msg: "كيف أتواصل مع فريق QIROX؟" },
+    { label: "طلباتي", icon: Package, msg: "أظهر لي طلباتي" },
+    { label: "مشاريعي", icon: BookOpen, msg: "أظهر مشاريعي النشطة" },
+    { label: "رصيد محفظتي", icon: CreditCard, msg: "ما رصيد محفظتي؟" },
+    { label: "تواصل مع الدعم", icon: MessageSquare, msg: "أريد إرسال تذكرة دعم" },
   ],
   guest: [
     { label: "استكشف الباقات", icon: Package, msg: "أخبرني عن الباقات المتاحة" },
@@ -91,92 +147,221 @@ const QUICK_ACTIONS: Record<string, { label: string; icon: any; msg: string }[]>
   ],
 };
 
-/* ─── Stats Card rendered inside chat ─── */
-function StatsCard({ data, role }: { data: any; role: string }) {
+/* ─────── Tool Result Cards ─────── */
+
+function OrdersTable({ data, onNavigate }: { data: any; onNavigate: (url: string) => void }) {
+  if (!data?.orders?.length) return <EmptyResult label="لا توجد طلبات" />;
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(14,165,233,0.05)", border: "1px solid rgba(14,165,233,0.18)" }}>
+      <div className="px-3 py-2 flex items-center justify-between border-b border-white/[0.06]">
+        <span className="text-[10px] font-black text-cyan-300 flex items-center gap-1"><Package className="w-3 h-3" /> {data.count} طلب</span>
+        <button onClick={() => onNavigate("/admin/orders")} className="text-[9px] text-white/30 hover:text-cyan-300 transition-colors">عرض الكل ←</button>
+      </div>
+      <div className="divide-y divide-white/[0.04]">
+        {data.orders.map((o: any) => (
+          <div key={o.id} className="px-3 py-2 flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-white/85 truncate">{o.service}</div>
+              <div className="text-[9px] text-white/35 mt-0.5">{o.client} · {o.amount ? `${Number(o.amount).toLocaleString()} ريال` : ""}</div>
+            </div>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_COLOR[o.status] || "text-slate-300 bg-slate-500/15"}`}>
+              {STATUS_AR[o.status] || o.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClientsTable({ data, onNavigate }: { data: any; onNavigate: (url: string) => void }) {
+  if (!data?.clients?.length) return <EmptyResult label="لا يوجد عملاء" />;
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.18)" }}>
+      <div className="px-3 py-2 flex items-center justify-between border-b border-white/[0.06]">
+        <span className="text-[10px] font-black text-violet-300 flex items-center gap-1"><Users className="w-3 h-3" /> {data.count} عميل</span>
+        <button onClick={() => onNavigate("/admin/users")} className="text-[9px] text-white/30 hover:text-violet-300 transition-colors">عرض الكل ←</button>
+      </div>
+      <div className="divide-y divide-white/[0.04]">
+        {data.clients.map((c: any) => (
+          <div key={c.id} className="px-3 py-2 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[11px]"
+              style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.3),rgba(14,165,233,0.3))" }}>
+              {(c.name || "؟")[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-white/85 truncate">{c.name}</div>
+              <div className="text-[9px] text-white/35 mt-0.5">{c.email || c.phone || ""}</div>
+            </div>
+            {c.wallet > 0 && (
+              <span className="text-[9px] text-emerald-300 font-semibold flex-shrink-0">{Number(c.wallet).toLocaleString()} ﷼</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsCard({ data }: { data: any }) {
   if (!data) return null;
-  if (role === "client" && data.orders) {
-    const { orders, projects, wallet } = data;
-    return (
-      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(14,165,233,0.07)", border: "1px solid rgba(14,165,233,0.2)" }}>
-        <div className="px-3 py-2 grid grid-cols-3 gap-2">
-          <div className="text-center">
-            <div className="text-[18px] font-black text-cyan-300">{orders.total}</div>
-            <div className="text-[9px] text-white/40">طلب إجمالي</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[18px] font-black text-emerald-300">{projects?.active ?? 0}</div>
-            <div className="text-[9px] text-white/40">مشروع نشط</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[14px] font-black text-amber-300">{Number(wallet?.balance ?? 0).toLocaleString()}</div>
-            <div className="text-[9px] text-white/40">رصيد (ريال)</div>
-          </div>
-        </div>
-        {orders.pending > 0 && (
-          <div className="px-3 py-1.5 text-[10px] text-amber-300 font-semibold" style={{ borderTop: "1px solid rgba(14,165,233,0.15)" }}>
-            ⚠️ {orders.pending} طلب في الانتظار
-          </div>
-        )}
+  const items = [
+    { label: "العملاء", value: data.totalClients, color: "text-violet-300" },
+    { label: "طلبات مفتوحة", value: data.openOrders ?? data.pendingOrders ?? data.activeOrders, color: "text-orange-300" },
+    { label: "الإيرادات (الشهر)", value: data.monthRevenue ? `${Number(data.monthRevenue).toLocaleString()} ﷼` : "0 ﷼", color: "text-emerald-300" },
+    { label: "عملاء جدد", value: data.newClients, color: "text-cyan-300" },
+  ];
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.22)" }}>
+      <div className="px-3 py-2 border-b border-white/[0.06]">
+        <span className="text-[10px] font-black text-violet-300 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> إحصاءات النظام</span>
       </div>
-    );
-  }
-  if ((role === "admin" || role === "manager") && (data.totalClients !== undefined || data.openOrders !== undefined)) {
-    return (
-      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.22)" }}>
-        <div className="px-3 py-2 grid grid-cols-2 gap-2">
-          <div className="text-center">
-            <div className="text-[17px] font-black text-violet-300">{data.totalClients ?? 0}</div>
-            <div className="text-[9px] text-white/40">إجمالي العملاء</div>
+      <div className="px-3 py-2 grid grid-cols-2 gap-2">
+        {items.map((item, i) => (
+          <div key={i} className="text-center py-1">
+            <div className={`text-[16px] font-black ${item.color}`}>{item.value ?? "—"}</div>
+            <div className="text-[9px] text-white/40">{item.label}</div>
           </div>
-          <div className="text-center">
-            <div className="text-[17px] font-black text-orange-300">{data.openOrders ?? 0}</div>
-            <div className="text-[9px] text-white/40">طلبات مفتوحة</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[14px] font-black text-emerald-300">{Number(data.monthRevenue ?? 0).toLocaleString()}</div>
-            <div className="text-[9px] text-white/40">إيرادات الشهر</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-black text-cyan-300">{data.newClients ?? 0}</div>
-            <div className="text-[9px] text-white/40">عملاء جدد (أسبوع)</div>
-          </div>
-        </div>
+        ))}
       </div>
-    );
-  }
-  if ((role === "employee" || role === "employee_manager") && data.orders) {
-    const o = data.orders;
-    return (
-      <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.2)" }}>
-        <div className="px-3 py-2 grid grid-cols-3 gap-2">
-          <div className="text-center">
-            <div className="text-[17px] font-black text-amber-300">{o.pending ?? 0}</div>
-            <div className="text-[9px] text-white/40">معلقة</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-black text-blue-300">{o.active ?? 0}</div>
-            <div className="text-[9px] text-white/40">نشطة</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[17px] font-black text-emerald-300">{o.completed ?? 0}</div>
-            <div className="text-[9px] text-white/40">مكتملة</div>
-          </div>
+      {data.totalOrders && (
+        <div className="px-3 py-1.5 border-t border-white/[0.06] grid grid-cols-3 gap-1 text-center">
+          <div><div className="text-[11px] font-bold text-amber-300">{data.pendingOrders}</div><div className="text-[8px] text-white/30">معلّق</div></div>
+          <div><div className="text-[11px] font-bold text-blue-300">{data.activeOrders}</div><div className="text-[8px] text-white/30">نشط</div></div>
+          <div><div className="text-[11px] font-bold text-emerald-300">{data.completedOrders}</div><div className="text-[8px] text-white/30">مكتمل</div></div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function EmployeesTable({ data }: { data: any }) {
+  if (!data?.employees?.length) return <EmptyResult label="لا يوجد موظفون" />;
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.18)" }}>
+      <div className="px-3 py-2 border-b border-white/[0.06]">
+        <span className="text-[10px] font-black text-blue-300 flex items-center gap-1"><Briefcase className="w-3 h-3" /> {data.count} موظف</span>
       </div>
-    );
-  }
+      <div className="divide-y divide-white/[0.04]">
+        {data.employees.map((e: any) => (
+          <div key={e.id} className="px-3 py-2 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] bg-blue-500/20">
+              {(e.name || "؟")[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-white/85 truncate">{e.name}</div>
+              <div className="text-[9px] text-white/35">{ROLE_AR[e.role] || e.role}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WalletCard({ data }: { data: any }) {
+  if (!data) return null;
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.22)" }}>
+      <div className="px-3 py-3 text-center border-b border-white/[0.06]">
+        <div className="text-[10px] text-white/40 mb-1 flex items-center justify-center gap-1"><Wallet className="w-3 h-3" /> رصيد محفظتك</div>
+        <div className="text-[26px] font-black text-emerald-300">{Number(data.balance || 0).toLocaleString()} <span className="text-[14px]">ريال</span></div>
+      </div>
+      {data.recent?.length > 0 && (
+        <div className="divide-y divide-white/[0.04]">
+          {data.recent.map((tx: any, i: number) => (
+            <div key={i} className="px-3 py-2 flex items-center justify-between">
+              <div className="text-[10px] text-white/60 truncate">{tx.service}</div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[9px] px-1 py-0.5 rounded-full ${STATUS_COLOR[tx.status] || "text-slate-300 bg-slate-500/15"}`}>{STATUS_AR[tx.status] || tx.status}</span>
+                <span className="text-[10px] font-bold text-white/70">{Number(tx.amount).toLocaleString()} ﷼</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectsTable({ data, onNavigate }: { data: any; onNavigate: (url: string) => void }) {
+  if (!data?.projects?.length) return <EmptyResult label="لا توجد مشاريع" />;
+  return (
+    <div className="w-full mt-1.5 rounded-xl overflow-hidden" style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.18)" }}>
+      <div className="px-3 py-2 flex items-center justify-between border-b border-white/[0.06]">
+        <span className="text-[10px] font-black text-amber-300 flex items-center gap-1"><BookOpen className="w-3 h-3" /> {data.count} مشروع</span>
+        <button onClick={() => onNavigate("/projects")} className="text-[9px] text-white/30 hover:text-amber-300 transition-colors">عرض الكل ←</button>
+      </div>
+      <div className="divide-y divide-white/[0.04]">
+        {data.projects.map((p: any) => (
+          <div key={p.id} className="px-3 py-2 flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-white/85 truncate">{p.name}</div>
+              {p.description && <div className="text-[9px] text-white/35 mt-0.5 truncate">{p.description}</div>}
+            </div>
+            <div className="flex-shrink-0 text-center">
+              <div className="text-[10px] font-black text-amber-300">{p.progress || 0}%</div>
+              <div className="w-12 h-1 bg-white/10 rounded-full mt-0.5">
+                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${p.progress || 0}%` }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActionSuccess({ data, toolName }: { data: any; toolName?: string }) {
+  const msgs: Record<string, string> = {
+    update_order_status: `✅ تم تغيير حالة الطلب من "${STATUS_AR[data?.prevStatus] || data?.prevStatus}" إلى "${STATUS_AR[data?.newStatus] || data?.newStatus}"`,
+    send_notification: `✅ تم إرسال الإشعار لـ ${data?.sent ?? 1} ${data?.target === "all" ? "مستخدم" : ""}`,
+    cancel_my_order: "✅ تم إلغاء طلبك بنجاح",
+    create_task: `✅ تم إنشاء المهمة "${data?.title}" في مشروع "${data?.project}"`,
+    send_support_ticket: `✅ تم إرسال تذكرة الدعم "${data?.subject}"`,
+  };
+  const msg = msgs[toolName || ""] || "✅ تم تنفيذ العملية بنجاح";
+  return (
+    <div className="w-full mt-1.5 rounded-xl px-3 py-2.5 flex items-center gap-2"
+      style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
+      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+      <span className="text-[11px] text-emerald-300 font-semibold">{msg}</span>
+    </div>
+  );
+}
+
+function EmptyResult({ label }: { label: string }) {
+  return (
+    <div className="w-full mt-1.5 rounded-xl px-3 py-2.5 flex items-center gap-2"
+      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <AlertCircle className="w-4 h-4 text-white/30 flex-shrink-0" />
+      <span className="text-[11px] text-white/40">{label}</span>
+    </div>
+  );
+}
+
+/* ─── ToolResultCard dispatcher ─── */
+function ToolResultCard({ displayType, toolName, data, onNavigate }: {
+  displayType?: string; toolName?: string; data: any; onNavigate: (url: string) => void;
+}) {
+  if (!displayType || !data) return null;
+  if (displayType === "orders_table") return <OrdersTable data={data} onNavigate={onNavigate} />;
+  if (displayType === "clients_table") return <ClientsTable data={data} onNavigate={onNavigate} />;
+  if (displayType === "analytics_card") return <AnalyticsCard data={data} />;
+  if (displayType === "employees_table") return <EmployeesTable data={data} />;
+  if (displayType === "wallet_card") return <WalletCard data={data} />;
+  if (displayType === "projects_table") return <ProjectsTable data={data} onNavigate={onNavigate} />;
+  if (displayType === "action_success") return <ActionSuccess data={data} toolName={toolName} />;
   return null;
 }
 
-/* ─── Navigate action card ─── */
+/* ─── Navigate card ─── */
 function NavigateCard({ url, label, onNavigate }: { url: string; label: string; onNavigate: (url: string) => void }) {
   return (
-    <button
-      onClick={() => onNavigate(url)}
+    <button onClick={() => onNavigate(url)}
       className="w-full mt-1.5 flex items-center gap-2 px-3 py-2.5 rounded-xl text-right transition-all hover:scale-[1.01]"
       style={{ background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.3)" }}
-      data-testid="button-ai-navigate"
-    >
+      data-testid="button-ai-navigate">
       <div className="flex-1 min-w-0">
         <div className="text-[11px] font-bold text-cyan-300">انتقل إلى: {label}</div>
         <div className="text-[9px] text-white/35 font-mono mt-0.5">{url}</div>
@@ -187,8 +372,7 @@ function NavigateCard({ url, label, onNavigate }: { url: string; label: string; 
 }
 
 /* ══════════════════════════════════════════════════════════
-   AIPanel — مكوّن مدمج داخل الصفحات (ليس عائماً)
-   استخدمه هكذا:  <AIPanel className="h-[520px]" />
+   AIPanel — main component
 ══════════════════════════════════════════════════════════ */
 export function AIPanel({ className = "" }: { className?: string }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -210,26 +394,22 @@ export function AIPanel({ className = "" }: { className?: string }) {
   useEffect(() => {
     if (!initialized.current) {
       initialized.current = true;
-      addAiMsg(
-        role === "client"
-          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! ✨ أنا **QIROX AI**، مستشارك الشخصي.\n\nيمكنني عرض حسابك، اختيار الباقة الأنسب، أو الانتقال لأي صفحة تحتاجها.\n\nكيف أقدر أساعدك؟`
-          : role === "admin" || role === "manager"
-          ? `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI**، مساعدك الإداري.\n\nيمكنني عرض إحصاءات النظام، تحليل الموقع، إرسال البريد، والانتقال لأي صفحة.`
-          : role === "employee" || role === "employee_manager"
-          ? `أهلاً${user?.fullName ? ` ${user.fullName}` : ""}! 💼 أنا **QIROX AI**، مساعدك داخل النظام.\n\nيمكنني عرض مهامك، شرح أي صفحة، أو مساعدتك في التنقل.`
-          : `مرحباً! أنا **QIROX AI**.\n\nيمكنني مساعدتك في اكتشاف الباقة المثالية أو الإجابة على أي سؤال.`,
-        role === "guest" ? ["استكشف الباقات", "أنسب باقة لمشروعي", "كيف تعمل المنصة؟"] : undefined
-      );
+      const welcomes: Record<string, string> = {
+        admin: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI** العامل.\n\nيمكنني **تنفيذ عمليات فعلية** على النظام:\n• عرض الطلبات والعملاء والإحصاءات\n• تغيير حالات الطلبات مباشرة\n• إرسال إشعارات للمستخدمين\n• إنشاء مهام في المشاريع\n\nماذا تريد أن أفعل؟`,
+        manager: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI** العامل. يمكنني إدارة الطلبات وإرسال الإشعارات وعرض التحليلات مباشرة. ماذا تريد؟`,
+        developer: `أهلاً${user?.fullName ? ` ${user.fullName}` : ""}! 💻 أنا **QIROX AI**. يمكنني عرض الطلبات والمشاريع المعينة لك، وإنشاء مهام، وتغيير حالات الطلبات. ماذا تحتاج؟`,
+        client: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! ⭐ أنا **QIROX AI**، مساعدك الشخصي.\n\nيمكنني:\n• عرض طلباتك ومشاريعك ورصيدك\n• إلغاء طلب معلّق\n• إرسال تذكرة دعم\n\nكيف أساعدك؟`,
+        guest: `مرحباً! أنا **QIROX AI**.\n\nيمكنني مساعدتك في اختيار الباقة المناسبة أو الإجابة على أسئلتك.`,
+      };
+      addAiMsg(welcomes[role] || welcomes.guest);
     }
   }, [role, user]);
 
-  function addAiMsg(text: string, suggestions?: string[], action?: string, data?: any) {
-    setMsgs(prev => [...prev, { id: uid(), role: "ai", text, suggestions, action, data, timestamp: new Date() }]);
+  function addAiMsg(text: string, suggestions?: string[], action?: string, data?: any, displayType?: string, toolName?: string, allTools?: any[]) {
+    setMsgs(prev => [...prev, { id: uid(), role: "ai", text, suggestions, action, data, displayType, allTools, timestamp: new Date() }]);
   }
 
-  function handleNavigate(url: string) {
-    navigate(url);
-  }
+  function handleNavigate(url: string) { navigate(url); }
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
@@ -237,7 +417,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
     setInput("");
     setLoading(true);
     try {
-      const res = await fetch("/api/ai/chat", {
+      const res = await fetch("/api/ai/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -248,24 +428,22 @@ export function AIPanel({ className = "" }: { className?: string }) {
       });
       const data = await res.json();
 
-      // Handle actions that trigger side-effects
-      if (data.action === "CUSTOM_ORDER_SUBMITTED" && data.data) {
-        fetch("/api/ai/custom-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data.data) }).catch(() => {});
-      }
       if (data.action === "NAVIGATE" && data.data?.url) {
-        addAiMsg(data.reply || "سأنقلك الآن...", data.suggestions, data.action, data.data);
+        addAiMsg(data.reply || "سأنقلك الآن...", data.suggestions, "NAVIGATE", data.data);
         setLoading(false);
         setTimeout(() => handleNavigate(data.data.url), 900);
         return;
       }
-      if (data.action === "GO_PRICES") {
-        addAiMsg(data.reply || "انتقل للأسعار", data.suggestions, data.action, data.data);
-        setLoading(false);
-        setTimeout(() => handleNavigate("/prices"), 900);
-        return;
-      }
 
-      addAiMsg(data.reply || "عذراً، حدث خطأ.", data.suggestions, data.action, data.data);
+      addAiMsg(
+        data.reply || "عذراً، حدث خطأ.",
+        data.suggestions,
+        data.action,
+        data.toolData,
+        data.displayType,
+        data.toolName,
+        data.allTools,
+      );
     } catch {
       addAiMsg("⚠️ حدث خطأ في الاتصال. تحقق من الإنترنت وحاول مجدداً.");
     } finally {
@@ -279,7 +457,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
     fetch(`/api/ai/session/${sessionId}`, { method: "DELETE" }).catch(() => {});
     setTimeout(() => {
       initialized.current = false;
-      addAiMsg(role === "client" ? `مرحباً مجدداً! 👋 كيف أقدر أساعدك؟` : `تم تجديد المحادثة. كيف أقدر أساعدك؟`);
+      addAiMsg("تم تجديد المحادثة. كيف أقدر أساعدك؟");
     }, 50);
   }
 
@@ -305,24 +483,22 @@ export function AIPanel({ className = "" }: { className?: string }) {
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
               {cfg.icon} {cfg.label}
             </span>
+            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-black/20 text-white/70 font-semibold">⚡ عامل</span>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <motion.div className="w-1.5 h-1.5 rounded-full bg-green-300"
               animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-            <span className="text-[10px] text-white/60">جاهز للمساعدة</span>
+            <span className="text-[10px] text-white/60">متصل بالنظام · يمكنه التنفيذ الفعلي</span>
           </div>
         </div>
-        <button
-          onClick={resetChat}
+        <button onClick={resetChat}
           className="relative p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all"
-          title="محادثة جديدة"
-          data-testid="button-ai-reset"
-        >
+          title="محادثة جديدة" data-testid="button-ai-reset">
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* ── Quick actions (when no messages yet) ── */}
+      {/* ── Quick actions ── */}
       <AnimatePresence>
         {msgs.length === 0 && (
           <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -335,8 +511,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
                   onClick={() => sendMessage(qa.msg)}
                   className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-right text-[11px] font-semibold text-white/75 hover:text-white transition-all"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  data-testid={`button-ai-quick-${i}`}
-                >
+                  data-testid={`button-ai-quick-${i}`}>
                   <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{ background: "linear-gradient(135deg,rgba(14,165,233,0.25),rgba(124,58,237,0.25))" }}>
                     <Icon className="w-3 h-3 text-cyan-400" />
@@ -365,7 +540,8 @@ export function AIPanel({ className = "" }: { className?: string }) {
                   <Sparkles className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div className={`max-w-[82%] flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+
+              <div className={`max-w-[86%] flex flex-col gap-1.5 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 <div
                   className={`px-3 py-2 rounded-2xl text-[12.5px] leading-relaxed ${msg.role === "user" ? "text-white rounded-tr-sm" : "text-white/90 rounded-tl-sm"}`}
                   style={msg.role === "user"
@@ -374,39 +550,26 @@ export function AIPanel({ className = "" }: { className?: string }) {
                   dangerouslySetInnerHTML={{ __html: renderText(msg.text) }}
                 />
 
-                {/* Stats card — SHOW_STATS action */}
-                {msg.action === "SHOW_STATS" && msg.data && (
-                  <StatsCard data={msg.data} role={role} />
+                {/* Tool result cards */}
+                {msg.action === "TOOL_RESULT" && msg.displayType && (
+                  <ToolResultCard
+                    displayType={msg.displayType}
+                    toolName={msg.allTools?.[0]?.name}
+                    data={msg.data}
+                    onNavigate={handleNavigate}
+                  />
                 )}
 
-                {/* Navigate card — NAVIGATE action */}
+                {/* Multiple tool results */}
+                {msg.action === "TOOL_RESULT" && msg.allTools && msg.allTools.length > 1 && msg.allTools.slice(1).map((t, idx) => (
+                  t.displayType && t.data ? (
+                    <ToolResultCard key={idx} displayType={t.displayType} toolName={t.name} data={t.data} onNavigate={handleNavigate} />
+                  ) : null
+                ))}
+
+                {/* Navigate card */}
                 {msg.action === "NAVIGATE" && msg.data?.url && (
                   <NavigateCard url={msg.data.url} label={msg.data.label} onNavigate={handleNavigate} />
-                )}
-
-                {/* Package cards — SHOW_PACKAGE action */}
-                {msg.action === "SHOW_PACKAGE" && msg.data?.all && (
-                  <div className="w-full grid gap-1.5 mt-0.5">
-                    {msg.data.all.map((pkg: any) => (
-                      <div key={pkg.tier}
-                        className="px-2.5 py-2 rounded-xl flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.01]"
-                        style={{
-                          background: pkg.tier === msg.data.recommended?.tier ? "rgba(14,165,233,0.12)" : "rgba(255,255,255,0.04)",
-                          border: `1px solid ${pkg.tier === msg.data.recommended?.tier ? "rgba(14,165,233,0.4)" : "rgba(255,255,255,0.08)"}`,
-                        }}
-                        onClick={() => sendMessage(`اختر باقة ${pkg.nameAr}`)}
-                      >
-                        <span className="text-base">{pkg.tier === "lite" ? "🥉" : pkg.tier === "pro" ? "🥈" : "🏆"}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-black text-white">{pkg.nameAr}</div>
-                          <div className="text-[10px] text-white/45">{pkg.price?.toLocaleString()} ريال+</div>
-                        </div>
-                        {pkg.tier === msg.data.recommended?.tier && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-black text-cyan-300 bg-cyan-500/20">موصى به</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
                 )}
 
                 {/* Suggestions */}
@@ -416,8 +579,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
                       <button key={i} onClick={() => sendMessage(s)}
                         className="text-[11px] px-2.5 py-1 rounded-full text-cyan-300 hover:text-white font-semibold transition-all hover:scale-[1.03]"
                         style={{ background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.25)" }}
-                        data-testid={`button-ai-suggestion-${i}`}
-                      >
+                        data-testid={`button-ai-suggestion-${i}`}>
                         {s}
                       </button>
                     ))}
@@ -458,10 +620,9 @@ export function AIPanel({ className = "" }: { className?: string }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-            placeholder="اكتب سؤالك أو اطلب انتقالاً..."
+            placeholder="اسأل أو اطلب تنفيذ أي شيء..."
             disabled={loading}
-            className="flex-1 bg-transparent text-white text-[12.5px] placeholder:text-white/30 outline-none text-right"
-            dir="rtl"
+            className="flex-1 bg-transparent text-white text-[12.5px] outline-none placeholder:text-white/25 min-w-0"
             data-testid="input-ai-message"
           />
           <motion.button
@@ -470,14 +631,13 @@ export function AIPanel({ className = "" }: { className?: string }) {
             disabled={!input.trim() || loading}
             className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-30"
             style={{ background: "linear-gradient(135deg,#0ea5e9,#7c3aed)" }}
-            data-testid="button-ai-send"
-          >
+            data-testid="button-ai-send">
             {loading
               ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
               : <Send className="w-3.5 h-3.5 text-white" style={{ transform: "scaleX(-1)" }} />}
           </motion.button>
         </div>
-        <p className="text-center text-[9px] text-white/20 mt-1">QIROX AI · متصل بالنظام</p>
+        <p className="text-center text-[9px] text-white/20 mt-1">QIROX AI · عامل ذكي · متصل بقاعدة البيانات</p>
       </div>
     </div>
   );

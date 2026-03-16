@@ -1,15 +1,15 @@
 // @ts-nocheck
 /**
- * QIROX AI — Powered by OpenAI (via OpenRouter)
- * Intelligent assistant with full platform knowledge, creative responses,
- * analytics insights, and multi-role support.
+ * QIROX AI — Agentic Intelligence (OpenAI via OpenRouter)
+ * Full function-calling system: reads, writes, sends notifications,
+ * changes order status, manages tasks — all from natural language.
  */
 import type { Express } from "express";
 import OpenAI from "openai";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
 
-/* ─── OpenAI client (OpenRouter compatible) ─── */
+/* ─── OpenAI client (OpenRouter) ─── */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
@@ -21,7 +21,7 @@ const openai = new OpenAI({
 
 const AI_MODEL = "openai/gpt-4o-mini";
 
-/* ─── Serper.dev for web search ─── */
+/* ─── Serper.dev web search ─── */
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";
 async function searchWeb(query: string): Promise<string> {
   try {
@@ -31,451 +31,690 @@ async function searchWeb(query: string): Promise<string> {
       { headers: { "X-API-KEY": SERPER_KEY, "Content-Type": "application/json" }, timeout: 8000 }
     );
     const results = res.data?.organic?.slice(0, 3) || [];
-    if (!results.length) return "";
     return results.map((r: any, i: number) => `${i + 1}. ${r.title}: ${r.snippet}`).join("\n");
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 /* ─── Session store ─── */
-interface Message { role: "user" | "assistant"; content: string }
-interface Session {
-  history: Message[];
-  userId?: string;
-  userRole?: string;
-}
+interface Message { role: "user" | "assistant" | "tool"; content: string; tool_call_id?: string; name?: string }
+interface Session { history: Message[]; userId?: string; userRole?: string; }
 const sessions = new Map<string, Session>();
 
 function getSession(id: string, userId?: string, role?: string): Session {
-  if (!sessions.has(id)) {
-    sessions.set(id, { history: [], userId, userRole: role });
-  }
+  if (!sessions.has(id)) sessions.set(id, { history: [], userId, userRole: role });
   const s = sessions.get(id)!;
   if (userId) s.userId = userId;
   if (role) s.userRole = role;
   return s;
 }
 
-/* ─── QIROX Platform System Prompt ─── */
+/* ─── QIROX Tools (function calling) ─── */
+const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "get_orders",
+      description: "جلب قائمة الطلبات من النظام مع تصفية حسب الحالة والعدد. للمدراء يجلب جميع الطلبات، للموظفين يجلب المرتبطة بهم، للعملاء طلباتهم فقط.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["pending", "active", "completed", "cancelled", "all"], description: "تصفية حسب حالة الطلب" },
+          limit: { type: "number", description: "عدد النتائج (افتراضي 10، أقصى 20)" },
+          search: { type: "string", description: "بحث في اسم العميل أو رقم الطلب" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_clients",
+      description: "جلب قائمة العملاء من النظام. متاح للمدراء ومسؤولي المبيعات فقط.",
+      parameters: {
+        type: "object",
+        properties: {
+          search: { type: "string", description: "بحث بالاسم أو البريد أو رقم الهاتف" },
+          limit: { type: "number", description: "عدد النتائج (افتراضي 8)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_analytics",
+      description: "جلب إحصاءات وتحليلات المنصة الشاملة. للمدراء فقط.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_employees",
+      description: "جلب قائمة الموظفين وبياناتهم. للمدراء فقط.",
+      parameters: {
+        type: "object",
+        properties: {
+          search: { type: "string", description: "بحث بالاسم أو الدور" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_wallet_info",
+      description: "جلب معلومات المحفظة والرصيد والمعاملات. للعملاء فقط.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_projects",
+      description: "جلب قائمة المشاريع النشطة مع تفاصيلها.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "عدد النتائج" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_order_status",
+      description: "تغيير حالة طلب معين. للمدراء والموظفين المخوّلين فقط.",
+      parameters: {
+        type: "object",
+        required: ["orderId", "status"],
+        properties: {
+          orderId: { type: "string", description: "معرّف الطلب (ID)" },
+          status: { type: "string", enum: ["pending", "active", "completed", "cancelled", "on_hold"], description: "الحالة الجديدة" },
+          note: { type: "string", description: "ملاحظة تُضاف عند تغيير الحالة" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_notification",
+      description: "إرسال إشعار فوري لمستخدم معين أو لجميع المستخدمين. للمدراء فقط.",
+      parameters: {
+        type: "object",
+        required: ["title", "body"],
+        properties: {
+          userId: { type: "string", description: "معرّف المستخدم لإرسال إشعار شخصي. إذا فارغ يُرسل للجميع." },
+          title: { type: "string", description: "عنوان الإشعار" },
+          body: { type: "string", description: "نص الإشعار" },
+          role: { type: "string", description: "إرسال لجميع أصحاب دور معين (مثال: client)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cancel_my_order",
+      description: "إلغاء طلب خاص بالعميل الحالي (فقط الطلبات المعلّقة يمكن إلغاؤها).",
+      parameters: {
+        type: "object",
+        required: ["orderId"],
+        properties: {
+          orderId: { type: "string", description: "معرّف الطلب المراد إلغاؤه" },
+          reason: { type: "string", description: "سبب الإلغاء" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_task",
+      description: "إنشاء مهمة جديدة في مشروع معين. للمدراء والموظفين.",
+      parameters: {
+        type: "object",
+        required: ["projectId", "title"],
+        properties: {
+          projectId: { type: "string", description: "معرّف المشروع" },
+          title: { type: "string", description: "عنوان المهمة" },
+          description: { type: "string", description: "وصف المهمة" },
+          priority: { type: "string", enum: ["low", "medium", "high"], description: "أولوية المهمة" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_support_ticket",
+      description: "إرسال تذكرة دعم أو رسالة تواصل من العميل لفريق الدعم.",
+      parameters: {
+        type: "object",
+        required: ["subject", "message"],
+        properties: {
+          subject: { type: "string", description: "موضوع الرسالة" },
+          message: { type: "string", description: "نص الرسالة الكاملة" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_web",
+      description: "البحث في الإنترنت عن معلومات حديثة أو غير متوفرة في قاعدة البيانات.",
+      parameters: {
+        type: "object",
+        required: ["query"],
+        properties: {
+          query: { type: "string", description: "استعلام البحث" },
+        },
+      },
+    },
+  },
+];
+
+/* ─── Tool Executor ─── */
+async function executeTool(name: string, args: any, userId?: string, userRole?: string): Promise<{ success: boolean; data?: any; error?: string; display?: any }> {
+  try {
+    const {
+      OrderModel, UserModel, ProjectModel, TaskModel,
+      NotificationModel, SupportTicketModel,
+    } = await import("./models");
+
+    const isAdmin = ["admin", "manager"].includes(userRole || "");
+    const isEmployee = ["developer", "designer", "support", "sales", "sales_manager", "accountant", "merchant"].includes(userRole || "");
+    const isClient = userRole === "client";
+
+    /* ── READ: get_orders ── */
+    if (name === "get_orders") {
+      const limit = Math.min(args.limit || 10, 20);
+      const query: any = {};
+      if (args.status && args.status !== "all") query.status = args.status;
+      if (isClient && userId) query.userId = userId;
+      if (args.search) query.$or = [
+        { "service.nameAr": { $regex: args.search, $options: "i" } },
+        { notes: { $regex: args.search, $options: "i" } },
+      ];
+      const orders = await OrderModel.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate("userId", "fullName username phone")
+        .lean();
+      return {
+        success: true,
+        data: { count: orders.length, orders: orders.map(o => ({
+          id: String(o._id),
+          status: o.status,
+          service: o.service?.nameAr || o.service?.name || "خدمة",
+          client: (o.userId as any)?.fullName || (o.userId as any)?.username || "عميل",
+          amount: o.totalPrice || o.paymentAmount || 0,
+          createdAt: o.createdAt,
+          notes: o.notes,
+        }))},
+        display: { type: "orders_table" },
+      };
+    }
+
+    /* ── READ: get_clients ── */
+    if (name === "get_clients") {
+      if (!isAdmin && !["sales_manager", "sales"].includes(userRole || "")) {
+        return { success: false, error: "غير مخوّل بعرض قائمة العملاء" };
+      }
+      const limit = Math.min(args.limit || 8, 20);
+      const query: any = { role: "client" };
+      if (args.search) query.$or = [
+        { fullName: { $regex: args.search, $options: "i" } },
+        { username: { $regex: args.search, $options: "i" } },
+        { email: { $regex: args.search, $options: "i" } },
+        { phone: { $regex: args.search, $options: "i" } },
+      ];
+      const clients = await UserModel.find(query).sort({ createdAt: -1 }).limit(limit).select("fullName username email phone createdAt walletBalance").lean();
+      return {
+        success: true,
+        data: { count: clients.length, clients: clients.map(c => ({
+          id: String(c._id),
+          name: c.fullName || c.username,
+          email: c.email,
+          phone: c.phone,
+          wallet: c.walletBalance || 0,
+          joined: c.createdAt,
+        }))},
+        display: { type: "clients_table" },
+      };
+    }
+
+    /* ── READ: get_analytics ── */
+    if (name === "get_analytics") {
+      if (!isAdmin) return { success: false, error: "متاح للمدراء فقط" };
+      const [totalClients, totalOrders, pendingOrders, activeOrders, completedOrders, totalProjects] = await Promise.all([
+        UserModel.countDocuments({ role: "client" }),
+        OrderModel.countDocuments({}),
+        OrderModel.countDocuments({ status: "pending" }),
+        OrderModel.countDocuments({ status: "active" }),
+        OrderModel.countDocuments({ status: "completed" }),
+        ProjectModel.countDocuments({}),
+      ]);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const [monthRevOrders, newClients] = await Promise.all([
+        OrderModel.find({ createdAt: { $gte: monthStart }, status: { $in: ["active", "completed"] } }).select("totalPrice paymentAmount").lean(),
+        UserModel.countDocuments({ role: "client", createdAt: { $gte: weekStart } }),
+      ]);
+      const monthRevenue = monthRevOrders.reduce((s, o) => s + (o.totalPrice || o.paymentAmount || 0), 0);
+      return {
+        success: true,
+        data: { totalClients, totalOrders, pendingOrders, activeOrders, completedOrders, totalProjects, monthRevenue, newClients },
+        display: { type: "analytics_card" },
+      };
+    }
+
+    /* ── READ: get_employees ── */
+    if (name === "get_employees") {
+      if (!isAdmin) return { success: false, error: "متاح للمدراء فقط" };
+      const query: any = { role: { $ne: "client" }, isActive: { $ne: false } };
+      if (args.search) query.$or = [
+        { fullName: { $regex: args.search, $options: "i" } },
+        { role: { $regex: args.search, $options: "i" } },
+      ];
+      const employees = await UserModel.find(query).select("fullName username role phone email createdAt").lean();
+      return {
+        success: true,
+        data: { count: employees.length, employees: employees.map(e => ({
+          id: String(e._id), name: e.fullName || e.username, role: e.role, phone: e.phone,
+        }))},
+        display: { type: "employees_table" },
+      };
+    }
+
+    /* ── READ: get_wallet_info ── */
+    if (name === "get_wallet_info") {
+      if (!userId) return { success: false, error: "يجب تسجيل الدخول" };
+      const user = await UserModel.findById(userId).select("walletBalance fullName").lean();
+      const recentOrders = await OrderModel.find({ userId })
+        .sort({ createdAt: -1 }).limit(5)
+        .select("totalPrice paymentAmount status createdAt service")
+        .lean();
+      return {
+        success: true,
+        data: {
+          balance: user?.walletBalance || 0,
+          name: user?.fullName,
+          recent: recentOrders.map(o => ({
+            amount: o.totalPrice || o.paymentAmount || 0,
+            status: o.status,
+            service: o.service?.nameAr || "خدمة",
+            date: o.createdAt,
+          })),
+        },
+        display: { type: "wallet_card" },
+      };
+    }
+
+    /* ── READ: get_projects ── */
+    if (name === "get_projects") {
+      const limit = args.limit || 8;
+      const query: any = {};
+      if (isClient && userId) {
+        const clientOrders = await OrderModel.find({ userId }).select("_id").lean();
+        const orderIds = clientOrders.map(o => o._id);
+        query.orderId = { $in: orderIds };
+      }
+      const projects = await ProjectModel.find(query).sort({ createdAt: -1 }).limit(limit)
+        .populate("orderId", "userId service")
+        .lean();
+      return {
+        success: true,
+        data: { count: projects.length, projects: projects.map(p => ({
+          id: String(p._id), name: p.name, status: p.status || "active",
+          progress: p.progress || 0, description: p.description,
+        }))},
+        display: { type: "projects_table" },
+      };
+    }
+
+    /* ── WRITE: update_order_status ── */
+    if (name === "update_order_status") {
+      if (!isAdmin && !isEmployee) return { success: false, error: "غير مخوّل بتغيير حالة الطلبات" };
+      const order = await OrderModel.findById(args.orderId);
+      if (!order) return { success: false, error: "الطلب غير موجود" };
+      const prevStatus = order.status;
+      order.status = args.status;
+      if (args.note) order.notes = (order.notes || "") + `\n[AI ${new Date().toLocaleDateString("ar")}]: ${args.note}`;
+      await order.save();
+      // notify client
+      try {
+        const { pushToUser } = await import("./ws");
+        const clientId = String(order.userId);
+        await NotificationModel.create({ userId: clientId, title: "تحديث على طلبك", body: `تم تغيير حالة طلبك من "${prevStatus}" إلى "${args.status}"`, read: false });
+        pushToUser(clientId, { type: "notification", title: "تحديث على طلبك", body: `حالة طلبك الجديدة: ${args.status}` });
+      } catch {}
+      return { success: true, data: { orderId: args.orderId, prevStatus, newStatus: args.status }, display: { type: "action_success" } };
+    }
+
+    /* ── WRITE: send_notification ── */
+    if (name === "send_notification") {
+      if (!isAdmin) return { success: false, error: "إرسال الإشعارات للمدراء فقط" };
+      const { pushToUser, broadcastToAll } = await import("./ws");
+      if (args.userId) {
+        await NotificationModel.create({ userId: args.userId, title: args.title, body: args.body, read: false });
+        pushToUser(args.userId, { type: "notification", title: args.title, body: args.body });
+        return { success: true, data: { sent: 1, target: "user" }, display: { type: "action_success" } };
+      } else if (args.role) {
+        const targets = await UserModel.find({ role: args.role, isActive: { $ne: false } }).select("_id").lean();
+        for (const t of targets) {
+          const id = String(t._id);
+          await NotificationModel.create({ userId: id, title: args.title, body: args.body, read: false });
+          pushToUser(id, { type: "notification", title: args.title, body: args.body });
+        }
+        return { success: true, data: { sent: targets.length, target: args.role }, display: { type: "action_success" } };
+      } else {
+        broadcastToAll({ type: "notification", title: args.title, body: args.body });
+        const allUsers = await UserModel.find({ isActive: { $ne: false } }).select("_id").lean();
+        await NotificationModel.insertMany(allUsers.map(u => ({ userId: String(u._id), title: args.title, body: args.body, read: false })));
+        return { success: true, data: { sent: allUsers.length, target: "all" }, display: { type: "action_success" } };
+      }
+    }
+
+    /* ── WRITE: cancel_my_order ── */
+    if (name === "cancel_my_order") {
+      if (!userId) return { success: false, error: "يجب تسجيل الدخول" };
+      const order = await OrderModel.findOne({ _id: args.orderId, userId });
+      if (!order) return { success: false, error: "الطلب غير موجود أو لا ينتمي لحسابك" };
+      if (order.status !== "pending") return { success: false, error: `لا يمكن إلغاء طلب بحالة "${order.status}" — الإلغاء متاح للطلبات المعلّقة فقط` };
+      order.status = "cancelled";
+      if (args.reason) order.notes = (order.notes || "") + `\n[إلغاء العميل]: ${args.reason}`;
+      await order.save();
+      return { success: true, data: { orderId: args.orderId, status: "cancelled" }, display: { type: "action_success" } };
+    }
+
+    /* ── WRITE: create_task ── */
+    if (name === "create_task") {
+      if (!isAdmin && !isEmployee) return { success: false, error: "غير مخوّل بإنشاء مهام" };
+      const project = await ProjectModel.findById(args.projectId);
+      if (!project) return { success: false, error: "المشروع غير موجود" };
+      const task = await TaskModel.create({
+        projectId: args.projectId,
+        title: args.title,
+        description: args.description || "",
+        priority: args.priority || "medium",
+        status: "todo",
+        createdAt: new Date(),
+      });
+      return { success: true, data: { taskId: String(task._id), title: task.title, project: project.name }, display: { type: "action_success" } };
+    }
+
+    /* ── WRITE: send_support_ticket ── */
+    if (name === "send_support_ticket") {
+      if (!userId) return { success: false, error: "يجب تسجيل الدخول لإرسال رسالة دعم" };
+      const user = await UserModel.findById(userId).select("fullName email username").lean();
+      const ticket = await SupportTicketModel.create({
+        userId,
+        subject: args.subject,
+        message: args.message,
+        status: "open",
+        createdAt: new Date(),
+      });
+      try {
+        await sendDirectEmail("info@qiroxstudio.online", `تذكرة دعم جديدة: ${args.subject}`, `من: ${user?.fullName || user?.username}\n\n${args.message}`);
+        const { pushToUser } = await import("./ws");
+        const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
+        for (const a of admins) pushToUser(String(a._id), { type: "notification", title: "تذكرة دعم جديدة", body: args.subject });
+      } catch {}
+      return { success: true, data: { ticketId: String(ticket._id), subject: args.subject }, display: { type: "action_success" } };
+    }
+
+    /* ── search_web ── */
+    if (name === "search_web") {
+      const result = await searchWeb(args.query);
+      return { success: true, data: { results: result }, display: { type: "web_results" } };
+    }
+
+    return { success: false, error: `أداة غير معروفة: ${name}` };
+  } catch (err: any) {
+    console.error(`[AI Tool Error] ${name}:`, err.message);
+    return { success: false, error: err.message || "خطأ غير متوقع" };
+  }
+}
+
+/* ─── System Prompt Builder ─── */
 function buildSystemPrompt(userRole?: string, userName?: string, systemData?: any): string {
   const now = new Date();
   const dateStr = now.toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const timeStr = now.toLocaleTimeString("ar-SA");
 
-  const userCtx = systemData ? `
-== بيانات المستخدم الحالية ==
-${systemData.orders ? `• الطلبات: ${systemData.orders.total} إجمالي | ${systemData.orders.pending} معلق | ${systemData.orders.active} نشط | ${systemData.orders.completed} مكتمل` : ""}
-${systemData.projects ? `• المشاريع: ${systemData.projects.total} إجمالي | ${systemData.projects.active} نشط` : ""}
-${systemData.wallet ? `• رصيد المحفظة: ${systemData.wallet.balance?.toLocaleString()} ريال` : ""}
-${systemData.notifications ? `• الإشعارات غير المقروءة: ${systemData.notifications.unread}` : ""}
-${systemData.stats ? `• إحصاءات إضافية: ${JSON.stringify(systemData.stats)}` : ""}
-` : "";
+  const roleCapabilities = {
+    admin: "لديك صلاحية كاملة: قراءة وكتابة وحذف في جميع أقسام النظام. يمكنك تغيير حالات الطلبات، إرسال الإشعارات للجميع، إنشاء المهام، عرض التحليلات الكاملة.",
+    manager: "لديك صلاحية واسعة مثل المدير: تغيير حالات الطلبات، إرسال الإشعارات، إنشاء المهام، عرض التحليلات.",
+    developer: "يمكنك عرض الطلبات المرتبطة بك وتغيير حالاتها، إنشاء مهام في المشاريع المعينة لك.",
+    designer: "يمكنك عرض الطلبات المرتبطة بك وإنشاء مهام في المشاريع المعينة لك.",
+    support: "يمكنك عرض الطلبات وتغيير حالاتها للحالات التشغيلية.",
+    sales: "يمكنك عرض العملاء والطلبات وإرسال تذاكر دعم.",
+    sales_manager: "يمكنك عرض العملاء والطلبات وإرسال الإشعارات.",
+    accountant: "يمكنك عرض التحليلات المالية والطلبات والمحافظ.",
+    client: "يمكنك عرض طلباتك ومشاريعك ورصيد محفظتك، وإلغاء الطلبات المعلّقة، وإرسال تذاكر دعم.",
+    guest: "أنت زائر — يمكنني مساعدتك في فهم المنصة واختيار الباقة المناسبة.",
+  };
 
-  return `أنت **QIROX AI** — المساعد الذكي الرسمي لمنصة QIROX Studio، وكالة تطوير مواقع وتطبيقات سعودية متخصصة.
+  return `أنت **QIROX AI** — المساعد الذكي الرسمي والعامل لمنصة QIROX Studio.
 
 == هويتك ==
-- اسمك: QIROX AI
-- شخصيتك: ذكي، ودود، إبداعي، محترف، تتحدث بالعربية الفصيحة المبسّطة مع لمسة سعودية خليجية طبيعية
-- أسلوبك: مباشر وواضح، تستخدم الإيموجي باعتدال، تقدم إجابات عملية وقابلة للتطبيق
+- اسمك: QIROX AI | الشخصية: ذكي، ودود، فعّال، محترف
 - اليوم: ${dateStr} — الساعة: ${timeStr}
-- المستخدم: ${userName || "الزائر"} | الدور: ${userRole || "زائر"}
+- المستخدم الحالي: ${userName || "الزائر"} | الدور: ${userRole || "guest"}
+- صلاحياتك: ${roleCapabilities[userRole || "guest"] || roleCapabilities.guest}
 
-== معرفتك الكاملة بمنصة QIROX Studio ==
+== قدراتك الحقيقية في النظام ==
+أنت لست مجرد محادثة — أنت عامل ذكي يمكنه **تنفيذ عمليات فعلية** على النظام:
+- 📋 **قراءة البيانات**: الطلبات، العملاء، الموظفون، المشاريع، التحليلات، المحفظة
+- ✏️ **تعديل البيانات**: تغيير حالة الطلبات، إنشاء المهام، تحديث الملاحظات
+- 📩 **الإرسال**: إشعارات فورية، تذاكر دعم، بريد إلكتروني
+- 🗑️ **الإلغاء**: إلغاء الطلبات المعلّقة (للعملاء فقط)
 
-=== الشركة ===
-QIROX Studio وكالة تقنية سعودية متخصصة في تطوير المواقع والتطبيقات وحلول التحول الرقمي.
-الرؤية: تمكين الشركات السعودية والعربية من التحول الرقمي بحلول عالمية المستوى.
-البريد: info@qiroxstudio.online
-المنصة: SaaS متعددة المستأجرين (Multi-tenant) مع صلاحيات متعددة المستويات.
+== تعليمات مهمة ==
+1. **استخدم الأدوات بذكاء**: عندما يطلب المستخدم أي بيانات أو عملية، استخدم الأداة المناسبة مباشرة ولا تسأل كثيراً.
+2. **كن حذراً مع العمليات التدميرية**: إلغاء الطلبات وتغيير الحالات — أكّد مع المستخدم قبل التنفيذ إن كان الأمر غير واضح.
+3. **اعرض النتائج بوضوح**: بعد تنفيذ أي عملية، وضّح ما تم وما هو الأثر.
+4. **تحدّث بالعربية دائماً** إلا إذا طُلب منك الإنجليزية.
+5. **لا تختلق بيانات**: إذا لم تجد بيانات في الأداة، قل ذلك بوضوح.
 
-=== الباقات والأسعار ===
-1. **باقة لايت** - من 5,000 ريال
-   - موقع إلكتروني احترافي، لوحة تحكم، نظام طلبات، إدارة منتجات، دعم فني
-   - مثالية لـ: المطاعم الصغيرة، المتاجر الناشئة، مقدمو الخدمات الأفراد
-   - المدة: 2-4 أسابيع
-
-2. **باقة برو** - من 10,000 ريال
-   - كل ميزات لايت + تطبيق جوال، بوابة دفع إلكتروني، CRM، تقارير متقدمة، ذكاء اصطناعي
-   - مثالية لـ: المطاعم المتوسطة، المتاجر المتنامية، شركات الخدمات، المنصات التعليمية
-   - المدة: 4-8 أسابيع
-
-3. **باقة إنفينيت** - من 20,000 ريال
-   - تخصيص كامل، خادم مخصص، API غير محدودة، فريق دعم مخصص، تكاملات متقدمة
-   - مثالية لـ: سلاسل كبيرة، شركات مؤسسية، منصات SaaS، مشاريع حكومية
-   - المدة: 8-16 أسبوع
-
-=== طرق الدفع ===
-1. المحفظة الإلكترونية (Qirox Pay) — شحن ودفع فوري
-2. التحويل البنكي — يُرفع الإيصال في النظام
-3. PayPal — دفع دولي آمن
-4. التقسيط — حسب الاتفاق مع الفريق
-
-=== صفحات النظام (حسب الدور) ===
-
-**لوحة القيادة (Dashboard)**
-- ملخص شامل للأداء: إيرادات، طلبات نشطة، نمو عملاء، تنبيهات
-- الرسوم البيانية تُحدَّث لحظياً
-- الوصول: جميع الأدوار
-
-**إدارة الطلبات (Orders)**
-- إدارة جميع طلبات العملاء من البداية للنهاية
-- تغيير الحالة، تعيين موظف مسؤول، إضافة ملاحظات
-- إرسال تحديثات تلقائية للعميل
-- الوصول: admin, manager, developer, designer, support, sales
-
-**العملاء (Customers)**
-- قاعدة بيانات كاملة: تاريخ المعاملات، الطلبات، الفواتير، المراسلات
-- بحث وتصفية وتصدير البيانات
-- الوصول: admin, manager, sales, sales_manager
-
-**الموظفون (Employees)**
-- إدارة الفريق: صلاحيات، رواتب، حضور، مهام، أداء
-- لكل موظف لوحة تحكم خاصة به
-- الوصول: admin, manager
-
-**المالية (Finance)**
-- إيرادات ومصروفات، تقارير الأرباح، التدفق النقدي
-- فواتير معلّقة، تحليلات مالية متعمقة
-- الوصول: admin, accountant
-
-**لوحة كانبان (Kanban)**
-- تتبع مراحل المشاريع بأسلوب كانبان (سحب وإفلات)
-- كل بطاقة تمثل مهمة أو مرحلة مشروع
-- الوصول: admin, manager, developer, designer
-
-**الفواتير (Invoices)**
-- إنشاء وإرسال فواتير احترافية
-- تتبع حالة الفاتورة (معلّقة، مدفوعة، متأخرة)
-- إرسال تذكيرات تلقائية
-- الوصول: admin, accountant, sales
-
-**التحليلات (Analytics)**
-- تقارير مفصّلة: أكثر الخدمات مبيعاً، معدل التحويل، مصادر العملاء
-- أداء كل موظف، تحليل العقود والمبيعات
-- الوصول: admin, manager
-
-**المحفظة (Wallet)**
-- رصيد المستخدم، سجل المعاملات، رموز الكاشباك
-- Qirox Pay Card للدفع السريع
-- الوصول: client
-
-**العقود (Contracts)**
-- عرض وتوقيع العقود الرقمية
-- محفوظة وقابلة للتحميل دائماً
-- الوصول: client, admin
-
-**برنامج الولاء (Loyalty)**
-- كل 100 ريال = 10 نقاط ولاء
-- 500 نقطة = 50 ريال خصم
-- الوصول: client
-
-**الحضور والانصراف (Attendance)**
-- تسجيل الحضور بالبصمة أو الكود
-- حساب ساعات العمل والإضافية تلقائياً
-- تقارير شهرية للمحاسبة
-- الوصول: admin, manager, موظفون
-
-**الرواتب (Payroll)**
-- راتب أساسي، بدلات، خصومات
-- إرسال إيصالات الراتب تلقائياً
-- الوصول: admin, accountant
-
-**QMeet (اجتماعات فيديو)**
-- منصة مؤتمرات فيديو مدمجة داخل النظام
-- إنشاء غرف اجتماع، تسجيل جلسات
-- الوصول: admin, manager, employee
-
-**مساحة العمل (ProjectWorkspace)**
-- مساحة تعاون للمشاريع مع العملاء
-- ملفات، تعليقات، جدول زمني، تقدم
-- الوصول: admin, employee, client
-
-**الإشعارات (Notifications)**
-- إشعارات فورية عبر WebSocket
-- دعم إشعارات الدفع (Web Push + PWA)
-- نظام قراءة/غير مقروء
-
-**PWA (Progressive Web App)**
-- تثبيت التطبيق على الجهاز مباشرة
-- يعمل بدون إنترنت (محدود)
-- إشعارات دفع على iOS وAndroid
-
-=== الأدوار في النظام ===
-- **admin**: صلاحيات كاملة على كل شيء
-- **manager**: إدارة الفريق والمشاريع والعملاء
-- **developer**: المشاريع والمهام التقنية
-- **designer**: مهام التصميم والملفات الإبداعية
-- **support**: الدعم الفني والتواصل مع العملاء
-- **sales**: إدارة المبيعات والعملاء الجدد
-- **sales_manager**: إدارة فريق المبيعات والتقارير
-- **accountant**: المالية والفواتير والرواتب
-- **merchant**: إدارة المتاجر والمنتجات
-- **client**: العميل — يتابع مشاريعه وطلباته ومحفظته
-
-=== تقنيات المنصة ===
-- Backend: Node.js + Express + TypeScript
-- Frontend: React + Vite + Tailwind CSS
-- Database: MongoDB (Mongoose)
-- Real-time: WebSocket (ws)
-- Auth: Passport.js (محلي + Google OAuth)
-- PWA: Service Worker + Web Push
-- Video: QMeet (WebRTC مدمج)
-- AI: OpenAI GPT عبر OpenRouter
-- Email: SMTP مع قوالب HTML احترافية
-- Payment: PayPal + تحويل بنكي + محفظة إلكترونية
-
-${userCtx}
-
-=== تعليمات الرد ===
-1. **اللغة**: العربية دائماً مع لمسة خليجية طبيعية (هلا، يزاك الله، ما شاء الله)
-2. **الإبداع**: ردودك مخصصة وإبداعية — لا ردوداً متكررة أو مملة
-3. **الدقة**: معلوماتك عن النظام دقيقة 100% — لا تخمّن
-4. **الاقتراحات**: عند الإجابة، أضف 2-3 اقتراحات للمتابعة في نهاية ردك بصيغة: \`[اقتراح: نص الاقتراح]\`
-5. **الإجراءات**: عند الإشارة لصفحة معينة، استخدم صيغة: \`[انتقال: /url | نص الزر]\`
-6. **التحليل**: عند طلب تحليل البيانات، قدّم رؤى قابلة للتطبيق
-7. **الإبداع التصميمي**: عند طلب اقتراحات إبداعية، كن خلاّقاً ومبتكراً
-8. **الطوارئ**: إذا لم تعرف شيئاً، اعترف بذلك بلباقة وأعطِ بديلاً مفيداً`;
+== معرفتك بالمنصة ==
+QIROX Studio — وكالة تقنية سعودية | الباقات: لايت (5,000 ريال)، برو (10,000 ريال)، إنفينيت (20,000 ريال)
+الأدوار: admin, manager, developer, designer, support, sales, sales_manager, accountant, merchant, client
+طرق الدفع: محفظة Qirox Pay، تحويل بنكي، PayPal، تقسيط
+${systemData ? `بيانات النظام: ${JSON.stringify(systemData)}` : ""}`;
 }
 
-/* ─── Parse AI response for actions and suggestions ─── */
-function parseResponse(text: string): { reply: string; suggestions: string[]; action?: string; data?: any; navigateTo?: string; navigateLabel?: string } {
-  const suggestions: string[] = [];
-  let action: string | undefined;
-  let navigateTo: string | undefined;
-  let navigateLabel: string | undefined;
+/* ─── Core Chat Handler ─── */
+async function handleChat(req: any, res: any) {
+  const { message, sessionId, context } = req.body;
+  if (!message?.trim()) return res.json({ reply: "الرجاء إدخال رسالة." });
 
-  let reply = text;
+  const userId = req.user?._id ? String(req.user._id) : undefined;
+  const userRole = context?.role || req.user?.role || "guest";
+  const userName = context?.name || req.user?.fullName || req.user?.username;
 
-  // Extract suggestions [اقتراح: ...]
-  const suggestionRegex = /\[اقتراح:\s*(.+?)\]/g;
-  let match;
-  while ((match = suggestionRegex.exec(text)) !== null) {
-    suggestions.push(match[1].trim());
+  const session = getSession(sessionId || "anon", userId, userRole);
+  session.history.push({ role: "user", content: message.trim() });
+  if (session.history.length > 40) session.history = session.history.slice(-40);
+
+  try {
+    /* ── Round 1: AI decides which tools to call ── */
+    const messages: any[] = [
+      { role: "system", content: buildSystemPrompt(userRole, userName) },
+      ...session.history.slice(-20),
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages,
+      tools: QIROX_TOOLS,
+      tool_choice: "auto",
+      temperature: 0.65,
+      max_tokens: 1200,
+    });
+
+    const choice = completion.choices[0];
+    let toolResults: { name: string; result: any }[] = [];
+
+    /* ── Round 2: Execute tool calls if any ── */
+    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+      const toolMessages: any[] = [
+        { role: "system", content: buildSystemPrompt(userRole, userName) },
+        ...session.history.slice(-20),
+        choice.message, // assistant message with tool_calls
+      ];
+
+      const executionResults = await Promise.all(
+        choice.message.tool_calls.map(async (tc) => {
+          const args = JSON.parse(tc.function.arguments || "{}");
+          const result = await executeTool(tc.function.name, args, userId, userRole);
+          toolResults.push({ name: tc.function.name, result });
+          return {
+            role: "tool" as const,
+            tool_call_id: tc.id,
+            content: JSON.stringify(result.success ? result.data : { error: result.error }),
+          };
+        })
+      );
+
+      toolMessages.push(...executionResults);
+
+      const finalCompletion = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: toolMessages,
+        temperature: 0.65,
+        max_tokens: 1200,
+      });
+
+      const finalReply = finalCompletion.choices[0].message.content || "تم تنفيذ العملية.";
+
+      // store in history
+      session.history.push({ role: "assistant", content: finalReply });
+
+      // extract suggestions
+      const suggestions: string[] = [];
+      const sugMatch = finalReply.match(/\[اقتراح:([^\]]+)\]/g);
+      if (sugMatch) sugMatch.forEach(m => suggestions.push(m.replace(/\[اقتراح:|]/g, "").trim()));
+
+      // Build the primary display from first tool result with a display type
+      const displayResult = toolResults.find(t => t.result?.display?.type);
+
+      return res.json({
+        reply: finalReply.replace(/\[اقتراح:[^\]]+\]/g, "").trim(),
+        suggestions,
+        action: displayResult ? "TOOL_RESULT" : undefined,
+        toolName: displayResult?.name,
+        toolData: displayResult?.result?.data,
+        displayType: displayResult?.result?.display?.type,
+        allTools: toolResults.map(t => ({ name: t.name, success: t.result.success, displayType: t.result?.display?.type, data: t.result?.data })),
+      });
+    }
+
+    /* ── No tool calls — pure text response ── */
+    const textReply = choice.message.content || "عذراً، لم أفهم طلبك.";
+    session.history.push({ role: "assistant", content: textReply });
+
+    const suggestions: string[] = [];
+    const sugMatch = textReply.match(/\[اقتراح:([^\]]+)\]/g);
+    if (sugMatch) sugMatch.forEach(m => suggestions.push(m.replace(/\[اقتراح:|]/g, "").trim()));
+
+    // Check for navigate action
+    const navMatch = textReply.match(/\[انتقال:([^|]+)\|([^\]]+)\]/);
+    if (navMatch) {
+      return res.json({
+        reply: textReply.replace(/\[انتقال:[^\]]+\]/g, "").replace(/\[اقتراح:[^\]]+\]/g, "").trim(),
+        suggestions,
+        action: "NAVIGATE",
+        data: { url: navMatch[1].trim(), label: navMatch[2].trim() },
+      });
+    }
+
+    return res.json({ reply: textReply.replace(/\[اقتراح:[^\]]+\]/g, "").trim(), suggestions });
+  } catch (err: any) {
+    console.error("[AI Chat Error]", err.message);
+    return res.json({ reply: "⚠️ حدث خطأ في الذكاء الاصطناعي. تحقق من الإنترنت وحاول مجدداً." });
   }
-  reply = reply.replace(/\[اقتراح:\s*.+?\]/g, "").trim();
-
-  // Extract navigation [انتقال: /url | نص]
-  const navRegex = /\[انتقال:\s*([^\|]+)\|([^\]]+)\]/g;
-  const navMatch = navRegex.exec(text);
-  if (navMatch) {
-    navigateTo = navMatch[1].trim();
-    navigateLabel = navMatch[2].trim();
-    action = "NAVIGATE";
-    reply = reply.replace(/\[انتقال:\s*[^\]]+\]/g, "").trim();
-  }
-
-  return { reply, suggestions, action, navigateTo, navigateLabel };
 }
 
-/* ─── Main message processor ─── */
-async function processMessage(
-  sessionId: string,
-  message: string,
-  context: {
-    userId?: string;
-    userRole?: string;
-    userName?: string;
-    currentPage?: string;
-    systemData?: any;
+/* ─── Analytics endpoint ─── */
+async function handleAnalyze(req: any, res: any) {
+  const { metric, period } = req.body;
+  try {
+    const { OrderModel, UserModel, ProjectModel } = await import("./models");
+    const [totalOrders, activeOrders, completedOrders, totalClients] = await Promise.all([
+      OrderModel.countDocuments({}), OrderModel.countDocuments({ status: "active" }),
+      OrderModel.countDocuments({ status: "completed" }), UserModel.countDocuments({ role: "client" }),
+    ]);
+    const prompt = `أنت محلل بيانات لمنصة QIROX Studio. بناء على:
+- إجمالي الطلبات: ${totalOrders} | نشطة: ${activeOrders} | مكتملة: ${completedOrders}
+- إجمالي العملاء: ${totalClients}
+المطلوب: ${metric || "تحليل عام للمنصة"}. أعط تحليلاً ذكياً ومقترحات عملية بالعربية.`;
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.6, max_tokens: 800,
+    });
+    res.json({ analysis: comp.choices[0].message.content });
+  } catch (err: any) {
+    res.json({ analysis: "تعذّر إجراء التحليل حالياً." });
   }
-): Promise<{ reply: string; suggestions?: string[]; action?: string; data?: any }> {
-  const session = getSession(sessionId, context.userId, context.userRole);
-  const systemPrompt = buildSystemPrompt(context.userRole, context.userName, context.systemData);
-
-  // Check if web search is needed
-  let searchContext = "";
-  const needsSearch = /ابحث|بحث عن|search|ما هو|معلومة عن/.test(message.toLowerCase());
-  if (needsSearch) {
-    searchContext = await searchWeb(message);
-  }
-
-  // Build messages array
-  const messages: any[] = [
-    { role: "system", content: systemPrompt },
-  ];
-
-  // Add conversation history (last 12 messages)
-  const recentHistory = session.history.slice(-12);
-  for (const h of recentHistory) {
-    messages.push({ role: h.role, content: h.content });
-  }
-
-  // Add current message with optional search context
-  let userMessage = message;
-  if (searchContext) {
-    userMessage = `${message}\n\n[نتائج بحث من الإنترنت]:\n${searchContext}`;
-  }
-  if (context.currentPage) {
-    userMessage = `[الصفحة الحالية: ${context.currentPage}]\n${userMessage}`;
-  }
-
-  messages.push({ role: "user", content: userMessage });
-
-  // Call OpenAI
-  const completion = await openai.chat.completions.create({
-    model: AI_MODEL,
-    messages,
-    max_tokens: 1000,
-    temperature: 0.75,
-  });
-
-  const aiText = completion.choices[0]?.message?.content || "عذراً، لم أستطع المعالجة. حاول مرة أخرى.";
-
-  // Save to history
-  session.history.push({ role: "user", content: message });
-  session.history.push({ role: "assistant", content: aiText });
-
-  // Keep history bounded (last 30 messages)
-  if (session.history.length > 30) {
-    session.history = session.history.slice(-30);
-  }
-
-  // Parse response for actions and suggestions
-  const parsed = parseResponse(aiText);
-
-  const result: any = { reply: parsed.reply };
-  if (parsed.suggestions.length) result.suggestions = parsed.suggestions;
-  if (parsed.action) result.action = parsed.action;
-  if (parsed.navigateTo) result.data = { url: parsed.navigateTo, label: parsed.navigateLabel };
-
-  return result;
 }
 
-/* ─── Register routes ─── */
+/* ─── Content generation endpoint ─── */
+async function handleGenerate(req: any, res: any) {
+  const { type, context: ctx, language = "ar" } = req.body;
+  const templates: Record<string, string> = {
+    proposal: "اكتب عرض سعر احترافي لمشروع تطوير موقع ويب",
+    email: "اكتب بريداً إلكترونياً احترافياً للتواصل مع عميل",
+    report: "اكتب تقريراً إدارياً احترافياً",
+    social: "اكتب منشوراً احترافياً لوسائل التواصل الاجتماعي",
+    description: "اكتب وصفاً احترافياً",
+  };
+  const basePrompt = templates[type] || "اكتب محتوى احترافياً";
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: "user", content: `${basePrompt} لـ QIROX Studio. ${ctx ? `السياق: ${ctx}` : ""}. اللغة: ${language === "ar" ? "العربية" : "الإنجليزية"}` }],
+      temperature: 0.8, max_tokens: 600,
+    });
+    res.json({ content: comp.choices[0].message.content });
+  } catch {
+    res.json({ content: "تعذّر توليد المحتوى حالياً." });
+  }
+}
+
+/* ─── Custom Order endpoint ─── */
+async function handleCustomOrder(req: any, res: any) {
+  const { description, budget, timeline, contactInfo } = req.body;
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{
+        role: "user",
+        content: `أنت مستشار أعمال في QIROX Studio. العميل يريد: "${description}"، الميزانية: ${budget || "غير محددة"}، الجدول الزمني: ${timeline || "غير محدد"}. أعطه ردًا احترافياً يوضح كيف يمكن QIROX مساعدته والخطوات التالية.`,
+      }],
+      temperature: 0.7, max_tokens: 500,
+    });
+    res.json({ reply: comp.choices[0].message.content, success: true });
+  } catch {
+    res.json({ reply: "شكراً لاهتمامك! سيتواصل معك فريقنا قريباً.", success: true });
+  }
+}
+
+/* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
-
-  // POST /api/ai/message — main chat endpoint
-  app.post("/api/ai/message", async (req, res) => {
-    try {
-      const { sessionId, message, currentPage, systemData } = req.body;
-      if (!sessionId || !message?.trim()) {
-        return res.status(400).json({ error: "sessionId and message are required" });
-      }
-
-      const user = (req as any).user;
-      const result = await processMessage(sessionId, message.trim(), {
-        userId: user?._id?.toString() || user?.id?.toString(),
-        userRole: user?.role,
-        userName: user?.fullName || user?.username,
-        currentPage,
-        systemData,
-      });
-
-      res.json(result);
-    } catch (err: any) {
-      console.error("[QIROX AI] Error:", err?.message || err);
-      res.json({ reply: "عذراً، حدث خطأ مؤقت في مساعد الذكاء الاصطناعي. حاول مرة أخرى." });
-    }
-  });
-
-  // POST /api/ai/custom-order — save custom order from AI conversation
-  app.post("/api/ai/custom-order", async (req, res) => {
-    try {
-      const { description, features, budget, timeline } = req.body;
-      const user = (req as any).user;
-      const { OrderModel } = await import("./models");
-
-      const orderData = {
-        clientId: user?._id || null,
-        clientName: user?.fullName || user?.username || "زائر",
-        clientEmail: user?.email || "",
-        status: "pending",
-        type: "custom",
-        notes: `طلب مخصص عبر QIROX AI:\n\nالوصف: ${description}\nالميزات: ${features}\nالميزانية: ${budget}\nالجدول الزمني: ${timeline}`,
-        totalAmount: 0,
-        source: "qirox-ai",
-        createdAt: new Date(),
-      };
-
-      const order = await OrderModel.create(orderData);
-
-      sendDirectEmail(
-        "info@qiroxstudio.online",
-        "QIROX",
-        `طلب مخصص جديد عبر QIROX AI`,
-        `عميل: ${orderData.clientName}\nالبريد: ${orderData.clientEmail}\n\n${orderData.notes}`
-      ).catch(console.error);
-
-      res.json({ success: true, orderId: order._id });
-    } catch (err) {
-      console.error("[AI Custom Order]", err);
-      res.status(500).json({ error: "فشل في إنشاء الطلب" });
-    }
-  });
-
-  // POST /api/ai/analyze — business analytics insight (admin/manager)
-  app.post("/api/ai/analyze", async (req, res) => {
-    try {
-      const user = (req as any).user;
-      if (!["admin", "manager"].includes(user?.role)) {
-        return res.status(403).json({ error: "غير مصرح" });
-      }
-
-      const { data, question } = req.body;
-      const systemPrompt = buildSystemPrompt(user.role, user.fullName || user.username);
-
-      const completion = await openai.chat.completions.create({
-        model: AI_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `قم بتحليل هذه البيانات وأجب على السؤال التالي بشكل احترافي وإبداعي:\n\nالسؤال: ${question}\n\nالبيانات:\n${JSON.stringify(data, null, 2)}`,
-          },
-        ],
-        max_tokens: 800,
-        temperature: 0.6,
-      });
-
-      const analysis = completion.choices[0]?.message?.content || "تعذّر تحليل البيانات.";
-      res.json({ analysis });
-    } catch (err) {
-      console.error("[AI Analyze]", err);
-      res.status(500).json({ error: "فشل التحليل" });
-    }
-  });
-
-  // POST /api/ai/generate — creative content generation
-  app.post("/api/ai/generate", async (req, res) => {
-    try {
-      const { type, context: ctx, lang } = req.body;
-      const user = (req as any).user;
-
-      const prompts: Record<string, string> = {
-        project_description: `اكتب وصفاً احترافياً وجذاباً لمشروع برمجي بناءً على هذه المعلومات:\n${ctx}`,
-        email_template: `اكتب قالب بريد إلكتروني احترافي بالعربية لـ:\n${ctx}`,
-        proposal: `اكتب عرض سعر احترافي ومقنع لعميل بناءً على:\n${ctx}`,
-        social_post: `اكتب منشور جذاب لوسائل التواصل الاجتماعي عن:\n${ctx}`,
-        report_summary: `لخّص هذه البيانات في تقرير موجز ومفيد:\n${ctx}`,
-      };
-
-      const prompt = prompts[type] || `اكتب محتوى إبداعياً عن: ${ctx}`;
-
-      const completion = await openai.chat.completions.create({
-        model: AI_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: `أنت كاتب محتوى إبداعي ومحترف لشركة QIROX Studio. ${lang === "en" ? "Respond in English." : "أجب بالعربية."}`,
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 600,
-        temperature: 0.8,
-      });
-
-      const content = completion.choices[0]?.message?.content || "";
-      res.json({ content });
-    } catch (err) {
-      console.error("[AI Generate]", err);
-      res.status(500).json({ error: "فشل إنشاء المحتوى" });
-    }
-  });
-
-  // DELETE /api/ai/session/:sessionId — reset conversation
-  app.delete("/api/ai/session/:sessionId", (req, res) => {
-    sessions.delete(req.params.sessionId);
-    res.json({ ok: true });
+  app.post("/api/ai/message", handleChat);
+  app.post("/api/ai/chat", handleChat); // legacy alias
+  app.post("/api/ai/analyze", handleAnalyze);
+  app.post("/api/ai/generate", handleGenerate);
+  app.post("/api/ai/custom-order", handleCustomOrder);
+  app.delete("/api/ai/session/:id", (req, res) => {
+    sessions.delete(req.params.id);
+    res.json({ success: true });
   });
 }
