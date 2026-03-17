@@ -1053,7 +1053,7 @@ export async function registerRoutes(
   app.post("/api/attendance/check-out", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    const { checkOutNotes, achievements } = req.body;
+    const { checkOutNotes, achievements } = req.body || {};
     const { AttendanceModel, UserModel, NotificationModel, EmployeeProfileModel } = await import("./models");
     const { pushToUser } = await import("./ws");
     const latest = await AttendanceModel.findOne({ userId: user.id, checkOut: null });

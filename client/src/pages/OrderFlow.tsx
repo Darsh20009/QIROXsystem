@@ -14,7 +14,7 @@ import {
   Upload, X, FileText, Image, Film, CreditCard,
   Globe, Store, GraduationCap, UtensilsCrossed, Building2,
   Dumbbell, Zap, Star, Package, BarChart, Shield, Sparkles,
-  Copy, ClipboardCheck, Lock, Plus, Minus,
+  Copy, ClipboardCheck, ClipboardList, Lock, Plus, Minus,
   ShoppingCart, BadgeCheck, Crown, Layers, Smartphone, Map,
   Infinity as InfinityIcon, Wallet, BanknoteIcon, Hash, LayoutGrid,
   Users, Calendar, Palette, ChevronDown, ChevronUp, MessageCircle,
@@ -516,6 +516,15 @@ export default function OrderFlow() {
     });
     if (next === 0) {
       setDeviceBundles(prev => { const u = { ...prev }; delete u[pid]; return u; });
+    } else if (curr === 0) {
+      // Auto-select bundle matching current plan when product is first added
+      const product = products.find((p: any) => p.id === pid);
+      if (product?.planBundles?.length > 0) {
+        const matchIdx = product.planBundles.findIndex((b: any) => b.planTier === selectedPlan);
+        if (matchIdx >= 0) {
+          setDeviceBundles(prev => ({ ...prev, [pid]: matchIdx }));
+        }
+      }
     }
   };
 
@@ -698,6 +707,30 @@ export default function OrderFlow() {
       <div className="max-w-3xl mx-auto px-4 pt-16 pb-28">
         {/* Step indicator */}
         <StepIndicator step={step} lang={lang} />
+
+        {/* ── Plan Context Banner (steps 2, 3, 4) ── */}
+        {step > 1 && selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-6 flex items-center gap-3 bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl px-4 py-3 shadow-sm"
+          >
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-violet-500 to-purple-600"} flex items-center justify-center shrink-0`}>
+              {(() => { const Icon = TIER_VISUAL[selectedPlan]?.icon || Crown; return <Icon className="w-4 h-4 text-white" />; })()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-black/35 dark:text-white/35 font-medium">{lang === "ar" ? "الباقة المختارة" : "Selected Package"}</p>
+              <p className="text-sm font-black text-black dark:text-white">
+                {PLAN_LABELS[selectedPlan]} {segmentFromUrl && `— ${SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl}`}
+              </p>
+            </div>
+            {planPrice > 0 && (
+              <div className="text-right shrink-0">
+                <p className="font-black text-black dark:text-white flex items-center gap-1">{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-60" /></p>
+                {periodFromUrl && <p className="text-[10px] text-black/35 dark:text-white/35">{PERIOD_LABELS_TR[periodFromUrl]}</p>}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Step content card */}
         <AnimatePresence mode="wait">
@@ -991,84 +1024,224 @@ export default function OrderFlow() {
               </div>
             )}
 
-            {/* ─── STEP 4: Meeting ─── */}
+            {/* ─── STEP 4: Payment & Order Summary ─── */}
             {step === 4 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
                   <p className="text-[11px] font-bold text-black/25 dark:text-white/25 uppercase tracking-[3px] mb-2">{lang === "ar" ? "الخطوة 4 من 4" : "Step 4 of 4"}</p>
-                  <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "تحديد موعد الاجتماع" : "Schedule Your Meeting"}</h2>
-                  <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "اختر 3 أوقات و 3 أيام مناسبة لك" : "Choose 3 preferred time slots and days"}</p>
+                  <h2 className="text-3xl font-black text-black dark:text-white mb-2">{lang === "ar" ? "الدفع وإتمام الطلب" : "Payment & Checkout"}</h2>
+                  <p className="text-black/40 dark:text-white/40 text-sm">{lang === "ar" ? "راجع طلبك وأتمّ عملية الدفع" : "Review your order and complete payment"}</p>
                 </div>
 
-                {/* Meeting Scheduling UI */}
-                {[{
-                  title: lang === "ar" ? "الأوقات المفضلة (اختر 3)" : "Preferred Times (choose 3)",
-                  options: ["9:00 صباحاً", "11:00 صباحاً", "1:00 ظهراً", "3:00 عصراً", "5:00 مساءً", "7:00 مساءً"],
-                  selected: meetingSlots,
-                  setSelected: setMeetingSlots,
-                  max: 3,
-                }, {
-                  title: lang === "ar" ? "الأيام المفضلة (اختر 3)" : "Preferred Days (choose 3)",
-                  options: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"],
-                  selected: meetingDays,
-                  setSelected: setMeetingDays,
-                  max: 3,
-                }].map(({ title, options, selected, setSelected, max }) => (
-                  <div key={title} className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] p-5">
-                    <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" /> {title}
+                {/* ── Order Summary Card ── */}
+                <div className="bg-black dark:bg-gray-900 rounded-3xl overflow-hidden shadow-xl">
+                  <div className="px-6 py-5">
+                    <p className="text-xs font-black text-white/40 uppercase tracking-[3px] mb-5 flex items-center gap-1.5">
+                      <ShoppingCart className="w-3.5 h-3.5" /> {lang === "ar" ? "ملخص الطلب" : "Order Summary"}
+                    </p>
+                    <div className="space-y-3">
+                      {/* Plan row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${TIER_VISUAL[selectedPlan]?.headerGrad || "from-violet-500 to-purple-600"} flex items-center justify-center shrink-0`}>
+                            {(() => { const Icon = TIER_VISUAL[selectedPlan]?.icon || Crown; return <Icon className="w-3.5 h-3.5 text-white" />; })()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Plan`}</p>
+                            {segmentFromUrl && <p className="text-[10px] text-white/40">{SEG_LABELS_TR[segmentFromUrl] || segmentFromUrl}</p>}
+                          </div>
+                        </div>
+                        <span className="font-black text-white flex items-center gap-1">{planPrice.toLocaleString()} <SARIcon size={11} className="opacity-50" /></span>
+                      </div>
+                      {/* Add-ons rows */}
+                      {selectedAddons.map(id => {
+                        const a = extraAddons.find((ad: any) => ad.id === id);
+                        if (!a) return null;
+                        return (
+                          <div key={id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><Plus className="w-3 h-3 text-white/70" /></div>
+                              <p className="text-sm text-white/80">{a.nameAr}</p>
+                            </div>
+                            <span className="text-sm font-bold text-white/80 flex items-center gap-1">{a.price.toLocaleString()} <SARIcon size={10} className="opacity-40" /></span>
+                          </div>
+                        );
+                      })}
+                      {/* Devices rows */}
+                      {Object.entries(deviceCart).filter(([,q]) => q > 0).map(([pid, qty]) => {
+                        const p = products.find((pr: any) => pr.id === pid);
+                        const bundleIdx = deviceBundles[pid];
+                        const bundle = typeof bundleIdx === "number" ? p?.planBundles?.[bundleIdx] : null;
+                        if (!p) return null;
+                        return (
+                          <div key={pid}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0"><Package className="w-3 h-3 text-white/70" /></div>
+                                <p className="text-sm text-white/80">{p.nameAr || p.name} ×{qty}</p>
+                              </div>
+                              <span className="text-sm font-bold text-white/80 flex items-center gap-1">{(p.price * qty).toLocaleString()} <SARIcon size={10} className="opacity-40" /></span>
+                            </div>
+                            {bundle && !bundle.isFree && bundle.customPrice > 0 && (
+                              <div className="flex items-center justify-between mt-1 pr-10">
+                                <p className="text-xs text-white/40 flex items-center gap-1"><Crown className="w-3 h-3" /> {bundle.planNameAr}</p>
+                                <span className="text-xs text-white/40 flex items-center gap-1">{bundle.customPrice.toLocaleString()} <SARIcon size={9} className="opacity-40" /></span>
+                              </div>
+                            )}
+                            {bundle?.isFree && (
+                              <div className="pr-10 mt-1">
+                                <span className="text-[10px] text-emerald-400 flex items-center gap-1"><Check className="w-3 h-3" /> {bundle.planNameAr} — مجانية مع الباقة</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Divider + Total */}
+                    <div className="border-t border-white/10 mt-5 pt-4">
+                      {/* Wallet discount */}
+                      {useWallet && effectiveWalletAmt > 0 && (
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-violet-300 flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" /> {lang === "ar" ? "خصم المحفظة" : "Wallet Discount"}</span>
+                          <span className="text-sm font-bold text-violet-300 flex items-center gap-1">- {effectiveWalletAmt.toLocaleString()} <SARIcon size={10} /></span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-white/50">{lang === "ar" ? "الإجمالي" : "Total"}</span>
+                        <span className="text-2xl font-black text-white flex items-center gap-2">{remainingAfterWallet.toLocaleString()} <SARIcon size={16} className="opacity-70" /></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Project Details ── */}
+                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] p-5 space-y-4">
+                  <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-wider flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5" /> {lang === "ar" ? "تفاصيل المشروع" : "Project Details"}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-black/50 dark:text-white/50 mb-1 block">{lang === "ar" ? "اسم المشروع / الشركة" : "Project / Business Name"}</Label>
+                      <Input value={formData.businessName} onChange={e => setFormData(f => ({ ...f, businessName: e.target.value }))}
+                        placeholder={lang === "ar" ? "مثال: مطعم الأصيل" : "e.g. My Business"} className="rounded-xl h-10 text-sm" data-testid="input-business-name" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-black/50 dark:text-white/50 mb-1 block">{lang === "ar" ? "رقم الجوال" : "Phone Number"}</Label>
+                      <Input value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
+                        placeholder="05xxxxxxxx" className="rounded-xl h-10 text-sm" data-testid="input-phone" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-black/50 dark:text-white/50 mb-1 block">{lang === "ar" ? "ملاحظات إضافية (اختياري)" : "Additional Notes (optional)"}</Label>
+                    <Textarea value={formData.requiredFunctions} onChange={e => setFormData(f => ({ ...f, requiredFunctions: e.target.value }))}
+                      placeholder={lang === "ar" ? "أي متطلبات أو ملاحظات خاصة بمشروعك..." : "Any special requirements for your project..."}
+                      className="rounded-xl text-sm resize-none" rows={3} data-testid="textarea-notes" />
+                  </div>
+                  {/* Meeting Slots */}
+                  <div>
+                    <p className="text-xs text-black/40 dark:text-white/40 font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" /> {lang === "ar" ? "أوقات الاجتماع المفضلة (اختياري)" : "Preferred Meeting Times (optional)"}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {options.map(opt => {
-                        const isSel = selected.includes(opt);
-                        const canSelect = !isSel && selected.length >= max;
+                      {["9:00 صباحاً","11:00 صباحاً","1:00 ظهراً","3:00 عصراً","5:00 مساءً","7:00 مساءً"].map(opt => {
+                        const isSel = meetingSlots.includes(opt);
                         return (
-                          <button
-                            key={opt}
-                            onClick={() => {
-                              if (isSel) { setSelected((p: string[]) => p.filter((v: string) => v !== opt)); }
-                              else if (!canSelect) { setSelected((p: string[]) => [...p, opt]); }
-                            }}
-                            disabled={canSelect}
-                            className={`py-3 px-2 rounded-2xl text-sm font-bold border-2 transition-all text-center ${
-                              isSel ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                                : canSelect ? "border-black/[0.04] dark:border-white/[0.04] text-black/20 dark:text-white/20 cursor-not-allowed"
-                                : "border-black/[0.07] dark:border-white/[0.07] text-black dark:text-white hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950"
-                            }`}
-                            data-testid={`meeting-opt-${opt}`}
-                          >
+                          <button key={opt} data-testid={`meeting-slot-${opt}`}
+                            onClick={() => setMeetingSlots(p => isSel ? p.filter(v => v !== opt) : p.length < 3 ? [...p, opt] : p)}
+                            className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center ${isSel ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300" : "border-black/[0.08] dark:border-white/[0.08] text-black/50 dark:text-white/50 hover:border-violet-300"}`}>
                             {opt}
-                            {isSel && <Check className="w-3 h-3 mx-auto mt-1 opacity-70" />}
                           </button>
                         );
                       })}
                     </div>
-                    <p className="text-xs text-black/30 dark:text-white/30 mt-3 text-center">
-                      {selected.length}/{max} {lang === "ar" ? "تم اختيارهم" : "selected"}
+                  </div>
+                </div>
+
+                {/* ── Wallet Option ── */}
+                {user && walletBalance > 0 && (
+                  <div className={`rounded-3xl border-2 p-5 transition-all cursor-pointer ${useWallet ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
+                    onClick={() => setUseWallet(v => !v)} data-testid="toggle-wallet">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${useWallet ? "bg-violet-500" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
+                        <Wallet className={`w-5 h-5 ${useWallet ? "text-white" : "text-black/40 dark:text-white/40"}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-sm text-black dark:text-white">{lang === "ar" ? "استخدام رصيد المحفظة" : "Use Wallet Balance"}</p>
+                        <p className="text-xs text-black/40 dark:text-white/40">{lang === "ar" ? `رصيدك: ${walletBalance.toLocaleString()} ر.س` : `Balance: ${walletBalance.toLocaleString()} SAR`}</p>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${useWallet ? "border-violet-500 bg-violet-500" : "border-black/20 dark:border-white/20"}`}>
+                        {useWallet && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                    {useWallet && (
+                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800/40">
+                        <Label className="text-xs text-violet-700 dark:text-violet-300 mb-2 block">{lang === "ar" ? `المبلغ من المحفظة (الحد الأقصى ${maxWalletUsable.toLocaleString()} ر.س)` : `Wallet Amount (max ${maxWalletUsable.toLocaleString()} SAR)`}</Label>
+                        <Input type="number" min={0} max={maxWalletUsable} value={walletAmount}
+                          onChange={e => setWalletAmount(Math.min(Number(e.target.value), maxWalletUsable))}
+                          className="rounded-xl h-10 text-sm border-violet-300 dark:border-violet-700"
+                          onClick={e => e.stopPropagation()} data-testid="input-wallet-amount" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Bank Transfer Details ── */}
+                {!fullyPaidByWallet && (
+                  <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
+                    <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-b border-black/[0.04] dark:border-white/[0.04]">
+                      <p className="text-xs font-black text-black/50 dark:text-white/50 uppercase tracking-wider flex items-center gap-1.5">
+                        <BanknoteIcon className="w-3.5 h-3.5 text-emerald-600" /> {lang === "ar" ? "التحويل البنكي" : "Bank Transfer"}
+                      </p>
+                    </div>
+                    <div className="px-5 py-5 space-y-3">
+                      {[
+                        { label: lang === "ar" ? "البنك" : "Bank", value: bank.bankName },
+                        { label: lang === "ar" ? "اسم المستفيد" : "Beneficiary", value: bank.beneficiaryName },
+                        { label: "IBAN", value: bank.iban },
+                        ...(bank.accountNumber ? [{ label: lang === "ar" ? "رقم الحساب" : "Account #", value: bank.accountNumber }] : []),
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-center justify-between py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                          <span className="text-xs text-black/40 dark:text-white/40">{label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-black dark:text-white font-mono">{value}</span>
+                            <button onClick={() => { navigator.clipboard.writeText(value); setCopiedIban(true); setTimeout(() => setCopiedIban(false), 2000); }}
+                              className="text-black/30 hover:text-black dark:text-white/30 dark:hover:text-white transition-colors" data-testid="btn-copy-iban">
+                              {copiedIban ? <ClipboardCheck className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {bank.notes && <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 rounded-xl px-3 py-2">{bank.notes}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Upload Payment Proof ── */}
+                {!fullyPaidByWallet && (
+                  <FileUploadField
+                    label={lang === "ar" ? "إيصال الدفع (اختياري — يمكن رفعه لاحقاً)" : "Payment Proof (optional — can upload later)"}
+                    field="paymentProof" files={uploadedFiles.paymentProof}
+                    onUpload={handleFileUpload} onRemove={handleFileRemove}
+                  />
+                )}
+
+                {bank.notes && fullyPaidByWallet && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4">
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                      <Check className="w-4 h-4 shrink-0" />
+                      {lang === "ar" ? "سيُخصم المبلغ كاملاً من رصيد محفظتك." : "The full amount will be deducted from your wallet balance."}
                     </p>
                   </div>
-                ))}
+                )}
 
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
                   <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
                     <Clock className="w-4 h-4 shrink-0 mt-0.5" />
                     {lang === "ar"
-                      ? "سيتواصل معك فريق QIROX لتأكيد موعد الاجتماع خلال 24 ساعة بعد إتمام الدفع."
-                      : "The QIROX team will contact you to confirm the meeting within 24 hours after payment."}
+                      ? "سيتواصل معك فريق QIROX لتأكيد الطلب خلال 24 ساعة من استلام الدفع."
+                      : "The QIROX team will contact you within 24 hours after receiving payment."}
                   </p>
                 </div>
-
-                {/* Order recap */}
-                <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden">
-                  <div className="px-5 py-4 bg-black/[0.02] dark:bg-white/[0.02] border-b border-black/[0.05] dark:border-white/[0.05]">
-                    <p className="text-xs font-black text-black/40 dark:text-white/40 uppercase tracking-wider">{lang === "ar" ? "ملخص الطلب" : "Order Summary"}</p>
-                  </div>
-                  <div className="px-5 py-4 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-black dark:text-white">{lang === "ar" ? `باقة ${PLAN_LABELS[selectedPlan]}` : `${PLAN_LABELS[selectedPlan]} Plan`}</span>
-                    <span className="font-black text-black dark:text-white flex items-center gap-1">{grandTotal.toLocaleString()} <SARIcon size={11} className="opacity-60" /></span>
-                  </div>
-                </div>
-
               </div>
             )}
           </motion.div>
@@ -1095,18 +1268,14 @@ export default function OrderFlow() {
           ) : (
             <Button
               onClick={() => {
-                const wizardData = {
-                  planTier: selectedPlan, planPrice, planSegment: segmentFromUrl, planPeriod: periodFromUrl,
-                  selectedAddons, deviceCart, deviceBundles, formData,
-                  uploadedFiles: Object.fromEntries(Object.entries(uploadedFiles).map(([k, v]) => [k, v.map((f: any) => f.url)])),
-                  meetingSlots, meetingDays, grandTotal,
-                  businessName: formData.businessName, sector: formData.sector,
-                };
-                sessionStorage.setItem("qiroxWizardData", JSON.stringify(wizardData));
-                setLocation("/checkout");
+                if (!user) { setLocation("/auth?redirect=/order"); return; }
+                submitMutation.mutate();
               }}
-              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30" data-testid="button-submit">
-              {lang === "ar" ? <>الانتقال للدفع <ArrowLeft className="w-4 h-4" /></> : <>Proceed to Payment <ArrowRight className="w-4 h-4" /></>}
+              disabled={submitMutation.isPending}
+              className="gap-2 rounded-xl h-11 px-6 font-black bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 shadow-lg shadow-violet-500/30 disabled:opacity-60" data-testid="button-submit">
+              {submitMutation.isPending
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {lang === "ar" ? "جاري الإرسال..." : "Submitting..."}</>
+                : lang === "ar" ? <>إرسال الطلب <ArrowLeft className="w-4 h-4" /></> : <>Submit Order <ArrowRight className="w-4 h-4" /></>}
             </Button>
           )}
         </div>

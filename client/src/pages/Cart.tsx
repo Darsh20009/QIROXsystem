@@ -171,6 +171,9 @@ export default function Cart() {
 
   const items: CartItem[] = user ? (cart?.items || []) : guestCartItems;
   const hasPhysical = items.some(i => PHYSICAL_TYPES.includes(i.type));
+  const hasPlan = items.some(i => i.type === "plan" || i.type === "service");
+  const hasDigitalExtras = items.some(i => ["domain", "email", "hosting"].includes(i.type));
+  const needsPlanWarning = hasDigitalExtras && !hasPlan;
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const discount = cart?.discountAmount || 0;
   const afterDiscount = subtotal - discount;
@@ -923,10 +926,24 @@ export default function Cart() {
                   </div>
                 )}
 
+                {/* Package guard warning */}
+                {needsPlanWarning && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex gap-3 items-start">
+                    <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-800">الإضافات تحتاج باقة</p>
+                      <p className="text-xs text-amber-700 mt-0.5">الدومين والبريد والاستضافة لا تُباع منفردة — يجب أن تكون مرتبطة بباقة مشروع.</p>
+                      <Link href="/pricing" className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-amber-800 underline">
+                        اختر باقة الآن <ArrowLeft className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
                 {/* Checkout button */}
                 <Button
-                  className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all"
-                  disabled={items.length === 0}
+                  className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={items.length === 0 || needsPlanWarning}
                   onClick={() => setWizardOpen(true)}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
