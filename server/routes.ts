@@ -125,7 +125,8 @@ async function fireNotify(
   pushToUser(userId, { type: "notification", title, body, link });
   sendPushToUser(userId, {
     title, body,
-    icon: "/icons/icon-192x192.png",
+    icon: "/icon-192.png",
+    badge: "/favicon-32.png",
     tag: opts.tag || `notif-${Date.now()}`,
     data: { url: link },
   }).catch(() => {});
@@ -144,7 +145,7 @@ async function fireNotifyAdmins(
       const uid = String(a._id);
       try { await NotificationModel.create({ userId: uid, type: opts.type || "info", title, body, link, icon: opts.icon || "🔔" }); } catch (_) {}
       pushToUser(uid, { type: "notification", title, body, link });
-      sendPushToUser(uid, { title, body, icon: "/icons/icon-192x192.png", tag: `admin-notif-${Date.now()}`, data: { url: link } }).catch(() => {});
+      sendPushToUser(uid, { title, body, icon: "/icon-192.png", badge: "/favicon-32.png", tag: `admin-notif-${Date.now()}`, data: { url: link } }).catch(() => {});
     }));
   } catch (_) {}
 }
@@ -9752,7 +9753,7 @@ export async function registerRoutes(
       const emailOtp = dbUser?.emailOtpEnabled || false;
       const passphrase = dbUser?.recoveryPassphraseEnabled || false;
       const pushApproval = dbUser?.pushApprovalEnabled || false;
-      const pushSubCount = pushApproval ? await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) }) : 0;
+      const pushSubCount = await PushSubscriptionModel.countDocuments({ userId: String(dbUser!._id) });
       res.json({
         enabled: totp || emailOtp || passphrase || pushApproval,
         totp,

@@ -202,11 +202,6 @@ export default function TwoFactorSetup() {
                     : L ? "تفعيل" : "Enable"}
                 </Button>
               )}
-              {m.id === "push" && !m.enabled && !status?.hasPushSubscriptions && (
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 text-center">
-                  {L ? "فعّل الإشعارات في المتصفح أولاً" : "Enable browser notifications first"}
-                </p>
-              )}
               {m.enabled && disabling !== m.id && (
                 <Button size="sm" variant="outline"
                   onClick={() => setDisabling(m.id)}
@@ -217,6 +212,13 @@ export default function TwoFactorSetup() {
                 </Button>
               )}
             </div>
+
+            {m.id === "push" && !m.enabled && !status?.hasPushSubscriptions && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                <Bell className="w-3 h-3 shrink-0" />
+                {L ? "فعّل إشعارات المتصفح أولاً حتى تتمكن من استخدام هذه الطريقة" : "Enable browser notifications first to use this method"}
+              </p>
+            )}
 
             <AnimatePresence>
               {disabling === m.id && (
