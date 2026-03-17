@@ -16,7 +16,7 @@ import {
   LayoutDashboard, FileText, Users, Wallet, Briefcase,
   LogIn, LogOut, Clock, Layers, DollarSign, Handshake, Image,
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
-  BarChart3, Activity, LifeBuoy, Banknote, User, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
+  BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
   TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot
 } from "lucide-react";
@@ -97,39 +97,42 @@ export function AppSidebar() {
     // Employee — main
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "employee", section: "main" },
     { title: ar ? "لوحتي المتخصصة" : "My Role Board", icon: BarChart3, url: "/employee/role-dashboard", group: "employee", section: "main", allowedRoles: ["merchant", "developer", "designer", "accountant", "sales", "sales_manager"] },
-    // Employee — work
+    // Employee — clients (قسم العملاء)
+    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "clients" },
+    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: UserPlus, url: "/employee/new-order", group: "employee", section: "clients" },
+    { title: ar ? "اشتراكات العملاء" : "Client Subscriptions", icon: Crown, url: "/employee/subscriptions", group: "employee", section: "clients" },
+    { title: ar ? "العربات المهجورة" : "Abandoned Carts", icon: ShoppingCart, url: "/employee/abandoned-carts", group: "employee", section: "clients" },
+    { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "clients" },
+    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "clients" },
+    { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Megaphone, url: "/sales/marketing", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
+    // Employee — work (العمل والطلبات)
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
-    { title: ar ? "إنشاء عميل وطلب" : "New Client & Order", icon: Users, url: "/employee/new-order", group: "employee", section: "work" },
     { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
-    { title: ar ? "التحقق بالهاتف" : "Phone Verifications", icon: Smartphone, url: "/admin/phone-verifications", group: "employee", section: "work" },
-    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/admin/data-requests", group: "employee", section: "work" },
-    { title: ar ? "العربات المهجورة" : "Abandoned Carts", icon: ShoppingCart, url: "/employee/abandoned-carts", group: "employee", section: "work" },
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
-    // Employee — communication
+    // Employee — communication (التواصل)
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "employee", section: "communication" },
     { title: ar ? "مجموعات الفريق" : "Team Groups", icon: Users, url: "/groups", group: "employee", section: "communication" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "employee", section: "communication" },
     { title: ar ? "الاستشارات" : "Consultations", icon: CalendarCheck, url: "/admin/consultations", group: "employee", section: "communication" },
     { title: "QMeet", icon: Video, url: "/admin/qmeet", group: "employee", section: "communication" },
     { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "employee", section: "communication" },
-    // Employee — sales
-    { title: ar ? "العملاء" : "Clients", icon: Users, url: "/admin/customers", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
-    { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Palette, url: "/sales/marketing", group: "employee", section: "sales", allowedRoles: SALES_ROLES },
-    // Employee — finance
+    // Employee — finance (المالية)
     { title: ar ? "المالية" : "Finance Overview", icon: Wallet, url: "/admin/finance", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: STAFF_ROLES },
-    // Employee — personal
-    { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "personal" },
-    { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "personal" },
-    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "personal" },
-    { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "employee", section: "personal" },
-    { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "personal" },
-    { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "personal" },
-    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", section: "personal", allowedRoles: ["investor", "admin", "manager"] },
+    // Employee — tools (الأدوات)
+    { title: ar ? "أدواتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "employee", section: "tools" },
+    { title: ar ? "صانع الأنظمة" : "System Builder", icon: Wrench, url: "/employee/system-builder", group: "employee", section: "tools" },
+    { title: ar ? "AI Studio" : "AI Studio", icon: Bot, url: "/ai-studio", group: "employee", section: "tools", allowedRoles: STAFF_ROLES },
+    { title: ar ? "إصدارات النظام" : "System Versions", icon: Sparkles, url: "/employee/changelog", group: "employee", section: "tools" },
+    // Employee — account (حسابي)
+    { title: ar ? "مهامي" : "My Tasks", icon: ListChecks, url: "/employee/checklist", group: "employee", section: "account" },
+    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/employee/profile", group: "employee", section: "account" },
+    { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "employee", section: "account" },
+    { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "employee", section: "account", allowedRoles: ["investor", "admin", "manager"] },
     // Supplier group
     { title: ar ? "لوحة المورد" : "Supplier Dashboard", icon: Package, url: "/supplier/dashboard", group: "supplier", section: "main" },
     { title: ar ? "عروضي" : "My Offers", icon: Briefcase, url: "/supplier/dashboard", group: "supplier", section: "main" },
@@ -308,25 +311,26 @@ export function AppSidebar() {
   const supplierItems = menuItems.filter(i => i.group === "supplier");
 
   const SECTION_LABELS: Record<string, { ar: string; en: string; accent: string }> = {
-    main:          { ar: "",               en: "",                       accent: "" },
-    shopping:      { ar: "التسوق",         en: "Shopping",               accent: "text-cyan-600 dark:text-cyan-400" },
-    services:      { ar: "خدماتي",        en: "My Services",            accent: "text-[#06b6d4] dark:text-cyan-400" },
-    work:          { ar: "العمل والمهام",   en: "Work & Tasks",           accent: "text-[#06b6d4] dark:text-cyan-400" },
-    communication: { ar: "التواصل والخدمات", en: "Communication",        accent: "text-green-600 dark:text-green-400" },
-    account:       { ar: "حسابي",          en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
-    finance:       { ar: "المالية",        en: "Finance",                accent: "text-amber-600 dark:text-amber-400" },
-    sales:         { ar: "المبيعات",       en: "Sales",                  accent: "text-pink-600 dark:text-pink-400" },
-    tools:         { ar: "الأدوات",        en: "Tools",                  accent: "text-blue-600 dark:text-blue-400" },
-    personal:      { ar: "حسابي",          en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
-    investor:      { ar: "الاستثمار",      en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
-    operations:    { ar: "المنتجات والخدمات", en: "Products & Services",    accent: "text-[#06b6d4] dark:text-cyan-400" },
-    clients_ops:   { ar: "عمليات العملاء",   en: "Client Operations",      accent: "text-violet-600 dark:text-violet-400" },
-    team:          { ar: "الفريق والدعم",    en: "Team & Support",         accent: "text-indigo-600 dark:text-indigo-400" },
-    settings:      { ar: "الإعدادات والمحتوى", en: "Settings & Content",   accent: "text-gray-600 dark:text-gray-400" },
-    content:       { ar: "المحتوى",          en: "Content",                accent: "text-orange-600 dark:text-orange-400" },
-    devtools:      { ar: "النظام والمطور",   en: "System & Dev",           accent: "text-rose-600 dark:text-rose-400" },
-    monitoring:    { ar: "المراقبة",         en: "Monitoring",             accent: "text-teal-600 dark:text-teal-400" },
-    investors:     { ar: "الاستثمار",        en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
+    main:          { ar: "",                    en: "",                       accent: "" },
+    shopping:      { ar: "التسوق",              en: "Shopping",               accent: "text-cyan-600 dark:text-cyan-400" },
+    services:      { ar: "خدماتي",             en: "My Services",            accent: "text-[#06b6d4] dark:text-cyan-400" },
+    clients:       { ar: "العملاء",             en: "Clients",                accent: "text-blue-600 dark:text-blue-400" },
+    work:          { ar: "الطلبات والعمل",       en: "Orders & Work",          accent: "text-[#06b6d4] dark:text-cyan-400" },
+    communication: { ar: "التواصل",              en: "Communication",          accent: "text-green-600 dark:text-green-400" },
+    account:       { ar: "حسابي",               en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
+    finance:       { ar: "المالية",             en: "Finance",                accent: "text-amber-600 dark:text-amber-400" },
+    sales:         { ar: "المبيعات",            en: "Sales",                  accent: "text-pink-600 dark:text-pink-400" },
+    tools:         { ar: "الأدوات",             en: "Tools",                  accent: "text-blue-600 dark:text-blue-400" },
+    personal:      { ar: "حسابي",               en: "My Account",             accent: "text-violet-600 dark:text-violet-400" },
+    investor:      { ar: "الاستثمار",           en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
+    operations:    { ar: "المنتجات والخدمات",    en: "Products & Services",    accent: "text-[#06b6d4] dark:text-cyan-400" },
+    clients_ops:   { ar: "عمليات العملاء",       en: "Client Operations",      accent: "text-violet-600 dark:text-violet-400" },
+    team:          { ar: "الفريق والدعم",         en: "Team & Support",         accent: "text-indigo-600 dark:text-indigo-400" },
+    settings:      { ar: "الإعدادات والمحتوى",   en: "Settings & Content",     accent: "text-gray-600 dark:text-gray-400" },
+    content:       { ar: "المحتوى",              en: "Content",                accent: "text-orange-600 dark:text-orange-400" },
+    devtools:      { ar: "النظام والمطور",        en: "System & Dev",           accent: "text-rose-600 dark:text-rose-400" },
+    monitoring:    { ar: "المراقبة",             en: "Monitoring",             accent: "text-teal-600 dark:text-teal-400" },
+    investors:     { ar: "الاستثمار",            en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
   };
 
   function renderNavItem(item: NavItem) {

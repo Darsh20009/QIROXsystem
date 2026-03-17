@@ -38,6 +38,35 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+// ── Security Headers ──────────────────────────────────────────────────────────
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  res.setHeader("X-Download-Options", "noopen");
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  next();
+});
+
+// ── Anti-scraping / bot detection ─────────────────────────────────────────────
+const suspiciousPatterns = [
+  /sqlmap/i, /nikto/i, /nmap/i, /masscan/i, /havij/i,
+  /acunetix/i, /burpsuite/i, /<script/i, /javascript:/i,
+  /union.*select/i, /drop.*table/i, /insert.*into/i,
+  /exec\s*\(/i, /eval\s*\(/i,
+];
+app.use((req, res, next) => {
+  const ua = req.headers["user-agent"] || "";
+  const isSuspicious = suspiciousPatterns.some(p => p.test(ua));
+  if (isSuspicious) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+  next();
+});
+
 let reconnecting = false;
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState === 1) return next();

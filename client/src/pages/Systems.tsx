@@ -38,6 +38,7 @@ interface SystemCard {
   features: string[];
   badge?: string;
   highlight?: boolean;
+  locked?: boolean;
 }
 
 const SYSTEMS: Record<string, SystemCard[]> = {
@@ -202,7 +203,7 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       title: "نظام ERP مؤسسي",
       description: "نظام متكامل يربط المبيعات والمخزون والمحاسبة في منصة واحدة",
       features: ["المبيعات والمشتريات", "المحاسبة والفواتير", "إدارة المخزون", "لوحات التحليل والتقارير"],
-      badge: "متقدم",
+      locked: true,
     },
   ],
   realestate: [
@@ -231,13 +232,14 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       title: "بوابة المستثمرين",
       description: "بوابة خاصة للمستثمرين لمتابعة عوائد محافظهم العقارية",
       features: ["تقارير العوائد الدورية", "وثائق الملكية الرقمية", "إشعارات دفع الإيجار", "رسوم بيانية للأداء"],
+      locked: true,
     },
     {
       icon: BarChart3,
       title: "لوحة تحليلات السوق",
       description: "تقارير ذكية عن أداء السوق العقاري وتوجهاته",
       features: ["مقارنة أسعار المناطق", "نسبة الإشغال", "تقرير الطلب والعرض", "توقعات بالذكاء الاصطناعي"],
-      badge: "متقدم",
+      locked: true,
     },
     {
       icon: Users,
@@ -278,12 +280,14 @@ const SYSTEMS: Record<string, SystemCard[]> = {
       title: "نظام الاستشارات الطبية عن بعد",
       description: "تليميديسين — استشارة طبية فيديو من أي مكان",
       features: ["مكالمة فيديو مشفرة", "كتابة التشخيص خلال الجلسة", "الوصفة الإلكترونية بعد المكالمة", "أرشيف الاستشارات"],
+      locked: true,
     },
     {
       icon: BarChart3,
       title: "لوحة تحليل أداء العيادة",
       description: "تقارير دقيقة عن إيرادات وأداء عيادتك",
       features: ["إيرادات يومية وشهرية", "أداء كل طبيب", "نسبة الحجوزات والإلغاء", "رضا المرضى"],
+      locked: true,
     },
   ],
 };
@@ -442,21 +446,25 @@ export default function Systems() {
               const Icon = sys.icon;
               return (
                 <motion.div key={idx} variants={fadeUp} custom={idx} initial="hidden" animate="visible"
-                  className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-                    sys.highlight
-                      ? `${activeSegment.bg} ${activeSegment.border}`
-                      : "bg-white dark:bg-gray-900 border-black/[0.07] dark:border-white/[0.08]"
+                  className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all ${
+                    sys.locked
+                      ? "opacity-70 cursor-not-allowed bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.06] dark:border-white/[0.06]"
+                      : `hover:-translate-y-0.5 hover:shadow-lg ${sys.highlight ? `${activeSegment.bg} ${activeSegment.border}` : "bg-white dark:bg-gray-900 border-black/[0.07] dark:border-white/[0.08]"}`
                   }`}
                   data-testid={`system-card-${idx}`}
                 >
-                  {sys.badge && (
+                  {sys.locked ? (
+                    <span className="absolute top-4 left-4 text-[10px] font-black px-2.5 py-1 rounded-full bg-black/10 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center gap-1">
+                      <span>🔒</span> {lang === "ar" ? "قريباً" : "Coming Soon"}
+                    </span>
+                  ) : sys.badge && (
                     <span className={`absolute top-4 left-4 text-[10px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r ${activeSegment.color} text-white`}>
                       {sys.badge}
                     </span>
                   )}
                   <div>
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${activeSegment.color}`}>
-                      <Icon className="w-5 h-5 text-white" />
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${sys.locked ? "bg-black/[0.06] dark:bg-white/[0.06]" : `bg-gradient-to-br ${activeSegment.color}`}`}>
+                      <Icon className={`w-5 h-5 ${sys.locked ? "text-black/30 dark:text-white/30" : "text-white"}`} />
                     </div>
                     <h3 className="text-base font-black text-black dark:text-white mb-1">{sys.title}</h3>
                     <p className="text-xs text-black/45 dark:text-white/45 leading-relaxed">{sys.description}</p>
@@ -464,16 +472,22 @@ export default function Systems() {
                   <ul className="space-y-1.5 flex-1">
                     {sys.features.map((f, fi) => (
                       <li key={fi} className="flex items-start gap-2 text-[12px] text-black/60 dark:text-white/60">
-                        <Check className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${activeSegment.text}`} />
+                        <Check className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${sys.locked ? "text-black/20 dark:text-white/20" : activeSegment.text}`} />
                         <span>{f}</span>
                       </li>
                     ))}
                   </ul>
-                  <Link href={`/order?segment=${segment}`}>
-                    <Button size="sm" className={`w-full h-9 rounded-xl font-bold text-xs gap-1.5 bg-gradient-to-r ${activeSegment.color} text-white hover:opacity-90`}>
-                      {lang === "ar" ? "اطلب هذا النظام" : "Order This System"} <ChevronRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
+                  {sys.locked ? (
+                    <div className="w-full h-9 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.04] text-black/30 dark:text-white/30 border border-black/[0.06] dark:border-white/[0.06] cursor-not-allowed select-none">
+                      🔒 {lang === "ar" ? "غير متاح حالياً — قريباً" : "Not Available Yet — Coming Soon"}
+                    </div>
+                  ) : (
+                    <Link href={`/order?segment=${segment}`}>
+                      <Button size="sm" className={`w-full h-9 rounded-xl font-bold text-xs gap-1.5 bg-gradient-to-r ${activeSegment.color} text-white hover:opacity-90`}>
+                        {lang === "ar" ? "اطلب هذا النظام" : "Order This System"} <ChevronRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </Link>
+                  )}
                 </motion.div>
               );
             })}

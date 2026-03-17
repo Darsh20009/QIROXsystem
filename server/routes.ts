@@ -634,7 +634,7 @@ export async function registerRoutes(
     res.json(sanitizeUser(users));
   });
 
-  const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "client"];
+  const allowedRoles = ["manager", "accountant", "sales_manager", "sales", "developer", "designer", "support", "merchant", "client"];
   const userFieldsWhitelist = ["username", "password", "email", "fullName", "role", "phone", "avatarUrl", "instagram", "twitter", "linkedin", "snapchat", "tiktok", "youtube", "linktree", "jobTitle", "bio"];
 
   app.post("/api/admin/users", async (req, res) => {
