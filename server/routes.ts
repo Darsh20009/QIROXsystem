@@ -578,6 +578,7 @@ export async function registerRoutes(
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
+        username: String(req.body.username).trim().toLowerCase(),
         role,
         password: hashedPassword,
         email: incomingEmail || req.body.email,
@@ -3610,8 +3611,9 @@ export async function registerRoutes(
       const rawPassword = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6).toUpperCase() + "!";
       const hashedPassword = await hashPassword(rawPassword);
 
+      const normalizedUsername = String(username).trim().toLowerCase();
       const newUser = await storage.createUser({
-        username,
+        username: normalizedUsername,
         password: hashedPassword,
         email,
         fullName,
@@ -3620,11 +3622,11 @@ export async function registerRoutes(
         emailVerified: true as any,
       });
 
-      sendWelcomeWithCredentialsEmail(email, fullName, username, rawPassword).catch(e => console.error("[HIRE] email failed:", e));
+      sendWelcomeWithCredentialsEmail(email, fullName, normalizedUsername, rawPassword).catch(e => console.error("[HIRE] email failed:", e));
       await storage.updateApplication(req.params.id, { status: "accepted" });
 
-      console.log(`[HIRE] New employee created: ${username} / role:${role} / email:${email}`);
-      res.json({ ok: true, userId: newUser.id, username, rawPassword, email });
+      console.log(`[HIRE] New employee created: ${normalizedUsername} / role:${role} / email:${email}`);
+      res.json({ ok: true, userId: newUser.id, username: normalizedUsername, rawPassword, email });
     } catch (err: any) {
       console.error("[HIRE] error:", err);
       res.status(500).json({ error: translateError(err) });
