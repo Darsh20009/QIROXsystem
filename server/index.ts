@@ -41,13 +41,17 @@ app.use(express.urlencoded({ extended: false }));
 // ── Security Headers ──────────────────────────────────────────────────────────
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  // Allow iframe embedding (e.g., Replit canvas preview)
+  res.removeHeader("X-Frame-Options");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("X-DNS-Prefetch-Control", "off");
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  // Only set HSTS in production to avoid dev issues
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   next();
 });
 

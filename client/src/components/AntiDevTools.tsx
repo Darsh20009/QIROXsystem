@@ -33,12 +33,15 @@ export function AntiDevTools() {
     };
 
     // Detect DevTools open via window size heuristic
+    // Skip detection if running inside an iframe to avoid false positives
+    const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
     const detectDevTools = () => {
+      if (isInIframe) return; // Don't block when embedded as iframe
+      if (!import.meta.env.PROD) return; // Only in production
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
       if (widthThreshold || heightThreshold) {
-        // DevTools might be open — redirect to a warning page
         document.body.innerHTML = `
           <div style="
             min-height:100vh;display:flex;flex-direction:column;
