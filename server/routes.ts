@@ -663,7 +663,7 @@ export async function registerRoutes(
       }
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
-        username: String(username).trim(),
+        username: String(username).trim().toLowerCase(),
         password: hashedPassword,
         email: String(email).trim(),
         fullName: String(fullName).trim(),

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   Loader2, Plus, Pencil, Trash2, Package, Search, Star, Image as ImageIcon,
-  Sparkles, Truck, Globe, MapPin, Clock, ExternalLink, Info,
+  Sparkles, Truck, Globe, MapPin, Clock, ExternalLink, Info, AlertCircle,
   Crown, Zap, Infinity as InfinityIcon, LayoutGrid, X, CheckSquare, DollarSign
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -115,7 +115,7 @@ export default function AdminProducts() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
-  const { data: products, isLoading } = useQuery<QiroxProduct[]>({
+  const { data: products, isLoading, isError, refetch } = useQuery<QiroxProduct[]>({
     queryKey: ["/api/admin/products"],
   });
 
@@ -334,6 +334,15 @@ export default function AdminProducts() {
       {isLoading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="animate-spin w-8 h-8 text-black/20" />
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center" data-testid="products-error-state">
+          <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
+          <p className="text-sm font-medium text-black/60 dark:text-white/60 mb-1">{L ? "حدث خطأ أثناء تحميل المنتجات" : "Failed to load products"}</p>
+          <p className="text-xs text-black/30 dark:text-white/30 mb-4">{L ? "تأكد من اتصالك بالإنترنت وحاول مرة أخرى" : "Check your connection and try again"}</p>
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => refetch()} data-testid="button-retry-products">
+            {L ? "إعادة المحاولة" : "Retry"}
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

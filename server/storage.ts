@@ -156,9 +156,9 @@ export class MongoStorage implements IStorage {
   async getUserByUsername(identifier: string): Promise<User | undefined> {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
     const isPhone = /^[\+\d][\d\s\-]{6,}$/.test(identifier.replace(/\s/g, ""));
-    let query: any = { username: identifier };
+    let query: any = { username: { $regex: new RegExp(`^${identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } };
     if (isEmail) {
-      query = { email: identifier };
+      query = { email: { $regex: new RegExp(`^${identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } };
     } else if (isPhone) {
       const normalized = identifier.replace(/[\s\-]/g, "");
       // Match exact number OR numbers ending with the digits (handles local format without country code)

@@ -718,6 +718,87 @@ function AbandonedCartsWidget() {
   );
 }
 
+// ── SUPPORT DASHBOARD ─────────────────────────────────────────────────────────
+function SupportDashboard() {
+  const { lang } = useI18n();
+  const L = lang === "ar";
+
+  const { data: tickets, isLoading } = useQuery<any[]>({ queryKey: ["/api/support-tickets"] });
+
+  const openCount = tickets?.filter((t: any) => t.status === "open").length ?? 0;
+  const inProgressCount = tickets?.filter((t: any) => t.status === "in_progress").length ?? 0;
+  const closedCount = tickets?.filter((t: any) => t.status === "closed" || t.status === "resolved").length ?? 0;
+  const totalCount = tickets?.length ?? 0;
+
+  return (
+    <motion.div {...fade(0)} className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: L ? "إجمالي التذاكر" : "Total Tickets", value: totalCount, icon: MessageCircle, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" },
+          { label: L ? "مفتوحة" : "Open", value: openCount, icon: AlertCircle, color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" },
+          { label: L ? "قيد المعالجة" : "In Progress", value: inProgressCount, icon: Clock, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" },
+          { label: L ? "مغلقة" : "Closed", value: closedCount, icon: CheckCircle2, color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" },
+        ].map((s, i) => (
+          <motion.div key={i} {...fade(i * 0.08)}>
+            <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>
+                  <s.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-black dark:text-white">{s.value}</p>
+                  <p className="text-[10px] text-black/40 dark:text-white/40">{s.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      <Card className="border border-black/[0.06] dark:border-white/[0.06] shadow-none">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold text-black dark:text-white flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-black/40 dark:text-white/40" />
+            {L ? "آخر التذاكر" : "Recent Tickets"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin w-6 h-6 text-black/20 dark:text-white/20" />
+            </div>
+          ) : !tickets || tickets.length === 0 ? (
+            <div className="text-center py-8 text-black/30 dark:text-white/30">
+              <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">{L ? "لا توجد تذاكر حالياً" : "No tickets yet"}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {tickets.slice(0, 10).map((ticket: any, i: number) => {
+                const statusColor = ticket.status === "open" ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+                  : ticket.status === "in_progress" ? "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
+                  : "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
+                const statusLabel = ticket.status === "open" ? (L ? "مفتوحة" : "Open")
+                  : ticket.status === "in_progress" ? (L ? "قيد المعالجة" : "In Progress")
+                  : (L ? "مغلقة" : "Closed");
+                return (
+                  <div key={ticket._id || ticket.id || i} className="flex items-center justify-between p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06] hover:bg-black/[0.01] dark:hover:bg-white/[0.02] transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-black dark:text-white truncate">{ticket.subject || ticket.title || (L ? "بدون عنوان" : "No subject")}</p>
+                      <p className="text-[10px] text-black/40 dark:text-white/40 mt-0.5">{ticket.clientName || ticket.email || ""}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] px-2 py-0 border ${statusColor}`}>{statusLabel}</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 // ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function EmployeeRoleDashboard() {
   const { lang, dir } = useI18n();
@@ -735,6 +816,7 @@ export default function EmployeeRoleDashboard() {
     accountant: <AccountantDashboard />,
     sales: <SalesDashboard />,
     sales_manager: <SalesDashboard />,
+    support: <SupportDashboard />,
   };
 
   const roleDashboard = roleToComponent[user.role];

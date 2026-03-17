@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2 } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle } from "lucide-react";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
@@ -92,7 +92,7 @@ export default function AdminEmployees() {
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const avatarTargetId = useRef<string | null>(null);
 
-  const { data: users, isLoading } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
+  const { data: users, isLoading, isError, refetch } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
 
   const handleAvatarClick = (empId: string) => {
     avatarTargetId.current = empId;
@@ -246,6 +246,17 @@ export default function AdminEmployees() {
   );
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-black/20" /></div>;
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center" data-testid="employees-error-state">
+      <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
+      <p className="text-sm font-medium text-black/60 dark:text-white/60 mb-1">{L ? "حدث خطأ أثناء تحميل بيانات الفريق" : "Failed to load team data"}</p>
+      <p className="text-xs text-black/30 dark:text-white/30 mb-4">{L ? "تأكد من اتصالك بالإنترنت وحاول مرة أخرى" : "Check your connection and try again"}</p>
+      <Button variant="outline" size="sm" className="text-xs" onClick={() => refetch()} data-testid="button-retry-employees">
+        {L ? "إعادة المحاولة" : "Retry"}
+      </Button>
+    </div>
+  );
 
   return (
     <div className="relative overflow-hidden p-4 md:p-8 max-w-[1200px] mx-auto space-y-6">
