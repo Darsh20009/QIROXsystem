@@ -581,7 +581,7 @@ export async function registerRoutes(
         username: String(req.body.username).trim().toLowerCase(),
         role,
         password: hashedPassword,
-        email: incomingEmail || req.body.email,
+        email: String(incomingEmail || req.body.email).toLowerCase().trim(),
       });
 
       req.login(user, async (err) => {
@@ -666,7 +666,7 @@ export async function registerRoutes(
       const user = await storage.createUser({
         username: String(username).trim().toLowerCase(),
         password: hashedPassword,
-        email: String(email).trim(),
+        email: String(email).toLowerCase().trim(),
         fullName: String(fullName).trim(),
         role,
         phone: normPhone || undefined,
@@ -4607,7 +4607,9 @@ export async function registerRoutes(
       const { email } = req.body;
       if (!email) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
       const { OtpModel, UserModel } = await import("./models");
-      const user = await UserModel.findOne({ email: String(email).toLowerCase().trim().trim() });
+      const emailClean = String(email).trim();
+      const emailRegex = new RegExp(`^${emailClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+      const user = await UserModel.findOne({ email: { $regex: emailRegex } });
       if (!user) return res.status(404).json({ error: "لا يوجد حساب مرتبط بهذا البريد الإلكتروني" });
       // Invalidate previous forgot-password OTPs for this email only
       await OtpModel.updateMany({ email: String(email).toLowerCase().trim(), used: false, type: "forgot_password" }, { used: true });
@@ -4736,7 +4738,9 @@ export async function registerRoutes(
       const otp = await OtpModel.findOne({ email: String(email).toLowerCase().trim(), code, used: false, type: "forgot_password", expiresAt: { $gt: new Date() } });
       if (!otp) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       const hashed = await hashPassword(newPassword);
-      await UserModel.updateOne({ email: String(email).toLowerCase().trim() }, { password: hashed });
+      const emailResetClean = String(email).trim();
+      const emailResetRegex = new RegExp(`^${emailResetClean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+      await UserModel.updateOne({ email: { $regex: emailResetRegex } }, { password: hashed });
       await OtpModel.updateOne({ _id: otp._id }, { used: true });
       res.json({ ok: true });
     } catch (err) {
@@ -4805,9 +4809,10 @@ export async function registerRoutes(
 
     const { UserModel, OtpModel, DeviceTokenModel } = await import("./models");
 
-    // Find user by email (no session dependency)
+    // Find user by email (no session dependency) — case-insensitive to handle mixed-case stored emails
     const email = String(rawEmail).toLowerCase().trim();
-    const user = await UserModel.findOne({ email });
+    const emailLoginRegex = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const user = await UserModel.findOne({ email: { $regex: emailLoginRegex } });
     if (!user) return res.status(400).json({ error: "المستخدم غير موجود" });
 
     const enteredCode = String(code).trim();
