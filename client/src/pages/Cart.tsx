@@ -109,6 +109,19 @@ export default function Cart() {
   const [selectedCheckoutAddons, setSelectedCheckoutAddons] = useState<string[]>([]);
   const [docsFiles, setDocsFiles] = useState<UpFile[]>([]);
   const [shipping, setShipping] = useState({ name: "", phone: "", city: "", address: "" });
+  const [contact, setContact] = useState({ name: "", phone: "", email: "", city: "" });
+
+  useEffect(() => {
+    if (preCheckoutOpen && hasPlan) {
+      setContact(prev => ({
+        name: prev.name || (user as any)?.fullName || (user as any)?.username || "",
+        phone: prev.phone || (user as any)?.phone || "",
+        email: prev.email || (user as any)?.email || "",
+        city: prev.city || (user as any)?.city || "",
+      }));
+    }
+  }, [preCheckoutOpen]);
+
   const docsInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -117,6 +130,12 @@ export default function Cart() {
         ...prev,
         name: prev.name || (user as any).fullName || "",
         phone: prev.phone || (user as any).phone || (user as any).whatsappNumber || "",
+      }));
+      setContact(prev => ({
+        ...prev,
+        name: prev.name || (user as any).fullName || (user as any).businessName || "",
+        phone: prev.phone || (user as any).phone || (user as any).whatsappNumber || "",
+        email: prev.email || (user as any).email || "",
       }));
     }
   }, [user]);
@@ -348,6 +367,8 @@ export default function Cart() {
         projectNotes ? `الفكرة: ${projectNotes}` : "",
         filledIdeas.length ? `أفكار الميزات: ${filledIdeas.map((f, i) => `${i + 1}. ${f}`).join(" | ")}` : "",
         selectedCheckoutAddons.length ? `إضافات مختارة: ${selectedCheckoutAddons.join("، ")}` : "",
+        hasPlan && contact.city ? `المدينة: ${contact.city}` : "",
+        hasPlan && contact.email ? `البريد: ${contact.email}` : "",
         hasPhysical && shipping.name ? `الشحن: ${shipping.name} — ${shipping.phone} — ${shipping.city} — ${shipping.address}` : "",
         walletUsed > 0 ? `دفع بالمحفظة: ${walletUsed.toLocaleString()} ر.س` : "",
       ].filter(Boolean).join(" | ") || `طلب من السلة — ${items.length} عنصر`;
@@ -355,8 +376,8 @@ export default function Cart() {
       const r = await apiRequest("POST", "/api/orders", {
         projectType: derivedProjectType,
         sector: "general",
-        businessName: (user as any)?.businessName || (user as any)?.fullName || "",
-        phone: shipping.phone || (user as any)?.phone || "",
+        businessName: hasPlan ? (contact.name || (user as any)?.businessName || (user as any)?.fullName || "") : ((user as any)?.businessName || (user as any)?.fullName || ""),
+        phone: hasPlan ? (contact.phone || (user as any)?.phone || "") : (shipping.phone || (user as any)?.phone || ""),
         totalAmount: parseFloat(total.toFixed(2)),
         items: items.map(i => ({
           id: i._id || i.id,
@@ -430,10 +451,12 @@ export default function Cart() {
     }
   };
 
-  const totalSteps = hasPhysical ? 3 : 2;
+  // Step logic: plan → [Address, Payment] | physical → [Details, Shipping, Payment] | other → [Details, Payment]
+  const totalSteps = hasPlan ? (hasPhysical ? 3 : 2) : (hasPhysical ? 3 : 2);
   const paymentStep = totalSteps;
   const canNextStep = () => {
-    if (preCheckoutStep === 1) return true;
+    if (hasPlan && preCheckoutStep === 1) return !!(contact.name.trim() && contact.phone.trim());
+    if (!hasPlan && preCheckoutStep === 1) return true;
     if (hasPhysical && preCheckoutStep === 2) return !!(shipping.name.trim() && shipping.phone.trim() && shipping.city.trim());
     return true;
   };
@@ -940,7 +963,7 @@ export default function Cart() {
                 <Button
                   className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={items.length === 0 || needsPlanWarning}
-                  onClick={() => navigate("/cart-wizard")}
+                  onClick={() => { setPreCheckoutOpen(true); setPreCheckoutStep(1); }}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
                   إتمام الطلب الآن
@@ -972,7 +995,7 @@ export default function Cart() {
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
-              onClick={() => navigate("/cart-wizard")}
+              onClick={() => { setPreCheckoutOpen(true); setPreCheckoutStep(1); }}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
               أكمل الطلب
@@ -998,7 +1021,11 @@ export default function Cart() {
                 <div>
                   <p className="font-black text-white text-base">إتمام الطلب</p>
                   <p className="text-white/50 text-xs">
-                    {preCheckoutStep === 1 ? "تفاصيل المشروع والملفات" : preCheckoutStep === paymentStep ? "اختر طريقة الدفع" : "بيانات الشحن"}
+                    {preCheckoutStep === 1
+                      ? (hasPlan ? "معلومات التواصل والعنوان" : "تفاصيل المشروع والملفات")
+                      : preCheckoutStep === paymentStep
+                        ? "اختر طريقة الدفع"
+                        : "بيانات الشحن والتوصيل"}
                   </p>
                 </div>
                 <button onClick={() => { if (!checkoutMutation.isPending) { setPreCheckoutOpen(false); setPreCheckoutStep(1); } }} className="mr-auto flex items-center gap-1.5 px-3 h-8 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white text-xs font-bold">
@@ -1047,9 +1074,65 @@ export default function Cart() {
           {/* Content area */}
           <div className="space-y-5 mt-5">
 
-              {/* Step 1: Project idea + documents */}
+              {/* Step 1: Address (for plans) OR Project idea (for others) */}
               {preCheckoutStep === 1 && (
                 <>
+                  {/* ── Contact / Address for Plan Orders ── */}
+                  {hasPlan && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-8 h-8 bg-cyan-500/10 rounded-xl flex items-center justify-center border border-cyan-500/20">
+                          <MapPin className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm text-black dark:text-white">معلومات التواصل والعنوان</p>
+                          <p className="text-[11px] text-black/40 dark:text-slate-500">سيتواصل معك فريقنا لإتمام المشروع</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">الاسم الكامل <span className="text-red-400">*</span></Label>
+                          <Input value={contact.name} onChange={e => setContact(p => ({ ...p, name: e.target.value }))}
+                            placeholder="اسمك الكامل أو اسم الشركة" className="h-11 rounded-xl text-sm"
+                            data-testid="input-contact-name" />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">رقم الواتساب <span className="text-red-400">*</span></Label>
+                          <Input value={contact.phone} onChange={e => setContact(p => ({ ...p, phone: e.target.value }))}
+                            placeholder="05xxxxxxxx" className="h-11 rounded-xl text-sm" dir="ltr"
+                            data-testid="input-contact-phone" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">البريد الإلكتروني</Label>
+                          <Input value={contact.email} onChange={e => setContact(p => ({ ...p, email: e.target.value }))}
+                            placeholder="email@example.com" className="h-11 rounded-xl text-sm" dir="ltr"
+                            data-testid="input-contact-email" />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-1.5 block">المدينة</Label>
+                          <Input value={contact.city} onChange={e => setContact(p => ({ ...p, city: e.target.value }))}
+                            placeholder="الرياض، جدة..." className="h-11 rounded-xl text-sm"
+                            data-testid="input-contact-city" />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-black/[0.05] dark:border-white/[0.05] pt-4">
+                        <Label className="text-xs font-bold text-black/40 dark:text-slate-500 uppercase tracking-wider mb-2 block">
+                          ملاحظات إضافية <span className="text-black/25 font-normal">(اختياري)</span>
+                        </Label>
+                        <Textarea value={projectNotes} onChange={e => setProjectNotes(e.target.value)}
+                          placeholder="اكتب أي ملاحظات أو متطلبات خاصة..."
+                          className="h-20 resize-none rounded-xl text-sm" data-testid="textarea-project-notes" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Project Notes + Features + Addons + Docs for non-plan orders ── */}
+                  {!hasPlan && (<>
                   <div>
                     <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-2 block">
                       فكرة المشروع ومتطلباتك
@@ -1161,6 +1244,7 @@ export default function Cart() {
                         }} />
                     </button>
                   </div>
+                </>)}
 
                 </>
               )}
@@ -1417,7 +1501,7 @@ export default function Cart() {
                   onClick={() => setPreCheckoutStep(s => s + 1)}
                   disabled={!canNextStep()}
                   data-testid="button-next-step">
-                  {preCheckoutStep === 1 && hasPhysical ? "التالي — بيانات الشحن" : "التالي — طريقة الدفع"}
+                  {preCheckoutStep === 1 && hasPhysical ? "التالي — بيانات الشحن" : preCheckoutStep === 1 && hasPlan ? "التالي — طريقة الدفع" : "التالي — طريقة الدفع"}
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               ) : paymentOption === "paypal" && !fullyPaidByWallet ? (
