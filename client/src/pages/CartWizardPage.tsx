@@ -67,6 +67,7 @@ interface WizardData {
   competitorUrl: string; hadPrevSite: boolean; prevSiteFeedback: string;
   technicalLevel: "high" | "low" | ""; technicalDetails: string;
   hasDevTeam: boolean; devTeamDetails: string;
+  technicalFeatures: string[]; projectTechIdeas: string;
   preferredTimes: string[]; preferredDays: string[];
   address: { name: string; phone: string; city: string; district: string; street: string };
 }
@@ -79,6 +80,7 @@ const defaultData: WizardData = {
   expectedCustomers: "", extraFiles: [],
   competitorUrl: "", hadPrevSite: false, prevSiteFeedback: "",
   technicalLevel: "", technicalDetails: "", hasDevTeam: false, devTeamDetails: "",
+  technicalFeatures: [], projectTechIdeas: "",
   preferredTimes: [], preferredDays: [],
   address: { name: "", phone: "", city: "", district: "", street: "" },
 };
@@ -124,6 +126,55 @@ function Chips({ options, value, onChange, max }: { options: string[]; value: st
           {o}
         </button>
       ))}
+    </div>
+  );
+}
+
+function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+  const [input, setInput] = useState("");
+  const addTag = () => {
+    const trimmed = input.trim();
+    if (trimmed && !value.includes(trimmed)) {
+      onChange([...value, trimmed]);
+    }
+    setInput("");
+  };
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") { e.preventDefault(); addTag(); }
+    if (e.key === "Backspace" && !input && value.length > 0) {
+      onChange(value.slice(0, -1));
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder={placeholder || "اكتب ثم اضغط Enter أو +"}
+          className="flex-1 h-10 px-4 rounded-xl bg-white/[0.05] border border-slate-700/60 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-green-500/60 transition-all"
+        />
+        <button
+          type="button"
+          onClick={addTag}
+          disabled={!input.trim()}
+          className="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/30 text-green-400 hover:bg-green-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center font-black text-lg"
+        >
+          +
+        </button>
+      </div>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((tag, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/25 text-green-300 text-xs font-bold">
+              {tag}
+              <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="text-green-500/60 hover:text-red-400 transition-colors font-black leading-none">×</button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -648,6 +699,36 @@ export default function CartWizardPage() {
                     {data.hasDevTeam && (
                       <TArea value={data.devTeamDetails} onChange={(v: string) => upd("devTeamDetails", v)} rows={2} placeholder="أسماء المطورين وتخصصاتهم..." />
                     )}
+                  </Field>
+
+                  {/* ── المميزات التقنية ── */}
+                  <div className="pt-2 border-t border-white/[0.05]">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                        <Cpu className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="font-black text-white text-sm">المتطلبات التقنية للمشروع</p>
+                        <p className="text-slate-500 text-[11px]">أضف التقنيات والأفكار التي تريدها</p>
+                      </div>
+                    </div>
+
+                    <Field label="المميزات التقنية المطلوبة" hint="اكتب كل ميزة ثم اضغط + أو Enter لإضافتها">
+                      <TagInput
+                        value={data.technicalFeatures}
+                        onChange={v => upd("technicalFeatures", v)}
+                        placeholder="مثال: دفع إلكتروني، نظام نقاط، تحليلات..."
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="الأفكار التقنية والرؤية الخاصة بك" hint="شارك أفكارك ورؤيتك للمشروع بحرية">
+                    <TArea
+                      value={data.projectTechIdeas}
+                      onChange={(v: string) => upd("projectTechIdeas", v)}
+                      rows={4}
+                      placeholder="اكتب أفكارك التقنية بتفصيل... مثال: أريد نظاماً يعمل تلقائياً لإشعار العملاء عند تغيير حالة الطلب، مع تكامل مع واتساب..."
+                    />
                   </Field>
                 </div>
               )}
