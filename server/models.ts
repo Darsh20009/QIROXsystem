@@ -132,6 +132,8 @@ const orderSchema = new mongoose.Schema({
   totalAmount: Number,
   isDepositPaid: { type: Boolean, default: false },
   requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
+  // Wizard brief data (full form from CartWizardPage)
+  wizardData: { type: mongoose.Schema.Types.Mixed },
   // Assignment
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   adminNotes: String,

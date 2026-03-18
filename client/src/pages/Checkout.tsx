@@ -366,6 +366,7 @@ export default function Checkout() {
         paymentMethod: method,
         notes,
         files: hasWizardData ? wizardData.uploadedFiles : undefined,
+        wizardData: hasWizardData ? wizardData : undefined,
         shippingAddress: { name: addr.recipientName, phone: addr.recipientPhone, city: addr.city, address: `${addr.district} ${addr.street}`.trim(), nationalAddressId: addr.nationalAddressId },
         ...(hasPhysicalItems && selectedShippingCo ? {
           shippingCompanyId: selectedShippingCompanyId,

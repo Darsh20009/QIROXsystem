@@ -239,6 +239,11 @@ export default function ProjectDetails() {
               <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
             )}
           </TabsTrigger>
+          {order?.wizardData && (
+            <TabsTrigger value="brief" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              {L ? "ملف المشروع" : "Project Brief"}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <div className="mt-6">
@@ -801,8 +806,231 @@ export default function ProjectDetails() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* ══ PROJECT BRIEF TAB ══════════════════════════════════════ */}
+          {order?.wizardData && (
+            <TabsContent value="brief">
+              <ProjectBriefTab order={order} L={L} />
+            </TabsContent>
+          )}
         </div>
       </Tabs>
+    </div>
+  );
+}
+
+/* ─────────── Project Brief Component ─────────── */
+function ProjectBriefTab({ order, L }: { order: any; L: boolean }) {
+  const wd = order.wizardData || {};
+
+  const handleDownload = () => {
+    const lines: string[] = [];
+    lines.push("═══════════════════════════════════════");
+    lines.push("         ملف المشروع — QIROX Studio");
+    lines.push("═══════════════════════════════════════");
+    lines.push("");
+    lines.push("── معلومات التواصل ──");
+    if (wd.businessName) lines.push(`اسم المشروع: ${wd.businessName}`);
+    if (wd.email)        lines.push(`البريد: ${wd.email}`);
+    if (wd.whatsapp)     lines.push(`واتساب: ${wd.whatsapp}`);
+    if (wd.teamSize)     lines.push(`حجم الفريق: ${wd.teamSize}`);
+    lines.push("");
+    lines.push("── فكرة المشروع ──");
+    if (wd.projectIdea)  lines.push(wd.projectIdea);
+    if (wd.selectedFeatures?.length) {
+      lines.push("");
+      lines.push("── المميزات المختارة ──");
+      wd.selectedFeatures.forEach((f: string) => lines.push(`• ${f}`));
+    }
+    if (wd.technicalFeatures?.length) {
+      lines.push("");
+      lines.push("── المميزات التقنية ──");
+      wd.technicalFeatures.forEach((f: string) => lines.push(`• ${f}`));
+    }
+    if (wd.projectTechIdeas) {
+      lines.push("");
+      lines.push("── الأفكار التقنية ──");
+      lines.push(wd.projectTechIdeas);
+    }
+    lines.push("");
+    lines.push("── تفاصيل إضافية ──");
+    if (wd.logoChoice !== undefined)  lines.push(`الشعار: ${wd.logoChoice === "have" ? "يوجد شعار" : "يحتاج تصميم"}`);
+    if (wd.brandChoice !== undefined) lines.push(`الهوية: ${wd.brandChoice === "have" ? "يوجد هوية" : "تحتاج تصميم"}`);
+    if (wd.expectedCustomers)         lines.push(`العملاء المتوقعون: ${wd.expectedCustomers}`);
+    if (wd.technicalLevel)            lines.push(`المستوى التقني: ${wd.technicalLevel}`);
+    if (wd.hasDevTeam !== undefined)  lines.push(`مبرمجون خاصون: ${wd.hasDevTeam ? "نعم" : "لا"}`);
+    if (wd.devTeamDetails)            lines.push(`تفاصيل المبرمجين: ${wd.devTeamDetails}`);
+    if (wd.hadPrevSite !== undefined) lines.push(`موقع سابق: ${wd.hadPrevSite ? "نعم" : "لا"}`);
+    if (wd.prevSiteUrl)               lines.push(`رابط الموقع السابق: ${wd.prevSiteUrl}`);
+    lines.push("");
+    lines.push("── الاجتماع ──");
+    if (wd.meetingSlots?.length)  lines.push(`الأوقات: ${wd.meetingSlots.join(" / ")}`);
+    if (wd.meetingDays?.length)   lines.push(`الأيام: ${wd.meetingDays.join(" / ")}`);
+    if (wd.address?.city)         lines.push(`المدينة: ${wd.address.city}`);
+    lines.push("");
+    lines.push("── الباقة ──");
+    if (wd.planTier)    lines.push(`الباقة: ${wd.planTier}`);
+    if (wd.grandTotal)  lines.push(`الإجمالي: ${wd.grandTotal.toLocaleString()} ر.س`);
+    lines.push("");
+    lines.push("═══════════════════════════════════════");
+
+    const text = lines.join("\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `project-brief-${order.businessName || order._id || "order"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const Row = ({ label, value }: { label: string; value?: string | number | boolean | null }) => {
+    if (value === undefined || value === null || value === "") return null;
+    const display = typeof value === "boolean" ? (value ? "نعم" : "لا") : String(value);
+    return (
+      <div className="flex gap-3 text-sm">
+        <span className="text-slate-500 shrink-0 w-36">{label}</span>
+        <span className="font-medium text-primary flex-1">{display}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header + Download */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-black text-primary">ملف المشروع الكامل</h2>
+          <p className="text-sm text-slate-500 mt-0.5">جميع المعلومات التي أدخلتها عند تقديم طلبك</p>
+        </div>
+        <Button onClick={handleDownload} variant="outline" className="gap-2" data-testid="btn-download-brief">
+          <Download className="w-4 h-4" />
+          تحميل الملف
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Contact Info */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm font-black">معلومات التواصل</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Row label="اسم المشروع" value={wd.businessName} />
+            <Row label="البريد الإلكتروني" value={wd.email} />
+            <Row label="رقم الواتساب" value={wd.whatsapp} />
+            <Row label="حجم الفريق" value={wd.teamSize} />
+          </CardContent>
+        </Card>
+
+        {/* Package */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm font-black">الباقة المختارة</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Row label="الباقة" value={wd.planTier} />
+            <Row label="سعر الباقة" value={wd.planPrice ? `${Number(wd.planPrice).toLocaleString()} ر.س` : undefined} />
+            <Row label="الإجمالي" value={wd.grandTotal ? `${Number(wd.grandTotal).toLocaleString()} ر.س` : undefined} />
+          </CardContent>
+        </Card>
+
+        {/* Project Idea */}
+        {wd.projectIdea && (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle className="text-sm font-black">فكرة المشروع</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{wd.projectIdea}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Selected Features */}
+        {wd.selectedFeatures?.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-black">المميزات المختارة</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {wd.selectedFeatures.map((f: string, i: number) => (
+                  <span key={i} className="px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold rounded-lg">{f}</span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Technical Features */}
+        {wd.technicalFeatures?.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-black">المميزات التقنية</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {wd.technicalFeatures.map((f: string, i: number) => (
+                  <span key={i} className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">{f}</span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tech Ideas */}
+        {wd.projectTechIdeas && (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle className="text-sm font-black">الأفكار التقنية</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{wd.projectTechIdeas}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Design & Branding */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm font-black">التصميم والهوية</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Row label="الشعار" value={wd.logoChoice === "have" ? "يوجد شعار" : wd.logoChoice === "need" ? "يحتاج تصميم" : undefined} />
+            <Row label="الهوية البصرية" value={wd.brandChoice === "have" ? "يوجد هوية" : wd.brandChoice === "need" ? "تحتاج تصميم" : undefined} />
+            <Row label="العملاء المتوقعون" value={wd.expectedCustomers} />
+          </CardContent>
+        </Card>
+
+        {/* Technical Profile */}
+        <Card>
+          <CardHeader><CardTitle className="text-sm font-black">الملف التقني</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Row label="المستوى التقني" value={wd.technicalLevel === "low" ? "مبتدئ" : wd.technicalLevel === "medium" ? "متوسط" : wd.technicalLevel === "high" ? "متقدم" : undefined} />
+            <Row label="تفاصيل تقنية" value={wd.technicalDetails} />
+            <Row label="مبرمجون خاصون" value={wd.hasDevTeam} />
+            <Row label="تفاصيل المبرمجين" value={wd.devTeamDetails} />
+            <Row label="موقع سابق" value={wd.hadPrevSite} />
+            <Row label="رابط الموقع السابق" value={wd.prevSiteUrl} />
+          </CardContent>
+        </Card>
+
+        {/* Meeting Preferences */}
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle className="text-sm font-black">تفضيلات الاجتماع</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            <Row label="الأوقات المفضلة" value={wd.meetingSlots?.join(" / ")} />
+            <Row label="الأيام المناسبة" value={wd.meetingDays?.join(" / ")} />
+            <Row label="المدينة" value={wd.address?.city} />
+          </CardContent>
+        </Card>
+
+        {/* Uploaded Files */}
+        {wd.uploadedFiles?.length > 0 && (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle className="text-sm font-black">الملفات المرفقة</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {wd.uploadedFiles.map((url: string, i: number) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors"
+                    data-testid={`link-brief-file-${i}`}>
+                    <FileText className="w-3.5 h-3.5" />
+                    ملف {i + 1}
+                    <ExternalLink className="w-3 h-3 opacity-50" />
+                  </a>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

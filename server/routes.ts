@@ -1595,6 +1595,7 @@ export async function registerRoutes(
       "videoUrl","accessCredentials","files","requirements",
       "paymentMethod","paymentProofUrl","totalAmount","walletAmountUsed",
       "shippingCompanyId","shippingCompanyName","shippingFee",
+      "wizardData",
     ];
     const safeBody: Record<string, unknown> = {};
     for (const key of ALLOWED_ORDER_FIELDS) {

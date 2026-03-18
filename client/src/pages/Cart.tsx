@@ -446,7 +446,7 @@ export default function Cart() {
 
   /* ─── Checkout Done Screen ─── */
   if (checkoutDone) return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-x-hidden" dir={dir}>
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0a0a0a] relative overflow-x-hidden" dir={dir}>
       <div className="max-w-xl mx-auto px-4 pt-10 pb-28 space-y-5">
 
         {/* Success hero */}
@@ -458,7 +458,7 @@ export default function Cart() {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h2 className="text-3xl font-black text-black mb-2">{L ? "تم استلام طلبك!" : "Order Received!"}</h2>
+          <h2 className="text-3xl font-black text-black dark:text-white mb-2">{L ? "تم استلام طلبك!" : "Order Received!"}</h2>
           {savedOrderId && (
             <p className="text-black/40 text-sm">{L ? "رقم الطلب:" : "Order #:"} <span className="font-mono font-black text-black">{savedOrderId}</span></p>
           )}
@@ -477,14 +477,14 @@ export default function Cart() {
         {/* Order summary */}
         {savedItems.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="bg-white border border-black/[0.07] rounded-3xl overflow-hidden shadow-sm">
+            className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
             <div className="px-5 py-4 border-b border-black/[0.05]">
-              <p className="text-xs font-black text-black/40 uppercase tracking-widest">ملخص الطلب</p>
+              <p className="text-xs font-black text-black/40 dark:text-slate-500 uppercase tracking-widest">ملخص الطلب</p>
             </div>
             <div className="divide-y divide-black/[0.04]">
               {savedItems.map((item, i) => (
                 <div key={i} className="px-5 py-3 flex justify-between items-center">
-                  <span className="text-sm text-black/60 truncate max-w-[60%]">{item.nameAr || item.name}</span>
+                  <span className="text-sm text-black/60 dark:text-slate-400 truncate max-w-[60%]">{item.nameAr || item.name}</span>
                   <span className="font-bold text-sm text-black flex-shrink-0 flex items-center gap-1">
                     {item.price === 0 ? "مجاني" : <>{(item.price * item.qty).toLocaleString()} <SARIcon size={10} className="opacity-60" /></>}
                   </span>
@@ -577,13 +577,13 @@ export default function Cart() {
         {/* Upload receipt — only shown if bank transfer is needed */}
         {savedWalletUsed < savedTotal - 0.01 && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="bg-white border border-black/[0.07] rounded-3xl p-6 shadow-sm">
+            className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <Upload className="w-4 h-4 text-white" />
               </div>
               <p className="font-black text-black">ارفع إيصال التحويل</p>
-              <span className="text-xs text-black/35 mr-auto">اختياري الآن</span>
+              <span className="text-xs text-black/35 dark:text-slate-500 mr-auto">اختياري الآن</span>
             </div>
             {!proofFile ? (
               <div
@@ -591,7 +591,7 @@ export default function Cart() {
                 className="border-2 border-dashed border-black/10 rounded-2xl p-8 text-center cursor-pointer hover:border-black/25 transition-all group"
                 data-testid="upload-proof">
                 <Upload className="w-10 h-10 mx-auto mb-3 text-black/20 group-hover:text-black/40 transition-colors" />
-                <p className="text-sm text-black/40">اضغط لرفع صورة الإيصال</p>
+                <p className="text-sm text-black/40 dark:text-slate-500">اضغط لرفع صورة الإيصال</p>
                 <p className="text-xs text-black/25 mt-1">PNG، JPG أو PDF</p>
                 <input ref={proofInputRef} type="file" className="hidden" accept="image/*,.pdf"
                   onChange={e => { if (e.target.files?.[0]) handleProofUpload(e.target.files[0]); }} />
@@ -623,11 +623,11 @@ export default function Cart() {
 
   /* ─── Main Cart ─── */
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative" dir={dir}>
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0a0a0a] relative" dir={dir}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="minimal" /></div>
 
       {/* Sticky Header */}
-      <div className="bg-white border-b border-black/[0.06] sticky top-0 z-30">
+      <div className="bg-white dark:bg-slate-950 border-b border-black/[0.06] dark:border-slate-800 sticky top-0 z-30">
         <div className="max-w-[1100px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/prices">
@@ -636,13 +636,13 @@ export default function Cart() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-base font-black text-black flex items-center gap-2">
+              <h1 className="text-base font-black text-black dark:text-white flex items-center gap-2">
                 {L ? "سلة التسوق" : "Shopping Cart"}
                 {items.length > 0 && (
                   <span className="w-5 h-5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">{items.length}</span>
                 )}
               </h1>
-              <p className="text-[10px] text-black/35 mt-0.5">{L ? "راجع طلبك قبل الإتمام" : "Review your order before completing"}</p>
+              <p className="text-[10px] text-black/35 dark:text-slate-500 mt-0.5">{L ? "راجع طلبك قبل الإتمام" : "Review your order before completing"}</p>
             </div>
           </div>
           {items.length > 0 && (
@@ -657,11 +657,11 @@ export default function Cart() {
       {/* Empty Cart */}
       {items.length === 0 ? (
         <div className="max-w-[500px] mx-auto px-4 py-20 text-center">
-          <div className="w-24 h-24 bg-white border border-black/[0.07] rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-24 h-24 bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <ShoppingCart className="w-11 h-11 text-black/15" />
           </div>
-          <h3 className="text-xl font-black text-black mb-2">{L ? "السلة فارغة" : "Your Cart is Empty"}</h3>
-          <p className="text-black/40 text-sm mb-10 leading-relaxed">{L ? "لم تضف أي خدمات بعد. تصفح خدماتنا واختر ما يناسب مشروعك" : "You haven't added any services yet. Browse our services and choose what suits your project"}</p>
+          <h3 className="text-xl font-black text-black dark:text-white mb-2">{L ? "السلة فارغة" : "Your Cart is Empty"}</h3>
+          <p className="text-black/40 dark:text-slate-500 text-sm mb-10 leading-relaxed">{L ? "لم تضف أي خدمات بعد. تصفح خدماتنا واختر ما يناسب مشروعك" : "You haven't added any services yet. Browse our services and choose what suits your project"}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/prices">
               <Button className="premium-btn gap-2 px-6" data-testid="button-browse-services">
@@ -684,10 +684,10 @@ export default function Cart() {
           <div className="space-y-4">
 
             {/* Cart Items */}
-            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-black/[0.05] flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-black/30" />
-                <span className="text-sm font-bold text-black">عناصر الطلب</span>
+                <span className="text-sm font-bold text-black dark:text-white">عناصر الطلب</span>
               </div>
               <AnimatePresence>
                 {items.map((item, i) => {
@@ -710,7 +710,7 @@ export default function Cart() {
                           : <Icon className="w-5 h-5" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-black leading-tight">{item.nameAr || item.name}</p>
+                        <p className="font-bold text-sm text-black dark:text-white leading-tight">{item.nameAr || item.name}</p>
                         <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 ${colorCls}`}>{typeLabels[item.type] || item.type}</span>
                         {item.type === 'plan' && item.config && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
@@ -729,7 +729,7 @@ export default function Cart() {
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {Object.entries(item.config).slice(0, 3).map(([k, v]) => (
                               typeof v === 'string' || typeof v === 'number' ? (
-                                <span key={k} className="text-[9px] bg-black/[0.03] border border-black/[0.05] px-1.5 py-0.5 rounded text-black/40 font-mono">
+                                <span key={k} className="text-[9px] bg-black/[0.03] dark:bg-slate-800 border border-black/[0.05] dark:border-slate-700 px-1.5 py-0.5 rounded text-black/40 dark:text-slate-500 font-mono">
                                   {String(v)}
                                 </span>
                               ) : null
@@ -758,7 +758,7 @@ export default function Cart() {
                           </div>
                         )}
                         <div className="text-right min-w-[80px]">
-                          <p className="font-black text-sm text-black flex items-center gap-1 justify-end">
+                          <p className="font-black text-sm text-black dark:text-white flex items-center gap-1 justify-end">
                             {item.price === 0 ? "مجاني" : <>{(item.price * item.qty).toLocaleString()} <SARIcon size={10} className="opacity-60" /></>}
                           </p>
                           {item.price > 0 && item.qty > 1 && (
@@ -768,7 +768,7 @@ export default function Cart() {
                         <button
                           onClick={() => item.id && removeMutation.mutate(item.id)}
                           disabled={removeMutation.isPending}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl text-black/20 hover:text-red-500 hover:bg-red-50 transition-all"
+                          className="w-8 h-8 flex items-center justify-center rounded-xl text-black/20 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
                           data-testid={`button-remove-${item.id}`}>
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -780,11 +780,11 @@ export default function Cart() {
             </div>
 
             {/* ── Add-ons ── */}
-            <div className="bg-white border border-black/[0.07] rounded-2xl p-5">
+            <div className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-black/30" />
-                <span className="text-sm font-bold text-black">أضف لطلبك</span>
-                <span className="text-[10px] text-black/35 mr-auto">بنية تحتية متكاملة</span>
+                <span className="text-sm font-bold text-black dark:text-white">أضف لطلبك</span>
+                <span className="text-[10px] text-black/35 dark:text-slate-500 mr-auto">بنية تحتية متكاملة</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -796,16 +796,16 @@ export default function Cart() {
                   const Icon = a.icon;
                   return (
                     <button key={a.key} onClick={() => setAddOnDialog(a.key as any)}
-                      className="flex items-center gap-3 p-3.5 rounded-xl border border-black/[0.07] hover:border-black/20 hover:shadow-sm transition-all text-right bg-white"
+                      className="flex items-center gap-3 p-3.5 rounded-xl border border-black/[0.07] dark:border-slate-800 hover:border-black/20 dark:hover:border-slate-700 hover:shadow-sm transition-all text-right bg-white dark:bg-slate-900"
                       data-testid={`button-addon-${a.key}`}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${a.color}`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-black">{a.label}</p>
-                        <p className="text-[10px] text-black/40 mt-0.5 flex items-center gap-0.5">{a.sub}{a.sarSub && <SARIcon size={7} className="opacity-50" />}</p>
+                        <p className="text-[10px] text-black/40 dark:text-slate-500 mt-0.5 flex items-center gap-0.5">{a.sub}{a.sarSub && <SARIcon size={7} className="opacity-50" />}</p>
                       </div>
-                      <Plus className="w-3.5 h-3.5 text-black/20 mr-auto flex-shrink-0" />
+                      <Plus className="w-3.5 h-3.5 text-black/20 dark:text-slate-600 mr-auto flex-shrink-0" />
                     </button>
                   );
                 })}
@@ -827,11 +827,11 @@ export default function Cart() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-black">{ea.nameAr}</p>
-                        <p className="text-[10px] text-black/40 mt-0.5">{ea.price.toLocaleString()} {ea.currency}</p>
+                        <p className="text-[10px] text-black/40 dark:text-slate-500 mt-0.5">{ea.price.toLocaleString()} {ea.currency}</p>
                       </div>
                       {already
                         ? <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                        : <Plus className="w-3.5 h-3.5 text-black/20 mr-auto flex-shrink-0" />}
+                        : <Plus className="w-3.5 h-3.5 text-black/20 dark:text-slate-600 mr-auto flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -859,7 +859,7 @@ export default function Cart() {
 
           {/* ── Right: Order Summary ── */}
           <div className="space-y-4">
-            <div className="bg-white border border-black/[0.07] rounded-2xl overflow-hidden sticky top-[72px] shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-black/[0.07] dark:border-slate-800 rounded-2xl overflow-hidden sticky top-[72px] shadow-sm">
               <div className="bg-gradient-to-br from-gray-950 via-gray-900 to-black px-5 py-5 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
                 <div className="absolute top-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl" />
@@ -1068,7 +1068,7 @@ export default function Cart() {
                     <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-1 block">
                       أفكار الميزات <span className="text-black/30 font-normal">(اختياري — حتى 5 أفكار)</span>
                     </Label>
-                    <p className="text-xs text-black/35 mb-3">اكتب أي ميزة أو فكرة تريدها في مشروعك — مثال: تسجيل دخول بواتساب، لوحة تحكم، تطبيق جوال...</p>
+                    <p className="text-xs text-black/35 dark:text-slate-500 mb-3">اكتب أي ميزة أو فكرة تريدها في مشروعك — مثال: تسجيل دخول بواتساب، لوحة تحكم، تطبيق جوال...</p>
                     <div className="space-y-2">
                       {featureIdeas.map((idea, idx) => (
                         <div key={idx} className="flex items-center gap-2">
@@ -1091,7 +1091,7 @@ export default function Cart() {
                       <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-1 block">
                         الإضافات المتاحة <span className="text-black/30 font-normal">(اختياري)</span>
                       </Label>
-                      <p className="text-xs text-black/35 mb-3">اختر الإضافات التي تحتاجها لمشروعك</p>
+                      <p className="text-xs text-black/35 dark:text-slate-500 mb-3">اختر الإضافات التي تحتاجها لمشروعك</p>
                       <div className="grid gap-2">
                         {extraAddons.map((addon: any) => {
                           const isSelected = selectedCheckoutAddons.includes(addon._id || addon.id || addon.nameAr);
@@ -1107,8 +1107,8 @@ export default function Cart() {
                                 {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-black dark:text-white">{addon.nameAr || addon.name}</p>
-                                {addon.descriptionAr && <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">{addon.descriptionAr}</p>}
+                                <p className="text-sm font-bold text-black dark:text-white dark:text-white">{addon.nameAr || addon.name}</p>
+                                {addon.descriptionAr && <p className="text-xs text-black/40 dark:text-slate-500 dark:text-white/40 mt-0.5 truncate">{addon.descriptionAr}</p>}
                               </div>
                               {addon.price > 0 && (
                                 <span className="text-xs font-black text-black dark:text-white shrink-0 flex items-center gap-0.5">{addon.price?.toLocaleString()} <SARIcon size={9} className="opacity-70" /></span>
@@ -1124,7 +1124,7 @@ export default function Cart() {
                     <Label className="text-xs font-bold text-black/50 uppercase tracking-wider mb-2 block">
                       الوثائق والملفات <span className="text-black/30 font-normal">(اختياري)</span>
                     </Label>
-                    <p className="text-xs text-black/35 mb-3">شعار، هوية بصرية، مراجع تصميم، أي ملفات تساعدنا</p>
+                    <p className="text-xs text-black/35 dark:text-slate-500 mb-3">شعار، هوية بصرية، مراجع تصميم، أي ملفات تساعدنا</p>
 
                     {docsFiles.length > 0 && (
                       <div className="space-y-2 mb-3">
@@ -1321,7 +1321,7 @@ export default function Cart() {
                             </div>
                             <div className="flex-1">
                               <p className="font-bold text-sm text-black">بيانات التحويل البنكي</p>
-                              <p className="text-xs text-black/40 mt-0.5">حوّل المبلغ وارفع الإيصال بعد تأكيد الطلب</p>
+                              <p className="text-xs text-black/40 dark:text-slate-500 mt-0.5">حوّل المبلغ وارفع الإيصال بعد تأكيد الطلب</p>
                             </div>
                           </div>
                           <div className="p-4 space-y-2 text-sm">
@@ -1358,7 +1358,7 @@ export default function Cart() {
                             </div>
                             <div className="flex-1">
                               <p className="font-bold text-sm text-black">الدفع عبر PayPal</p>
-                              <p className="text-xs text-black/40 mt-0.5">ادفع بحسابك أو ببطاقتك عبر PayPal — آمن وفوري</p>
+                              <p className="text-xs text-black/40 dark:text-slate-500 mt-0.5">ادفع بحسابك أو ببطاقتك عبر PayPal — آمن وفوري</p>
                             </div>
                           </div>
                           <div className="p-4">
