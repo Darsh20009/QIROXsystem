@@ -61,6 +61,7 @@ const AdminShipping = lazy(() => import("@/pages/AdminShipping"));
 const AdminCountries = lazy(() => import("@/pages/AdminCountries"));
 const Devices = lazy(() => import("@/pages/Devices"));
 const Cart = lazy(() => import("@/pages/Cart"));
+const CartWizardPage = lazy(() => import("@/pages/CartWizardPage"));
 const Checkout = lazy(() => import("@/pages/Checkout"));
 const InternalGate = lazy(() => import("@/pages/InternalGate"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
@@ -310,6 +311,7 @@ function AdminRouter() {
         <Route path="/payment-history" component={PaymentHistory} />
         <Route path="/employee/abandoned-carts" component={AdminAbandonedCarts} />
         <Route path="/cart" component={Cart} />
+        <Route path="/cart-wizard" component={CartWizardPage} />
         <Route path="/checkout" component={Checkout} />
         <Route path="/inbox" component={Inbox} />
         <Route path="/groups/:id" component={GroupChat} />

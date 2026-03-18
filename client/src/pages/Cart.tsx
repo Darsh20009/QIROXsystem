@@ -1,7 +1,6 @@
 // @ts-nocheck
 import SARIcon from "@/components/SARIcon";
 import PayPalCheckoutButton from "@/components/PayPalCheckoutButton";
-import CartOrderWizard from "@/components/CartOrderWizard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,9 +100,6 @@ export default function Cart() {
   const [domainName, setDomainName] = useState("");
   const [domainExt, setDomainExt] = useState(".com");
   const [selectedEmail, setSelectedEmail] = useState<typeof emailPlans[0] | null>(null);
-
-  /* wizard */
-  const [wizardOpen, setWizardOpen] = useState(false);
 
   /* pre-checkout dialog states */
   const [preCheckoutOpen, setPreCheckoutOpen] = useState(false);
@@ -944,7 +940,7 @@ export default function Cart() {
                 <Button
                   className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={items.length === 0 || needsPlanWarning}
-                  onClick={() => setWizardOpen(true)}
+                  onClick={() => navigate("/cart-wizard")}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
                   إتمام الطلب الآن
@@ -976,7 +972,7 @@ export default function Cart() {
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
-              onClick={() => setWizardOpen(true)}
+              onClick={() => navigate("/cart-wizard")}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
               أكمل الطلب
@@ -1752,14 +1748,6 @@ export default function Cart() {
         </DialogContent>
       </Dialog>
 
-      <CartOrderWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        cartItems={items}
-        total={total}
-        user={user}
-        hasPhysical={hasPhysical}
-      />
     </div>
   );
 }
