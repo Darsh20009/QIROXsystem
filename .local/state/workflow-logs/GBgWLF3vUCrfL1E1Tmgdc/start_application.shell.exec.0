@@ -1,0 +1,211 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+3:26:35 AM [express] serving on port 5000
+Initialized 9 cron jobs
+3:26:41 AM [express] GET /api/user 401 in 2ms
+3:26:45 AM [express] GET /api/user 401 in 1ms
+3:26:45 AM [express] GET /api/public/settings 304 in 98ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+3:26:46 AM [express] GET /api/partners 304 in 34ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+3:26:46 AM [express] GET /api/discount-codes/public 304 in 32ms :: []
+3:26:46 AM [express] GET /api/app-downloads 304 in 37ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+3:26:46 AM [express] GET /api/templates 304 in 73ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+3:26:50 AM [express] GET /api/user 401 in 1ms
+3:26:58 AM [express] GET /api/user 401 in 1ms
+3:27:40 AM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+3:27:40 AM [express] GET /api/auth/google/status 304 in 0ms :: {"enabled":true}
+3:27:47 AM [express] POST /api/login 401 in 87ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+3:27:51 AM [express] POST /api/login 200 in 120ms :: {"subscriptionPeriod":null,"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"linktree":"","referredBy":null,"referralCreditsEarned":0,"username":…
+3:27:51 AM [express] GET /api/orders 304 in 222ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled",…
+3:27:51 AM [express] GET /api/cart 304 in 221ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","ti…
+3:27:51 AM [express] GET /api/notifications/unread-count 304 in 212ms :: {"count":8}
+3:27:51 AM [express] GET /api/badges 304 in 220ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:27:52 AM [express] GET /api/wallet 304 in 401ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+3:27:52 AM [express] GET /api/notifications 200 in 36ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:27:52 AM [express] GET /api/inbox/unread-count 304 in 38ms :: {"count":0}
+3:27:55 AM [express] GET /api/auth/webauthn/credentials 200 in 44ms :: [{"userId":"699a420be5c888d6633c0611","credentialId":"xPLrMVIy-PFLGAI3ZI6G-mj57DJGELk58kDA78iC6iA","counter":1,"transports":["internal"],"deviceName":…
+3:27:55 AM [express] GET /api/attendance/status 200 in 35ms
+3:27:55 AM [express] GET /api/mod-quota 200 in 37ms :: {"hasOrders":false}
+3:27:55 AM [express] GET /api/admin/mod-type-prices 200 in 36ms :: []
+3:27:55 AM [express] GET /api/my-api-keys 200 in 37ms :: []
+3:27:55 AM [express] GET /api/projects 304 in 80ms :: [{"usageGuide":{"title":"شرح استخدام النظام","files":[]},"orderId":{"sector":"يث","totalAmount":8000,"id":"699ae6bea81a646c92373be8"},"clientId":"699a420be5c888d6633c0…
+3:27:56 AM [express] GET /api/phone-verify/status 200 in 77ms :: {"phone":"0532441566","phoneVerified":true,"pendingMethod":null,"pendingCallStatus":null,"pendingExpiresAt":null}
+3:27:56 AM [express] GET /api/qmeet/upcoming 304 in 32ms :: []
+3:27:56 AM [express] GET /api/modification-requests 200 in 36ms :: [{"userId":"699a420be5c888d6633c0611","projectId":"69a27858527789d1101319be","title":"ق3","description":"ق3","priority":"urgent","status":"rejected","atta…
+3:27:56 AM [express] GET /api/pricing 304 in 36ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime…
+3:28:12 AM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:28:13 AM [express] GET /api/bank-settings 304 in 41ms :: {"key":"main","bankName":"بنك الراجحي","beneficiaryName":"Mohammed Bin Ali ALdbani","iban":"SA74 8000 0336 6080 1608 1379","accountNumber":"","swiftCode":"","curr…
+3:28:13 AM [express] GET /api/extra-addons 304 in 70ms :: [{"name":"iOS App Store Publishing","nameAr":"نشر على App Store (iOS)","description":"","descriptionAr":"رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمر…
+3:28:13 AM [express] GET /api/wallet/card 304 in 72ms :: {"cardNumber":"4747460673989295","cardActive":true,"hasPin":true,"holderName":"darsh","balance":0}
+3:28:22 AM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:28:22 AM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:28:22 AM [express] GET /api/inbox/unread-count 304 in 2ms :: {"count":0}
+3:28:32 AM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:28:42 AM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:28:52 AM [express] GET /api/orders 304 in 41ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","…
+3:28:52 AM [express] GET /api/wallet 304 in 143ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+3:28:52 AM [express] GET /api/badges 304 in 37ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:28:52 AM [express] GET /api/inbox/unread-count 304 in 36ms :: {"count":0}
+3:28:53 AM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:29:02 AM [express] GET /api/cart 304 in 35ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:29:13 AM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:29:22 AM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:29:22 AM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+3:29:23 AM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:29:33 AM [express] GET /api/notifications 304 in 35ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:29:43 AM [express] GET /api/cart 304 in 35ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:29:52 AM [express] GET /api/orders 304 in 38ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","…
+3:29:52 AM [express] GET /api/wallet 304 in 140ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+3:29:53 AM [express] GET /api/badges 304 in 37ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:29:53 AM [express] GET /api/inbox/unread-count 304 in 36ms :: {"count":0}
+3:29:54 AM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:30:03 AM [express] GET /api/cart 304 in 35ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:30:14 AM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:30:18 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:30:18 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+3:30:23 AM [express] GET /api/badges 304 in 2ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:30:23 AM [express] GET /api/inbox/unread-count 304 in 8ms :: {"count":0}
+3:30:24 AM [express] GET /api/cart 304 in 46ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:30:26 AM [express] GET /api/shipping-companies 304 in 38ms :: [{"name":"SMSA Express","nameAr":"سمسا إكسبرس","logo":"🟠","color":"#FF6B00","basePrice":25,"outsideCityPrice":35,"estimatedDays":"1-2 أيام","outsideCityDays…
+3:30:34 AM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:30:41 AM [express] POST /api/cart/items 200 in 82ms :: {"userId":"699a420be5c888d6633c0611","items":[{"__parentArray":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"c…
+3:30:42 AM [express] GET /api/cart 200 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:30:49 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/CartWizardPage.tsx, /src/index.css[22m
+3:30:52 AM [express] GET /api/orders 304 in 37ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","…
+3:30:53 AM [express] GET /api/wallet 304 in 138ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+3:30:53 AM [express] GET /api/badges 304 in 40ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:30:53 AM [express] GET /api/inbox/unread-count 304 in 35ms :: {"count":0}
+3:30:54 AM [express] GET /api/notifications 304 in 35ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:31:06 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/CartWizardPage.tsx, /src/index.css[22m [33m(x2)[39m
+3:31:12 AM [express] GET /api/cart 304 in 38ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:31:15 AM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…
+3:31:23 AM [express] GET /api/badges 304 in 2ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+3:31:24 AM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:31:29 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/CartWizardPage.tsx, /src/index.css[22m [33m(x3)[39m
+3:31:32 AM [express] GET /api/cart 304 in 36ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+3:31:35 AM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b75437342b3485259577cb","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"status","title":"تحديث طلبك: cancelled","body":"تم تحديث حالة طلب…

@@ -1,0 +1,430 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+9:04:19 PM [express] serving on port 5000
+Initialized 9 cron jobs
+9:04:25 PM [express] GET /api/user 401 in 2ms
+9:04:25 PM [express] GET /api/public/settings 304 in 67ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:04:27 PM [express] GET /api/discount-codes/public 304 in 39ms :: []
+9:04:27 PM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+9:04:27 PM [express] GET /api/partners 304 in 37ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+9:04:27 PM [express] GET /api/templates 304 in 71ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+9:36:56 PM [express] GET /api/user 401 in 2ms
+9:37:50 PM [express] GET /api/public/settings 200 in 41ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:37:54 PM [express] GET /api/public/settings 200 in 39ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:37:55 PM [express] GET /api/templates 200 in 66ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+9:37:57 PM [express] POST /api/login 401 in 90ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+9:38:18 PM [express] POST /api/login 200 in 119ms :: {"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBalance":…
+9:38:27 PM [express] POST /api/login 200 in 114ms :: {"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBalance":…
+9:38:27 PM [express] GET /api/admin/users 200 in 89ms :: [{"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBala…
+9:38:33 PM [express] GET /api/admin/orders 200 in 117ms :: [{"_id":"699ae6bea81a646c92373be8","userId":{"_id":"699a420be5c888d6633c0611","username":"darwish","email":"youssefdarwish20009@gmail.com","fullName":"darsh","pho…
+9:38:33 PM [express] GET /api/admin/customers 200 in 48ms :: [{"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"wallet…
+9:38:33 PM [express] GET /api/admin/finance/summary 200 in 42ms :: {"totalRevenue":0,"monthRevenue":0,"unpaidTotal":0,"cancelledTotal":0,"totalOrders":0,"activeClients":35,"monthlyBreakdown":[{"name":"أكتوبر","value":0},{…
+9:38:33 PM [express] GET /api/admin/employees 200 in 77ms :: [{"id":"698a441902c00da9923744f7","fullName":"System Admin","username":"qadmin","role":"admin","email":"info@qiroxstudio.online"},{"id":"69920f66cd5abe741330f11…
+9:38:33 PM [express] GET /api/settings 200 in 16ms
+9:38:40 PM [express] GET /api/admin/wallet 200 in 11ms
+9:38:40 PM [express] GET /api/admin/invoices 200 in 13ms
+9:38:40 PM [express] GET /api/admin/receipts 200 in 12ms
+9:38:40 PM [express] GET /api/admin/payroll 200 in 73ms :: [{"userId":{"username":"darwish2001","email":"youssefd.business@gmail.com","role":"manager","fullName":"يوسف محمد محمود أحمد درويش","id":"69a487f0a18808005bdf3247…
+9:38:40 PM [express] GET /api/admin/contact-messages 200 in 38ms :: [{"_id":"69b602ec8410111ca634078b","name":"أحمد","email":"test@test.com","phone":"0501234567","subject":"تجربة","message":"مرحبا هذه تجربة للنموذج","read…
+9:38:40 PM [express] GET /api/admin/consultations 200 in 10ms
+9:38:40 PM [express] GET /api/admin/installments 200 in 9ms
+9:38:40 PM [express] GET /api/admin/mod-requests 200 in 7ms
+9:38:45 PM [express] GET /api/admin/phone-verifications 200 in 36ms :: []
+9:38:45 PM [express] GET /api/admin/data-requests 200 in 37ms :: []
+9:38:46 PM [express] GET /api/qmeet/rooms 200 in 8ms
+9:38:46 PM [express] GET /api/notifications 200 in 48ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:38:46 PM [express] GET /api/messages 200 in 10ms
+9:38:55 PM [express] GET /api/partners 200 in 36ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+9:38:55 PM [express] GET /api/admin/attendance 200 in 157ms :: [{"user":{"username":"qadmin","email":"info@qiroxstudio.online","role":"admin","fullName":"System Admin","id":"698a441902c00da9923744f7"},"todayAttendance":nu…
+9:38:55 PM [express] GET /api/employee/checklist 200 in 9ms
+9:38:55 PM [express] GET /api/groups 200 in 40ms :: []
+9:39:26 PM [express] GET /api/auth/google/status 200 in 1ms :: {"enabled":true}
+9:39:26 PM [express] GET /api/auth/github/status 200 in 1ms :: {"enabled":false}
+9:39:32 PM [express] POST /api/login 401 in 80ms :: {"error":"اسم المستخدم أو كلمة المرور غير صحيحة"}
+9:39:40 PM [express] POST /api/login 200 in 97ms :: {"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBalance":0…
+9:39:41 PM [express] GET /api/public/settings 304 in 116ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+9:39:41 PM [express] GET /api/attendance/status 200 in 109ms :: {"location":{"lat":0,"lng":0},"userId":"698a441902c00da9923744f7","checkIn":"2026-03-08T20:45:18.079Z","ipAddress":"fetching...","locationHistory":[{"lat":0,…
+9:39:41 PM [express] GET /api/notifications 200 in 122ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوما…
+9:39:41 PM [express] GET /api/notifications/unread-count 200 in 115ms :: {"count":5}
+9:39:41 PM [express] GET /api/badges 200 in 348ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:39:41 PM [express] GET /api/inbox/unread-count 200 in 40ms :: {"count":0}
+9:39:41 PM [express] GET /api/orders/pending-count 200 in 39ms :: {"count":0}
+9:39:43 PM [express] GET /api/admin/system-overview 200 in 476ms :: {"overview":{"totalClients":35,"totalEmployees":6,"totalRevenue":0,"totalOrders":23,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalInvo…
+9:40:01 PM [express] GET /api/notifications 304 in 41ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:40:11 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:40:11 PM [express] GET /api/inbox/unread-count 304 in 2ms :: {"count":0}
+9:40:11 PM [express] GET /api/orders/pending-count 304 in 36ms :: {"count":0}
+9:40:21 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:40:40 PM [express] GET /api/notifications/unread-count 304 in 37ms :: {"count":5}
+9:40:41 PM [express] GET /api/badges 304 in 40ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:40:42 PM [express] GET /api/inbox/unread-count 304 in 38ms :: {"count":0}
+9:40:42 PM [express] GET /api/orders/pending-count 304 in 37ms :: {"count":0}
+9:40:42 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:40:43 PM [express] GET /api/admin/system-overview 304 in 2ms :: {"overview":{"totalClients":35,"totalEmployees":6,"totalRevenue":0,"totalOrders":23,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalInvoic…
+9:40:54 PM [express] GET /api/modification-requests 200 in 35ms :: [{"userId":"699a420be5c888d6633c0611","projectId":"69a27858527789d1101319be","title":"ق3","description":"ق3","priority":"urgent","status":"rejected","atta…
+9:40:54 PM [express] GET /api/qmeet/upcoming 200 in 36ms :: []
+9:40:54 PM [express] GET /api/admin/stats 200 in 86ms :: {"totalOrders":23,"pendingOrders":0,"activeProjects":1,"totalRevenue":0,"totalClients":35,"totalEmployees":5,"totalServices":3,"recentOrders":[{"userId":"699a420be5…
+9:40:54 PM [express] GET /api/projects 200 in 90ms :: [{"usageGuide":{"title":"شرح استخدام النظام","files":[]},"orderId":{"sector":"يث","totalAmount":8000,"id":"699ae6bea81a646c92373be8"},"clientId":"699a420be5c888d6633c0…
+9:40:54 PM [express] GET /api/orders 200 in 127ms :: [{"_id":"699ae6bea81a646c92373be8","userId":{"_id":"699a420be5c888d6633c0611","username":"darwish","email":"youssefdarwish20009@gmail.com","fullName":"darsh","phone":"0…
+9:41:02 PM [express] GET /api/notifications 304 in 39ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:41:12 PM [express] GET /api/badges 304 in 3ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:41:12 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:41:12 PM [express] GET /api/orders/pending-count 304 in 36ms :: {"count":0}
+9:41:22 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:41:42 PM [express] GET /api/badges 304 in 47ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:41:42 PM [express] GET /api/inbox/unread-count 304 in 38ms :: {"count":0}
+9:41:42 PM [express] GET /api/orders/pending-count 304 in 36ms :: {"count":0}
+9:41:43 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:41:54 PM [express] GET /api/qmeet/upcoming 304 in 35ms :: []
+9:42:03 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:42:12 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:42:12 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:42:13 PM [express] GET /api/orders/pending-count 304 in 38ms :: {"count":0}
+9:42:23 PM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:42:43 PM [express] GET /api/badges 304 in 41ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:42:43 PM [express] GET /api/inbox/unread-count 304 in 37ms :: {"count":0}
+9:42:43 PM [express] GET /api/orders/pending-count 304 in 35ms :: {"count":0}
+9:42:44 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:42:55 PM [express] GET /api/qmeet/upcoming 304 in 35ms :: []
+9:43:04 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:43:13 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:43:13 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:43:13 PM [express] GET /api/orders/pending-count 304 in 38ms :: {"count":0}
+9:43:24 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:43:43 PM [express] GET /api/inbox/unread-count 304 in 37ms :: {"count":0}
+9:43:43 PM [express] GET /api/badges 304 in 253ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:43:43 PM [express] GET /api/orders/pending-count 304 in 37ms :: {"count":0}
+9:43:44 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:43:55 PM [express] GET /api/qmeet/upcoming 304 in 35ms :: []
+9:44:05 PM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:44:14 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:44:14 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:44:14 PM [express] GET /api/orders/pending-count 304 in 38ms :: {"count":0}
+9:44:25 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:44:27 PM [express] GET /api/admin/phone-verifications 200 in 38ms :: []
+9:44:44 PM [express] GET /api/inbox/unread-count 304 in 75ms :: {"count":0}
+9:44:44 PM [express] GET /api/badges 304 in 76ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:44:44 PM [express] GET /api/orders/pending-count 304 in 36ms :: {"count":0}
+9:44:45 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:45:04 PM [express] GET /api/notifications/unread-count 304 in 38ms :: {"count":5}
+9:45:06 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34c","userId":"698a441902c00da9923744f7","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:45:13 PM [express] GET /api/admin/investors 200 in 77ms :: [{"_id":"69a7811a1d2c8aa72fab17a1","userId":{"jobTitle":"","bio":"","username":"moh2030","email":"Mohammedadbani517@gmail.com","role":"manager","fullName":"محمد…
+9:45:13 PM [express] GET /api/admin/investment-payments 200 in 77ms :: [{"_id":"69a830b86a9a2363a2589fe9","investorId":"69a781291d2c8aa72fab17ac","userId":{"username":"darwish2001","email":"youssefd.business@gmail.com","f…
+9:45:14 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:45:14 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:45:14 PM [express] GET /api/orders/pending-count 304 in 50ms :: {"count":0}
+9:45:18 PM [express] POST /api/logout 200 in 2ms
+9:45:18 PM [express] GET /api/partners 304 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+9:45:18 PM [express] GET /api/public/settings 304 in 37ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:45:18 PM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+9:45:18 PM [express] GET /api/discount-codes/public 304 in 41ms :: []
+9:45:18 PM [express] GET /api/templates 304 in 69ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+9:45:20 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+9:45:20 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+9:45:27 PM [express] POST /api/login 200 in 199ms :: {"requires2FA":true,"methods":["push","totp","email","passphrase"],"tempToken":"732b64fa0913df2a458f6fceed5736668086c3815fadc17c96ebef71853a86d2"}
+9:45:30 PM [express] POST /api/auth/push-challenge/request 200 in 118ms :: {"challengeId":"d06d634c8db2c14c213881f4e4ca9dee","number":47}
+9:45:30 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 200 in 36ms :: {"status":"pending","number":47}
+9:45:32 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 35ms :: {"status":"pending","number":47}
+9:45:35 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 39ms :: {"status":"pending","number":47}
+9:45:37 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 37ms :: {"status":"pending","number":47}
+9:45:40 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 37ms :: {"status":"pending","number":47}
+9:45:42 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 36ms :: {"status":"pending","number":47}
+9:45:45 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 38ms :: {"status":"pending","number":47}
+9:45:47 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 37ms :: {"status":"pending","number":47}
+9:45:50 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 35ms :: {"status":"pending","number":47}
+9:45:52 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 35ms :: {"status":"pending","number":47}
+9:45:55 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 37ms :: {"status":"pending","number":47}
+9:45:57 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 36ms :: {"status":"pending","number":47}
+9:46:00 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 37ms :: {"status":"pending","number":47}
+9:46:02 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 35ms :: {"status":"pending","number":47}
+9:46:05 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 36ms :: {"status":"pending","number":47}
+9:46:07 PM [express] GET /api/auth/push-challenge/status/d06d634c8db2c14c213881f4e4ca9dee 304 in 39ms :: {"status":"pending","number":47}
+9:46:09 PM [express] POST /api/auth/push-challenge/request 200 in 113ms :: {"challengeId":"782015e694b257de39c6bb73af1534df","number":84}
+9:46:10 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 200 in 36ms :: {"status":"pending","number":84}
+9:46:12 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 37ms :: {"status":"pending","number":84}
+9:46:15 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 47ms :: {"status":"pending","number":84}
+9:46:17 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 37ms :: {"status":"pending","number":84}
+9:46:20 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 37ms :: {"status":"pending","number":84}
+9:46:22 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 36ms :: {"status":"pending","number":84}
+9:46:25 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 304 in 36ms :: {"status":"pending","number":84}
+9:46:27 PM [express] GET /api/auth/push-challenge/status/782015e694b257de39c6bb73af1534df 200 in 36ms :: {"status":"approved","number":84}
+9:46:28 PM [express] POST /api/auth/push-challenge/complete 200 in 146ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","link…
+9:46:28 PM [express] GET /api/user 200 in 1ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":fa…
+9:46:28 PM [express] GET /api/admin/system-overview 304 in 483ms :: {"overview":{"totalClients":35,"totalEmployees":6,"totalRevenue":0,"totalOrders":23,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalInvo…
+9:46:41 PM [express] GET /api/admin/users 200 in 81ms :: [{"subscriptionPeriod":null,"subscriptionStatus":"none","renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"walletCardActive":false,"walletBala…
+9:46:48 PM [express] GET /api/notifications 200 in 36ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+Internal Server Error: TypeError: Cannot destructure property 'checkOutNotes' of 'req.body' as it is undefined.
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/routes.ts:1056:13[90m)[39m
+    at Layer.handleRequest [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/layer.js:152:17[90m)[39m
+    at next [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/route.js:157:13[90m)[39m
+    at Route.dispatch [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/route.js:117:3[90m)[39m
+    at handle [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:435:11[90m)[39m
+    at Layer.handleRequest [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/layer.js:152:17[90m)[39m
+    at [90m/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:295:15
+    at processParams [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:582:12[90m)[39m
+    at next [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:291:5[90m)[39m
+    at strategy.pass [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/middleware/authenticate.js:355:9[90m)[39m
+    at [90m/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/strategies/session.js:120:12
+    at pass [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/authenticator.js:352:31[90m)[39m
+    at deserialized [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/authenticator.js:364:7[90m)[39m
+    at <anonymous> [90m(/home/runner/workspace/[39mserver/auth.ts:122:26[90m)[39m
+    at pass [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/authenticator.js:372:9[90m)[39m
+    at Authenticator.deserializeUser [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/authenticator.js:377:5[90m)[39m
+    at SessionStrategy.authenticate [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/strategies/session.js:112:10[90m)[39m
+    at attempt [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/middleware/authenticate.js:378:16[90m)[39m
+    at authenticate [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/middleware/authenticate.js:379:7[90m)[39m
+    at Layer.handleRequest [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/layer.js:152:17[90m)[39m
+    at trimPrefix [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:342:13[90m)[39m
+    at [90m/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:297:9
+    at processParams [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:582:12[90m)[39m
+    at next [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:291:5[90m)[39m
+    at initialize [90m(/home/runner/workspace/[39mnode_modules/[4mpassport[24m/lib/middleware/initialize.js:98:5[90m)[39m
+    at Layer.handleRequest [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/lib/layer.js:152:17[90m)[39m
+    at trimPrefix [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:342:13[90m)[39m
+    at [90m/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:297:9
+    at processParams [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:582:12[90m)[39m
+    at next [90m(/home/runner/workspace/[39mnode_modules/[4mrouter[24m/index.js:291:5[90m)[39m
+    at Immediate.<anonymous> [90m(/home/runner/workspace/[39mnode_modules/[4mexpress-session[24m/index.js:521:7[90m)[39m
+[90m    at process.processImmediate (node:internal/timers:485:21)[39m
+9:46:52 PM [express] POST /api/attendance/check-out 500 in 5ms :: {"message":"Cannot destructure property 'checkOutNotes' of 'req.body' as it is undefined."}
+9:46:58 PM [express] GET /api/badges 304 in 39ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:46:58 PM [express] GET /api/inbox/unread-count 304 in 35ms :: {"count":0}
+9:46:58 PM [express] GET /api/orders/pending-count 304 in 36ms :: {"count":0}
+9:47:03 PM [express] POST /api/logout 200 in 1ms
+9:47:04 PM [express] GET /api/public/settings 304 in 36ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:47:07 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+9:47:07 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+9:48:18 PM [express] POST /api/login 200 in 194ms :: {"requires2FA":true,"methods":["push","totp","email","passphrase"],"tempToken":"31aa3c3d0f11fe749ccf62481942e61a618a9be480556060d88a99aec84e08f4"}
+9:48:25 PM [express] POST /api/auth/verify-2fa 200 in 349ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","pho…
+9:48:25 PM [express] GET /api/user 304 in 1ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":fa…
+9:48:45 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:48:55 PM [express] GET /api/inbox/unread-count 304 in 38ms :: {"count":0}
+9:48:55 PM [express] GET /api/orders/pending-count 304 in 34ms :: {"count":0}
+9:48:55 PM [express] GET /api/badges 304 in 39ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:48:57 PM [express] GET /api/notifications/unread-count 200 in 39ms :: {"count":0}
+9:49:06 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:49:26 PM [express] GET /api/badges 304 in 1ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:49:26 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:49:26 PM [express] GET /api/orders/pending-count 304 in 35ms :: {"count":0}
+9:49:26 PM [express] GET /api/admin/system-overview 304 in 496ms :: {"overview":{"totalClients":35,"totalEmployees":6,"totalRevenue":0,"totalOrders":23,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalInvo…
+9:49:26 PM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:49:27 PM [express] GET /api/notifications/unread-count 304 in 38ms :: {"count":0}
+9:49:46 PM [express] GET /api/notifications 304 in 35ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:49:56 PM [express] GET /api/orders/pending-count 304 in 35ms :: {"count":0}
+9:49:56 PM [express] GET /api/inbox/unread-count 304 in 37ms :: {"count":0}
+9:49:56 PM [express] GET /api/badges 304 in 41ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:49:57 PM [express] GET /api/notifications/unread-count 304 in 38ms :: {"count":0}
+9:50:06 PM [express] GET /api/notifications 304 in 37ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:50:26 PM [express] GET /api/admin/system-overview 304 in 1ms :: {"overview":{"totalClients":35,"totalEmployees":6,"totalRevenue":0,"totalOrders":23,"pendingOrders":0,"inProgressOrders":0,"completedOrders":0,"totalInvoic…
+9:50:26 PM [express] GET /api/inbox/unread-count 304 in 1ms :: {"count":0}
+9:50:26 PM [express] GET /api/badges 304 in 0ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:50:26 PM [express] GET /api/orders/pending-count 304 in 40ms :: {"count":0}
+9:50:27 PM [express] GET /api/notifications 304 in 38ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:50:28 PM [express] GET /api/notifications/unread-count 304 in 35ms :: {"count":0}
+9:50:47 PM [express] GET /api/notifications 304 in 36ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:50:56 PM [express] GET /api/inbox/unread-count 304 in 37ms :: {"count":0}
+9:50:56 PM [express] GET /api/orders/pending-count 304 in 40ms :: {"count":0}
+9:50:57 PM [express] GET /api/badges 304 in 255ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":7,"total":7}
+9:50:58 PM [express] GET /api/notifications/unread-count 304 in 35ms :: {"count":0}
+9:51:07 PM [express] GET /api/notifications 304 in 34ms :: [{"_id":"69b794d1535598619954d34f","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"صباح الخير ☀️","body":"صباح الخير! نتمنى لكم يوماً…
+9:51:20 PM [express] POST /api/logout 200 in 1ms
+9:51:21 PM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+9:51:21 PM [express] GET /api/public/settings 304 in 35ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+9:51:23 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+9:51:23 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+[OTP] ✅ Code for mohammedadbani517@gmail.com: 838616 (expires in 10 min)
+9:51:33 PM [express] POST /api/auth/forgot-password 200 in 2092ms :: {"ok":true,"emailSent":true}
+9:51:35 PM [express] GET /api/auth/google/status 304 in 1ms :: {"enabled":true}
+9:51:35 PM [express] GET /api/auth/github/status 304 in 1ms :: {"enabled":false}
+9:52:25 PM [express] GET /api/admin/connection-settings 200 in 74ms :: {"status":{"primary":{"uri":"mongodb+srv://Vercel-Admin-QIROXSYSTEM:****@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM","state":"connected"},"s…
+9:53:20 PM [express] GET /api/admin/connection-settings 200 in 37ms :: {"status":{"primary":{"uri":"mongodb+srv://Vercel-Admin-QIROXSYSTEM:****@qiroxsystem.ekvjdkj.mongodb.net/?appName=QIROXSYSTEM","state":"connected"},"s…
+10:16:18 PM [express] GET /api/app-downloads 304 in 38ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+10:16:18 PM [express] GET /api/system-features 200 in 39ms :: []
+10:16:19 PM [express] GET /api/extra-addons 200 in 73ms :: [{"name":"iOS App Store Publishing","nameAr":"نشر على App Store (iOS)","description":"","descriptionAr":"رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمر…
+10:16:19 PM [express] GET /api/products 200 in 41ms :: [{"discount":0,"warrantyMonths":0,"name":"Handheld PDA Android POS Terminal Receipt Printer Barcode Printer, Data Collector, Portable Barcode Scanner Pos Machine, Hand…
+10:16:19 PM [express] GET /api/bank-settings 200 in 37ms :: {"key":"main","bankName":"بنك الراجحي","beneficiaryName":"Mohammed Bin Ali ALdbani","iban":"SA74 8000 0336 6080 1608 1379","accountNumber":"","swiftCode":"","curr…
+10:16:19 PM [express] GET /api/public/settings 304 in 37ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+10:16:19 PM [express] GET /api/templates 304 in 69ms :: [{"createdBy":null,"name":"Beauty and salon ","nameAr":" التجميل و الصالونات","slug":"Beauty and salon ","description":"Digital Transformation for Beauty & Wellness C…
+10:16:22 PM [express] GET /api/extra-addons 200 in 78ms :: [{"name":"iOS App Store Publishing","nameAr":"نشر على App Store (iOS)","description":"","descriptionAr":"رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمر…
+10:16:24 PM [express] GET /api/extra-addons 200 in 78ms :: [{"name":"iOS App Store Publishing","nameAr":"نشر على App Store (iOS)","description":"","descriptionAr":"رفع التطبيق ونشره على متجر Apple — يشمل إعداد الحساب والمر…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:18:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/OrderFlow.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:19:06 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/OrderFlow.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:20:33 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/OrderFlow.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:20:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/OrderFlow.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:21:00 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/OrderFlow.tsx, /src/index.css[22m [33m(x5)[39m
+10:21:18 PM [express] GET /api/user 401 in 1ms
+10:21:24 PM [express] GET /api/user 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:22:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:22:28 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
