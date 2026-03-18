@@ -788,8 +788,8 @@ export default function Cart() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { key: 'db',     icon: Database, label: "MongoDB Atlas",  sub: "من $0/شهر",     color: "text-green-600 bg-green-50" },
-                  { key: 'aws',    icon: Cloud,    label: "Amazon EC2",     sub: "من $8/شهر",     color: "text-orange-500 bg-orange-50" },
+                  { key: 'db',     icon: Database, label: "MongoDB Atlas",  sub: "من 0/شهر",      sarSub: true, color: "text-green-600 bg-green-50" },
+                  { key: 'aws',    icon: Cloud,    label: "Amazon EC2",     sub: "من 30/شهر",     sarSub: true, color: "text-orange-500 bg-orange-50" },
                   { key: 'domain', icon: Globe,    label: "تسجيل دومين",   sub: "من 45/سنة",     sarSub: true, color: "text-blue-600 bg-blue-50" },
                   { key: 'email',  icon: Mail,     label: "بريد أعمال",    sub: "من 35/شهر",     sarSub: true, color: "text-violet-600 bg-violet-50" },
                 ].map(a => {
