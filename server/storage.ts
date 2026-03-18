@@ -536,12 +536,15 @@ export class MongoStorage implements IStorage {
   }
 
   async upsertCartItem(userId: string, item: CartItem): Promise<Cart> {
-    // Strip any client-generated _id to avoid ObjectId cast errors
     const { _id, id, ...safeItem } = item as any;
     let cart = await CartModel.findOne({ userId });
     if (!cart) {
       cart = await CartModel.create({ userId, items: [safeItem] });
     } else {
+      // Enforce one plan per cart: replace any existing plan/service with the new one
+      if (safeItem.type === "plan" || safeItem.type === "service") {
+        cart.items = (cart.items as any[]).filter((i: any) => i.type !== "plan" && i.type !== "service") as any;
+      }
       cart.items.push(safeItem as any);
       await cart.save();
     }

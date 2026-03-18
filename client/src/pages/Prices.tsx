@@ -395,21 +395,27 @@ export default function Prices() {
         },
       };
       if (!user) {
-        // Guest: save to localStorage
         const existing = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : { items: [] }; } catch { return { items: [] }; } })();
-        // Remove any existing plan item to replace it
-        existing.items = existing.items.filter((i: any) => i.type !== "plan");
+        const hadPlan = existing.items.some((i: any) => i.type === "plan" || i.type === "service");
+        existing.items = existing.items.filter((i: any) => i.type !== "plan" && i.type !== "service");
         existing.items.push({ ...cartItem, _id: Date.now().toString() });
         localStorage.setItem("qiroxGuestCart", JSON.stringify(existing));
-        return { guest: true };
+        return { guest: true, replaced: hadPlan };
       }
+      const cachedCart = (queryClient.getQueryData(["/api/cart"]) as any);
+      const hadPlan = Array.isArray(cachedCart?.items) && cachedCart.items.some((i: any) => i.type === "plan" || i.type === "service");
       const r = await apiRequest("POST", "/api/cart/items", cartItem);
-      return r.json();
+      const data = await r.json();
+      return { ...data, replaced: hadPlan };
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       setAddingPlanId(null);
-      toast({ title: "✓ تمت إضافة الباقة للسلة" });
+      if (data?.replaced) {
+        toast({ title: "✓ تم استبدال الباقة السابقة", description: "أُضيفت الباقة الجديدة كمشروع واحد في السلة" });
+      } else {
+        toast({ title: "✓ تمت إضافة الباقة للسلة", description: "يمكنك إضافة خدمات إضافية قبل إتمام الطلب" });
+      }
       navigate("/cart");
     },
     onError: () => {
