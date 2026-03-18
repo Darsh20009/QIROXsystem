@@ -10,45 +10,43 @@ import { useUser } from "@/hooks/use-auth";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import {
-  X, ChevronRight, ChevronLeft, Check, Loader2,
-  Building2, Lightbulb, FileText, Target, Calendar,
-  MapPin, LogIn, UserPlus, Phone, Mail, Instagram, Twitter,
+  ChevronRight, ChevronLeft, Check, Loader2,
+  Building2, FileText, Target, Calendar,
+  MapPin, LogIn, UserPlus,
   Upload, Globe, Users, Code2, Star, Sparkles, Camera,
   ShoppingBag, Smartphone, BotMessageSquare, Languages,
   TrendingUp, MessageSquare, Truck, BookOpen, Lock,
   Database, BarChart3, Palette, Server, ArrowLeft, Eye, EyeOff,
-  Zap, Package, Send, Hash, Cpu, Home, ShoppingCart
+  Zap, Package, Send, Hash, Cpu, ShoppingCart,
+  Plus, Cloud, Image as ImageIcon, Headphones, Wifi, CreditCard, Settings
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
 import type { Cart, CartItem } from "@shared/schema";
 
-const ALL_FEATURES = [
-  { id: "products",   icon: ShoppingBag,      labelAr: "إدارة المنتجات",          price: 0 },
-  { id: "orders",     icon: Package,           labelAr: "إدارة الطلبات",           price: 0 },
-  { id: "payments",   icon: Sparkles,          labelAr: "بوابة الدفع الإلكتروني",  price: 0 },
-  { id: "mobile",     icon: Smartphone,        labelAr: "تطبيق جوال",              price: 800 },
-  { id: "ai",         icon: BotMessageSquare,  labelAr: "ذكاء اصطناعي",            price: 600 },
-  { id: "multilang",  icon: Languages,         labelAr: "تعدد اللغات",             price: 300 },
-  { id: "seo",        icon: TrendingUp,        labelAr: "تحسين محركات البحث SEO",  price: 400 },
-  { id: "loyalty",    icon: Star,              labelAr: "نقاط الولاء",             price: 300 },
-  { id: "whatsapp",   icon: Send,              labelAr: "تكامل واتساب",            price: 200 },
-  { id: "chat",       icon: MessageSquare,     labelAr: "دردشة مباشرة",            price: 250 },
-  { id: "crm",        icon: Users,             labelAr: "إدارة العملاء CRM",       price: 500 },
-  { id: "accounting", icon: Database,          labelAr: "محاسبة وفواتير",          price: 450 },
-  { id: "qr",         icon: Hash,              labelAr: "قائمة QR",                price: 120 },
-  { id: "delivery",   icon: Truck,             labelAr: "نظام التوصيل",            price: 350 },
-  { id: "blog",       icon: BookOpen,          labelAr: "مدونة ومحتوى",            price: 200 },
-  { id: "api",        icon: Code2,             labelAr: "API خارجي",               price: 600 },
-  { id: "reports",    icon: BarChart3,         labelAr: "تقارير وإحصاءات",         price: 300 },
-  { id: "security",   icon: Lock,              labelAr: "حماية متقدمة",            price: 350 },
-  { id: "hosting",    icon: Server,            labelAr: "استضافة سحابية",          price: 400 },
-  { id: "branding",   icon: Palette,           labelAr: "هوية بصرية كاملة",        price: 700 },
-  { id: "notifs",     icon: Zap,              labelAr: "إشعارات فورية",            price: 150 },
-  { id: "map",        icon: MapPin,            labelAr: "خرائط وتتبع",             price: 200 },
-  { id: "cam",        icon: Camera,            labelAr: "معرض صور وفيديو",         price: 150 },
-  { id: "cpu",        icon: Cpu,              labelAr: "خادم مخصص",                price: 500 },
-  { id: "lang",       icon: Globe,             labelAr: "ترجمة آلية",              price: 250 },
-];
+/* ── Lucide icon name → component map (for addons from DB) ── */
+const ICON_MAP: Record<string, any> = {
+  Smartphone, Database, Server, Cloud, Globe, Lock, Star, Sparkles,
+  ShoppingBag, Package, Send, Users, TrendingUp, MessageSquare, Truck,
+  BookOpen, Code2, BarChart3, Palette, Hash, Cpu, Camera, Zap, MapPin,
+  Upload, Languages, BotMessageSquare, Plus, Image: ImageIcon,
+  Headphones, Wifi, CreditCard, Settings, Building2, FileText,
+};
+
+function AddonIcon({ iconName, imageUrl, selected }: { iconName?: string; imageUrl?: string; selected: boolean }) {
+  if (imageUrl) {
+    return (
+      <div className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${selected ? "border-blue-500/60" : "border-white/[0.07]"}`}>
+        <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  const Icon = (iconName && ICON_MAP[iconName]) || Package;
+  return (
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${selected ? "bg-blue-500/20" : "bg-white/[0.04]"}`}>
+      <Icon className={`w-5 h-5 ${selected ? "text-blue-400" : "text-slate-500"}`} />
+    </div>
+  );
+}
 
 const DAYS  = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 const TIMES = ["8:00 ص","9:00 ص","10:00 ص","11:00 ص","12:00 م","1:00 م","2:00 م","3:00 م","4:00 م","5:00 م","6:00 م","7:00 م","8:00 م","9:00 م"];
@@ -136,6 +134,9 @@ export default function CartWizardPage() {
   const { data: user, isLoading: isUserLoading } = useUser();
   const { data: cart, isLoading: isCartLoading } = useQuery<Cart>({
     queryKey: ["/api/cart"], enabled: !!user,
+  });
+  const { data: extraAddons = [] } = useQuery<any[]>({
+    queryKey: ["/api/extra-addons"],
   });
 
   const cartItems: CartItem[] = cart?.items || [];
@@ -462,31 +463,67 @@ export default function CartWizardPage() {
               {step === 2 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-slate-500">اختر المميزات التي تحتاجها لمشروعك</p>
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${data.selectedFeatures.length === maxFeatures ? "bg-green-500/20 text-green-400" : "bg-white/[0.05] text-slate-400"}`}>
+                    <p className="text-xs text-slate-500">اختر المميزات الإضافية التي تحتاجها لمشروعك</p>
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${data.selectedFeatures.length >= maxFeatures ? "bg-green-500/20 text-green-400" : "bg-white/[0.05] text-slate-400"}`}>
                       {data.selectedFeatures.length} / {maxFeatures}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {ALL_FEATURES.map(f => {
-                      const Icon = f.icon;
-                      const selected = data.selectedFeatures.includes(f.id);
-                      const disabled = !selected && data.selectedFeatures.length >= maxFeatures;
-                      return (
-                        <button key={f.id} type="button" disabled={disabled} onClick={() => {
-                          if (selected) upd("selectedFeatures", data.selectedFeatures.filter(x => x !== f.id));
-                          else if (!disabled) upd("selectedFeatures", [...data.selectedFeatures, f.id]);
-                        }} className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-right transition-all ${selected ? "border-blue-500/50 bg-blue-500/10" : disabled ? "border-slate-800/50 bg-white/[0.01] opacity-40 cursor-not-allowed" : "border-slate-800/60 bg-white/[0.02] hover:border-slate-700 hover:bg-white/[0.04]"}`}>
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${selected ? "bg-blue-500/20" : "bg-white/[0.04]"}`}>
-                            <Icon className={`w-4 h-4 ${selected ? "text-blue-400" : "text-slate-500"}`} />
-                          </div>
-                          <span className={`text-sm font-bold flex-1 text-right ${selected ? "text-white" : "text-slate-400"}`}>{f.labelAr}</span>
-                          {f.price > 0 && <span className="text-[10px] text-slate-600 shrink-0">+{f.price} ر.س</span>}
-                          {selected && <Check className="w-4 h-4 text-blue-400 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+
+                  {extraAddons.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Package className="w-10 h-10 text-slate-700 mb-3" />
+                      <p className="text-slate-500 text-sm">لا توجد إضافات متاحة حالياً</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {extraAddons.map((addon: any) => {
+                        const addonId = addon._id || addon.id;
+                        const selected = data.selectedFeatures.includes(addonId);
+                        const disabled = !selected && data.selectedFeatures.length >= maxFeatures;
+                        return (
+                          <button
+                            key={addonId}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => {
+                              if (selected) upd("selectedFeatures", data.selectedFeatures.filter((x: string) => x !== addonId));
+                              else if (!disabled) upd("selectedFeatures", [...data.selectedFeatures, addonId]);
+                            }}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-right transition-all ${
+                              selected
+                                ? "border-blue-500/50 bg-blue-500/10"
+                                : disabled
+                                ? "border-slate-800/50 bg-white/[0.01] opacity-40 cursor-not-allowed"
+                                : "border-slate-800/60 bg-white/[0.02] hover:border-slate-700 hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <AddonIcon
+                              iconName={addon.icon}
+                              imageUrl={addon.imageUrl}
+                              selected={selected}
+                            />
+                            <div className="flex-1 text-right min-w-0">
+                              <p className={`text-sm font-bold ${selected ? "text-white" : "text-slate-300"}`}>
+                                {addon.nameAr || addon.name}
+                              </p>
+                              {addon.descriptionAr && (
+                                <p className="text-[11px] text-slate-500 truncate mt-0.5">{addon.descriptionAr}</p>
+                              )}
+                            </div>
+                            {addon.price > 0 && (
+                              <div className="text-right shrink-0">
+                                <span className={`text-xs font-black ${selected ? "text-blue-300" : "text-slate-500"}`}>
+                                  {addon.price.toLocaleString()}
+                                </span>
+                                <span className="text-[10px] text-slate-600 mr-0.5"> ر.س</span>
+                              </div>
+                            )}
+                            {selected && <Check className="w-4 h-4 text-blue-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
