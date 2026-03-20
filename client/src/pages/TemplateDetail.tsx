@@ -408,6 +408,16 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
 }
 
 // ── Browser Frame ─────────────────────────────────────────────────────────
+const CAFE_ORIGIN = "https://cafe.qiroxstudio.online";
+
+function toProxyUrl(url: string): string {
+  if (url.startsWith(CAFE_ORIGIN)) {
+    const path = url.slice(CAFE_ORIGIN.length) || "/";
+    return `/cafe-proxy${path}`;
+  }
+  return url;
+}
+
 function BrowserFrame({ url, label, page, compact = false }: { url: string; label: string; page?: CafePage; compact?: boolean }) {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [loaded, setLoaded] = useState(false);
@@ -416,6 +426,7 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
   const theme = (page as any)?.theme || "orange";
   const s = THEME_STYLES[theme as keyof typeof THEME_STYLES] || THEME_STYLES.orange;
   const previewHeight = compact ? 210 : 460;
+  const proxyUrl = toProxyUrl(url);
 
   // Compact: render iframe at 1280×900 then scale down to fit container
   const IFRAME_W = 1280;
@@ -502,8 +513,8 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
         {compact && (
           <div className="absolute inset-0 overflow-hidden">
             <iframe
-              key={url}
-              src={url}
+              key={proxyUrl}
+              src={proxyUrl}
               title={label}
               onLoad={handleIframeLoad}
               style={{
@@ -531,8 +542,8 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
             }}
           >
             <iframe
-              key={url + viewport}
-              src={url}
+              key={proxyUrl + viewport}
+              src={proxyUrl}
               title={label}
               onLoad={handleIframeLoad}
               style={{

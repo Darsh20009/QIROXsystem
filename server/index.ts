@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
 import { registerAiRoutes } from "./ai";
 import { serveStatic } from "./static";
@@ -62,6 +63,42 @@ app.use((_req, res, next) => {
   }
   next();
 });
+
+// ── Cafe Site Proxy (strips X-Frame-Options so pages can be embedded) ─────────
+const CAFE_BASE = "https://cafe.qiroxstudio.online";
+app.use(
+  "/cafe-proxy",
+  createProxyMiddleware({
+    target: CAFE_BASE,
+    changeOrigin: true,
+    selfHandleResponse: true,
+    pathRewrite: { "^/cafe-proxy": "" },
+    on: {
+      proxyRes: responseInterceptor(async (responseBuffer, proxyRes, _req, res) => {
+        // Strip frame-blocking headers from both proxyRes and res
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+        delete proxyRes.headers["content-security-policy-report-only"];
+        res.removeHeader("x-frame-options");
+        res.removeHeader("X-Frame-Options");
+        res.removeHeader("content-security-policy");
+        res.removeHeader("Content-Security-Policy");
+        res.removeHeader("content-security-policy-report-only");
+
+        const contentType = proxyRes.headers["content-type"] || "";
+        if (contentType.includes("text/html")) {
+          let html = responseBuffer.toString("utf8");
+          // Inject <base> so relative URLs resolve to the cafe domain
+          if (!html.includes("<base ")) {
+            html = html.replace("<head>", `<head><base href="${CAFE_BASE}/">`);
+          }
+          return html;
+        }
+        return responseBuffer;
+      }),
+    },
+  })
+);
 
 // ── Anti-scraping / bot detection ─────────────────────────────────────────────
 const suspiciousPatterns = [
