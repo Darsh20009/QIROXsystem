@@ -10,14 +10,16 @@ import {
   ArrowRight, Play, Globe, Download, BookOpen,
   Loader2, ChevronLeft, ExternalLink, Package,
   CheckCircle2, Zap, Star, FileText, Video,
-  Monitor, Smartphone, Tablet, RefreshCw,
+  Monitor, Smartphone, Tablet,
   UtensilsCrossed, Users, ShieldCheck, Truck,
   LayoutDashboard, ChefHat, CreditCard, QrCode,
-  BarChart3, Calendar, Heart, Gift, Share2,
-  Settings, Eye, Lock, User, Coffee, Utensils,
+  BarChart3, Calendar, Heart,
+  Settings, Lock, User, Coffee,
   MapPin, Bell, ClipboardList, Layers, Copy,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { CAFE_SECTIONS } from "./cafe-pages-data";
+import type { CafePageEntry } from "./cafe-pages-data";
 
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
   lite:     { label: "لايت",    color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
@@ -35,48 +37,8 @@ function getVideoEmbed(url: string): string | null {
   return null;
 }
 
-// ── Cafe Pages Data ─────────────────────────────────────────────────────────
-interface CafePage {
-  path: string;
-  titleAr: string;
-  descAr: string;
-  icon: any;
-  badge: string;
-  badgeColor: string;
-  category: "customer" | "employee" | "manager" | "driver" | "admin";
-}
-
-const CAFE_PUBLIC_PAGES: CafePage[] = [
-  { path: "/welcome",          titleAr: "صفحة الترحيب الرئيسية",       descAr: "أول صفحة يراها العميل — تعرض شعار الكافيه وصورة جذابة وزر 'ابدأ الطلب' للانتقال للقائمة.",  icon: Coffee,        badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700" , category: "customer" },
-  { path: "/menu",             titleAr: "قائمة المنتجات الكاملة",       descAr: "صفحة التسوق الأساسية — عرض فئات المنتجات (مشروبات ساخنة، باردة، حلويات...) مع بحث وتخصيص وإضافة للسلة.", icon: Utensils,      badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700", category: "customer" },
-  { path: "/menu-view",        titleAr: "عرض بصري للقائمة",            descAr: "تصميم كتالوج بصري جذاب مع عروض منزلقة — مثالي للعرض على الشاشات الكبيرة والعروض التقديمية.",       icon: Layers,        badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700", category: "customer" },
-  { path: "/order-status",     titleAr: "شاشة حالة الطلبات المباشرة",  descAr: "شاشة تُعلَّق في منطقة الانتظار — تظهر الطلبات قيد التحضير والمكتملة وتُحدَّث فورياً.",          icon: ClipboardList, badge: "شاشة عامة", badgeColor: "bg-slate-100 text-slate-700", category: "customer" },
-  { path: "/customer-display", titleAr: "شاشة العملاء أمام الكاشير",  descAr: "تُوصَل بشاشة ثانية أمام العميل في نقطة البيع — تعرض تفاصيل الطلب الحالي والمجموع.",             icon: Monitor,       badge: "شاشة عامة", badgeColor: "bg-slate-100 text-slate-700", category: "customer" },
-  { path: "/table-reservation", titleAr: "حجز الطاولات مسبقاً",       descAr: "اختيار التاريخ والوقت وعدد الأشخاص وإدخال بيانات التواصل — بدون الحاجة للاتصال بالكافيه.",      icon: Calendar,      badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700", category: "customer" },
-  { path: "/guide",            titleAr: "دليل استخدام النظام",          descAr: "شرح مصوّر لكل خطوات الطلب والدفع — مرجع تعليمي للعملاء الجدد.",                                 icon: BookOpen,      badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700", category: "customer" },
-  { path: "/notifications",    titleAr: "صفحة الإشعارات العامة",       descAr: "عروض جديدة وتحديثات الطلبات ورسائل النظام — متاحة لجميع المستخدمين.",                             icon: Bell,          badge: "عملاء", badgeColor: "bg-orange-100 text-orange-700", category: "customer" },
-];
-
-const CAFE_AUTH_PAGES: CafePage[] = [
-  { path: "/auth",             titleAr: "تسجيل الدخول / إنشاء حساب",  descAr: "التحقق برقم الجوال — نقطة دخول العملاء لجميع الصفحات المحمية.",   icon: User,          badge: "حماية", badgeColor: "bg-blue-100 text-blue-700", category: "customer" },
-  { path: "/customer-login",   titleAr: "دخول بديل للعملاء",           descAr: "تسجيل دخول باسم المستخدم وكلمة المرور للعملاء ذوي الحسابات القديمة.", icon: Lock,         badge: "حماية", badgeColor: "bg-blue-100 text-blue-700", category: "customer" },
-  { path: "/forgot-password",  titleAr: "استعادة كلمة المرور",          descAr: "إدخال رقم الجوال المسجّل لاستعادة كلمة المرور.",                       icon: ShieldCheck,   badge: "حماية", badgeColor: "bg-blue-100 text-blue-700", category: "customer" },
-];
-
-const CAFE_EMPLOYEE_PAGES: CafePage[] = [
-  { path: "/employee/login",   titleAr: "تسجيل دخول الموظف",           descAr: "دخول الموظف لنظام الشيفتات والطلبات.",                               icon: User,          badge: "موظف", badgeColor: "bg-emerald-100 text-emerald-700", category: "employee" },
-  { path: "/employee/gateway", titleAr: "بوابة اختيار المستخدم",        descAr: "فصل طريق الموظف عن المدير — يوجّه كلاً منهما لصفحته المناسبة.",      icon: Layers,        badge: "موظف", badgeColor: "bg-emerald-100 text-emerald-700", category: "employee" },
-  { path: "/employee/activate", titleAr: "تفعيل حساب موظف جديد",       descAr: "يُستخدم مرة واحدة فقط عند انضمام موظف جديد — ينشئ كلمة مرور خاصة.", icon: ShieldCheck,   badge: "موظف", badgeColor: "bg-emerald-100 text-emerald-700", category: "employee" },
-];
-
-const CAFE_MANAGER_PAGES: CafePage[] = [
-  { path: "/manager",          titleAr: "تسجيل دخول المدير",           descAr: "نقطة الدخول الرئيسية للمديرين وأصحاب المطاعم بصلاحيات أعلى.",       icon: Lock,          badge: "مدير", badgeColor: "bg-violet-100 text-violet-700", category: "manager" },
-  { path: "/manager/forgot-password", titleAr: "استعادة كلمة مرور المدير", descAr: "إجراء آمن لاستعادة كلمة مرور حساب المدير.",                      icon: ShieldCheck,   badge: "مدير", badgeColor: "bg-violet-100 text-violet-700", category: "manager" },
-];
-
-const CAFE_DRIVER_PAGES: CafePage[] = [
-  { path: "/driver/login",     titleAr: "تسجيل دخول السائق",           descAr: "نقطة الدخول الخاصة بسائقي التوصيل.",                                 icon: Truck,         badge: "سائق", badgeColor: "bg-sky-100 text-sky-700", category: "driver" },
-];
+// ── Legacy CafePage type alias for backwards compat ─────────────────────────
+type CafePage = CafePageEntry;
 
 interface PortalCredential {
   role: string;
@@ -98,7 +60,7 @@ const CAFE_PORTALS: PortalCredential[] = [
 ];
 
 // ── Browser Frame ─────────────────────────────────────────────────────────
-function BrowserFrame({ url, label, page }: { url: string; label: string; page?: CafePage }) {
+function BrowserFrame({ url, label, page, compact = false }: { url: string; label: string; page?: CafePage; compact?: boolean }) {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const Icon = page?.icon || Globe;
 
@@ -106,6 +68,8 @@ function BrowserFrame({ url, label, page }: { url: string; label: string; page?:
     { w: "60%", h: "h-3" }, { w: "40%", h: "h-3" }, { w: "75%", h: "h-3" },
     { w: "50%", h: "h-2" }, { w: "65%", h: "h-2" }, { w: "30%", h: "h-2" },
   ];
+
+  const previewHeight = compact ? 200 : 460;
 
   return (
     <div className="bg-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl border border-white/[0.06]">
@@ -136,7 +100,7 @@ function BrowserFrame({ url, label, page }: { url: string; label: string; page?:
       </div>
 
       {/* Preview area */}
-      <div className="relative overflow-hidden flex justify-center bg-[#f0f0f0]" style={{ height: "460px" }}>
+      <div className="relative overflow-hidden flex justify-center bg-[#f0f0f0]" style={{ height: `${previewHeight}px` }}>
         <div
           className="relative overflow-hidden transition-all duration-500 bg-white"
           style={{
@@ -309,9 +273,7 @@ export default function TemplateDetail() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
 
-  const [activePreviewPage, setActivePreviewPage] = useState<CafePage | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [activePortalTab, setActivePortalTab] = useState<"public" | "auth" | "employee" | "manager" | "driver">("public");
 
   const { data: template, isLoading, isError } = useQuery<SectorTemplate>({
     queryKey: ["/api/templates/slug", slug],
@@ -330,14 +292,6 @@ export default function TemplateDetail() {
     navigator.clipboard.writeText(text).catch(() => {});
     setCopiedField(key);
     setTimeout(() => setCopiedField(null), 1500);
-  };
-
-  const ALL_PORTAL_PAGES: Record<string, { pages: CafePage[]; label: string; loginPath: string }> = {
-    public:   { pages: CAFE_PUBLIC_PAGES,   label: "صفحات عامة",          loginPath: "" },
-    auth:     { pages: CAFE_AUTH_PAGES,     label: "تسجيل الدخول",        loginPath: "/auth" },
-    employee: { pages: CAFE_EMPLOYEE_PAGES, label: "بوابة الموظفين",      loginPath: "/employee/login" },
-    manager:  { pages: CAFE_MANAGER_PAGES,  label: "بوابة المديرين",      loginPath: "/manager" },
-    driver:   { pages: CAFE_DRIVER_PAGES,   label: "بوابة السائقين",      loginPath: "/driver/login" },
   };
 
   if (isLoading) {
@@ -497,119 +451,98 @@ export default function TemplateDetail() {
             </div>
           </motion.section>
 
-          {/* ── Live Interactive Browser ──────────────────────────── */}
+          {/* ── All Pages Showcase — Full List ───────────────────── */}
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-8">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
-                <Globe className="w-4.5 h-4.5 text-white" />
+                <Layers className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-black dark:text-white">استعرض النظام مباشرة</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">جرّب كل صفحة من داخل هذه الصفحة — اضغط أي صفحة في القائمة أدناه</p>
+                <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات النظام الكامل</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة — كل صفحة بمعاينة بصرية وشرح تفصيلي</p>
               </div>
             </div>
 
-            {/* Page pill tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none">
-              {CAFE_PUBLIC_PAGES.slice(0, 6).map(pg => (
-                <button
-                  key={pg.path}
-                  onClick={() => setActivePreviewPage(pg)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all border ${
-                    activePreviewPage?.path === pg.path
-                      ? "border-transparent text-white shadow-sm"
-                      : "border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-black/60 dark:text-white/60 hover:border-orange-300 hover:text-orange-700"
-                  }`}
-                  style={activePreviewPage?.path === pg.path ? { backgroundColor: color } : {}}
-                  data-testid={`tab-preview-${pg.path.replace(/\//g, "-")}`}
-                >
-                  <pg.icon className="w-3.5 h-3.5" />
-                  {pg.titleAr}
-                </button>
+            <div className="space-y-14">
+              {CAFE_SECTIONS.map((section, si) => (
+                <div key={section.id} data-testid={`section-${section.id}`}>
+                  {/* Section header */}
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ backgroundColor: section.color + "15", border: `1.5px solid ${section.color}30` }}>
+                      {section.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-sm text-black dark:text-white leading-snug">{section.titleAr}</p>
+                      <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{section.pages.length} صفحة</p>
+                    </div>
+                    <div className="text-2xl font-black tabular-nums" style={{ color: section.color + "60" }}>
+                      {String(si + 1).padStart(2, "0")}
+                    </div>
+                  </div>
+
+                  {/* Pages grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {section.pages.map((page, pi) => {
+                      const PageIcon = page.icon;
+                      const pageUrl = `${baseUrl}${page.path}`;
+                      return (
+                        <motion.div
+                          key={page.path}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: si * 0.02 + pi * 0.03 }}
+                          className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                          data-testid={`page-card-${page.path.replace(/\//g, "-")}`}
+                        >
+                          {/* Browser frame (compact) */}
+                          <BrowserFrame
+                            url={pageUrl}
+                            label={page.titleAr}
+                            page={page}
+                            compact
+                          />
+
+                          {/* Page info below frame */}
+                          <div className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: section.color + "15" }}>
+                                <PageIcon className="w-4.5 h-4.5" style={{ color: section.color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                  <p className="font-black text-sm text-black dark:text-white">{page.titleAr}</p>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${page.badgeColor}`}>
+                                    {page.badge}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-black/55 dark:text-white/55 leading-relaxed">{page.descAr}</p>
+                                <div className="flex items-center gap-2 mt-3">
+                                  <code className="text-[10px] text-black/30 dark:text-white/30 font-mono bg-black/[0.04] dark:bg-white/[0.04] px-2 py-1 rounded-lg truncate block max-w-[200px]" dir="ltr">
+                                    {page.path}
+                                  </code>
+                                  <a
+                                    href={pageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors text-black/50 dark:text-white/50 whitespace-nowrap flex-shrink-0"
+                                    data-testid={`btn-open-${page.path.replace(/\//g, "-")}`}
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    فتح
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
-
-            <BrowserFrame
-              url={activePreviewPage ? `${baseUrl}${activePreviewPage.path}` : baseUrl}
-              label={activePreviewPage?.titleAr || "الصفحة الرئيسية"}
-              page={activePreviewPage ?? undefined}
-            />
-
-            {activePreviewPage && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="mt-4 bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-5 flex items-start gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color + "20" }}>
-                  <activePreviewPage.icon className="w-5 h-5" style={{ color }} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-black text-black dark:text-white">{activePreviewPage.titleAr}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activePreviewPage.badgeColor}`}>{activePreviewPage.badge}</span>
-                  </div>
-                  <p className="text-sm text-black/60 dark:text-white/60 leading-relaxed">{activePreviewPage.descAr}</p>
-                  <div className="flex items-center gap-3 mt-3">
-                    <code className="text-xs text-black/30 font-mono bg-black/[0.04] px-2 py-1 rounded-lg" dir="ltr">{baseUrl}{activePreviewPage.path}</code>
-                    <a href={`${baseUrl}${activePreviewPage.path}`} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs font-bold hover:opacity-70 transition-opacity" style={{ color }}>
-                      <ExternalLink className="w-3 h-3" /> فتح
-                    </a>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </motion.section>
-
-          {/* ── Pages Showcase ────────────────────────────────────── */}
-          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            {/* Tab navigation */}
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <div>
-                <h2 className="text-xl font-black text-black dark:text-white">دليل صفحات النظام الكامل</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">تصفح جميع الصفحات حسب البوابة</p>
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {(Object.entries(ALL_PORTAL_PAGES) as Array<[typeof activePortalTab, typeof ALL_PORTAL_PAGES[string]]>).map(([key, meta]) => (
-                  <button
-                    key={key}
-                    onClick={() => setActivePortalTab(key)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-                      activePortalTab === key
-                        ? "border-transparent text-white shadow-sm"
-                        : "border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 text-black/60 dark:text-white/60 hover:border-black/20"
-                    }`}
-                    style={activePortalTab === key ? { backgroundColor: color } : {}}
-                    data-testid={`tab-portal-${key}`}
-                  >
-                    {meta.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activePortalTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-              >
-                {ALL_PORTAL_PAGES[activePortalTab].pages.map((page, i) => (
-                  <PageCard
-                    key={page.path}
-                    page={page}
-                    baseUrl={baseUrl}
-                    index={i}
-                    onPreview={(pg) => {
-                      setActivePreviewPage(pg);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  />
-                ))}
-              </motion.div>
-            </AnimatePresence>
           </motion.section>
 
           {/* ── Portals Access & Credentials ─────────────────────── */}
