@@ -459,7 +459,11 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
 
           {/* Overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-end"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)" }}>
+            style={{
+              background: compact
+                ? "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 30%, transparent 60%)"
+                : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)"
+            }}>
             {compact ? (
               <a
                 href={url}
