@@ -162,6 +162,25 @@ export default function Login() {
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
 
+  const [twoFAExpiresAt, setTwoFAExpiresAt] = useState<number | null>(null);
+  const [twoFASecondsLeft, setTwoFASecondsLeft] = useState(600);
+  const [totpSecondsLeft, setTotpSecondsLeft] = useState(30);
+
+  useEffect(() => {
+    if (!twoFA || !twoFAExpiresAt) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((twoFAExpiresAt - Date.now()) / 1000));
+      setTwoFASecondsLeft(remaining);
+      const epoch = Math.floor(Date.now() / 1000);
+      setTotpSecondsLeft(30 - (epoch % 30));
+      if (remaining === 0) {
+        setTwoFA(null);
+        setTwoFAError("انتهت مهلة جلسة التحقق. يرجى تسجيل الدخول مجدداً");
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [twoFA, twoFAExpiresAt]);
+
   // Push Approval states
   const [pushChallengeId, setPushChallengeId] = useState<string | null>(null);
   const [pushNumber, setPushNumber] = useState<number | null>(null);
@@ -400,6 +419,10 @@ export default function Login() {
             setTwoFAPassphrase("");
             setTwoFAError("");
             setEmailOtpSent(false);
+            setTwoFAExpiresAt(Date.now() + 10 * 60 * 1000);
+            setTwoFASecondsLeft(600);
+            const epoch = Math.floor(Date.now() / 1000);
+            setTotpSecondsLeft(30 - (epoch % 30));
             return;
           }
           if (user.role === "client" && user.email && (user.needsVerification || !user.emailVerified)) {
@@ -640,6 +663,16 @@ export default function Login() {
               </div>
               <h1 className="text-2xl font-black font-heading text-black mb-2">المصادقة الثنائية</h1>
               <p className="text-black/40 text-sm leading-relaxed">اختر طريقة التحقق لإكمال تسجيل الدخول</p>
+              <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-xs font-mono font-semibold transition-colors ${
+                twoFASecondsLeft <= 60
+                  ? "bg-red-50 text-red-500 border border-red-200/60"
+                  : twoFASecondsLeft <= 180
+                    ? "bg-amber-50 text-amber-600 border border-amber-200/60"
+                    : "bg-black/[0.04] text-black/40 border border-black/[0.08]"
+              }`} data-testid="text-2fa-countdown">
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${twoFASecondsLeft <= 60 ? "bg-red-400 animate-pulse" : twoFASecondsLeft <= 180 ? "bg-amber-400 animate-pulse" : "bg-black/20"}`} />
+                {String(Math.floor(twoFASecondsLeft / 60)).padStart(2, "0")}:{String(twoFASecondsLeft % 60).padStart(2, "0")}
+              </div>
             </div>
 
             {twoFA.methods.length > 1 && (
@@ -674,6 +707,23 @@ export default function Login() {
                   autoFocus
                   data-testid="input-2fa-totp"
                 />
+                <div className="flex items-center gap-2.5 justify-center" data-testid="text-totp-timer">
+                  <div className="relative w-5 h-5 flex-shrink-0">
+                    <svg className="w-5 h-5 -rotate-90" viewBox="0 0 20 20">
+                      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" className="text-black/10" />
+                      <circle
+                        cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2"
+                        strokeDasharray={`${2 * Math.PI * 8}`}
+                        strokeDashoffset={`${2 * Math.PI * 8 * (1 - totpSecondsLeft / 30)}`}
+                        strokeLinecap="round"
+                        className={`transition-all duration-1000 ${totpSecondsLeft <= 5 ? "text-red-400" : "text-black/40"}`}
+                      />
+                    </svg>
+                  </div>
+                  <span className={`text-xs font-mono font-medium ${totpSecondsLeft <= 5 ? "text-red-500" : "text-black/40"}`}>
+                    ينتهي الرمز خلال {totpSecondsLeft} ثانية
+                  </span>
+                </div>
               </div>
             )}
 
