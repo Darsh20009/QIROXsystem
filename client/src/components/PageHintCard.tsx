@@ -87,16 +87,20 @@ export function PageHintCard() {
     }
 
     if (timerRef.current) clearTimeout(timerRef.current);
+    let innerTimer: ReturnType<typeof setTimeout>;
     timerRef.current = setTimeout(() => {
       setVisible(true);
       setShowTyping(true);
-      setTimeout(() => {
+      innerTimer = setTimeout(() => {
         setShowTyping(false);
         setShowContent(true);
       }, 1400);
     }, 700);
 
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (innerTimer) clearTimeout(innerTimer);
+    };
   }, [location, userId]);
 
   const handleDismiss = () => {

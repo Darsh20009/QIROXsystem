@@ -31,6 +31,13 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "تجاوزت الحد المسموح، حاول مجدداً بعد ساعة" },
 });
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "تجاوزت حد التسجيل، حاول مجدداً بعد ساعة" },
+});
 const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 6,
@@ -98,6 +105,8 @@ function sanitizeUser(user: any): any {
   delete obj.password;
   delete obj.walletPin;
   delete obj.walletCardNumber;
+  delete obj.totpSecret;
+  delete obj.recoveryPassphrase;
   return obj;
 }
 
@@ -514,7 +523,7 @@ export async function registerRoutes(
   });
 
   // === AUTH API ===
-  app.post(api.auth.register.path, async (req, res, next) => {
+  app.post(api.auth.register.path, registerLimiter, async (req, res, next) => {
     try {
       const { UserModel, OtpModel } = await import("./models");
       const incomingEmail = req.body.email ? String(req.body.email).toLowerCase().trim() : null;

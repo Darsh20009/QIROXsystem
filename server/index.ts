@@ -14,6 +14,14 @@ import { cache } from "./cache";
 import { connManager } from "./connection-manager";
 import { mkdirSync } from "fs";
 
+// Global error handlers to prevent server crashes
+process.on("unhandledRejection", (reason: any, promise) => {
+  console.error("[UnhandledRejection] Unhandled promise rejection:", reason?.message || reason, "at:", promise);
+});
+process.on("uncaughtException", (err: Error) => {
+  console.error("[UncaughtException] Uncaught exception:", err.message, err.stack);
+});
+
 // Ensure required directories exist on startup
 try { mkdirSync("uploads", { recursive: true }); } catch {}
 try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}

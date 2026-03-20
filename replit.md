@@ -10,6 +10,31 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 20, 2026 - Session 55)
+
+### Stability & Security Improvements
+
+**Session Persistence:**
+- Switched session store from in-memory (MemoryStore) to MongoDB-backed (connect-mongo)
+- Sessions now persist across server restarts — users stay logged in
+- Sessions stored in `sessions` collection with 14-day TTL and touch-after-24h optimization
+
+**Security Hardening:**
+- `sanitizeUser()` now strips `totpSecret` and `recoveryPassphrase` in addition to `password`, `walletPin`, `walletCardNumber`
+- Added `registerLimiter` (10 registrations/hour/IP) to the `/api/register` endpoint to prevent mass account creation
+
+**Error Handling:**
+- Added global `unhandledRejection` and `uncaughtException` handlers in `server/index.ts` to log errors without crashing the server
+
+**DevTools Fix:**
+- `AntiDevTools` component keyboard shortcut blocking (F12, Ctrl+Shift+I) and right-click disabling now only activate in production (`import.meta.env.PROD`)
+- Developers can freely use browser DevTools in development environment
+
+**Memory Leak Fix:**
+- Fixed nested `setTimeout` in `PageHintCard.tsx` — inner timer is now properly cleaned up on component unmount
+
+---
+
 ## Latest Changes (Mar 16, 2026 - Session 54)
 
 ### Bug Fixes & Feature Additions

@@ -2,7 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import MongoStore from "connect-mongo";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -67,13 +67,19 @@ export function setupAuth(app: Express) {
   const SESSION_DAYS = 14;
   const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
 
-  const MemoryStore = createMemoryStore(session);
+  const mongoUri = (process.env.MONGODB_URI || "").replace(/\s+/g, "");
 
   const sessionSettings: session.SessionOptions = {
-    store: new MemoryStore({
-      checkPeriod: 86400000,
-    }),
-    secret: process.env.SESSION_SECRET || "qirox_super_secret_key",
+    store: mongoUri
+      ? MongoStore.create({
+          mongoUrl: mongoUri,
+          collectionName: "sessions",
+          ttl: SESSION_MS / 1000,
+          autoRemove: "native",
+          touchAfter: 24 * 3600,
+        })
+      : undefined,
+    secret: process.env.SESSION_SECRET || "qirox_super_secret_key_2024",
     resave: false,
     saveUninitialized: false,
     rolling: true,
