@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
@@ -410,10 +410,37 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
 // ── Browser Frame ─────────────────────────────────────────────────────────
 function BrowserFrame({ url, label, page, compact = false }: { url: string; label: string; page?: CafePage; compact?: boolean }) {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const Icon = page?.icon || Globe;
+  const [loaded, setLoaded] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const theme = (page as any)?.theme || "orange";
   const s = THEME_STYLES[theme as keyof typeof THEME_STYLES] || THEME_STYLES.orange;
   const previewHeight = compact ? 210 : 460;
+
+  // Compact: render iframe at 1280×900 then scale down to fit container
+  const IFRAME_W = 1280;
+  const IFRAME_H = 900;
+  const compactScale = 0.27; // 1280*0.27≈346px wide, 900*0.27≈243px tall
+
+  // Non-compact viewport widths
+  const vpWidth = !compact && viewport !== "desktop"
+    ? (viewport === "tablet" ? 768 : 390)
+    : null;
+
+  // Start blocked-detection timer when url changes
+  useEffect(() => {
+    setLoaded(false);
+    setBlocked(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setBlocked(true), 6000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [url]);
+
+  function handleIframeLoad() {
+    setLoaded(true);
+    setBlocked(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-xl border border-white/[0.06]" style={{ background: s.navBg }}>
@@ -448,54 +475,74 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
 
       {/* Preview area */}
       <div className="relative overflow-hidden flex justify-center" style={{ height: `${previewHeight}px`, background: s.contentBg }}>
-        <div
-          className="relative overflow-hidden transition-all duration-500"
-          style={{
-            width: !compact && viewport !== "desktop" ? (viewport === "tablet" ? "768px" : "390px") : "100%",
-            height: "100%",
-          }}
-        >
-          <MockPageContent theme={theme} icon={Icon} compact={compact} />
 
-          {/* Overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-end"
-            style={{
-              background: compact
-                ? "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 30%, transparent 60%)"
-                : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)"
-            }}>
-            {compact ? (
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mb-3 flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-transform"
-                style={{ backgroundColor: s.accentColor, color: theme === "orange" ? "#000" : "#fff" }}
-                data-testid={`btn-open-${url.replace(/[^a-z0-9]/gi, "-")}`}
-              >
-                <ExternalLink className="w-3 h-3" />
-                فتح الصفحة
-              </a>
-            ) : (
-              <div className="text-center mb-8 px-6 flex flex-col items-center gap-3">
-                <p className="text-white font-black text-xl">{label}</p>
-                <p className="text-white/50 text-xs max-w-xs">{page?.descAr?.slice(0, 80)}...</p>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="btn-open-preview"
-                  className="flex items-center gap-2 font-bold text-sm px-7 py-3 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-transform mt-1"
-                  style={{ backgroundColor: s.accentColor, color: theme === "orange" || theme === "sky" ? "#000" : "#fff" }}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  فتح الصفحة الحقيقية
-                </a>
-                <p className="text-white/20 text-[10px] font-mono" dir="ltr">{url}</p>
-              </div>
-            )}
+        {/* Loading spinner */}
+        {!loaded && !blocked && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2" style={{ background: s.contentBg }}>
+            <div className="w-6 h-6 rounded-full border-2 border-white/10 border-t-white/60 animate-spin" />
+            <span className="text-white/30 text-[10px]">جار التحميل...</span>
           </div>
-        </div>
+        )}
+
+        {/* Blocked fallback */}
+        {blocked && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{ background: s.contentBg }}>
+            <Globe className="w-8 h-8 text-white/20" />
+            <p className="text-white/40 text-xs text-center px-4">لا يمكن تضمين الصفحة هنا</p>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-[11px] shadow-lg"
+              style={{ backgroundColor: s.accentColor, color: "#000" }}>
+              <ExternalLink className="w-3 h-3" />
+              فتح في تبويب جديد
+            </a>
+          </div>
+        )}
+
+        {/* Compact iframe — scaled down */}
+        {compact && (
+          <div className="absolute inset-0 overflow-hidden">
+            <iframe
+              key={url}
+              src={url}
+              title={label}
+              onLoad={handleIframeLoad}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: `${IFRAME_W}px`,
+                height: `${IFRAME_H}px`,
+                transform: `scale(${compactScale})`,
+                transformOrigin: "top left",
+                border: "none",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Non-compact iframe — full size with viewport control */}
+        {!compact && (
+          <div
+            className="transition-all duration-500 overflow-hidden"
+            style={{
+              width: vpWidth ? `${vpWidth}px` : "100%",
+              height: "100%",
+            }}
+          >
+            <iframe
+              key={url + viewport}
+              src={url}
+              title={label}
+              onLoad={handleIframeLoad}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
