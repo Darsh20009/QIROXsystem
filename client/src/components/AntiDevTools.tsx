@@ -2,14 +2,16 @@ import { useEffect } from "react";
 
 export function AntiDevTools() {
   useEffect(() => {
-    // Disable right-click context menu
+    // Disable right-click context menu (production only)
     const handleContextMenu = (e: MouseEvent) => {
+      if (!import.meta.env.PROD) return;
       e.preventDefault();
       return false;
     };
 
-    // Block common keyboard shortcuts for DevTools
+    // Block common keyboard shortcuts for DevTools (production only)
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!import.meta.env.PROD) return;
       // F12
       if (e.key === "F12") {
         e.preventDefault();
