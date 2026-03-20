@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -59,126 +59,437 @@ const CAFE_PORTALS: PortalCredential[] = [
   { role: "مسؤول النظام",    username: "qadmin",     password: "admin123",    access: "جميع الصفحات + إعدادات الفروع والنظام",              icon: ShieldCheck,   color: "text-red-700", bg: "bg-red-50" },
 ];
 
+// ── Theme configs for page mock visuals ──────────────────────────────────
+const THEME_STYLES = {
+  orange: {
+    navBg: "#1c0f00",
+    heroBg: "linear-gradient(135deg,#92400e 0%,#d97706 60%,#f59e0b 100%)",
+    accentColor: "#f59e0b",
+    contentBg: "#fff9f0",
+    pillBg: "#fef3c7",
+    pillText: "#92400e",
+    cardBg: "#fff",
+    cardBorder: "#fed7aa",
+    shimmer: "#fbbf24",
+    gridColors: ["#fde68a","#fed7aa","#fde68a","#fdba74","#fef3c7","#fed7aa"],
+  },
+  dark: {
+    navBg: "#0a0a0a",
+    heroBg: "linear-gradient(135deg,#111827 0%,#1f2937 60%,#374151 100%)",
+    accentColor: "#6ee7b7",
+    contentBg: "#111827",
+    pillBg: "#1f2937",
+    pillText: "#9ca3af",
+    cardBg: "#1f2937",
+    cardBorder: "#374151",
+    shimmer: "#4b5563",
+    gridColors: ["#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"],
+  },
+  sky: {
+    navBg: "#0c1a2e",
+    heroBg: "linear-gradient(135deg,#0c4a6e 0%,#0369a1 55%,#0ea5e9 100%)",
+    accentColor: "#38bdf8",
+    contentBg: "#f0f9ff",
+    pillBg: "#e0f2fe",
+    pillText: "#0369a1",
+    cardBg: "#fff",
+    cardBorder: "#bae6fd",
+    shimmer: "#7dd3fc",
+    gridColors: ["#7dd3fc","#93c5fd","#a5f3fc","#6ee7b7","#bae6fd","#c7d2fe"],
+  },
+  green: {
+    navBg: "#052e16",
+    heroBg: "linear-gradient(135deg,#14532d 0%,#15803d 55%,#16a34a 100%)",
+    accentColor: "#4ade80",
+    contentBg: "#f0fdf4",
+    pillBg: "#dcfce7",
+    pillText: "#15803d",
+    cardBg: "#fff",
+    cardBorder: "#bbf7d0",
+    shimmer: "#86efac",
+    gridColors: ["#86efac","#6ee7b7","#a7f3d0","#bbf7d0","#d1fae5","#a3e635"],
+  },
+  violet: {
+    navBg: "#1a0533",
+    heroBg: "linear-gradient(135deg,#3b0764 0%,#6d28d9 55%,#7c3aed 100%)",
+    accentColor: "#a78bfa",
+    contentBg: "#faf5ff",
+    pillBg: "#ede9fe",
+    pillText: "#6d28d9",
+    cardBg: "#fff",
+    cardBorder: "#ddd6fe",
+    shimmer: "#c4b5fd",
+    gridColors: ["#c4b5fd","#a78bfa","#d8b4fe","#f0abfc","#c084fc","#a78bfa"],
+  },
+  red: {
+    navBg: "#1c0505",
+    heroBg: "linear-gradient(135deg,#7f1d1d 0%,#b91c1c 55%,#dc2626 100%)",
+    accentColor: "#f87171",
+    contentBg: "#fff1f2",
+    pillBg: "#fee2e2",
+    pillText: "#b91c1c",
+    cardBg: "#fff",
+    cardBorder: "#fecaca",
+    shimmer: "#fca5a5",
+    gridColors: ["#fca5a5","#f87171","#fda4af","#fb923c","#fcd34d","#f87171"],
+  },
+  slate: {
+    navBg: "#020617",
+    heroBg: "linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#334155 100%)",
+    accentColor: "#94a3b8",
+    contentBg: "#f8fafc",
+    pillBg: "#f1f5f9",
+    pillText: "#475569",
+    cardBg: "#fff",
+    cardBorder: "#e2e8f0",
+    shimmer: "#94a3b8",
+    gridColors: ["#94a3b8","#cbd5e1","#e2e8f0","#94a3b8","#7dd3fc","#6ee7b7"],
+  },
+};
+
+// ── Mock UI patterns based on theme ──────────────────────────────────────
+function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: any; compact: boolean }) {
+  const s = THEME_STYLES[theme as keyof typeof THEME_STYLES] || THEME_STYLES.orange;
+  const contentH = compact ? 120 : 320;
+
+  if (theme === "dark") {
+    // Display/screen pages — order queue style
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.accentColor }} />
+          <div className="flex-1 h-2 rounded-full opacity-30" style={{ backgroundColor: s.accentColor }} />
+          <div className="w-12 h-4 rounded-md opacity-20" style={{ backgroundColor: s.accentColor }} />
+        </div>
+        <div className="flex-1 overflow-hidden p-3 space-y-2" style={{ background: s.contentBg }}>
+          {[1,2,3,4].map(n => (
+            <div key={n} className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+              <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: s.gridColors[(n - 1) % s.gridColors.length] + "40" }}>
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: s.gridColors[(n - 1) % s.gridColors.length] }} />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="h-2 rounded-full w-3/4" style={{ backgroundColor: s.shimmer + "60" }} />
+                <div className="h-1.5 rounded-full w-1/2" style={{ backgroundColor: s.shimmer + "30" }} />
+              </div>
+              <div className="w-12 h-5 rounded-full text-[8px] font-bold flex items-center justify-center"
+                style={{ backgroundColor: s.gridColors[(n) % s.gridColors.length] + "30", color: s.gridColors[(n) % s.gridColors.length] }}>
+                {["قيد", "جاهز", "تم", "جديد"][n - 1]}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === "violet") {
+    // Manager dashboard — charts + KPIs
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="w-5 h-5 rounded-md" style={{ background: s.heroBg }} />
+          <div className="flex gap-2 mr-auto">
+            {[1,2,3].map(n => <div key={n} className="h-1.5 rounded-full" style={{ width: `${28 + n * 8}px`, backgroundColor: s.accentColor + "40" }} />)}
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden p-3" style={{ background: s.contentBg }}>
+          {/* KPI row */}
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {["٥.٢k","٨٩٪","١٢٤"].map((v, i) => (
+              <div key={i} className="rounded-lg p-1.5 text-center" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+                <div className="font-black text-xs" style={{ color: s.gridColors[i] }}>{v}</div>
+                <div className="h-1 rounded-full mt-1" style={{ backgroundColor: s.shimmer + "30" }} />
+              </div>
+            ))}
+          </div>
+          {/* Chart bars */}
+          <div className="rounded-lg p-2" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+            <div className="h-1.5 w-20 rounded-full mb-2" style={{ backgroundColor: s.shimmer + "40" }} />
+            <div className="flex items-end gap-1 h-12">
+              {[40,65,45,80,55,70,90,60,75,50,85,65].map((h, i) => (
+                <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%`, backgroundColor: s.accentColor + (i % 3 === 0 ? "ff" : "60") }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === "green") {
+    // Employee portal — order management table
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: s.accentColor + "80" }} />
+          <div className="flex-1 h-1.5 rounded-full opacity-20" style={{ backgroundColor: s.accentColor }} />
+          <div className="flex gap-1.5">
+            {[1,2].map(n => <div key={n} className="h-4 w-10 rounded-md opacity-20" style={{ backgroundColor: s.accentColor }} />)}
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden" style={{ background: s.contentBg }}>
+          <div className="flex gap-1.5 p-2 pb-1">
+            {["الكل","جديد","قيد","مكتمل"].map((t, i) => (
+              <div key={t} className="px-2 py-0.5 rounded-full text-[8px] font-bold" style={{
+                backgroundColor: i === 0 ? s.accentColor : s.pillBg,
+                color: i === 0 ? "#fff" : s.pillText,
+              }}>{t}</div>
+            ))}
+          </div>
+          <div className="space-y-1 px-2">
+            {[1,2,3].map(n => (
+              <div key={n} className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+                <div className="w-5 h-5 rounded-full font-black text-[9px] flex items-center justify-center" style={{ backgroundColor: s.accentColor + "20", color: s.accentColor }}>#{n}</div>
+                <div className="flex-1">
+                  <div className="h-1.5 rounded-full w-4/5" style={{ backgroundColor: s.shimmer + "50" }} />
+                </div>
+                <div className="h-4 w-12 rounded-full" style={{ backgroundColor: s.gridColors[n] + "40" }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === "sky") {
+    // Driver/delivery — map & route style
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: s.accentColor + "80" }} />
+          <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: s.accentColor + "30" }} />
+        </div>
+        <div className="flex-1 overflow-hidden relative" style={{ background: `linear-gradient(160deg, ${s.pillBg} 60%, #e0f2fe 100%)` }}>
+          {/* Map grid */}
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: `linear-gradient(${s.cardBorder} 1px, transparent 1px), linear-gradient(90deg, ${s.cardBorder} 1px, transparent 1px)`, backgroundSize: "16px 16px" }} />
+          {/* Route line */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 80" preserveAspectRatio="none">
+            <polyline points="20,65 35,50 55,40 75,25" stroke={s.accentColor} strokeWidth="1.5" fill="none" strokeDasharray="3,2" opacity="0.7" />
+            <circle cx="20" cy="65" r="3" fill={s.shimmer} />
+            <circle cx="75" cy="25" r="3" fill={s.accentColor} />
+          </svg>
+          {/* Info card */}
+          <div className="absolute bottom-2 left-2 right-2 rounded-xl p-2" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: s.accentColor + "20" }}>
+                <Icon className="w-3 h-3" style={{ color: s.accentColor }} />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="h-1.5 w-3/4 rounded-full" style={{ backgroundColor: s.shimmer + "50" }} />
+                <div className="h-1 w-1/2 rounded-full" style={{ backgroundColor: s.shimmer + "30" }} />
+              </div>
+              <div className="w-12 h-5 rounded-lg text-[8px] font-bold flex items-center justify-center" style={{ backgroundColor: s.accentColor, color: "#fff" }}>تتبع</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === "red") {
+    // Admin — system settings style
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: s.accentColor + "60" }} />
+          <div className="h-1.5 w-16 rounded-full" style={{ backgroundColor: s.accentColor + "40" }} />
+          <div className="mr-auto flex gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#ef4444" }} />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e" }} />
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex" style={{ background: s.contentBg }}>
+          <div className="w-16 h-full flex-shrink-0 py-2 space-y-1 px-2" style={{ backgroundColor: "#1f0808" }}>
+            {[1,2,3,4,5].map(n => (
+              <div key={n} className="h-6 rounded-md" style={{ backgroundColor: n === 1 ? s.accentColor + "40" : "#ffffff10" }} />
+            ))}
+          </div>
+          <div className="flex-1 p-2 space-y-1.5">
+            {[1,2,3].map(n => (
+              <div key={n} className="rounded-lg p-2 flex items-center gap-2" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: s.shimmer + "40" }} />
+                <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: s.shimmer + "40" }} />
+                <div className="w-8 h-4 rounded-md" style={{ backgroundColor: s.gridColors[n] + "30" }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (theme === "slate") {
+    // Advanced systems — data table style
+    return (
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: "#f8fafc" }}>
+        <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+          <div className="flex gap-1.5">
+            {["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />)}
+          </div>
+          <div className="flex-1 mx-2 h-4 rounded-md" style={{ backgroundColor: "#1e293b" }}>
+            <div className="h-full w-3/4 rounded-md flex items-center px-2">
+              <div className="h-1.5 w-full rounded-full" style={{ backgroundColor: s.accentColor + "40" }} />
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden p-2" style={{ background: s.contentBg }}>
+          {/* Table header */}
+          <div className="flex gap-1 mb-1 px-2 py-1 rounded-md" style={{ backgroundColor: s.pillBg }}>
+            {["الاسم","النوع","الحالة","الإجراء"].map(h => (
+              <div key={h} className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: s.shimmer + "50" }} />
+            ))}
+          </div>
+          {/* Table rows */}
+          {[1,2,3].map(n => (
+            <div key={n} className="flex gap-1 items-center px-2 py-1.5 rounded-md mb-1" style={{ backgroundColor: n % 2 === 0 ? s.pillBg : s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+              {[1,2,3,4].map(c => (
+                <div key={c} className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: c === 3 ? s.gridColors[n] + "60" : s.shimmer + "40" }} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Default: orange — cafe customer pages
+  return (
+    <div className="w-full h-full flex flex-col" style={{ backgroundColor: s.contentBg }}>
+      <div className="h-9 flex items-center gap-2 px-4 flex-shrink-0" style={{ background: s.navBg }}>
+        <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ backgroundColor: "#b45309" }}>
+          <Coffee className="w-3 h-3 text-white" />
+        </div>
+        <div className="h-1.5 w-16 rounded-full opacity-30 bg-amber-300" />
+        <div className="mr-auto flex gap-1.5">
+          {[1,2,3].map(n => <div key={n} className="h-1.5 rounded-full opacity-20 bg-amber-300" style={{ width: `${24 + n * 8}px` }} />)}
+        </div>
+        <div className="w-6 h-6 rounded-full bg-amber-600/60 flex items-center justify-center">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-300/80" />
+        </div>
+      </div>
+      {/* Hero */}
+      <div className="h-16 flex-shrink-0 relative overflow-hidden" style={{ background: s.heroBg }}>
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "12px 12px" }} />
+        <div className="absolute inset-0 flex items-center px-4 gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="w-4.5 h-4.5 text-white" />
+          </div>
+          <div className="space-y-1.5 flex-1">
+            <div className="h-2.5 w-32 bg-white/35 rounded-full" />
+            <div className="h-1.5 w-24 bg-white/20 rounded-full" />
+          </div>
+          <div className="h-7 w-16 rounded-xl bg-white/25 flex-shrink-0" />
+        </div>
+      </div>
+      {/* Content */}
+      <div className="flex-1 p-2 overflow-hidden" style={{ background: s.contentBg }}>
+        <div className="flex gap-1.5 mb-2">
+          {["☕","🥐","❄️","🥗"].map(e => (
+            <div key={e} className="px-2 py-0.5 rounded-full text-[8px]" style={{ backgroundColor: s.pillBg, color: s.pillText, border: `1px solid ${s.cardBorder}` }}>{e}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {s.gridColors.map((c, i) => (
+            <div key={i} className="rounded-lg overflow-hidden" style={{ backgroundColor: s.cardBg, border: `1px solid ${s.cardBorder}` }}>
+              <div className="h-8" style={{ backgroundColor: c + "40" }} />
+              <div className="p-1 space-y-1">
+                <div className="h-1.5 rounded-full w-4/5" style={{ backgroundColor: s.shimmer + "50" }} />
+                <div className="h-1 rounded-full w-1/2" style={{ backgroundColor: s.shimmer + "30" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Browser Frame ─────────────────────────────────────────────────────────
 function BrowserFrame({ url, label, page, compact = false }: { url: string; label: string; page?: CafePage; compact?: boolean }) {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const Icon = page?.icon || Globe;
-
-  const mockBars = [
-    { w: "60%", h: "h-3" }, { w: "40%", h: "h-3" }, { w: "75%", h: "h-3" },
-    { w: "50%", h: "h-2" }, { w: "65%", h: "h-2" }, { w: "30%", h: "h-2" },
-  ];
-
-  const previewHeight = compact ? 200 : 460;
+  const theme = (page as any)?.theme || "orange";
+  const s = THEME_STYLES[theme as keyof typeof THEME_STYLES] || THEME_STYLES.orange;
+  const previewHeight = compact ? 210 : 460;
 
   return (
-    <div className="bg-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl border border-white/[0.06]">
+    <div className="rounded-2xl overflow-hidden shadow-xl border border-white/[0.06]" style={{ background: s.navBg }}>
       {/* Browser chrome */}
-      <div className="bg-[#2d2d2d] px-4 py-3 flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-          <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
-          <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+      <div className="px-3 py-2.5 flex items-center gap-2.5" style={{ background: s.navBg }}>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
         </div>
-        <div className="flex-1 bg-[#1a1a1a] rounded-lg px-3 py-1.5 flex items-center gap-2 min-w-0">
-          <div className="w-3 h-3 rounded-full bg-green-400/80 flex-shrink-0" />
-          <span className="text-white/50 text-xs font-mono truncate" dir="ltr">{url}</span>
+        <div className="flex-1 rounded-md px-2.5 py-1 flex items-center gap-1.5 min-w-0" style={{ backgroundColor: "#ffffff12" }}>
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: s.accentColor }} />
+          <span className="text-white/40 text-[10px] font-mono truncate" dir="ltr">{url}</span>
         </div>
-        <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-lg p-1">
-          {(["desktop", "tablet", "mobile"] as const).map(v => (
-            <button key={v} onClick={() => setViewport(v)}
-              className={`p-1 rounded-md transition-colors ${viewport === v ? "bg-white/15 text-white" : "text-white/30 hover:text-white/60"}`}>
-              {v === "desktop" && <Monitor className="w-3.5 h-3.5" />}
-              {v === "tablet" && <Tablet className="w-3.5 h-3.5" />}
-              {v === "mobile" && <Smartphone className="w-3.5 h-3.5" />}
-            </button>
-          ))}
-        </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-white/70 transition-colors">
-          <ExternalLink className="w-3.5 h-3.5" />
+        {!compact && (
+          <div className="flex items-center gap-0.5 rounded-md p-0.5" style={{ backgroundColor: "#ffffff10" }}>
+            {(["desktop", "tablet", "mobile"] as const).map(v => (
+              <button key={v} onClick={() => setViewport(v)}
+                className="p-1 rounded transition-colors"
+                style={{ backgroundColor: viewport === v ? "#ffffff20" : "transparent" }}>
+                {v === "desktop" && <Monitor className="w-3 h-3 text-white/50" />}
+                {v === "tablet" && <Tablet className="w-3 h-3 text-white/50" />}
+                {v === "mobile" && <Smartphone className="w-3 h-3 text-white/50" />}
+              </button>
+            ))}
+          </div>
+        )}
+        <a href={url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 opacity-30 hover:opacity-70 transition-opacity">
+          <ExternalLink className="w-3 h-3 text-white" />
         </a>
       </div>
 
       {/* Preview area */}
-      <div className="relative overflow-hidden flex justify-center bg-[#f0f0f0]" style={{ height: `${previewHeight}px` }}>
+      <div className="relative overflow-hidden flex justify-center" style={{ height: `${previewHeight}px`, background: s.contentBg }}>
         <div
-          className="relative overflow-hidden transition-all duration-500 bg-white"
+          className="relative overflow-hidden transition-all duration-500"
           style={{
-            width: viewport === "desktop" ? "100%" : viewport === "tablet" ? "768px" : "390px",
+            width: !compact && viewport !== "desktop" ? (viewport === "tablet" ? "768px" : "390px") : "100%",
             height: "100%",
           }}
         >
-          {/* Fake page skeleton UI */}
-          <div className="w-full h-full flex flex-col">
-            {/* Fake nav bar */}
-            <div className="bg-[#1a1a1a] h-12 flex items-center gap-3 px-5 flex-shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-amber-600/80 flex items-center justify-center">
-                <Coffee className="w-4 h-4 text-white" />
-              </div>
-              <div className="w-24 h-2.5 bg-white/20 rounded-full" />
-              <div className="flex gap-3 mr-auto">
-                {[1,2,3].map(n => <div key={n} className="w-12 h-2 bg-white/10 rounded-full" />)}
-              </div>
-            </div>
+          <MockPageContent theme={theme} icon={Icon} compact={compact} />
 
-            {/* Fake hero */}
-            <div className="h-44 bg-gradient-to-br from-amber-900 to-amber-700 relative overflow-hidden flex-shrink-0">
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Icon className="w-7 h-7 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-5 w-40 bg-white/30 rounded-full mx-auto" />
-                  <div className="h-3 w-56 bg-white/15 rounded-full mx-auto" />
-                </div>
-                <div className="h-9 w-36 bg-white/25 rounded-xl mt-1" />
+          {/* Overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-end"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)" }}>
+            {compact ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mb-3 flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-[11px] shadow-lg hover:scale-105 active:scale-95 transition-transform"
+                style={{ backgroundColor: s.accentColor, color: theme === "orange" ? "#000" : "#fff" }}
+                data-testid={`btn-open-${url.replace(/[^a-z0-9]/gi, "-")}`}
+              >
+                <ExternalLink className="w-3 h-3" />
+                فتح الصفحة
+              </a>
+            ) : (
+              <div className="text-center mb-8 px-6 flex flex-col items-center gap-3">
+                <p className="text-white font-black text-xl">{label}</p>
+                <p className="text-white/50 text-xs max-w-xs">{page?.descAr?.slice(0, 80)}...</p>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="btn-open-preview"
+                  className="flex items-center gap-2 font-bold text-sm px-7 py-3 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-transform mt-1"
+                  style={{ backgroundColor: s.accentColor, color: theme === "orange" || theme === "sky" ? "#000" : "#fff" }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  فتح الصفحة الحقيقية
+                </a>
+                <p className="text-white/20 text-[10px] font-mono" dir="ltr">{url}</p>
               </div>
-            </div>
-
-            {/* Fake content area */}
-            <div className="flex-1 p-5 space-y-4 overflow-hidden">
-              {/* Fake category row */}
-              <div className="flex gap-2">
-                {["☕ مشروبات", "🥐 حلويات", "🥗 سناندويش", "❄️ باردة"].map(c => (
-                  <div key={c} className="px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-[10px] text-gray-500 font-medium whitespace-nowrap">{c}</div>
-                ))}
-              </div>
-              {/* Fake product grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {[1,2,3,4,5,6].map(n => (
-                  <div key={n} className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
-                    <div className="h-20 bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-amber-200/70" />
-                    </div>
-                    <div className="p-2 space-y-1.5">
-                      {mockBars.slice(0,2).map((b, i) => (
-                        <div key={i} className={`${b.h} rounded-full bg-gray-200`} style={{ width: b.w }} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Overlay with open button */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col items-center justify-end pb-10 gap-4">
-            <div className="text-center px-6">
-              <p className="text-white font-black text-lg mb-1">{label}</p>
-              <p className="text-white/50 text-xs">{page?.descAr?.slice(0, 70)}...</p>
-            </div>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="btn-open-preview"
-              className="flex items-center gap-2 bg-white text-black font-bold text-sm px-6 py-3 rounded-2xl hover:bg-white/90 transition-all shadow-xl hover:scale-105 active:scale-95"
-            >
-              <ExternalLink className="w-4 h-4" />
-              فتح الصفحة الحقيقية
-            </a>
-            <p className="text-white/20 text-[10px] font-mono" dir="ltr">{url}</p>
+            )}
           </div>
         </div>
       </div>
@@ -282,7 +593,7 @@ export default function TemplateDetail() {
   });
 
   const isRestaurant = template?.category === "restaurant" || template?.category === "food" || template?.slug === "cafe-restaurant";
-  const baseUrl = template?.demoUrl?.replace(/\/$/, "") || (isRestaurant ? "https://cafe.qiroxstudio.online" : "");
+  const baseUrl = isRestaurant ? "https://cafe.qiroxstudio.online" : (template?.demoUrl?.replace(/\/$/, "") || "");
   const color = template?.heroColor || (isRestaurant ? "#b45309" : "#0f172a");
   const tier = template?.tier ? TIER_META[template.tier] : null;
   const videoEmbed = template?.howToUseVideoUrl ? getVideoEmbed(template.howToUseVideoUrl) : null;
