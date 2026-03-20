@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,36 +98,32 @@ const CAFE_PORTALS: PortalCredential[] = [
 ];
 
 // ── Browser Frame ─────────────────────────────────────────────────────────
-function BrowserFrame({ url, label }: { url: string; label: string }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [loading, setLoading] = useState(true);
+function BrowserFrame({ url, label, page }: { url: string; label: string; page?: CafePage }) {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const Icon = page?.icon || Globe;
 
-  const widths = { desktop: "100%", tablet: "768px", mobile: "390px" };
+  const mockBars = [
+    { w: "60%", h: "h-3" }, { w: "40%", h: "h-3" }, { w: "75%", h: "h-3" },
+    { w: "50%", h: "h-2" }, { w: "65%", h: "h-2" }, { w: "30%", h: "h-2" },
+  ];
 
   return (
     <div className="bg-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl border border-white/[0.06]">
       {/* Browser chrome */}
       <div className="bg-[#2d2d2d] px-4 py-3 flex items-center gap-3">
-        {/* Traffic lights */}
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
           <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <div className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        {/* Address bar */}
         <div className="flex-1 bg-[#1a1a1a] rounded-lg px-3 py-1.5 flex items-center gap-2 min-w-0">
           <div className="w-3 h-3 rounded-full bg-green-400/80 flex-shrink-0" />
           <span className="text-white/50 text-xs font-mono truncate" dir="ltr">{url}</span>
         </div>
-        {/* Viewport switcher */}
         <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-lg p-1">
           {(["desktop", "tablet", "mobile"] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setViewport(v)}
-              className={`p-1 rounded-md transition-colors ${viewport === v ? "bg-white/15 text-white" : "text-white/30 hover:text-white/60"}`}
-            >
+            <button key={v} onClick={() => setViewport(v)}
+              className={`p-1 rounded-md transition-colors ${viewport === v ? "bg-white/15 text-white" : "text-white/30 hover:text-white/60"}`}>
               {v === "desktop" && <Monitor className="w-3.5 h-3.5" />}
               {v === "tablet" && <Tablet className="w-3.5 h-3.5" />}
               {v === "mobile" && <Smartphone className="w-3.5 h-3.5" />}
@@ -138,23 +134,88 @@ function BrowserFrame({ url, label }: { url: string; label: string }) {
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
-      {/* Iframe container */}
-      <div className="relative bg-gray-100 overflow-hidden flex justify-center" style={{ height: "520px" }}>
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-100 z-10">
-            <Loader2 className="w-8 h-8 animate-spin text-black/20" />
-            <p className="text-xs text-black/30 font-medium">جاري تحميل {label}...</p>
+
+      {/* Preview area */}
+      <div className="relative overflow-hidden flex justify-center bg-[#f0f0f0]" style={{ height: "460px" }}>
+        <div
+          className="relative overflow-hidden transition-all duration-500 bg-white"
+          style={{
+            width: viewport === "desktop" ? "100%" : viewport === "tablet" ? "768px" : "390px",
+            height: "100%",
+          }}
+        >
+          {/* Fake page skeleton UI */}
+          <div className="w-full h-full flex flex-col">
+            {/* Fake nav bar */}
+            <div className="bg-[#1a1a1a] h-12 flex items-center gap-3 px-5 flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-amber-600/80 flex items-center justify-center">
+                <Coffee className="w-4 h-4 text-white" />
+              </div>
+              <div className="w-24 h-2.5 bg-white/20 rounded-full" />
+              <div className="flex gap-3 mr-auto">
+                {[1,2,3].map(n => <div key={n} className="w-12 h-2 bg-white/10 rounded-full" />)}
+              </div>
+            </div>
+
+            {/* Fake hero */}
+            <div className="h-44 bg-gradient-to-br from-amber-900 to-amber-700 relative overflow-hidden flex-shrink-0">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "16px 16px" }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Icon className="w-7 h-7 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-5 w-40 bg-white/30 rounded-full mx-auto" />
+                  <div className="h-3 w-56 bg-white/15 rounded-full mx-auto" />
+                </div>
+                <div className="h-9 w-36 bg-white/25 rounded-xl mt-1" />
+              </div>
+            </div>
+
+            {/* Fake content area */}
+            <div className="flex-1 p-5 space-y-4 overflow-hidden">
+              {/* Fake category row */}
+              <div className="flex gap-2">
+                {["☕ مشروبات", "🥐 حلويات", "🥗 سناندويش", "❄️ باردة"].map(c => (
+                  <div key={c} className="px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-[10px] text-gray-500 font-medium whitespace-nowrap">{c}</div>
+                ))}
+              </div>
+              {/* Fake product grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[1,2,3,4,5,6].map(n => (
+                  <div key={n} className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
+                    <div className="h-20 bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-amber-200/70" />
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                      {mockBars.slice(0,2).map((b, i) => (
+                        <div key={i} className={`${b.h} rounded-full bg-gray-200`} style={{ width: b.w }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
-        <div className="overflow-hidden transition-all duration-500" style={{ width: widths[viewport], height: "100%" }}>
-          <iframe
-            ref={iframeRef}
-            src={url}
-            className="w-full h-full border-0"
-            onLoad={() => setLoading(false)}
-            title={label}
-            data-testid="iframe-cafe-page"
-          />
+
+          {/* Overlay with open button */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col items-center justify-end pb-10 gap-4">
+            <div className="text-center px-6">
+              <p className="text-white font-black text-lg mb-1">{label}</p>
+              <p className="text-white/50 text-xs">{page?.descAr?.slice(0, 70)}...</p>
+            </div>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="btn-open-preview"
+              className="flex items-center gap-2 bg-white text-black font-bold text-sm px-6 py-3 rounded-2xl hover:bg-white/90 transition-all shadow-xl hover:scale-105 active:scale-95"
+            >
+              <ExternalLink className="w-4 h-4" />
+              فتح الصفحة الحقيقية
+            </a>
+            <p className="text-white/20 text-[10px] font-mono" dir="ltr">{url}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -471,6 +532,7 @@ export default function TemplateDetail() {
             <BrowserFrame
               url={activePreviewPage ? `${baseUrl}${activePreviewPage.path}` : baseUrl}
               label={activePreviewPage?.titleAr || "الصفحة الرئيسية"}
+              page={activePreviewPage ?? undefined}
             />
 
             {activePreviewPage && (
