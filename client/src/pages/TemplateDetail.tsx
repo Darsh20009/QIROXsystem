@@ -407,6 +407,14 @@ function MockPageContent({ theme, icon: Icon, compact }: { theme: string; icon: 
   );
 }
 
+// ── Auth detection ────────────────────────────────────────────────────────
+// Badges that indicate a page is publicly accessible (no login needed)
+const PUBLIC_BADGES = new Set(["عام", "شاشة عامة", "QR", "طاولة", "تتبع", "دخول"]);
+function isPublicPage(badge?: string): boolean {
+  if (!badge) return true;
+  return PUBLIC_BADGES.has(badge);
+}
+
 // ── Browser Frame ─────────────────────────────────────────────────────────
 const CAFE_ORIGIN = "https://cafe.qiroxstudio.online";
 
@@ -454,14 +462,21 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
     ? (viewport === "tablet" ? 768 : 390)
     : null;
 
-  // Start blocked-detection timer when url changes
+  // Start blocked-detection timer when url changes (only for live iframes)
+  const pageIsPublic = isPublicPage((page as any)?.badge);
   useEffect(() => {
+    if (compact && !pageIsPublic) {
+      // Auth-required pages show a mock — no loading states needed
+      setLoaded(true);
+      setBlocked(false);
+      return;
+    }
     setLoaded(false);
     setBlocked(false);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setBlocked(true), 6000);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [url]);
+  }, [url, compact, pageIsPublic]);
 
   function handleIframeLoad() {
     setLoaded(true);
@@ -525,27 +540,47 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
           </div>
         )}
 
-        {/* Compact iframe — scaled to fill container width exactly */}
+        {/* Compact preview */}
         {compact && (
-          <div ref={containerRef} className="absolute inset-0 overflow-hidden">
-            <iframe
-              key={proxyUrl}
-              src={proxyUrl}
-              title={label}
-              onLoad={handleIframeLoad}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: `${IFRAME_W}px`,
-                height: `${IFRAME_H}px`,
-                transform: `scale(${compactScale})`,
-                transformOrigin: "top left",
-                border: "none",
-                pointerEvents: "none",
-              }}
-            />
-          </div>
+          isPublicPage((page as any)?.badge) ? (
+            /* Live iframe for public pages — scaled to fill container width */
+            <div ref={containerRef} className="absolute inset-0 overflow-hidden">
+              <iframe
+                key={proxyUrl}
+                src={proxyUrl}
+                title={label}
+                onLoad={handleIframeLoad}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: `${IFRAME_W}px`,
+                  height: `${IFRAME_H}px`,
+                  transform: `scale(${compactScale})`,
+                  transformOrigin: "top left",
+                  border: "none",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
+          ) : (
+            /* Auth-required pages: show a stylized mock instead of an ugly login form */
+            <div className="absolute inset-0 overflow-hidden">
+              <MockPageContent theme={theme} icon={(page as any)?.icon || Lock} compact />
+              {/* Auth overlay badge */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg"
+                  style={{ backgroundColor: s.accentColor + "22", border: `1.5px solid ${s.accentColor}55` }}>
+                  <Lock className="w-4 h-4" style={{ color: s.accentColor }} />
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full shadow"
+                  style={{ backgroundColor: s.navBg + "ee", color: s.accentColor }}>
+                  {(page as any)?.badge || "محمية"}
+                </span>
+              </div>
+            </div>
+          )
         )}
 
         {/* Non-compact iframe — full size with viewport control */}
