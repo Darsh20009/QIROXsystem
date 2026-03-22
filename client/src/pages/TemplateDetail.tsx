@@ -822,7 +822,7 @@ export default function TemplateDetail() {
                     </Button>
                   </a>
                 )}
-                <Link href={`/order?template=${template.slug}`}>
+                <Link href="/pricing">
                   <Button variant="outline" className="h-12 px-7 rounded-2xl font-bold gap-2 border-white/20 text-white hover:bg-white/10 text-sm" data-testid="btn-order-template">
                     <ArrowRight className="w-4 h-4" /> ابدأ مشروعك
                   </Button>
