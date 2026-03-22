@@ -425,15 +425,29 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
   const [loaded, setLoaded] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const theme = (page as any)?.theme || "orange";
   const s = THEME_STYLES[theme as keyof typeof THEME_STYLES] || THEME_STYLES.orange;
-  const previewHeight = compact ? 210 : 460;
+  const previewHeight = compact ? 220 : 460;
   const proxyUrl = toProxyUrl(url);
 
-  // Compact: render iframe at 1280×900 then scale down to fit container
+  // Compact: render iframe at 1280×800 then scale to fill the container exactly
   const IFRAME_W = 1280;
-  const IFRAME_H = 900;
-  const compactScale = 0.27; // 1280*0.27≈346px wide, 900*0.27≈243px tall
+  const IFRAME_H = 800;
+  // Compute scale dynamically from real container width (falls back to 0.27 until measured)
+  const compactScale = containerWidth > 0 ? containerWidth / IFRAME_W : 0.27;
+
+  // Observe container width so scale is always exact
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !compact) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [compact]);
 
   // Non-compact viewport widths
   const vpWidth = !compact && viewport !== "desktop"
@@ -511,9 +525,9 @@ function BrowserFrame({ url, label, page, compact = false }: { url: string; labe
           </div>
         )}
 
-        {/* Compact iframe — scaled down */}
+        {/* Compact iframe — scaled to fill container width exactly */}
         {compact && (
-          <div className="absolute inset-0 overflow-hidden">
+          <div ref={containerRef} className="absolute inset-0 overflow-hidden">
             <iframe
               key={proxyUrl}
               src={proxyUrl}
