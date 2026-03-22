@@ -6,6 +6,7 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -1701,27 +1702,77 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
   );
 }
 
+/* ─── PartnerLogoAvatar ─────────────────────────────────────── */
+function PartnerLogoAvatar({ name, logo, size = "sm" }: { name: string; logo: string; size?: "sm" | "lg" }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const letter = name.trim()[0]?.toUpperCase() || "?";
+  const colors = [
+    "bg-blue-500","bg-emerald-500","bg-violet-500","bg-orange-500",
+    "bg-pink-500","bg-cyan-500","bg-amber-500","bg-rose-500",
+    "bg-teal-500","bg-indigo-500","bg-lime-500","bg-sky-500",
+  ];
+  const color = colors[letter.charCodeAt(0) % colors.length];
+  const dim = size === "lg" ? "w-16 h-16 text-2xl" : "w-7 h-7 text-xs";
+
+  return (
+    <span className={`relative flex-shrink-0 rounded-lg overflow-hidden ${dim}`}>
+      <span className={`absolute inset-0 flex items-center justify-center ${color} text-white font-bold`}>
+        {letter}
+      </span>
+      {!failed && (
+        <img
+          src={logo}
+          alt={name}
+          loading="eager"
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
+    </span>
+  );
+}
+
+/* ─── PartnersMarquee ───────────────────────────────────────── */
 function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
+  const L = lang === "ar";
   const { data: apiPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<{
+    name: string; nameAr?: string; logo: string; url?: string;
+    category?: string; description?: string; descriptionAr?: string;
+    features?: string[]; featuresAr?: string[];
+  } | null>(null);
 
-  const allLogos = useMemo(() => {
+  const allPartners = useMemo(() => {
     const fromApi = (apiPartners || []).map(p => ({
-      name: lang === "ar" ? (p.nameAr || p.name) : p.name,
+      name: p.name,
+      nameAr: p.nameAr,
       logo: p.logoUrl,
       url: p.websiteUrl,
+      category: p.category,
+      description: (p as any).description,
+      descriptionAr: (p as any).descriptionAr,
+      features: (p as any).features,
+      featuresAr: (p as any).featuresAr,
     }));
     const fromStatic = staticPartners.map(p => ({
-      name: lang === "ar" ? p.nameAr : p.name,
+      name: p.name,
+      nameAr: p.nameAr,
       logo: p.logo,
       url: undefined as string | undefined,
+      category: undefined as string | undefined,
+      description: undefined as string | undefined,
+      descriptionAr: undefined as string | undefined,
+      features: undefined as string[] | undefined,
+      featuresAr: undefined as string[] | undefined,
     }));
     const apiNames = new Set(fromApi.map(p => p.name));
     return [...fromApi, ...fromStatic.filter(s => !apiNames.has(s.name))];
-  }, [apiPartners, lang]);
+  }, [apiPartners]);
 
-  // Measure and set ping-pong offset after logos render
   useEffect(() => {
     const measure = () => {
       const wrap = wrapRef.current;
@@ -1730,7 +1781,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
       const offset = track.scrollWidth - wrap.clientWidth;
       if (offset > 0) {
         track.style.setProperty("--ping-offset", `-${offset}px`);
-        const dur = Math.max(Math.round(offset / 35), 15);
+        const dur = Math.max(Math.round(offset / 35), 12);
         track.style.setProperty("--ping-duration", `${dur}s`);
       }
     };
@@ -1738,66 +1789,107 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
     const ro = new ResizeObserver(measure);
     if (wrapRef.current) ro.observe(wrapRef.current);
     return () => ro.disconnect();
-  }, [allLogos]);
+  }, [allPartners]);
 
-  if (allLogos.length === 0) return null;
+  if (allPartners.length === 0) return null;
+
+  const displayName = (p: typeof allPartners[0]) => L ? (p.nameAr || p.name) : p.name;
+  const displayDesc = (p: typeof allPartners[0]) =>
+    L ? (p.descriptionAr || p.description || "") : (p.description || "");
+  const displayFeatures = (p: typeof allPartners[0]) =>
+    L ? (p.featuresAr?.length ? p.featuresAr : p.features || []) : (p.features || []);
 
   return (
-    <section className="py-16 md:py-20 relative" data-testid="section-partners">
+    <section className="py-16 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-partners">
       <div className="container mx-auto px-4 mb-10 text-center">
         <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold" dir={dir}>
-          {lang === "ar" ? "يثقون بنا" : "Trusted By"}
+          {L ? "يثقون بنا" : "Trusted By"}
         </p>
       </div>
 
       <div className="relative">
-        {/* Edge fades */}
-        <div className="absolute left-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-        <div ref={wrapRef} className="overflow-hidden w-full py-2">
+        <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
           <div
             ref={trackRef}
             className="flex animate-pingpong"
             style={{ width: "max-content" }}
           >
-            {allLogos.map((partner, i) => {
-              const imgEl = (
-                <img
-                  src={partner.logo}
-                  alt={partner.name}
-                  className="h-10 md:h-12 w-auto max-w-[120px] object-contain opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-400"
-                  loading="eager"
-                  onError={(e) => {
-                    // fallback: show name as text
-                    e.currentTarget.style.display = "none";
-                    (e.currentTarget.nextSibling as HTMLElement | null)?.style?.removeProperty("display");
-                  }}
-                />
-              );
-              return (
-                <div
-                  key={`${partner.name}-${i}`}
-                  className="flex-shrink-0 mx-8 md:mx-12 flex items-center justify-center group"
-                  data-testid={`partner-logo-${i}`}
-                >
-                  {partner.url ? (
-                    <a href={partner.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                      {imgEl}
-                      <span className="hidden text-sm font-bold text-black/30 dark:text-white/30">{partner.name}</span>
-                    </a>
-                  ) : (
-                    <span className="flex items-center">
-                      {imgEl}
-                      <span className="hidden text-sm font-bold text-black/30 dark:text-white/30">{partner.name}</span>
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+            {allPartners.map((partner, i) => (
+              <button
+                key={`${partner.name}-${i}`}
+                onClick={() => setSelected(partner)}
+                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
+                data-testid={`partner-chip-${i}`}
+              >
+                <PartnerLogoAvatar name={partner.name} logo={partner.logo} />
+                <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
+                  {displayName(partner)}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* Partner details dialog */}
+      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        {selected && (
+          <DialogContent className="max-w-md" dir={dir}>
+            <DialogHeader>
+              <div className="flex items-center gap-4 mb-2">
+                <PartnerLogoAvatar name={selected.name} logo={selected.logo} size="lg" />
+                <div className="text-start">
+                  <DialogTitle className="text-lg font-bold">
+                    {L ? (selected.nameAr || selected.name) : selected.name}
+                  </DialogTitle>
+                  {selected.nameAr && selected.nameAr !== selected.name && (
+                    <p className="text-sm text-black/40 dark:text-white/40 mt-0.5">
+                      {L ? selected.name : selected.nameAr}
+                    </p>
+                  )}
+                  {selected.category && (
+                    <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 font-medium">
+                      {selected.category}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            {displayDesc(selected) && (
+              <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
+                {displayDesc(selected)}
+              </p>
+            )}
+
+            {displayFeatures(selected).length > 0 && (
+              <ul className="mt-1 space-y-1.5">
+                {displayFeatures(selected).map((f: string, fi: number) => (
+                  <li key={fi} className="flex items-start gap-2 text-sm text-black/60 dark:text-white/55">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {selected.url && (
+              <a
+                href={selected.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Globe className="w-4 h-4" />
+                {selected.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+              </a>
+            )}
+          </DialogContent>
+        )}
+      </Dialog>
     </section>
   );
 }
