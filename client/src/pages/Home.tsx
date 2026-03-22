@@ -1274,36 +1274,39 @@ export default function Home() {
   );
 }
 
-// Reliable company logo: tries Google favicon, falls back to styled letter avatar
+// Shows letter avatar instantly; favicon fades in on top when loaded
 function CompanyLogo({ domain, name }: { domain: string; name: string }) {
-  const [failed, setFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const initial = name.charAt(0).toUpperCase();
-  const colors = [
-    "bg-blue-100 text-blue-700", "bg-violet-100 text-violet-700",
-    "bg-emerald-100 text-emerald-700", "bg-amber-100 text-amber-700",
-    "bg-rose-100 text-rose-700", "bg-sky-100 text-sky-700",
-    "bg-orange-100 text-orange-700", "bg-teal-100 text-teal-700",
+  const palette = [
+    "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+    "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
+    "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
+    "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300",
+    "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
+    "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300",
+    "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300",
   ];
-  const colorClass = colors[name.charCodeAt(0) % colors.length];
-
-  if (failed) {
-    return (
-      <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-black shrink-0 ${colorClass}`}>
-        {initial}
-      </span>
-    );
-  }
+  const colorClass = palette[name.charCodeAt(0) % palette.length];
 
   return (
-    <img
-      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-      alt={name}
-      width={24}
-      height={24}
-      className="w-6 h-6 object-contain rounded-md shrink-0"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
+    <span className="relative w-6 h-6 shrink-0">
+      {/* Letter avatar — always visible immediately */}
+      <span className={`absolute inset-0 rounded-md flex items-center justify-center text-[11px] font-black ${colorClass}`}>
+        {initial}
+      </span>
+      {/* Favicon overlays smoothly once loaded */}
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+        alt=""
+        width={24}
+        height={24}
+        className={`absolute inset-0 w-full h-full object-contain rounded-md transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+        onLoad={() => setImgLoaded(true)}
+        onError={() => {/* letter stays visible */}}
+      />
+    </span>
   );
 }
 
