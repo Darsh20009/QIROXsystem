@@ -1488,7 +1488,8 @@ export default function Dashboard() {
   const [upgradeWalletPin, setUpgradeWalletPin] = useState<string>("");
   const [uploadingProofOrderId, setUploadingProofOrderId] = useState<string | null>(null);
   const proofFileRef = useRef<HTMLInputElement>(null);
-  const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null);
+  const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null); // Sheet state
+  const [inlineProjectKeyId, setInlineProjectKeyId] = useState<string | null>(null); // Inline widget state
   const [showAllSectors, setShowAllSectors] = useState(false);
 
   const uploadProofMutation = useMutation({
@@ -1553,6 +1554,13 @@ export default function Dashboard() {
 
   const linkedApiKeys = myApiKeys.filter((k: any) => k.projectName && k.projectName.trim() !== "");
 
+  // Auto-select first linked API project for inline display on dashboard load
+  useEffect(() => {
+    if (linkedApiKeys.length > 0 && !inlineProjectKeyId) {
+      setInlineProjectKeyId(linkedApiKeys[0].id);
+    }
+  }, [linkedApiKeys.length]);
+
   const { data: linkedProjectPreview, isLoading: isLoadingLinkedPreview } = useQuery<any>({
     queryKey: ['/api/my-api-keys', linkedProjectKeyId, 'preview'],
     enabled: !!linkedProjectKeyId,
@@ -1561,6 +1569,18 @@ export default function Dashboard() {
       if (!res.ok) throw new Error('failed');
       return res.json();
     },
+  });
+
+  // Inline widget query (separate from Sheet query)
+  const { data: inlinePreview, isLoading: isLoadingInlinePreview } = useQuery<any>({
+    queryKey: ['/api/my-api-keys', inlineProjectKeyId, 'preview'],
+    enabled: !!inlineProjectKeyId,
+    queryFn: async () => {
+      const res = await fetch(`/api/my-api-keys/${inlineProjectKeyId}/preview`, { credentials: 'include' });
+      if (!res.ok) throw new Error('failed');
+      return res.json();
+    },
+    staleTime: 60000,
   });
 
   const [instantMeetResult, setInstantMeetResult] = useState<any>(null);
@@ -2464,57 +2484,244 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ─── Linked API Projects ─── */}
+            {/* ─── API-Linked Project Dashboard (Inline) ─── */}
             {user?.role === 'client' && linkedApiKeys.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6">
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6" dir="rtl">
+
+                {/* Section header */}
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-black dark:text-white flex items-center gap-2">
-                    <div className="w-6 h-6 bg-violet-600 rounded-lg flex items-center justify-center">
-                      <KeyRound className="w-3.5 h-3.5 text-white" />
+                  <h2 className="font-bold text-black dark:text-white flex items-center gap-2 text-sm">
+                    <div className="w-6 h-6 bg-gradient-to-br from-violet-600 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                      <Server className="w-3.5 h-3.5 text-white" />
                     </div>
-                    {L ? "مشاريع مربوطة بالـ API" : "API-Linked Projects"}
+                    {L ? "لوحة مشروعي المربوط" : "My Linked Project Dashboard"}
                   </h2>
-                  <Link href="/api-keys">
-                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-black/60 dark:text-white/60 flex items-center gap-1" data-testid="link-manage-api-keys">
+                  <Link href="/my-api-keys">
+                    <button className="text-[10px] text-black/30 dark:text-white/30 hover:text-violet-600 dark:hover:text-violet-400 flex items-center gap-1 transition-colors" data-testid="link-manage-api-keys">
                       {L ? "إدارة المفاتيح" : "Manage Keys"} <ArrowUpRight className="w-3 h-3" />
                     </button>
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {linkedApiKeys.map((apiKey: any, i: number) => (
-                    <motion.div key={apiKey.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 + i * 0.05 }}
-                      data-testid={`card-linked-project-${apiKey.id}`}
-                      onClick={() => setLinkedProjectKeyId(apiKey.id)}
-                      className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.07] rounded-2xl p-4 cursor-pointer hover:shadow-md hover:border-violet-200 dark:hover:border-violet-800/50 transition-all group">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${apiKey.isActive ? "bg-violet-100 dark:bg-violet-950/40" : "bg-black/[0.04] dark:bg-white/[0.04]"}`}>
-                          <Server className={`w-4.5 h-4.5 ${apiKey.isActive ? "text-violet-600 dark:text-violet-400" : "text-black/20 dark:text-white/20"}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="font-bold text-sm text-black dark:text-white truncate">{apiKey.projectName}</p>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${apiKey.isActive ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800" : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400"}`}>
-                              {apiKey.isActive ? (L ? "نشط" : "Active") : (L ? "معطّل" : "Disabled")}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-black/40 dark:text-white/40 mb-2">{apiKey.name}</p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-wrap gap-1">
-                              {(apiKey.scopes || []).slice(0, 3).map((s: string) => (
-                                <span key={s} className="text-[9px] bg-black/[0.04] dark:bg-white/[0.06] text-black/40 dark:text-white/40 px-1.5 py-0.5 rounded-full">{s}</span>
-                              ))}
-                              {(apiKey.scopes || []).length > 3 && <span className="text-[9px] text-black/30 dark:text-white/30">+{(apiKey.scopes || []).length - 3}</span>}
+
+                {/* Project switcher — pill tabs when multiple keys exist */}
+                {linkedApiKeys.length > 1 && (
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+                    {linkedApiKeys.map((k: any) => (
+                      <button key={k.id}
+                        data-testid={`tab-inline-project-${k.id}`}
+                        onClick={() => setInlineProjectKeyId(k.id)}
+                        className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${
+                          inlineProjectKeyId === k.id
+                            ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                            : "bg-white dark:bg-gray-900 text-black/50 dark:text-white/50 border-black/[0.08] dark:border-white/[0.08] hover:border-violet-300 dark:hover:border-violet-700"
+                        }`}>
+                        <Server className="w-3 h-3" /> {k.projectName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Main inline widget */}
+                {inlineProjectKeyId && (() => {
+                  const activeKey = linkedApiKeys.find((k: any) => k.id === inlineProjectKeyId);
+                  const preview = inlinePreview;
+                  const loading = isLoadingInlinePreview;
+
+                  const scopeIconMap: Record<string, string> = {
+                    orders:"📦", projects:"🗂️", invoices:"🧾", stats:"📊", wallet:"💳",
+                    customers:"👥", subscriptions:"⚡", support:"🎧", files:"📁", notifications:"🔔",
+                  };
+
+                  return (
+                    <div className="rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 shadow-sm">
+
+                      {/* Project header — gradient banner */}
+                      <div className="relative bg-gradient-to-l from-violet-700 via-violet-600 to-purple-600 p-5 overflow-hidden">
+                        <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} />
+                        <div className="absolute -top-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-purple-400/20 rounded-full blur-xl" />
+
+                        <div className="relative z-10 flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20">
+                              <Server className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-[10px] text-black/30 dark:text-white/30 flex items-center gap-1">
-                              <Activity className="w-3 h-3" />{(apiKey.requestCount || 0).toLocaleString()}
+                            <div>
+                              <p className="font-black text-white text-base leading-tight">{activeKey?.projectName}</p>
+                              <p className="text-white/50 text-[11px] mt-0.5 font-mono">{activeKey?.keyPrefix}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${activeKey?.isActive ? "bg-green-500/20 text-green-200 border-green-400/30" : "bg-white/10 text-white/50 border-white/20"}`}>
+                              {activeKey?.isActive ? (L ? "● نشط" : "● Active") : (L ? "○ معطّل" : "○ Disabled")}
                             </span>
+                            <button
+                              data-testid="btn-open-project-sheet"
+                              onClick={() => { setLinkedProjectKeyId(inlineProjectKeyId); }}
+                              className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-colors flex items-center gap-1">
+                              <ExternalLink className="w-3 h-3" /> {L ? "تفاصيل أكثر" : "More Details"}
+                            </button>
                           </div>
                         </div>
-                        <ChevronLeft className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-violet-500 transition-colors flex-shrink-0 mt-1" />
+
+                        {/* Granted scopes row */}
+                        <div className="relative z-10 flex flex-wrap gap-1.5 mt-3">
+                          {(activeKey?.scopes || []).map((s: string) => (
+                            <span key={s} className="text-[10px] bg-white/10 border border-white/20 text-white/70 px-2 py-0.5 rounded-full font-medium">
+                              {scopeIconMap[s] || "🔑"} {s}
+                            </span>
+                          ))}
+                          <span className="text-[10px] text-white/40 flex items-center gap-1 mr-2">
+                            <Activity className="w-3 h-3" /> {(activeKey?.requestCount || 0).toLocaleString()} {L ? "طلب API" : "API calls"}
+                          </span>
+                        </div>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+
+                      {/* Stats + data body */}
+                      <div className="p-4 space-y-4">
+                        {loading ? (
+                          <div className="flex items-center justify-center py-10">
+                            <div className="text-center">
+                              <Loader2 className="w-7 h-7 animate-spin text-violet-500 mx-auto mb-2" />
+                              <p className="text-xs text-black/30 dark:text-white/30">{L ? "جارٍ تحميل بيانات المشروع…" : "Loading project data…"}</p>
+                            </div>
+                          </div>
+                        ) : preview ? (
+                          <>
+                            {/* Stats row */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                              {[
+                                { label: L ? "الطلبات" : "Orders",     value: preview.stats?.totalOrders   ?? 0, icon: Package,  from: "from-blue-500",   to: "to-blue-600",   light: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
+                                { label: L ? "المشاريع" : "Projects",  value: preview.stats?.activeProjects ?? 0, icon: Layers,   from: "from-violet-500", to: "to-violet-600", light: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400" },
+                                { label: L ? "الفواتير" : "Invoices",  value: preview.stats?.totalInvoices  ?? 0, icon: FileText, from: "from-amber-500",  to: "to-amber-600",  light: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+                                { label: L ? "الإيرادات" : "Revenue",  value: `${(preview.stats?.totalRevenue ?? 0).toLocaleString()}`,  icon: TrendingUp, from: "from-green-500",  to: "to-green-600",  light: "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400", unit: "ر.س" },
+                              ].map(({ label, value, icon: Icon, light, unit }, idx) => (
+                                <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }}
+                                  className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-xl p-3">
+                                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${light}`}>
+                                    <Icon className="w-3.5 h-3.5" />
+                                  </div>
+                                  <p className="text-base font-black text-black dark:text-white leading-none">
+                                    {value}{unit ? <span className="text-[10px] font-medium text-black/40 dark:text-white/40 mr-1">{unit}</span> : null}
+                                  </p>
+                                  <p className="text-[10px] text-black/35 dark:text-white/35 mt-0.5">{label}</p>
+                                </motion.div>
+                              ))}
+                            </div>
+
+                            {/* Recent orders feed */}
+                            {preview.recentOrders?.length > 0 && (
+                              <div>
+                                <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                  <Package className="w-3 h-3" /> {L ? "آخر الطلبات" : "Recent Orders"}
+                                </p>
+                                <div className="space-y-2">
+                                  {preview.recentOrders.slice(0, 4).map((order: any, oi: number) => {
+                                    const st = statusMap[order.status] || statusMap['pending'];
+                                    const Icon = st.icon;
+                                    return (
+                                      <motion.div key={order.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: oi * 0.05 }}
+                                        className="flex items-center gap-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2.5">
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${st.bg}`}>
+                                          <Icon className={`w-3.5 h-3.5 ${st.color}`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-bold text-black dark:text-white truncate">{order.businessName || order.serviceType || (L ? "طلب جديد" : "New order")}</p>
+                                          <p className="text-[10px] text-black/30 dark:text-white/30">{new Date(order.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { day: '2-digit', month: 'short' })}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          {order.totalAmount > 0 && (
+                                            <span className="text-[10px] font-bold text-black/50 dark:text-white/50 flex items-center gap-0.5">
+                                              {Number(order.totalAmount).toLocaleString()} <SARIcon size={8} className="opacity-60" />
+                                            </span>
+                                          )}
+                                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${st.color} ${st.bg}`}>{st.label}</span>
+                                        </div>
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Recent projects */}
+                            {preview.recentProjects?.length > 0 && (
+                              <div>
+                                <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                  <Layers className="w-3 h-3" /> {L ? "آخر المشاريع" : "Recent Projects"}
+                                </p>
+                                <div className="space-y-2">
+                                  {preview.recentProjects.slice(0, 3).map((proj: any, pi: number) => {
+                                    const pst = statusMap[proj.status] || statusMap['pending'];
+                                    return (
+                                      <motion.div key={proj.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: pi * 0.05 }}
+                                        className="flex items-center gap-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2.5">
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${pst.bg}`}>
+                                          <Globe className={`w-3.5 h-3.5 ${pst.color}`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          {proj.productionUrl ? (
+                                            <a href={proj.productionUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline truncate block">{proj.productionUrl}</a>
+                                          ) : proj.stagingUrl ? (
+                                            <a href={proj.stagingUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline truncate block">{proj.stagingUrl}</a>
+                                          ) : (
+                                            <p className="text-xs font-bold text-black/60 dark:text-white/60">{L ? "مشروع قيد التنفيذ" : "Project in progress"}</p>
+                                          )}
+                                          <p className="text-[10px] text-black/30 dark:text-white/30">{new Date(proj.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                        </div>
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${pst.color} ${pst.bg}`}>{pst.label}</span>
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Recent invoices */}
+                            {preview.recentInvoices?.length > 0 && (
+                              <div>
+                                <p className="text-[10px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                  <FileText className="w-3 h-3" /> {L ? "آخر الفواتير" : "Recent Invoices"}
+                                </p>
+                                <div className="space-y-2">
+                                  {preview.recentInvoices.slice(0, 3).map((inv: any, ii: number) => {
+                                    const ist = statusMap[inv.status] || statusMap['pending'];
+                                    return (
+                                      <motion.div key={inv.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ii * 0.05 }}
+                                        className="flex items-center gap-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-xl px-3 py-2.5">
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${ist.bg}`}>
+                                          <FileText className={`w-3.5 h-3.5 ${ist.color}`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-bold text-black dark:text-white truncate">{inv.description || (L ? "فاتورة" : "Invoice")}</p>
+                                          <p className="text-[10px] text-black/30 dark:text-white/30">{new Date(inv.createdAt).toLocaleDateString(L ? 'ar-SA' : 'en-US', { day: '2-digit', month: 'short' })}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          <span className="text-xs font-black text-black dark:text-white flex items-center gap-1">
+                                            {Number(inv.total || 0).toLocaleString()} <SARIcon size={9} className="opacity-50" />
+                                          </span>
+                                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${ist.color} ${ist.bg}`}>{ist.label}</span>
+                                        </div>
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Empty state when no data */}
+                            {!preview.recentOrders?.length && !preview.recentProjects?.length && !preview.recentInvoices?.length && (
+                              <div className="text-center py-6">
+                                <BarChart3 className="w-8 h-8 mx-auto mb-2 text-black/10 dark:text-white/10" />
+                                <p className="text-xs text-black/30 dark:text-white/30">{L ? "لا توجد بيانات بعد. ابدأ باستخدام الـ API لربط بياناتك." : "No data yet. Start using the API to link your data."}</p>
+                              </div>
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
               </motion.div>
             )}
           </div>
