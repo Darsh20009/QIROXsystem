@@ -262,6 +262,8 @@ function ChatInput({ onSend, disabled, placeholder = "Write your message...", on
 // ══════════════════════════════════════════════
 function ClientView({ user }: { user: any }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [subject, setSubject] = useState("");
   const [showRating, setShowRating] = useState(false);
   const [ratingVal, setRatingVal] = useState(0);
@@ -535,6 +537,8 @@ function ClientView({ user }: { user: any }) {
 // ══════════════════════════════════════════════
 function AgentView({ user }: { user: any }) {
   const { toast } = useToast();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSessions, setShowSessions] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("active");
