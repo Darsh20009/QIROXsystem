@@ -1591,56 +1591,88 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
   ];
 
   return (
-    <section className="py-16 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-integration-partners">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
-            {L ? "شركاء التكامل" : "Integration Partners"}
-          </p>
-          <p className="text-sm text-black/40 dark:text-white/35" dir={dir}>
-            {L
-              ? "منظومة متكاملة من الشركاء في الدفع والتوصيل والمحاسبة وأكثر"
-              : "A complete ecosystem of partners across payments, delivery, accounting, and more"}
-          </p>
-        </div>
+    <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04] overflow-hidden" data-testid="section-integration-partners">
+      {/* Header */}
+      <div className="container mx-auto px-4 mb-10 text-center">
+        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
+          {L ? "شركاء التكامل" : "Integration Partners"}
+        </p>
+        <p className="text-sm text-black/35 dark:text-white/30" dir={dir}>
+          {L
+            ? "منظومة متكاملة من الشركاء في الدفع والتوصيل والمحاسبة وأكثر"
+            : "A complete ecosystem of partners across payments, delivery, accounting, and more"}
+        </p>
+      </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4" dir={dir}>
-          {categories.map((cat) => (
+      {/* Scrolling strips */}
+      <div className="space-y-1.5">
+        {categories.map((cat, idx) => {
+          const speedClasses = [
+            "animate-marquee-slow",
+            "animate-marquee-fast-reverse",
+            "animate-marquee",
+            "animate-marquee-reverse",
+            "animate-marquee-slow-reverse",
+            "animate-marquee-fast",
+          ];
+          const animClass = speedClasses[idx % speedClasses.length];
+          const doubled = [...cat.companies, ...cat.companies, ...cat.companies];
+
+          return (
             <div
               key={cat.key}
-              className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white/50 dark:bg-white/[0.03] p-4"
-              data-testid={`integration-card-${cat.key}`}
+              className="group/strip relative flex items-center"
+              data-testid={`integration-strip-${cat.key}`}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`w-2.5 h-2.5 rounded-full ${cat.color} shrink-0`} />
-                <span className="text-[11px] font-black text-black/60 dark:text-white/50 uppercase tracking-wider">{cat.label}</span>
+              {/* Category label — fixed side badge */}
+              <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pointer-events-none" style={{ width: "9rem" }}>
+                <div className="w-full h-full bg-gradient-to-l from-white dark:from-gray-950 via-white/95 dark:via-gray-950/95 to-transparent flex items-center justify-end pr-4">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-[9px] font-black uppercase tracking-widest text-black/40 dark:text-white/35 whitespace-nowrap`}>{cat.label}</span>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${cat.color}`} />
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {cat.companies.map((company, i) => (
-                  <a
-                    key={company.name}
-                    href={`https://${company.domain}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.05] hover:border-black/25 dark:hover:border-white/25 hover:shadow-sm transition-all duration-200 group"
-                    data-testid={`integration-chip-${cat.key}-${i}`}
-                  >
-                    <img
-                      src={`https://logo.clearbit.com/${company.domain}`}
-                      alt={company.name}
-                      className="h-3.5 w-3.5 object-contain rounded-sm opacity-55 group-hover:opacity-100 transition-opacity shrink-0"
-                      loading="lazy"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                    <span className="text-[10px] font-semibold text-black/50 dark:text-white/40 group-hover:text-black dark:group-hover:text-white transition-colors whitespace-nowrap leading-none">
-                      {company.name}
-                    </span>
-                  </a>
-                ))}
+
+              {/* Left fade mask */}
+              <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+
+              {/* Scrolling chips track */}
+              <div className="overflow-hidden w-full py-1.5">
+                <div className={`strip-inner flex ${animClass} group-hover/strip:[animation-play-state:paused]`} style={{ width: "max-content" }}>
+                  {doubled.map((company, ci) => (
+                    <a
+                      key={`${company.name}-${ci}`}
+                      href={`https://${company.domain}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 mx-1.5 px-3 py-1.5 rounded-full border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.08] hover:shadow-sm transition-all duration-200 group shrink-0"
+                      data-testid={`integration-chip-${cat.key}-${ci}`}
+                    >
+                      <img
+                        src={`https://logo.clearbit.com/${company.domain}`}
+                        alt={company.name}
+                        className="h-3.5 w-3.5 object-contain rounded-sm opacity-50 group-hover:opacity-90 transition-opacity shrink-0"
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/35 group-hover:text-black/80 dark:group-hover:text-white/80 transition-colors whitespace-nowrap leading-none">
+                        {company.name}
+                      </span>
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom hint */}
+      <div className="container mx-auto px-4 mt-8 text-center">
+        <p className="text-[9px] tracking-[0.25em] uppercase text-black/15 dark:text-white/15" dir={dir}>
+          {L ? "مرر فوق الشريط لإيقاف التمرير" : "Hover over any strip to pause"}
+        </p>
       </div>
     </section>
   );
