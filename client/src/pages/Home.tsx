@@ -1678,9 +1678,10 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
 
         {/* Overflow wrapper */}
         <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
-          {/* Track — ping-pong animated (applied after measurement) */}
+          {/* Track — ltr always so chips start from left regardless of page RTL */}
           <div
             ref={trackRef}
+            dir="ltr"
             className="flex"
             style={{ width: "max-content", ...pingStyle }}
           >
@@ -1710,31 +1711,33 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
 function PartnerLogoAvatar({ name, logo, size = "sm" }: { name: string; logo: string; size?: "sm" | "lg" }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-  const letter = name.trim()[0]?.toUpperCase() || "?";
+  const letter = (name || "?").trim()[0]?.toUpperCase() || "?";
   const colors = [
     "bg-blue-500","bg-emerald-500","bg-violet-500","bg-orange-500",
     "bg-pink-500","bg-cyan-500","bg-amber-500","bg-rose-500",
     "bg-teal-500","bg-indigo-500","bg-lime-500","bg-sky-500",
   ];
   const color = colors[letter.charCodeAt(0) % colors.length];
-  const dim = size === "lg" ? "w-16 h-16 text-2xl" : "w-7 h-7 text-xs";
+  const dim = size === "lg" ? "w-16 h-16 text-2xl rounded-xl" : "w-8 h-8 text-xs rounded-lg";
 
   return (
-    <span className={`relative flex-shrink-0 rounded-lg overflow-hidden ${dim}`}>
-      <span className={`absolute inset-0 flex items-center justify-center ${color} text-white font-bold`}>
+    <div className={`relative flex-shrink-0 overflow-hidden ${dim}`}>
+      {/* Letter avatar — always visible */}
+      <div className={`absolute inset-0 flex items-center justify-center ${color} text-white font-bold`}>
         {letter}
-      </span>
-      {!failed && (
+      </div>
+      {/* Actual logo fades in on top */}
+      {!failed && logo && (
         <img
           src={logo}
           alt={name}
           loading="eager"
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 w-full h-full object-contain bg-white transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
       )}
-    </span>
+    </div>
   );
 }
 
@@ -1825,6 +1828,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
         <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
           <div
             ref={trackRef}
+            dir="ltr"
             className="flex"
             style={{ width: "max-content", ...pingStyle }}
           >
