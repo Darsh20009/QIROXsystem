@@ -412,8 +412,10 @@ const CAFE_ORIGIN = "https://cafe.qiroxstudio.online";
 
 function toProxyUrl(url: string): string {
   if (url.startsWith(CAFE_ORIGIN)) {
-    const path = url.slice(CAFE_ORIGIN.length) || "/";
-    return `/cafe-proxy${path}`;
+    const suffix = url.slice(CAFE_ORIGIN.length) || "";
+    // Strip leading slash so we don't double up
+    const cleanSuffix = suffix.startsWith("/") ? suffix.slice(1) : suffix;
+    return cleanSuffix ? `/cafe-demo/${cleanSuffix}` : "/cafe-demo";
   }
   return url;
 }

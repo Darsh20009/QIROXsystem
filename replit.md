@@ -10,6 +10,35 @@ The application is a full-stack TypeScript project with a React frontend and Exp
 - **Client Pages**: Dashboard, Project tracking, Order flow
 - **Authentication**: Session-based with role-based access control
 
+## Latest Changes (Mar 22, 2026 - Session 56)
+
+### Cafe Demo — Live Embedded SPA
+
+**What was built:**
+- Extracted and built the cafe template frontend as a standalone self-hosted static SPA
+- `cafe-demo/` directory: full React+Express project (cafe.qiroxstudio.online source)
+- **Vite build**: outputs to `public/cafe-demo/` with `base: "/cafe-demo/"` so all assets load correctly
+- **Wouter router**: `base="/cafe-demo"` so in-app navigation stays under `/cafe-demo/*`
+
+**Serving (server/index.ts):**
+- `GET /cafe-demo` and `GET /cafe-demo/*path` → serves `public/cafe-demo/index.html` (SPA fallback)
+- `app.use("/cafe-demo", express.static(...))` → serves built JS/CSS/images
+
+**API Proxy (`/cafe-api`):**
+- Added `/cafe-api/*` reverse proxy in Express using `http-proxy-middleware`
+- Forwards requests to `https://cafe.qiroxstudio.online` server-side
+- Rewrites `Set-Cookie` domain so sessions work under our domain
+- Fixes CORS credential issue: browser sends same-origin requests, server proxies cross-origin
+- `cafe-demo/client/src/lib/queryClient.ts`: `API_BASE = "/cafe-api"` (was direct `https://...`)
+
+**Template Showcase (TemplateDetail.tsx):**
+- `toProxyUrl()` updated: maps `https://cafe.qiroxstudio.online/path` → `/cafe-demo/path`
+- iframes in BrowserFrame now load the self-hosted SPA instead of the external site
+
+**Result:** `/cafe-demo` renders the full interactive cafe app with zero CORS errors.
+
+---
+
 ## Latest Changes (Mar 20, 2026 - Session 55)
 
 ### Stability & Security Improvements

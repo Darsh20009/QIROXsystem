@@ -13,7 +13,8 @@ import { registerSandboxRoutes } from "./sandbox-routes";
 import mongoose from "mongoose";
 import { cache } from "./cache";
 import { connManager } from "./connection-manager";
-import { mkdirSync } from "fs";
+import { mkdirSync, existsSync } from "fs";
+import path from "path";
 
 // Global error handlers to prevent server crashes
 process.on("unhandledRejection", (reason: any, promise) => {
@@ -96,6 +97,36 @@ app.use(
         }
         return responseBuffer;
       }),
+    },
+  })
+);
+
+// ── Cafe API Proxy (same-origin bridge for the embedded cafe demo SPA) ────────
+// The cafe-demo SPA sends API requests to /cafe-api/* — we forward them
+// server-side so the browser never sees a CORS error.
+app.use(
+  "/cafe-api",
+  createProxyMiddleware({
+    target: CAFE_BASE,
+    changeOrigin: true,
+    pathRewrite: { "^/cafe-api": "" },
+    on: {
+      proxyReq: (proxyReq, req) => {
+        // Forward the original host cookie so sessions work
+        if (req.headers.cookie) {
+          proxyReq.setHeader("Cookie", req.headers.cookie);
+        }
+      },
+      proxyRes: (proxyRes, _req, res) => {
+        // Rewrite Set-Cookie domain so the browser stores it under our domain
+        const setCookie = proxyRes.headers["set-cookie"];
+        if (setCookie) {
+          const rewritten = setCookie.map((c) =>
+            c.replace(/;\s*Domain=[^;]+/i, "")
+          );
+          res.setHeader("set-cookie", rewritten);
+        }
+      },
     },
   })
 );
@@ -461,6 +492,17 @@ app.use((req, res, next) => {
     if (res.headersSent) return next(err);
     return res.status(status).json({ message });
   });
+
+  // ── Cafe Demo Static SPA (always, dev & prod) ───────────────────────────
+  const cafeDemoDir = path.resolve(process.cwd(), "public/cafe-demo");
+  if (existsSync(cafeDemoDir)) {
+    // Serve static assets (js, css, images)
+    app.use("/cafe-demo", express.static(cafeDemoDir, { index: false }));
+    // SPA fallback — all /cafe-demo/* routes return index.html
+    app.get("/cafe-demo", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    app.get("/cafe-demo/*path", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    console.log("[CafeDemo] Serving from", cafeDemoDir);
+  }
 
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
