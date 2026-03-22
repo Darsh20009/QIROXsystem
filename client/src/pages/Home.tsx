@@ -1837,21 +1837,25 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
       {/* Partner details dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         {selected && (
-          <DialogContent className="max-w-md" dir={dir}>
-            <DialogHeader>
-              <div className="flex items-center gap-4 mb-2">
+          <DialogContent
+            className="w-[calc(100vw-2rem)] max-w-md max-h-[85dvh] flex flex-col p-0 gap-0 overflow-hidden"
+            dir={dir}
+          >
+            {/* Sticky header */}
+            <DialogHeader className="px-5 pt-5 pb-3 border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
+              <div className="flex items-center gap-3">
                 <PartnerLogoAvatar name={selected.name} logo={selected.logo} size="lg" />
-                <div className="text-start">
-                  <DialogTitle className="text-lg font-bold">
+                <div className="text-start min-w-0">
+                  <DialogTitle className="text-base font-bold leading-tight truncate">
                     {L ? (selected.nameAr || selected.name) : selected.name}
                   </DialogTitle>
                   {selected.nameAr && selected.nameAr !== selected.name && (
-                    <p className="text-sm text-black/40 dark:text-white/40 mt-0.5">
+                    <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">
                       {L ? selected.name : selected.nameAr}
                     </p>
                   )}
                   {selected.category && (
-                    <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 font-medium">
+                    <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 font-medium">
                       {selected.category}
                     </span>
                   )}
@@ -1859,34 +1863,37 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
               </div>
             </DialogHeader>
 
-            {displayDesc(selected) && (
-              <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
-                {displayDesc(selected)}
-              </p>
-            )}
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {displayDesc(selected) && (
+                <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
+                  {displayDesc(selected)}
+                </p>
+              )}
 
-            {displayFeatures(selected).length > 0 && (
-              <ul className="mt-1 space-y-1.5">
-                {displayFeatures(selected).map((f: string, fi: number) => (
-                  <li key={fi} className="flex items-start gap-2 text-sm text-black/60 dark:text-white/55">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            )}
+              {displayFeatures(selected).length > 0 && (
+                <ul className="space-y-2">
+                  {displayFeatures(selected).map((f: string, fi: number) => (
+                    <li key={fi} className="flex items-start gap-2 text-sm text-black/60 dark:text-white/55">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-            {selected.url && (
-              <a
-                href={selected.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                <Globe className="w-4 h-4" />
-                {selected.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-              </a>
-            )}
+              {selected.url && (
+                <a
+                  href={selected.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all"
+                >
+                  <Globe className="w-4 h-4 shrink-0" />
+                  {selected.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                </a>
+              )}
+            </div>
           </DialogContent>
         )}
       </Dialog>
