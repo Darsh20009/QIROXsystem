@@ -1013,7 +1013,31 @@
   animation: marquee 25s linear infinite reverse;
 }
 
+/* Per-strip speed variants */
+.animate-strip-0 { animation: marquee 48s linear infinite; }
+.animate-strip-1 { animation: marquee 25s linear infinite reverse; }
+.animate-strip-2 { animation: marquee 34s linear infinite; }
+.animate-strip-3 { animation: marquee 40s linear infinite reverse; }
+.animate-strip-4 { animation: marquee 42s linear infinite; }
+.animate-strip-5 { animation: marquee 22s linear infinite reverse; }
+.animate-strip-6 { animation: marquee 36s linear infinite; }
+.animate-strip-7 { animation: marquee 28s linear infinite reverse; }
+.animate-strip-8 { animation: marquee 50s linear infinite; }
+.animate-strip-9 { animation: marquee 30s linear infinite reverse; }
+.animate-strip-10 { animation: marquee 38s linear infinite; }
+.animate-strip-11 { animation: marquee 26s linear infinite reverse; }
+.animate-strip-12 { animation: marquee 44s linear infinite; }
+.animate-strip-13 { animation: marquee 32s linear infinite reverse; }
+.animate-strip-14 { animation: marquee 46s linear infinite; }
+.animate-strip-15 { animation: marquee 24s linear infinite reverse; }
+
+/* Pause all strip animations on parent hover */
+.group\/strip:hover [class*="animate-strip-"] {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [class*="animate-strip-"],
   .animate-marquee,
   .animate-marquee-reverse {
     animation: none;

@@ -1274,6 +1274,39 @@ export default function Home() {
   );
 }
 
+// Reliable company logo: tries Google favicon, falls back to styled letter avatar
+function CompanyLogo({ domain, name }: { domain: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const initial = name.charAt(0).toUpperCase();
+  const colors = [
+    "bg-blue-100 text-blue-700", "bg-violet-100 text-violet-700",
+    "bg-emerald-100 text-emerald-700", "bg-amber-100 text-amber-700",
+    "bg-rose-100 text-rose-700", "bg-sky-100 text-sky-700",
+    "bg-orange-100 text-orange-700", "bg-teal-100 text-teal-700",
+  ];
+  const colorClass = colors[name.charCodeAt(0) % colors.length];
+
+  if (failed) {
+    return (
+      <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-black shrink-0 ${colorClass}`}>
+        {initial}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+      alt={name}
+      width={24}
+      height={24}
+      className="w-6 h-6 object-contain rounded-md shrink-0"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
   const L = lang === "ar";
 
@@ -1604,19 +1637,11 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
         </p>
       </div>
 
-      {/* Scrolling strips — no labels, large chips */}
+      {/* Scrolling strips */}
       <div className="space-y-3">
         {categories.map((cat, idx) => {
-          const speedClasses = [
-            "animate-marquee-slow",
-            "animate-marquee-fast-reverse",
-            "animate-marquee",
-            "animate-marquee-reverse",
-            "animate-marquee-slow-reverse",
-            "animate-marquee-fast",
-          ];
-          const animClass = speedClasses[idx % speedClasses.length];
-          const tripled = [...cat.companies, ...cat.companies, ...cat.companies];
+          // Duplicate for seamless infinite loop (translateX -50%)
+          const doubled = [...cat.companies, ...cat.companies];
 
           return (
             <div
@@ -1624,30 +1649,27 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
               className="group/strip relative"
               data-testid={`integration-strip-${cat.key}`}
             >
-              {/* Edge fade masks */}
-              <div className="absolute left-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-              <div className="absolute right-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+              {/* Edge fades */}
+              <div className="absolute inset-y-0 left-0 w-24 md:w-44 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 w-24 md:w-44 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
               {/* Track */}
-              <div className="overflow-hidden w-full py-1">
-                <div className={`flex gap-3 ${animClass} group-hover/strip:[animation-play-state:paused]`} style={{ width: "max-content" }}>
-                  {tripled.map((company, ci) => (
+              <div className="overflow-hidden w-full py-1.5">
+                <div
+                  className={`flex animate-strip-${idx % 16}`}
+                  style={{ width: "max-content" }}
+                >
+                  {doubled.map((company, ci) => (
                     <a
                       key={`${company.name}-${ci}`}
                       href={`https://${company.domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:shadow-md dark:hover:bg-white/[0.08] transition-all duration-200 group/chip shrink-0"
+                      className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-md hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.03] transition-all duration-200 shrink-0"
                       data-testid={`integration-chip-${cat.key}-${ci}`}
                     >
-                      <img
-                        src={`https://logo.clearbit.com/${company.domain}`}
-                        alt={company.name}
-                        className="h-6 w-6 object-contain rounded-md opacity-60 group-hover/chip:opacity-100 transition-opacity shrink-0"
-                        loading="lazy"
-                        onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      />
-                      <span className="text-sm font-semibold text-black/55 dark:text-white/45 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
+                      <CompanyLogo domain={company.domain} name={company.name} />
+                      <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
                         {company.name}
                       </span>
                     </a>
