@@ -1177,6 +1177,9 @@ export default function Home() {
       {/* PARTNERS MARQUEE */}
       <PartnersMarquee lang={lang} dir={dir} />
 
+      {/* INTEGRATION PARTNERS */}
+      <IntegrationPartnersMarquee lang={lang} dir={dir} />
+
       {/* FINAL CTA */}
       <section className="py-20 md:py-28 relative" data-testid="section-spotlight">
         <div className="container mx-auto px-4">
@@ -1268,6 +1271,224 @@ export default function Home() {
       <InstallPrompt />
       <Footer />
     </div>
+  );
+}
+
+function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
+  const L = lang === "ar";
+
+  const categories = [
+    {
+      key: "payment",
+      label: L ? "الدفع" : "Payment",
+      color: "bg-violet-500",
+      reverse: false,
+      speed: "animate-marquee",
+      companies: [
+        { name: "Stripe", domain: "stripe.com" },
+        { name: "PayPal", domain: "paypal.com" },
+        { name: "Adyen", domain: "adyen.com" },
+        { name: "Worldpay", domain: "worldpay.com" },
+        { name: "Square", domain: "squareup.com" },
+        { name: "OPay", domain: "opayweb.com" },
+        { name: "Klarna", domain: "klarna.com" },
+        { name: "KNET", domain: "knet.com.kw" },
+        { name: "Benefit", domain: "benefit.bh" },
+        { name: "Fawry", domain: "fawry.com" },
+        { name: "Ziina", domain: "ziina.com" },
+      ],
+    },
+    {
+      key: "food",
+      label: L ? "الطعام" : "Food",
+      color: "bg-orange-500",
+      reverse: true,
+      speed: "animate-marquee-reverse",
+      companies: [
+        { name: "Talabat", domain: "talabat.com" },
+        { name: "Wolt", domain: "wolt.com" },
+        { name: "Uber Eats", domain: "ubereats.com" },
+        { name: "DoorDash", domain: "doordash.com" },
+        { name: "Glovo", domain: "glovoapp.com" },
+        { name: "Zomato", domain: "zomato.com" },
+        { name: "Cari", domain: "cari.com.sa" },
+      ],
+    },
+    {
+      key: "delivery",
+      label: L ? "التوصيل" : "Delivery",
+      color: "bg-blue-500",
+      reverse: false,
+      speed: "animate-marquee",
+      companies: [
+        { name: "FedEx", domain: "fedex.com" },
+        { name: "DHL", domain: "dhl.com" },
+        { name: "UPS", domain: "ups.com" },
+        { name: "iMile", domain: "imile.me" },
+        { name: "Fetchr", domain: "fetchr.us" },
+        { name: "Lalamove", domain: "lalamove.com" },
+        { name: "Bosta", domain: "bosta.co" },
+      ],
+    },
+    {
+      key: "accounting",
+      label: L ? "المحاسبة" : "Accounting",
+      color: "bg-teal-500",
+      reverse: true,
+      speed: "animate-marquee-reverse",
+      companies: [
+        { name: "Sage", domain: "sage.com" },
+        { name: "FreshBooks", domain: "freshbooks.com" },
+        { name: "Tally", domain: "tallysolutions.com" },
+        { name: "Xero", domain: "xero.com" },
+        { name: "KashFlow", domain: "kashflow.com" },
+        { name: "MenaITech", domain: "menaitech.com" },
+      ],
+    },
+    {
+      key: "erp",
+      label: "ERP",
+      color: "bg-indigo-500",
+      reverse: false,
+      speed: "animate-marquee",
+      companies: [
+        { name: "Epicor", domain: "epicor.com" },
+        { name: "Infor", domain: "infor.com" },
+        { name: "Acumatica", domain: "acumatica.com" },
+        { name: "IFS", domain: "ifs.com" },
+        { name: "Unit4", domain: "unit4.com" },
+        { name: "Ramco", domain: "ramco.com" },
+      ],
+    },
+    {
+      key: "hr",
+      label: "HR",
+      color: "bg-pink-500",
+      reverse: true,
+      speed: "animate-marquee-reverse",
+      companies: [
+        { name: "Workday", domain: "workday.com" },
+        { name: "SAP SuccessFactors", domain: "successfactors.com" },
+        { name: "BambooHR", domain: "bamboohr.com" },
+        { name: "ADP", domain: "adp.com" },
+        { name: "Gusto", domain: "gusto.com" },
+        { name: "Rippling", domain: "rippling.com" },
+      ],
+    },
+    {
+      key: "cloud",
+      label: L ? "السحابة" : "Cloud",
+      color: "bg-sky-500",
+      reverse: false,
+      speed: "animate-marquee",
+      companies: [
+        { name: "DigitalOcean", domain: "digitalocean.com" },
+        { name: "Alibaba Cloud", domain: "alibabacloud.com" },
+        { name: "Vultr", domain: "vultr.com" },
+        { name: "Supabase", domain: "supabase.com" },
+        { name: "Vercel", domain: "vercel.com" },
+      ],
+    },
+    {
+      key: "hardware",
+      label: L ? "الأجهزة" : "Hardware",
+      color: "bg-slate-500",
+      reverse: true,
+      speed: "animate-marquee-reverse",
+      companies: [
+        { name: "Ingenico", domain: "ingenico.com" },
+        { name: "Verifone", domain: "verifone.com" },
+        { name: "NCR", domain: "ncr.com" },
+        { name: "Posiflex", domain: "posiflex.com" },
+        { name: "Elo Touch", domain: "elotouch.com" },
+        { name: "Telpo", domain: "telpo.com" },
+      ],
+    },
+    {
+      key: "reservations",
+      label: L ? "الحجوزات" : "Reservations",
+      color: "bg-amber-500",
+      reverse: false,
+      speed: "animate-marquee",
+      companies: [
+        { name: "OpenTable", domain: "opentable.com" },
+        { name: "Resy", domain: "resy.com" },
+        { name: "Quandoo", domain: "quandoo.com" },
+        { name: "Google Reserve", domain: "google.com" },
+        { name: "TripAdvisor", domain: "tripadvisor.com" },
+      ],
+    },
+    {
+      key: "security",
+      label: L ? "الأمان" : "Security",
+      color: "bg-red-500",
+      reverse: true,
+      speed: "animate-marquee-reverse",
+      companies: [
+        { name: "CrowdStrike", domain: "crowdstrike.com" },
+        { name: "Palo Alto", domain: "paloaltonetworks.com" },
+        { name: "Sophos", domain: "sophos.com" },
+        { name: "SentinelOne", domain: "sentinelone.com" },
+        { name: "Trend Micro", domain: "trendmicro.com" },
+      ],
+    },
+  ];
+
+  return (
+    <section className="py-16 md:py-20 relative overflow-hidden border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-integration-partners">
+      <div className="container mx-auto px-4 mb-10 text-center">
+        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
+          {L ? "شركاء التكامل" : "Integration Partners"}
+        </p>
+        <p className="text-sm text-black/40 dark:text-white/35" dir={dir}>
+          {L
+            ? "منظومة متكاملة من الشركاء في الدفع والتوصيل والمحاسبة وأكثر"
+            : "A complete ecosystem of partners across payments, delivery, accounting, and more"}
+        </p>
+      </div>
+
+      <div className="space-y-2.5 relative">
+        <div className="absolute left-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-20 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-20 pointer-events-none" />
+
+        {categories.map((cat) => {
+          const items = [...cat.companies, ...cat.companies, ...cat.companies, ...cat.companies];
+          return (
+            <div key={cat.key} className="flex items-center overflow-hidden" data-testid={`integration-row-${cat.key}`}>
+              <div className="flex items-center gap-1.5 w-24 md:w-32 shrink-0 px-4 z-10">
+                <span className={`w-2 h-2 rounded-full ${cat.color} shrink-0`} />
+                <span className="text-[10px] font-bold text-black/40 dark:text-white/35 whitespace-nowrap truncate">{cat.label}</span>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <div className={`flex ${cat.speed} hover:[animation-play-state:paused]`} style={{ width: "max-content" }}>
+                  {items.map((company, i) => (
+                    <a
+                      key={`${company.name}-${i}`}
+                      href={`https://${company.domain}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 mx-3 flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-black/[0.07] dark:border-white/[0.07] bg-white/60 dark:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.08] transition-all duration-300 group"
+                      data-testid={`integration-logo-${cat.key}-${i}`}
+                    >
+                      <img
+                        src={`https://logo.clearbit.com/${company.domain}`}
+                        alt={company.name}
+                        className="h-4 w-4 object-contain rounded-sm opacity-60 group-hover:opacity-100 transition-opacity"
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                      <span className="text-[11px] font-semibold text-black/50 dark:text-white/40 group-hover:text-black dark:group-hover:text-white transition-colors whitespace-nowrap">
+                        {company.name}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
