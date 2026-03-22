@@ -1676,12 +1676,10 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
         <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-        {/* Overflow wrapper */}
-        <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
-          {/* Track — ltr always so chips start from left regardless of page RTL */}
+        {/* Overflow wrapper — dir=ltr forces left-to-right layout in RTL pages */}
+        <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
           <div
             ref={trackRef}
-            dir="ltr"
             className="flex"
             style={{ width: "max-content", ...pingStyle }}
           >
@@ -1709,7 +1707,6 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
 
 /* ─── PartnerLogoAvatar ─────────────────────────────────────── */
 function PartnerLogoAvatar({ name, logo, size = "sm" }: { name: string; logo: string; size?: "sm" | "lg" }) {
-  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const letter = (name || "?").trim()[0]?.toUpperCase() || "?";
   const colors = [
@@ -1718,26 +1715,26 @@ function PartnerLogoAvatar({ name, logo, size = "sm" }: { name: string; logo: st
     "bg-teal-500","bg-indigo-500","bg-lime-500","bg-sky-500",
   ];
   const color = colors[letter.charCodeAt(0) % colors.length];
-  const dim = size === "lg" ? "w-16 h-16 text-2xl rounded-xl" : "w-8 h-8 text-xs rounded-lg";
+  const dim = size === "lg"
+    ? "w-16 h-16 text-2xl rounded-xl flex-shrink-0"
+    : "w-8 h-8 text-xs rounded-lg flex-shrink-0";
 
-  return (
-    <div className={`relative flex-shrink-0 overflow-hidden ${dim}`}>
-      {/* Letter avatar — always visible */}
-      <div className={`absolute inset-0 flex items-center justify-center ${color} text-white font-bold`}>
+  if (failed || !logo) {
+    return (
+      <div className={`${dim} ${color} flex items-center justify-center text-white font-bold`}>
         {letter}
       </div>
-      {/* Actual logo fades in on top */}
-      {!failed && logo && (
-        <img
-          src={logo}
-          alt={name}
-          loading="eager"
-          className={`absolute inset-0 w-full h-full object-contain bg-white transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-        />
-      )}
-    </div>
+    );
+  }
+
+  return (
+    <img
+      src={logo}
+      alt={name}
+      loading="eager"
+      className={`${dim} object-contain bg-white p-0.5`}
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -1825,10 +1822,9 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
         <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-        <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
+        <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
           <div
             ref={trackRef}
-            dir="ltr"
             className="flex"
             style={{ width: "max-content", ...pingStyle }}
           >
@@ -1836,11 +1832,11 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
               <button
                 key={`${partner.name}-${i}`}
                 onClick={() => setSelected(partner)}
-                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
+                className="group/chip flex items-center gap-2.5 mx-2 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.07] shadow-sm hover:shadow-md hover:border-black/20 dark:hover:border-white/20 hover:scale-[1.03] transition-all duration-200 shrink-0"
                 data-testid={`partner-chip-${i}`}
               >
                 <PartnerLogoAvatar name={partner.name} logo={partner.logo} />
-                <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
+                <span className="text-[13px] font-medium text-black/70 dark:text-white/70 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
                   {displayName(partner)}
                 </span>
               </button>
