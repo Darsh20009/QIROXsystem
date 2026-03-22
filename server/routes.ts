@@ -3056,7 +3056,7 @@ export async function registerRoutes(
     const count = await ClientApiKeyModel.countDocuments({ clientId: me._id || me.id, isActive: true });
     if (count >= 10) return res.status(400).json({ error: "الحد الأقصى 10 مفاتيح نشطة" });
 
-    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers"];
+    const VALID_SCOPES = ["orders", "projects", "invoices", "stats", "wallet", "customers", "subscriptions", "support", "files", "notifications"];
     const cleanScopes = Array.isArray(scopes) ? scopes.filter((s: string) => VALID_SCOPES.includes(s)) : ["orders", "projects", "invoices", "stats"];
     if (cleanScopes.length === 0) return res.status(400).json({ error: "يجب اختيار صلاحية واحدة على الأقل" });
 
@@ -3209,6 +3209,160 @@ export async function registerRoutes(
     const { ClientApiKeyModel } = await import("./models");
     await ClientApiKeyModel.findByIdAndDelete(req.params.id);
     res.sendStatus(204);
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // === WEBHOOKS (ربط إشعارات الأحداث بأنظمتك الخارجية) ===
+  // ══════════════════════════════════════════════════════════════
+
+  app.get("/api/my-webhooks", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientWebhookModel } = await import("./models");
+    const hooks = await ClientWebhookModel.find({ clientId: me._id || me.id }).sort({ createdAt: -1 });
+    res.json(hooks);
+  });
+
+  app.post("/api/my-webhooks", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientWebhookModel } = await import("./models");
+    const { label, url, events, secret } = req.body;
+    if (!label?.trim()) return res.status(400).json({ error: "اسم الـ Webhook مطلوب" });
+    if (!url?.trim() || !url.startsWith("http")) return res.status(400).json({ error: "رابط URL صحيح مطلوب" });
+    const count = await ClientWebhookModel.countDocuments({ clientId: me._id || me.id });
+    if (count >= 20) return res.status(400).json({ error: "الحد الأقصى 20 webhook" });
+    const VALID_EVENTS = ["order.created","order.updated","order.completed","order.cancelled","project.updated","invoice.created","invoice.paid","wallet.topup","support.message","subscription.renewed","subscription.expired"];
+    const cleanEvents = Array.isArray(events) ? events.filter((e: string) => VALID_EVENTS.includes(e)) : ["order.created"];
+    const doc = await ClientWebhookModel.create({ clientId: me._id || me.id, label: label.trim(), url: url.trim(), events: cleanEvents, secret: secret?.trim() || "" });
+    res.status(201).json(doc.toJSON());
+  });
+
+  app.patch("/api/my-webhooks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientWebhookModel } = await import("./models");
+    const doc = await ClientWebhookModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
+    if (!doc) return res.sendStatus(404);
+    const { label, url, events, secret, isActive } = req.body;
+    if (label !== undefined) doc.label = label;
+    if (url !== undefined) doc.url = url;
+    if (events !== undefined) doc.events = events;
+    if (secret !== undefined) doc.secret = secret;
+    if (isActive !== undefined) doc.isActive = isActive;
+    await doc.save();
+    res.json(doc.toJSON());
+  });
+
+  app.delete("/api/my-webhooks/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientWebhookModel } = await import("./models");
+    await ClientWebhookModel.findOneAndDelete({ _id: req.params.id, clientId: me._id || me.id });
+    res.sendStatus(204);
+  });
+
+  app.post("/api/my-webhooks/:id/test", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { ClientWebhookModel } = await import("./models");
+    const hook = await ClientWebhookModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
+    if (!hook) return res.sendStatus(404);
+    const payload = { event: "webhook.test", timestamp: new Date().toISOString(), data: { message: "هذا اختبار من نظام Qirox ✅", clientId: String(me._id || me.id) } };
+    try {
+      const sig = hook.secret ? require("crypto").createHmac("sha256", hook.secret).update(JSON.stringify(payload)).digest("hex") : undefined;
+      const headers: any = { "Content-Type": "application/json", "User-Agent": "Qirox-Webhook/1.0" };
+      if (sig) headers["X-Qirox-Signature"] = `sha256=${sig}`;
+      const r = await fetch(hook.url, { method: "POST", headers, body: JSON.stringify(payload), signal: AbortSignal.timeout(8000) });
+      await ClientWebhookModel.updateOne({ _id: hook._id }, { $set: { lastDeliveredAt: new Date() }, $inc: { deliveryCount: 1 } });
+      res.json({ success: r.ok, status: r.status });
+    } catch (e: any) {
+      await ClientWebhookModel.updateOne({ _id: hook._id }, { $set: { lastError: e.message }, $inc: { failCount: 1 } });
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // === EMBED TOKENS (رموز تضمين لوحة التحكم في مواقعك) ===
+  // ══════════════════════════════════════════════════════════════
+
+  app.get("/api/my-embed-tokens", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { EmbedTokenModel } = await import("./models");
+    const tokens = await EmbedTokenModel.find({ clientId: me._id || me.id }).sort({ createdAt: -1 });
+    res.json(tokens);
+  });
+
+  app.post("/api/my-embed-tokens", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { EmbedTokenModel } = await import("./models");
+    const { label, allowedOrigins, expiresAt } = req.body;
+    const count = await EmbedTokenModel.countDocuments({ clientId: me._id || me.id, isActive: true });
+    if (count >= 5) return res.status(400).json({ error: "الحد الأقصى 5 رموز تضمين" });
+    const rawToken = "qrx_embed_" + crypto.randomBytes(24).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const tokenPrefix = rawToken.slice(0, 18) + "...";
+    const doc = await EmbedTokenModel.create({
+      clientId: me._id || me.id,
+      label: label?.trim() || "لوحة التضمين الرئيسية",
+      tokenHash, tokenPrefix,
+      allowedOrigins: Array.isArray(allowedOrigins) ? allowedOrigins.map((o: string) => o.trim()).filter(Boolean) : [],
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+    res.status(201).json({ ...doc.toJSON(), rawToken });
+  });
+
+  app.patch("/api/my-embed-tokens/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { EmbedTokenModel } = await import("./models");
+    const doc = await EmbedTokenModel.findOne({ _id: req.params.id, clientId: me._id || me.id });
+    if (!doc) return res.sendStatus(404);
+    const { label, isActive, allowedOrigins } = req.body;
+    if (label !== undefined) doc.label = label;
+    if (isActive !== undefined) doc.isActive = isActive;
+    if (allowedOrigins !== undefined) doc.allowedOrigins = allowedOrigins;
+    await doc.save();
+    res.json(doc.toJSON());
+  });
+
+  app.delete("/api/my-embed-tokens/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    const { EmbedTokenModel } = await import("./models");
+    await EmbedTokenModel.findOneAndDelete({ _id: req.params.id, clientId: me._id || me.id });
+    res.sendStatus(204);
+  });
+
+  // ── Public Embed Dashboard API (يُستخدم من صفحة التضمين بـ Bearer token) ──
+  app.get("/api/embed/me", async (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+    const rawToken = auth.slice(7);
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const { EmbedTokenModel, UserModel, OrderModel, ProjectModel, WalletTransactionModel } = await import("./models");
+    const embedDoc = await EmbedTokenModel.findOne({ tokenHash, isActive: true });
+    if (!embedDoc) return res.status(401).json({ error: "رمز التضمين غير صالح أو مُلغى" });
+    if (embedDoc.expiresAt && embedDoc.expiresAt < new Date()) return res.status(401).json({ error: "انتهت صلاحية رمز التضمين" });
+    await EmbedTokenModel.updateOne({ _id: embedDoc._id }, { $set: { lastUsedAt: new Date() }, $inc: { useCount: 1 } });
+    const cid = String(embedDoc.clientId);
+    const [user, recentOrders, recentProjects, walletTxns] = await Promise.all([
+      (UserModel as any).findById(cid).select("fullName email phone subscriptionStatus subscriptionExpiresAt subscriptionSegmentNameAr walletBalance").lean(),
+      (OrderModel as any).find({ clientId: cid }).sort({ createdAt: -1 }).limit(10).lean(),
+      (ProjectModel as any).find({ clientId: cid }).sort({ createdAt: -1 }).limit(5).lean(),
+      (WalletTransactionModel as any).find({ userId: cid }).sort({ createdAt: -1 }).limit(5).lean(),
+    ]);
+    const totalOrders = await (OrderModel as any).countDocuments({ clientId: cid });
+    const activeProjects = await (ProjectModel as any).countDocuments({ clientId: cid, status: { $nin: ["completed","cancelled"] } });
+    res.json({
+      client: user ? { id: cid, fullName: (user as any).fullName, email: (user as any).email, phone: (user as any).phone, subscriptionStatus: (user as any).subscriptionStatus, subscriptionExpiresAt: (user as any).subscriptionExpiresAt, subscriptionSegmentNameAr: (user as any).subscriptionSegmentNameAr, walletBalance: (user as any).walletBalance || 0 } : null,
+      stats: { totalOrders, activeProjects, walletBalance: (user as any)?.walletBalance || 0 },
+      recentOrders: recentOrders.map((o: any) => ({ id: String(o._id), projectType: o.projectType, status: o.status, totalAmount: o.totalAmount, createdAt: o.createdAt })),
+      recentProjects: recentProjects.map((p: any) => ({ id: String(p._id), status: p.status, stagingUrl: p.stagingUrl, productionUrl: p.productionUrl, createdAt: p.createdAt })),
+      walletTransactions: walletTxns.map((t: any) => ({ id: String(t._id), type: t.type, amount: t.amount, description: t.description, createdAt: t.createdAt })),
+    });
   });
 
   // ══════════════════════════════════════════════════════════════

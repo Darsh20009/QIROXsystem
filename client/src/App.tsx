@@ -130,6 +130,7 @@ const AdminInvestors = lazy(() => import("@/pages/AdminInvestors"));
 const AdminSwitchReminders = lazy(() => import("@/pages/AdminSwitchReminders"));
 const SwitchReminder = lazy(() => import("@/pages/SwitchReminder"));
 const MyApiKeys = lazy(() => import("@/pages/MyApiKeys"));
+const EmbedDashboard = lazy(() => import("@/pages/EmbedDashboard"));
 const AdminApiKeys = lazy(() => import("@/pages/AdminApiKeys"));
 const Demos = lazy(() => import("@/pages/Demos"));
 const TemplateDetail = lazy(() => import("@/pages/TemplateDetail"));
@@ -157,7 +158,7 @@ const ClientQMeet = lazy(() => import("@/pages/ClientQMeet"));
 const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed"];
 
 function PageLoader() {
   return (
@@ -199,6 +200,7 @@ function PublicRouter() {
         <Route path="/demos" component={Demos} />
         <Route path="/templates/:slug" component={TemplateDetail} />
         <Route path="/switch-reminder" component={SwitchReminder} />
+        <Route path="/embed" component={EmbedDashboard} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

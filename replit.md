@@ -1454,3 +1454,37 @@ Preferred communication style: Simple, everyday language.
 - ~~`@replit/vite-plugin-runtime-error-modal`~~ (removed)
 - ~~`@replit/vite-plugin-cartographer`~~ (removed)
 - ~~`@replit/vite-plugin-dev-banner`~~ (removed)
+
+## Developer Integration Platform (مركز المطوّرين)
+
+### Overview
+Complete developer tools suite at `/my-api-keys` — rebranded as "مركز المطوّرين" (Developer Center) with 3 tabs:
+
+### Tab 1: API Keys (مفاتيح API)
+- **10 scopes** (expanded from 6): orders, projects, invoices, stats, wallet, customers, subscriptions, support, files, notifications
+- CRUD: create (with one-time key reveal), toggle active/inactive, delete
+- Routes: GET/POST/PATCH/DELETE `/api/my-api-keys`
+- Public V1 API at `/api/v1/*` authenticated via `Authorization: Bearer qrx_live_xxx`
+
+### Tab 2: Webhooks
+- Register webhook endpoints with any public HTTPS URL
+- **11 event types**: order.created/updated/completed/cancelled, project.updated, invoice.created/paid, wallet.topup, support.message, subscription.renewed/expired
+- Optional HMAC signing secret — sends `X-Qirox-Signature: sha256=xxx` header
+- Test button sends a live test payload to verify connectivity
+- Routes: GET/POST/PATCH/DELETE `/api/my-webhooks` + POST `/api/my-webhooks/:id/test`
+- Model: `ClientWebhookModel` (server/models.ts)
+
+### Tab 3: Embed Dashboard (تضمين اللوحة)
+- Clients generate embed tokens (max 5 active)
+- Copy ready `<iframe>` HTML snippet to embed Qirox dashboard in their own website
+- Embedded dashboard page: `/embed?token=qrx_embed_xxx`
+- The embed page authenticates using `Authorization: Bearer` header (no cookies needed, works cross-origin)
+- Data served at GET `/api/embed/me` — returns client profile, stats, orders, projects, wallet
+- Routes: GET/POST/PATCH/DELETE `/api/my-embed-tokens` + public GET `/api/embed/me`
+- Model: `EmbedTokenModel` (server/models.ts)
+- Page: `client/src/pages/EmbedDashboard.tsx` — minimal RTL dashboard, no nav, iframe-friendly
+
+### Security
+- Embed tokens and API keys are hashed (SHA-256) in DB, raw value shown only once
+- Embed tokens are validated on every request + expiry check + isActive check
+- Webhook test uses `AbortSignal.timeout(8000)` to prevent hanging
