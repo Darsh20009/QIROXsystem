@@ -1481,6 +1481,11 @@ export default function Dashboard() {
   const [subSvcProjectLabel, setSubSvcProjectLabel] = useState("");
   const [subSvcType, setSubSvcType] = useState("");
   const [subSvcNotes, setSubSvcNotes] = useState("");
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [selectedUpgradePeriod, setSelectedUpgradePeriod] = useState<string>("");
+  const [upgradePayMethod, setUpgradePayMethod] = useState<string>("bank_transfer");
+  const [upgradeProofUrl, setUpgradeProofUrl] = useState<string>("");
+  const [upgradeWalletPin, setUpgradeWalletPin] = useState<string>("");
   const [uploadingProofOrderId, setUploadingProofOrderId] = useState<string | null>(null);
   const proofFileRef = useRef<HTMLInputElement>(null);
   const [linkedProjectKeyId, setLinkedProjectKeyId] = useState<string | null>(null);
@@ -1653,6 +1658,41 @@ export default function Dashboard() {
       projectLabel: subSvcProjectLabel || undefined,
       serviceType: subSvcType,
       notes: subSvcNotes,
+    });
+  };
+
+  const { data: upgradeOptions, isLoading: isLoadingUpgradeOptions } = useQuery<any>({
+    queryKey: ["/api/client/upgrade-options"],
+    enabled: upgradeDialogOpen,
+    retry: false,
+  });
+
+  const upgradeRequestMutation = useMutation({
+    mutationFn: async (data: { targetPeriod: string; paymentMethod: string; paymentProofUrl?: string; walletAmountUsed?: number; walletPayPin?: string }) => {
+      const res = await apiRequest("POST", "/api/client/upgrade-request", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setUpgradeDialogOpen(false);
+      setSelectedUpgradePeriod("");
+      setUpgradeProofUrl("");
+      setUpgradeWalletPin("");
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "تم إرسال طلب الترقية", description: `رقم الطلب: ${data.orderId} — سيتم تطبيق الترقية بعد مراجعة الدفع` });
+    },
+    onError: (err: any) => toast({ title: "خطأ في الإرسال", description: err?.message || "يرجى المحاولة مرة أخرى", variant: "destructive" }),
+  });
+
+  const handleSubmitUpgrade = () => {
+    if (!selectedUpgradePeriod) return;
+    const selectedOption = upgradeOptions?.upgrades?.find((u: any) => u.targetPeriod === selectedUpgradePeriod);
+    if (!selectedOption) return;
+    upgradeRequestMutation.mutate({
+      targetPeriod: selectedUpgradePeriod,
+      paymentMethod: upgradePayMethod,
+      paymentProofUrl: upgradePayMethod === "bank_transfer" ? upgradeProofUrl : undefined,
+      walletAmountUsed: upgradePayMethod === "wallet" ? selectedOption.amountToPay : undefined,
+      walletPayPin: upgradePayMethod === "wallet" ? upgradeWalletPin : undefined,
     });
   };
 
@@ -2961,6 +3001,20 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
+                        {/* Upgrade Button */}
+                        {(user as any).subscriptionPeriod !== "annual" && (
+                          <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
+                            <Button
+                              size="sm"
+                              onClick={() => setUpgradeDialogOpen(true)}
+                              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl gap-2"
+                              data-testid="button-upgrade-plan"
+                            >
+                              <TrendingUp className="w-4 h-4" />
+                              {L ? "ترقية الباقة — ادفع الفرق فقط" : "Upgrade Plan — Pay Only the Difference"}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -3581,6 +3635,142 @@ export default function Dashboard() {
                   {L ? "إغلاق" : "Close"}
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Upgrade Plan Dialog ─── */}
+      <Dialog open={upgradeDialogOpen} onOpenChange={v => { setUpgradeDialogOpen(v); if (!v) { setSelectedUpgradePeriod(""); setUpgradeProofUrl(""); setUpgradeWalletPin(""); } }}>
+        <DialogContent className="max-w-lg rounded-2xl" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-3 font-black">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                <TrendingUp className="w-4.5 h-4.5 text-white" />
+              </div>
+              {L ? "ترقية الباقة" : "Upgrade Plan"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isLoadingUpgradeOptions ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+            </div>
+          ) : upgradeOptions?.error || !upgradeOptions ? (
+            <div className="py-8 text-center text-black/40 dark:text-white/40 text-sm">
+              {upgradeOptions?.error || (L ? "لا توجد خيارات ترقية متاحة" : "No upgrade options available")}
+            </div>
+          ) : !upgradeOptions.canUpgrade ? (
+            <div className="py-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="font-black text-black dark:text-white">{L ? "أنت على أعلى باقة!" : "You're on the highest plan!"}</p>
+              <p className="text-xs text-black/40 dark:text-white/40 mt-1">{L ? "اشتراكك السنوي يوفر لك أفضل قيمة" : "Your annual plan gives you the best value"}</p>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-1">
+              {/* Current Plan Info */}
+              <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06]">
+                <p className="text-[11px] text-black/40 dark:text-white/40 mb-1">{L ? "باقتك الحالية" : "Current Plan"}</p>
+                <div className="flex items-center gap-3">
+                  <Crown className="w-4 h-4 text-amber-500" />
+                  <div>
+                    <p className="text-sm font-black text-black dark:text-white">{upgradeOptions.currentPlan.segmentNameAr} — {upgradeOptions.currentPlan.periodLabel}</p>
+                    <p className="text-xs text-black/40 dark:text-white/40">{upgradeOptions.currentPlan.remainingDays} {L ? "يوم متبقٍ" : "days remaining"} · {L ? "رصيدك المحتسب:" : "Your credit:"} <span className="font-bold text-violet-600">{upgradeOptions.currentPlan.proratedCredit.toLocaleString()} {L ? "ر.س" : "SAR"}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upgrade Options */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-black/50 dark:text-white/40">{L ? "اختر الباقة الجديدة" : "Choose New Plan"}</p>
+                {upgradeOptions.upgrades.map((opt: any) => (
+                  <button
+                    key={opt.targetPeriod}
+                    onClick={() => setSelectedUpgradePeriod(opt.targetPeriod)}
+                    className={`w-full text-right rounded-xl border p-4 transition-all ${selectedUpgradePeriod === opt.targetPeriod ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 bg-white dark:bg-gray-900"}`}
+                    data-testid={`button-select-upgrade-${opt.targetPeriod}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedUpgradePeriod === opt.targetPeriod ? "border-violet-500" : "border-black/20 dark:border-white/20"}`}>
+                          {selectedUpgradePeriod === opt.targetPeriod && <div className="w-2 h-2 rounded-full bg-violet-500" />}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-violet-700 dark:text-violet-300" : "text-black dark:text-white"}`}>{opt.label}</p>
+                          <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "السعر الكامل:" : "Full price:"} {opt.fullPrice.toLocaleString()} {L ? "ر.س" : "SAR"} · {L ? "خصم رصيدك:" : "Credit deducted:"} {opt.proratedCredit.toLocaleString()} {L ? "ر.س" : "SAR"}</p>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-xl font-black ${selectedUpgradePeriod === opt.targetPeriod ? "text-violet-700 dark:text-violet-300" : "text-black dark:text-white"}`}>{opt.amountToPay.toLocaleString()}</p>
+                        <p className="text-[10px] text-black/40 dark:text-white/40">{L ? "ر.س فقط" : "SAR only"}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Payment Method */}
+              {selectedUpgradePeriod && (
+                <div className="space-y-3 border-t border-black/[0.06] dark:border-white/[0.06] pt-3">
+                  <p className="text-xs font-bold text-black/50 dark:text-white/40">{L ? "طريقة الدفع" : "Payment Method"}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "bank_transfer", icon: "🏦", label: L ? "تحويل بنكي" : "Bank Transfer" },
+                      { key: "wallet", icon: "💳", label: L ? "محفظة كيروكس باي" : "QIROX Pay Wallet" },
+                    ].map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => setUpgradePayMethod(m.key)}
+                        className={`p-3 rounded-xl border text-center transition-all ${upgradePayMethod === m.key ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30" : "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900"}`}
+                        data-testid={`button-pay-method-upgrade-${m.key}`}
+                      >
+                        <span className="text-lg block mb-0.5">{m.icon}</span>
+                        <span className={`text-[11px] font-bold ${upgradePayMethod === m.key ? "text-violet-700 dark:text-violet-300" : "text-black/60 dark:text-white/60"}`}>{m.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {upgradePayMethod === "bank_transfer" && (
+                    <div>
+                      <label className="text-xs text-black/50 dark:text-white/40 font-medium block mb-1.5">{L ? "رابط إثبات الدفع (صورة التحويل)" : "Payment Proof URL"}</label>
+                      <Input
+                        value={upgradeProofUrl}
+                        onChange={e => setUpgradeProofUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="text-sm rounded-xl"
+                        dir="ltr"
+                        data-testid="input-upgrade-proof-url"
+                      />
+                    </div>
+                  )}
+
+                  {upgradePayMethod === "wallet" && (
+                    <div>
+                      <label className="text-xs text-black/50 dark:text-white/40 font-medium block mb-1.5">{L ? "كلمة مرور المحفظة (إن وُجدت)" : "Wallet PIN (if set)"}</label>
+                      <Input
+                        type="password"
+                        value={upgradeWalletPin}
+                        onChange={e => setUpgradeWalletPin(e.target.value)}
+                        placeholder="••••"
+                        className="text-sm rounded-xl"
+                        data-testid="input-upgrade-wallet-pin"
+                      />
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleSubmitUpgrade}
+                    disabled={upgradeRequestMutation.isPending || (upgradePayMethod === "bank_transfer" && !upgradeProofUrl.trim())}
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl gap-2"
+                    data-testid="button-submit-upgrade"
+                  >
+                    {upgradeRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+                    {L ? "إرسال طلب الترقية" : "Submit Upgrade Request"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

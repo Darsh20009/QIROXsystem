@@ -7699,6 +7699,254 @@ export async function registerRoutes(
     }
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === PLAN UPGRADE SYSTEM ===
+  // ═══════════════════════════════════════════════════════════
+
+  // Client: get available upgrade options with pro-rated pricing
+  app.get("/api/client/upgrade-options", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "client") return res.sendStatus(403);
+    try {
+      const { UserModel, SegmentPricingModel } = await import("./models");
+      const dbUser = await UserModel.findById(user.id || user._id).lean() as any;
+      if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+
+      if (dbUser.subscriptionStatus !== "active") {
+        return res.status(400).json({ error: "لا يوجد اشتراك نشط حالياً" });
+      }
+
+      const segmentId = dbUser.subscriptionSegmentId;
+      const currentPeriod = dbUser.subscriptionPeriod as string; // "monthly" | "6months" | "annual"
+      const expiresAt = dbUser.subscriptionExpiresAt ? new Date(dbUser.subscriptionExpiresAt) : null;
+      const startDate = dbUser.subscriptionStartDate ? new Date(dbUser.subscriptionStartDate) : null;
+
+      if (!expiresAt || !segmentId || !currentPeriod) {
+        return res.status(400).json({ error: "بيانات الاشتراك غير مكتملة" });
+      }
+
+      // Get segment pricing
+      const segmentPricing = await SegmentPricingModel.findOne({ segmentKey: segmentId, isActive: true }).lean() as any;
+      if (!segmentPricing) {
+        return res.status(404).json({ error: "لم يتم العثور على تسعير هذا القطاع" });
+      }
+
+      const now = new Date();
+      const remainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
+      const remainingDays = Math.ceil(remainingMs / 86400000);
+
+      // Period ordering — only allow upgrading to a longer period
+      const PERIOD_ORDER = ["monthly", "6months", "annual"];
+      const PERIOD_DAYS: Record<string, number> = { monthly: 30, "6months": 180, annual: 365 };
+      const PERIOD_LABEL: Record<string, string> = { monthly: "شهري", "6months": "نصف سنوي", annual: "سنوي" };
+      const PERIOD_PRICE_KEY: Record<string, string> = { monthly: "monthlyPrice", "6months": "sixMonthPrice", annual: "annualPrice" };
+
+      const currentPriceKey = PERIOD_PRICE_KEY[currentPeriod];
+      const currentPlanPrice = currentPriceKey ? (segmentPricing[currentPriceKey] as number || 0) : 0;
+      const currentTotalDays = PERIOD_DAYS[currentPeriod] || 30;
+
+      // Pro-rated credit for remaining days on current plan
+      const dailyRateCurrent = currentTotalDays > 0 ? currentPlanPrice / currentTotalDays : 0;
+      const proratedCredit = parseFloat((remainingDays * dailyRateCurrent).toFixed(2));
+
+      const currentPeriodIndex = PERIOD_ORDER.indexOf(currentPeriod);
+      const upgrades = PERIOD_ORDER
+        .filter((p, i) => i > currentPeriodIndex) // only higher periods
+        .map(targetPeriod => {
+          const priceKey = PERIOD_PRICE_KEY[targetPeriod];
+          const newPlanPrice = priceKey ? (segmentPricing[priceKey] as number || 0) : 0;
+          const newTotalDays = PERIOD_DAYS[targetPeriod];
+          const amountToPay = Math.max(0, parseFloat((newPlanPrice - proratedCredit).toFixed(2)));
+          const newExpiresAt = new Date(now.getTime() + newTotalDays * 86400000);
+          return {
+            targetPeriod,
+            label: PERIOD_LABEL[targetPeriod],
+            fullPrice: newPlanPrice,
+            proratedCredit,
+            amountToPay,
+            newTotalDays,
+            newExpiresAt: newExpiresAt.toISOString(),
+          };
+        })
+        .filter(u => u.fullPrice > 0); // skip if no price configured
+
+      res.json({
+        currentPlan: {
+          segmentId,
+          segmentNameAr: dbUser.subscriptionSegmentNameAr || segmentId,
+          period: currentPeriod,
+          periodLabel: PERIOD_LABEL[currentPeriod] || currentPeriod,
+          expiresAt: expiresAt.toISOString(),
+          remainingDays,
+          currentPrice: currentPlanPrice,
+          proratedCredit,
+        },
+        upgrades,
+        canUpgrade: upgrades.length > 0,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "فشل حساب خيارات الترقية" });
+    }
+  });
+
+  // Client: submit upgrade request (creates an order with difference amount)
+  app.post("/api/client/upgrade-request", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role !== "client") return res.sendStatus(403);
+    try {
+      const { UserModel, SegmentPricingModel, NotificationModel } = await import("./models");
+      const dbUser = await UserModel.findById(user.id || user._id).lean() as any;
+      if (!dbUser) return res.status(404).json({ error: "المستخدم غير موجود" });
+      if (dbUser.subscriptionStatus !== "active") {
+        return res.status(400).json({ error: "لا يوجد اشتراك نشط حالياً" });
+      }
+
+      const { targetPeriod, paymentMethod, paymentProofUrl, walletAmountUsed, walletPayPin } = req.body;
+      const VALID_PERIODS = ["6months", "annual"];
+      if (!VALID_PERIODS.includes(targetPeriod)) {
+        return res.status(400).json({ error: "الفترة المستهدفة غير صالحة" });
+      }
+
+      const currentPeriod = dbUser.subscriptionPeriod as string;
+      const PERIOD_ORDER = ["monthly", "6months", "annual"];
+      if (PERIOD_ORDER.indexOf(targetPeriod) <= PERIOD_ORDER.indexOf(currentPeriod)) {
+        return res.status(400).json({ error: "لا يمكن الترقية إلى نفس الباقة أو أقل" });
+      }
+
+      const segmentPricing = await SegmentPricingModel.findOne({ segmentKey: dbUser.subscriptionSegmentId, isActive: true }).lean() as any;
+      if (!segmentPricing) return res.status(404).json({ error: "لم يتم العثور على تسعير هذا القطاع" });
+
+      const PERIOD_DAYS: Record<string, number> = { monthly: 30, "6months": 180, annual: 365 };
+      const PERIOD_PRICE_KEY: Record<string, string> = { monthly: "monthlyPrice", "6months": "sixMonthPrice", annual: "annualPrice" };
+      const PERIOD_LABEL: Record<string, string> = { monthly: "شهري", "6months": "نصف سنوي", annual: "سنوي" };
+
+      const expiresAt = dbUser.subscriptionExpiresAt ? new Date(dbUser.subscriptionExpiresAt) : new Date();
+      const now = new Date();
+      const remainingDays = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / 86400000));
+      const currentPlanPrice: number = segmentPricing[PERIOD_PRICE_KEY[currentPeriod]] || 0;
+      const newPlanPrice: number = segmentPricing[PERIOD_PRICE_KEY[targetPeriod]] || 0;
+      const currentTotalDays = PERIOD_DAYS[currentPeriod] || 30;
+      const dailyRateCurrent = currentTotalDays > 0 ? currentPlanPrice / currentTotalDays : 0;
+      const proratedCredit = parseFloat((remainingDays * dailyRateCurrent).toFixed(2));
+      const amountToPay = Math.max(0, parseFloat((newPlanPrice - proratedCredit).toFixed(2)));
+
+      // Wallet payment handling
+      let walletDeducted = 0;
+      const walletPay = Number(walletAmountUsed || 0);
+      if (walletPay > 0) {
+        const bcrypt = await import("bcryptjs");
+        const dbUserWithPin = await UserModel.findById(user.id || user._id).select("+walletPin");
+        if (dbUserWithPin?.walletPin) {
+          if (!walletPayPin) return res.status(400).json({ error: "wallet_pin_required", message: "يجب إدخال كلمة مرور المحفظة" });
+          const pinOk = await bcrypt.compare(String(walletPayPin), dbUserWithPin.walletPin);
+          if (!pinOk) return res.status(400).json({ error: "wallet_pin_invalid", message: "كلمة مرور المحفظة غير صحيحة" });
+        }
+        const available = await getWalletBalance(String(user.id || user._id));
+        if (walletPay > available + 0.01) return res.status(400).json({ error: `رصيد المحفظة غير كافٍ. المتاح: ${available} ر.س` });
+        walletDeducted = walletPay;
+      }
+
+      // Create upgrade order
+      const order = await storage.createOrder({
+        userId: String(user.id || user._id),
+        serviceType: "plan",
+        planPeriod: targetPeriod as any,
+        planSegment: dbUser.subscriptionSegmentId,
+        businessName: dbUser.fullName || dbUser.username,
+        totalAmount: amountToPay,
+        paymentMethod: paymentMethod || "bank_transfer",
+        paymentProofUrl: paymentProofUrl || "",
+        walletAmountUsed: walletDeducted,
+        isDepositPaid: ["wallet"].includes(paymentMethod) && walletDeducted >= amountToPay,
+        notes: `طلب ترقية اشتراك من ${PERIOD_LABEL[currentPeriod]} إلى ${PERIOD_LABEL[targetPeriod]} — الائتمان المحسوب: ${proratedCredit} ر.س — المبلغ المطلوب: ${amountToPay} ر.س`,
+        status: "pending",
+      } as any);
+
+      // Deduct wallet if used
+      if (walletDeducted > 0) {
+        try {
+          const { WalletTransactionModel } = await import("./models");
+          await atomicWalletDebit(String(user.id || user._id), walletDeducted);
+          await WalletTransactionModel.create({
+            userId: String(user.id || user._id), type: 'debit', amount: walletDeducted,
+            description: `دفع ترقية الاشتراك من ${PERIOD_LABEL[currentPeriod]} إلى ${PERIOD_LABEL[targetPeriod]}`,
+            orderId: String(order.id), addedBy: String(user.id || user._id), note: 'upgrade_payment',
+          });
+        } catch (_) {}
+      }
+
+      // Notify admins
+      try {
+        const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
+        const notifPromises = admins.map((a: any) => NotificationModel.create({
+          userId: String(a._id), forAdmins: true, type: "info",
+          title: "طلب ترقية اشتراك جديد",
+          body: `${dbUser.fullName} يطلب الترقية من ${PERIOD_LABEL[currentPeriod]} إلى ${PERIOD_LABEL[targetPeriod]} — المبلغ: ${amountToPay} ر.س`,
+          link: `/admin/orders`, icon: "⬆️",
+        }));
+        await Promise.all(notifPromises);
+      } catch (_) {}
+
+      res.status(201).json({
+        success: true,
+        orderId: String(order.id),
+        amountToPay,
+        targetPeriod,
+        newPlanPrice,
+        proratedCredit,
+        message: `تم إرسال طلب الترقية بنجاح. سيتم تطبيق الترقية بعد مراجعة الدفع.`,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "فشل إرسال طلب الترقية" });
+    }
+  });
+
+  // Admin: apply upgrade to client subscription after payment verification
+  app.post("/api/admin/upgrade/apply/:orderId", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { UserModel, NotificationModel } = await import("./models");
+      const order = await storage.getOrder(req.params.orderId) as any;
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      if (order.serviceType !== "plan") return res.status(400).json({ error: "هذا الطلب ليس طلب ترقية" });
+
+      const { targetPeriod } = req.body;
+      if (!targetPeriod) return res.status(400).json({ error: "الفترة المستهدفة مطلوبة" });
+
+      const PERIOD_DAYS: Record<string, number> = { monthly: 30, "6months": 180, annual: 365 };
+      const durationDays = PERIOD_DAYS[targetPeriod] || 30;
+      const now = new Date();
+      const newExpiry = new Date(now.getTime() + durationDays * 86400000);
+
+      await UserModel.findByIdAndUpdate(order.userId, {
+        $set: {
+          subscriptionPeriod: targetPeriod,
+          subscriptionStartDate: now,
+          subscriptionExpiresAt: newExpiry,
+          subscriptionStatus: "active",
+        },
+      });
+
+      await storage.updateOrder(req.params.orderId, { status: "completed", isDepositPaid: true } as any);
+
+      const PERIOD_LABEL: Record<string, string> = { monthly: "شهري", "6months": "نصف سنوي", annual: "سنوي" };
+      try {
+        await NotificationModel.create({
+          userId: String(order.userId), forAdmins: false, type: "subscription",
+          title: "تمت ترقية اشتراكك",
+          body: `تمت ترقية اشتراكك بنجاح إلى الباقة ${PERIOD_LABEL[targetPeriod]} — ينتهي في ${newExpiry.toLocaleDateString("ar-SA")}`,
+          link: "/dashboard", icon: "⬆️",
+        });
+      } catch (_) {}
+
+      res.json({ success: true, newExpiresAt: newExpiry.toISOString() });
+    } catch (err) {
+      res.status(500).json({ error: "فشل تطبيق الترقية" });
+    }
+  });
+
   // ============================================================
   // CONSULTATION SLOTS (Employee sets availability)
   // ============================================================
