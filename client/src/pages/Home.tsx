@@ -1309,6 +1309,28 @@ function CompanyLogo({ domain, name }: { domain: string; name: string }) {
 
 function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
   const L = lang === "ar";
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // Measure content and set CSS variable for ping-pong distance
+  useEffect(() => {
+    const measure = () => {
+      const wrap = wrapRef.current;
+      const track = trackRef.current;
+      if (!wrap || !track) return;
+      const offset = track.scrollWidth - wrap.clientWidth;
+      if (offset > 0) {
+        track.style.setProperty("--ping-offset", `-${offset}px`);
+        // Scale duration proportionally to distance (px per second)
+        const dur = Math.round(offset / 40);
+        track.style.setProperty("--ping-duration", `${Math.max(dur, 20)}s`);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const categories = [
     {
@@ -1623,10 +1645,13 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
     },
   ];
 
+  // Flatten all companies into one single list
+  const allCompanies = categories.flatMap(cat => cat.companies);
+
   return (
-    <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04] overflow-hidden" data-testid="section-integration-partners">
+    <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-integration-partners">
       {/* Header */}
-      <div className="container mx-auto px-4 mb-12 text-center">
+      <div className="container mx-auto px-4 mb-10 text-center">
         <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
           {L ? "شركاء التكامل" : "Integration Partners"}
         </p>
@@ -1637,48 +1662,37 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
         </p>
       </div>
 
-      {/* Scrolling strips */}
-      <div className="space-y-3">
-        {categories.map((cat, idx) => {
-          // Duplicate for seamless infinite loop (translateX -50%)
-          const doubled = [...cat.companies, ...cat.companies];
+      {/* Single ping-pong strip */}
+      <div className="relative" data-testid="integration-single-strip">
+        {/* Edge fades */}
+        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-          return (
-            <div
-              key={cat.key}
-              className="group/strip relative"
-              data-testid={`integration-strip-${cat.key}`}
-            >
-              {/* Edge fades */}
-              <div className="absolute inset-y-0 left-0 w-24 md:w-44 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 w-24 md:w-44 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-
-              {/* Track */}
-              <div className="overflow-hidden w-full py-1.5">
-                <div
-                  className={`flex animate-strip-${idx % 16}`}
-                  style={{ width: "max-content" }}
-                >
-                  {doubled.map((company, ci) => (
-                    <a
-                      key={`${company.name}-${ci}`}
-                      href={`https://${company.domain}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-md hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.03] transition-all duration-200 shrink-0"
-                      data-testid={`integration-chip-${cat.key}-${ci}`}
-                    >
-                      <CompanyLogo domain={company.domain} name={company.name} />
-                      <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
-                        {company.name}
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {/* Overflow wrapper */}
+        <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
+          {/* Track — ping-pong animated */}
+          <div
+            ref={trackRef}
+            className="flex animate-pingpong"
+            style={{ width: "max-content" }}
+          >
+            {allCompanies.map((company, ci) => (
+              <a
+                key={`${company.name}-${ci}`}
+                href={`https://${company.domain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
+                data-testid={`integration-chip-all-${ci}`}
+              >
+                <CompanyLogo domain={company.domain} name={company.name} />
+                <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
+                  {company.name}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

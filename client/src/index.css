@@ -1013,6 +1013,16 @@
   animation: marquee 25s linear infinite reverse;
 }
 
+/* Ping-pong (bounce) single-strip marquee */
+@keyframes marquee-pingpong {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(var(--ping-offset, -2000px)); }
+}
+
+.animate-pingpong {
+  animation: marquee-pingpong var(--ping-duration, 60s) ease-in-out infinite alternate;
+}
+
 /* Per-strip speed variants */
 .animate-strip-0 { animation: marquee 48s linear infinite; }
 .animate-strip-1 { animation: marquee 25s linear infinite reverse; }
