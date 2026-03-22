@@ -1593,7 +1593,7 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
   return (
     <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04] overflow-hidden" data-testid="section-integration-partners">
       {/* Header */}
-      <div className="container mx-auto px-4 mb-10 text-center">
+      <div className="container mx-auto px-4 mb-12 text-center">
         <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
           {L ? "شركاء التكامل" : "Integration Partners"}
         </p>
@@ -1604,8 +1604,8 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
         </p>
       </div>
 
-      {/* Scrolling strips */}
-      <div className="space-y-1.5">
+      {/* Scrolling strips — no labels, large chips */}
+      <div className="space-y-3">
         {categories.map((cat, idx) => {
           const speedClasses = [
             "animate-marquee-slow",
@@ -1616,47 +1616,38 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
             "animate-marquee-fast",
           ];
           const animClass = speedClasses[idx % speedClasses.length];
-          const doubled = [...cat.companies, ...cat.companies, ...cat.companies];
+          const tripled = [...cat.companies, ...cat.companies, ...cat.companies];
 
           return (
             <div
               key={cat.key}
-              className="group/strip relative flex items-center"
+              className="group/strip relative"
               data-testid={`integration-strip-${cat.key}`}
             >
-              {/* Category label — fixed side badge */}
-              <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center pointer-events-none" style={{ width: "9rem" }}>
-                <div className="w-full h-full bg-gradient-to-l from-white dark:from-gray-950 via-white/95 dark:via-gray-950/95 to-transparent flex items-center justify-end pr-4">
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-[9px] font-black uppercase tracking-widest text-black/40 dark:text-white/35 whitespace-nowrap`}>{cat.label}</span>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${cat.color}`} />
-                  </div>
-                </div>
-              </div>
+              {/* Edge fade masks */}
+              <div className="absolute left-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-              {/* Left fade mask */}
-              <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-
-              {/* Scrolling chips track */}
-              <div className="overflow-hidden w-full py-1.5">
-                <div className={`strip-inner flex ${animClass} group-hover/strip:[animation-play-state:paused]`} style={{ width: "max-content" }}>
-                  {doubled.map((company, ci) => (
+              {/* Track */}
+              <div className="overflow-hidden w-full py-1">
+                <div className={`flex gap-3 ${animClass} group-hover/strip:[animation-play-state:paused]`} style={{ width: "max-content" }}>
+                  {tripled.map((company, ci) => (
                     <a
                       key={`${company.name}-${ci}`}
                       href={`https://${company.domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 mx-1.5 px-3 py-1.5 rounded-full border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.08] hover:shadow-sm transition-all duration-200 group shrink-0"
+                      className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:shadow-md dark:hover:bg-white/[0.08] transition-all duration-200 group/chip shrink-0"
                       data-testid={`integration-chip-${cat.key}-${ci}`}
                     >
                       <img
                         src={`https://logo.clearbit.com/${company.domain}`}
                         alt={company.name}
-                        className="h-3.5 w-3.5 object-contain rounded-sm opacity-50 group-hover:opacity-90 transition-opacity shrink-0"
+                        className="h-6 w-6 object-contain rounded-md opacity-60 group-hover/chip:opacity-100 transition-opacity shrink-0"
                         loading="lazy"
                         onError={(e) => { e.currentTarget.style.display = "none"; }}
                       />
-                      <span className="text-[10px] font-semibold text-black/40 dark:text-white/35 group-hover:text-black/80 dark:group-hover:text-white/80 transition-colors whitespace-nowrap leading-none">
+                      <span className="text-sm font-semibold text-black/55 dark:text-white/45 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
                         {company.name}
                       </span>
                     </a>
@@ -1666,13 +1657,6 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
             </div>
           );
         })}
-      </div>
-
-      {/* Bottom hint */}
-      <div className="container mx-auto px-4 mt-8 text-center">
-        <p className="text-[9px] tracking-[0.25em] uppercase text-black/15 dark:text-white/15" dir={dir}>
-          {L ? "مرر فوق الشريط لإيقاف التمرير" : "Hover over any strip to pause"}
-        </p>
       </div>
     </section>
   );
