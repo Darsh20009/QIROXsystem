@@ -16,6 +16,7 @@ import {
   BarChart3, Calendar, Heart,
   Settings, Lock, User, Coffee,
   MapPin, Bell, ClipboardList, Layers, Copy,
+  Printer, Wifi, Bluetooth, Cable, Network, BadgeCheck,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { CAFE_SECTIONS } from "./cafe-pages-data";
@@ -1118,6 +1119,114 @@ export default function TemplateDetail() {
                   <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/50 mr-auto flex-shrink-0 transition-colors" />
                 </a>
               ))}
+            </div>
+          </motion.section>
+
+          {/* ── Compatible Devices ───────────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+            <div className="text-center mb-10">
+              <p className="text-xs font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2">الأجهزة المتوافقة</p>
+              <h2 className="text-3xl font-black text-black dark:text-white">6 أجهزة متوافقة 100% مع النظام</h2>
+              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">أجهزة الشائعة في السعودية — متكاملة كلياً مع نظام الكافيه بدون أي إعداد إضافي.</p>
+            </div>
+
+            <div className="relative rounded-3xl overflow-hidden bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
+              <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='white' stroke-width='0.5'%3E%3Cpath d='M20 0v10M20 30v10M0 20h10M30 20h10'/%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "40px 40px" }} />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full blur-3xl opacity-20" style={{ background: color }} />
+
+              <div className="relative grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                {[
+                  {
+                    brand: "Sunmi", model: "V2s", category: "جهاز POS", icon: Smartphone,
+                    color: "#f97316", connections: [
+                      { Icon: Wifi, label: "واي فاي" }, { Icon: Bluetooth, label: "بلوتوث" }
+                    ]
+                  },
+                  {
+                    brand: "Epson", model: "TM-T20III", category: "طابعة إيصالات", icon: Printer,
+                    color: "#3b82f6", connections: [
+                      { Icon: Cable, label: "USB" }, { Icon: Network, label: "شبكة IP" }
+                    ]
+                  },
+                  {
+                    brand: "Xprinter", model: "XP-80C", category: "طابعة مطبخ", icon: ChefHat,
+                    color: "#ef4444", connections: [
+                      { Icon: Cable, label: "USB" }, { Icon: Network, label: "شبكة IP" }
+                    ]
+                  },
+                  {
+                    brand: "ZKTeco", model: "K40", category: "بصمة الحضور", icon: ShieldCheck,
+                    color: "#8b5cf6", connections: [
+                      { Icon: Network, label: "شبكة IP" }, { Icon: Cable, label: "USB" }
+                    ]
+                  },
+                  {
+                    brand: "Geidea", model: "Geidea POS", category: "طرفية الدفع", icon: CreditCard,
+                    color: "#10b981", connections: [
+                      { Icon: Network, label: "شبكة IP" }, { Icon: Wifi, label: "واي فاي" }
+                    ]
+                  },
+                  {
+                    brand: "Samsung", model: "Smart TV 32\"", category: "شاشة KDS", icon: Monitor,
+                    color: "#06b6d4", connections: [
+                      { Icon: Network, label: "شبكة IP" }, { Icon: Wifi, label: "واي فاي" }
+                    ]
+                  },
+                ].map((device, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + i * 0.07 }}
+                    className="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.14] transition-all duration-300 p-4 cursor-default overflow-hidden"
+                    data-testid={`device-card-${i}`}
+                  >
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: `inset 0 0 0 1px ${device.color}30` }} />
+
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: device.color + "20" }}>
+                        <device.icon className="w-4.5 h-4.5" style={{ color: device.color }} />
+                      </div>
+                      <span className="inline-flex items-center gap-1 bg-green-400/10 border border-green-400/20 text-green-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                        <span className="w-1 h-1 rounded-full bg-green-400" />
+                        100%
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] font-bold text-white/30 mb-0.5">{device.brand}</p>
+                    <p className="text-sm font-black text-white leading-tight mb-1" dir="ltr">{device.model}</p>
+                    <p className="text-[10px] text-white/40 mb-3">{device.category}</p>
+
+                    <div className="flex flex-wrap gap-1">
+                      {device.connections.map(({ Icon, label }, j) => (
+                        <span key={j} className="inline-flex items-center gap-1 bg-white/[0.06] border border-white/[0.08] text-white/50 text-[9px] font-bold px-1.5 py-0.5 rounded-lg">
+                          <Icon className="w-2.5 h-2.5" />
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="relative mt-6 pt-5 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-4 h-4 text-green-400" />
+                  <span className="text-xs text-white/40 font-medium">جميع الأجهزة مختبرة ومعتمدة من فريق قيروكس</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {[
+                    { label: "أجهزة POS", count: "18+" },
+                    { label: "طابعات", count: "37+" },
+                    { label: "بصمة", count: "15+" },
+                  ].map((stat, i) => (
+                    <div key={i} className="text-center">
+                      <p className="text-sm font-black text-white">{stat.count}</p>
+                      <p className="text-[9px] text-white/30">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.section>
 
