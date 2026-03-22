@@ -1315,8 +1315,9 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
   const L = lang === "ar";
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const [pingStyle, setPingStyle] = useState<React.CSSProperties>({});
 
-  // Measure content and set CSS variable for ping-pong distance
+  // Measure content and set animation only after DOM is painted
   useEffect(() => {
     const measure = () => {
       const wrap = wrapRef.current;
@@ -1324,16 +1325,19 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
       if (!wrap || !track) return;
       const offset = track.scrollWidth - wrap.clientWidth;
       if (offset > 0) {
-        track.style.setProperty("--ping-offset", `-${offset}px`);
-        // Scale duration proportionally to distance (px per second)
-        const dur = Math.round(offset / 40);
-        track.style.setProperty("--ping-duration", `${Math.max(dur, 20)}s`);
+        const dur = Math.max(Math.round(offset / 40), 20);
+        setPingStyle({
+          "--ping-offset": `-${offset}px`,
+          animation: `marquee-pingpong ${dur}s ease-in-out infinite alternate`,
+        } as React.CSSProperties);
+      } else {
+        setPingStyle({});
       }
     };
-    measure();
+    const t = setTimeout(measure, 60);
     const ro = new ResizeObserver(measure);
     if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => ro.disconnect();
+    return () => { clearTimeout(t); ro.disconnect(); };
   }, []);
 
   const categories = [
@@ -1674,11 +1678,11 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
 
         {/* Overflow wrapper */}
         <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
-          {/* Track — ping-pong animated */}
+          {/* Track — ping-pong animated (applied after measurement) */}
           <div
             ref={trackRef}
-            className="flex animate-pingpong"
-            style={{ width: "max-content" }}
+            className="flex"
+            style={{ width: "max-content", ...pingStyle }}
           >
             {allCompanies.map((company, ci) => (
               <a
@@ -1740,6 +1744,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
   const { data: apiPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const [pingStyle, setPingStyle] = useState<React.CSSProperties>({});
   const [selected, setSelected] = useState<{
     name: string; nameAr?: string; logo: string; url?: string;
     category?: string; description?: string; descriptionAr?: string;
@@ -1780,15 +1785,21 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
       if (!wrap || !track) return;
       const offset = track.scrollWidth - wrap.clientWidth;
       if (offset > 0) {
-        track.style.setProperty("--ping-offset", `-${offset}px`);
         const dur = Math.max(Math.round(offset / 35), 12);
-        track.style.setProperty("--ping-duration", `${dur}s`);
+        setPingStyle({
+          "--ping-offset": `-${offset}px`,
+          "--ping-duration": `${dur}s`,
+          animation: `marquee-pingpong ${dur}s ease-in-out infinite alternate`,
+        } as React.CSSProperties);
+      } else {
+        setPingStyle({});
       }
     };
-    measure();
+    // Small delay so the DOM has painted the chips before measuring
+    const t = setTimeout(measure, 60);
     const ro = new ResizeObserver(measure);
     if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => ro.disconnect();
+    return () => { clearTimeout(t); ro.disconnect(); };
   }, [allPartners]);
 
   if (allPartners.length === 0) return null;
@@ -1814,8 +1825,8 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
         <div ref={wrapRef} className="overflow-hidden w-full py-3 px-2">
           <div
             ref={trackRef}
-            className="flex animate-pingpong"
-            style={{ width: "max-content" }}
+            className="flex"
+            style={{ width: "max-content", ...pingStyle }}
           >
             {allPartners.map((partner, i) => (
               <button
