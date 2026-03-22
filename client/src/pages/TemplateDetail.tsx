@@ -21,6 +21,26 @@ import { useI18n } from "@/lib/i18n";
 import { CAFE_SECTIONS } from "./cafe-pages-data";
 import type { CafePageEntry } from "./cafe-pages-data";
 
+import sc01 from "@assets/Screenshot_2026-03-22_083144_1774164974564.png";
+import sc02 from "@assets/Screenshot_2026-03-22_102704_1774164974568.png";
+import sc03 from "@assets/Screenshot_2026-03-22_102916_1774164974569.png";
+import sc04 from "@assets/Screenshot_2026-03-22_103058_1774164974569.png";
+import sc05 from "@assets/Screenshot_2026-03-22_103114_1774164974570.png";
+import sc06 from "@assets/Screenshot_2026-03-22_103122_1774164974570.png";
+import sc07 from "@assets/Screenshot_2026-03-22_103213_1774164974570.png";
+import sc08 from "@assets/Screenshot_2026-03-22_103228_1774164974571.png";
+import sc09 from "@assets/Screenshot_2026-03-22_103237_1774164974571.png";
+import sc10 from "@assets/Screenshot_2026-03-22_103245_1774164974572.png";
+import sc11 from "@assets/Screenshot_2026-03-22_103254_1774164974572.png";
+import sc12 from "@assets/Screenshot_2026-03-22_103343_1774164974572.png";
+import sc13 from "@assets/Screenshot_2026-03-22_103353_1774164974572.png";
+import sc14 from "@assets/Screenshot_2026-03-22_103406_1774164974573.png";
+import sc15 from "@assets/Screenshot_2026-03-22_103419_1774164988228.png";
+import sc16 from "@assets/Screenshot_2026-03-22_103429_1774164988237.png";
+import sc17 from "@assets/Screenshot_2026-03-22_103443_1774164988237.png";
+
+const CAFE_SCREENSHOTS = [sc01,sc02,sc03,sc04,sc05,sc06,sc07,sc08,sc09,sc10,sc11,sc12,sc13,sc14,sc15,sc16,sc17];
+
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
   lite:     { label: "لايت",    color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
   pro:      { label: "برو",     color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", desc: "الباقة الاحترافية — للمشاريع المتوسطة والكبيرة" },
@@ -884,6 +904,48 @@ export default function TemplateDetail() {
               <div>
                 <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات النظام الكامل</h2>
                 <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
+              </div>
+            </div>
+
+            {/* ── Screenshots Marquee ───────────────────────────────── */}
+            <div className="relative mb-10 overflow-hidden rounded-2xl" style={{ direction: "ltr" }}>
+              <style>{`
+                @keyframes marquee-scroll {
+                  0%   { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .marquee-track {
+                  display: flex;
+                  width: max-content;
+                  animation: marquee-scroll 40s linear infinite;
+                }
+                .marquee-track:hover {
+                  animation-play-state: paused;
+                }
+              `}</style>
+              <div
+                className="absolute inset-y-0 left-0 z-10 w-16 pointer-events-none"
+                style={{ background: "linear-gradient(to right, hsl(var(--background)), transparent)" }}
+              />
+              <div
+                className="absolute inset-y-0 right-0 z-10 w-16 pointer-events-none"
+                style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
+              />
+              <div className="marquee-track gap-3 py-2 px-1">
+                {[...CAFE_SCREENSHOTS, ...CAFE_SCREENSHOTS].map((src, i) => (
+                  <div
+                    key={i}
+                    className="flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/5"
+                    style={{ width: 180, height: 360 }}
+                  >
+                    <img
+                      src={src}
+                      alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
+                      className="w-full h-full object-cover object-top"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
