@@ -10,6 +10,7 @@ interface PayPalCheckoutButtonProps {
   onError?: (msg: string) => void;
   disabled?: boolean;
   pendingData?: Record<string, any>;
+  returnPath?: string;
 }
 
 export default function PayPalCheckoutButton({
@@ -19,6 +20,7 @@ export default function PayPalCheckoutButton({
   onError,
   disabled = false,
   pendingData,
+  returnPath = "/cart",
 }: PayPalCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
 
@@ -29,8 +31,8 @@ export default function PayPalCheckoutButton({
     setLoading(true);
 
     try {
-      const returnUrl = `${window.location.origin}/cart?paypal_return=1`;
-      const cancelUrl = `${window.location.origin}/cart?paypal_cancel=1`;
+      const returnUrl = `${window.location.origin}${returnPath}?paypal_return=1`;
+      const cancelUrl = `${window.location.origin}${returnPath}?paypal_cancel=1`;
 
       if (pendingData) {
         sessionStorage.setItem("paypal_pending_checkout", JSON.stringify(pendingData));

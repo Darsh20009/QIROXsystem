@@ -156,7 +156,7 @@ export default function Checkout() {
   const [couponApplied, setCouponApplied] = useState(false);
   const [proofFile, setProofFile] = useState<UpFile | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
-  const [paypalDone, setPaypalDone] = useState(false);
+  const [paypalProcessing, setPaypalProcessing] = useState(false);
   const [copiedIban, setCopiedIban] = useState(false);
 
   const [orderId, setOrderId] = useState("");
@@ -236,6 +236,89 @@ export default function Checkout() {
     else if (cardData?.cardActive) setPayMethod("card");
     else setPayMethod("bank");
   }, [walletBalance, cardData, total]);
+
+  // Handle PayPal redirect return — captures payment and creates order automatically
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isReturn = params.get("paypal_return") === "1";
+    const isCancel = params.get("paypal_cancel") === "1";
+    const paypalToken = params.get("token");
+
+    if (isReturn && paypalToken) {
+      window.history.replaceState({}, "", window.location.pathname);
+      const pending = sessionStorage.getItem("paypal_pending_checkout");
+      sessionStorage.removeItem("paypal_pending_checkout");
+      const pendingData = pending ? JSON.parse(pending) : null;
+
+      setPaypalProcessing(true);
+      setStep(2);
+
+      const doCapture = async () => {
+        try {
+          const captureRes = await fetch(`/paypal/order/${paypalToken}/capture`, { method: "POST", credentials: "include" });
+          if (!captureRes.ok) {
+            const err = await captureRes.json().catch(() => ({}));
+            throw new Error(err.error || "فشل تأكيد الدفع من PayPal");
+          }
+
+          if (!pendingData) throw new Error("بيانات الطلب مفقودة — أعد المحاولة");
+
+          const { pAddr, pTotal, pItems, pHasWizard, pWizardData, pWalletUsed = 0 } = pendingData;
+          const method = pWalletUsed > 0 ? "mixed" : "paypal";
+          const addressLine = pAddr ? `الشحن: ${pAddr.recipientName} — ${pAddr.recipientPhone} — ${pAddr.city} — ${pAddr.district} — ${pAddr.street}` : "";
+
+          const r = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              projectType: pHasWizard ? (pWizardData?.formData?.sector || pWizardData?.planTier) : (pItems?.[0]?.nameAr || pItems?.[0]?.name || "طلب من PayPal"),
+              sector: pHasWizard ? (pWizardData?.formData?.sector || "general") : "general",
+              businessName: pHasWizard ? (pWizardData?.businessName || pWizardData?.formData?.businessName || "") : "",
+              phone: pAddr?.recipientPhone || "",
+              totalAmount: parseFloat((pTotal || 0).toFixed(2)),
+              items: pItems || [],
+              paymentMethod: method,
+              notes: addressLine,
+              wizardData: pHasWizard ? pWizardData : undefined,
+              shippingAddress: pAddr ? { name: pAddr.recipientName, phone: pAddr.recipientPhone, city: pAddr.city, address: `${pAddr.district} ${pAddr.street}`.trim() } : undefined,
+              walletAmountUsed: pWalletUsed > 0 ? parseFloat(pWalletUsed.toFixed(2)) : undefined,
+            }),
+          });
+
+          if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.message || err.error || "فشل إنشاء الطلب");
+          }
+
+          const data = await r.json();
+          setOrderId(data.id || data._id || "");
+          setOrderTotal(pTotal || 0);
+          setOrderPayMethod("paypal");
+          try {
+            await fetch("/api/cart", { method: "DELETE", credentials: "include" });
+            queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+            sessionStorage.removeItem("qiroxWizardData");
+          } catch { /* ok */ }
+          setStep(3);
+          toast({ title: "✅ تم الدفع وتأكيد طلبك بنجاح!" });
+        } catch (e: any) {
+          toast({ title: e.message || "فشل إتمام الطلب بعد PayPal", variant: "destructive" });
+        } finally {
+          setPaypalProcessing(false);
+        }
+      };
+
+      doCapture();
+    } else if (isCancel) {
+      window.history.replaceState({}, "", window.location.pathname);
+      toast({ title: "تم إلغاء الدفع عبر PayPal", variant: "destructive" });
+      setPayMethod("paypal");
+      setStep(2);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGeolocate = async () => {
     if (!navigator.geolocation) { toast({ title: "المتصفح لا يدعم الموقع الجغرافي", variant: "destructive" }); return; }
@@ -405,7 +488,7 @@ export default function Checkout() {
 
   const canProceedStep1 = !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city)
     && (!hasPhysicalItems || !!selectedShippingCompanyId);
-  const canProceedStep2 = (payMethod === "bank") || (payMethod === "paypal" && paypalDone) ||
+  const canProceedStep2 = (payMethod === "bank") || (payMethod === "paypal") ||
     (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
 
   // ── Inline Auth Step (when user not logged in) ───────────────
@@ -944,13 +1027,32 @@ export default function Checkout() {
                       </div>
                       {payMethod === "paypal" && (
                         <div className="mt-4 pt-4 border-t border-blue-100" onClick={e => e.stopPropagation()}>
-                          <PayPalCheckoutButton
-                            amount={total}
-                            items={items.map((i: any) => ({ name: i.name || i.nameAr, unit_amount: { currency_code: "USD", value: (i.price / 3.75).toFixed(2) }, quantity: String(i.qty || 1) }))}
-                            description={`QIROX Order — ${items.length} items`}
-                            metadata={{ shipping: addr, walletUsed: 0 }}
-                            onApprove={() => setPaypalDone(true)}
-                          />
+                          {paypalProcessing ? (
+                            <div className="flex items-center justify-center gap-2 py-4 text-[#003087]">
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              <span className="font-bold text-sm">جاري تأكيد الدفع وإنشاء طلبك...</span>
+                            </div>
+                          ) : (
+                            <PayPalCheckoutButton
+                              amount={total}
+                              currency="SAR"
+                              returnPath="/checkout"
+                              pendingData={{
+                                pAddr: addr,
+                                pTotal: total,
+                                pItems: hasWizardData
+                                  ? [{ type: "plan", name: wizardData?.planTier, nameAr: `باقة ${wizardData?.planTier}`, price: wizardData?.grandTotal || wizardData?.planPrice || 0, qty: 1 },
+                                     ...(wizardData?.selectedAddons || []).map((id: string) => ({ type: "addon", name: id, nameAr: id, price: 0, qty: 1 }))]
+                                  : items.map((i: any) => ({ id: i._id || i.id, type: i.type, name: i.name, nameAr: i.nameAr, price: i.price, qty: i.qty, config: i.config, imageUrl: i.imageUrl })),
+                                pHasWizard: hasWizardData,
+                                pWizardData: hasWizardData ? wizardData : undefined,
+                                pWalletUsed: 0,
+                              }}
+                              onRedirecting={() => toast({ title: "جاري التحويل إلى PayPal..." })}
+                              onError={(msg) => toast({ title: msg || "فشل الدفع عبر PayPal، حاول مجدداً", variant: "destructive" })}
+                              disabled={total <= 0}
+                            />
+                          )}
                         </div>
                       )}
                     </button>
@@ -961,16 +1063,25 @@ export default function Checkout() {
                   <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12 rounded-2xl gap-2" data-testid="button-back-address">
                     <ArrowRight className="w-4 h-4" /> {L ? "السابق" : "Back"}
                   </Button>
-                  <Button
-                    onClick={() => submitMutation.mutate()}
-                    disabled={!canProceedStep2 || submitMutation.isPending}
-                    className="flex-[2] h-12 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-black gap-2 shadow-lg shadow-green-600/20"
-                    data-testid="button-confirm-order"
-                  >
-                    {submitMutation.isPending
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ الإرسال...</>
-                      : <><Sparkles className="w-4 h-4" /> تأكيد الطلب</>}
-                  </Button>
+                  {payMethod === "paypal" ? (
+                    <div className="flex-[2] h-12 rounded-2xl border-2 border-[#FFC439]/50 bg-[#FFC439]/10 flex items-center justify-center text-xs text-[#003087] font-bold gap-2" data-testid="paypal-action-hint">
+                      {paypalProcessing
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري المعالجة...</>
+                        : <><span className="text-[#FFC439]">⬆</span> استخدم زر PayPal أعلاه للدفع</>
+                      }
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => submitMutation.mutate()}
+                      disabled={!canProceedStep2 || submitMutation.isPending}
+                      className="flex-[2] h-12 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-black gap-2 shadow-lg shadow-green-600/20"
+                      data-testid="button-confirm-order"
+                    >
+                      {submitMutation.isPending
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ الإرسال...</>
+                        : <><Sparkles className="w-4 h-4" /> تأكيد الطلب</>}
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>
