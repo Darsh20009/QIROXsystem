@@ -1703,6 +1703,8 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
 
 function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
   const { data: apiPartners } = useQuery<Partner[]>({ queryKey: ["/api/partners"] });
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const allLogos = useMemo(() => {
     const fromApi = (apiPartners || []).map(p => ({
@@ -1716,16 +1718,32 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
       url: undefined as string | undefined,
     }));
     const apiNames = new Set(fromApi.map(p => p.name));
-    const merged = [...fromApi, ...fromStatic.filter(s => !apiNames.has(s.name))];
-    return merged;
+    return [...fromApi, ...fromStatic.filter(s => !apiNames.has(s.name))];
   }, [apiPartners, lang]);
+
+  // Measure and set ping-pong offset after logos render
+  useEffect(() => {
+    const measure = () => {
+      const wrap = wrapRef.current;
+      const track = trackRef.current;
+      if (!wrap || !track) return;
+      const offset = track.scrollWidth - wrap.clientWidth;
+      if (offset > 0) {
+        track.style.setProperty("--ping-offset", `-${offset}px`);
+        const dur = Math.max(Math.round(offset / 35), 15);
+        track.style.setProperty("--ping-duration", `${dur}s`);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [allLogos]);
 
   if (allLogos.length === 0) return null;
 
-  const doubled = [...allLogos, ...allLogos];
-
   return (
-    <section className="py-16 md:py-20 relative overflow-hidden" data-testid="section-partners">
+    <section className="py-16 md:py-20 relative" data-testid="section-partners">
       <div className="container mx-auto px-4 mb-10 text-center">
         <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold" dir={dir}>
           {lang === "ar" ? "يثقون بنا" : "Trusted By"}
@@ -1733,35 +1751,51 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
       </div>
 
       <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        {/* Edge fades */}
+        <div className="absolute left-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 md:w-36 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
-        <div className="flex animate-marquee hover:[animation-play-state:paused]" style={{ width: "max-content" }}>
-          {doubled.map((partner, i) => (
-            <div
-              key={`${partner.name}-${i}`}
-              className="flex-shrink-0 mx-6 md:mx-10 flex items-center justify-center group"
-              data-testid={`partner-logo-${i}`}
-            >
-              {partner.url ? (
-                <a href={partner.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <img
-                    src={partner.logo}
-                    alt={partner.name}
-                    className="h-10 md:h-12 w-auto object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"
-                    loading="lazy"
-                  />
-                </a>
-              ) : (
+        <div ref={wrapRef} className="overflow-hidden w-full py-2">
+          <div
+            ref={trackRef}
+            className="flex animate-pingpong"
+            style={{ width: "max-content" }}
+          >
+            {allLogos.map((partner, i) => {
+              const imgEl = (
                 <img
                   src={partner.logo}
                   alt={partner.name}
-                  className="h-10 md:h-12 w-auto object-contain grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-90 transition-all duration-500"
-                  loading="lazy"
+                  className="h-10 md:h-12 w-auto max-w-[120px] object-contain opacity-50 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-400"
+                  loading="eager"
+                  onError={(e) => {
+                    // fallback: show name as text
+                    e.currentTarget.style.display = "none";
+                    (e.currentTarget.nextSibling as HTMLElement | null)?.style?.removeProperty("display");
+                  }}
                 />
-              )}
-            </div>
-          ))}
+              );
+              return (
+                <div
+                  key={`${partner.name}-${i}`}
+                  className="flex-shrink-0 mx-8 md:mx-12 flex items-center justify-center group"
+                  data-testid={`partner-logo-${i}`}
+                >
+                  {partner.url ? (
+                    <a href={partner.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                      {imgEl}
+                      <span className="hidden text-sm font-bold text-black/30 dark:text-white/30">{partner.name}</span>
+                    </a>
+                  ) : (
+                    <span className="flex items-center">
+                      {imgEl}
+                      <span className="hidden text-sm font-bold text-black/30 dark:text-white/30">{partner.name}</span>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
