@@ -883,7 +883,7 @@ export default function TemplateDetail() {
               </div>
               <div>
                 <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات النظام الكامل</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة — كل صفحة بمعاينة بصرية وشرح تفصيلي</p>
+                <p className="text-xs text-black/40 dark:text-white/40">100+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
               </div>
             </div>
 
@@ -919,15 +919,7 @@ export default function TemplateDetail() {
                           className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                           data-testid={`page-card-${page.path.replace(/\//g, "-")}`}
                         >
-                          {/* Browser frame (compact) */}
-                          <BrowserFrame
-                            url={pageUrl}
-                            label={page.titleAr}
-                            page={page}
-                            compact
-                          />
-
-                          {/* Page info below frame */}
+                          {/* Page info */}
                           <div className="p-4">
                             <div className="flex items-start gap-3">
                               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
