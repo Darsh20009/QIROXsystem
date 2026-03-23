@@ -932,36 +932,36 @@ export default function TemplateDetail() {
                 className="absolute inset-y-0 right-0 z-10 w-16 pointer-events-none"
                 style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
               />
-              <div className="marquee-track gap-6 py-4 px-2">
+              <div className="marquee-track gap-5 py-4 px-2">
                 {[...CAFE_SCREENSHOTS, ...CAFE_SCREENSHOTS].map((src, i) => (
-                  <div key={i} className="flex-shrink-0 flex flex-col items-center" style={{ width: 300 }}>
-                    {/* Laptop lid */}
-                    <div
-                      className="w-full rounded-t-xl rounded-b-md shadow-2xl"
-                      style={{ background: "linear-gradient(145deg,#2a2a2e,#1a1a1e)", border: "1.5px solid #3a3a3e", padding: "8px 10px 6px" }}
-                    >
-                      {/* Camera dot */}
-                      <div className="flex justify-center mb-1.5">
-                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#444", boxShadow: "0 0 0 1px #555" }} />
-                      </div>
-                      {/* Screen bezel inner */}
-                      <div
-                        className="overflow-hidden"
-                        style={{ borderRadius: 4, height: 170, background: "#000", border: "1px solid #111" }}
-                      >
-                        <img
-                          src={src}
-                          alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    {/* Hinge */}
-                    <div style={{ width: "105%", height: 8, background: "linear-gradient(180deg,#252528,#1e1e21)", borderBottom: "1px solid #333", borderLeft: "1px solid #333", borderRight: "1px solid #333", borderRadius: "0 0 3px 3px" }} />
-                    {/* Keyboard base */}
-                    <div style={{ width: "108%", height: 14, background: "linear-gradient(180deg,#2c2c30,#242428)", border: "1px solid #3a3a3e", borderTop: "none", borderRadius: "0 0 8px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: 48, height: 4, background: "#1a1a1e", borderRadius: 3, opacity: 0.7 }} />
+                  <div
+                    key={i}
+                    className="flex-shrink-0 relative shadow-2xl"
+                    style={{
+                      width: 310, height: 220,
+                      background: "linear-gradient(145deg,#2e2e33,#1c1c20)",
+                      borderRadius: 18,
+                      border: "1.5px solid #3e3e44",
+                      padding: "14px 16px",
+                      boxShadow: "0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    {/* Camera dot — top center */}
+                    <div style={{ position: "absolute", top: 7, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#3a3a40", boxShadow: "0 0 0 1px #4a4a52, inset 0 0 2px rgba(0,0,0,0.5)" }} />
+                    {/* Power button — right edge */}
+                    <div style={{ position: "absolute", right: -3, top: "38%", width: 4, height: 22, background: "linear-gradient(180deg,#38383e,#28282e)", borderRadius: "0 3px 3px 0", border: "1px solid #444" }} />
+                    {/* Volume up — top edge */}
+                    <div style={{ position: "absolute", top: -3, left: "32%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
+                    {/* Volume down — top edge */}
+                    <div style={{ position: "absolute", top: -3, left: "44%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
+                    {/* Screen */}
+                    <div style={{ width: "100%", height: "100%", borderRadius: 8, overflow: "hidden", background: "#000", border: "1px solid #111" }}>
+                      <img
+                        src={src}
+                        alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                 ))}
