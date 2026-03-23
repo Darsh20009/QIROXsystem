@@ -37,9 +37,13 @@ export function AntiDevTools() {
     // Detect DevTools open via window size heuristic
     // Skip detection if running inside an iframe to avoid false positives
     const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    // Skip detection on mobile devices — Safari/Chrome on iOS/Android have large
+    // browser-UI offsets (address bar, status bar, bottom bar) that exceed the threshold
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
     const detectDevTools = () => {
       if (isInIframe) return; // Don't block when embedded as iframe
       if (!import.meta.env.PROD) return; // Only in production
+      if (isMobile) return; // Mobile browsers have large UI offsets — skip to avoid false positives
       const threshold = 160;
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
