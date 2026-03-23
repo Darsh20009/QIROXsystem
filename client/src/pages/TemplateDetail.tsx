@@ -932,28 +932,19 @@ export default function TemplateDetail() {
                 className="absolute inset-y-0 right-0 z-10 w-16 pointer-events-none"
                 style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
               />
-              <div className="marquee-track gap-4 py-3 px-1">
+              <div className="marquee-track gap-3 py-2 px-1">
                 {[...CAFE_SCREENSHOTS, ...CAFE_SCREENSHOTS].map((src, i) => (
                   <div
                     key={i}
-                    className="flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/5 relative"
-                    style={{ width: 240, height: 150 }}
+                    className="flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/5"
+                    style={{ width: 180, height: 360 }}
                   >
-                    <div style={{
-                      position: "absolute",
-                      width: 150,
-                      height: 240,
-                      top: "50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%) rotate(90deg)",
-                    }}>
-                      <img
-                        src={src}
-                        alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                        loading="lazy"
-                      />
-                    </div>
+                    <img
+                      src={src}
+                      alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
+                      className="w-full h-full object-cover object-top"
+                      loading="lazy"
+                    />
                   </div>
                 ))}
               </div>
