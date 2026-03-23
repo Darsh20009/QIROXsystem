@@ -760,10 +760,14 @@ export default function MeetingRoom() {
     if (!navigator?.mediaDevices?.getUserMedia) {
       const ua = navigator.userAgent;
       const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      if (isIOS) {
+      // Detect iframe context — camera/mic blocked by browser Permissions Policy
+      const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+      if (isInIframe) {
+        setMediaError("__iframe__");
+      } else if (isIOS) {
         setMediaError("يلزم Safari على iPhone/iPad — افتح الرابط في Safari");
       } else {
-        setMediaError("المتصفح لا يدعم الكاميرا/الميكروفون. جرّب Chrome أو Safari");
+        setMediaError("المتصفح لا يدعم الكاميرا/الميكروفون. جرّب Chrome أو Edge");
       }
       return null;
     }
@@ -803,9 +807,16 @@ export default function MeetingRoom() {
         setMediaError(null);
         return stream;
       } catch (err: any) {
-        // NotAllowedError = user denied permission — stop retrying video
+        // NotAllowedError = user denied permission OR iframe Permissions Policy violation
         if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-          setMediaError("تم رفض إذن الكاميرا/الميكروفون. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+          const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+          const isPermissionsPolicyErr = err?.message?.toLowerCase().includes("permissions policy") ||
+            err?.message?.toLowerCase().includes("permission denied");
+          if (isInIframe || isPermissionsPolicyErr) {
+            setMediaError("__iframe__");
+          } else {
+            setMediaError("تم رفض إذن الكاميرا/الميكروفون. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+          }
           return null;
         }
         // Continue to next constraint set for other errors
@@ -822,7 +833,14 @@ export default function MeetingRoom() {
       return stream;
     } catch (err: any) {
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        setMediaError("تم رفض الإذن. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+        const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+        const isPermissionsPolicyErr = err?.message?.toLowerCase().includes("permissions policy") ||
+          err?.message?.toLowerCase().includes("permission denied");
+        if (isInIframe || isPermissionsPolicyErr) {
+          setMediaError("__iframe__");
+        } else {
+          setMediaError("تم رفض الإذن. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+        }
       } else {
         setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
       }
@@ -920,15 +938,22 @@ export default function MeetingRoom() {
   }, [sendWs, roomId, navigate]);
 
   const toggleAudio = useCallback(() => {
-    if (!localStreamRef.current) return;
+    if (!localStreamRef.current) {
+      toast({ title: "الميكروفون غير متاح", description: mediaError === "__iframe__" ? "افتح الاجتماع في تبويب جديد لتفعيل الميكروفون" : "تأكد من منح إذن الميكروفون للمتصفح", variant: "destructive" });
+      return;
+    }
     const enabled = !audioOn;
     localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = enabled; });
     setAudioOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: enabled, video: videoOn });
-  }, [audioOn, videoOn, roomId, sendWs]);
+  }, [audioOn, videoOn, roomId, sendWs, mediaError, toast]);
 
   const toggleVideo = useCallback(async () => {
-    if (!localStreamRef.current || screenSharing) return;
+    if (screenSharing) return;
+    if (!localStreamRef.current) {
+      toast({ title: "الكاميرا غير متاحة", description: mediaError === "__iframe__" ? "افتح الاجتماع في تبويب جديد لتفعيل الكاميرا" : "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
+      return;
+    }
     const enabled = !videoOn;
     const videoTracks = localStreamRef.current.getVideoTracks();
 
@@ -958,7 +983,7 @@ export default function MeetingRoom() {
 
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, toast]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, mediaError, toast]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
@@ -1616,12 +1641,37 @@ export default function MeetingRoom() {
               <p className="text-white/35 text-sm">{meeting.hostName}</p>
             </div>
 
-            {mediaError && (
+            {mediaError === "__iframe__" ? (
+              <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)" }}>
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                  <p className="text-blue-200/90 text-xs leading-relaxed">
+                    الكاميرا والميكروفون لا يعملان داخل نافذة المعاينة. افتح الاجتماع في تبويب جديد للحصول على تجربة كاملة.
+                  </p>
+                </div>
+                <button
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  className="w-full h-9 rounded-lg text-white text-xs font-semibold transition-all hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)" }}
+                >
+                  افتح في تبويب جديد
+                </button>
+              </div>
+            ) : mediaError ? (
               <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
                 <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
+                <div className="flex flex-col gap-2 flex-1">
+                  <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
+                  <button
+                    onClick={() => { setMediaError(null); getMedia(); }}
+                    className="self-start px-3 py-1 rounded-lg text-yellow-300 text-xs font-medium transition-all hover:opacity-80"
+                    style={{ background: "rgba(234,179,8,0.15)", border: "1px solid rgba(234,179,8,0.2)" }}
+                  >
+                    إعادة المحاولة
+                  </button>
+                </div>
               </div>
-            )}
+            ) : null}
 
             <div className="space-y-2.5">
               <button
