@@ -105,20 +105,42 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
   peer: Peer; local?: boolean; spotlight?: boolean; onKick?: () => void; canKick?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [from, to] = getAvatarColor(peer.name || "A");
 
-  const videoCallbackRef = useCallback((el: HTMLVideoElement | null) => {
+  // Fix: use useRef + useEffect so video re-attaches on every stream change
+  useEffect(() => {
+    const el = videoRef.current;
     if (el && peer.stream) {
-      el.srcObject = peer.stream;
+      if (el.srcObject !== peer.stream) {
+        el.srcObject = peer.stream;
+      }
       el.play().catch(() => {});
     }
   }, [peer.stream]);
 
+  // Fix: audio playback with proper autoplay handling
   useEffect(() => {
-    if (audioRef.current && peer.stream && !local) {
-      audioRef.current.srcObject = peer.stream;
-      audioRef.current.play().catch(() => {});
+    const el = audioRef.current;
+    if (!el || !peer.stream || local) return;
+    if (el.srcObject !== peer.stream) {
+      el.srcObject = peer.stream;
     }
+    // Attempt play — if blocked by autoplay policy, retry on next user interaction
+    const tryPlay = () => {
+      el.play().catch(() => {
+        const resume = () => {
+          el.play().catch(() => {});
+          document.removeEventListener("click", resume);
+          document.removeEventListener("keydown", resume);
+          document.removeEventListener("touchstart", resume);
+        };
+        document.addEventListener("click", resume, { once: true });
+        document.addEventListener("keydown", resume, { once: true });
+        document.addEventListener("touchstart", resume, { once: true });
+      });
+    };
+    tryPlay();
   }, [peer.stream, local]);
 
   const objectFit = spotlight ? "object-contain" : "object-cover";
@@ -135,13 +157,13 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
         }`}
       style={{ background: showVideo ? "#000" : `linear-gradient(135deg, #131b2e 0%, #1a2540 100%)` }}
     >
-      {!local && peer.stream && (
+      {!local && (
         <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       )}
 
       {showVideo ? (
         <video
-          ref={videoCallbackRef}
+          ref={videoRef}
           autoPlay playsInline muted={local}
           className={`w-full h-full ${objectFit}`}
           data-testid={`video-tile-${peer.id}`}
@@ -793,6 +815,15 @@ export default function MeetingRoom() {
     const stream = localStream || await getMedia();
     if (!stream && !mediaError) return;
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    // Resume AudioContext from within a user gesture so audio playback is allowed
+    try {
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === "suspended") {
+        await audioCtxRef.current.resume();
+      }
+    } catch {}
     connectWs(userId, roomId, userName);
   }, [userId, roomId, userName, localStream, mediaError, getMedia, connectWs]);
 
@@ -820,13 +851,38 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_media_state", roomId, audio: enabled, video: videoOn });
   }, [audioOn, videoOn, roomId, sendWs]);
 
-  const toggleVideo = useCallback(() => {
+  const toggleVideo = useCallback(async () => {
     if (!localStreamRef.current || screenSharing) return;
     const enabled = !videoOn;
-    localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = enabled; });
+    const videoTracks = localStreamRef.current.getVideoTracks();
+
+    if (videoTracks.length === 0 && enabled) {
+      // No video tracks — try to acquire camera now
+      try {
+        const camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: cameraFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        const camTrack = camStream.getVideoTracks()[0];
+        localStreamRef.current.addTrack(camTrack);
+        pcsRef.current.forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track?.kind === "video");
+          if (sender) sender.replaceTrack(camTrack).catch(() => {});
+          else pc.addTrack(camTrack, localStreamRef.current!);
+        });
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+        setMediaError(null);
+      } catch {
+        toast({ title: "تعذّر تشغيل الكاميرا", description: "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
+        return;
+      }
+    } else {
+      videoTracks.forEach(t => { t.enabled = enabled; });
+    }
+
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs, screenSharing]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, toast]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
