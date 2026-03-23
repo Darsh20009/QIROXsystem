@@ -1489,7 +1489,7 @@ export async function registerRoutes(
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
   });
 
-  // ICE server credentials endpoint — tries Metered premium, falls back to openrelay free TURN
+  // ICE server credentials endpoint — creates short-lived Metered credentials, falls back to openrelay
   app.get("/api/ice-servers", async (_req, res) => {
     const openRelayServers = [
       { urls: "stun:stun.l.google.com:19302" },
@@ -1508,20 +1508,35 @@ export async function registerRoutes(
     ];
 
     try {
-      const apiKey = process.env.METERED_API_KEY;
+      const secretKey = process.env.METERED_SECRET_KEY;
       const domain = process.env.METERED_DOMAIN;
-      if (apiKey && domain) {
-        const url = `https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`;
-        const resp = await fetch(url, { signal: AbortSignal.timeout(4000) });
-        if (resp.ok) {
-          const iceServers = await resp.json();
-          res.setHeader("Cache-Control", "private, max-age=3300");
-          console.log(`[ICE] Using Metered premium TURN (${iceServers.length} servers)`);
-          return res.json(iceServers);
-        }
-        console.warn(`[ICE] Metered returned ${resp.status} — falling back to openrelay`);
+      if (secretKey && domain) {
+        // Step 1: Create a fresh credential (expires in 1 hour)
+        const createResp = await fetch(
+          `https://${domain}/api/v1/turn/credential?secretKey=${secretKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ expiryInSeconds: 3600 }),
+            signal: AbortSignal.timeout(5000),
+          }
+        );
+        if (!createResp.ok) throw new Error(`Create credential failed: ${createResp.status}`);
+        const cred = await createResp.json();
+        const apiKey: string = cred.apiKey;
+
+        // Step 2: Fetch ICE servers using the new apiKey
+        const iceResp = await fetch(
+          `https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`,
+          { signal: AbortSignal.timeout(4000) }
+        );
+        if (!iceResp.ok) throw new Error(`ICE fetch failed: ${iceResp.status}`);
+        const iceServers = await iceResp.json();
+        console.log(`[ICE] Using Metered premium TURN (${iceServers.length} servers, expires in 1h)`);
+        res.setHeader("Cache-Control", "private, max-age=3300");
+        return res.json(iceServers);
       } else {
-        console.log("[ICE] No Metered credentials — using openrelay free TURN");
+        console.log("[ICE] No Metered credentials configured — using openrelay free TURN");
       }
     } catch (err) {
       console.warn("[ICE] Metered fetch failed — falling back to openrelay:", (err as Error).message);
