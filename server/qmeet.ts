@@ -488,9 +488,9 @@ export function registerQMeetRoutes(app: Express) {
     try {
       const userId = String(req.user._id || req.user.id);
       const userEmail = (req.user.email || "").toLowerCase().trim();
-      const isManagement = ["admin", "manager", "developer", "designer", "support", "sales_manager", "sales", "accountant", "merchant"].includes(req.user.role);
-      // Management sees all scheduled/live meetings; clients see only their own
-      const filter: any = isManagement
+      // Only admin/manager see ALL meetings — everyone else sees only their own
+      const isFullAdmin = ["admin", "manager"].includes(req.user.role);
+      const filter: any = isFullAdmin
         ? { status: { $in: ["scheduled", "live"] } }
         : {
             status: { $in: ["scheduled", "live"] },
