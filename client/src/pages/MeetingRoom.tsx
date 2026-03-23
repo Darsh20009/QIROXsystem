@@ -47,33 +47,28 @@ function useMeetingTimer() {
     : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    {
-      urls: [
-        "turn:openrelay.metered.ca:80",
-        "turn:openrelay.metered.ca:443",
-        "turn:openrelay.metered.ca:443?transport=tcp",
-      ],
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-    {
-      urls: [
-        "turn:relay.metered.ca:80",
-        "turn:relay.metered.ca:443",
-        "turn:relay.metered.ca:443?transport=tcp",
-      ],
-      username: "e7b7c7d7c5e1c0c2a2dff7d5",
-      credential: "6JqHH7XvZWLMUvFF",
-    },
-  ],
-  iceCandidatePoolSize: 10,
-};
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+async function fetchIceServers(): Promise<RTCIceServer[]> {
+  try {
+    const res = await fetch("/api/ice-servers");
+    if (!res.ok) throw new Error("ice fetch failed");
+    return await res.json();
+  } catch {
+    return FALLBACK_ICE_SERVERS;
+  }
+}
+
+// Cache so we only fetch once per session
+let _iceServersCache: RTCIceServer[] | null = null;
+async function getIceServers(): Promise<RTCIceServer[]> {
+  if (_iceServersCache) return _iceServersCache;
+  _iceServersCache = await fetchIceServers();
+  return _iceServersCache;
+}
 
 const CANVAS_W = 1600;
 const CANVAS_H = 1000;
@@ -360,6 +355,8 @@ export default function MeetingRoom() {
   useEffect(() => { activePanelRef.current = activePanel; }, [activePanel]);
   // Sync lobbyEnabled from meeting data
   useEffect(() => { if (meeting) setLobbyEnabled(!!(meeting as any).lobbyEnabled); }, [meeting]);
+  // Pre-warm ICE server cache on mount
+  useEffect(() => { getIceServers(); }, []);
 
   // Invite search: debounced fetch
   useEffect(() => {
@@ -475,8 +472,9 @@ export default function MeetingRoom() {
     setPeers(prev => { const next = new Map(prev); next.delete(peerId); return next; });
   }, []);
 
-  const createPC = useCallback((peerId: string) => {
-    const pc = new RTCPeerConnection(RTC_CONFIG);
+  const createPC = useCallback(async (peerId: string) => {
+    const iceServers = await getIceServers();
+    const pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 10 });
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!));
     }
@@ -591,7 +589,7 @@ export default function MeetingRoom() {
             if (!next.has(peerId)) next.set(peerId, { id: peerId, name: info.name, audioOn: true, videoOn: true, photoUrl: info.photoUrl });
             return next;
           });
-          const pc = createPC(peerId);
+          const pc = await createPC(peerId);
           const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
           await pc.setLocalDescription(offer);
           sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription });
@@ -609,7 +607,7 @@ export default function MeetingRoom() {
       case "webrtc_offer": {
         // Use existing PC for renegotiation, create new one for new peers
         const existingPc = pcsRef.current.get(data.from);
-        const pc = existingPc || createPC(data.from);
+        const pc = existingPc || await createPC(data.from);
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
         await flushPendingCandidates(data.from);
         const answer = await pc.createAnswer();

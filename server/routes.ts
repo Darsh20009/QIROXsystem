@@ -1489,6 +1489,34 @@ export async function registerRoutes(
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
   });
 
+  // Metered TURN/ICE server credentials — proxied from backend to keep API key secret
+  app.get("/api/ice-servers", async (_req, res) => {
+    try {
+      const apiKey = process.env.METERED_API_KEY;
+      const domain = process.env.METERED_DOMAIN;
+      if (!apiKey || !domain) {
+        // Fallback to free STUN if not configured
+        return res.json([
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ]);
+      }
+      const url = `https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Metered API error: ${resp.status}`);
+      const iceServers = await resp.json();
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.json(iceServers);
+    } catch (err) {
+      console.error("[ICE] Failed to fetch Metered credentials:", err);
+      // Fallback STUN only
+      return res.json([
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ]);
+    }
+  });
+
   app.get("/api/public/team", async (_req, res) => {
     try {
       const { UserModel } = await import("./models");
