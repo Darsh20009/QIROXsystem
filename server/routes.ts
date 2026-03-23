@@ -1489,32 +1489,46 @@ export async function registerRoutes(
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
   });
 
-  // Metered TURN/ICE server credentials — proxied from backend to keep API key secret
+  // ICE server credentials endpoint — tries Metered premium, falls back to openrelay free TURN
   app.get("/api/ice-servers", async (_req, res) => {
+    const openRelayServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:openrelay.metered.ca:80" },
+      {
+        urls: [
+          "turn:openrelay.metered.ca:80",
+          "turn:openrelay.metered.ca:443",
+          "turn:openrelay.metered.ca:443?transport=tcp",
+          "turns:openrelay.metered.ca:443",
+        ],
+        username: "openrelayproject",
+        credential: "openrelayproject",
+      },
+    ];
+
     try {
       const apiKey = process.env.METERED_API_KEY;
       const domain = process.env.METERED_DOMAIN;
-      if (!apiKey || !domain) {
-        // Fallback to free STUN if not configured
-        return res.json([
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-        ]);
+      if (apiKey && domain) {
+        const url = `https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`;
+        const resp = await fetch(url, { signal: AbortSignal.timeout(4000) });
+        if (resp.ok) {
+          const iceServers = await resp.json();
+          res.setHeader("Cache-Control", "private, max-age=3300");
+          console.log(`[ICE] Using Metered premium TURN (${iceServers.length} servers)`);
+          return res.json(iceServers);
+        }
+        console.warn(`[ICE] Metered returned ${resp.status} — falling back to openrelay`);
+      } else {
+        console.log("[ICE] No Metered credentials — using openrelay free TURN");
       }
-      const url = `https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`Metered API error: ${resp.status}`);
-      const iceServers = await resp.json();
-      res.setHeader("Cache-Control", "public, max-age=3600");
-      return res.json(iceServers);
     } catch (err) {
-      console.error("[ICE] Failed to fetch Metered credentials:", err);
-      // Fallback STUN only
-      return res.json([
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-      ]);
+      console.warn("[ICE] Metered fetch failed — falling back to openrelay:", (err as Error).message);
     }
+
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.json(openRelayServers);
   });
 
   app.get("/api/public/team", async (_req, res) => {
