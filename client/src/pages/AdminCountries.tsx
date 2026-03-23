@@ -26,8 +26,7 @@ interface Country {
   sortOrder: number;
 }
 
-const CONTINENTS_AR = ["آسيا", "أفريقيا", "أوروبا", "أمريكا", "أوقيانوسيا"];
-  const CONTINENTS_EN = ["Asia", "Africa", "Europe", "America", "Oceania"];
+const CONTINENTS = ["آسيا", "أفريقيا", "أوروبا", "أمريكا", "أوقيانوسيا"];
 
 const EMPTY: Omit<Country, "id"> = {
   nameAr: "", nameEn: "", code: "", flag: "🌍",

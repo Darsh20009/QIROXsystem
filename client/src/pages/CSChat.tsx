@@ -35,9 +35,10 @@ function formatSize(b: number) {
   if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
   return `${(b / 1048576).toFixed(1)} MB`;
 }
-function roleLabel(r: string) {
+function roleLabel(r: string, L?: boolean) {
   const m: Record<string, string> = { admin: "مدير", manager: "مدير عام", support: "خدمة عملاء", developer: "مطور", designer: "مصمم", client: "عميل" };
-  return m[r] || r;
+  const mEn: Record<string, string> = { admin: "Admin", manager: "Manager", support: "Support", developer: "Developer", designer: "Designer", client: "Client" };
+  return L !== false ? (m[r] || r) : (mEn[r] || r);
 }
 function statusInfo(status: string) {
   if (status === 'waiting') return { label: "في الانتظار", color: "bg-amber-100 text-amber-700", dot: "bg-amber-500" };
@@ -149,12 +150,14 @@ function TypingIndicator({ name }: { name: string }) {
   );
 }
 
-function ChatInput({ onSend, disabled, placeholder = "Write your message...", onTyping }: {
+function ChatInput({ onSend, disabled, placeholder, onTyping }: {
   onSend: (data: any) => void;
   disabled?: boolean;
   placeholder?: string;
   onTyping?: (isTyping: boolean) => void;
 }) {
+  const { lang } = useI18n();
+  const L = lang === "ar";
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -242,7 +245,7 @@ function ChatInput({ onSend, disabled, placeholder = "Write your message...", on
           <span className="text-xs text-red-500">{L ? "جارٍ التسجيل..." : "Recording..."}</span>
         </div>
       ) : (
-        <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder || defaultPlaceholder} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
+        <Input value={text} onChange={e => handleTextChange(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={placeholder || (L ? "اكتب رسالتك..." : "Write your message...")} className="flex-1 rounded-xl border-black/[0.08] dark:border-white/[0.1] text-sm h-10" disabled={disabled} data-testid="input-cs-message" />
       )}
       <Button size="icon" variant="ghost" className="h-10 w-10 text-black/40 dark:text-white/40 hover:text-black hover:bg-black/[0.05] rounded-xl" onClick={() => fileRef.current?.click()} disabled={uploading || recording} data-testid="button-attach-file">
         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}

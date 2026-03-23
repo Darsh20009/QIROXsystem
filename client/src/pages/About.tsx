@@ -10,10 +10,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Code2, Layers, Globe, Cpu, GitBranch, TrendingUp,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users
+  User, Heart, ShoppingCart, Coffee, Building2, Rocket, Award, Shield, Database, Info, Zap, Users,
+  Smartphone, Monitor, Tablet, ExternalLink, Handshake, CheckCircle2
 } from "lucide-react";
-import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube, SiLinktree } from "react-icons/si";
-
 const sectorIcons: Record<string, any> = {
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
   User, Heart, ShoppingCart, Coffee, Globe
@@ -32,28 +31,16 @@ const stagger = {
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
-const roleLabelsAr: Record<string, string> = {
-  admin: "مدير النظام", manager: "مدير", developer: "مطور", designer: "مصمم",
-  accountant: "محاسب", sales: "مبيعات", sales_manager: "مدير مبيعات",
-  support: "دعم فني", merchant: "توصيل", investor: "مستثمر",
-};
-
-const socialLinks = [
-  { key: "instagram", icon: SiInstagram, color: "hover:text-pink-500" },
-  { key: "twitter", icon: SiX, color: "hover:text-black dark:hover:text-white" },
-  { key: "linkedin", icon: SiLinkedin, color: "hover:text-blue-600" },
-  { key: "snapchat", icon: SiSnapchat, color: "hover:text-yellow-400" },
-  { key: "tiktok", icon: SiTiktok, color: "hover:text-black dark:hover:text-white" },
-  { key: "youtube", icon: SiYoutube, color: "hover:text-red-500" },
-  { key: "linktree", icon: SiLinktree, color: "hover:text-green-500" },
-];
-
 export default function About() {
   const { data: templates } = useTemplates();
   const { t, lang, dir } = useI18n();
 
-  const { data: team = [] } = useQuery<any[]>({
-    queryKey: ["/api/public/team"],
+  const { data: partners = [] } = useQuery<any[]>({
+    queryKey: ["/api/partners"],
+  });
+
+  const { data: appDownloads } = useQuery<any>({
+    queryKey: ["/api/app-downloads"],
   });
 
   const features = [
@@ -204,56 +191,129 @@ export default function About() {
         </div>
       </section>
 
-      {/* Team */}
-      {team.length > 0 && (
+      {/* Partners */}
+      {partners.length > 0 && (
         <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">
           <div className="container mx-auto px-4">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
               <div className="text-center mb-16">
                 <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900 mb-6">
-                  <Users className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                  <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">OUR TEAM</span>
+                  <Handshake className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                  <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">PARTNERS</span>
                 </motion.div>
                 <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
-                  {lang === "ar" ? "الفريق" : "Team"} <span className="text-gray-400 dark:text-gray-500">{lang === "ar" ? "المتخصص" : "Members"}</span>
+                  {lang === "ar" ? "شركاؤنا" : "Our"} <span className="text-gray-400 dark:text-gray-500">{lang === "ar" ? "المميزون" : "Partners"}</span>
                 </motion.h2>
+                <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 text-sm max-w-xl mx-auto">
+                  {lang === "ar" ? "نفخر بشراكتنا مع أبرز الجهات في المنطقة" : "We're proud to partner with leading organizations in the region"}
+                </motion.p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                {team.map((member: any, idx: number) => {
-                  const hasSocials = socialLinks.some(s => !!member[s.key]);
-                  return (
-                    <motion.div key={member._id || idx} variants={fadeUp} custom={idx}>
-                      <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-6 rounded-2xl text-center group hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all" data-testid={`card-team-${idx}`}>
-                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4">
-                          {member.avatarUrl ? (
-                            <img src={member.avatarUrl} alt={member.fullName} className="w-full h-full object-cover" />
+                {partners.map((partner: any, idx: number) => (
+                  <motion.div key={partner._id || idx} variants={fadeUp} custom={idx}>
+                    <a
+                      href={partner.websiteUrl || "#"}
+                      target={partner.websiteUrl ? "_blank" : "_self"}
+                      rel="noopener noreferrer"
+                      className="block"
+                      data-testid={`card-partner-${idx}`}
+                    >
+                      <div className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] p-6 rounded-2xl text-center group hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] transition-all h-full">
+                        <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden bg-black/[0.03] dark:bg-white/[0.03] flex items-center justify-center mb-4 border border-black/[0.05] dark:border-white/[0.05]">
+                          {partner.logoUrl ? (
+                            <img src={partner.logoUrl} alt={partner.name} className="w-full h-full object-contain p-1" />
                           ) : (
-                            <span className="text-xl font-black text-black/20 dark:text-white/20">{member.fullName?.charAt(0)}</span>
+                            <Building2 className="w-7 h-7 text-black/20 dark:text-white/20" />
                           )}
                         </div>
-                        <h3 className="font-bold text-sm text-black dark:text-white mb-1">{member.fullName}</h3>
-                        <p className="text-[11px] text-black/40 dark:text-white/40 mb-1">{member.jobTitle || roleLabelsAr[member.role] || member.role}</p>
-                        {member.bio && <p className="text-[10px] text-black/25 dark:text-white/25 leading-relaxed mb-3 line-clamp-2">{member.bio}</p>}
-                        {hasSocials && (
-                          <div className="flex items-center justify-center gap-2 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
-                            {socialLinks.map(({ key, icon: Icon, color }) =>
-                              member[key] ? (
-                                <a key={key} href={member[key]} target="_blank" rel="noopener noreferrer" className={`text-black/20 dark:text-white/20 transition-colors ${color}`} data-testid={`link-${key}-${idx}`}>
-                                  <Icon size={13} />
-                                </a>
-                              ) : null
-                            )}
+                        <h3 className="font-bold text-sm text-black dark:text-white mb-1 truncate">{lang === "ar" ? (partner.nameAr || partner.name) : (partner.name || partner.nameAr)}</h3>
+                        {partner.category && <p className="text-[10px] text-black/30 dark:text-white/30">{partner.category}</p>}
+                        {partner.websiteUrl && (
+                          <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-black/25 dark:text-white/25 group-hover:text-black/50 dark:group-hover:text-white/50 transition-colors">
+                            <ExternalLink className="w-2.5 h-2.5" />
+                            <span>{lang === "ar" ? "زيارة الموقع" : "Visit site"}</span>
                           </div>
                         )}
                       </div>
-                    </motion.div>
-                  );
-                })}
+                    </a>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
           </div>
         </section>
       )}
+
+      {/* Compatible Platforms & Devices */}
+      <section className="py-28 relative">
+        <div className="container mx-auto px-4">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+            <div className="text-center mb-16">
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-6">
+                <Smartphone className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">COMPATIBLE</span>
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
+                {lang === "ar" ? "الأجهزة" : "Compatible"} <span className="text-gray-400 dark:text-gray-500">{lang === "ar" ? "المتوافقة" : "Devices"}</span>
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 text-sm max-w-xl mx-auto">
+                {lang === "ar" ? "متاح على جميع المنصات والأجهزة الرئيسية" : "Available on all major platforms and devices"}
+              </motion.p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto">
+              {[
+                {
+                  key: "android",
+                  icon: Smartphone,
+                  title: { ar: "أندرويد", en: "Android" },
+                  desc: { ar: "متوافق مع جميع أجهزة أندرويد", en: "Compatible with all Android devices" },
+                  url: appDownloads?.playStore?.enabled ? appDownloads.playStore.url : null,
+                  badge: { ar: "متوفر", en: "Available" },
+                  enabled: appDownloads?.playStore?.enabled ?? true,
+                },
+                {
+                  key: "ios",
+                  icon: Tablet,
+                  title: { ar: "آيفون وآيباد", en: "iPhone & iPad" },
+                  desc: { ar: "متوافق مع iOS على iPhone وiPad", en: "Compatible with iOS on iPhone and iPad" },
+                  url: appDownloads?.appStore?.enabled ? appDownloads.appStore.url : null,
+                  badge: appDownloads?.appStore?.enabled ? { ar: "متوفر", en: "Available" } : { ar: "قريباً", en: "Coming Soon" },
+                  enabled: appDownloads?.appStore?.enabled ?? false,
+                },
+                {
+                  key: "windows",
+                  icon: Monitor,
+                  title: { ar: "ويندوز وماك", en: "Windows & Mac" },
+                  desc: { ar: "متوافق مع متصفح أي حاسوب", en: "Compatible with any desktop browser" },
+                  url: appDownloads?.msStore?.enabled ? appDownloads.msStore.url : null,
+                  badge: { ar: "متوفر", en: "Available" },
+                  enabled: true,
+                },
+              ].map((item, idx) => (
+                <motion.div key={item.key} variants={fadeUp} custom={idx}>
+                  <div className={`bg-white dark:bg-gray-900 border rounded-2xl p-7 text-center group transition-all h-full flex flex-col items-center ${item.enabled ? "border-black/[0.06] dark:border-white/[0.06] hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2]" : "border-dashed border-black/[0.06] dark:border-white/[0.06] opacity-60"}`} data-testid={`card-device-${item.key}`}>
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-5">
+                      <item.icon className="w-6 h-6 text-black/35 dark:text-white/35" />
+                    </div>
+                    <h3 className="font-bold text-black dark:text-white text-base mb-2">{item.title[lang]}</h3>
+                    <p className="text-black/40 dark:text-white/40 text-sm mb-4 flex-1">{item.desc[lang]}</p>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${item.enabled ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30" : "bg-black/[0.04] text-black/40 dark:bg-white/[0.04] dark:text-white/40 border border-black/[0.06] dark:border-white/[0.06]"}`}>
+                      {item.enabled && <CheckCircle2 className="w-3 h-3" />}
+                      {item.badge[lang]}
+                    </div>
+                    {item.url && (
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-3 text-[11px] text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1" data-testid={`link-download-${item.key}`}>
+                        <ExternalLink className="w-3 h-3" />
+                        {lang === "ar" ? "تحميل" : "Download"}
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Tech Stack */}
       <section className="py-28 bg-[#fafafa] dark:bg-gray-900/30 relative">

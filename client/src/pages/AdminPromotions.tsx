@@ -57,7 +57,7 @@ const ROLE_LEVEL: Record<string, number> = {
   sales: 2, accountant: 2, investor: 2, sales_manager: 3, manager: 4, admin: 5,
 };
 
-const ALL_ROLES = Object.keys(ROLE_LABELS);
+const ALL_ROLES = ["admin", "manager", "developer", "designer", "accountant", "sales", "sales_manager", "support", "merchant", "client", "customer", "investor"];
 
 type Tab = "users" | "log";
 

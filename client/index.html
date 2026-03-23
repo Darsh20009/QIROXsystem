@@ -76,7 +76,7 @@
 
     <style>
       html {
-        background: #000;
+        background: #fff;
         overflow-x: hidden;
         max-width: 100%;
         /* Safari iOS: allow html to use fill-available so 100vh works correctly */
@@ -111,12 +111,6 @@
           var t = localStorage.getItem('qirox-theme');
           if (t === 'dark') {
             document.documentElement.classList.add('dark');
-          } else if (!t) {
-            var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-            if (mq && mq.matches) {
-              document.documentElement.classList.add('dark');
-              localStorage.setItem('qirox-theme', 'dark');
-            }
           }
         } catch(e) {}
       })();

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Bell, Phone, Mail, Building2, Calendar, Clock, CheckCircle2, XCircle, MessageSquare, Trash2, Search, Filter, TrendingUp, Users, AlertCircle, Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type SwitchReminder = {
   id: string;
