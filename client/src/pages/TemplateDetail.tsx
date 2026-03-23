@@ -932,19 +932,37 @@ export default function TemplateDetail() {
                 className="absolute inset-y-0 right-0 z-10 w-16 pointer-events-none"
                 style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
               />
-              <div className="marquee-track gap-3 py-2 px-1">
+              <div className="marquee-track gap-6 py-4 px-2">
                 {[...CAFE_SCREENSHOTS, ...CAFE_SCREENSHOTS].map((src, i) => (
-                  <div
-                    key={i}
-                    className="flex-shrink-0 rounded-xl overflow-hidden shadow-md border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/5"
-                    style={{ width: 180, height: 360 }}
-                  >
-                    <img
-                      src={src}
-                      alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
-                      className="w-full h-full object-cover object-top"
-                      loading="lazy"
-                    />
+                  <div key={i} className="flex-shrink-0 flex flex-col items-center" style={{ width: 300 }}>
+                    {/* Laptop lid */}
+                    <div
+                      className="w-full rounded-t-xl rounded-b-md shadow-2xl"
+                      style={{ background: "linear-gradient(145deg,#2a2a2e,#1a1a1e)", border: "1.5px solid #3a3a3e", padding: "8px 10px 6px" }}
+                    >
+                      {/* Camera dot */}
+                      <div className="flex justify-center mb-1.5">
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#444", boxShadow: "0 0 0 1px #555" }} />
+                      </div>
+                      {/* Screen bezel inner */}
+                      <div
+                        className="overflow-hidden"
+                        style={{ borderRadius: 4, height: 170, background: "#000", border: "1px solid #111" }}
+                      >
+                        <img
+                          src={src}
+                          alt={`لقطة شاشة ${(i % CAFE_SCREENSHOTS.length) + 1}`}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                    {/* Hinge */}
+                    <div style={{ width: "105%", height: 8, background: "linear-gradient(180deg,#252528,#1e1e21)", borderBottom: "1px solid #333", borderLeft: "1px solid #333", borderRight: "1px solid #333", borderRadius: "0 0 3px 3px" }} />
+                    {/* Keyboard base */}
+                    <div style={{ width: "108%", height: 14, background: "linear-gradient(180deg,#2c2c30,#242428)", border: "1px solid #3a3a3e", borderTop: "none", borderRadius: "0 0 8px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 48, height: 4, background: "#1a1a1e", borderRadius: 3, opacity: 0.7 }} />
+                    </div>
                   </div>
                 ))}
               </div>
