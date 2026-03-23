@@ -15,7 +15,7 @@ import {
   Zap, FileText, Plus, Headphones, UserMinus, UserPlus,
   Layout, ExternalLink, CheckCircle2, XCircle, Bell, Smile, Hand,
   MoreHorizontal, NotebookPen, ChevronUp, SwitchCamera, Clock,
-  Lock, LockOpen, Mail, AtSign, Search
+  Lock, LockOpen, Mail, AtSign, Search, Highlighter
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -98,11 +98,11 @@ interface ChatMessage {
 
 interface DrawStroke {
   x1: number; y1: number; x2: number; y2: number;
-  color: string; size: number; eraser: boolean;
+  color: string; size: number; eraser: boolean; highlight?: boolean;
 }
 
-function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: {
-  peer: Peer; local?: boolean; spotlight?: boolean; onKick?: () => void; canKick?: boolean;
+function VideoTile({ peer, local = false, spotlight = false, onKick, canKick, onPin, isPinned }: {
+  peer: Peer; local?: boolean; spotlight?: boolean; onKick?: () => void; canKick?: boolean; onPin?: () => void; isPinned?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -206,6 +206,18 @@ function VideoTile({ peer, local = false, spotlight = false, onKick, canKick }: 
         )}
       </div>
 
+      {/* Pin button */}
+      {onPin && !spotlight && (
+        <button
+          onClick={e => { e.stopPropagation(); onPin(); }}
+          className={`absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm text-white rounded-lg p-1.5 hover:scale-105 ${isPinned ? "opacity-100 bg-blue-500/90 hover:bg-blue-600" : "bg-black/60 hover:bg-black/80"}`}
+          title={isPinned ? "إلغاء التثبيت" : "تثبيت المشارك"}
+          data-testid={`button-pin-${peer.id}`}
+        >
+          <Layout className="w-3.5 h-3.5" />
+        </button>
+      )}
+
       {/* Kick button */}
       {canKick && onKick && !local && (
         <button
@@ -289,7 +301,7 @@ export default function MeetingRoom() {
 
   const [drawColor, setDrawColor] = useState("#ffffff");
   const [drawSize, setDrawSize] = useState(3);
-  const [drawMode, setDrawMode] = useState<"pen" | "eraser">("pen");
+  const [drawMode, setDrawMode] = useState<"pen" | "eraser" | "highlighter">("pen");
   const [isDrawing, setIsDrawing] = useState(false);
 
   type FloatingReaction = { id: string; emoji: string; name: string; x: number; };
@@ -300,6 +312,7 @@ export default function MeetingRoom() {
   const REACTION_EMOJIS = ["👍","❤️","😂","🎉","👏","🔥","🚀","😮"];
   const reactionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  const [pinnedPeerId, setPinnedPeerId] = useState<string | null>(null);
   const [pendingScreenShareRequests, setPendingScreenShareRequests] = useState<{ userId: string; name: string }[]>([]);
   const [screenSharePending, setScreenSharePending] = useState(false);
   const [screenShareApproved, setScreenShareApproved] = useState(false);
@@ -531,6 +544,11 @@ export default function MeetingRoom() {
       ctx.globalCompositeOperation = "destination-out";
       ctx.strokeStyle = "rgba(0,0,0,1)";
       ctx.lineWidth = stroke.size * 3;
+    } else if (stroke.highlight) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size * 4;
     } else {
       ctx.globalCompositeOperation = "source-over";
       ctx.strokeStyle = stroke.color;
@@ -1165,6 +1183,7 @@ export default function MeetingRoom() {
           { video: true, audio: false },
         ]
       : [
+          { video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: true },
           { video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
           { video: true, audio: false },
         ];
@@ -1343,7 +1362,7 @@ export default function MeetingRoom() {
     const stroke: DrawStroke = {
       x1: lastPos.current.x, y1: lastPos.current.y,
       x2: pos.x, y2: pos.y,
-      color: drawColor, size: drawSize, eraser: drawMode === "eraser",
+      color: drawColor, size: drawSize, eraser: drawMode === "eraser", highlight: drawMode === "highlighter",
     };
     drawStrokeOnCanvas(stroke);
     sendStrokeThrottled(stroke);
@@ -1370,7 +1389,7 @@ export default function MeetingRoom() {
     const stroke: DrawStroke = {
       x1: lastPos.current.x, y1: lastPos.current.y,
       x2: pos.x, y2: pos.y,
-      color: drawColor, size: drawSize, eraser: drawMode === "eraser",
+      color: drawColor, size: drawSize, eraser: drawMode === "eraser", highlight: drawMode === "highlighter",
     };
     drawStrokeOnCanvas(stroke);
     sendStrokeThrottled(stroke);
@@ -1778,6 +1797,31 @@ export default function MeetingRoom() {
                 )}
               </div>
             );
+          })() : pinnedPeerId ? (() => {
+            const pinnedPeer = allPeers.find(p => p.id === pinnedPeerId);
+            const otherPeers = allPeers.filter(p => p.id !== pinnedPeerId);
+            if (!pinnedPeer) { setPinnedPeerId(null); return null; }
+            return (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="shrink-0 px-3 py-1.5 flex items-center gap-2" style={{ background: "rgba(59,130,246,0.1)", borderBottom: "1px solid rgba(59,130,246,0.2)" }}>
+                  <Layout className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-blue-300 text-xs font-medium">مثبَّت: {pinnedPeer.name}</span>
+                  <button onClick={() => setPinnedPeerId(null)} className="mr-auto text-blue-300/60 hover:text-blue-300 text-xs px-2 py-0.5 rounded-full hover:bg-blue-500/20 transition-colors">إلغاء التثبيت</button>
+                </div>
+                <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+                  <VideoTile peer={pinnedPeer} local={pinnedPeer.id === (userId || "local")} spotlight={true} canKick={false} isPinned={true} />
+                </div>
+                {otherPeers.length > 0 && (
+                  <div className="h-24 sm:h-28 shrink-0 flex gap-2 px-2 py-1.5 overflow-x-auto scrollbar-none" style={{ background: "rgba(8,14,26,0.8)" }}>
+                    {otherPeers.map(peer => (
+                      <div key={peer.id} className="shrink-0 w-36 sm:w-40">
+                        <VideoTile peer={peer} local={peer.id === (userId || "local")} canKick={isAdmin} onKick={() => kickPeer(peer.id)} onPin={() => setPinnedPeerId(peer.id === pinnedPeerId ? null : peer.id)} isPinned={peer.id === pinnedPeerId} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
           })() : (
           <div className="flex-1 p-2.5 sm:p-4 overflow-hidden">
             <div className={`grid ${gridCols} gap-2.5 h-full`} style={{ maxHeight: "calc(100vh - 140px)" }}>
@@ -1788,6 +1832,8 @@ export default function MeetingRoom() {
                   local={peer.id === (userId || "local")}
                   canKick={isAdmin}
                   onKick={() => kickPeer(peer.id)}
+                  onPin={() => setPinnedPeerId(peer.id === pinnedPeerId ? null : peer.id)}
+                  isPinned={peer.id === pinnedPeerId}
                 />
               ))}
             </div>
@@ -1929,15 +1975,20 @@ export default function MeetingRoom() {
                   <button onClick={() => setDrawMode("pen")} className={`p-1.5 rounded-lg transition-colors ${drawMode === "pen" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`} title="قلم">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
+                  <button onClick={() => setDrawMode("highlighter")} className={`p-1.5 rounded-lg transition-colors ${drawMode === "highlighter" ? "bg-yellow-400/30 text-yellow-300" : "text-white/40 hover:text-white"}`} title="تظليل">
+                    <Highlighter className="w-3.5 h-3.5" />
+                  </button>
                   <button onClick={() => setDrawMode("eraser")} className={`p-1.5 rounded-lg transition-colors ${drawMode === "eraser" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`} title="ممحاة">
                     <Eraser className="w-3.5 h-3.5" />
                   </button>
-                  <div className="flex items-center gap-1">
-                    {["#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#f59e0b", "#8b5cf6"].map(c => (
-                      <button key={c} onClick={() => { setDrawColor(c); setDrawMode("pen"); }} className={`w-4 h-4 rounded-full transition-all ${drawColor === c ? "ring-2 ring-white ring-offset-1 ring-offset-gray-900" : ""}`} style={{ backgroundColor: c }} />
+                  <div className="w-px h-4 bg-white/10 mx-0.5" />
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {["#ffffff", "#ef4444", "#f97316", "#f59e0b", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#000000"].map(c => (
+                      <button key={c} onClick={() => { setDrawColor(c); if (drawMode === "eraser") setDrawMode("pen"); }} className={`w-4 h-4 rounded-full transition-all border border-white/20 ${drawColor === c && drawMode !== "eraser" ? "ring-2 ring-white ring-offset-1 ring-offset-gray-900 scale-110" : ""}`} style={{ backgroundColor: c }} />
                     ))}
-                    <input type="color" value={drawColor} onChange={e => { setDrawColor(e.target.value); setDrawMode("pen"); }} className="w-4 h-4 rounded cursor-pointer bg-transparent border-0 p-0" title="لون مخصص" />
+                    <input type="color" value={drawColor} onChange={e => { setDrawColor(e.target.value); if (drawMode === "eraser") setDrawMode("pen"); }} className="w-4 h-4 rounded cursor-pointer bg-transparent border-0 p-0" title="لون مخصص" />
                   </div>
+                  <div className="w-px h-4 bg-white/10 mx-0.5" />
                   <select value={drawSize} onChange={e => setDrawSize(Number(e.target.value))} className="text-[10px] bg-white/10 text-white border-0 rounded px-1 py-0.5 outline-none">
                     <option value={2}>رفيع</option>
                     <option value={5}>متوسط</option>
