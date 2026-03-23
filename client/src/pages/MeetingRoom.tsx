@@ -453,6 +453,15 @@ export default function MeetingRoom() {
     if (newVal) addFloating("🙋", "أنت");
   };
 
+  const removePeer = useCallback((peerId: string) => {
+    const pc = pcsRef.current.get(peerId);
+    if (pc) { pc.close(); pcsRef.current.delete(peerId); }
+    pendingCandidates.current.delete(peerId);
+    const node = analyserNodesRef.current.get(peerId);
+    if (node) { try { node.source.disconnect(); } catch {} analyserNodesRef.current.delete(peerId); }
+    setPeers(prev => { const next = new Map(prev); next.delete(peerId); return next; });
+  }, []);
+
   const createPC = useCallback((peerId: string) => {
     const pc = new RTCPeerConnection(RTC_CONFIG);
     if (localStreamRef.current) {
@@ -461,8 +470,19 @@ export default function MeetingRoom() {
     pc.onicecandidate = (e) => {
       if (e.candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: e.candidate });
     };
+
+    // Track accumulated stream to handle cases where audio/video tracks arrive separately
+    const remoteStreamRef: { current: MediaStream | null } = { current: null };
     pc.ontrack = (e) => {
-      const stream = e.streams[0];
+      let stream = e.streams?.[0];
+      if (!stream) {
+        // Build a synthetic stream for platforms that don't bundle tracks into streams
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+        }
+        remoteStreamRef.current.addTrack(e.track);
+        stream = remoteStreamRef.current;
+      }
       setPeers(prev => {
         const next = new Map(prev);
         const existing = next.get(peerId) || { id: peerId, name: peerId, audioOn: true, videoOn: true };
@@ -475,16 +495,7 @@ export default function MeetingRoom() {
     };
     pcsRef.current.set(peerId, pc);
     return pc;
-  }, [sendWs]);
-
-  const removePeer = useCallback((peerId: string) => {
-    const pc = pcsRef.current.get(peerId);
-    if (pc) { pc.close(); pcsRef.current.delete(peerId); }
-    pendingCandidates.current.delete(peerId);
-    const node = analyserNodesRef.current.get(peerId);
-    if (node) { try { node.source.disconnect(); } catch {} analyserNodesRef.current.delete(peerId); }
-    setPeers(prev => { const next = new Map(prev); next.delete(peerId); return next; });
-  }, []);
+  }, [sendWs, removePeer]);
 
   const addIceCandidate = useCallback(async (peerId: string, candidate: RTCIceCandidateInit | null) => {
     if (!candidate) return;
@@ -729,28 +740,77 @@ export default function MeetingRoom() {
   }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost]);
 
   const getMedia = useCallback(async () => {
-    const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-        audio: audioConstraints,
-      });
-      localStreamRef.current = stream;
-      setLocalStream(stream);
-      setMediaError(null);
-      return stream;
-    } catch {
+    // Guard: some browsers/environments don't expose mediaDevices
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      const ua = navigator.userAgent;
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        setMediaError("يلزم Safari على iPhone/iPad — افتح الرابط في Safari");
+      } else {
+        setMediaError("المتصفح لا يدعم الكاميرا/الميكروفون. جرّب Chrome أو Safari");
+      }
+      return null;
+    }
+
+    // iOS Safari does NOT support sampleRate constraint (causes OverconstrainedError).
+    // Keep constraints minimal and compatible across all browsers.
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    // iOS-safe audio constraints (no sampleRate)
+    const audioConstraints: MediaTrackConstraints = isIOS
+      ? { echoCancellation: true, noiseSuppression: true }
+      : { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+
+    // Try ordered constraint sets from best to most compatible
+    const videoConstraintSets: MediaTrackConstraints[] = isIOS
+      ? [
+          { width: { ideal: 1280 }, height: { ideal: 720 } },
+          { width: { ideal: 640 }, height: { ideal: 480 } },
+          true as any,
+        ]
+      : [
+          { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+          { width: { ideal: 640 }, height: { ideal: 480 } },
+          true as any,
+        ];
+
+    // Try video + audio
+    for (const videoConstraints of videoConstraintSets) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: audioConstraints,
+        });
         localStreamRef.current = stream;
         setLocalStream(stream);
-        setVideoOn(false);
-        setMediaError("الكاميرا غير متاحة، يمكنك الانضمام بالصوت فقط");
+        setMediaError(null);
         return stream;
-      } catch {
-        setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
-        return null;
+      } catch (err: any) {
+        // NotAllowedError = user denied permission — stop retrying video
+        if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+          setMediaError("تم رفض إذن الكاميرا/الميكروفون. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+          return null;
+        }
+        // Continue to next constraint set for other errors
       }
+    }
+
+    // Fallback: audio only
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      setVideoOn(false);
+      setMediaError("الكاميرا غير متاحة — انضم بالصوت فقط");
+      return stream;
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setMediaError("تم رفض الإذن. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
+      } else {
+        setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
+      }
+      return null;
     }
   }, []);
 
@@ -1056,8 +1116,8 @@ export default function MeetingRoom() {
         });
       } else if (isAndroid) {
         toast({
-          title: "غير مدعوم",
-          description: "تأكد من استخدام Chrome آخر إصدار على الأندرويد، وأن الموقع يعمل عبر HTTPS",
+          title: "مشاركة الشاشة غير مدعومة هنا",
+          description: "افتح رابط الاجتماع مباشرةً في تطبيق Chrome (ليس داخل التطبيق)، أو تأكد أن Chrome محدَّث لآخر إصدار",
           variant: "destructive",
         });
       } else {
