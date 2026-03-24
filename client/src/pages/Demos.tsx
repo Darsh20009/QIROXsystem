@@ -140,11 +140,8 @@ export default function Demos() {
     queryKey: ["/api/templates"],
   });
 
-  const CAFE_ONLY = true; // Set to false when other templates are ready
-
   const activeTemplates = templates
-    .filter(t => t.status !== "archived")
-    .filter(t => !CAFE_ONLY || t.category === "restaurant" || t.category === "food" || t.slug === "cafe-restaurant");
+    .filter(t => t.status !== "archived");
 
   const categories = ["all", ...Array.from(new Set(activeTemplates.map(t => t.category)))];
 

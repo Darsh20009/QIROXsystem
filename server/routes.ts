@@ -12143,20 +12143,32 @@ export async function seedDatabase() {
         name: "E-Commerce Store",
         nameAr: "متجر إلكتروني متكامل",
         slug: "ecommerce-store",
-        description: "Full-featured e-commerce platform with product management, cart, checkout, payment gateways, and order tracking.",
-        descriptionAr: "منصة تجارة إلكترونية متكاملة مع إدارة المنتجات وسلة التسوق والدفع وتتبع الطلبات.",
-        category: "commerce",
+        description: "Full-featured e-commerce platform with product management, cart, checkout, payment gateways (card, STC Pay, Apple Pay, Tamara, Tabby), and order tracking.",
+        descriptionAr: "متجر إلكتروني متكامل مع إدارة المنتجات وسلة التسوق و٧ طرق دفع (بطاقة، STC Pay، Apple Pay، تمارة، تابي، محفظة، تحويل) ولوحة إدارة شاملة مع POS وتتبع الطلبات.",
+        category: "ecommerce",
         icon: "ShoppingCart",
-        features: ["Product Catalog", "Shopping Cart", "Payment Gateway", "Order Tracking", "Inventory Management"],
-        featuresAr: ["كتالوج المنتجات", "سلة التسوق", "بوابة الدفع", "تتبع الطلبات", "إدارة المخزون"],
-        tags: ["ecommerce", "shop", "store"],
+        demoUrl: "https://e-commerce.qiroxstudio.online",
+        features: ["Product Catalog", "Shopping Cart", "7 Payment Methods", "Order Tracking", "POS System", "Loyalty Program", "PWA", "Bilingual AR/EN"],
+        featuresAr: [
+          "٢٨ صفحة متكاملة",
+          "٧ طرق دفع (بطاقة / STC Pay / Apple Pay / تمارة / تابي / محفظة / تحويل)",
+          "بوابة دفع بكشف تلقائي لنوع البطاقة ومحاكاة 3DS",
+          "نظام ولاء (برونز / فضي / ذهبي) ومحفظة رقمية",
+          "لوحة إدارة شاملة مع POS وصندوق نقدي وتقارير",
+          "إشعارات Web Push + بريد إلكتروني تلقائي",
+          "PWA — يعمل كتطبيق على الجوال",
+          "ثنائية اللغة عربي/إنجليزي مع RTL/LTR",
+          "RBAC — أدوار وصلاحيات مخصصة للموظفين",
+          "فروع متعددة وإدارة مخزون",
+        ],
+        tags: ["ecommerce", "shop", "store", "متجر"],
         priceMin: 1000,
         priceMax: 1000,
         currency: "SAR",
         estimatedDuration: "4-6 أسابيع",
         status: "active" as const,
         sortOrder: 7,
-        heroColor: "#ca8a04",
+        heroColor: "#7c3aed",
       },
       {
         name: "Cafe & Restaurant System",
@@ -12184,6 +12196,36 @@ export async function seedDatabase() {
     }
     console.log("8 sector templates seeded successfully");
   }
+
+  // ── E-Commerce template migration: ensure demoUrl, category, and featuresAr are set ──
+  try {
+    const { SectorTemplateModel } = await import("./models");
+    const ecTemplate = await (SectorTemplateModel as any).findOne({ slug: "ecommerce-store" });
+    if (ecTemplate) {
+      const updates: any = {};
+      if (!ecTemplate.demoUrl) updates.demoUrl = "https://e-commerce.qiroxstudio.online";
+      if (ecTemplate.category === "commerce") updates.category = "ecommerce";
+      if (!ecTemplate.heroColor || ecTemplate.heroColor === "#ca8a04") updates.heroColor = "#7c3aed";
+      if (!ecTemplate.featuresAr || ecTemplate.featuresAr.length === 0) {
+        updates.featuresAr = [
+          "٢٨ صفحة متكاملة",
+          "٧ طرق دفع (بطاقة / STC Pay / Apple Pay / تمارة / تابي / محفظة / تحويل)",
+          "بوابة دفع بكشف تلقائي لنوع البطاقة ومحاكاة 3DS",
+          "نظام ولاء (برونز / فضي / ذهبي) ومحفظة رقمية",
+          "لوحة إدارة شاملة مع POS وصندوق نقدي وتقارير",
+          "إشعارات Web Push + بريد إلكتروني تلقائي",
+          "PWA — يعمل كتطبيق على الجوال",
+          "ثنائية اللغة عربي/إنجليزي مع RTL/LTR",
+          "RBAC — أدوار وصلاحيات مخصصة للموظفين",
+          "فروع متعددة وإدارة مخزون",
+        ];
+      }
+      if (Object.keys(updates).length > 0) {
+        await (SectorTemplateModel as any).findByIdAndUpdate(ecTemplate._id, updates);
+        console.log("[Migration] E-Commerce template updated:", Object.keys(updates));
+      }
+    }
+  } catch (e) { console.error("[Migration] E-Commerce template update failed:", e); }
 
   // Seed Pricing Plans — Segment × Tier system (v5)
   const existingPlans = await storage.getPricingPlans();
