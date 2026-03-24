@@ -1316,19 +1316,59 @@ export default function TemplateDetail() {
               </div>
             </div>
 
-            {/* Screenshots marquee banner */}
-            <div className="relative mb-10 overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.06]" style={{ height: 200 }}>
-              <div className="flex gap-3 animate-[marquee_30s_linear_infinite] w-max">
+            {/* ── Screenshots Marquee ───────────────────────────────── */}
+            <div className="relative mb-10 overflow-hidden rounded-2xl" style={{ direction: "ltr" }}>
+              <style>{`
+                @keyframes ec-marquee-scroll {
+                  0%   { transform: translateX(0); }
+                  100% { transform: translateX(-50%); }
+                }
+                .ec-marquee-track {
+                  display: flex;
+                  width: max-content;
+                  animation: ec-marquee-scroll 40s linear infinite;
+                }
+                .ec-marquee-track:hover {
+                  animation-play-state: paused;
+                }
+              `}</style>
+              <div
+                className="absolute inset-y-0 left-0 z-10 w-16 pointer-events-none"
+                style={{ background: "linear-gradient(to right, hsl(var(--background)), transparent)" }}
+              />
+              <div
+                className="absolute inset-y-0 right-0 z-10 w-16 pointer-events-none"
+                style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
+              />
+              <div className="ec-marquee-track gap-5 py-4 px-2">
                 {[...ECOMMERCE_SCREENSHOTS, ...ECOMMERCE_SCREENSHOTS].map((src, i) => (
-                  <div key={i} className="flex-shrink-0 overflow-hidden rounded-xl" style={{ width: 320, height: 200 }}>
-                    <img src={src} alt={`ec-shot-${i}`} className="w-full h-full object-cover object-top" draggable={false} />
+                  <div
+                    key={i}
+                    className="flex-shrink-0 relative shadow-2xl"
+                    style={{
+                      width: 310, height: 220,
+                      background: "linear-gradient(145deg,#2e2e33,#1c1c20)",
+                      borderRadius: 18,
+                      border: "1.5px solid #3e3e44",
+                      padding: "14px 16px",
+                      boxShadow: "0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    <div style={{ position: "absolute", top: 7, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#3a3a40", boxShadow: "0 0 0 1px #4a4a52, inset 0 0 2px rgba(0,0,0,0.5)" }} />
+                    <div style={{ position: "absolute", right: -3, top: "38%", width: 4, height: 22, background: "linear-gradient(180deg,#38383e,#28282e)", borderRadius: "0 3px 3px 0", border: "1px solid #444" }} />
+                    <div style={{ position: "absolute", top: -3, left: "32%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
+                    <div style={{ position: "absolute", top: -3, left: "44%", width: 20, height: 4, background: "linear-gradient(90deg,#38383e,#28282e)", borderRadius: "3px 3px 0 0", border: "1px solid #444" }} />
+                    <div style={{ width: "100%", height: "100%", borderRadius: 8, overflow: "hidden", background: "#000", border: "1px solid #111" }}>
+                      <img
+                        src={src}
+                        alt={`لقطة شاشة ${(i % ECOMMERCE_SCREENSHOTS.length) + 1}`}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="absolute inset-y-0 left-0 w-16 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
-              <div className="absolute inset-y-0 right-0 w-16 pointer-events-none dark:hidden" style={{ background: "linear-gradient(to left, white, transparent)" }} />
-              <div className="absolute inset-y-0 left-0 w-16 pointer-events-none hidden dark:block" style={{ background: "linear-gradient(to right, #111827, transparent)" }} />
-              <div className="absolute inset-y-0 right-0 w-16 pointer-events-none hidden dark:block" style={{ background: "linear-gradient(to left, #111827, transparent)" }} />
             </div>
 
             <div className="space-y-14">
