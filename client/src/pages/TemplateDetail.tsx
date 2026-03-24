@@ -89,7 +89,7 @@ const CAFE_PORTALS: PortalCredential[] = [
   { role: "كاشير",           username: "cashier",    password: "cashier123",  access: "الكاشير، الطلبات، الطاولات، الولاء، الحضور",        icon: CreditCard,    color: "text-emerald-700", bg: "bg-emerald-50" },
   { role: "باريستا",         username: "barista",    password: "barista123",  access: "المطبخ، الطلبات، الحضور",                           icon: Coffee,        color: "text-amber-700", bg: "bg-amber-50" },
   { role: "مدير فرع",        username: "manager",    password: "manager123",  access: "لوحة التحكم، المخزون، المحاسبة، الموظفين، التقارير", icon: LayoutDashboard, color: "text-violet-700", bg: "bg-violet-50" },
-  { role: "مدير QIROX",      username: "qirox2026",  password: "qirox2026",   access: "نفس صلاحيات المدير",                                icon: Settings,      color: "text-slate-700",  bg: "bg-slate-50" },
+  { role: "مدير QIROX",      username: "qirox2026",  password: "123456",      access: "نفس صلاحيات المدير",                                icon: Settings,      color: "text-slate-700",  bg: "bg-slate-50" },
   { role: "مسؤول النظام",    username: "qadmin",     password: "admin123",    access: "جميع الصفحات + إعدادات الفروع والنظام",              icon: ShieldCheck,   color: "text-red-700", bg: "bg-red-50" },
 ];
 
