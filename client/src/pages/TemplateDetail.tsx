@@ -42,6 +42,7 @@ import sc14 from "@assets/Screenshot_2026-03-22_103406_1774164974573.png";
 import sc15 from "@assets/Screenshot_2026-03-22_103419_1774164988228.png";
 import sc16 from "@assets/Screenshot_2026-03-22_103429_1774164988237.png";
 import sc17 from "@assets/Screenshot_2026-03-22_103443_1774164988237.png";
+import cafeHeroBg from "@assets/Screenshot_2026-03-13_022223_1774351431935.png";
 
 const CAFE_SCREENSHOTS = [sc01,sc02,sc03,sc04,sc05,sc06,sc07,sc08,sc09,sc10,sc11,sc12,sc13,sc14,sc15,sc16,sc17];
 
@@ -797,6 +798,16 @@ export default function TemplateDetail() {
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden pt-24 pb-20" style={{ backgroundColor: color }}>
+        {/* Cafe hero background image */}
+        {isRestaurant && (
+          <img
+            src={cafeHeroBg}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={{ opacity: 0.35 }}
+          />
+        )}
         {/* Dot grid */}
         <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
         {/* Diagonal overlay */}
