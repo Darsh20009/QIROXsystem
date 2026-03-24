@@ -1,0 +1,260 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[Migration] E-Commerce template updated: [ [32m'demoUrl'[39m, [32m'category'[39m, [32m'heroColor'[39m ]
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+10:36:33 AM [express] serving on port 5000
+Initialized 11 cron jobs
+10:36:40 AM [express] GET /api/user 401 in 2ms
+10:36:41 AM [express] GET /api/public/settings 304 in 98ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+10:36:42 AM [express] GET /api/partners 304 in 73ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+10:36:42 AM [express] GET /api/templates 200 in 69ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+10:36:42 AM [express] GET /api/app-downloads 304 in 70ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+10:36:42 AM [express] GET /api/discount-codes/public 304 in 69ms :: []
+10:36:47 AM [express] GET /api/user 401 in 1ms
+10:36:54 AM [express] GET /api/user 401 in 1ms
+10:37:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+10:37:03 AM [express] GET /api/templates 200 in 131ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cen…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:37:33 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+10:38:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+10:38:11 AM [express] GET /api/templates/slug/ecommerce-store 200 in 70ms :: {"createdBy":null,"name":"E-Commerce Store","nameAr":"متجر إلكتروني متكامل","slug":"ecommerce-store","description":"Full-featured e-commerce plat…
+10:39:00 AM [express] POST /api/internal/push/promotional 200 in 30ms
+10:39:19 AM [express] GET /api/templates/slug/cafe-restaurant 200 in 66ms :: {"createdBy":null,"name":"Cafe & Restaurant System","nameAr":"نظام الكافيهات والمطاعم","slug":"cafe-restaurant","description":"Smart restaurant m…
+10:39:28 AM [express] GET /api/templates/slug/ecommerce-store 200 in 64ms :: {"createdBy":null,"name":"E-Commerce Store","nameAr":"متجر إلكتروني متكامل","slug":"ecommerce-store","description":"Full-featured e-commerce plat…
+10:40:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+10:41:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+10:42:00 AM [express] POST /api/internal/push/promotional 200 in 10ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:01 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:12 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:23 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:32 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:46 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x5)[39m
+10:43:00 AM [express] POST /api/internal/push/promotional 200 in 23ms
+10:43:51 AM [express] GET /api/user 401 in 1ms
+10:43:52 AM [express] GET /api/app-downloads 304 in 69ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+10:43:52 AM [express] GET /api/public/settings 304 in 68ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+10:43:52 AM [express] GET /api/templates/slug/ecommerce-store 304 in 67ms :: {"createdBy":null,"name":"E-Commerce Store","nameAr":"متجر إلكتروني متكامل","slug":"ecommerce-store","description":"Full-featured e-commerce plat…
+10:44:00 AM [express] POST /api/internal/push/promotional 200 in 10ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:44:26 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x6)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:44:35 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x7)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:44:46 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/TemplateDetail.tsx, /src/index.css[22m [33m(x8)[39m
+10:45:00 AM [express] POST /api/internal/push/promotional 200 in 15ms
+10:45:07 AM [express] GET /api/user 401 in 1ms
+10:45:18 AM [express] GET /api/templates/slug/ecommerce-store 200 in 68ms :: {"createdBy":null,"name":"E-Commerce Store","nameAr":"متجر إلكتروني متكامل","slug":"ecommerce-store","description":"Full-featured e-commerce plat…
