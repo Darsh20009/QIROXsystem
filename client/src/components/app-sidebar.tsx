@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -193,6 +193,8 @@ export function AppSidebar() {
     { title: ar ? "سجل النشاط" : "Activity Log", icon: Activity, url: "/admin/activity-log", group: "admin", section: "devtools", allowedRoles: STAFF_ROLES },
     // Admin — investors
     { title: ar ? "المستثمرون" : "Investors", icon: TrendingUp, url: "/admin/investors", group: "admin", section: "investors", allowedRoles: ["admin"] },
+    // Admin — stores (e-commerce module)
+    { title: ar ? "متجر Qirox" : "Qirox Store", icon: Store, url: "/admin/stores", group: "admin", section: "stores", allowedRoles: STAFF_ROLES },
   ];
 
   const { data: attendanceStatus } = useQuery({
@@ -331,6 +333,7 @@ export function AppSidebar() {
     devtools:      { ar: "النظام والمطور",        en: "System & Dev",           accent: "text-rose-600 dark:text-rose-400" },
     monitoring:    { ar: "المراقبة",             en: "Monitoring",             accent: "text-teal-600 dark:text-teal-400" },
     investors:     { ar: "الاستثمار",            en: "Investment",             accent: "text-emerald-600 dark:text-emerald-400" },
+    stores:        { ar: "المتاجر الإلكترونية",  en: "E-Commerce Stores",      accent: "text-violet-600 dark:text-violet-400" },
   };
 
   function renderNavItem(item: NavItem) {

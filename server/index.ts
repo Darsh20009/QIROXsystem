@@ -101,6 +101,65 @@ app.use(
   })
 );
 
+// ── E-Commerce Site Proxy (strips X-Frame-Options so pages can be embedded) ───
+const ECOMMERCE_BASE = "https://e-commerce.qiroxstudio.online";
+app.use(
+  "/ecommerce-proxy",
+  createProxyMiddleware({
+    target: ECOMMERCE_BASE,
+    changeOrigin: true,
+    selfHandleResponse: true,
+    pathRewrite: { "^/ecommerce-proxy": "" },
+    on: {
+      proxyRes: responseInterceptor(async (responseBuffer, proxyRes, _req, res) => {
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+        delete proxyRes.headers["content-security-policy-report-only"];
+        res.removeHeader("x-frame-options");
+        res.removeHeader("X-Frame-Options");
+        res.removeHeader("content-security-policy");
+        res.removeHeader("Content-Security-Policy");
+        res.removeHeader("content-security-policy-report-only");
+        const contentType = proxyRes.headers["content-type"] || "";
+        if (contentType.includes("text/html")) {
+          let html = responseBuffer.toString("utf8");
+          if (!html.includes("<base ")) {
+            html = html.replace("<head>", `<head><base href="${ECOMMERCE_BASE}/">`);
+          }
+          return html;
+        }
+        return responseBuffer;
+      }),
+    },
+  })
+);
+
+// ── E-Commerce API Proxy ──────────────────────────────────────────────────────
+app.use(
+  "/ecommerce-api",
+  createProxyMiddleware({
+    target: ECOMMERCE_BASE,
+    changeOrigin: true,
+    pathRewrite: { "^/ecommerce-api": "" },
+    on: {
+      proxyReq: (proxyReq, req) => {
+        if (req.headers.cookie) {
+          proxyReq.setHeader("Cookie", req.headers.cookie);
+        }
+      },
+      proxyRes: (proxyRes, _req, res) => {
+        const setCookie = proxyRes.headers["set-cookie"];
+        if (setCookie) {
+          const rewritten = setCookie.map((c) =>
+            c.replace(/;\s*Domain=[^;]+/i, "")
+          );
+          res.setHeader("set-cookie", rewritten);
+        }
+      },
+    },
+  })
+);
+
 // ── Cafe API Proxy (same-origin bridge for the embedded cafe demo SPA) ────────
 // The cafe-demo SPA sends API requests to /cafe-api/* — we forward them
 // server-side so the browser never sees a CORS error.

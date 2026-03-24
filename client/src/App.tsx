@@ -158,6 +158,7 @@ const ClientQMeet = lazy(() => import("@/pages/ClientQMeet"));
 const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
+const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed"];
 
 function PageLoader() {
@@ -300,6 +301,7 @@ function AdminRouter() {
         <Route path="/admin/loyalty" component={AdminLoyalty} />
         <Route path="/admin/suppliers" component={AdminSuppliers} />
         <Route path="/admin/push-notifications" component={AdminPushNotifications} />
+        <Route path="/admin/stores" component={EcommerceStore} />
         <Route path="/client/contracts" component={ClientContracts} />
         <Route path="/client/invoices" component={ClientInvoices} />
         <Route path="/client/invoice-print/:id" component={ClientInvoicePrint} />
@@ -692,7 +694,7 @@ function AppInner() {
     }
   });
   const [location, navigate] = useLocation();
-  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location.startsWith("/project/") && location.endsWith("/workspace");
+  const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user, isLoading: userLoading } = useUser();
   const { t, lang, setLang, dir } = useI18n();
   const { theme, toggle } = useTheme();

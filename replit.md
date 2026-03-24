@@ -1,5 +1,30 @@
 # Qirox Platform
 
+## Latest Changes (Mar 24, 2026)
+
+### E-Commerce Store Module (متجر Qirox)
+
+**New Page:** `client/src/pages/EcommerceStore.tsx` at route `/admin/stores`
+- Full-bleed layout (similar to CS Chat / AI Studio) to support embedded iframe
+- Tab "نظرة عامة": feature cards, quick links grid, admin credentials panel, test payment cards, and full routes table
+- Tab "معاينة المتجر": embedded iframe with toolbar (path bar, reload, fullscreen, open in new tab) and quick-nav pills
+- Links to `https://e-commerce.qiroxstudio.online`
+
+**Server Proxies (server/index.ts):**
+- `/ecommerce-proxy` → reverse proxy to `https://e-commerce.qiroxstudio.online`, strips X-Frame-Options/CSP headers so the site can be embedded in iframes
+- `/ecommerce-api` → API proxy that forwards requests server-side (avoids CORS), rewrites Set-Cookie domain
+
+**Sidebar (app-sidebar.tsx):**
+- New section label "المتاجر الإلكترونية" in the admin sidebar
+- New item "متجر Qirox" with Store icon, visible to all STAFF_ROLES, at `/admin/stores`
+
+**App.tsx:**
+- Lazy-loaded `EcommerceStore` component
+- Route `/admin/stores` added to AdminRouter
+- `/admin/stores` added to `isFullBleed` check for proper full-height layout
+
+---
+
 ## Overview
 
 Qirox is a SaaS "Systems Factory" platform (qirox.tech) that showcases 8 industry-specific website templates and provides admin management for templates and pricing. The platform targets Arabic-speaking markets (Saudi Arabia, Egypt) with RTL UI, positioning itself as a "Website Infrastructure Automation Platform" for investors and clients.
