@@ -17,10 +17,13 @@ import {
   Settings, Lock, User, Coffee,
   MapPin, Bell, ClipboardList, Layers, Copy,
   Printer, Wifi, Bluetooth, Cable, Network, BadgeCheck,
+  Store, ShoppingBag, ShoppingCart, Tag, Building2, Receipt,
+  Wallet, Archive, Gift,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { CAFE_SECTIONS } from "./cafe-pages-data";
 import type { CafePageEntry } from "./cafe-pages-data";
+import { ECOMMERCE_SECTIONS, ECOMMERCE_PORTALS } from "./ecommerce-pages-data";
 
 import sc01 from "@assets/Screenshot_2026-03-22_083144_1774164974564.png";
 import sc02 from "@assets/Screenshot_2026-03-22_102704_1774164974568.png";
@@ -438,13 +441,18 @@ function isPublicPage(badge?: string): boolean {
 
 // ── Browser Frame ─────────────────────────────────────────────────────────
 const CAFE_ORIGIN = "https://cafe.qiroxstudio.online";
+const ECOMMERCE_ORIGIN = "https://e-commerce.qiroxstudio.online";
 
 function toProxyUrl(url: string): string {
   if (url.startsWith(CAFE_ORIGIN)) {
     const suffix = url.slice(CAFE_ORIGIN.length) || "";
-    // Strip leading slash so we don't double up
     const cleanSuffix = suffix.startsWith("/") ? suffix.slice(1) : suffix;
     return cleanSuffix ? `/cafe-demo/${cleanSuffix}` : "/cafe-demo";
+  }
+  if (url.startsWith(ECOMMERCE_ORIGIN)) {
+    const suffix = url.slice(ECOMMERCE_ORIGIN.length) || "";
+    const cleanSuffix = suffix.startsWith("/") ? suffix.slice(1) : suffix;
+    return cleanSuffix ? `/ecommerce-proxy/${cleanSuffix}` : "/ecommerce-proxy";
   }
   return url;
 }
@@ -727,7 +735,12 @@ export default function TemplateDetail() {
   });
 
   const isRestaurant = template?.category === "restaurant" || template?.category === "food" || template?.slug === "cafe-restaurant";
-  const baseUrl = isRestaurant ? "https://cafe.qiroxstudio.online" : (template?.demoUrl?.replace(/\/$/, "") || "");
+  const isEcommerce = template?.category === "ecommerce" || template?.slug === "ecommerce-store";
+  const baseUrl = isRestaurant
+    ? "https://cafe.qiroxstudio.online"
+    : isEcommerce
+    ? "https://e-commerce.qiroxstudio.online"
+    : (template?.demoUrl?.replace(/\/$/, "") || "");
   const color = template?.heroColor || (isRestaurant ? "#b45309" : "#0f172a");
   const tier = template?.tier ? TIER_META[template.tier] : null;
   const videoEmbed = template?.howToUseVideoUrl ? getVideoEmbed(template.howToUseVideoUrl) : null;
@@ -861,7 +874,14 @@ export default function TemplateDetail() {
                   <StatBadge value="فورية" label="تحديثات مباشرة" icon={Zap} />
                 </>
               )}
-              {!isRestaurant && template.featuresAr && (
+              {isEcommerce && (
+                <>
+                  <StatBadge value="28+" label="صفحة متكاملة" icon={Layers} />
+                  <StatBadge value="7" label="طرق دفع" icon={CreditCard} />
+                  <StatBadge value="PWA" label="تطبيق جوال" icon={Smartphone} />
+                </>
+              )}
+              {!isRestaurant && !isEcommerce && template.featuresAr && (
                 <StatBadge value={template.featuresAr.length} label="ميزة مدمجة" icon={Zap} />
               )}
               {template.estimatedDuration && (
@@ -1251,6 +1271,323 @@ export default function TemplateDetail() {
         </div>
       )}
 
+      {/* ── E-Commerce Specific Content ──────────────────────────── */}
+      {isEcommerce && (
+        <div className="max-w-6xl mx-auto px-6 py-14 space-y-16">
+
+          {/* ── System Capabilities ─────────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <div className="text-center mb-10">
+              <p className="text-xs font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2">ما يقدمه هذا النظام</p>
+              <h2 className="text-3xl font-black text-black dark:text-white">متجر إلكتروني متكامل من البداية للنهاية</h2>
+              <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">كل ما يحتاجه متجرك في منظومة واحدة — من عرض المنتجات والدفع حتى إدارة المخزون والموظفين والتقارير.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <FeatureHighlight icon={CreditCard} title="٧ طرق دفع متكاملة" desc="بطاقة بكشف تلقائي + محاكاة 3DS، STC Pay، Apple Pay، تمارة (BNPL)، تابي (BNPL)، محفظة رقمية، تحويل بنكي." color="bg-violet-600" />
+              <FeatureHighlight icon={Monitor} title="نظام كاشير POS احترافي" desc="واجهة كاشير متكاملة مع إدارة الصندوق النقدي وتقارير المبيعات اليومية والتسوية الفورية." color="bg-indigo-600" />
+              <FeatureHighlight icon={Gift} title="برنامج الولاء والمحفظة" desc="مستويات عضوية (برونز / فضي / ذهبي) مع نقاط مكافأة ومحفظة رقمية مدمجة وبرنامج إحالة." color="bg-pink-500" />
+              <FeatureHighlight icon={ShoppingBag} title="إدارة المنتجات والمخزون" desc="كتالوج منتجات متعدد الفئات مع تتبع المخزون وتنبيهات النفاد وإدارة البيانات الجماعية." color="bg-emerald-600" />
+              <FeatureHighlight icon={Smartphone} title="تطبيق PWA جوال" desc="يُضاف تلقائياً لشاشة الجوال ويعمل offline — بدون نشر في App Store، متوافق مع iOS وAndroid." color="bg-sky-500" />
+              <FeatureHighlight icon={Globe} title="ثنائية اللغة عربي/إنجليزي" desc="واجهة مستخدم كاملة باللغتين مع دعم RTL/LTR — يتذكر النظام تفضيل المستخدم تلقائياً." color="bg-teal-500" />
+              <FeatureHighlight icon={ShieldCheck} title="RBAC — صلاحيات مخصصة" desc="نظام أدوار متقدم: مدير، كاشير، مستودع — كل دور بصلاحيات دقيقة يمكن تخصيصها." color="bg-red-500" />
+              <FeatureHighlight icon={Building2} title="فروع متعددة" desc="إدارة أكثر من فرع من لوحة تحكم واحدة — مخزون مستقل، موظفون، وتقارير لكل فرع." color="bg-amber-600" />
+              <FeatureHighlight icon={BarChart3} title="تقارير وتحليلات ذكية" desc="لوحة تحكم تنفيذية بمؤشرات الأداء والمبيعات والمخزون وسلوك العملاء قابلة للتصدير." color="bg-orange-500" />
+            </div>
+          </motion.section>
+
+          {/* ── Live Demo Iframe ─────────────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
+                <Globe className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-black dark:text-white">معاينة المتجر الحية</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">جرّب التسوق الحقيقي — الموقع مباشر بالكامل</p>
+              </div>
+              <a href={baseUrl} target="_blank" rel="noopener noreferrer" className="mr-auto">
+                <Button className="h-9 px-5 rounded-xl gap-2 font-bold text-xs" style={{ backgroundColor: color }}>
+                  <ExternalLink className="w-3.5 h-3.5" /> فتح في تبويب جديد
+                </Button>
+              </a>
+            </div>
+            <BrowserFrame
+              url={`${baseUrl}/`}
+              label="الواجهة الرئيسية للمتجر"
+              compact={false}
+            />
+          </motion.section>
+
+          {/* ── Pages Showcase ───────────────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
+                <Layers className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات المتجر الكامل</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">٢٨+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
+              </div>
+            </div>
+
+            <div className="space-y-14">
+              {ECOMMERCE_SECTIONS.map((section, si) => (
+                <div key={section.id} data-testid={`ec-section-${section.id}`}>
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                      style={{ backgroundColor: section.color + "15", border: `1.5px solid ${section.color}30` }}>
+                      {section.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-sm text-black dark:text-white leading-snug">{section.titleAr}</p>
+                      <p className="text-[11px] text-black/40 dark:text-white/40 mt-0.5">{section.pages.length} صفحة</p>
+                    </div>
+                    <div className="text-2xl font-black tabular-nums" style={{ color: section.color + "60" }}>
+                      {String(si + 1).padStart(2, "0")}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {section.pages.map((page, pi) => {
+                      const PageIcon = page.icon;
+                      const pageUrl = `${baseUrl}${page.path}`;
+                      return (
+                        <motion.div
+                          key={page.path}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: si * 0.02 + pi * 0.03 }}
+                          className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                          data-testid={`ec-page-card-${page.path.replace(/\//g, "-")}`}
+                        >
+                          {/* Mini iframe preview */}
+                          <div className="relative overflow-hidden" style={{ height: 160, backgroundColor: section.color + "08" }}>
+                            <iframe
+                              src={toProxyUrl(`${baseUrl}${page.path}`)}
+                              title={page.titleAr}
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: 1280,
+                                height: 800,
+                                transform: `scale(${180 / 800})`,
+                                transformOrigin: "top left",
+                                border: "none",
+                                pointerEvents: "none",
+                              }}
+                            />
+                            {/* Auth overlay for protected pages */}
+                            {page.badge !== "عام" && (
+                              <div className="absolute inset-0 flex items-center justify-center"
+                                style={{ background: `linear-gradient(to top, ${section.color}dd 0%, ${section.color}88 50%, ${section.color}44 100%)` }}>
+                                <div className="text-center">
+                                  <Lock className="w-5 h-5 text-white/80 mx-auto mb-1" />
+                                  <span className="text-[10px] font-bold text-white/80">{page.badge}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Page info */}
+                          <div className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: section.color + "15" }}>
+                                <PageIcon className="w-4.5 h-4.5" style={{ color: section.color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                  <p className="font-black text-sm text-black dark:text-white">{page.titleAr}</p>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${page.badgeColor}`}>
+                                    {page.badge}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-black/55 dark:text-white/55 leading-relaxed">{page.descAr}</p>
+                                <div className="flex items-center gap-2 mt-3">
+                                  <code className="text-[10px] text-black/30 dark:text-white/30 font-mono bg-black/[0.04] dark:bg-white/[0.04] px-2 py-1 rounded-lg truncate block max-w-[200px]" dir="ltr">
+                                    {page.path}
+                                  </code>
+                                  <a
+                                    href={pageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors text-black/50 dark:text-white/50 whitespace-nowrap flex-shrink-0"
+                                    data-testid={`btn-ec-open-${page.path.replace(/\//g, "-")}`}
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    فتح
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* ── Portals & Credentials ────────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
+                <ShieldCheck className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-black dark:text-white">بيانات الدخول التجريبية</h2>
+                <p className="text-xs text-black/40 dark:text-white/40">استخدم هذه البيانات لاستعراض المتجر بصلاحيات مختلفة</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {ECOMMERCE_PORTALS.map((portal, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`${portal.bg} border border-black/[0.06] rounded-2xl p-4`}
+                  data-testid={`ec-portal-${i}`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-3 min-w-[160px]">
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-black/[0.06] flex items-center justify-center flex-shrink-0">
+                        <User className={`w-5 h-5 ${portal.color}`} />
+                      </div>
+                      <p className={`font-black text-sm ${portal.color}`}>{portal.role}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3 flex-1">
+                      <div className="bg-white rounded-xl px-3 py-2 flex items-center gap-2 border border-black/[0.06] min-w-[160px]">
+                        <div className="text-[10px] text-black/30 font-bold whitespace-nowrap">رقم الجوال</div>
+                        <code className="text-xs font-mono font-bold text-black/80" dir="ltr">{portal.username}</code>
+                        <button
+                          onClick={() => copyToClipboard(portal.username, `ec-user-${i}`)}
+                          className="text-black/20 hover:text-black/60 transition-colors mr-auto"
+                          data-testid={`btn-ec-copy-user-${i}`}
+                        >
+                          {copiedField === `ec-user-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <div className="bg-white rounded-xl px-3 py-2 flex items-center gap-2 border border-black/[0.06] min-w-[140px]">
+                        <div className="text-[10px] text-black/30 font-bold whitespace-nowrap">كلمة المرور</div>
+                        <code className="text-xs font-mono font-bold text-black/80" dir="ltr">{portal.password}</code>
+                        <button
+                          onClick={() => copyToClipboard(portal.password, `ec-pass-${i}`)}
+                          className="text-black/20 hover:text-black/60 transition-colors mr-auto"
+                          data-testid={`btn-ec-copy-pass-${i}`}
+                        >
+                          {copiedField === `ec-pass-${i}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="hidden lg:block text-xs text-black/40 max-w-[220px] leading-relaxed">{portal.access}</div>
+                  </div>
+                  <p className="text-xs text-black/40 mt-2 leading-relaxed lg:hidden">{portal.access}</p>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Quick access links */}
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "الواجهة الرئيسية", path: "/", icon: Store, color: "bg-violet-600" },
+                { label: "تسجيل الدخول", path: "/login", icon: Lock, color: "bg-indigo-600" },
+                { label: "لوحة الإدارة", path: "/admin", icon: LayoutDashboard, color: "bg-slate-700" },
+                { label: "الكاشير POS", path: "/pos", icon: Monitor, color: "bg-cyan-600" },
+              ].map((p, i) => (
+                <a
+                  key={i}
+                  href={`${baseUrl}${p.path}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-3 hover:shadow-md hover:-translate-y-0.5 transition-all group"
+                  data-testid={`btn-ec-portal-link-${i}`}
+                >
+                  <div className={`w-9 h-9 rounded-xl ${p.color} flex items-center justify-center flex-shrink-0`}>
+                    <p.icon className="w-4.5 h-4.5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-black dark:text-white leading-none mb-0.5">{p.label}</p>
+                    <code className="text-[10px] text-black/30 font-mono truncate block" dir="ltr">{p.path}</code>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-black/20 group-hover:text-black/50 mr-auto flex-shrink-0 transition-colors" />
+                </a>
+              ))}
+            </div>
+          </motion.section>
+
+          {/* ── Payment Methods Showcase ─────────────────────────── */}
+          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <div className="relative rounded-3xl overflow-hidden bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
+              <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='white' stroke-width='0.5'%3E%3Cpath d='M20 0v10M20 30v10M0 20h10M30 20h10'/%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "40px 40px" }} />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full blur-3xl opacity-20" style={{ background: color }} />
+
+              <div className="relative text-center mb-8">
+                <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-2">بوابات الدفع المدمجة</p>
+                <h2 className="text-2xl font-black text-white">٧ طرق دفع في بوابة واحدة</h2>
+                <p className="text-white/40 text-sm mt-2 max-w-md mx-auto">مع كشف تلقائي لنوع البطاقة ومحاكاة 3DS الكاملة</p>
+              </div>
+
+              <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {[
+                  { label: "بطاقة بنكية", sub: "Visa / Mastercard / Mada", icon: CreditCard, color: "#6d28d9" },
+                  { label: "STC Pay", sub: "محفظة رقمية", icon: Smartphone, color: "#059669" },
+                  { label: "Apple Pay", sub: "لمسة واحدة", icon: Smartphone, color: "#64748b" },
+                  { label: "تمارة", sub: "اشتري الآن وادفع لاحقاً", icon: Receipt, color: "#7c3aed" },
+                  { label: "تابي", sub: "4 دفعات بدون فوائد", icon: Receipt, color: "#0d9488" },
+                  { label: "محفظة", sub: "رصيد داخل التطبيق", icon: Wallet, color: "#d97706" },
+                  { label: "تحويل بنكي", sub: "IBAN مع تأكيد يدوي", icon: Building2, color: "#475569" },
+                  { label: "3DS Security", sub: "OTP + محاكاة كاملة", icon: ShieldCheck, color: "#16a34a" },
+                ].map((method, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + i * 0.06 }}
+                    className="group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.14] transition-all duration-300 p-4 cursor-default"
+                    data-testid={`payment-method-${i}`}
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: method.color + "20" }}>
+                      <method.icon className="w-4.5 h-4.5" style={{ color: method.color }} />
+                    </div>
+                    <p className="text-sm font-black text-white leading-tight mb-1">{method.label}</p>
+                    <p className="text-[10px] text-white/40">{method.sub}</p>
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-green-400/10 border border-green-400/20 text-green-400 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                      <span className="w-1 h-1 rounded-full bg-green-400" />
+                      مفعّل
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="relative mt-6 pt-5 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-4 h-4 text-green-400" />
+                  <span className="text-xs text-white/40 font-medium">جميع طرق الدفع مختبرة ومفعّلة في بيئة الديمو</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {[
+                    { label: "بوابة دفع", count: "1" },
+                    { label: "طريقة دفع", count: "7" },
+                    { label: "عملة مدعومة", count: "SAR" },
+                  ].map((stat, i) => (
+                    <div key={i} className="text-center">
+                      <p className="text-sm font-black text-white">{stat.count}</p>
+                      <p className="text-[9px] text-white/30">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+        </div>
+      )}
+
       {/* ── Generic Content (for all templates) ─────────────────── */}
       <div className="max-w-6xl mx-auto px-6 pb-14 space-y-10">
 
@@ -1316,8 +1653,8 @@ export default function TemplateDetail() {
           </motion.section>
         )}
 
-        {/* Demo Website (generic non-restaurant) */}
-        {!isRestaurant && template.demoUrl && (
+        {/* Demo Website (generic — not restaurant or ecommerce, both have dedicated sections) */}
+        {!isRestaurant && !isEcommerce && template.demoUrl && (
           <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
@@ -1449,7 +1786,13 @@ export default function TemplateDetail() {
           <div className="relative z-10">
             <Star className="w-10 h-10 text-white/50 mx-auto mb-4" />
             <h3 className="text-3xl font-black text-white mb-3">أعجبك هذا النظام؟</h3>
-            <p className="text-white/50 text-sm mb-8 max-w-md mx-auto">ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام وتخصيصه لكافيهك أو مطعمك خلال أيام.</p>
+            <p className="text-white/50 text-sm mb-8 max-w-md mx-auto">
+              {isEcommerce
+                ? "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة المتجر وتخصيصه لمنتجاتك وعلامتك التجارية خلال أيام."
+                : isRestaurant
+                ? "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام وتخصيصه لكافيهك أو مطعمك خلال أيام."
+                : "ابدأ مشروعك الآن وسيتولى فريقنا تهيئة النظام وتخصيصه لمشروعك خلال أيام."}
+            </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href={`/order?template=${template.slug}`}>
                 <Button className="h-12 px-9 rounded-2xl bg-white text-black hover:bg-white/90 font-bold text-sm gap-2" data-testid="btn-start-order-cta">

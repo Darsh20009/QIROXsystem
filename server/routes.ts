@@ -12206,7 +12206,7 @@ export async function seedDatabase() {
       if (!ecTemplate.demoUrl) updates.demoUrl = "https://e-commerce.qiroxstudio.online";
       if (ecTemplate.category === "commerce") updates.category = "ecommerce";
       if (!ecTemplate.heroColor || ecTemplate.heroColor === "#ca8a04") updates.heroColor = "#7c3aed";
-      if (!ecTemplate.featuresAr || ecTemplate.featuresAr.length === 0) {
+      if (!ecTemplate.featuresAr || ecTemplate.featuresAr.length < 8) {
         updates.featuresAr = [
           "٢٨ صفحة متكاملة",
           "٧ طرق دفع (بطاقة / STC Pay / Apple Pay / تمارة / تابي / محفظة / تحويل)",
