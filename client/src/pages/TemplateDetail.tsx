@@ -1295,29 +1295,6 @@ export default function TemplateDetail() {
             </div>
           </motion.section>
 
-          {/* ── Live Demo Iframe ─────────────────────────────────── */}
-          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
-                <Globe className="w-4.5 h-4.5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-black dark:text-white">معاينة المتجر الحية</h2>
-                <p className="text-xs text-black/40 dark:text-white/40">جرّب التسوق الحقيقي — الموقع مباشر بالكامل</p>
-              </div>
-              <a href={baseUrl} target="_blank" rel="noopener noreferrer" className="mr-auto">
-                <Button className="h-9 px-5 rounded-xl gap-2 font-bold text-xs" style={{ backgroundColor: color }}>
-                  <ExternalLink className="w-3.5 h-3.5" /> فتح في تبويب جديد
-                </Button>
-              </a>
-            </div>
-            <BrowserFrame
-              url={`${baseUrl}/`}
-              label="الواجهة الرئيسية للمتجر"
-              compact={false}
-            />
-          </motion.section>
-
           {/* ── Pages Showcase ───────────────────────────────────── */}
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <div className="flex items-center gap-3 mb-8">
@@ -1360,33 +1337,15 @@ export default function TemplateDetail() {
                           className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                           data-testid={`ec-page-card-${page.path.replace(/\//g, "-")}`}
                         >
-                          {/* Mini iframe preview */}
-                          <div className="relative overflow-hidden" style={{ height: 160, backgroundColor: section.color + "08" }}>
-                            <iframe
-                              src={toProxyUrl(`${baseUrl}${page.path}`)}
-                              title={page.titleAr}
-                              style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: 1280,
-                                height: 800,
-                                transform: `scale(${180 / 800})`,
-                                transformOrigin: "top left",
-                                border: "none",
-                                pointerEvents: "none",
-                              }}
-                            />
-                            {/* Auth overlay for protected pages */}
-                            {page.badge !== "عام" && (
-                              <div className="absolute inset-0 flex items-center justify-center"
-                                style={{ background: `linear-gradient(to top, ${section.color}dd 0%, ${section.color}88 50%, ${section.color}44 100%)` }}>
-                                <div className="text-center">
-                                  <Lock className="w-5 h-5 text-white/80 mx-auto mb-1" />
-                                  <span className="text-[10px] font-bold text-white/80">{page.badge}</span>
-                                </div>
+                          {/* Page visual banner */}
+                          <div className="relative overflow-hidden flex items-center justify-center" style={{ height: 100, background: `linear-gradient(135deg, ${section.color}22 0%, ${section.color}10 100%)`, borderBottom: `1px solid ${section.color}20` }}>
+                            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "16px 16px" }} />
+                            <div className="relative flex flex-col items-center gap-2">
+                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: section.color + "20", border: `1.5px solid ${section.color}30` }}>
+                                <PageIcon className="w-6 h-6" style={{ color: section.color }} />
                               </div>
-                            )}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${page.badgeColor}`}>{page.badge}</span>
+                            </div>
                           </div>
 
                           {/* Page info */}
