@@ -45,6 +45,15 @@ import sc17 from "@assets/Screenshot_2026-03-22_103443_1774164988237.png";
 
 const CAFE_SCREENSHOTS = [sc01,sc02,sc03,sc04,sc05,sc06,sc07,sc08,sc09,sc10,sc11,sc12,sc13,sc14,sc15,sc16,sc17];
 
+import ec01 from "@assets/Screenshot_2026-03-24_135039_1774349708184.png";
+import ec02 from "@assets/Screenshot_2026-03-24_135057_1774349708189.png";
+import ec03 from "@assets/Screenshot_2026-03-24_135129_1774349716335.png";
+import ec04 from "@assets/Screenshot_2026-03-24_135202_1774349716341.png";
+import ec05 from "@assets/Screenshot_2026-03-24_135234_1774349716341.png";
+import ec06 from "@assets/Screenshot_2026-03-24_135305_1774349716342.png";
+
+const ECOMMERCE_SCREENSHOTS = [ec01,ec02,ec03,ec04,ec05,ec06];
+
 const TIER_META: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
   lite:     { label: "لايت",    color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200",   desc: "الباقة الأساسية — كل ما تحتاجه للبداية" },
   pro:      { label: "برو",     color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", desc: "الباقة الاحترافية — للمشاريع المتوسطة والكبيرة" },
@@ -1297,7 +1306,7 @@ export default function TemplateDetail() {
 
           {/* ── Pages Showcase ───────────────────────────────────── */}
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-6">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: color }}>
                 <Layers className="w-4.5 h-4.5 text-white" />
               </div>
@@ -1305,6 +1314,21 @@ export default function TemplateDetail() {
                 <h2 className="text-2xl font-black text-black dark:text-white">دليل صفحات المتجر الكامل</h2>
                 <p className="text-xs text-black/40 dark:text-white/40">٢٨+ صفحة — كل صفحة بشرح تفصيلي وزر فتح مباشر</p>
               </div>
+            </div>
+
+            {/* Screenshots marquee banner */}
+            <div className="relative mb-10 overflow-hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.06]" style={{ height: 200 }}>
+              <div className="flex gap-3 animate-[marquee_30s_linear_infinite] w-max">
+                {[...ECOMMERCE_SCREENSHOTS, ...ECOMMERCE_SCREENSHOTS].map((src, i) => (
+                  <div key={i} className="flex-shrink-0 overflow-hidden rounded-xl" style={{ width: 320, height: 200 }}>
+                    <img src={src} alt={`ec-shot-${i}`} className="w-full h-full object-cover object-top" draggable={false} />
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-y-0 left-0 w-16 pointer-events-none" style={{ background: "linear-gradient(to right, white, transparent)" }} />
+              <div className="absolute inset-y-0 right-0 w-16 pointer-events-none dark:hidden" style={{ background: "linear-gradient(to left, white, transparent)" }} />
+              <div className="absolute inset-y-0 left-0 w-16 pointer-events-none hidden dark:block" style={{ background: "linear-gradient(to right, #111827, transparent)" }} />
+              <div className="absolute inset-y-0 right-0 w-16 pointer-events-none hidden dark:block" style={{ background: "linear-gradient(to left, #111827, transparent)" }} />
             </div>
 
             <div className="space-y-14">
