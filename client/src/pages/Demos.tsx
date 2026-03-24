@@ -140,8 +140,11 @@ export default function Demos() {
     queryKey: ["/api/templates"],
   });
 
+  const VISIBLE_SLUGS = ["ecommerce-store", "cafe-restaurant"];
+
   const activeTemplates = templates
-    .filter(t => t.status !== "archived");
+    .filter(t => t.status !== "archived")
+    .filter(t => VISIBLE_SLUGS.includes(t.slug));
 
   const categories = ["all", ...Array.from(new Set(activeTemplates.map(t => t.category)))];
 
