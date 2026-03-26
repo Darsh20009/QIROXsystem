@@ -811,10 +811,15 @@ export default function MeetingRoom() {
       } catch (err: any) {
         // NotAllowedError = user denied permission OR iframe Permissions Policy violation
         if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-          const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-          const isPermissionsPolicyErr = err?.message?.toLowerCase().includes("permissions policy") ||
-            err?.message?.toLowerCase().includes("permission denied");
-          if (isInIframe || isPermissionsPolicyErr) {
+          const isInIframeLocal = (() => { try { return window.self !== window.top; } catch { return true; } })();
+          // Chrome Permissions Policy message: "The request is not allowed by the user agent or the platform in the current context"
+          const msg = (err?.message ?? "").toLowerCase();
+          const isPermissionsPolicyErr = msg.includes("permissions policy") ||
+            msg.includes("permission denied") ||
+            msg.includes("not allowed by") ||
+            msg.includes("not allowed by the user agent") ||
+            msg.includes("current context");
+          if (isInIframeLocal || isPermissionsPolicyErr) {
             setMediaError("__iframe__");
           } else {
             setMediaError("تم رفض إذن الكاميرا/الميكروفون. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
@@ -834,17 +839,25 @@ export default function MeetingRoom() {
       setMediaError("الكاميرا غير متاحة — انضم بالصوت فقط");
       return stream;
     } catch (err: any) {
+      const isInIframeLocal = (() => { try { return window.self !== window.top; } catch { return true; } })();
+      const msg = (err?.message ?? "").toLowerCase();
+      const isPermissionsPolicyErr = msg.includes("permissions policy") ||
+        msg.includes("permission denied") ||
+        msg.includes("not allowed by") ||
+        msg.includes("not allowed by the user agent") ||
+        msg.includes("current context");
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-        const isPermissionsPolicyErr = err?.message?.toLowerCase().includes("permissions policy") ||
-          err?.message?.toLowerCase().includes("permission denied");
-        if (isInIframe || isPermissionsPolicyErr) {
+        if (isInIframeLocal || isPermissionsPolicyErr) {
           setMediaError("__iframe__");
         } else {
           setMediaError("تم رفض الإذن. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
         }
       } else {
-        setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
+        if (isInIframeLocal) {
+          setMediaError("__iframe__");
+        } else {
+          setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن وأن الجهاز غير مستخدم.");
+        }
       }
       return null;
     }
@@ -939,22 +952,42 @@ export default function MeetingRoom() {
     navigate("/dashboard");
   }, [sendWs, roomId, navigate]);
 
-  const toggleAudio = useCallback(() => {
+  const toggleAudio = useCallback(async () => {
     if (!localStreamRef.current) {
-      toast({ title: "الميكروفون غير متاح", description: isInIframe ? "الميكروفون محجوب في نافذة المعاينة" : "تأكد من منح إذن الميكروفون للمتصفح", variant: "destructive" });
-      return;
+      const stream = await getMedia();
+      if (!stream) {
+        toast({ title: "الميكروفون غير متاح", description: isInIframe ? "لا يمكن استخدام الميكروفون في هذه النافذة" : "اضغط على أيقونة القفل في شريط العنوان ثم أعد تشغيل الصفحة", variant: "destructive" });
+        return;
+      }
+      stream.getTracks().forEach(track => {
+        pcsRef.current.forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track?.kind === track.kind);
+          if (sender) sender.replaceTrack(track).catch(() => {});
+          else pc.addTrack(track, stream);
+        });
+      });
     }
     const enabled = !audioOn;
-    localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = enabled; });
+    localStreamRef.current!.getAudioTracks().forEach(t => { t.enabled = enabled; });
     setAudioOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: enabled, video: videoOn });
-  }, [audioOn, videoOn, roomId, sendWs, mediaError, toast]);
+  }, [audioOn, videoOn, roomId, sendWs, getMedia, toast, isInIframe]);
 
   const toggleVideo = useCallback(async () => {
     if (screenSharing) return;
     if (!localStreamRef.current) {
-      toast({ title: "الكاميرا غير متاحة", description: isInIframe ? "الكاميرا محجوبة في نافذة المعاينة" : "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
-      return;
+      const stream = await getMedia();
+      if (!stream) {
+        toast({ title: "الكاميرا غير متاحة", description: isInIframe ? "لا يمكن استخدام الكاميرا في هذه النافذة" : "اضغط على أيقونة القفل في شريط العنوان ثم أعد تشغيل الصفحة", variant: "destructive" });
+        return;
+      }
+      stream.getTracks().forEach(track => {
+        pcsRef.current.forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track?.kind === track.kind);
+          if (sender) sender.replaceTrack(track).catch(() => {});
+          else pc.addTrack(track, stream);
+        });
+      });
     }
     const enabled = !videoOn;
     const videoTracks = localStreamRef.current.getVideoTracks();
@@ -985,7 +1018,7 @@ export default function MeetingRoom() {
 
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, mediaError, toast]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, getMedia, toast, isInIframe]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
@@ -1611,8 +1644,8 @@ export default function MeetingRoom() {
                 <span className="text-white/50 text-sm">{userName}</span>
               </div>
             )}
-            {/* Media controls overlay — hidden in iframe (camera/mic unavailable) */}
-            <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${isInIframe ? "hidden" : ""}`}>
+            {/* Media controls overlay */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
               <button
                 onClick={toggleAudio}
                 className={`p-3 rounded-full border backdrop-blur-sm transition-all hover:scale-105 ${audioOn ? "bg-white/15 border-white/20 text-white" : "bg-red-500/90 border-red-400/50 text-white"}`}
@@ -1660,9 +1693,18 @@ export default function MeetingRoom() {
             )}
 
             {mediaError === "__iframe__" && (
-              <div className="rounded-xl px-4 py-3 flex items-center gap-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <AlertCircle className="w-3.5 h-3.5 text-white/30 shrink-0" />
-                <p className="text-white/40 text-xs leading-relaxed">الكاميرا/الميك غير متاح في هذه النافذة — ستنضم بدون صوت/صورة</p>
+              <div className="rounded-xl px-4 py-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.18)" }}>
+                <AlertCircle className="w-3.5 h-3.5 text-yellow-400/70 shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-yellow-300/70 text-xs leading-relaxed">الكاميرا والميكروفون غير متاحَين في نافذة المعاينة</p>
+                  <button
+                    onClick={() => { setMediaError(null); getMedia(); }}
+                    className="self-start text-yellow-300/60 text-xs underline underline-offset-2 hover:text-yellow-300/90 transition-colors"
+                    data-testid="button-retry-media-iframe"
+                  >
+                    اضغط هنا للمحاولة مجدداً بعد منح الإذن
+                  </button>
+                </div>
               </div>
             )}
 
