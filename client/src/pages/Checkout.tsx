@@ -192,14 +192,18 @@ export default function Checkout() {
 
   const walletBalance = walletData ? Math.max(0, walletData.totalCredit - walletData.totalDebit) : 0;
   const cartItems: any[] = cart?.items || [];
-  const hasWizardData = !!wizardData && cartItems.length === 0;
-  const items: any[] = hasWizardData
-    ? [{ name: wizardData.planTier, nameAr: `باقة ${wizardData.planTier}`, price: wizardData.grandTotal || wizardData.planPrice || 0, qty: 1, type: "plan" }]
-    : cartItems;
+  const hasWizardData = !!wizardData;
+  const items: any[] = cartItems.length > 0
+    ? cartItems
+    : hasWizardData
+      ? [{ name: wizardData.planTier, nameAr: `باقة ${wizardData.planTier}`, price: wizardData.grandTotal || wizardData.planPrice || 0, qty: 1, type: "plan" }]
+      : [];
   const discount = cart?.discountAmount || 0;
-  const subtotal = hasWizardData ? (wizardData.grandTotal || 0) : items.reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0);
+  const subtotal = cartItems.length > 0
+    ? items.reduce((s: number, i: any) => s + (i.price || 0) * (i.qty || 1), 0)
+    : hasWizardData ? (wizardData.grandTotal || 0) : 0;
 
-  const hasPhysicalItems = !hasWizardData && items.some((i: any) => i.type === "product" || i.type === "gift");
+  const hasPhysicalItems = items.some((i: any) => i.type === "product" || i.type === "gift");
   const activeShippingCos: any[] = shippingCompanies || [];
   const selectedShippingCo = activeShippingCos.find(c => (c._id || c.id) === selectedShippingCompanyId) || null;
   const shippingFee = hasPhysicalItems && selectedShippingCo

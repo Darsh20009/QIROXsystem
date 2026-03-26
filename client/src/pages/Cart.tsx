@@ -975,7 +975,7 @@ export default function Cart() {
                 <Button
                   className="w-full bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-black h-13 rounded-xl text-sm mt-2 gap-2 shadow-lg shadow-cyan-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={items.length === 0 || needsPlanWarning}
-                  onClick={() => { setPreCheckoutOpen(true); setPreCheckoutStep(1); }}
+                  onClick={() => { if (hasPlan) { navigate("/cart-wizard"); } else { setPreCheckoutOpen(true); setPreCheckoutStep(1); } }}
                   data-testid="button-checkout">
                   <Sparkles className="w-4 h-4" />
                   {hasPlan ? "إتمام المشروع الآن" : "إتمام الطلب الآن"}
@@ -1007,7 +1007,7 @@ export default function Cart() {
             </div>
             <Button
               className="bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-black px-5 h-11 rounded-xl gap-2 shrink-0 text-sm shadow-lg shadow-cyan-500/30"
-              onClick={() => { setPreCheckoutOpen(true); setPreCheckoutStep(1); }}
+              onClick={() => { if (hasPlan) { navigate("/cart-wizard"); } else { setPreCheckoutOpen(true); setPreCheckoutStep(1); } }}
               data-testid="button-mobile-checkout">
               <Sparkles className="w-4 h-4" />
               أكمل الطلب
