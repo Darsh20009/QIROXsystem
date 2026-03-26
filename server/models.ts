@@ -223,8 +223,8 @@ const newsSchema = new mongoose.Schema({
   content: { type: String, required: true },
   excerpt: String,
   imageUrl: String,
-  authorId: { type: Number, required: true },
-  status: { type: String, enum: ["draft", "published"], default: "draft" },
+  authorId: { type: mongoose.Schema.Types.Mixed },
+  status: { type: String, enum: ["draft", "published", "archived"], default: "draft" },
   publishedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

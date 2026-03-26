@@ -66,8 +66,8 @@ export default function AdminNews() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const res = await apiRequest("PATCH", `/api/admin/news/${editingId}`, data);
+    mutationFn: async ({ id, data }: { id: string; data: FormData }) => {
+      const res = await apiRequest("PATCH", `/api/admin/news/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -98,7 +98,7 @@ export default function AdminNews() {
       return;
     }
     if (editingId) {
-      updateMutation.mutate(formData);
+      updateMutation.mutate({ id: editingId, data: formData });
     } else {
       createMutation.mutate(formData);
     }
@@ -125,13 +125,15 @@ export default function AdminNews() {
   const handleQuickToggle = (item: News) => {
     const newStatus = item.status === "published" ? "draft" : "published";
     updateMutation.mutate({
-      title: item.title,
-      content: item.content,
-      excerpt: item.excerpt || "",
-      imageUrl: item.imageUrl || "",
-      status: newStatus,
+      id: item.id.toString(),
+      data: {
+        title: item.title,
+        content: item.content,
+        excerpt: item.excerpt || "",
+        imageUrl: item.imageUrl || "",
+        status: newStatus,
+      },
     });
-    setEditingId(item.id.toString());
   };
 
   if (isLoading) {
