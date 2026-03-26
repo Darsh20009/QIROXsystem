@@ -851,10 +851,6 @@ export default function MeetingRoom() {
   }, []);
 
   useEffect(() => {
-    if (isInIframe) {
-      setMediaError("__iframe__");
-      return;
-    }
     getMedia();
     return () => {
       localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -862,7 +858,7 @@ export default function MeetingRoom() {
       reactionTimersRef.current = [];
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [getMedia, isInIframe]);
+  }, [getMedia]);
 
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -912,7 +908,6 @@ export default function MeetingRoom() {
 
   const joinMeeting = useCallback(async () => {
     if (!userId || !roomId) return;
-    if (isInIframe) { window.open(window.location.href, '_blank'); return; }
     const stream = localStream || await getMedia();
     if (!stream && !mediaError) return;
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -946,7 +941,7 @@ export default function MeetingRoom() {
 
   const toggleAudio = useCallback(() => {
     if (!localStreamRef.current) {
-      toast({ title: "الميكروفون غير متاح", description: mediaError === "__iframe__" ? "افتح الاجتماع في تبويب جديد لتفعيل الميكروفون" : "تأكد من منح إذن الميكروفون للمتصفح", variant: "destructive" });
+      toast({ title: "الميكروفون غير متاح", description: isInIframe ? "الميكروفون محجوب في نافذة المعاينة" : "تأكد من منح إذن الميكروفون للمتصفح", variant: "destructive" });
       return;
     }
     const enabled = !audioOn;
@@ -958,7 +953,7 @@ export default function MeetingRoom() {
   const toggleVideo = useCallback(async () => {
     if (screenSharing) return;
     if (!localStreamRef.current) {
-      toast({ title: "الكاميرا غير متاحة", description: mediaError === "__iframe__" ? "افتح الاجتماع في تبويب جديد لتفعيل الكاميرا" : "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
+      toast({ title: "الكاميرا غير متاحة", description: isInIframe ? "الكاميرا محجوبة في نافذة المعاينة" : "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
       return;
     }
     const enabled = !videoOn;
@@ -1616,8 +1611,8 @@ export default function MeetingRoom() {
                 <span className="text-white/50 text-sm">{userName}</span>
               </div>
             )}
-            {/* Media controls overlay */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
+            {/* Media controls overlay — hidden in iframe (camera/mic unavailable) */}
+            <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${isInIframe ? "hidden" : ""}`}>
               <button
                 onClick={toggleAudio}
                 className={`p-3 rounded-full border backdrop-blur-sm transition-all hover:scale-105 ${audioOn ? "bg-white/15 border-white/20 text-white" : "bg-red-500/90 border-red-400/50 text-white"}`}
@@ -1648,7 +1643,7 @@ export default function MeetingRoom() {
               <p className="text-white/35 text-sm">{meeting.hostName}</p>
             </div>
 
-            {mediaError !== "__iframe__" && mediaError && (
+            {mediaError && mediaError !== "__iframe__" && (
               <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
                 <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
                 <div className="flex flex-col gap-2 flex-1">
@@ -1664,33 +1659,22 @@ export default function MeetingRoom() {
               </div>
             )}
 
+            {mediaError === "__iframe__" && (
+              <div className="rounded-xl px-4 py-3 flex items-center gap-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <AlertCircle className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                <p className="text-white/40 text-xs leading-relaxed">الكاميرا/الميك غير متاح في هذه النافذة — ستنضم بدون صوت/صورة</p>
+              </div>
+            )}
+
             <div className="space-y-2.5">
-              {mediaError === "__iframe__" ? (
-                <>
-                  <div className="rounded-xl p-4 flex flex-col gap-3 mb-1" style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)" }}>
-                    <p className="text-blue-200/80 text-xs leading-relaxed text-center">
-                      🖥️ يعمل الاجتماع في نافذة مستقلة فقط — اضغط الزر أدناه لفتحه
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => window.open(window.location.href, '_blank')}
-                    className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
-                    style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
-                    data-testid="button-open-new-tab"
-                  >
-                    🚀 افتح الاجتماع في تبويب جديد
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={joinMeeting}
-                  className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
-                  style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
-                  data-testid="button-join-meeting"
-                >
-                  انضم الآن
-                </button>
-              )}
+              <button
+                onClick={joinMeeting}
+                className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
+                style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
+                data-testid="button-join-meeting"
+              >
+                انضم الآن
+              </button>
               <button
                 onClick={() => window.close() || navigate("/dashboard")}
                 className="w-full h-11 rounded-xl font-medium text-white/50 hover:text-white/70 transition-all"
@@ -1718,27 +1702,6 @@ export default function MeetingRoom() {
 
   return (
     <div className="min-h-screen flex flex-col relative" dir="rtl" style={{ background: "linear-gradient(160deg, #080e1a 0%, #0a1020 50%, #080e1a 100%)" }}>
-      {/* Iframe blocker overlay */}
-      {isInIframe && (
-        <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center gap-5 text-center px-6"
-          style={{ background: "linear-gradient(160deg, #080e1a 0%, #0a1020 100%)" }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl" style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)" }}>🖥️</div>
-          <div>
-            <p className="text-white font-bold text-lg mb-2">افتح الاجتماع في تبويب جديد</p>
-            <p className="text-white/50 text-sm leading-relaxed max-w-xs">الكاميرا والميكروفون لا يعملان داخل نافذة المعاينة بسبب قيود المتصفح</p>
-          </div>
-          <button
-            onClick={() => window.open(window.location.href, '_blank')}
-            className="px-8 h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.02] shadow-lg shadow-green-500/20"
-            style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
-          >
-            🚀 افتح الاجتماع الآن
-          </button>
-          <button onClick={() => navigate("/dashboard")} className="text-white/30 text-sm hover:text-white/60 transition-colors">
-            العودة للرئيسية
-          </button>
-        </div>
-      )}
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 shrink-0" style={{ background: "rgba(8,14,26,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3">
