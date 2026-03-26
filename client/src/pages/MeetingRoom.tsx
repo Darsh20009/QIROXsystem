@@ -170,6 +170,7 @@ export default function MeetingRoom() {
   const [showReactions, setShowReactions] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; name: string }[]>([]);
   const [layout, setLayout] = useState<"grid" | "spotlight">("grid");
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 640);
 
   // ── speaking detection ───────────────────────────────────────────────────
   useEffect(() => {
@@ -462,6 +463,13 @@ export default function MeetingRoom() {
     connectWs(uid, roomId, name);
   }, [userId, roomId, localStream, getMedia, connectWs, userName]);
 
+  // ── responsive ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // ── cleanup ───────────────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
@@ -598,11 +606,22 @@ export default function MeetingRoom() {
   // ─── Pre-join screen ──────────────────────────────────────────────────────
   if (!joined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#202124]" dir="rtl">
-        <div className="w-full max-w-5xl mx-4 flex flex-col lg:flex-row gap-8 items-center">
+      <div className="min-h-screen flex flex-col bg-[#202124] overflow-y-auto" dir="rtl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <span className="text-white font-semibold text-base truncate">{meeting?.title || "اجتماع"}</span>
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#3c4043] cursor-pointer hover:bg-[#4a4d51] transition" onClick={copyLink}>
+            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-[#9aa0a6]" />}
+            <span className="text-[#9aa0a6] text-xs hidden sm:block">نسخ الرابط</span>
+          </div>
+        </div>
+
+        {/* Content: stacks vertically on mobile, side-by-side on desktop */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-8 items-center justify-center px-4 pb-6 lg:max-w-5xl lg:mx-auto lg:w-full">
 
           {/* Camera preview */}
-          <div className="w-full lg:flex-1 rounded-2xl overflow-hidden relative bg-[#3c4043]" style={{ aspectRatio: "16/9" }}>
+          <div className="w-full lg:flex-1 rounded-2xl overflow-hidden relative bg-[#2d2f33]"
+            style={{ aspectRatio: "16/9", maxHeight: "40vh" }}>
             {localStream && videoOn ? (
               <video
                 ref={el => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); } }}
@@ -611,72 +630,63 @@ export default function MeetingRoom() {
                 style={{ transform: "scaleX(-1)" }}
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                 <div
-                  className="w-28 h-28 rounded-full flex items-center justify-center text-5xl font-bold text-white"
+                  className="w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-5xl font-bold text-white"
                   style={{ background: getAvatarColor(userName) }}
                 >
-                  {userName.charAt(0).toUpperCase()}
+                  {(userName || "م").charAt(0).toUpperCase()}
                 </div>
-                {mediaError && (
-                  <button
-                    onClick={async () => { const s = await getMedia(); if (!s) window.open(location.href, "_blank"); }}
-                    className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition"
-                  >
-                    تفعيل الكاميرا
-                  </button>
-                )}
+                <span className="text-[#9aa0a6] text-xs">
+                  {mediaError ? "الكاميرا غير متاحة" : "الكاميرا مغلقة"}
+                </span>
               </div>
             )}
-            {/* Controls overlay */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+            {/* Media controls overlay */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
               <button
                 onClick={toggleAudio}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition ${audioOn ? "bg-[#5f6368] hover:bg-[#6f7379]" : "bg-red-600 hover:bg-red-700"}`}
+                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition shadow-lg ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
                 data-testid="button-toggle-audio-prejoin"
               >
-                {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+                {audioOn ? <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
               </button>
               <button
                 onClick={toggleVideo}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition ${videoOn ? "bg-[#5f6368] hover:bg-[#6f7379]" : "bg-red-600 hover:bg-red-700"}`}
+                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition shadow-lg ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
                 data-testid="button-toggle-video-prejoin"
               >
-                {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+                {videoOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
               </button>
             </div>
           </div>
 
           {/* Join card */}
-          <div className="w-full lg:w-80 flex flex-col gap-4">
-            <div>
-              <h1 className="text-white text-2xl font-semibold mb-1">{meeting?.title || "الاجتماع"}</h1>
-              <p className="text-[#9aa0a6] text-sm">{meeting?.hostName || ""}</p>
-            </div>
-
-            {/* Name input for guests */}
+          <div className="w-full lg:w-80 flex flex-col gap-3">
+            {/* Name for guests */}
             {!defaultName && (
               <div>
                 <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك</label>
                 <input
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
-                  placeholder="أدخل اسمك للمتابعة..."
+                  placeholder="أدخل اسمك..."
                   className="w-full bg-[#3c4043] text-white text-sm rounded-xl px-4 py-3 outline-none border border-white/10 focus:border-blue-500 transition placeholder:text-[#9aa0a6]"
                   data-testid="input-guest-name"
                 />
               </div>
             )}
 
+            {/* Media error */}
             {mediaError && (
-              <div className="rounded-xl p-3 flex flex-col gap-2.5 bg-[#3c4043] border border-red-500/30">
+              <div className="rounded-xl p-3 flex flex-col gap-2 bg-[#3c4043] border border-red-500/30">
                 <div className="flex gap-2 items-start">
                   <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                  <p className="text-red-300 text-sm leading-relaxed">{mediaError}</p>
+                  <p className="text-red-300 text-xs leading-relaxed">{mediaError}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={async () => await getMedia()} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition">حاول مجدداً</button>
-                  <button onClick={() => window.open(location.href, "_blank")} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-[#5f6368] hover:bg-[#6f7379] transition">فتح في تبويب جديد</button>
+                  <button onClick={async () => await getMedia()} className="flex-1 py-1.5 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition">حاول مجدداً</button>
+                  <button onClick={() => window.open(location.href, "_blank")} className="flex-1 py-1.5 rounded-lg text-xs font-medium text-white bg-[#5f6368] hover:bg-[#6f7379] transition">تبويب جديد</button>
                 </div>
               </div>
             )}
@@ -684,16 +694,15 @@ export default function MeetingRoom() {
             <button
               onClick={joinMeeting}
               disabled={!defaultName && !guestName.trim()}
-              className="w-full h-12 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all text-base"
+              className="w-full h-12 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold transition-all text-base"
               data-testid="button-join-meeting"
             >
               انضم الآن
             </button>
 
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-[#3c4043] cursor-pointer hover:bg-[#4a4d51] transition" onClick={copyLink}>
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-[#9aa0a6]" />}
-              <span className="text-[#9aa0a6] text-xs truncate">/meet/{roomId}</span>
-            </div>
+            {meeting?.hostName && (
+              <p className="text-[#9aa0a6] text-xs text-center">المضيف: {meeting.hostName}</p>
+            )}
           </div>
         </div>
       </div>
@@ -715,55 +724,56 @@ export default function MeetingRoom() {
   }
 
   // ─── Meeting room ─────────────────────────────────────────────────────────
-  const gridCols = total === 1 ? 1 : total === 2 ? 2 : total <= 4 ? 2 : total <= 6 ? 3 : 4;
+  // On mobile: max 1 column. On desktop: adaptive by count
+  const gridCols = isMobile ? 1 : (total === 1 ? 1 : total === 2 ? 2 : total <= 4 ? 2 : total <= 6 ? 3 : 4);
 
   return (
     <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative" dir="rtl">
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-medium text-sm">{meeting?.title || "اجتماع"}</span>
-          <span className="text-[#9aa0a6] text-sm">{timer}</span>
+      <div className="flex items-center justify-between px-3 py-2 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-white font-medium text-sm truncate max-w-[140px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
+          <span className="text-[#9aa0a6] text-xs hidden sm:block shrink-0">{timer}</span>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Lobby requests badge */}
-          {isHost && lobbyRequests.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          {/* Lobby waiting badge */}
+          {lobbyRequests.length > 0 && (
             <button
               onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium"
             >
               <Users className="w-3.5 h-3.5" />
-              {lobbyRequests.length} ينتظر
+              <span>{lobbyRequests.length} ينتظر</span>
             </button>
           )}
-          <button onClick={copyLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs transition">
+          <button onClick={copyLink} className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
             {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-            نسخ الرابط
           </button>
         </div>
       </div>
 
       {/* Main area */}
-      <div className="flex flex-1 gap-2 px-2 pb-2 overflow-hidden">
+      <div className="flex flex-1 gap-2 px-2 pb-2 overflow-hidden min-h-0">
 
         {/* Video grid */}
-        <div className={`flex-1 grid gap-2 content-center ${panel !== "none" ? "lg:flex-1" : ""}`}
+        <div
+          className="flex-1 grid gap-1.5 sm:gap-2 content-center min-h-0"
           style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
         >
-          {allPeers.map((peer, i) => (
+          {allPeers.map((peer) => (
             <div
               key={peer.id}
-              className={`rounded-xl overflow-hidden relative ${total === 1 ? "aspect-video" : "aspect-video"}`}
+              className="rounded-xl overflow-hidden relative aspect-video"
             >
               <VideoTile peer={peer} isSelf={peer.id === (userId || "local")} size="large" />
             </div>
           ))}
         </div>
 
-        {/* Side panel */}
+        {/* Side panel — desktop only (full overlay on mobile handled below) */}
         {panel !== "none" && (
-          <div className="w-80 bg-[#292b2f] rounded-2xl flex flex-col overflow-hidden shrink-0">
+          <div className="hidden md:flex w-72 lg:w-80 bg-[#292b2f] rounded-2xl flex-col overflow-hidden shrink-0">
             {/* Panel header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] shrink-0">
               <div className="flex gap-1">
@@ -875,157 +885,250 @@ export default function MeetingRoom() {
         )}
       </div>
 
+      {/* Mobile panel overlay — slides up from bottom on small screens */}
+      {panel !== "none" && (
+        <div className="md:hidden fixed inset-0 z-40 flex flex-col justify-end" onClick={() => setPanel("none")}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="relative bg-[#292b2f] rounded-t-3xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "75vh" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+            {/* Tabs */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.08] shrink-0">
+              <div className="flex gap-1">
+                <button onClick={() => setPanel("chat")} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  المحادثة
+                </button>
+                <button onClick={() => { setPanel("participants"); setUnread(0); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  المشاركون ({total})
+                </button>
+              </div>
+              <button onClick={() => setPanel("none")} className="text-[#9aa0a6] hover:text-white p-1">
+                <ChevronRight className="w-5 h-5 rotate-90" />
+              </button>
+            </div>
+            {/* Chat content */}
+            {panel === "chat" && (
+              <>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3" style={{ maxHeight: "50vh" }}>
+                  {chat.length === 0 && <div className="text-center text-[#9aa0a6] text-sm mt-8">لا توجد رسائل بعد</div>}
+                  {chat.map(msg => (
+                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.userId === userId ? "items-end" : "items-start"}`}>
+                      <span className="text-[#9aa0a6] text-xs">{msg.userId === userId ? "أنت" : msg.name} · {msg.time}</span>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.userId === userId ? "bg-blue-600" : "bg-[#3c4043]"}`}>{msg.text}</div>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+                <div className="p-3 border-t border-white/[0.08] shrink-0">
+                  <div className="flex gap-2 items-center bg-[#3c4043] rounded-full px-4 py-2">
+                    <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendChat()} placeholder="اكتب رسالة..." className="flex-1 bg-transparent text-white text-sm placeholder:text-[#9aa0a6] outline-none" />
+                    <button onClick={sendChat} className="text-blue-400"><Send className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              </>
+            )}
+            {/* Participants content */}
+            {panel === "participants" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: "55vh" }}>
+                {(isHost || isStaff) && lobbyRequests.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[#9aa0a6] text-xs font-medium mb-2 px-1">ينتظر في الردهة</p>
+                    {lobbyRequests.map(req => (
+                      <div key={req.userId} className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-2">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ background: getAvatarColor(req.name || "") }}>{(req.name || "م").charAt(0)}</div>
+                        <span className="text-white text-sm flex-1 truncate">{req.name || "مشارك"}</span>
+                        <button onClick={() => approveRequest(req.userId)} className="px-2 py-1 rounded-lg bg-green-600 text-white text-xs">قبول</button>
+                        <button onClick={() => rejectRequest(req.userId)} className="px-2 py-1 rounded-lg bg-red-600/70 text-white text-xs">رفض</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {allPeers.map(peer => (
+                  <div key={peer.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-[#3c4043]">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-sm" style={{ background: getAvatarColor(peer.name) }}>{peer.name.charAt(0).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm truncate">{peer.id === (userId || "local") ? `${peer.name} (أنت)` : peer.name}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      {!peer.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                      {!peer.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Floating reactions */}
-      <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-none z-20">
+      <div className="absolute bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-none z-20">
         {floatingReactions.map(r => (
           <div key={r.id} className="flex flex-col items-center animate-bounce">
-            <span className="text-4xl">{r.emoji}</span>
-            <span className="text-white/70 text-xs">{r.name}</span>
+            <span className="text-3xl sm:text-4xl">{r.emoji}</span>
+            <span className="text-white/70 text-[10px] sm:text-xs">{r.name}</span>
           </div>
         ))}
       </div>
 
       {/* Emoji picker popup */}
       {showReactions && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[#292b2f] rounded-2xl p-3 flex gap-2 shadow-2xl border border-white/10 z-30">
+        <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 bg-[#292b2f] rounded-2xl p-2.5 sm:p-3 flex gap-1.5 sm:gap-2 shadow-2xl border border-white/10 z-30">
           {["👍","❤️","😂","😮","👏","🎉","🙏","🔥"].map(emoji => (
-            <button
-              key={emoji}
-              onClick={() => sendReaction(emoji)}
-              className="text-2xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-white/10"
-            >
+            <button key={emoji} onClick={() => sendReaction(emoji)} className="text-xl sm:text-2xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-white/10">
               {emoji}
             </button>
           ))}
         </div>
       )}
 
-      {/* Bottom controls bar */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0 relative">
-        {/* Left: info + host controls */}
-        <div className="flex items-center gap-2 w-48">
-          <span className="text-[#9aa0a6] text-xs hidden md:block">{timer}</span>
+      {/* ── Bottom controls ── */}
+      {/* Mobile: compact 2-section layout */}
+      <div className="shrink-0 relative">
+
+        {/* Secondary controls row (mobile only) */}
+        <div className="flex md:hidden items-center justify-center gap-2 px-3 py-1.5 border-t border-white/[0.06]">
+          <button onClick={toggleScreen} className={`flex-1 h-9 rounded-full flex items-center justify-center gap-1 text-xs text-[#9aa0a6] transition ${screenSharing ? "bg-blue-600/30 text-blue-300" : "bg-[#3c4043]"}`} data-testid="button-toggle-screen-mobile">
+            <Monitor className="w-4 h-4" />
+            <span>شاشة</span>
+          </button>
+          <button onClick={toggleHand} className={`flex-1 h-9 rounded-full flex items-center justify-center gap-1 text-xs transition ${raisedHand ? "bg-amber-500/30 text-amber-300" : "bg-[#3c4043] text-[#9aa0a6]"}`} data-testid="button-raise-hand-mobile">
+            <Hand className="w-4 h-4" />
+            <span>يدي</span>
+          </button>
+          <button onClick={() => setShowReactions(s => !s)} className={`flex-1 h-9 rounded-full flex items-center justify-center gap-1 text-xs transition ${showReactions ? "bg-blue-600/30 text-blue-300" : "bg-[#3c4043] text-[#9aa0a6]"}`} data-testid="button-reactions-mobile">
+            <Smile className="w-4 h-4" />
+            <span>إيموجي</span>
+          </button>
           {(isHost || isStaff) && (
-            <>
-              <button
-                onClick={muteAll}
-                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] hover:text-white text-xs transition"
-                title="كتم الجميع"
-                data-testid="button-mute-all"
-              >
-                <MicOff className="w-3.5 h-3.5" />
-                كتم الكل
-              </button>
-              <button
-                onClick={async () => {
-                  if (!meeting) return;
-                  const r = await fetch(`/api/qmeet/meetings/${meeting._id || meeting.id}/toggle-lobby`, { method: "PATCH", credentials: "include" });
-                  if (r.ok) { const d = await r.json(); setLobbyEnabled(d.lobbyEnabled); toast({ title: d.lobbyEnabled ? "✅ صالة الانتظار مفعلة" : "🔓 صالة الانتظار معطلة" }); }
-                }}
-                className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition ${lobbyEnabled ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-[#3c4043] text-[#9aa0a6] hover:bg-[#4a4d51] hover:text-white"}`}
-                title={lobbyEnabled ? "تعطيل صالة الانتظار" : "تفعيل صالة الانتظار"}
-                data-testid="button-toggle-lobby"
-              >
-                {lobbyEnabled ? <Lock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                {lobbyEnabled ? "مقفل" : "مفتوح"}
-              </button>
-            </>
+            <button onClick={muteAll} className="flex-1 h-9 rounded-full flex items-center justify-center gap-1 text-xs bg-[#3c4043] text-[#9aa0a6] transition" data-testid="button-mute-all-mobile">
+              <MicOff className="w-4 h-4" />
+              <span>كتم الكل</span>
+            </button>
           )}
         </div>
 
-        {/* Center: core controls */}
-        <div className="flex items-center gap-2">
-          {/* Mic */}
-          <button
-            onClick={toggleAudio}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${audioOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
-            title={audioOn ? "كتم الميكروفون" : "تشغيل الميكروفون"}
-            data-testid="button-toggle-audio"
-          >
-            {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
-          </button>
+        {/* Main controls row */}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
 
-          {/* Camera */}
-          <button
-            onClick={toggleVideo}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${videoOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
-            title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}
-            data-testid="button-toggle-video"
-          >
-            {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
-          </button>
-
-          {/* Screen share */}
-          <button
-            onClick={toggleScreen}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${screenSharing ? "bg-blue-600 hover:bg-blue-700" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
-            title={screenSharing ? "إيقاف مشاركة الشاشة" : "مشاركة الشاشة"}
-            data-testid="button-toggle-screen"
-          >
-            <Monitor className="w-5 h-5 text-white" />
-          </button>
-
-          {/* Raise hand */}
-          <button
-            onClick={toggleHand}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${raisedHand ? "bg-amber-500 hover:bg-amber-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
-            title={raisedHand ? "إنزال اليد" : "رفع اليد"}
-            data-testid="button-raise-hand"
-          >
-            <Hand className="w-5 h-5 text-white" />
-          </button>
-
-          {/* Emoji reactions */}
-          <button
-            onClick={() => setShowReactions(s => !s)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${showReactions ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
-            title="ردود فعل"
-            data-testid="button-reactions"
-          >
-            <Smile className="w-5 h-5 text-white" />
-          </button>
-
-          {/* Leave */}
-          <button
-            onClick={leave}
-            className="h-12 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all hover:scale-105 flex items-center gap-2"
-            data-testid="button-leave"
-          >
-            <PhoneOff className="w-4 h-4" />
-            <span className="hidden sm:inline">مغادرة</span>
-          </button>
-        </div>
-
-        {/* Right: layout + chat + participants */}
-        <div className="flex items-center gap-2 w-48 justify-end">
-          <button
-            onClick={() => setLayout(l => l === "grid" ? "spotlight" : "grid")}
-            className="w-10 h-10 rounded-full hidden md:flex items-center justify-center bg-[#3c4043] hover:bg-[#4a4d51] transition"
-            title={layout === "grid" ? "عرض المتحدث" : "عرض الشبكة"}
-            data-testid="button-toggle-layout"
-          >
-            <Grid3X3 className="w-4 h-4 text-[#9aa0a6]" />
-          </button>
-          <button
-            onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
-            data-testid="button-toggle-chat"
-          >
-            <MessageSquare className="w-5 h-5 text-white" />
-            {unread > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>
+          {/* Left: desktop-only host controls + timer */}
+          <div className="hidden md:flex items-center gap-2 w-44">
+            <span className="text-[#9aa0a6] text-xs">{timer}</span>
+            {(isHost || isStaff) && (
+              <>
+                <button onClick={muteAll} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] hover:text-white text-xs transition" data-testid="button-mute-all">
+                  <MicOff className="w-3.5 h-3.5" /> كتم الكل
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!meeting) return;
+                    const r = await fetch(`/api/qmeet/meetings/${meeting._id || meeting.id}/toggle-lobby`, { method: "PATCH", credentials: "include" });
+                    if (r.ok) { const d = await r.json(); setLobbyEnabled(d.lobbyEnabled); toast({ title: d.lobbyEnabled ? "✅ صالة الانتظار مفعلة" : "🔓 صالة الانتظار معطلة" }); }
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition ${lobbyEnabled ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-[#3c4043] text-[#9aa0a6] hover:bg-[#4a4d51] hover:text-white"}`}
+                  data-testid="button-toggle-lobby"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  {lobbyEnabled ? "مقفل" : "مفتوح"}
+                </button>
+              </>
             )}
-          </button>
-          <button
-            onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "participants" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
-            data-testid="button-toggle-participants"
-          >
-            <Users className="w-5 h-5 text-white" />
-            {lobbyRequests.length > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">{lobbyRequests.length}</span>
-            )}
-          </button>
+          </div>
+
+          {/* Center: core controls */}
+          <div className="flex items-center justify-center gap-2 flex-1 md:flex-none">
+            {/* Mic */}
+            <button onClick={toggleAudio}
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all active:scale-95 ${audioOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
+              data-testid="button-toggle-audio"
+            >
+              {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
+            </button>
+            {/* Camera */}
+            <button onClick={toggleVideo}
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all active:scale-95 ${videoOn ? "bg-[#3c4043] hover:bg-[#4a4d51]" : "bg-red-600 hover:bg-red-700"}`}
+              data-testid="button-toggle-video"
+            >
+              {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+            </button>
+            {/* Screen share — desktop only */}
+            <button onClick={toggleScreen}
+              className={`hidden md:flex w-12 h-12 rounded-full items-center justify-center transition-all hover:scale-105 ${screenSharing ? "bg-blue-600 hover:bg-blue-700" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-screen"
+            >
+              <Monitor className="w-5 h-5 text-white" />
+            </button>
+            {/* Raise hand — desktop only */}
+            <button onClick={toggleHand}
+              className={`hidden md:flex w-12 h-12 rounded-full items-center justify-center transition-all hover:scale-105 ${raisedHand ? "bg-amber-500 hover:bg-amber-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-raise-hand"
+            >
+              <Hand className="w-5 h-5 text-white" />
+            </button>
+            {/* Emoji — desktop only */}
+            <button onClick={() => setShowReactions(s => !s)}
+              className={`hidden md:flex w-12 h-12 rounded-full items-center justify-center transition-all hover:scale-105 ${showReactions ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-reactions"
+            >
+              <Smile className="w-5 h-5 text-white" />
+            </button>
+            {/* Leave */}
+            <button onClick={leave}
+              className="h-11 sm:h-12 px-4 sm:px-5 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium text-sm transition-all flex items-center gap-1.5"
+              data-testid="button-leave"
+            >
+              <PhoneOff className="w-4 h-4" />
+              <span className="hidden sm:inline">مغادرة</span>
+            </button>
+          </div>
+
+          {/* Right: chat + participants */}
+          <div className="hidden md:flex items-center gap-2 w-44 justify-end">
+            <button onClick={() => setLayout(l => l === "grid" ? "spotlight" : "grid")}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4a4d51] transition"
+              data-testid="button-toggle-layout"
+            >
+              <Grid3X3 className="w-4 h-4 text-[#9aa0a6]" />
+            </button>
+            <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-chat"
+            >
+              <MessageSquare className="w-5 h-5 text-white" />
+              {unread > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">{unread}</span>}
+            </button>
+            <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "participants" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              data-testid="button-toggle-participants"
+            >
+              <Users className="w-5 h-5 text-white" />
+              {lobbyRequests.length > 0 && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">{lobbyRequests.length}</span>}
+            </button>
+          </div>
+
+          {/* Right: mobile chat + participants */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043]"}`}
+              data-testid="button-toggle-chat-mobile"
+            >
+              <MessageSquare className="w-4 h-4 text-white" />
+              {unread > 0 && <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">{unread}</span>}
+            </button>
+            <button onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition relative ${panel === "participants" ? "bg-blue-600" : "bg-[#3c4043]"}`}
+              data-testid="button-toggle-participants-mobile"
+            >
+              <Users className="w-4 h-4 text-white" />
+              {lobbyRequests.length > 0 && <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center font-bold">{lobbyRequests.length}</span>}
+            </button>
+          </div>
         </div>
       </div>
     </div>
