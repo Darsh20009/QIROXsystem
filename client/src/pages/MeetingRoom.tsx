@@ -293,7 +293,6 @@ export default function MeetingRoom() {
   const [copied, setCopied] = useState(false);
   const [wsReady, setWsReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
-  const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
   const meetingTimer = useMeetingTimer();
 
   const [drawColor, setDrawColor] = useState("#ffffff");
@@ -758,108 +757,28 @@ export default function MeetingRoom() {
   }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost, isStaff]);
 
   const getMedia = useCallback(async () => {
-    // Guard: some browsers/environments don't expose mediaDevices
-    if (!navigator?.mediaDevices?.getUserMedia) {
-      const ua = navigator.userAgent;
-      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      // Detect iframe context — camera/mic blocked by browser Permissions Policy
-      const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-      if (isInIframe) {
-        setMediaError("__iframe__");
-      } else if (isIOS) {
-        setMediaError("يلزم Safari على iPhone/iPad — افتح الرابط في Safari");
-      } else {
-        setMediaError("المتصفح لا يدعم الكاميرا/الميكروفون. جرّب Chrome أو Edge");
-      }
-      return null;
-    }
-
-    // iOS Safari does NOT support sampleRate constraint (causes OverconstrainedError).
-    // Keep constraints minimal and compatible across all browsers.
-    const ua = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-    // iOS-safe audio constraints (no sampleRate)
-    const audioConstraints: MediaTrackConstraints = isIOS
-      ? { echoCancellation: true, noiseSuppression: true }
-      : { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-
-    // Try ordered constraint sets from best to most compatible
-    const videoConstraintSets: MediaTrackConstraints[] = isIOS
-      ? [
-          { width: { ideal: 1280 }, height: { ideal: 720 } },
-          { width: { ideal: 640 }, height: { ideal: 480 } },
-          true as any,
-        ]
-      : [
-          { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-          { width: { ideal: 640 }, height: { ideal: 480 } },
-          true as any,
-        ];
-
-    // Try video + audio
-    for (const videoConstraints of videoConstraintSets) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-          audio: audioConstraints,
-        });
-        localStreamRef.current = stream;
-        setLocalStream(stream);
-        setMediaError(null);
-        return stream;
-      } catch (err: any) {
-        // NotAllowedError = user denied permission OR iframe Permissions Policy violation
-        if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-          const isInIframeLocal = (() => { try { return window.self !== window.top; } catch { return true; } })();
-          // Chrome Permissions Policy message: "The request is not allowed by the user agent or the platform in the current context"
-          const msg = (err?.message ?? "").toLowerCase();
-          const isPermissionsPolicyErr = msg.includes("permissions policy") ||
-            msg.includes("permission denied") ||
-            msg.includes("not allowed by") ||
-            msg.includes("not allowed by the user agent") ||
-            msg.includes("current context");
-          if (isInIframeLocal || isPermissionsPolicyErr) {
-            setMediaError("__iframe__");
-          } else {
-            setMediaError("تم رفض إذن الكاميرا/الميكروفون. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
-          }
-          return null;
-        }
-        // Continue to next constraint set for other errors
-      }
-    }
-
-    // Fallback: audio only
+    const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        audio: audioConstraints,
+      });
       localStreamRef.current = stream;
       setLocalStream(stream);
-      setVideoOn(false);
-      setMediaError("الكاميرا غير متاحة — انضم بالصوت فقط");
+      setMediaError(null);
       return stream;
-    } catch (err: any) {
-      const isInIframeLocal = (() => { try { return window.self !== window.top; } catch { return true; } })();
-      const msg = (err?.message ?? "").toLowerCase();
-      const isPermissionsPolicyErr = msg.includes("permissions policy") ||
-        msg.includes("permission denied") ||
-        msg.includes("not allowed by") ||
-        msg.includes("not allowed by the user agent") ||
-        msg.includes("current context");
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        if (isInIframeLocal || isPermissionsPolicyErr) {
-          setMediaError("__iframe__");
-        } else {
-          setMediaError("تم رفض الإذن. اضغط على أيقونة القفل في شريط العنوان وأعد تشغيل الصفحة.");
-        }
-      } else {
-        if (isInIframeLocal) {
-          setMediaError("__iframe__");
-        } else {
-          setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن وأن الجهاز غير مستخدم.");
-        }
+    } catch {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+        setVideoOn(false);
+        setMediaError("الكاميرا غير متاحة، يمكنك الانضمام بالصوت فقط");
+        return stream;
+      } catch {
+        setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
+        return null;
       }
-      return null;
     }
   }, []);
 
@@ -952,73 +871,21 @@ export default function MeetingRoom() {
     navigate("/dashboard");
   }, [sendWs, roomId, navigate]);
 
-  const toggleAudio = useCallback(async () => {
-    if (!localStreamRef.current) {
-      const stream = await getMedia();
-      if (!stream) {
-        toast({ title: "الميكروفون غير متاح", description: isInIframe ? "لا يمكن استخدام الميكروفون في هذه النافذة" : "اضغط على أيقونة القفل في شريط العنوان ثم أعد تشغيل الصفحة", variant: "destructive" });
-        return;
-      }
-      stream.getTracks().forEach(track => {
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === track.kind);
-          if (sender) sender.replaceTrack(track).catch(() => {});
-          else pc.addTrack(track, stream);
-        });
-      });
-    }
+  const toggleAudio = useCallback(() => {
+    if (!localStreamRef.current) return;
     const enabled = !audioOn;
-    localStreamRef.current!.getAudioTracks().forEach(t => { t.enabled = enabled; });
+    localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = enabled; });
     setAudioOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: enabled, video: videoOn });
-  }, [audioOn, videoOn, roomId, sendWs, getMedia, toast, isInIframe]);
+  }, [audioOn, videoOn, roomId, sendWs]);
 
-  const toggleVideo = useCallback(async () => {
-    if (screenSharing) return;
-    if (!localStreamRef.current) {
-      const stream = await getMedia();
-      if (!stream) {
-        toast({ title: "الكاميرا غير متاحة", description: isInIframe ? "لا يمكن استخدام الكاميرا في هذه النافذة" : "اضغط على أيقونة القفل في شريط العنوان ثم أعد تشغيل الصفحة", variant: "destructive" });
-        return;
-      }
-      stream.getTracks().forEach(track => {
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === track.kind);
-          if (sender) sender.replaceTrack(track).catch(() => {});
-          else pc.addTrack(track, stream);
-        });
-      });
-    }
+  const toggleVideo = useCallback(() => {
+    if (!localStreamRef.current || screenSharing) return;
     const enabled = !videoOn;
-    const videoTracks = localStreamRef.current.getVideoTracks();
-
-    if (videoTracks.length === 0 && enabled) {
-      // No video tracks — try to acquire camera now
-      try {
-        const camStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: cameraFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
-        const camTrack = camStream.getVideoTracks()[0];
-        localStreamRef.current.addTrack(camTrack);
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(camTrack).catch(() => {});
-          else pc.addTrack(camTrack, localStreamRef.current!);
-        });
-        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-        setMediaError(null);
-      } catch {
-        toast({ title: "تعذّر تشغيل الكاميرا", description: "تأكد من منح إذن الكاميرا للمتصفح", variant: "destructive" });
-        return;
-      }
-    } else {
-      videoTracks.forEach(t => { t.enabled = enabled; });
-    }
-
+    localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = enabled; });
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs, screenSharing, cameraFacing, getMedia, toast, isInIframe]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
@@ -1676,35 +1543,10 @@ export default function MeetingRoom() {
               <p className="text-white/35 text-sm">{meeting.hostName}</p>
             </div>
 
-            {mediaError && mediaError !== "__iframe__" && (
+            {mediaError && (
               <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
                 <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                <div className="flex flex-col gap-2 flex-1">
-                  <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
-                  <button
-                    onClick={() => { setMediaError(null); getMedia(); }}
-                    className="self-start px-3 py-1 rounded-lg text-yellow-300 text-xs font-medium transition-all hover:opacity-80"
-                    style={{ background: "rgba(234,179,8,0.15)", border: "1px solid rgba(234,179,8,0.2)" }}
-                  >
-                    إعادة المحاولة
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {mediaError === "__iframe__" && (
-              <div className="rounded-xl px-4 py-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.18)" }}>
-                <AlertCircle className="w-3.5 h-3.5 text-yellow-400/70 shrink-0 mt-0.5" />
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-yellow-300/70 text-xs leading-relaxed">الكاميرا والميكروفون غير متاحَين في نافذة المعاينة</p>
-                  <button
-                    onClick={() => { setMediaError(null); getMedia(); }}
-                    className="self-start text-yellow-300/60 text-xs underline underline-offset-2 hover:text-yellow-300/90 transition-colors"
-                    data-testid="button-retry-media-iframe"
-                  >
-                    اضغط هنا للمحاولة مجدداً بعد منح الإذن
-                  </button>
-                </div>
+                <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
               </div>
             )}
 
