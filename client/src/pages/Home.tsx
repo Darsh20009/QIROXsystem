@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Partner } from "@shared/schema";
 
 import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
+import paymobLogo from "@assets/download_1774503289938.png";
 import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
 import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
 import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
@@ -465,6 +466,167 @@ export default function Home() {
                   <div className="text-black/35 dark:text-white/35 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
                 </div>
               ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* PAYMOB PARTNERSHIP SECTION */}
+      <section className="py-16 md:py-20 relative overflow-hidden" data-testid="section-paymob-partnership">
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+            custom={0}
+            className="relative rounded-3xl overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #0a0a0a 0%, #111827 40%, #0f172a 100%)",
+            }}
+          >
+            {/* Animated glowing orbs */}
+            <div className="absolute top-0 left-1/4 w-72 h-72 rounded-full opacity-20 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, #1d90f5 0%, transparent 70%)" }} />
+            <div className="absolute bottom-0 right-1/4 w-56 h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, #2563eb 0%, transparent 70%)" }} />
+
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+
+            {/* Shimmer sweep */}
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 4 }}
+              style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%)" }}
+            />
+
+            <div className="relative z-10 px-6 sm:px-10 md:px-16 py-12 md:py-16">
+              <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16" dir="rtl">
+
+                {/* Left: Logos + badge */}
+                <div className="flex-shrink-0 flex flex-col items-center gap-6">
+                  {/* Partnership visual */}
+                  <div className="flex items-center gap-4">
+                    {/* Qirox logo box */}
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center"
+                    >
+                      <span className="text-white font-black text-lg sm:text-xl tracking-tight font-heading">Q</span>
+                    </motion.div>
+
+                    {/* Connection indicator */}
+                    <div className="flex flex-col items-center gap-1">
+                      <motion.div
+                        animate={{ scaleX: [0.8, 1, 0.8], opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-8 h-0.5 rounded-full bg-blue-400"
+                      />
+                      <motion.div
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        className="w-2 h-2 rounded-full bg-blue-400"
+                      />
+                      <motion.div
+                        animate={{ scaleX: [0.8, 1, 0.8], opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                        className="w-8 h-0.5 rounded-full bg-blue-400"
+                      />
+                    </div>
+
+                    {/* Paymob logo box */}
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/20"
+                    >
+                      <img src={paymobLogo} alt="Paymob" className="w-12 sm:w-14 object-contain" />
+                    </motion.div>
+                  </div>
+
+                  {/* Partnership badge */}
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-blue-300 border border-blue-400/30 bg-blue-500/10"
+                  >
+                    {lang === "ar" ? "🤝 شراكة رسمية معتمدة" : "🤝 Official Certified Partnership"}
+                  </motion.div>
+                </div>
+
+                {/* Right: Text content */}
+                <div className="flex-1 text-center md:text-right">
+                  <motion.div
+                    variants={fadeUp}
+                    custom={1}
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/20 mb-4"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-blue-300 text-xs font-semibold tracking-wide uppercase">
+                      {lang === "ar" ? "بوابة دفع متكاملة" : "Integrated Payment Gateway"}
+                    </span>
+                  </motion.div>
+
+                  <motion.h2
+                    variants={fadeUp}
+                    custom={2}
+                    className="text-2xl sm:text-3xl md:text-4xl font-black text-white font-heading leading-tight mb-4"
+                  >
+                    {lang === "ar" ? (
+                      <>
+                        <span className="text-white">Qirox</span>{" "}
+                        <span className="text-blue-400">×</span>{" "}
+                        <span className="text-[#1d90f5]">Paymob</span>
+                        <br />
+                        <span className="text-white/70 text-xl sm:text-2xl font-bold">
+                          موقعك أصبح متكاملاً ببوابة دفع احترافية
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-white">Qirox</span>{" "}
+                        <span className="text-blue-400">×</span>{" "}
+                        <span className="text-[#1d90f5]">Paymob</span>
+                        <br />
+                        <span className="text-white/70 text-xl sm:text-2xl font-bold">
+                          Your site is now powered by a professional payment gateway
+                        </span>
+                      </>
+                    )}
+                  </motion.h2>
+
+                  <motion.p
+                    variants={fadeUp}
+                    custom={3}
+                    className="text-white/45 text-sm sm:text-base leading-relaxed mb-8 max-w-lg mx-auto md:mx-0"
+                  >
+                    {lang === "ar"
+                      ? "تعاقدت Qirox رسمياً مع Paymob لتوفير بوابة دفع آمنة وسريعة لجميع عملاؤنا — قبول بطاقات Visa، Mastercard، محافظ رقمية، وأكثر."
+                      : "Qirox has officially partnered with Paymob to deliver a fast, secure payment gateway for all our clients — supporting Visa, Mastercard, digital wallets, and more."}
+                  </motion.p>
+
+                  {/* Feature pills */}
+                  <motion.div
+                    variants={fadeUp}
+                    custom={4}
+                    className="flex flex-wrap items-center justify-center md:justify-start gap-2"
+                  >
+                    {(lang === "ar"
+                      ? ["✅ Visa & Mastercard", "✅ محافظ رقمية", "✅ تشفير SSL", "✅ دعم 24/7", "✅ تسوية فورية"]
+                      : ["✅ Visa & Mastercard", "✅ Digital Wallets", "✅ SSL Encryption", "✅ 24/7 Support", "✅ Instant Settlement"]
+                    ).map((feat, i) => (
+                      <span
+                        key={i}
+                        className="text-xs font-medium text-white/60 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08]"
+                      >
+                        {feat}
+                      </span>
+                    ))}
+                  </motion.div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
