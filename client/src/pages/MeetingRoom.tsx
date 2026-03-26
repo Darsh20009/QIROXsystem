@@ -573,14 +573,18 @@ export default function MeetingRoom() {
     const effectiveId = userId || `guest-${Date.now()}`;
     myIdRef.current = effectiveId;
 
-    // Get media first
-    const stream = await getMedia();
-    // stream may be null if no permission — still let them join
+    // Reuse existing stream if already obtained from pre-join screen
+    // Only call getMedia if we don't have a stream yet — avoids duplicate streams
+    let stream = localStreamRef.current;
+    const hasLiveTracks = stream && stream.getTracks().some(t => t.readyState === "live");
+    if (!hasLiveTracks) {
+      stream = await getMedia();
+    }
 
-    // Apply initial track states
+    // Apply initial track states (respect what user set on pre-join screen)
     if (stream) {
-      stream.getAudioTracks().forEach(t => { t.enabled = audioOn; });
-      stream.getVideoTracks().forEach(t => { t.enabled = videoOn; });
+      stream.getAudioTracks().forEach(t => { t.enabled = audioOnRef.current; });
+      stream.getVideoTracks().forEach(t => { t.enabled = videoOnRef.current; });
     }
 
     // Load ICE servers
@@ -605,7 +609,7 @@ export default function MeetingRoom() {
     ws.onerror = () => {};
 
     setJoined(true);
-  }, [roomId, userId, userName, user, audioOn, videoOn, getMedia, handleMessage]);
+  }, [roomId, userId, userName, user, getMedia, handleMessage]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -665,43 +669,130 @@ export default function MeetingRoom() {
 
   // ── Controls ──────────────────────────────────────────────────────────────
 
-  const toggleAudio = useCallback(async () => {
-    if (!localStreamRef.current) {
-      const s = await getMedia();
-      if (!s) return;
+  // Replace a track in all PCs and in the local stream ref
+  const replaceTrackInPcs = useCallback((newTrack: MediaStreamTrack, kind: "audio" | "video") => {
+    if (!localStreamRef.current) return;
+    // Remove old tracks of this kind from stream
+    localStreamRef.current.getTracks()
+      .filter(t => t.kind === kind && t.id !== newTrack.id)
+      .forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+    // Add new track to stream
+    if (!localStreamRef.current.getTracks().find(t => t.id === newTrack.id)) {
+      localStreamRef.current.addTrack(newTrack);
     }
+    // Replace in each PC
+    pcsRef.current.forEach(pc => {
+      const sender = pc.getSenders().find(s => s.track?.kind === kind);
+      if (sender) {
+        sender.replaceTrack(newTrack).catch(() => {});
+      } else {
+        pc.addTrack(newTrack, localStreamRef.current!);
+      }
+    });
+    // Force React to re-render local video
+    setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+  }, []);
+
+  const toggleAudio = useCallback(async () => {
     const on = !audioOnRef.current;
+
+    if (on) {
+      // Turning ON — check if existing audio tracks are live
+      const existingAudio = localStreamRef.current?.getAudioTracks() ?? [];
+      const liveTrack = existingAudio.find(t => t.readyState === "live");
+      if (liveTrack) {
+        liveTrack.enabled = true;
+      } else {
+        // Track ended or missing — request a fresh audio track
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          const newAudio = newStream.getAudioTracks()[0];
+          if (!localStreamRef.current) {
+            localStreamRef.current = newStream;
+            setLocalStream(newStream);
+          } else {
+            replaceTrackInPcs(newAudio, "audio");
+          }
+        } catch {
+          toast({ title: "تعذّر تشغيل الميكروفون", variant: "destructive" });
+          return;
+        }
+      }
+    } else {
+      // Turning OFF — just disable, don't stop (so re-enable works instantly)
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
+    }
+
     audioOnRef.current = on;
-    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = on; });
     setAudioOn(on);
     sendWs({ type: "webrtc_media_state", roomId, audio: on, video: videoOnRef.current });
-  }, [roomId, sendWs, getMedia]);
+  }, [roomId, sendWs, toast, replaceTrackInPcs]);
 
   const toggleVideo = useCallback(async () => {
     if (screenSharing) return;
-    if (!localStreamRef.current) {
-      const s = await getMedia();
-      if (!s) return;
-    }
     const on = !videoOnRef.current;
+
+    if (on) {
+      // Turning ON — check if existing video tracks are live
+      const existingVideo = localStreamRef.current?.getVideoTracks() ?? [];
+      const liveTrack = existingVideo.find(t => t.readyState === "live");
+      if (liveTrack) {
+        liveTrack.enabled = true;
+      } else {
+        // Track ended or missing — request a fresh video track
+        try {
+          const newStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          const newVideo = newStream.getVideoTracks()[0];
+          if (!localStreamRef.current) {
+            localStreamRef.current = newStream;
+            setLocalStream(newStream);
+          } else {
+            replaceTrackInPcs(newVideo, "video");
+          }
+        } catch {
+          toast({ title: "تعذّر تشغيل الكاميرا", variant: "destructive" });
+          return;
+        }
+      }
+    } else {
+      // Turning OFF — just disable, don't stop
+      localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = false; });
+    }
+
     videoOnRef.current = on;
-    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = on; });
     setVideoOn(on);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: on });
-  }, [screenSharing, roomId, sendWs, getMedia]);
+  }, [screenSharing, roomId, sendWs, toast, replaceTrackInPcs]);
 
   const toggleScreen = useCallback(async () => {
     if (screenSharing) {
-      // Stop screen, revert to camera
-      const cam = await getMedia();
-      if (cam) {
+      // Stop screen share, revert to camera
+      // Only request a new camera video track — keep existing audio tracks
+      try {
+        const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const camTrack = camStream.getVideoTracks()[0];
+        camTrack.enabled = videoOnRef.current;
+
+        if (localStreamRef.current) {
+          // Stop old screen track(s)
+          localStreamRef.current.getVideoTracks().forEach(t => t.stop());
+          // Swap video track in stream
+          localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
+          localStreamRef.current.addTrack(camTrack);
+        } else {
+          localStreamRef.current = camStream;
+        }
+        // Replace in PCs
         pcsRef.current.forEach(pc => {
           const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          const track = cam.getVideoTracks()[0];
-          if (sender && track) sender.replaceTrack(track).catch(() => {});
+          if (sender) sender.replaceTrack(camTrack).catch(() => {});
         });
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+      } catch {
+        toast({ title: "تعذّر العودة للكاميرا", variant: "destructive" });
       }
       setScreenSharing(false);
+      sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
     } else {
       const isMob = /Android|iPhone|iPad/i.test(navigator.userAgent);
       if (isMob) {
@@ -711,27 +802,30 @@ export default function MeetingRoom() {
       try {
         const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
         const screenTrack = screen.getVideoTracks()[0];
+        // Stop existing camera video tracks
+        if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach(t => t.stop());
+          localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
+          localStreamRef.current.addTrack(screenTrack);
+        }
         // Replace video track in all PCs
         pcsRef.current.forEach(pc => {
           const sender = pc.getSenders().find(s => s.track?.kind === "video");
           if (sender) sender.replaceTrack(screenTrack).catch(() => {});
         });
-        // Update local stream for preview
-        if (localStreamRef.current) {
-          localStreamRef.current.getVideoTracks().forEach(t => t.stop());
-          const newStream = new MediaStream([screenTrack, ...localStreamRef.current.getAudioTracks()]);
-          localStreamRef.current = newStream;
-          setLocalStream(newStream);
-        }
-        screenTrack.onended = () => toggleScreen();
+        if (localStreamRef.current) setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+        // When the user stops sharing from the browser UI
+        screenTrack.onended = () => {
+          setScreenSharing(false);
+          sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
+        };
         setScreenSharing(true);
         sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
       } catch (e: any) {
         if (e?.name !== "NotAllowedError") toast({ title: "تعذّر مشاركة الشاشة", variant: "destructive" });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenSharing, getMedia, roomId, sendWs, toast, userName]);
+  }, [screenSharing, roomId, sendWs, toast, userName]);
 
   const toggleHand = useCallback(() => {
     const on = !raisedHand;
