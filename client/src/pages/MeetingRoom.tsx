@@ -871,21 +871,36 @@ export default function MeetingRoom() {
     navigate("/dashboard");
   }, [sendWs, roomId, navigate]);
 
-  const toggleAudio = useCallback(() => {
-    if (!localStreamRef.current) return;
+  const toggleAudio = useCallback(async () => {
+    if (!localStreamRef.current) {
+      // Try to get media again
+      const stream = await getMedia();
+      if (!stream) {
+        toast({ title: "تعذّر الوصول للميكروفون", description: "تأكد من منح إذن الميكروفون في إعدادات المتصفح، أو افتح التطبيق في تبويب جديد.", variant: "destructive" });
+        return;
+      }
+    }
     const enabled = !audioOn;
-    localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = enabled; });
+    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = enabled; });
     setAudioOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: enabled, video: videoOn });
-  }, [audioOn, videoOn, roomId, sendWs]);
+  }, [audioOn, videoOn, roomId, sendWs, getMedia]);
 
-  const toggleVideo = useCallback(() => {
-    if (!localStreamRef.current || screenSharing) return;
+  const toggleVideo = useCallback(async () => {
+    if (screenSharing) return;
+    if (!localStreamRef.current) {
+      // Try to get media again
+      const stream = await getMedia();
+      if (!stream) {
+        toast({ title: "تعذّر الوصول للكاميرا", description: "تأكد من منح إذن الكاميرا في إعدادات المتصفح، أو افتح التطبيق في تبويب جديد.", variant: "destructive" });
+        return;
+      }
+    }
     const enabled = !videoOn;
-    localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = enabled; });
+    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = enabled; });
     setVideoOn(enabled);
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOn, video: enabled });
-  }, [audioOn, videoOn, roomId, sendWs, screenSharing]);
+  }, [audioOn, videoOn, roomId, sendWs, screenSharing, getMedia]);
 
   const flipCamera = useCallback(async () => {
     if (!videoOn || screenSharing) return;
@@ -1509,6 +1524,16 @@ export default function MeetingRoom() {
                   {userName.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-white/50 text-sm">{userName}</span>
+                {mediaError && (
+                  <button
+                    onClick={async () => { const s = await getMedia(); if (!s) window.open(window.location.href, "_blank"); }}
+                    className="mt-2 px-4 py-2 rounded-xl text-xs font-semibold text-white flex items-center gap-2 hover:opacity-90 transition-all"
+                    style={{ background: "rgba(239,68,68,0.5)", border: "1px solid rgba(239,68,68,0.4)" }}
+                  >
+                    <Video className="w-4 h-4" />
+                    اضغط لتفعيل الكاميرا
+                  </button>
+                )}
               </div>
             )}
             {/* Media controls overlay */}
@@ -1544,9 +1569,21 @@ export default function MeetingRoom() {
             </div>
 
             {mediaError && (
-              <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
-                <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                <p className="text-yellow-300/80 text-xs leading-relaxed">{mediaError}</p>
+              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                  <p className="text-red-300/90 text-xs leading-relaxed font-medium">{mediaError}</p>
+                </div>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  المتصفح يمنع الكاميرا والميك داخل نافذة المعاينة. افتح التطبيق في تبويب جديد لتعمل بشكل صحيح.
+                </p>
+                <button
+                  onClick={() => window.open(window.location.href, "_blank")}
+                  className="w-full py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: "rgba(239,68,68,0.5)", border: "1px solid rgba(239,68,68,0.4)" }}
+                >
+                  افتح في تبويب جديد
+                </button>
               </div>
             )}
 
