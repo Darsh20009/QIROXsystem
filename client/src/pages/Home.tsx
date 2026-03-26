@@ -16,6 +16,7 @@ import type { Partner } from "@shared/schema";
 import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
 import paymobLogo from "@assets/download_1774503289938.png";
 import qiroxNoBgLogo from "@assets/qirox_without_background_1771716363944.png";
+import paymobPartnershipImg from "@assets/image_2026-03-26_085233119_1774504353125.png";
 import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
 import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
 import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
@@ -1084,6 +1085,16 @@ export default function Home() {
                     ? "في إطار توسّع Qirox وتعزيز منظومتها الرقمية، أبرمت الشركة اتفاقية شراكة رسمية مع Paymob لتوفير بوابة دفع آمنة ومتوافقة لجميع عملائها."
                     : "As part of Qirox's expansion and digital ecosystem enhancement, the company has signed an official partnership agreement with Paymob to provide a secure, compliant payment gateway for all its clients."}
                 </p>
+              </div>
+
+              {/* Partnership image */}
+              <div className="mb-10 md:mb-12 rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] shadow-sm">
+                <img
+                  src={paymobPartnershipImg}
+                  alt="Qirox × Paymob — Global Strategic Integration Partnership"
+                  className="w-full object-cover"
+                  data-testid="img-paymob-partnership"
+                />
               </div>
 
               {/* Logos + divider */}
