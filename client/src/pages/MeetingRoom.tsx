@@ -8,7 +8,7 @@ import {
   MessageSquare, Users, Copy, Check, Loader2, Send,
   Hand, Grid3X3, Maximize2, Smile, X,
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
-  CircleDot, Download, QrCode, Sparkles,
+  CircleDot, Download, QrCode, Sparkles, FlipHorizontal2,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -82,9 +82,9 @@ interface AttendanceEntry { userId: string; name: string; action: "join" | "leav
 // ── VideoTile ────────────────────────────────────────────────────────────────
 
 function VideoTile({
-  peer, isSelf, speaking, small,
+  peer, isSelf, speaking, small, mirrored,
 }: {
-  peer: PeerState; isSelf: boolean; speaking: boolean; small?: boolean;
+  peer: PeerState; isSelf: boolean; speaking: boolean; small?: boolean; mirrored?: boolean;
 }) {
   const vidRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -108,7 +108,7 @@ function VideoTile({
       {showVideo
         ? <video ref={vidRef} autoPlay playsInline muted={isSelf}
             className="w-full h-full object-cover"
-            style={{ transform: isSelf ? "scaleX(-1)" : undefined }} />
+            style={{ transform: (isSelf && mirrored !== false) ? "scaleX(-1)" : undefined }} />
         : <div className="flex flex-col items-center gap-1">
             <div className="rounded-full flex items-center justify-center font-bold text-white"
               style={{ background: bg, width: small ? 44 : 80, height: small ? 44 : 80, fontSize: small ? 18 : 30 }}>
@@ -213,6 +213,10 @@ export default function MeetingRoom() {
   const audioOnRef = useRef(true);
   const videoOnRef = useRef(true);
   const isRoomHostRef = useRef(false);
+  // Camera
+  const facingModeRef = useRef<"user" | "environment">("user");
+  const [flippingCamera, setFlippingCamera] = useState(false);
+
   // Recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -910,6 +914,32 @@ export default function MeetingRoom() {
     sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: on });
   }, [screenSharing, roomId, sendWs, toast, replaceTrackInPcs]);
 
+  const flipCamera = useCallback(async () => {
+    if (screenSharing || flippingCamera || !videoOnRef.current) return;
+    const next = facingModeRef.current === "user" ? "environment" : "user";
+    setFlippingCamera(true);
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: next } },
+        audio: false,
+      }).catch(async () => {
+        // Some devices don't support "exact" — try without exact
+        return await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: next },
+          audio: false,
+        });
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      if (!newTrack) throw new Error("no video track");
+      replaceTrackInPcs(newTrack, "video");
+      facingModeRef.current = next;
+    } catch {
+      toast({ title: "تعذّر قلب الكاميرا — جهازك قد لا يدعم كاميرا خلفية", variant: "destructive" });
+    } finally {
+      setFlippingCamera(false);
+    }
+  }, [screenSharing, flippingCamera, replaceTrackInPcs, toast]);
+
   const toggleScreen = useCallback(async () => {
     if (screenSharing) {
       // Stop screen share, revert to camera
@@ -1224,7 +1254,8 @@ export default function MeetingRoom() {
             style={{ aspectRatio: "16/9", maxHeight: "42vh" }}>
             {localStream && videoOn
               ? <video ref={el => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); }}}
-                  autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+                  autoPlay muted playsInline className="w-full h-full object-cover"
+                  style={{ transform: facingModeRef.current === "user" ? "scaleX(-1)" : undefined }} />
               : <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                   <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold text-white"
                     style={{ background: avatarColor(userName) }}>
@@ -1243,6 +1274,13 @@ export default function MeetingRoom() {
                 className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}>
                 {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
               </button>
+              {videoOn && (
+                <button onClick={flipCamera} disabled={flippingCamera}
+                  className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition bg-black/50 hover:bg-black/70 backdrop-blur-sm disabled:opacity-50"
+                  title="قلب الكاميرا">
+                  {flippingCamera ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <FlipHorizontal2 className="w-5 h-5 text-white" />}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1439,7 +1477,7 @@ export default function MeetingRoom() {
         {isSpotlight && spotPeer ? (
           <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
             <div className="flex-1 rounded-xl overflow-hidden relative min-h-0">
-              <VideoTile peer={spotPeer} isSelf={spotPeer.id === myId} speaking={speakingIds.has(spotPeer.id)} />
+              <VideoTile peer={spotPeer} isSelf={spotPeer.id === myId} speaking={speakingIds.has(spotPeer.id)} mirrored={facingModeRef.current === "user"} />
               {pinnedId && (
                 <button onClick={() => setPinnedId(null)}
                   className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 text-white text-xs hover:bg-black/80 transition backdrop-blur-sm">
@@ -1453,7 +1491,7 @@ export default function MeetingRoom() {
                   <div key={p.id} onClick={() => setPinnedId(p.id)}
                     className="rounded-lg overflow-hidden relative shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
                     style={{ aspectRatio: "16/9", height: "100%" }}>
-                    <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} small />
+                    <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} small mirrored={facingModeRef.current === "user"} />
                   </div>
                 ))}
               </div>
@@ -1466,7 +1504,7 @@ export default function MeetingRoom() {
               <div key={p.id}
                 onClick={() => { if (total > 1) setPinnedId(p.id); }}
                 className={`rounded-xl overflow-hidden relative aspect-video ${total > 1 ? "cursor-pointer" : ""}`}>
-                <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} />
+                <VideoTile peer={p} isSelf={p.id === myId} speaking={speakingIds.has(p.id)} mirrored={facingModeRef.current === "user"} />
               </div>
             ))}
           </div>
@@ -1944,6 +1982,17 @@ export default function MeetingRoom() {
               data-testid="button-toggle-video">
               {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
             </button>
+            {/* Flip camera — visible when video is on and not screen sharing */}
+            {videoOn && !screenSharing && (
+              <button onClick={flipCamera} disabled={flippingCamera}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition shadow-lg bg-[#3c4043] hover:bg-[#4a4d51] disabled:opacity-40"
+                title="قلب الكاميرا"
+                data-testid="button-flip-camera">
+                {flippingCamera
+                  ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  : <FlipHorizontal2 className="w-4 h-4 text-[#9aa0a6]" />}
+              </button>
+            )}
             <button onClick={leave}
               className="w-14 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition shadow-lg"
               data-testid="button-leave">
