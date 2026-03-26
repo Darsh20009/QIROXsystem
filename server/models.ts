@@ -711,6 +711,24 @@ const orderExpenseSchema = new mongoose.Schema({
   addedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
+const paymobOnboardingSchema = new mongoose.Schema({
+  userId:           { type: String },
+  orderId:          { type: String },
+  docType:          { type: String, enum: ['freelance', 'commercial'], required: true },
+  docNumber:        { type: String, required: true },
+  docFileUrl:       { type: String },
+  ibanCertUrl:      { type: String },
+  vatNumber:        { type: String },
+  nationalId:       { type: String, required: true },
+  nationalIdFront:  { type: String, required: true },
+  nationalIdBack:   { type: String },
+  paymobRegistered: { type: Boolean, default: false },
+  policyAccepted:   { type: Boolean, default: false },
+  signatureName:    { type: String },
+  acceptedAt:       { type: Date },
+  status:           { type: String, enum: ['pending', 'reviewing', 'approved', 'rejected'], default: 'pending' },
+}, { timestamps: true });
+
 [userSchema, attendanceSchema, serviceSchema, orderSchema, projectSchema, taskSchema, messageSchema, projectVaultSchema, projectMemberSchema, newsSchema, jobSchema, applicationSchema, sectorTemplateSchema, pricingPlanSchema, partnerSchema, modificationRequestSchema, modPlanConfigSchema, modTypePriceSchema, modQuotaAddonSchema, qiroxProductSchema, cartSchema, orderSpecsSchema, otpSchema, notificationSchema, inboxMessageSchema, csSessionSchema, invoiceSchema, activityLogSchema, supportTicketSchema, employeeProfileSchema, payrollRecordSchema, receiptVoucherSchema, pushSubscriptionSchema, checklistItemSchema, bankSettingsSchema, segmentPricingSchema, subServiceRequestSchema, orderExpenseSchema].forEach(s => {
   s.set('toJSON', { transform });
   s.set('toObject', { transform });
@@ -1846,3 +1864,7 @@ const embedTokenSchema = new mongoose.Schema({
 }, { timestamps: true });
 embedTokenSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); delete ret.tokenHash; return ret; } });
 export const EmbedTokenModel = mongoose.models.EmbedToken || mongoose.model("EmbedToken", embedTokenSchema);
+
+paymobOnboardingSchema.set('toJSON', { transform });
+paymobOnboardingSchema.set('toObject', { transform });
+export const PaymobOnboardingModel = mongoose.models.PaymobOnboarding || mongoose.model("PaymobOnboarding", paymobOnboardingSchema);

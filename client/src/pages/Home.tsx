@@ -1151,6 +1151,25 @@ export default function Home() {
               </div>
             </div>
 
+            {/* CTA to onboarding */}
+            <div className="px-6 sm:px-10 md:px-14 pb-10 md:pb-12 flex flex-col items-center gap-4">
+              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-2" />
+              <p className="text-sm text-black/50 dark:text-white/50 text-center max-w-md">
+                {lang === "ar"
+                  ? "هل تريد تفعيل بوابة Paymob على نظامك الخاص؟ ابدأ الآن وأكمل عملية التسجيل في دقائق."
+                  : "Want to activate Paymob gateway on your own system? Start now and complete registration in minutes."}
+              </p>
+              <Link href="/paymob-onboarding">
+                <Button
+                  className="rounded-xl px-6 py-2.5 font-semibold"
+                  style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }}
+                  data-testid="btn-paymob-learn-more"
+                >
+                  {lang === "ar" ? "تعرف أكثر — ابدأ التفعيل" : "Learn More — Start Activation"}
+                </Button>
+              </Link>
+            </div>
+
             {/* Bottom stamp */}
             <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-black/[0.05] dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
               <span className="text-[11px] text-black/30 dark:text-white/30 tracking-wide">

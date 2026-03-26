@@ -3854,6 +3854,39 @@ export async function registerRoutes(
     }
   });
 
+  // === PAYMOB ONBOARDING API ===
+  app.post("/api/paymob-onboarding", async (req, res) => {
+    try {
+      const { PaymobOnboardingModel } = await import("./models");
+      const data = {
+        ...req.body,
+        userId: req.isAuthenticated() ? (req.user as any).id : undefined,
+        acceptedAt: req.body.policyAccepted ? new Date() : undefined,
+      };
+      const record = await PaymobOnboardingModel.create(data);
+      res.status(201).json({ ...record.toObject(), id: record._id.toString() });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  app.get("/api/admin/paymob-onboarding", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PaymobOnboardingModel } = await import("./models");
+      const records = await PaymobOnboardingModel.find().sort({ createdAt: -1 });
+      res.json(records.map((r: any) => ({ ...r.toObject(), id: r._id.toString() })));
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  app.patch("/api/admin/paymob-onboarding/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { PaymobOnboardingModel } = await import("./models");
+      const record = await PaymobOnboardingModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      if (!record) return res.status(404).json({ error: "not found" });
+      res.json({ ...record.toObject(), id: record._id.toString() });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
   // === ADMIN CUSTOMERS API ===
   app.get("/api/admin/customers", async (req, res) => {
     if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);

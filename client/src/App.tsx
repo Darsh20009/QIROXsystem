@@ -42,6 +42,7 @@ const Prices = lazy(() => import("@/pages/Prices"));
 const Customers = lazy(() => import("@/pages/Customers"));
 const News = lazy(() => import("@/pages/News"));
 const Jobs = lazy(() => import("@/pages/Jobs"));
+const PaymobOnboarding = lazy(() => import("@/pages/PaymobOnboarding"));
 const JoinUs = lazy(() => import("@/pages/JoinUs"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Privacy = lazy(() => import("@/pages/Privacy"));
@@ -179,6 +180,7 @@ function PublicRouter() {
         <Route path="/customers" component={Customers} />
         <Route path="/news" component={News} />
         <Route path="/jobs" component={Jobs} />
+        <Route path="/paymob-onboarding" component={PaymobOnboarding} />
         <Route path="/join" component={JoinUs} />
         <Route path="/contact" component={Contact} />
         <Route path="/privacy" component={Privacy} />
