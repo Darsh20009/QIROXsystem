@@ -17,6 +17,7 @@ import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
+import { ImageUpload } from "@/components/ImageUpload";
 
 function extractYouTubeId(url: string): string {
   const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
@@ -77,6 +78,31 @@ export default function ProjectDetails() {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id, "messages"] });
       setMessageContent("");
     },
+  });
+
+  // Paymob onboarding data
+  const [paymobEdit, setPaymobEdit] = useState<any>(null);
+
+  const { data: paymobData } = useQuery<any>({
+    queryKey: ["/api/my/paymob-onboarding"],
+    queryFn: async () => {
+      const res = await fetch("/api/my/paymob-onboarding", { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  const savePaymobMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const res = await apiRequest("PATCH", `/api/my/paymob-onboarding/${paymobData.id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my/paymob-onboarding"] });
+      setPaymobEdit(null);
+      toast({ title: L ? "تم حفظ التعديلات بنجاح" : "Changes saved successfully" });
+    },
+    onError: () => toast({ title: L ? "فشل الحفظ" : "Save failed", variant: "destructive" }),
   });
 
   const { data: addonSubs = [], isLoading: isLoadingAddons } = useQuery<any[]>({
@@ -242,6 +268,11 @@ export default function ProjectDetails() {
           {order?.wizardData && (
             <TabsTrigger value="brief" className="data-[state=active]:bg-primary data-[state=active]:text-white">
               {L ? "ملف المشروع" : "Project Brief"}
+            </TabsTrigger>
+          )}
+          {paymobData && (
+            <TabsTrigger value="paymob" className="data-[state=active]:bg-primary data-[state=active]:text-white" data-testid="tab-paymob">
+              <CreditCard className="w-3.5 h-3.5 ml-1" /> {L ? "وثائق Paymob" : "Paymob Docs"}
             </TabsTrigger>
           )}
         </TabsList>
@@ -810,6 +841,129 @@ export default function ProjectDetails() {
           {order?.wizardData && (
             <TabsContent value="brief">
               <ProjectBriefTab order={order} L={L} />
+            </TabsContent>
+          )}
+
+          {/* ══ PAYMOB DOCS TAB ══════════════════════════════════════════ */}
+          {paymobData && (
+            <TabsContent value="paymob">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <CardTitle className="font-heading flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-blue-600" />
+                        {L ? "وثائق تفعيل Paymob" : "Paymob Activation Documents"}
+                      </CardTitle>
+                      <p className="text-xs text-slate-400 mt-1">{L ? "يمكنك مراجعة وتعديل الوثائق التي أرفقتها في طلب التفعيل" : "You can review and update the documents you attached in the activation request"}</p>
+                    </div>
+                    {!paymobEdit ? (
+                      <Button size="sm" onClick={() => setPaymobEdit({ ...paymobData })} data-testid="btn-edit-paymob">
+                        {L ? "تعديل الوثائق" : "Edit Documents"}
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setPaymobEdit(null)}>{L ? "إلغاء" : "Cancel"}</Button>
+                        <Button size="sm" onClick={() => savePaymobMutation.mutate(paymobEdit)} disabled={savePaymobMutation.isPending}>
+                          {savePaymobMutation.isPending ? <><Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />{L ? "جارٍ الحفظ..." : "Saving..."}</> : (L ? "حفظ التعديلات" : "Save Changes")}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Status banner */}
+                    <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border ${paymobData.status === "approved" ? "bg-green-50 border-green-200 text-green-700" : paymobData.status === "rejected" ? "bg-red-50 border-red-200 text-red-700" : paymobData.status === "reviewing" ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      {L
+                        ? paymobData.status === "approved" ? "تمت الموافقة على طلبك ✓" : paymobData.status === "rejected" ? "تم رفض الطلب — يرجى التواصل مع الفريق" : paymobData.status === "reviewing" ? "طلبك قيد المراجعة" : "الطلب بانتظار المراجعة"
+                        : paymobData.status === "approved" ? "Your request has been approved ✓" : paymobData.status === "rejected" ? "Request rejected — please contact the team" : paymobData.status === "reviewing" ? "Request under review" : "Request pending review"
+                      }
+                    </div>
+
+                    {/* Info fields */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500 mb-1.5">{L ? "نوع الوثيقة" : "Document Type"}</p>
+                        <p className="text-sm font-bold text-primary">{paymobData.docType === "commercial" ? (L ? "سجل تجاري" : "Commercial Registration") : (L ? "وثيقة عمل حر" : "Freelance Document")}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500 mb-1.5">{L ? "رقم الوثيقة" : "Document Number"}</p>
+                        {paymobEdit ? (
+                          <Input value={paymobEdit.docNumber || ""} onChange={e => setPaymobEdit((p: any) => ({ ...p, docNumber: e.target.value }))} className="h-9 text-sm" dir="ltr" data-testid="input-paymob-doc-number" />
+                        ) : (
+                          <p className="text-sm font-bold text-primary" dir="ltr">{paymobData.docNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500 mb-1.5">{L ? "رقم الهوية الوطنية" : "National ID Number"}</p>
+                        {paymobEdit ? (
+                          <Input value={paymobEdit.nationalId || ""} onChange={e => setPaymobEdit((p: any) => ({ ...p, nationalId: e.target.value }))} className="h-9 text-sm" dir="ltr" data-testid="input-paymob-national-id" />
+                        ) : (
+                          <p className="text-sm font-bold text-primary" dir="ltr">{paymobData.nationalId}</p>
+                        )}
+                      </div>
+                      {(paymobData.vatNumber || paymobEdit) && (
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 mb-1.5">{L ? "الرقم الضريبي" : "VAT Number"}</p>
+                          {paymobEdit ? (
+                            <Input value={paymobEdit.vatNumber || ""} onChange={e => setPaymobEdit((p: any) => ({ ...p, vatNumber: e.target.value }))} className="h-9 text-sm" dir="ltr" placeholder={L ? "اختياري" : "Optional"} data-testid="input-paymob-vat" />
+                          ) : (
+                            <p className="text-sm font-bold text-primary" dir="ltr">{paymobData.vatNumber || "—"}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Uploaded Documents */}
+                    <div className="space-y-4">
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-wider border-b pb-2">{L ? "الوثائق المرفوعة" : "Uploaded Documents"}</p>
+
+                      {[
+                        { label: L ? "صورة الوثيقة التجارية / وثيقة العمل الحر" : "Business Document Image", key: "docFileUrl" },
+                        { label: L ? "شهادة الآيبان (IBAN)" : "IBAN Certificate", key: "ibanCertUrl" },
+                        { label: L ? "صورة الهوية — الوجه الأمامي" : "National ID — Front", key: "nationalIdFront" },
+                        { label: L ? "صورة الهوية — الوجه الخلفي" : "National ID — Back", key: "nationalIdBack" },
+                      ].map(({ label, key }) => (
+                        <div key={key} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50">
+                          <p className="text-xs font-semibold text-slate-500 mb-2">{label}</p>
+                          {paymobEdit ? (
+                            <ImageUpload
+                              label=""
+                              value={paymobEdit[key] || ""}
+                              onChange={(url: string) => setPaymobEdit((p: any) => ({ ...p, [key]: url }))}
+                              accept="image/*,.pdf"
+                            />
+                          ) : paymobData[key] ? (
+                            <a
+                              href={paymobData[key]}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                              data-testid={`link-paymob-${key}`}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              {L ? "عرض الملف" : "View File"}
+                              <ExternalLink className="w-3 h-3 opacity-50" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">{L ? "لم يُرفع بعد" : "Not uploaded yet"}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Signature */}
+                    {paymobData.signatureName && (
+                      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span className="text-xs font-semibold text-slate-500">{L ? "التوقيع الرقمي المعتمد:" : "Digital Signature:"}</span>
+                        <span className="font-bold text-primary" style={{ fontFamily: "Georgia, serif" }}>{paymobData.signatureName}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
         </div>

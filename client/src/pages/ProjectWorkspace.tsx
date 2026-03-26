@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   CheckCircle2, Clock, Play, XCircle, AlertCircle, Loader2, Plus,
   LayoutGrid, Bug, Calendar, ExternalLink, User, Star, ChevronLeft,
-  Send, Link2, VideoIcon, CheckCheck, ArrowLeft
+  Send, Link2, VideoIcon, CheckCheck, ArrowLeft, CreditCard, FileText, ShieldCheck
 } from "lucide-react";
 import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n";
@@ -188,6 +188,17 @@ export default function ProjectWorkspace() {
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Paymob onboarding data (employee view)
+  const { data: paymobData } = useQuery<any>({
+    queryKey: ["/api/projects", projectId, "paymob-onboarding"],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${projectId}/paymob-onboarding`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!projectId && isEmployee,
+  });
+
   if (!projectId) return <div className="p-8 text-center text-black/30">{L ? "معرّف المشروع غير صحيح" : "Invalid project ID"}</div>;
 
   const completed = features.filter((f: any) => f.status === 'completed').length;
@@ -236,6 +247,11 @@ export default function ProjectWorkspace() {
             <TabsTrigger value="meetings" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-meetings">
               <Calendar className="w-3.5 h-3.5 ml-1" /> {L ? "الاجتماعات" : "Meetings"}
             </TabsTrigger>
+            {isEmployee && paymobData && (
+              <TabsTrigger value="paymob" className="flex-1 rounded-lg text-xs font-bold data-[state=active]:bg-black data-[state=active]:text-white" data-testid="tab-paymob">
+                <CreditCard className="w-3.5 h-3.5 ml-1" /> Paymob
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* ── FEATURES TAB ── */}
@@ -577,6 +593,83 @@ export default function ProjectWorkspace() {
               </DialogContent>
             </Dialog>
           </TabsContent>
+
+          {/* ── PAYMOB DOCS TAB (employee view) ── */}
+          {isEmployee && paymobData && (
+            <TabsContent value="paymob">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.07] overflow-hidden">
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-blue-500" />
+                    <p className="text-sm font-black text-black dark:text-white">{L ? "وثائق تفعيل Paymob" : "Paymob Activation Documents"}</p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${paymobData.status === "approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : paymobData.status === "rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : paymobData.status === "reviewing" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+                    {paymobData.status === "approved" ? (L ? "موافق عليه" : "Approved") : paymobData.status === "rejected" ? (L ? "مرفوض" : "Rejected") : paymobData.status === "reviewing" ? (L ? "قيد المراجعة" : "Reviewing") : (L ? "بانتظار المراجعة" : "Pending")}
+                  </span>
+                </div>
+
+                {/* Info grid */}
+                <div className="p-5 space-y-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {[
+                      { label: L ? "نوع الوثيقة" : "Doc Type", value: paymobData.docType === "commercial" ? (L ? "سجل تجاري" : "Commercial Reg.") : (L ? "وثيقة عمل حر" : "Freelance Doc") },
+                      { label: L ? "رقم الوثيقة" : "Doc Number", value: paymobData.docNumber, ltr: true },
+                      { label: L ? "رقم الهوية" : "National ID", value: paymobData.nationalId, ltr: true },
+                      ...(paymobData.vatNumber ? [{ label: L ? "الرقم الضريبي" : "VAT Number", value: paymobData.vatNumber, ltr: true }] : []),
+                      ...(paymobData.signatureName ? [{ label: L ? "التوقيع الرقمي" : "Digital Signature", value: paymobData.signatureName }] : []),
+                    ].map(({ label, value, ltr }: any) => (
+                      <div key={label} className="p-3 bg-black/[0.02] dark:bg-white/[0.03] rounded-xl">
+                        <p className="text-[10px] font-semibold text-black/40 dark:text-white/30 mb-1">{label}</p>
+                        <p className="text-sm font-bold text-black dark:text-white" dir={ltr ? "ltr" : undefined}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <p className="text-[11px] font-black text-black/30 dark:text-white/20 uppercase tracking-widest mb-3">{L ? "الوثائق المرفوعة" : "Uploaded Documents"}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { label: L ? "وثيقة النشاط التجاري" : "Business Document", key: "docFileUrl" },
+                        { label: L ? "شهادة الآيبان" : "IBAN Certificate", key: "ibanCertUrl" },
+                        { label: L ? "الهوية — الوجه الأمامي" : "ID — Front Face", key: "nationalIdFront" },
+                        { label: L ? "الهوية — الوجه الخلفي" : "ID — Back Face", key: "nationalIdBack" },
+                      ].map(({ label, key }) => (
+                        <div key={key} className="p-3 border border-black/[0.06] dark:border-white/[0.06] rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-3.5 h-3.5 text-black/30 dark:text-white/20 shrink-0" />
+                            <span className="text-xs font-medium text-black/60 dark:text-white/50 truncate">{label}</span>
+                          </div>
+                          {paymobData[key] ? (
+                            <a
+                              href={paymobData[key]}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[11px] font-bold hover:bg-blue-100 transition-colors"
+                              data-testid={`link-emp-paymob-${key}`}
+                            >
+                              {L ? "عرض" : "View"} <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <span className="text-[11px] text-black/25 dark:text-white/20 italic">{L ? "لم يُرفع" : "Not uploaded"}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Paymob registration status */}
+                  <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold ${paymobData.paymobRegistered ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"}`}>
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    {paymobData.paymobRegistered
+                      ? (L ? "العميل أكد اكتمال التسجيل في منصة Paymob" : "Client confirmed Paymob portal registration")
+                      : (L ? "العميل لم يؤكد التسجيل في منصة Paymob بعد" : "Client has not confirmed Paymob portal registration yet")}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

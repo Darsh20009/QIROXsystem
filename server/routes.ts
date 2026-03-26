@@ -3855,6 +3855,51 @@ export async function registerRoutes(
   });
 
   // === PAYMOB ONBOARDING API ===
+
+  // Client: get own onboarding record
+  app.get("/api/my/paymob-onboarding", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PaymobOnboardingModel } = await import("./models");
+      const userId = (req.user as any).id;
+      const record = await PaymobOnboardingModel.findOne({ userId }).sort({ createdAt: -1 });
+      if (!record) return res.json(null);
+      res.json({ ...record.toObject(), id: record._id.toString() });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // Client: update own onboarding record
+  app.patch("/api/my/paymob-onboarding/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { PaymobOnboardingModel } = await import("./models");
+      const userId = (req.user as any).id;
+      const record = await PaymobOnboardingModel.findOne({ _id: req.params.id, userId });
+      if (!record) return res.status(404).json({ error: "not found" });
+      const allowed = ["docNumber", "docFileUrl", "ibanCertUrl", "vatNumber", "nationalId", "nationalIdFront", "nationalIdBack"];
+      const updates: any = {};
+      allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+      const updated = await PaymobOnboardingModel.findByIdAndUpdate(req.params.id, updates, { new: true });
+      res.json({ ...updated!.toObject(), id: updated!._id.toString() });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
+  // Employee: get paymob onboarding data for a project's client
+  app.get("/api/projects/:projectId/paymob-onboarding", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const role = (req.user as any).role;
+    if (!["admin", "manager", "employee", "developer", "designer", "support", "accountant", "supervisor"].includes(role)) return res.sendStatus(403);
+    try {
+      const { ProjectModel, PaymobOnboardingModel } = await import("./models");
+      const project = await ProjectModel.findById(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "project not found" });
+      const clientId = project.clientId?.toString();
+      const record = await PaymobOnboardingModel.findOne({ userId: clientId }).sort({ createdAt: -1 });
+      if (!record) return res.json(null);
+      res.json({ ...record.toObject(), id: record._id.toString() });
+    } catch (err: any) { res.status(500).json({ error: translateError(err) }); }
+  });
+
   app.post("/api/paymob-onboarding", async (req, res) => {
     try {
       const { PaymobOnboardingModel } = await import("./models");
