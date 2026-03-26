@@ -247,11 +247,13 @@ const jobSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const applicationSchema = new mongoose.Schema({
-  jobId: { type: Number, required: true },
+  jobId: { type: mongoose.Schema.Types.Mixed },
   fullName: { type: String, required: true },
   email: { type: String, required: true },
   phone: String,
   resumeUrl: String,
+  coverLetter: String,
+  answers: { type: mongoose.Schema.Types.Mixed, default: {} },
   technicalScore: Number,
   internalEvaluation: String,
   status: { type: String, default: "new" },

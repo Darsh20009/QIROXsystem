@@ -3770,9 +3770,9 @@ export async function registerRoutes(
   // Public job application
   app.post("/api/apply", async (req, res) => {
     try {
-      const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
+      const { jobId, fullName, email, phone, resumeUrl, coverLetter, answers } = req.body;
       if (!jobId || !fullName || !email) return res.status(400).json({ error: "يرجى تعبئة الحقول المطلوبة" });
-      const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "" });
+      const application = await storage.createApplication({ jobId, fullName, email, phone: phone || "", resumeUrl: resumeUrl || "", coverLetter: coverLetter || "", answers: answers || {} } as any);
       const hrEmailBody = `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
           <h2 style="color:#111;">طلب توظيف جديد</h2>
