@@ -473,165 +473,110 @@ export default function Home() {
       </section>
 
       {/* PAYMOB PARTNERSHIP SECTION */}
-      <section className="py-16 md:py-20 relative overflow-hidden" data-testid="section-paymob-partnership">
-        <div className="container mx-auto px-4 relative z-10">
+      <section className="py-14 md:py-20 relative" data-testid="section-paymob-partnership">
+        <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             custom={0}
-            className="relative rounded-3xl overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #0a0a0a 0%, #111827 40%, #0f172a 100%)",
-            }}
+            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
+            style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
           >
-            {/* Animated glowing orbs */}
-            <div className="absolute top-0 left-1/4 w-72 h-72 rounded-full opacity-20 blur-3xl pointer-events-none"
-              style={{ background: "radial-gradient(circle, #1d90f5 0%, transparent 70%)" }} />
-            <div className="absolute bottom-0 right-1/4 w-56 h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
-              style={{ background: "radial-gradient(circle, #2563eb 0%, transparent 70%)" }} />
+            {/* Top accent bar */}
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a 0%, #1d90f5 50%, #0f172a 100%)" }} />
 
-            {/* Subtle grid pattern */}
-            <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+            <div className="px-6 sm:px-10 md:px-14 py-10 md:py-14">
 
-            {/* Shimmer sweep */}
-            <motion.div
-              className="absolute inset-0 pointer-events-none"
-              animate={{ x: ["-100%", "200%"] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "linear", repeatDelay: 4 }}
-              style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%)" }}
-            />
+              {/* Header row */}
+              <div className="flex flex-col items-center text-center mb-10 md:mb-12">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
+                  <Shield className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
+                    {lang === "ar" ? "إعلان رسمي — شراكة استراتيجية" : "Official Announcement — Strategic Partnership"}
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-black dark:text-white tracking-tight mb-3">
+                  {lang === "ar" ? "Qirox تعتمد Paymob بوابةً رسمية للدفع" : "Qirox Adopts Paymob as Official Payment Gateway"}
+                </h2>
+                <p className="text-black/40 dark:text-white/40 text-sm sm:text-base max-w-xl leading-relaxed">
+                  {lang === "ar"
+                    ? "في إطار توسّع Qirox وتعزيز منظومتها الرقمية، أبرمت الشركة اتفاقية شراكة رسمية مع Paymob لتوفير بوابة دفع آمنة ومتوافقة لجميع عملائها."
+                    : "As part of Qirox's expansion and digital ecosystem enhancement, the company has signed an official partnership agreement with Paymob to provide a secure, compliant payment gateway for all its clients."}
+                </p>
+              </div>
 
-            <div className="relative z-10 px-6 sm:px-10 md:px-16 py-12 md:py-16">
-              <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16" dir="rtl">
-
-                {/* Left: Logos + badge */}
-                <div className="flex-shrink-0 flex flex-col items-center gap-6">
-                  {/* Partnership visual */}
-                  <div className="flex items-center gap-4">
-                    {/* Qirox logo box */}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center p-2.5"
-                    >
-                      <img
-                        src={qiroxNoBgLogo}
-                        alt="Qirox"
-                        className="w-full h-full object-contain"
-                        style={{ filter: "invert(1) brightness(1.2)" }}
-                      />
-                    </motion.div>
-
-                    {/* Connection indicator */}
-                    <div className="flex flex-col items-center gap-1">
-                      <motion.div
-                        animate={{ scaleX: [0.8, 1, 0.8], opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="w-8 h-0.5 rounded-full bg-blue-400"
-                      />
-                      <motion.div
-                        animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        className="w-2 h-2 rounded-full bg-blue-400"
-                      />
-                      <motion.div
-                        animate={{ scaleX: [0.8, 1, 0.8], opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                        className="w-8 h-0.5 rounded-full bg-blue-400"
-                      />
-                    </div>
-
-                    {/* Paymob logo box */}
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/20"
-                    >
-                      <img src={paymobLogo} alt="Paymob" className="w-12 sm:w-14 object-contain" />
-                    </motion.div>
+              {/* Logos + divider */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-10 md:mb-12">
+                {/* Qirox */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black dark:bg-black flex items-center justify-center p-4 shadow-sm">
+                    <img src={qiroxNoBgLogo} alt="Qirox" className="w-full h-full object-contain" style={{ filter: "invert(1) brightness(1.1)" }} />
                   </div>
-
-                  {/* Partnership badge */}
-                  <motion.div
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="px-4 py-1.5 rounded-full text-xs font-bold tracking-wider text-blue-300 border border-blue-400/30 bg-blue-500/10"
-                  >
-                    {lang === "ar" ? "🤝 شراكة رسمية معتمدة" : "🤝 Official Certified Partnership"}
-                  </motion.div>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Qirox Studio</span>
                 </div>
 
-                {/* Right: Text content */}
-                <div className="flex-1 text-center md:text-right">
-                  <motion.div
-                    variants={fadeUp}
-                    custom={1}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/20 mb-4"
-                  >
-                    <CreditCard className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-blue-300 text-xs font-semibold tracking-wide uppercase">
-                      {lang === "ar" ? "بوابة دفع متكاملة" : "Integrated Payment Gateway"}
-                    </span>
-                  </motion.div>
-
-                  <motion.h2
-                    variants={fadeUp}
-                    custom={2}
-                    className="text-2xl sm:text-3xl md:text-4xl font-black text-white font-heading leading-tight mb-4"
-                  >
-                    {lang === "ar" ? (
-                      <>
-                        <span className="text-white">Qirox</span>{" "}
-                        <span className="text-blue-400">×</span>{" "}
-                        <span className="text-[#1d90f5]">Paymob</span>
-                        <br />
-                        <span className="text-white/70 text-xl sm:text-2xl font-bold">
-                          موقعك أصبح متكاملاً ببوابة دفع احترافية
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-white">Qirox</span>{" "}
-                        <span className="text-blue-400">×</span>{" "}
-                        <span className="text-[#1d90f5]">Paymob</span>
-                        <br />
-                        <span className="text-white/70 text-xl sm:text-2xl font-bold">
-                          Your site is now powered by a professional payment gateway
-                        </span>
-                      </>
-                    )}
-                  </motion.h2>
-
-                  <motion.p
-                    variants={fadeUp}
-                    custom={3}
-                    className="text-white/45 text-sm sm:text-base leading-relaxed mb-8 max-w-lg mx-auto md:mx-0"
-                  >
-                    {lang === "ar"
-                      ? "تعاقدت Qirox رسمياً مع Paymob لتوفير بوابة دفع آمنة وسريعة لجميع عملاؤنا — قبول بطاقات Visa، Mastercard، محافظ رقمية، وأكثر."
-                      : "Qirox has officially partnered with Paymob to deliver a fast, secure payment gateway for all our clients — supporting Visa, Mastercard, digital wallets, and more."}
-                  </motion.p>
-
-                  {/* Feature pills */}
-                  <motion.div
-                    variants={fadeUp}
-                    custom={4}
-                    className="flex flex-wrap items-center justify-center md:justify-start gap-2"
-                  >
-                    {(lang === "ar"
-                      ? ["✅ Visa & Mastercard", "✅ محافظ رقمية", "✅ تشفير SSL", "✅ دعم 24/7", "✅ تسوية فورية"]
-                      : ["✅ Visa & Mastercard", "✅ Digital Wallets", "✅ SSL Encryption", "✅ 24/7 Support", "✅ Instant Settlement"]
-                    ).map((feat, i) => (
-                      <span
-                        key={i}
-                        className="text-xs font-medium text-white/60 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08]"
-                      >
-                        {feat}
-                      </span>
-                    ))}
-                  </motion.div>
+                {/* Center divider */}
+                <div className="flex flex-row sm:flex-col items-center gap-2">
+                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
+                  <div className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center bg-white dark:bg-gray-900 shadow-sm">
+                    <span className="text-black/30 dark:text-white/30 text-xs font-bold">×</span>
+                  </div>
+                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
                 </div>
+
+                {/* Paymob */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white flex items-center justify-center p-4 shadow-sm">
+                    <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
+                  </div>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Paymob</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-10" />
+
+              {/* Features grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6" dir={dir}>
+                {(lang === "ar"
+                  ? [
+                      { icon: CreditCard, label: "Visa & Mastercard" },
+                      { icon: Shield,     label: "تشفير SSL معتمد" },
+                      { icon: Zap,        label: "تسوية فورية" },
+                      { icon: Globe2,     label: "محافظ رقمية" },
+                      { icon: Clock,      label: "دعم على مدار الساعة" },
+                    ]
+                  : [
+                      { icon: CreditCard, label: "Visa & Mastercard" },
+                      { icon: Shield,     label: "SSL Encryption" },
+                      { icon: Zap,        label: "Instant Settlement" },
+                      { icon: Globe2,     label: "Digital Wallets" },
+                      { icon: Clock,      label: "24/7 Support" },
+                    ]
+                ).map(({ icon: Icon, label }, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 text-center p-3 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
+                    <div className="w-8 h-8 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center">
+                      <Icon className="w-4 h-4 text-black/40 dark:text-white/40" />
+                    </div>
+                    <span className="text-[11px] font-medium text-black/50 dark:text-white/50 leading-tight">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+
+            {/* Bottom stamp */}
+            <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-black/[0.05] dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
+              <span className="text-[11px] text-black/30 dark:text-white/30 tracking-wide">
+                {lang === "ar" ? "اتفاقية شراكة رسمية — مارس 2026" : "Official Partnership Agreement — March 2026"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
+                  {lang === "ar" ? "نشط ومفعّل" : "Active & Live"}
+                </span>
               </div>
             </div>
           </motion.div>
