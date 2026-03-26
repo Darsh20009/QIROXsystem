@@ -6,10 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff,
   MessageSquare, Users, Copy, Check, Loader2, Send,
-  Hand, Grid3X3, Maximize2, ChevronRight, Smile, X,
+  Hand, Grid3X3, Maximize2, Smile, X,
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
-  CircleDot, Download, QrCode, ClipboardList, Sparkles,
-  ChevronDown, Plus, Trash2, BarChart, Vote,
+  CircleDot, Download, QrCode, Sparkles,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
