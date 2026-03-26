@@ -8,7 +8,7 @@ import {
   MessageSquare, Users, MoreVertical, Copy, Check,
   Loader2, AlertCircle, Send, UserCircle2, Hand,
   Grid3X3, Maximize2, ChevronRight, Info, Settings,
-  Smile, MicIcon
+  Smile, MicIcon, Lock
 } from "lucide-react";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -120,16 +120,20 @@ export default function MeetingRoom() {
   const { toast } = useToast();
 
   // ── meeting data ──────────────────────────────────────────────────────────
-  const { data: meeting } = useQuery<any>({
+  const { data: meeting, isLoading: meetingLoading } = useQuery<any>({
     queryKey: ["/api/qmeet/room", roomId],
     queryFn: () => fetch(`/api/qmeet/room/${roomId}`, { credentials: "include" }).then(r => r.json()),
     enabled: !!roomId,
+    retry: 2,
   });
 
   // ── identity ──────────────────────────────────────────────────────────────
   const userId = (user as any)?._id || (user as any)?.id || "";
-  const userName = (user as any)?.fullName || (user as any)?.username || "مشارك";
-  const isHost = meeting && (meeting.hostId === userId || meeting.hostEmail === (user as any)?.email);
+  const defaultName = (user as any)?.fullName || (user as any)?.username || "";
+  const [guestName, setGuestName] = useState("");
+  const userName = defaultName || guestName || "مشارك";
+  const isHost = meeting && userId && (meeting.hostId === userId || meeting.hostEmail === (user as any)?.email);
+  const isStaff = (user as any)?.role === "admin" || (user as any)?.role === "management" || (user as any)?.role === "staff";
 
   // ── media state ───────────────────────────────────────────────────────────
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -163,6 +167,9 @@ export default function MeetingRoom() {
   const analyserNodes = useRef<Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode }>>(new Map());
   const audioCtxRef = useRef<AudioContext | null>(null);
   const timer = useTimer();
+  const [showReactions, setShowReactions] = useState(false);
+  const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; name: string }[]>([]);
+  const [layout, setLayout] = useState<"grid" | "spotlight">("grid");
 
   // ── speaking detection ───────────────────────────────────────────────────
   useEffect(() => {
@@ -382,6 +389,19 @@ export default function MeetingRoom() {
       if (data.userId !== userId) {
         toast({ title: `${data.name || "شخص"} ينتظر في الردهة`, description: "راجع تبويب المشاركين للقبول أو الرفض" });
       }
+    } else if (data.type === "webrtc_reaction") {
+      if (data.userId !== userId) {
+        const id = `${Date.now()}-${data.userId}`;
+        setFloatingReactions(prev => [...prev, { id, emoji: data.emoji, name: data.name || "مشارك" }]);
+        setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
+      }
+    } else if (data.type === "webrtc_mute_all") {
+      // Host muted everyone - mute our mic
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
+        setAudioOn(false);
+        toast({ title: "قام المضيف بكتم الميكروفون" });
+      }
     }
   }, [userId, panel, createPC, flushCandidates, removePeer, sendWs, toast, navigate]);
 
@@ -432,12 +452,15 @@ export default function MeetingRoom() {
 
   // ── join meeting ─────────────────────────────────────────────────────────
   const joinMeeting = useCallback(async () => {
-    if (!userId || !roomId) return;
+    if (!roomId) return;
+    // Use real userId if logged in, otherwise generate a guest ID
+    const uid = userId || `guest-${Date.now()}`;
+    const name = userName.trim() || "مشارك";
     const stream = localStream || await getMedia();
-    if (!stream && !mediaError) return;
+    // Allow joining even without media (audio/video off) as long as we know why
     try { if (!audioCtxRef.current) audioCtxRef.current = new AudioContext(); audioCtxRef.current.resume(); } catch {}
-    connectWs(userId, roomId, userName);
-  }, [userId, roomId, localStream, mediaError, getMedia, connectWs, userName]);
+    connectWs(uid, roomId, name);
+  }, [userId, roomId, localStream, getMedia, connectWs, userName]);
 
   // ── cleanup ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -505,6 +528,19 @@ export default function MeetingRoom() {
     setRaisedHand(on);
     sendWs({ type: "webrtc_raise_hand", roomId, raised: on, name: userName, userId });
   }, [raisedHand, roomId, userName, userId, sendWs]);
+
+  const sendReaction = useCallback((emoji: string) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setFloatingReactions(prev => [...prev, { id, emoji, name: "أنت" }]);
+    setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
+    sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName, userId });
+    setShowReactions(false);
+  }, [roomId, userName, userId, sendWs]);
+
+  const muteAll = useCallback(() => {
+    sendWs({ type: "webrtc_mute_all", roomId });
+    toast({ title: "تم كتم جميع المشاركين" });
+  }, [roomId, sendWs, toast]);
 
   // ── send chat ─────────────────────────────────────────────────────────────
   const sendChat = useCallback(() => {
@@ -612,11 +648,25 @@ export default function MeetingRoom() {
           </div>
 
           {/* Join card */}
-          <div className="w-full lg:w-80 flex flex-col gap-5">
+          <div className="w-full lg:w-80 flex flex-col gap-4">
             <div>
               <h1 className="text-white text-2xl font-semibold mb-1">{meeting?.title || "الاجتماع"}</h1>
               <p className="text-[#9aa0a6] text-sm">{meeting?.hostName || ""}</p>
             </div>
+
+            {/* Name input for guests */}
+            {!defaultName && (
+              <div>
+                <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك</label>
+                <input
+                  value={guestName}
+                  onChange={e => setGuestName(e.target.value)}
+                  placeholder="أدخل اسمك للمتابعة..."
+                  className="w-full bg-[#3c4043] text-white text-sm rounded-xl px-4 py-3 outline-none border border-white/10 focus:border-blue-500 transition placeholder:text-[#9aa0a6]"
+                  data-testid="input-guest-name"
+                />
+              </div>
+            )}
 
             {mediaError && (
               <div className="rounded-xl p-3 flex flex-col gap-2.5 bg-[#3c4043] border border-red-500/30">
@@ -626,14 +676,15 @@ export default function MeetingRoom() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={async () => await getMedia()} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition">حاول مجدداً</button>
-                  <button onClick={() => window.open(location.href, "_blank")} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-[#5f6368] hover:bg-[#6f7379] transition">تبويب جديد</button>
+                  <button onClick={() => window.open(location.href, "_blank")} className="flex-1 py-2 rounded-lg text-xs font-medium text-white bg-[#5f6368] hover:bg-[#6f7379] transition">فتح في تبويب جديد</button>
                 </div>
               </div>
             )}
 
             <button
               onClick={joinMeeting}
-              className="w-full h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all text-base"
+              disabled={!defaultName && !guestName.trim()}
+              className="w-full h-12 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all text-base"
               data-testid="button-join-meeting"
             >
               انضم الآن
@@ -641,7 +692,7 @@ export default function MeetingRoom() {
 
             <div className="flex items-center gap-2 p-3 rounded-xl bg-[#3c4043] cursor-pointer hover:bg-[#4a4d51] transition" onClick={copyLink}>
               {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-[#9aa0a6]" />}
-              <span className="text-[#9aa0a6] text-sm truncate">{location.origin}/meet/{roomId}</span>
+              <span className="text-[#9aa0a6] text-xs truncate">/meet/{roomId}</span>
             </div>
           </div>
         </div>
@@ -667,7 +718,7 @@ export default function MeetingRoom() {
   const gridCols = total === 1 ? 1 : total === 2 ? 2 : total <= 4 ? 2 : total <= 6 ? 3 : 4;
 
   return (
-    <div className="h-screen flex flex-col bg-[#202124] overflow-hidden" dir="rtl">
+    <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative" dir="rtl">
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
@@ -824,17 +875,66 @@ export default function MeetingRoom() {
         )}
       </div>
 
+      {/* Floating reactions */}
+      <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-none z-20">
+        {floatingReactions.map(r => (
+          <div key={r.id} className="flex flex-col items-center animate-bounce">
+            <span className="text-4xl">{r.emoji}</span>
+            <span className="text-white/70 text-xs">{r.name}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Emoji picker popup */}
+      {showReactions && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[#292b2f] rounded-2xl p-3 flex gap-2 shadow-2xl border border-white/10 z-30">
+          {["👍","❤️","😂","😮","👏","🎉","🙏","🔥"].map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => sendReaction(emoji)}
+              className="text-2xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-white/10"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Bottom controls bar */}
-      <div className="flex items-center justify-between px-6 py-4 shrink-0">
-        {/* Left: time / info */}
-        <div className="flex items-center gap-3 w-48">
-          <span className="text-[#9aa0a6] text-sm hidden sm:block">{new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span className="text-[#9aa0a6] text-xs hidden sm:block">|</span>
-          <span className="text-[#9aa0a6] text-xs truncate hidden sm:block">{roomId}</span>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0 relative">
+        {/* Left: info + host controls */}
+        <div className="flex items-center gap-2 w-48">
+          <span className="text-[#9aa0a6] text-xs hidden md:block">{timer}</span>
+          {(isHost || isStaff) && (
+            <>
+              <button
+                onClick={muteAll}
+                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] hover:text-white text-xs transition"
+                title="كتم الجميع"
+                data-testid="button-mute-all"
+              >
+                <MicOff className="w-3.5 h-3.5" />
+                كتم الكل
+              </button>
+              <button
+                onClick={async () => {
+                  if (!meeting) return;
+                  const r = await fetch(`/api/qmeet/meetings/${meeting._id || meeting.id}/toggle-lobby`, { method: "PATCH", credentials: "include" });
+                  if (r.ok) { const d = await r.json(); setLobbyEnabled(d.lobbyEnabled); toast({ title: d.lobbyEnabled ? "✅ صالة الانتظار مفعلة" : "🔓 صالة الانتظار معطلة" }); }
+                }}
+                className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition ${lobbyEnabled ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-[#3c4043] text-[#9aa0a6] hover:bg-[#4a4d51] hover:text-white"}`}
+                title={lobbyEnabled ? "تعطيل صالة الانتظار" : "تفعيل صالة الانتظار"}
+                data-testid="button-toggle-lobby"
+              >
+                {lobbyEnabled ? <Lock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                {lobbyEnabled ? "مقفل" : "مفتوح"}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Center: core controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Mic */}
           <button
             onClick={toggleAudio}
@@ -875,10 +975,20 @@ export default function MeetingRoom() {
             <Hand className="w-5 h-5 text-white" />
           </button>
 
+          {/* Emoji reactions */}
+          <button
+            onClick={() => setShowReactions(s => !s)}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 ${showReactions ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+            title="ردود فعل"
+            data-testid="button-reactions"
+          >
+            <Smile className="w-5 h-5 text-white" />
+          </button>
+
           {/* Leave */}
           <button
             onClick={leave}
-            className="h-12 px-6 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all hover:scale-105 flex items-center gap-2"
+            className="h-12 px-5 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all hover:scale-105 flex items-center gap-2"
             data-testid="button-leave"
           >
             <PhoneOff className="w-4 h-4" />
@@ -886,8 +996,16 @@ export default function MeetingRoom() {
           </button>
         </div>
 
-        {/* Right: chat / participants */}
+        {/* Right: layout + chat + participants */}
         <div className="flex items-center gap-2 w-48 justify-end">
+          <button
+            onClick={() => setLayout(l => l === "grid" ? "spotlight" : "grid")}
+            className="w-10 h-10 rounded-full hidden md:flex items-center justify-center bg-[#3c4043] hover:bg-[#4a4d51] transition"
+            title={layout === "grid" ? "عرض المتحدث" : "عرض الشبكة"}
+            data-testid="button-toggle-layout"
+          >
+            <Grid3X3 className="w-4 h-4 text-[#9aa0a6]" />
+          </button>
           <button
             onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
             className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
@@ -904,7 +1022,7 @@ export default function MeetingRoom() {
             data-testid="button-toggle-participants"
           >
             <Users className="w-5 h-5 text-white" />
-            {isHost && lobbyRequests.length > 0 && (
+            {lobbyRequests.length > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">{lobbyRequests.length}</span>
             )}
           </button>

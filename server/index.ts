@@ -483,6 +483,27 @@ wss.on("connection", (ws) => {
         }
         return;
       }
+
+      if (msg.type === "webrtc_reaction" && msg.roomId) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_reaction", emoji: msg.emoji, name: msg.name || "مشارك", userId });
+          }
+        }
+        return;
+      }
+
+      if (msg.type === "webrtc_mute_all" && msg.roomId) {
+        // Only broadcast if sender is in the room (host check on client)
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_mute_all", from: userId });
+          }
+        }
+        return;
+      }
     } catch {}
   });
 
