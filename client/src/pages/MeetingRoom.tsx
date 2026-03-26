@@ -757,17 +757,24 @@ export default function MeetingRoom() {
   }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost, isStaff]);
 
   const getMedia = useCallback(async () => {
-    const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000 };
+    // Check if mediaDevices API is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMediaError("متصفحك لا يدعم الكاميرا/الميك، جرب Chrome أو Firefox");
+      return null;
+    }
+    const audioConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: audioConstraints,
       });
       localStreamRef.current = stream;
       setLocalStream(stream);
       setMediaError(null);
       return stream;
-    } catch {
+    } catch (err: any) {
+      console.error("[QMeet] getMedia video+audio failed:", err?.name, err?.message);
+      // Try audio only
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: audioConstraints });
         localStreamRef.current = stream;
@@ -775,8 +782,18 @@ export default function MeetingRoom() {
         setVideoOn(false);
         setMediaError("الكاميرا غير متاحة، يمكنك الانضمام بالصوت فقط");
         return stream;
-      } catch {
-        setMediaError("لا يمكن الوصول للكاميرا أو الميكروفون. تأكد من منح الإذن.");
+      } catch (err2: any) {
+        console.error("[QMeet] getMedia audio-only failed:", err2?.name, err2?.message);
+        // Show specific error based on error type
+        if (err2?.name === "NotAllowedError" || err?.name === "NotAllowedError") {
+          setMediaError("تم رفض الإذن — اضغط على أيقونة القفل في شريط العنوان وامنح إذن الكاميرا والميك");
+        } else if (err2?.name === "NotFoundError" || err?.name === "NotFoundError") {
+          setMediaError("لا توجد كاميرا أو ميكروفون متصل بالجهاز");
+        } else if (err2?.name === "NotReadableError" || err?.name === "NotReadableError") {
+          setMediaError("الكاميرا/الميك مستخدمة من تطبيق آخر — أغلق البرامج الأخرى وحاول مجدداً");
+        } else {
+          setMediaError(`خطأ: ${err?.name || err2?.name || "غير معروف"} — ${err?.message || err2?.message || ""}`);
+        }
         return null;
       }
     }
@@ -1574,16 +1591,23 @@ export default function MeetingRoom() {
                   <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
                   <p className="text-red-300/90 text-xs leading-relaxed font-medium">{mediaError}</p>
                 </div>
-                <p className="text-white/40 text-xs leading-relaxed">
-                  المتصفح يمنع الكاميرا والميك داخل نافذة المعاينة. افتح التطبيق في تبويب جديد لتعمل بشكل صحيح.
-                </p>
-                <button
-                  onClick={() => window.open(window.location.href, "_blank")}
-                  className="w-full py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
-                  style={{ background: "rgba(239,68,68,0.5)", border: "1px solid rgba(239,68,68,0.4)" }}
-                >
-                  افتح في تبويب جديد
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => { await getMedia(); }}
+                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+                    style={{ background: "rgba(59,130,246,0.5)", border: "1px solid rgba(59,130,246,0.4)" }}
+                    data-testid="button-retry-media"
+                  >
+                    حاول مجدداً
+                  </button>
+                  <button
+                    onClick={() => window.open(window.location.href, "_blank")}
+                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+                    style={{ background: "rgba(239,68,68,0.4)", border: "1px solid rgba(239,68,68,0.3)" }}
+                  >
+                    فتح في تبويب جديد
+                  </button>
+                </div>
               </div>
             )}
 
