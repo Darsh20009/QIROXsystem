@@ -1441,16 +1441,15 @@ export default function MeetingRoom() {
             </div>
             <p className="text-white text-sm font-medium mb-3 leading-snug">{activePoll.question}</p>
             <div className="space-y-2">
-              {activePoll.options.map((opt: string, i: number) => {
-                const votes = activePoll.votes?.[i] ?? 0;
-                const total = activePoll.options.reduce((_: number, __: string, j: number) => _ + (activePoll.votes?.[j] ?? 0), 0);
-                const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+              {activePoll.options.map((opt: PollOption, i: number) => {
+                const total = activePoll.options.reduce((sum: number, o: PollOption) => sum + (o.votes ?? 0), 0);
+                const pct = total > 0 ? Math.round(((opt.votes ?? 0) / total) * 100) : 0;
                 return (
                   <button key={i} onClick={() => votePoll(i)} disabled={myPollVote !== null}
                     className={`w-full text-right px-3 py-2 rounded-xl text-sm transition relative overflow-hidden ${myPollVote === i ? "ring-2 ring-blue-500" : ""} ${myPollVote !== null ? "cursor-default" : "hover:bg-white/10"} bg-white/5`}>
                     <div className="absolute inset-0 bg-blue-600/20 transition-all" style={{ width: `${pct}%` }} />
                     <div className="relative flex justify-between">
-                      <span className="text-white">{opt}</span>
+                      <span className="text-white">{opt.text}</span>
                       {myPollVote !== null && <span className="text-blue-300 text-xs">{pct}%</span>}
                     </div>
                   </button>
@@ -1459,7 +1458,7 @@ export default function MeetingRoom() {
             </div>
             {myPollVote !== null && (
               <p className="text-[#9aa0a6] text-xs mt-2 text-center">
-                صوّت {activePoll.options.reduce((_: number, __: string, j: number) => _ + (activePoll.votes?.[j] ?? 0), 0)} مشارك
+                صوّت {activePoll.options.reduce((sum: number, o: PollOption) => sum + (o.votes ?? 0), 0)} مشارك
               </p>
             )}
           </div>
