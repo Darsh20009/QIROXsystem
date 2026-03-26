@@ -1,5 +1,41 @@
 # Qirox Platform
 
+## Latest Changes (Mar 26, 2026) — Session 3
+
+### QMeet Advanced Features UI Completion
+
+**New WS message handlers in MeetingRoom.tsx:**
+- `webrtc_mute_me` — individual mute from host (toast notification)
+- `webrtc_poll_started/updated/ended` — full poll lifecycle with state management
+- `webrtc_caption` — receives peer captions, adds to local overlay
+- `webrtc_attendance_log` — receives and stores attendance log from server
+
+**New control functions:**
+- `toggleLock()` — sends `webrtc_lock_room`, updates `meetingLocked` state
+- `kickPeer(id, name)` — confirm dialog + `webrtc_kick` with ban
+- `mutePeer(id)` — sends `webrtc_mute_peer`
+- `toggleCaptions()` — Web Speech API (ar-SA), relays final transcripts as `webrtc_caption`, auto-restarts
+- `toggleRecording()` — MediaRecorder on local stream, saves webm blob
+- `downloadRecording()` — creates object URL, triggers download
+- `createPoll()` — validates + sends `webrtc_poll_create`
+- `votePoll(i)` — sends `webrtc_poll_vote` (locked after first vote)
+- `endPoll()` — host sends `webrtc_poll_end`
+- `getAiSummary()` — POST to `/api/qmeet/room/:id/ai-summary` with chat+captions
+- `showAttendancePanel()` — requests log via `webrtc_get_attendance`, opens attendance tab
+
+**New UI elements:**
+- **Top bar**: Lock icon badge, recording indicator (pulsing red dot), QR code button
+- **QR Code Modal**: Uses api.qrserver.com to generate QR, shows meeting URL, copy button
+- **Live Captions Overlay**: Bottom of video area, last 3 entries, blue for self / dark for others
+- **Active Poll Widget**: Floating card (top-left), options with live %-bar animation, host can end
+- **Poll Creator Modal**: Host-only, question + 2-6 options, "بدء الاستطلاع" button
+- **Recording Download Banner**: Appears when recording stops, green download button
+- **Side Panel — 4 tabs**: Dردشة | المشاركون | الحضور | AI (desktop + mobile)
+- **Participants tab**: Host controls section (mute all, lock/unlock), per-peer hover actions (mute/kick)
+- **Attendance tab**: Color-coded join/leave log with timestamps
+- **AI tab**: Sparkles icon, loading spinner, summary text, refresh button
+- **Control bar right**: Captions (Subtitles icon), Recording (CircleDot), Poll (BarChart2, host only), Layout, Chat, Participants
+
 ## Latest Changes (Mar 26, 2026) — Session 2
 
 ### QMeet Critical Bug Fixes & New Features

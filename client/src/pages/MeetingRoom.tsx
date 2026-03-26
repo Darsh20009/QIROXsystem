@@ -7,6 +7,9 @@ import {
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff,
   MessageSquare, Users, Copy, Check, Loader2, Send,
   Hand, Grid3X3, Maximize2, ChevronRight, Smile, X,
+  Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
+  CircleDot, Download, QrCode, ClipboardList, Sparkles,
+  ChevronDown, Plus, Trash2, BarChart, Vote,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -64,6 +67,18 @@ interface ChatMsg {
   time: string;
   isSelf: boolean;
 }
+
+interface PollOption { text: string; votes: number }
+interface MeetingPoll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  hostId: string;
+  totalVotes?: number;
+}
+
+interface CaptionEntry { id: string; name: string; text: string; isSelf: boolean }
+interface AttendanceEntry { userId: string; name: string; action: "join" | "leave"; time: string }
 
 // ── VideoTile ────────────────────────────────────────────────────────────────
 
@@ -145,7 +160,7 @@ export default function MeetingRoom() {
   const [raisedHand, setRaisedHand] = useState(false);
 
   // ui state
-  const [panel, setPanel] = useState<"none" | "chat" | "participants">("none");
+  const [panel, setPanel] = useState<"none" | "chat" | "participants" | "attendance" | "ai">("none");
   const [unread, setUnread] = useState(0);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -159,6 +174,29 @@ export default function MeetingRoom() {
   const [floatReactions, setFloatReactions] = useState<{ id: string; emoji: string }[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  // ── Advanced features state ───────────────────────────────────────────────
+  const [isRoomHost, setIsRoomHost] = useState(false);
+  const [meetingLocked, setMeetingLocked] = useState(false);
+  // Polls
+  const [activePoll, setActivePoll] = useState<MeetingPoll | null>(null);
+  const [myPollVote, setMyPollVote] = useState<number | null>(null);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  // Captions
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [captions, setCaptions] = useState<CaptionEntry[]>([]);
+  // Recording
+  const [recording, setRecording] = useState(false);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  // QR
+  const [showQR, setShowQR] = useState(false);
+  // Attendance
+  const [attendanceLog, setAttendanceLog] = useState<AttendanceEntry[]>([]);
+  // AI
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const timer = useElapsedTimer(joined);
 
@@ -175,6 +213,15 @@ export default function MeetingRoom() {
   const peerNamesRef = useRef<Map<string, string>>(new Map()); // id → name
   const audioOnRef = useRef(true);
   const videoOnRef = useRef(true);
+  const isRoomHostRef = useRef(false);
+  // Recording
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  // Captions
+  const speechRef = useRef<any>(null);
+  const captionsEndRef = useRef<HTMLDivElement>(null);
+  // Chat/captions for AI summary
+  const captionsLogRef = useRef<CaptionEntry[]>([]);
 
   // Keep refs in sync with state
   useEffect(() => { audioOnRef.current = audioOn; }, [audioOn]);
@@ -358,9 +405,34 @@ export default function MeetingRoom() {
       navigate("/qmeet");
       return;
     }
+    if (msg.type === "webrtc_banned") {
+      toast({ title: "تم حظرك من هذا الاجتماع", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_room_locked") {
+      toast({ title: "الاجتماع مقفل", description: "لا يمكن الانضمام حاليًا — انتظر أن يفتح المضيف الاجتماع", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_room_lock_changed") {
+      setMeetingLocked(!!msg.locked);
+      toast({ title: msg.locked ? "🔒 الاجتماع مقفل" : "🔓 الاجتماع مفتوح" });
+      return;
+    }
 
     // ── Join: list of existing peers ─────────────────────────────────────────
     if (msg.type === "webrtc_peers") {
+      // Set host status
+      if (msg.hostId) {
+        const amHost = msg.hostId === myId;
+        setIsRoomHost(amHost);
+        isRoomHostRef.current = amHost;
+      }
+      // Set lock state
+      if (msg.isLocked !== undefined) setMeetingLocked(!!msg.isLocked);
+      // Set active poll
+      if (msg.activePoll) setActivePoll(msg.activePoll);
       // Build peer info map
       if (msg.peerInfoList) {
         msg.peerInfoList.forEach((p: any) => {
@@ -378,6 +450,11 @@ export default function MeetingRoom() {
       }
       // Initiate connection to each existing peer (we are the newcomer = initiator)
       const existingIds: string[] = msg.peers || [];
+      // If no existing peers, we are the first → we are the host
+      if (existingIds.length === 0 && !msg.hostId) {
+        setIsRoomHost(true);
+        isRoomHostRef.current = true;
+      }
       for (const peerId of existingIds) {
         if (peerId !== myId) await createPc(peerId, true);
       }
@@ -553,6 +630,53 @@ export default function MeetingRoom() {
       audioOnRef.current = false;
       setAudioOn(false);
       sendWs({ type: "webrtc_media_state", roomId, audio: false, video: videoOnRef.current });
+      toast({ title: "🔇 تم كتم صوتك من المضيف" });
+      return;
+    }
+
+    // ── Mute individual (host command) ────────────────────────────────────────
+    if (msg.type === "webrtc_mute_me") {
+      localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = false; });
+      audioOnRef.current = false;
+      setAudioOn(false);
+      sendWs({ type: "webrtc_media_state", roomId, audio: false, video: videoOnRef.current });
+      toast({ title: "🔇 تم كتم صوتك من المضيف" });
+      return;
+    }
+
+    // ── Polls ─────────────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_poll_started") {
+      setActivePoll(msg.poll);
+      setMyPollVote(null);
+      toast({ title: "📊 استطلاع جديد!", description: msg.poll.question });
+      return;
+    }
+    if (msg.type === "webrtc_poll_updated") {
+      setActivePoll(msg.poll);
+      if (msg.myVote !== undefined) setMyPollVote(msg.myVote);
+      return;
+    }
+    if (msg.type === "webrtc_poll_ended") {
+      setActivePoll(msg.poll);
+      setTimeout(() => setActivePoll(null), 8000); // show final results for 8s
+      return;
+    }
+
+    // ── Live captions ─────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_caption") {
+      const cap: CaptionEntry = { id: `${Date.now()}-${msg.from}`, name: msg.name || msg.from, text: msg.text, isSelf: false };
+      captionsLogRef.current = [...captionsLogRef.current, cap];
+      setCaptions(prev => {
+        const next = [...prev.slice(-9), cap]; // keep last 10
+        return next;
+      });
+      captionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // ── Attendance log ────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_attendance_log") {
+      setAttendanceLog(msg.log || []);
       return;
     }
 
@@ -886,6 +1010,166 @@ export default function MeetingRoom() {
     setLobbyRequests(prev => prev.filter(r => r.userId !== reqUserId));
   }, [roomId, sendWs]);
 
+  // ── Host: Lock/Unlock room ────────────────────────────────────────────────
+  const toggleLock = useCallback(() => {
+    const newLocked = !meetingLocked;
+    sendWs({ type: "webrtc_lock_room", roomId, locked: newLocked });
+    setMeetingLocked(newLocked);
+    toast({ title: newLocked ? "🔒 الاجتماع مقفل" : "🔓 الاجتماع مفتوح" });
+  }, [meetingLocked, roomId, sendWs, toast]);
+
+  // ── Host: Kick participant ─────────────────────────────────────────────────
+  const kickPeer = useCallback((targetId: string, targetName: string) => {
+    if (!confirm(`هل تريد إخراج ${targetName} وحظره من إعادة الانضمام؟`)) return;
+    sendWs({ type: "webrtc_kick", roomId, targetId, ban: true });
+    toast({ title: `تم إخراج ${targetName}` });
+  }, [roomId, sendWs, toast]);
+
+  // ── Host: Mute individual peer ────────────────────────────────────────────
+  const mutePeer = useCallback((targetId: string) => {
+    sendWs({ type: "webrtc_mute_peer", roomId, targetId });
+    toast({ title: "تم كتم المشارك" });
+  }, [roomId, sendWs, toast]);
+
+  // ── Live Captions (Web Speech API) ───────────────────────────────────────
+  const toggleCaptions = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "التعليقات المباشرة غير متاحة", description: "استخدم Chrome أو Edge لهذه الميزة", variant: "destructive" });
+      return;
+    }
+    if (captionsOn) {
+      speechRef.current?.stop();
+      speechRef.current = null;
+      setCaptionsOn(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "ar-SA";
+    recognition.onresult = (e: any) => {
+      const latest = e.results[e.results.length - 1];
+      if (latest.isFinal) {
+        const text = latest[0].transcript.trim();
+        if (!text) return;
+        const cap: CaptionEntry = { id: `${Date.now()}-self`, name: userName, text, isSelf: true };
+        captionsLogRef.current = [...captionsLogRef.current, cap];
+        setCaptions(prev => [...prev.slice(-9), cap]);
+        captionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Relay to peers
+        sendWs({ type: "webrtc_caption", roomId, text, name: userName });
+      }
+    };
+    recognition.onerror = () => {};
+    recognition.onend = () => {
+      // Auto-restart if still enabled
+      if (speechRef.current) {
+        try { speechRef.current.start(); } catch {}
+      }
+    };
+    recognition.start();
+    speechRef.current = recognition;
+    setCaptionsOn(true);
+    toast({ title: "✏️ التعليقات المباشرة تعمل" });
+  }, [captionsOn, roomId, userName, sendWs, toast]);
+
+  // ── Recording (MediaRecorder) ────────────────────────────────────────────
+  const toggleRecording = useCallback(async () => {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    if (!localStreamRef.current) {
+      toast({ title: "لا يوجد stream للتسجيل", variant: "destructive" });
+      return;
+    }
+    try {
+      recordedChunksRef.current = [];
+      const recorder = new MediaRecorder(localStreamRef.current, { mimeType: "video/webm;codecs=vp8,opus" });
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        setRecordingBlob(blob);
+        setRecording(false);
+        toast({ title: "✅ التسجيل جاهز للتنزيل" });
+      };
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      setRecordingBlob(null);
+      toast({ title: "⏺ بدأ التسجيل" });
+    } catch {
+      toast({ title: "تعذّر بدء التسجيل", variant: "destructive" });
+    }
+  }, [recording, toast]);
+
+  const downloadRecording = useCallback(() => {
+    if (!recordingBlob) return;
+    const url = URL.createObjectURL(recordingBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `meeting-${roomId}-${Date.now()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [recordingBlob, roomId]);
+
+  // ── Poll controls ─────────────────────────────────────────────────────────
+  const createPoll = useCallback(() => {
+    const validOptions = pollOptions.filter(o => o.trim());
+    if (!pollQuestion.trim() || validOptions.length < 2) {
+      toast({ title: "أدخل سؤالاً وخيارين على الأقل", variant: "destructive" });
+      return;
+    }
+    sendWs({ type: "webrtc_poll_create", roomId, question: pollQuestion.trim(), options: validOptions });
+    setPollQuestion("");
+    setPollOptions(["", ""]);
+    setShowPollCreator(false);
+  }, [pollQuestion, pollOptions, roomId, sendWs, toast]);
+
+  const votePoll = useCallback((optionIndex: number) => {
+    if (!activePoll || myPollVote !== null) return;
+    sendWs({ type: "webrtc_poll_vote", roomId, pollId: activePoll.id, optionIndex });
+    setMyPollVote(optionIndex);
+  }, [activePoll, myPollVote, roomId, sendWs]);
+
+  const endPoll = useCallback(() => {
+    if (!activePoll) return;
+    sendWs({ type: "webrtc_poll_end", roomId, pollId: activePoll.id });
+  }, [activePoll, roomId, sendWs]);
+
+  // ── AI Summary ────────────────────────────────────────────────────────────
+  const getAiSummary = useCallback(async () => {
+    setAiSummaryLoading(true);
+    setPanel("ai");
+    try {
+      const res = await fetch(`/api/qmeet/room/${roomId}/ai-summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          chat: chat.map(m => ({ name: m.name, text: m.text })),
+          captions: captionsLogRef.current.map(c => ({ name: c.name, text: c.text })),
+          title: meeting?.title || "اجتماع",
+        }),
+      });
+      const data = await res.json();
+      setAiSummary(data.summary || "تعذّر إنشاء الملخص");
+    } catch {
+      setAiSummary("خطأ في الاتصال بخدمة الذكاء الاصطناعي");
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  }, [roomId, chat, meeting]);
+
+  // ── Attendance ────────────────────────────────────────────────────────────
+  const showAttendancePanel = useCallback(() => {
+    sendWs({ type: "webrtc_get_attendance", roomId });
+    setPanel("attendance");
+  }, [roomId, sendWs]);
+
   // ── Render helpers ────────────────────────────────────────────────────────
 
   const myId = myIdRef.current || "local";
@@ -1048,6 +1332,8 @@ export default function MeetingRoom() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-white font-medium text-sm truncate max-w-[120px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
           <span className="text-[#9aa0a6] text-xs tabular-nums shrink-0">{timer}</span>
+          {meetingLocked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+          {recording && <span className="flex items-center gap-1 text-red-400 text-xs animate-pulse shrink-0"><CircleDot className="w-3 h-3" />تسجيل</span>}
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3c4043] text-[#9aa0a6] text-xs">
@@ -1059,12 +1345,40 @@ export default function MeetingRoom() {
               {lobbyRequests.length} ينتظر
             </button>
           )}
+          <button onClick={() => setShowQR(true)} title="رمز QR"
+            className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
+            <QrCode className="w-3.5 h-3.5" />
+          </button>
           <button onClick={copyLink} title="نسخ الرابط"
             className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
             {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
+
+      {/* ── QR Code Modal ── */}
+      {showQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowQR(false)}>
+          <div className="bg-[#292b2f] rounded-2xl p-6 flex flex-col items-center gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between w-full">
+              <span className="text-white font-semibold">رمز QR للانضمام</span>
+              <button onClick={() => setShowQR(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(`${window.location.origin}/meet/${roomId}`)}&color=ffffff&bgcolor=292b2f`}
+              alt="QR" className="rounded-xl"
+              width={220} height={220}
+            />
+            <div className="text-[#9aa0a6] text-xs text-center break-all max-w-[220px]">
+              {`${window.location.origin}/meet/${roomId}`}
+            </div>
+            <button onClick={copyLink}
+              className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition flex items-center justify-center gap-2">
+              {copied ? <><Check className="w-4 h-4" /> تم النسخ</> : <><Copy className="w-4 h-4" /> نسخ الرابط</>}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Main area ── */}
       <div className="flex flex-1 gap-2 px-2 pb-2 overflow-hidden min-h-0">
@@ -1106,25 +1420,129 @@ export default function MeetingRoom() {
           </div>
         )}
 
+        {/* ── Live Captions Overlay ── */}
+        {captionsOn && captions.length > 0 && (
+          <div className="pointer-events-none absolute bottom-28 left-0 right-0 px-4 z-30 flex flex-col gap-1" style={{ direction: "rtl" }}>
+            {captions.slice(-3).map(cap => (
+              <div key={cap.id}
+                className={`self-center max-w-[80%] px-4 py-2 rounded-xl text-sm text-white shadow-lg backdrop-blur-sm ${cap.isSelf ? "bg-blue-700/80" : "bg-black/70"}`}>
+                <span className="font-semibold ml-2 text-xs opacity-70">{cap.name}:</span>{cap.text}
+              </div>
+            ))}
+            <div ref={captionsEndRef} />
+          </div>
+        )}
+
+        {/* ── Active Poll Widget ── */}
+        {activePoll && (
+          <div className="absolute top-3 left-3 z-30 bg-[#292b2f]/95 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-white/10 w-64" style={{ direction: "rtl" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-blue-300 text-xs font-semibold flex items-center gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> استطلاع</span>
+              {isRoomHost && <button onClick={endPoll} className="text-[#9aa0a6] hover:text-red-400 text-xs transition">إنهاء</button>}
+            </div>
+            <p className="text-white text-sm font-medium mb-3 leading-snug">{activePoll.question}</p>
+            <div className="space-y-2">
+              {activePoll.options.map((opt: string, i: number) => {
+                const votes = activePoll.votes?.[i] ?? 0;
+                const total = activePoll.options.reduce((_: number, __: string, j: number) => _ + (activePoll.votes?.[j] ?? 0), 0);
+                const pct = total > 0 ? Math.round((votes / total) * 100) : 0;
+                return (
+                  <button key={i} onClick={() => votePoll(i)} disabled={myPollVote !== null}
+                    className={`w-full text-right px-3 py-2 rounded-xl text-sm transition relative overflow-hidden ${myPollVote === i ? "ring-2 ring-blue-500" : ""} ${myPollVote !== null ? "cursor-default" : "hover:bg-white/10"} bg-white/5`}>
+                    <div className="absolute inset-0 bg-blue-600/20 transition-all" style={{ width: `${pct}%` }} />
+                    <div className="relative flex justify-between">
+                      <span className="text-white">{opt}</span>
+                      {myPollVote !== null && <span className="text-blue-300 text-xs">{pct}%</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {myPollVote !== null && (
+              <p className="text-[#9aa0a6] text-xs mt-2 text-center">
+                صوّت {activePoll.options.reduce((_: number, __: string, j: number) => _ + (activePoll.votes?.[j] ?? 0), 0)} مشارك
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Poll Creator Modal ── */}
+        {showPollCreator && isRoomHost && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowPollCreator(false)}>
+            <div className="bg-[#292b2f] rounded-2xl p-5 shadow-2xl w-80 space-y-3" onClick={e => e.stopPropagation()} dir="rtl">
+              <div className="flex items-center justify-between">
+                <span className="text-white font-semibold flex items-center gap-2"><BarChart2 className="w-4 h-4 text-blue-400" /> إنشاء استطلاع</span>
+                <button onClick={() => setShowPollCreator(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
+              </div>
+              <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
+                placeholder="السؤال..."
+                className="w-full px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition" />
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex gap-2">
+                  <input value={opt} onChange={e => { const a = [...pollOptions]; a[i] = e.target.value; setPollOptions(a); }}
+                    placeholder={`خيار ${i + 1}`}
+                    className="flex-1 px-3 py-2 rounded-xl bg-[#3c4043] text-white text-sm placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition" />
+                  {pollOptions.length > 2 && (
+                    <button onClick={() => setPollOptions(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {pollOptions.length < 6 && (
+                <button onClick={() => setPollOptions(prev => [...prev, ""])}
+                  className="w-full py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#9aa0a6] text-sm transition">
+                  + إضافة خيار
+                </button>
+              )}
+              <button onClick={createPoll}
+                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition">
+                بدء الاستطلاع
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Recording Download Banner ── */}
+        {recordingBlob && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 bg-[#292b2f] rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl border border-white/10">
+            <span className="text-white text-sm">التسجيل جاهز</span>
+            <button onClick={downloadRecording}
+              className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" /> تنزيل
+            </button>
+            <button onClick={() => setRecordingBlob(null)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+        )}
+
         {/* Side panel (desktop) */}
         {panel !== "none" && (
           <div className="hidden md:flex w-72 lg:w-80 bg-[#292b2f] rounded-2xl flex-col overflow-hidden shrink-0">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] shrink-0">
-              <div className="flex gap-1">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08] shrink-0">
+              <div className="flex gap-0.5 flex-wrap">
                 <button onClick={() => { setPanel("chat"); setUnread(0); }}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
-                  المحادثة {unread > 0 && panel !== "chat" && <span className="ml-1 w-4 h-4 rounded-full bg-red-500 text-[10px] inline-flex items-center justify-center">{unread}</span>}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  الدردشة {unread > 0 && panel !== "chat" && <span className="mr-1 w-4 h-4 rounded-full bg-red-500 text-[10px] inline-flex items-center justify-center">{unread}</span>}
                 </button>
                 <button onClick={() => setPanel("participants")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
-                  المشاركون ({total})
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  المشاركون
+                </button>
+                <button onClick={showAttendancePanel}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-blue-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  الحضور
+                </button>
+                <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-purple-600 text-white" : "text-[#9aa0a6] hover:text-white"}`}>
+                  AI
                 </button>
               </div>
-              <button onClick={() => setPanel("none")} className="text-[#9aa0a6] hover:text-white transition">
-                <ChevronRight className="w-5 h-5" />
+              <button onClick={() => setPanel("none")} className="text-[#9aa0a6] hover:text-white transition shrink-0">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Chat */}
             {panel === "chat" && (
               <>
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -1154,8 +1572,25 @@ export default function MeetingRoom() {
               </>
             )}
 
+            {/* Participants */}
             {panel === "participants" && (
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {/* Host controls */}
+                {isRoomHost && (
+                  <div className="mb-3 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 space-y-2">
+                    <p className="text-blue-300 text-xs font-semibold">🎛 أدوات المضيف</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={muteAll}
+                        className="flex-1 py-1.5 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs font-medium transition flex items-center justify-center gap-1">
+                        <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
+                      </button>
+                      <button onClick={toggleLock}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" : "bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6]"}`}>
+                        {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {lobbyRequests.length > 0 && (
                   <div className="mb-3 space-y-2">
                     <p className="text-amber-300 text-xs font-medium px-1">في الانتظار</p>
@@ -1173,7 +1608,7 @@ export default function MeetingRoom() {
                   </div>
                 )}
                 {allPeers.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition">
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition group">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
                       style={{ background: avatarColor(p.name) }}>
                       {p.name?.charAt(0)?.toUpperCase() || "?"}
@@ -1181,13 +1616,77 @@ export default function MeetingRoom() {
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">{p.id === myId ? `${p.name} (أنت)` : p.name}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {!p.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400" />}
                       {!p.videoOn && <VideoOff className="w-3.5 h-3.5 text-[#9aa0a6]" />}
                       {p.raisedHand && <span className="text-sm">✋</span>}
+                      {/* Host controls per peer */}
+                      {isRoomHost && p.id !== myId && (
+                        <>
+                          <button onClick={() => mutePeer(p.id)} title="كتم"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-[#9aa0a6] hover:text-white transition">
+                            <VolumeX className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => kickPeer(p.id, p.name)} title="إخراج"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-[#9aa0a6] hover:text-red-400 transition">
+                            <UserX className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Attendance */}
+            {panel === "attendance" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <p className="text-[#9aa0a6] text-xs mb-3">سجل حضور الاجتماع</p>
+                {attendanceLog.length === 0 ? (
+                  <div className="text-center text-[#9aa0a6] text-sm mt-8">لا يوجد سجل بعد</div>
+                ) : attendanceLog.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-green-400" : "bg-red-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-white text-sm truncate">{entry.name}</span>
+                    </div>
+                    <div className="text-[#9aa0a6] text-xs shrink-0">
+                      {entry.action === "join" ? "انضم" : "غادر"} · {entry.time}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* AI Notes */}
+            {panel === "ai" && (
+              <div className="flex-1 overflow-y-auto p-3">
+                {aiSummaryLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                    <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
+                  </div>
+                ) : aiSummary ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-purple-300 text-xs font-semibold flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> ملخص الذكاء الاصطناعي</span>
+                      <button onClick={getAiSummary} className="text-[#9aa0a6] hover:text-white text-xs transition">تحديث</button>
+                    </div>
+                    <div className="text-white text-sm leading-relaxed whitespace-pre-wrap bg-[#3c4043]/50 rounded-xl p-3">
+                      {aiSummary}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <Sparkles className="w-8 h-8 text-purple-400" />
+                    <p className="text-[#9aa0a6] text-sm text-center">اضغط لتوليد ملخص ذكي للاجتماع</p>
+                    <button onClick={getAiSummary}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition">
+                      توليد الملخص
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1197,19 +1696,27 @@ export default function MeetingRoom() {
       {/* Mobile panel overlay */}
       {panel !== "none" && (
         <div className="md:hidden fixed inset-0 z-40 bg-black/60 flex flex-col justify-end" onClick={() => setPanel("none")}>
-          <div className="bg-[#292b2f] rounded-t-2xl max-h-[65vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
-              <div className="flex gap-1">
+          <div className="bg-[#292b2f] rounded-t-2xl max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.08]">
+              <div className="flex gap-0.5 flex-wrap">
                 <button onClick={() => { setPanel("chat"); setUnread(0); }}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
-                  المحادثة
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "chat" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  الدردشة
                 </button>
                 <button onClick={() => setPanel("participants")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
-                  المشاركون ({total})
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "participants" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  المشاركون
+                </button>
+                <button onClick={showAttendancePanel}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "attendance" ? "bg-blue-600 text-white" : "text-[#9aa0a6]"}`}>
+                  الحضور
+                </button>
+                <button onClick={() => { setPanel("ai"); if (!aiSummary) getAiSummary(); }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${panel === "ai" ? "bg-purple-600 text-white" : "text-[#9aa0a6]"}`}>
+                  AI
                 </button>
               </div>
-              <button onClick={() => setPanel("none")} className="text-[#9aa0a6]"><X className="w-5 h-5" /></button>
+              <button onClick={() => setPanel("none")} className="text-[#9aa0a6]"><X className="w-4 h-4" /></button>
             </div>
 
             {panel === "chat" && (
@@ -1238,6 +1745,18 @@ export default function MeetingRoom() {
 
             {panel === "participants" && (
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {isRoomHost && (
+                  <div className="mb-3 flex gap-2">
+                    <button onClick={muteAll}
+                      className="flex-1 py-2 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-xs font-medium transition flex items-center justify-center gap-1">
+                      <VolumeX className="w-3.5 h-3.5" /> كتم الجميع
+                    </button>
+                    <button onClick={toggleLock}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1 ${meetingLocked ? "bg-amber-500/20 text-amber-300" : "bg-[#3c4043] text-[#9aa0a6]"}`}>
+                      {meetingLocked ? <><Lock className="w-3.5 h-3.5" /> مقفل</> : <><LockOpen className="w-3.5 h-3.5" /> قفل</>}
+                    </button>
+                  </div>
+                )}
                 {allPeers.map(p => (
                   <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
@@ -1252,6 +1771,44 @@ export default function MeetingRoom() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {panel === "attendance" && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <p className="text-[#9aa0a6] text-xs mb-2">سجل الحضور</p>
+                {attendanceLog.length === 0 ? (
+                  <div className="text-center text-[#9aa0a6] text-sm mt-6">لا يوجد سجل بعد</div>
+                ) : attendanceLog.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${entry.action === "join" ? "bg-green-400" : "bg-red-400"}`} />
+                    <span className="text-white text-xs flex-1 truncate">{entry.name}</span>
+                    <span className="text-[#9aa0a6] text-xs">{entry.action === "join" ? "انضم" : "غادر"} · {entry.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {panel === "ai" && (
+              <div className="flex-1 overflow-y-auto p-3">
+                {aiSummaryLoading ? (
+                  <div className="flex flex-col items-center justify-center h-32 gap-3">
+                    <Loader2 className="w-7 h-7 text-purple-400 animate-spin" />
+                    <p className="text-[#9aa0a6] text-sm">يُحلّل الاجتماع...</p>
+                  </div>
+                ) : aiSummary ? (
+                  <div className="space-y-2">
+                    <span className="text-purple-300 text-xs font-semibold flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> ملخص AI</span>
+                    <div className="text-white text-sm leading-relaxed whitespace-pre-wrap">{aiSummary}</div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 mt-4">
+                    <button onClick={getAiSummary}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition">
+                      توليد الملخص
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1344,7 +1901,21 @@ export default function MeetingRoom() {
           </div>
 
           {/* Right */}
-          <div className="hidden md:flex items-center gap-2 w-44 justify-end">
+          <div className="hidden md:flex items-center gap-2 justify-end">
+            <button onClick={toggleCaptions} title="تعليقات مباشرة"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${captionsOn ? "bg-green-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <Subtitles className={`w-4 h-4 ${captionsOn ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "بدء التسجيل"}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-red-600 animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
+            {isRoomHost && (
+              <button onClick={() => setShowPollCreator(true)} title="استطلاع"
+                className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
+                <BarChart2 className="w-4 h-4 text-[#9aa0a6]" />
+              </button>
+            )}
             <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
               title={isSpotlight ? "وضع الشبكة" : "وضع التركيز"}>

@@ -6,7 +6,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
-import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs } from "./ws";
+import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, setActivePoll, getActivePoll, getAttendanceLog } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
@@ -318,6 +318,22 @@ wss.on("connection", (ws) => {
         (async () => {
           const rId = String(msg.roomId);
           const uid = String(userId);
+
+          // ── Ban check ─────────────────────────────────────────────────────
+          if (isBannedFromRoom(rId, uid)) {
+            ws.send(JSON.stringify({ type: "webrtc_banned", roomId: rId }));
+            return;
+          }
+
+          // ── Lock check ─────────────────────────────────────────────────────
+          if (isRoomLocked(rId)) {
+            const hostId = getRoomHost(rId);
+            if (uid !== hostId) {
+              ws.send(JSON.stringify({ type: "webrtc_room_locked", roomId: rId }));
+              return;
+            }
+          }
+
           // ── Lobby enforcement ─────────────────────────────────────────────
           try {
             const { QMeetingModel: QMF } = await import("./qmeet-db");
@@ -326,16 +342,13 @@ wss.on("connection", (ws) => {
               const inParticipants = (meeting.participantIds || []).some((id: any) => String(id) === uid);
               const isHostUser = String(meeting.hostId) === uid;
               if (!inParticipants && !isHostUser) {
-                // Save join request if not already pending
                 const existing = (meeting.joinRequests || []).find((r: any) => String(r.userId) === uid && r.status === "pending");
                 if (!existing) {
                   await QMF().findByIdAndUpdate(meeting._id, {
                     $push: { joinRequests: { userId: uid, userName: msg.name || uid, userEmail: "", userPhone: "", status: "pending", requestedAt: new Date() } }
                   });
                 }
-                // Tell user they're in the lobby
                 ws.send(JSON.stringify({ type: "webrtc_lobby_waiting", roomId: rId, meetingId: String(meeting._id), meetingTitle: meeting.title }));
-                // Notify host
                 pushToUser(String(meeting.hostId), {
                   type: "qmeet_join_request",
                   meetingId: String(meeting._id),
@@ -360,8 +373,17 @@ wss.on("connection", (ws) => {
           }
           currentRoomId = rId;
           const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "");
+          const hostId = getRoomHost(currentRoomId);
           const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== uid);
-          ws.send(JSON.stringify({ type: "webrtc_peers", peers: existingPeers, peerInfoList, roomId: currentRoomId }));
+          ws.send(JSON.stringify({
+            type: "webrtc_peers",
+            peers: existingPeers,
+            peerInfoList,
+            roomId: currentRoomId,
+            hostId,
+            isLocked: isRoomLocked(currentRoomId),
+            activePoll: (() => { const p = getActivePoll(currentRoomId!); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+          }));
           for (const peerId of existingPeers) {
             pushToUser(peerId, { type: "webrtc_peer_joined", peerId: uid, name: msg.name || uid, photoUrl: msg.photoUrl || "", roomId: currentRoomId });
           }
@@ -414,7 +436,111 @@ wss.on("connection", (ws) => {
       }
 
       if (msg.type === "webrtc_kick" && msg.roomId && msg.targetId) {
-        pushToUser(String(msg.targetId), { type: "webrtc_kicked", roomId: msg.roomId, by: userId });
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+        // Ban the user from rejoining
+        if (msg.ban !== false) banFromRoom(rId, targetId);
+        // Remove from room
+        leaveMeetRoom(rId, targetId);
+        // Notify target
+        pushToUser(targetId, { type: "webrtc_kicked", roomId: rId, by: userId, ban: msg.ban !== false });
+        // Notify remaining peers
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: targetId, roomId: rId });
+        }
+        return;
+      }
+
+      // ── Lock / Unlock room ──────────────────────────────────────────────────
+      if (msg.type === "webrtc_lock_room" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const hostId = getRoomHost(rId);
+        if (String(userId) !== hostId) return; // only host can lock
+        const locked = !!msg.locked;
+        setRoomLocked(rId, locked);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_room_lock_changed", locked, by: userId });
+        }
+        return;
+      }
+
+      // ── Mute individual peer ──────────────────────────────────────────────
+      if (msg.type === "webrtc_mute_peer" && msg.roomId && msg.targetId) {
+        pushToUser(String(msg.targetId), { type: "webrtc_mute_me", by: userId, roomId: msg.roomId });
+        return;
+      }
+
+      // ── Poll create ───────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_create" && msg.roomId && msg.question && msg.options) {
+        const rId = String(msg.roomId);
+        const poll = {
+          id: `poll-${Date.now()}`,
+          question: String(msg.question),
+          options: (msg.options as string[]).map((text: string) => ({ text, votes: 0 })),
+          voted: new Set<string>(),
+          hostId: String(userId),
+        };
+        setActivePoll(rId, poll);
+        const peers = getMeetRoomPeers(rId);
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId };
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_started", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_started", poll: pollPayload, roomId: rId }));
+        return;
+      }
+
+      // ── Poll vote ──────────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_vote" && msg.roomId && msg.pollId !== undefined && msg.optionIndex !== undefined) {
+        const rId = String(msg.roomId);
+        const poll = getActivePoll(rId);
+        if (!poll || poll.id !== msg.pollId) return;
+        const uid = String(userId);
+        if (poll.voted.has(uid)) return; // already voted
+        poll.voted.add(uid);
+        const idx = Number(msg.optionIndex);
+        if (idx >= 0 && idx < poll.options.length) poll.options[idx].votes++;
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId, totalVotes: poll.voted.size };
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_updated", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_updated", poll: pollPayload, roomId: rId, myVote: idx }));
+        return;
+      }
+
+      // ── Poll end ──────────────────────────────────────────────────────────
+      if (msg.type === "webrtc_poll_end" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const poll = getActivePoll(rId);
+        if (!poll || String(poll.hostId) !== String(userId)) return;
+        const pollPayload = { id: poll.id, question: poll.question, options: poll.options, hostId: poll.hostId, totalVotes: poll.voted.size };
+        setActivePoll(rId, null);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_poll_ended", poll: pollPayload, roomId: rId });
+        }
+        ws.send(JSON.stringify({ type: "webrtc_poll_ended", poll: pollPayload, roomId: rId }));
+        return;
+      }
+
+      // ── Live caption relay ────────────────────────────────────────────────
+      if (msg.type === "webrtc_caption" && msg.roomId && msg.text) {
+        const peers = getMeetRoomPeers(String(msg.roomId));
+        for (const peerId of peers) {
+          if (peerId !== userId) {
+            pushToUser(peerId, { type: "webrtc_caption", from: userId, name: msg.name || userId, text: msg.text, ts: Date.now() });
+          }
+        }
+        return;
+      }
+
+      // ── Attendance log request ─────────────────────────────────────────────
+      if (msg.type === "webrtc_get_attendance" && msg.roomId) {
+        const log = getAttendanceLog(String(msg.roomId));
+        ws.send(JSON.stringify({ type: "webrtc_attendance_log", log, roomId: msg.roomId }));
         return;
       }
 

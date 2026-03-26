@@ -1070,5 +1070,54 @@ export function registerQMeetRoutes(app: Express) {
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // POST /api/qmeet/room/:roomId/ai-summary — generate AI meeting summary
+  app.post("/api/qmeet/room/:roomId/ai-summary", async (req: any, res) => {
+    try {
+      const { chat = [], captions = [], title = "اجتماع" } = req.body;
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "QMeet AI Summary" },
+      });
+
+      const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");
+      const captionText = captions.map((c: any) => `${c.name}: ${c.text}`).join("\n");
+
+      const prompt = `أنت مساعد ذكي. قم بتلخيص هذا الاجتماع باللغة العربية بشكل منظم.
+
+عنوان الاجتماع: ${title}
+
+${chatText ? `رسائل الدردشة:\n${chatText}\n` : ""}
+${captionText ? `محادثات الاجتماع:\n${captionText}\n` : ""}
+
+قدم الملخص بهذا التنسيق:
+## ملخص الاجتماع
+[ملخص موجز في 2-3 جمل]
+
+## النقاط الرئيسية
+- [نقطة 1]
+- [نقطة 2]
+...
+
+## الإجراءات المطلوبة
+- [إجراء 1 إن وجد]
+...
+
+## الخلاصة
+[خلاصة نهائية]`;
+
+      const completion = await openai.chat.completions.create({
+        model: "openai/gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 800,
+      });
+      const summary = completion.choices[0]?.message?.content || "تعذّر إنشاء الملخص";
+      res.json({ summary });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "خطأ في الذكاء الاصطناعي", summary: "تعذّر الاتصال بخدمة الذكاء الاصطناعي" });
+    }
+  });
+
   console.log("[QMeet] Routes registered (main MongoDB)");
 }
