@@ -268,7 +268,7 @@ export function registerQMeetRoutes(app: Express) {
         agenda: agenda || [],
         joinCode: generateJoinCode(),
         joinRequests: [],
-        lobbyEnabled: true,
+        lobbyEnabled: false,
       });
 
       // Send invite emails (non-blocking)
@@ -845,7 +845,7 @@ export function registerQMeetRoutes(app: Express) {
         agenda: [],
         joinCode: generateJoinCode(),
         joinRequests: [],
-        lobbyEnabled: true,
+        lobbyEnabled: false,
         reminderSent: false,
         instantJoin: true,
       });

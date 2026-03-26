@@ -275,6 +275,7 @@ export default function MeetingRoom() {
   const isIOSDevice = /iPad|iPhone|iPod/.test(_ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const isAndroidDevice = /Android/.test(_ua);
   const isAndroidWebViewDevice = isAndroidDevice && /; wv\)/.test(_ua);
+  const isMobileDevice = isIOSDevice || isAndroidDevice;
 
   const [joined, setJoined] = useState(false);
   const [wasKicked, setWasKicked] = useState(false);
@@ -502,7 +503,7 @@ export default function MeetingRoom() {
       });
     };
     pc.onconnectionstatechange = () => {
-      if (["failed", "disconnected", "closed"].includes(pc.connectionState)) removePeer(peerId);
+      if (["failed", "closed"].includes(pc.connectionState)) removePeer(peerId);
     };
     pcsRef.current.set(peerId, pc);
     return pc;
@@ -753,7 +754,7 @@ export default function MeetingRoom() {
         break;
       }
     }
-  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost]);
+  }, [createPC, sendWs, addIceCandidate, flushPendingCandidates, removePeer, drawStrokeOnCanvas, toast, addFloating, isHost, isStaff]);
 
   const getMedia = useCallback(async () => {
     // Guard: some browsers/environments don't expose mediaDevices
@@ -861,7 +862,7 @@ export default function MeetingRoom() {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connectWs = useCallback((uid: string, rId: string, uName: string) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) return;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
@@ -2558,12 +2559,23 @@ export default function MeetingRoom() {
               ))}
             </div>
             <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
-              <button onClick={() => { toggleScreenShare(); setShowMoreMenu(false); }}
-                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${screenSharing ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : screenShareApproved ? "bg-green-500/20 text-green-300 border border-green-500/30 animate-pulse" : screenSharePending ? "bg-yellow-500/20 text-yellow-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}
-                data-testid="button-screen-share-more">
-                {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-                <span>{screenSharing ? "إيقاف الشاشة" : screenShareApproved ? "ابدأ المشاركة!" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
-              </button>
+              {isMobileDevice ? (
+                <button
+                  onClick={() => { toast({ title: "💻 متاح على الكمبيوتر فقط", description: "مشاركة الشاشة متوفرة على اللابتوب والكمبيوتر فقط" }); setShowMoreMenu(false); }}
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium text-white/25 transition-all"
+                  style={{ border: "1px solid rgba(255,255,255,0.06)" }}
+                  data-testid="button-screen-share-more-mobile">
+                  <Monitor className="w-5 h-5" />
+                  <span>لابتوب فقط</span>
+                </button>
+              ) : (
+                <button onClick={() => { toggleScreenShare(); setShowMoreMenu(false); }}
+                  className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium transition-all ${screenSharing ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : screenShareApproved ? "bg-green-500/20 text-green-300 border border-green-500/30 animate-pulse" : screenSharePending ? "bg-yellow-500/20 text-yellow-300" : "text-white/50 hover:text-white hover:bg-white/10"}`}
+                  data-testid="button-screen-share-more">
+                  {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                  <span>{screenSharing ? "إيقاف الشاشة" : screenShareApproved ? "ابدأ المشاركة!" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة"}</span>
+                </button>
+              )}
               {videoOn && !screenSharing && (
                 <button onClick={() => { flipCamera(); setShowMoreMenu(false); }}
                   className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl text-[11px] font-medium text-white/50 hover:text-white hover:bg-white/10 transition-all"
@@ -2670,21 +2682,39 @@ export default function MeetingRoom() {
               <SwitchCamera className="w-5 h-5" />
             </button>
           )}
-          <button
-            onClick={toggleScreenShare}
-            className="p-3 rounded-full text-white transition-all hover:scale-105"
-            style={screenSharing
-              ? { background: "rgba(37,99,235,0.9)", border: "1px solid rgba(59,130,246,0.5)" }
-              : screenShareApproved
-              ? { background: "rgba(22,163,74,0.9)", border: "1px solid rgba(74,222,128,0.5)", animation: "pulse 1.5s infinite" }
-              : screenSharePending
-              ? { background: "rgba(234,179,8,0.2)", border: "1px solid rgba(234,179,8,0.35)" }
-              : { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
-            title={screenSharing ? "إيقاف مشاركة الشاشة" : screenShareApproved ? "تمت الموافقة — اضغط لبدء المشاركة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
-            data-testid="button-screen-share"
-          >
-            {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-          </button>
+          {isMobileDevice ? (
+            <div className="relative group">
+              <button
+                onClick={() => toast({ title: "💻 متاح على الكمبيوتر فقط", description: "مشاركة الشاشة متوفرة على اللابتوب والكمبيوتر فقط" })}
+                className="p-3 rounded-full text-white/25 transition-all"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                title="مشاركة الشاشة — متاح على الكمبيوتر فقط"
+                data-testid="button-screen-share-mobile-only"
+              >
+                <Monitor className="w-5 h-5" />
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap px-2.5 py-1.5 rounded-lg text-[10px] text-white/80 font-medium z-50"
+                style={{ background: "rgba(0,0,0,0.85)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                💻 لابتوب فقط
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={toggleScreenShare}
+              className="p-3 rounded-full text-white transition-all hover:scale-105"
+              style={screenSharing
+                ? { background: "rgba(37,99,235,0.9)", border: "1px solid rgba(59,130,246,0.5)" }
+                : screenShareApproved
+                ? { background: "rgba(22,163,74,0.9)", border: "1px solid rgba(74,222,128,0.5)", animation: "pulse 1.5s infinite" }
+                : screenSharePending
+                ? { background: "rgba(234,179,8,0.2)", border: "1px solid rgba(234,179,8,0.35)" }
+                : { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+              title={screenSharing ? "إيقاف مشاركة الشاشة" : screenShareApproved ? "تمت الموافقة — اضغط لبدء المشاركة" : isHost || isStaff ? "مشاركة الشاشة" : "طلب مشاركة الشاشة"}
+              data-testid="button-screen-share"
+            >
+              {screenSharing ? <MonitorOff className="w-5 h-5" /> : screenShareApproved ? <MonitorUp className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+            </button>
+          )}
           <button
             onClick={leaveMeeting}
             className="p-3 rounded-full text-white transition-all hover:scale-105 hover:brightness-110"

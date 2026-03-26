@@ -1,5 +1,27 @@
 # Qirox Platform
 
+## Latest Changes (Mar 26, 2026)
+
+### QMeet Fixes & Screen Sharing Restriction
+
+**Main Bug Fix - `lobbyEnabled` Default (`server/qmeet.ts`):**
+- Changed `lobbyEnabled` from `true` to `false` for both regular meetings and instant meetings
+- This was the root cause of QMeet "not working" — all participants were getting stuck in the lobby waiting for host approval forever
+- Hosts can still manually enable the lobby (waiting room) from inside the meeting room if needed
+
+**Screen Sharing - Laptop/Desktop Only (`client/src/pages/MeetingRoom.tsx`):**
+- Added `isMobileDevice = isIOSDevice || isAndroidDevice` constant
+- Control bar screen share button: on mobile shows disabled/grayed icon with "💻 لابتوب فقط" tooltip; clicking shows toast "مشاركة الشاشة متوفرة على اللابتوب والكمبيوتر فقط"
+- "More menu" (mobile popup) screen share: on mobile shows "لابتوب فقط" label with grayed icon; clicking shows same toast message
+- Desktop users still have full screen sharing functionality
+
+**WebRTC & WebSocket Bug Fixes (`client/src/pages/MeetingRoom.tsx`):**
+- Fixed `onconnectionstatechange` — removed "disconnected" from states that trigger peer removal; "disconnected" is transient and can recover, only "failed"/"closed" should end the connection
+- Fixed `connectWs` — now checks both OPEN and CONNECTING WebSocket states to prevent duplicate connections
+- Fixed stale closure — added `isStaff` to `handleWsMessage` dependency array (was missing, causing screen share request panel to not show for staff users)
+
+---
+
 ## Latest Changes (Mar 24, 2026)
 
 ### E-Commerce Store Module (متجر Qirox)
