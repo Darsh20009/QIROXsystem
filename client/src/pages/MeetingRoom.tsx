@@ -293,6 +293,7 @@ export default function MeetingRoom() {
   const [copied, setCopied] = useState(false);
   const [wsReady, setWsReady] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
   const meetingTimer = useMeetingTimer();
 
   const [drawColor, setDrawColor] = useState("#ffffff");
@@ -850,6 +851,10 @@ export default function MeetingRoom() {
   }, []);
 
   useEffect(() => {
+    if (isInIframe) {
+      setMediaError("__iframe__");
+      return;
+    }
     getMedia();
     return () => {
       localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -857,7 +862,7 @@ export default function MeetingRoom() {
       reactionTimersRef.current = [];
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [getMedia]);
+  }, [getMedia, isInIframe]);
 
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -907,6 +912,7 @@ export default function MeetingRoom() {
 
   const joinMeeting = useCallback(async () => {
     if (!userId || !roomId) return;
+    if (isInIframe) { window.open(window.location.href, '_blank'); return; }
     const stream = localStream || await getMedia();
     if (!stream && !mediaError) return;
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
@@ -1642,23 +1648,7 @@ export default function MeetingRoom() {
               <p className="text-white/35 text-sm">{meeting.hostName}</p>
             </div>
 
-            {mediaError === "__iframe__" ? (
-              <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)" }}>
-                <div className="flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-                  <p className="text-blue-200/90 text-xs leading-relaxed">
-                    الكاميرا والميكروفون لا يعملان داخل نافذة المعاينة. افتح الاجتماع في تبويب جديد للحصول على تجربة كاملة.
-                  </p>
-                </div>
-                <button
-                  onClick={() => window.open(window.location.href, '_blank')}
-                  className="w-full h-9 rounded-lg text-white text-xs font-semibold transition-all hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)" }}
-                >
-                  افتح في تبويب جديد
-                </button>
-              </div>
-            ) : mediaError ? (
+            {mediaError !== "__iframe__" && mediaError && (
               <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
                 <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
                 <div className="flex flex-col gap-2 flex-1">
@@ -1672,17 +1662,35 @@ export default function MeetingRoom() {
                   </button>
                 </div>
               </div>
-            ) : null}
+            )}
 
             <div className="space-y-2.5">
-              <button
-                onClick={joinMeeting}
-                className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
-                style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
-                data-testid="button-join-meeting"
-              >
-                انضم الآن
-              </button>
+              {mediaError === "__iframe__" ? (
+                <>
+                  <div className="rounded-xl p-4 flex flex-col gap-3 mb-1" style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)" }}>
+                    <p className="text-blue-200/80 text-xs leading-relaxed text-center">
+                      🖥️ يعمل الاجتماع في نافذة مستقلة فقط — اضغط الزر أدناه لفتحه
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.open(window.location.href, '_blank')}
+                    className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
+                    style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
+                    data-testid="button-open-new-tab"
+                  >
+                    🚀 افتح الاجتماع في تبويب جديد
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={joinMeeting}
+                  className="w-full h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.01] shadow-lg"
+                  style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
+                  data-testid="button-join-meeting"
+                >
+                  انضم الآن
+                </button>
+              )}
               <button
                 onClick={() => window.close() || navigate("/dashboard")}
                 className="w-full h-11 rounded-xl font-medium text-white/50 hover:text-white/70 transition-all"
@@ -1710,6 +1718,27 @@ export default function MeetingRoom() {
 
   return (
     <div className="min-h-screen flex flex-col relative" dir="rtl" style={{ background: "linear-gradient(160deg, #080e1a 0%, #0a1020 50%, #080e1a 100%)" }}>
+      {/* Iframe blocker overlay */}
+      {isInIframe && (
+        <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center gap-5 text-center px-6"
+          style={{ background: "linear-gradient(160deg, #080e1a 0%, #0a1020 100%)" }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl" style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)" }}>🖥️</div>
+          <div>
+            <p className="text-white font-bold text-lg mb-2">افتح الاجتماع في تبويب جديد</p>
+            <p className="text-white/50 text-sm leading-relaxed max-w-xs">الكاميرا والميكروفون لا يعملان داخل نافذة المعاينة بسبب قيود المتصفح</p>
+          </div>
+          <button
+            onClick={() => window.open(window.location.href, '_blank')}
+            className="px-8 h-12 rounded-xl text-white font-semibold transition-all hover:opacity-90 hover:scale-[1.02] shadow-lg shadow-green-500/20"
+            style={{ background: "linear-gradient(135deg, #16a34a, #059669)" }}
+          >
+            🚀 افتح الاجتماع الآن
+          </button>
+          <button onClick={() => navigate("/dashboard")} className="text-white/30 text-sm hover:text-white/60 transition-colors">
+            العودة للرئيسية
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 shrink-0" style={{ background: "rgba(8,14,26,0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3">
