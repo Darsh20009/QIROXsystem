@@ -88,19 +88,25 @@ interface ActivePoll {
   voted: Set<string>;
   hostId: string;
 }
+interface LockPendingEntry {
+  userId: string;
+  name: string;
+}
+
 interface RoomMeta {
   hostId: string;
   locked: boolean;
   bannedUsers: Set<string>;
   activePoll: ActivePoll | null;
   attendanceLog: { userId: string; name: string; action: "join" | "leave"; time: string }[];
+  lockPending: LockPendingEntry[];
 }
 
 const meetRoomMeta = new Map<string, RoomMeta>();
 
 function getRoomMeta(roomId: string): RoomMeta {
   if (!meetRoomMeta.has(roomId)) {
-    meetRoomMeta.set(roomId, { hostId: "", locked: false, bannedUsers: new Set(), activePoll: null, attendanceLog: [] });
+    meetRoomMeta.set(roomId, { hostId: "", locked: false, bannedUsers: new Set(), activePoll: null, attendanceLog: [], lockPending: [] });
   }
   return meetRoomMeta.get(roomId)!;
 }
@@ -148,6 +154,29 @@ export function addAttendanceLog(roomId: string, entry: { userId: string; name: 
 
 export function getAttendanceLog(roomId: string): RoomMeta["attendanceLog"] {
   return getRoomMeta(roomId).attendanceLog;
+}
+
+export function addLockPending(roomId: string, userId: string, name: string): void {
+  const meta = getRoomMeta(roomId);
+  if (!meta.lockPending.find(e => e.userId === userId)) {
+    meta.lockPending.push({ userId, name });
+  }
+}
+
+export function removeLockPending(roomId: string, userId: string): boolean {
+  const meta = getRoomMeta(roomId);
+  const idx = meta.lockPending.findIndex(e => e.userId === userId);
+  if (idx === -1) return false;
+  meta.lockPending.splice(idx, 1);
+  return true;
+}
+
+export function getLockPending(roomId: string): LockPendingEntry[] {
+  return getRoomMeta(roomId).lockPending;
+}
+
+export function isLockPending(roomId: string, userId: string): boolean {
+  return !!getRoomMeta(roomId).lockPending.find(e => e.userId === userId);
 }
 
 export function joinMeetRoom(roomId: string, userId: string, name: string, photoUrl?: string): string[] {

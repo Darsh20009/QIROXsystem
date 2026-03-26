@@ -387,11 +387,7 @@ export default function MeetingRoom() {
 
     const myId = myIdRef.current;
 
-    // ── Lobby ────────────────────────────────────────────────────────────────
-    if (msg.type === "webrtc_lobby_waiting") {
-      setLobbyWaiting(true);
-      return;
-    }
+    // ── DB lobby join request (from qmeet API) ───────────────────────────────
     if (msg.type === "qmeet_join_request") {
       setLobbyRequests(prev => {
         if (prev.find(r => r.userId === msg.userId)) return prev;
@@ -410,13 +406,40 @@ export default function MeetingRoom() {
       return;
     }
     if (msg.type === "webrtc_room_locked") {
-      toast({ title: "الاجتماع مقفل", description: "لا يمكن الانضمام حاليًا — انتظر أن يفتح المضيف الاجتماع", variant: "destructive" });
+      // Legacy fallback — now redirected to lobby_waiting instead
+      toast({ title: "الاجتماع مقفل", description: "لا يمكن الانضمام حاليًا", variant: "destructive" });
       navigate("/qmeet");
       return;
     }
     if (msg.type === "webrtc_room_lock_changed") {
       setMeetingLocked(!!msg.locked);
       toast({ title: msg.locked ? "🔒 الاجتماع مقفل" : "🔓 الاجتماع مفتوح" });
+      return;
+    }
+
+    // ── Host receives a lock-lobby join request ───────────────────────────────
+    if (msg.type === "webrtc_lock_join_request") {
+      setLobbyRequests(prev => {
+        if (prev.find(r => r.userId === msg.userId)) return prev;
+        return [...prev, { userId: msg.userId, userName: msg.userName }];
+      });
+      // Open participants panel so host sees the request
+      setPanel(p => p === "none" ? "participants" : p);
+      toast({ title: "🔔 طلب انضمام جديد", description: `${msg.userName} يطلب الدخول` });
+      return;
+    }
+
+    // ── Lobby waiting: room is locked ─────────────────────────────────────────
+    if (msg.type === "webrtc_lobby_waiting") {
+      setLobbyWaiting(true);
+      return;
+    }
+
+    // ── Lobby denied ─────────────────────────────────────────────────────────
+    if (msg.type === "webrtc_lobby_denied") {
+      setLobbyWaiting(false);
+      toast({ title: "تم رفض طلبك", description: "لم يوافق المضيف على انضمامك", variant: "destructive" });
+      navigate("/qmeet");
       return;
     }
 
@@ -1300,14 +1323,44 @@ export default function MeetingRoom() {
   // ── LOBBY WAITING ──────────────────────────────────────────────────────────
   if (lobbyWaiting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#202124]" dir="rtl">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 text-blue-400 animate-spin mx-auto" />
-          <h2 className="text-white text-xl font-semibold">في انتظار الموافقة</h2>
-          <p className="text-[#9aa0a6]">سيتم قبولك قريباً من قِبل المضيف</p>
-          <button onClick={leave} className="px-6 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition">
-            إلغاء
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-[#202124] px-4" dir="rtl">
+        <div className="w-full max-w-sm bg-[#292b2f] rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl text-center">
+          {/* Animated waiting icon */}
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-[#3c4043] flex items-center justify-center">
+              <Lock className="w-8 h-8 text-amber-400" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-white text-xl font-bold mb-2">في انتظار الموافقة</h2>
+            <p className="text-[#9aa0a6] text-sm leading-relaxed">
+              هذا الاجتماع مقفل حاليًا.<br />
+              تم إرسال طلب انضمامك إلى المضيف.<br />
+              انتظر حتى يوافق على طلبك.
+            </p>
+          </div>
+
+          {/* Pulsing dots animation */}
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+
+          <div className="w-full pt-2 border-t border-white/[0.08]">
+            <p className="text-[#9aa0a6] text-xs mb-3">
+              {meeting?.title ? `«${meeting.title}»` : "الاجتماع"} · {userName}
+            </p>
+            <button onClick={leave}
+              className="w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-400 text-sm font-medium transition border border-red-500/30">
+              إلغاء الطلب والخروج
+            </button>
+          </div>
         </div>
       </div>
     );

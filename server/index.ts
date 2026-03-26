@@ -6,7 +6,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
-import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, setActivePoll, getActivePoll, getAttendanceLog } from "./ws";
+import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, setActivePoll, getActivePoll, getAttendanceLog, addLockPending, removeLockPending, getLockPending } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
@@ -325,11 +325,22 @@ wss.on("connection", (ws) => {
             return;
           }
 
-          // ── Lock check ─────────────────────────────────────────────────────
+          // ── Lock check → send to lock-lobby instead of blocking ────────────
           if (isRoomLocked(rId)) {
             const hostId = getRoomHost(rId);
             if (uid !== hostId) {
-              ws.send(JSON.stringify({ type: "webrtc_room_locked", roomId: rId }));
+              // Add to lock-pending list and notify host
+              addLockPending(rId, uid, msg.name || uid);
+              ws.send(JSON.stringify({ type: "webrtc_lobby_waiting", roomId: rId, reason: "locked" }));
+              // Notify host to approve/deny
+              if (hostId) {
+                pushToUser(hostId, {
+                  type: "webrtc_lock_join_request",
+                  roomId: rId,
+                  userId: uid,
+                  userName: msg.name || uid,
+                });
+              }
               return;
             }
           }
@@ -463,6 +474,74 @@ wss.on("connection", (ws) => {
         for (const peerId of peers) {
           pushToUser(peerId, { type: "webrtc_room_lock_changed", locked, by: userId });
         }
+        // If unlocking: auto-approve all lock-pending users
+        if (!locked) {
+          const pending = getLockPending(rId);
+          for (const entry of [...pending]) {
+            removeLockPending(rId, entry.userId);
+            const existingPeers = joinMeetRoom(rId, entry.userId, entry.name, "");
+            const currentHostId = getRoomHost(rId);
+            const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== entry.userId);
+            pushToUser(entry.userId, {
+              type: "webrtc_peers",
+              peers: existingPeers,
+              peerInfoList,
+              roomId: rId,
+              hostId: currentHostId,
+              isLocked: false,
+              activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+            });
+            for (const peerId of existingPeers) {
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: entry.userId, name: entry.name, photoUrl: "", roomId: rId });
+            }
+            pushToUser(entry.userId, { type: "webrtc_lobby_approved", roomId: rId });
+          }
+        }
+        return;
+      }
+
+      // ── Approve lobby (DB lobby or lock-pending) ──────────────────────────
+      if (msg.type === "webrtc_approve_lobby" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+
+        // Handle lock-pending approval (in-memory)
+        const pending = getLockPending(rId).find(e => e.userId === targetId);
+        if (pending) {
+          removeLockPending(rId, targetId);
+          const existingPeers = joinMeetRoom(rId, targetId, pending.name, "");
+          const hostId = getRoomHost(rId);
+          const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== targetId);
+          // Send peers list to approved user (triggers WebRTC setup)
+          pushToUser(targetId, {
+            type: "webrtc_peers",
+            peers: existingPeers,
+            peerInfoList,
+            roomId: rId,
+            hostId,
+            isLocked: isRoomLocked(rId),
+            activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
+          });
+          // Notify existing peers of the new joiner
+          for (const peerId of existingPeers) {
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pending.name, photoUrl: "", roomId: rId });
+          }
+          // Dismiss lobby screen on the approved user
+          pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+          return;
+        }
+
+        // Handle DB lobby approval (HTTP fallback is handled client-side)
+        pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+        return;
+      }
+
+      // ── Deny lobby (DB lobby or lock-pending) ────────────────────────────
+      if (msg.type === "webrtc_deny_lobby" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        const targetId = String(msg.targetId);
+        removeLockPending(rId, targetId);
+        pushToUser(targetId, { type: "webrtc_lobby_denied", roomId: rId });
         return;
       }
 
