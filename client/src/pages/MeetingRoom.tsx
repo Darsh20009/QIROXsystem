@@ -187,37 +187,71 @@ export default function MeetingRoom() {
     return () => window.removeEventListener("resize", fn);
   }, []);
 
+  // Auto-request media on pre-join screen
+  useEffect(() => {
+    if (!joined) {
+      getMedia().catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // scroll chat
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chat]);
 
   // ── media helpers ──────────────────────────────────────────────────────────
 
   const getMedia = useCallback(async (video = true, audio = true): Promise<MediaStream | null> => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setMediaError("متصفحك لا يدعم الكاميرا/الميك — استخدم Chrome أو Firefox");
+    // Check HTTPS (required for getUserMedia in Chrome/Firefox)
+    if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      setMediaError("يجب فتح الاجتماع عبر HTTPS لاستخدام الكاميرا/الميك");
       return null;
     }
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video, audio });
-      localStreamRef.current = s;
-      setLocalStream(s);
-      setMediaError(null);
-      return s;
-    } catch (e1: any) {
-      // fallback: audio only
-      if (video) {
+    // Check API availability
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMediaError("متصفحك لا يدعم الكاميرا/الميك — استخدم Chrome أو Firefox أو Safari");
+      return null;
+    }
+    // Try with video + audio
+    if (video) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        localStreamRef.current = s; setLocalStream(s); setMediaError(null);
+        return s;
+      } catch {
+        // Try with simpler constraints
         try {
-          const s = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-          localStreamRef.current = s;
-          setLocalStream(s);
-          setVideoOn(false);
-          setMediaError("الكاميرا غير متاحة — انضممت بالصوت فقط");
+          const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          localStreamRef.current = s; setLocalStream(s); setMediaError(null);
           return s;
         } catch {}
       }
-      const name = (e1 as any)?.name || "";
-      if (name === "NotAllowedError") setMediaError("يجب منح إذن الكاميرا/الميك من شريط العنوان");
-      else setMediaError("تعذّر الوصول للكاميرا/الميك");
+    }
+    // Fallback: audio only
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      localStreamRef.current = s; setLocalStream(s);
+      setVideoOn(false); videoOnRef.current = false;
+      setMediaError("الكاميرا غير متاحة — انضممت بالصوت فقط");
+      return s;
+    } catch (e: any) {
+      const name = e?.name || "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        const browser = /Firefox/.test(navigator.userAgent) ? "Firefox: افتح القائمة > الخصوصية > الأذونات"
+          : /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) ? "Safari: افتح الإعدادات > Safari > الكاميرا والميكروفون"
+          : "Chrome/Edge: اضغط أيقونة القفل أو الكاميرا في شريط العنوان وامنح الإذن";
+        setMediaError(`رُفض الإذن — ${browser}`);
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
+        setMediaError("الكاميرا/الميك مستخدمة في تطبيق آخر — أغلقها وحاول مجدداً");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        setMediaError("لا توجد كاميرا أو ميكروفون متصلة بجهازك");
+      } else if (name === "OverconstrainedError") {
+        setMediaError("الكاميرا المتصلة لا تدعم الدقة المطلوبة");
+      } else {
+        setMediaError("تعذّر الوصول للكاميرا/الميك. تأكد من منح الإذن.");
+      }
       return null;
     }
   }, []);
@@ -813,10 +847,27 @@ export default function MeetingRoom() {
           </div>
 
           {/* Join card */}
-          <div className="w-full lg:w-72 flex flex-col gap-4">
+          <div className="w-full lg:w-72 flex flex-col gap-3">
+
+            {/* Media error / permission warning */}
             {mediaError && (
-              <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm">{mediaError}</div>
+              <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 space-y-2">
+                <p className="text-yellow-300 text-xs leading-relaxed">{mediaError}</p>
+                <button onClick={() => getMedia()}
+                  className="w-full py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-medium transition">
+                  أعد المحاولة
+                </button>
+              </div>
             )}
+
+            {/* HTTPS warning */}
+            {window.location.protocol !== "https:" && window.location.hostname !== "localhost" && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs leading-relaxed">
+                ⚠️ يجب فتح الاجتماع عبر HTTPS (الرابط المنشور) لاستخدام الكاميرا والميكروفون
+              </div>
+            )}
+
+            {/* Name input for guests */}
             {!defaultName && (
               <div>
                 <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك</label>
@@ -832,15 +883,19 @@ export default function MeetingRoom() {
                 />
               </div>
             )}
+
+            {/* Logged-in user display */}
             {defaultName && (
               <div className="px-4 py-3 rounded-xl bg-[#3c4043] text-white text-sm flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                   style={{ background: avatarColor(defaultName) }}>
                   {defaultName.charAt(0).toUpperCase()}
                 </div>
-                <span>{defaultName}</span>
+                <span className="truncate">{defaultName}</span>
               </div>
             )}
+
+            {/* Join button */}
             <button
               onClick={joinMeeting}
               disabled={!defaultName && !guestName.trim()}
@@ -849,8 +904,14 @@ export default function MeetingRoom() {
             >
               انضمام الآن
             </button>
+
+            {/* Browser compatibility note */}
+            <p className="text-[#9aa0a6] text-xs text-center leading-relaxed">
+              يعمل على Chrome · Firefox · Safari · Edge
+            </p>
+
             <button onClick={() => navigate("/qmeet")}
-              className="w-full py-3 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-sm transition">
+              className="w-full py-2.5 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-sm transition">
               رجوع
             </button>
           </div>

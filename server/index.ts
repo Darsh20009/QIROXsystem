@@ -56,13 +56,9 @@ app.use((req, res, next) => {
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  // Allow camera + microphone for meeting room pages; restrict for everything else
-  const isMeetRoute = req.path.startsWith("/meet/") || req.path === "/meet";
-  if (isMeetRoute) {
-    res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
-  } else {
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
-  }
+  // Allow camera, microphone, and screen capture globally (required for WebRTC meeting rooms)
+  // The app is a SPA — client-side routing means the initial document policy applies everywhere
+  res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
 
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("X-DNS-Prefetch-Control", "off");
