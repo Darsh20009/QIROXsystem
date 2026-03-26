@@ -240,7 +240,7 @@ export function registerQMeetRoutes(app: Express) {
       const {
         title, description, scheduledAt, durationMinutes,
         type, participantIds, participantEmails, participantNames,
-        consultationBookingId, notes, agenda
+        consultationBookingId, notes, agenda, lobbyEnabled
       } = req.body;
 
       if (!title || !scheduledAt) return res.status(400).json({ message: "العنوان والتوقيت مطلوبان" });
@@ -268,7 +268,7 @@ export function registerQMeetRoutes(app: Express) {
         agenda: agenda || [],
         joinCode: generateJoinCode(),
         joinRequests: [],
-        lobbyEnabled: false,
+        lobbyEnabled: lobbyEnabled !== false,
       });
 
       // Send invite emails (non-blocking)
@@ -848,6 +848,7 @@ export function registerQMeetRoutes(app: Express) {
         lobbyEnabled: false,
         reminderSent: false,
         instantJoin: true,
+        // instant meetings are open — host is already in, no lobby needed
       });
 
       res.status(201).json(meeting);

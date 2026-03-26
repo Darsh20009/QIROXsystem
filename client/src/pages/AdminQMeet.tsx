@@ -41,6 +41,7 @@ const EMPTY_FORM = {
   type: "client_individual", notes: "", agenda: [] as string[],
   participantIds: [] as string[], participantEmails: [] as string[], participantNames: [] as string[],
   emailInput: "", nameInput: "", agendaInput: "",
+  lobbyEnabled: true,
 };
 
 export default function AdminQMeet() {
@@ -234,6 +235,7 @@ export default function AdminQMeet() {
       scheduledAt: form.scheduledAt, durationMinutes: parseInt(form.durationMinutes) || 60,
       type: form.type, notes: form.notes, agenda: form.agenda,
       participantIds: form.participantIds, participantEmails: form.participantEmails, participantNames: form.participantNames,
+      lobbyEnabled: form.lobbyEnabled,
     });
   };
 
@@ -776,6 +778,23 @@ export default function AdminQMeet() {
               <div className="col-span-2">
                 <label className="label-xs">ملاحظات داخلية</label>
                 <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="للفريق الداخلي فقط" className="mt-1 h-14" />
+              </div>
+              <div className="col-span-2">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <div
+                    onClick={() => setForm(f => ({ ...f, lobbyEnabled: !f.lobbyEnabled }))}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${form.lobbyEnabled ? "bg-blue-500" : "bg-black/20 dark:bg-white/20"}`}
+                    data-testid="toggle-lobby-enabled"
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.lobbyEnabled ? "translate-x-5" : ""}`} />
+                  </div>
+                  <span className="text-sm font-medium text-black dark:text-white">
+                    صالة الانتظار
+                  </span>
+                  <span className="text-xs text-black/40 dark:text-white/40">
+                    {form.lobbyEnabled ? "المشاركون ينتظرون موافقتك قبل الدخول" : "الكل يدخل مباشرة بدون إذن"}
+                  </span>
+                </label>
               </div>
             </div>
 
