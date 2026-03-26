@@ -49,13 +49,21 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 // ── Security Headers ──────────────────────────────────────────────────────────
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   // Allow iframe embedding (e.g., Replit canvas preview)
   res.removeHeader("X-Frame-Options");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+
+  // Allow camera + microphone for meeting room pages; restrict for everything else
+  const isMeetRoute = req.path.startsWith("/meet/") || req.path === "/meet";
+  if (isMeetRoute) {
+    res.setHeader("Permissions-Policy", "camera=*, microphone=*, display-capture=*, geolocation=(), interest-cohort=()");
+  } else {
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()");
+  }
+
   res.setHeader("X-Download-Options", "noopen");
   res.setHeader("X-DNS-Prefetch-Control", "off");
   // Only set HSTS in production to avoid dev issues
