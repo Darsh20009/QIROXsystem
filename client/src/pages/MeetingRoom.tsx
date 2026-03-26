@@ -75,9 +75,10 @@ function VideoTile({ peer, isSelf, size }: { peer: Peer; isSelf?: boolean; size:
   const bg = getAvatarColor(peer.name);
   const initial = peer.name?.charAt(0)?.toUpperCase() || "?";
   const showVideo = peer.stream && peer.videoOn;
+  const isSmall = size === "small";
 
   return (
-    <div className={`relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center ${size === "large" ? "w-full h-full" : "w-full h-full"}`}>
+    <div className={`relative w-full h-full rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center ${peer.speaking && peer.audioOn ? "ring-2 ring-green-400" : ""}`}>
       {showVideo ? (
         <video
           ref={videoRef}
@@ -86,26 +87,31 @@ function VideoTile({ peer, isSelf, size }: { peer: Peer; isSelf?: boolean; size:
           style={{ transform: isSelf ? "scaleX(-1)" : undefined }}
         />
       ) : (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1">
           <div
             className="rounded-full flex items-center justify-center font-bold text-white shadow-xl"
             style={{
               background: bg,
-              width: size === "large" ? 96 : 56,
-              height: size === "large" ? 96 : 56,
-              fontSize: size === "large" ? 40 : 22,
+              width: isSmall ? 44 : 80,
+              height: isSmall ? 44 : 80,
+              fontSize: isSmall ? 18 : 32,
             }}
           >
             {initial}
           </div>
+          {!isSmall && (
+            <span className="text-[#9aa0a6] text-xs mt-1">
+              {peer.videoOn ? "" : "الكاميرا مغلقة"}
+            </span>
+          )}
         </div>
       )}
       {/* Bottom info bar */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-t from-black/70 to-transparent">
-        {!peer.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400 shrink-0" />}
-        {peer.raisedHand && <span className="text-sm">✋</span>}
-        {peer.speaking && peer.audioOn && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />}
-        <span className="text-white text-xs font-medium truncate">{isSelf ? "أنت" : peer.name}</span>
+      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-1 px-2 py-1 bg-gradient-to-t from-black/70 to-transparent">
+        {!peer.audioOn && <MicOff className={`${isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} text-red-400 shrink-0`} />}
+        {peer.raisedHand && <span className={isSmall ? "text-xs" : "text-sm"}>✋</span>}
+        {peer.speaking && peer.audioOn && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />}
+        <span className={`text-white font-medium truncate ${isSmall ? "text-[10px]" : "text-xs"}`}>{isSelf ? "أنت" : peer.name}</span>
       </div>
     </div>
   );
@@ -154,6 +160,9 @@ export default function MeetingRoom() {
   const wsRef = useRef<WebSocket | null>(null);
   const [wsReady, setWsReady] = useState(false);
   const wasKickedRef = useRef(false);
+  // Effective user ID: real userId for logged-in users, guest-xxx for guests
+  // Use a ref so callbacks always see the latest value without stale closures
+  const myIdRef = useRef(userId);
 
   // ── ui state ──────────────────────────────────────────────────────────────
   const [panel, setPanel] = useState<"none" | "chat" | "participants">("none");
@@ -170,6 +179,7 @@ export default function MeetingRoom() {
   const [showReactions, setShowReactions] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; name: string }[]>([]);
   const [layout, setLayout] = useState<"grid" | "spotlight">("grid");
+  const [pinnedPeerId, setPinnedPeerId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 640);
 
   // ── speaking detection ───────────────────────────────────────────────────
@@ -195,12 +205,13 @@ export default function MeetingRoom() {
         analyserNodes.current.set(id, { analyser, source });
       } catch {}
     };
-    if (localStream) attach(userId || "local", localStream);
+    const selfId = myIdRef.current || "local";
+    if (localStream) attach(selfId, localStream);
     peers.forEach((p, id) => { if (p.stream) attach(id, p.stream); });
     const interval = setInterval(() => {
       const speaking = new Set<string>();
       analyserNodes.current.forEach(({ analyser }, id) => {
-        if (id === (userId || "local") && !audioOn) return;
+        if (id === selfId && !audioOn) return;
         const data = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(data);
         const avg = data.slice(0, data.length / 2).reduce((a, b) => a + b, 0) / (data.length / 2);
@@ -212,7 +223,7 @@ export default function MeetingRoom() {
       });
     }, 120);
     return () => clearInterval(interval);
-  }, [joined, localStream, peers, audioOn, userId]);
+  }, [joined, localStream, peers, audioOn]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -316,12 +327,13 @@ export default function MeetingRoom() {
 
   // ── ws message handler ───────────────────────────────────────────────────
   const handleWsMessage = useCallback(async (data: any) => {
+    const myId = myIdRef.current; // always current, even for guests
     if (data.type === "webrtc_peers") {
       for (const p of (data.peers || [])) {
-        if (p.userId === userId) continue;
+        if (p.userId === myId) continue;
         setPeers(prev => {
           const next = new Map(prev);
-          if (!next.has(p.userId)) next.set(p.userId, { id: p.userId, name: p.name, audioOn: true, videoOn: true, photoUrl: p.photoUrl });
+          if (!next.has(p.userId)) next.set(p.userId, { id: p.userId, name: p.name || p.userId, audioOn: true, videoOn: true, photoUrl: p.photoUrl });
           return next;
         });
         const pc = await createPC(p.userId);
@@ -330,6 +342,7 @@ export default function MeetingRoom() {
         sendWs({ type: "webrtc_offer", to: p.userId, offer });
       }
     } else if (data.type === "webrtc_offer") {
+      if (data.from === myId) return; // ignore self
       const pc = await createPC(data.from);
       await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
       await flushCandidates(data.from, pc);
@@ -352,7 +365,7 @@ export default function MeetingRoom() {
         pendingCandidates.current.set(data.from, q);
       }
     } else if (data.type === "webrtc_user_joined") {
-      if (data.userId !== userId) {
+      if (data.userId !== myId) {
         setPeers(prev => {
           const next = new Map(prev);
           if (!next.has(data.userId)) next.set(data.userId, { id: data.userId, name: data.name || data.userId, audioOn: true, videoOn: true });
@@ -362,16 +375,16 @@ export default function MeetingRoom() {
       }
     } else if (data.type === "webrtc_user_left") {
       removePeer(data.userId);
-      toast({ title: `${data.name || "مشارك"} غادر` });
+      if (data.userId !== myId) toast({ title: `${data.name || "مشارك"} غادر` });
     } else if (data.type === "webrtc_media_state") {
       setPeers(prev => {
         const next = new Map(prev);
-        const peer = next.get(data.userId);
-        if (peer) next.set(data.userId, { ...peer, audioOn: data.audio, videoOn: data.video });
+        const peer = next.get(data.from || data.userId);
+        if (peer) next.set(data.from || data.userId, { ...peer, audioOn: data.audio, videoOn: data.video });
         return next;
       });
     } else if (data.type === "webrtc_chat") {
-      const msg: ChatMsg = { id: Date.now() + data.userId, userId: data.userId, name: data.name || "مشارك", text: data.text, time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) };
+      const msg: ChatMsg = { id: `${Date.now()}-${data.from || data.userId}`, userId: data.from || data.userId, name: data.name || "مشارك", text: data.text, time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) };
       setChat(prev => [...prev, msg]);
       if (panel !== "chat") setUnread(u => u + 1);
     } else if (data.type === "webrtc_raise_hand") {
@@ -381,30 +394,29 @@ export default function MeetingRoom() {
         if (peer) next.set(data.userId, { ...peer, raisedHand: data.raised });
         return next;
       });
-      if (data.raised && data.userId !== userId) toast({ title: `${data.name} رفع يده ✋` });
+      if (data.raised && data.userId !== myId) toast({ title: `${data.name} رفع يده ✋` });
     } else if (data.type === "webrtc_kicked") {
       wasKickedRef.current = true;
       toast({ title: "تم إخراجك من الاجتماع", variant: "destructive" });
       navigate("/dashboard");
     } else if (data.type === "webrtc_lobby_joined") {
-      if (data.userId !== userId) {
+      if (data.userId !== myId) {
         toast({ title: `${data.name || "شخص"} ينتظر في الردهة`, description: "راجع تبويب المشاركين للقبول أو الرفض" });
       }
     } else if (data.type === "webrtc_reaction") {
-      if (data.userId !== userId) {
+      if (data.userId !== myId) {
         const id = `${Date.now()}-${data.userId}`;
         setFloatingReactions(prev => [...prev, { id, emoji: data.emoji, name: data.name || "مشارك" }]);
         setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
       }
     } else if (data.type === "webrtc_mute_all") {
-      // Host muted everyone - mute our mic
       if (localStreamRef.current) {
         localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
         setAudioOn(false);
         toast({ title: "قام المضيف بكتم الميكروفون" });
       }
     }
-  }, [userId, panel, createPC, flushCandidates, removePeer, sendWs, toast, navigate]);
+  }, [panel, createPC, flushCandidates, removePeer, sendWs, toast, navigate]);
 
   // ── lobby join request approval ──────────────────────────────────────────
   const [lobbyRequests, setLobbyRequests] = useState<any[]>([]);
@@ -456,12 +468,13 @@ export default function MeetingRoom() {
     if (!roomId) return;
     // Use real userId if logged in, otherwise generate a guest ID
     const uid = userId || `guest-${Date.now()}`;
+    // Store in ref so all callbacks (handleWsMessage etc.) see the correct ID
+    myIdRef.current = uid;
     const name = userName.trim() || "مشارك";
-    const stream = localStream || await getMedia();
-    // Allow joining even without media (audio/video off) as long as we know why
+    await getMedia(); // try to get media; continue even if it fails
     try { if (!audioCtxRef.current) audioCtxRef.current = new AudioContext(); audioCtxRef.current.resume(); } catch {}
     connectWs(uid, roomId, name);
-  }, [userId, roomId, localStream, getMedia, connectWs, userName]);
+  }, [userId, roomId, getMedia, connectWs, userName]);
 
   // ── responsive ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -534,16 +547,16 @@ export default function MeetingRoom() {
   const toggleHand = useCallback(() => {
     const on = !raisedHand;
     setRaisedHand(on);
-    sendWs({ type: "webrtc_raise_hand", roomId, raised: on, name: userName, userId });
-  }, [raisedHand, roomId, userName, userId, sendWs]);
+    sendWs({ type: "webrtc_raise_hand", roomId, raised: on, name: userName, userId: myIdRef.current });
+  }, [raisedHand, roomId, userName, sendWs]);
 
   const sendReaction = useCallback((emoji: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setFloatingReactions(prev => [...prev, { id, emoji, name: "أنت" }]);
     setTimeout(() => setFloatingReactions(prev => prev.filter(r => r.id !== id)), 3000);
-    sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName, userId });
+    sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName, userId: myIdRef.current });
     setShowReactions(false);
-  }, [roomId, userName, userId, sendWs]);
+  }, [roomId, userName, sendWs]);
 
   const muteAll = useCallback(() => {
     sendWs({ type: "webrtc_mute_all", roomId });
@@ -553,11 +566,12 @@ export default function MeetingRoom() {
   // ── send chat ─────────────────────────────────────────────────────────────
   const sendChat = useCallback(() => {
     if (!chatInput.trim()) return;
-    const msg: ChatMsg = { id: Date.now() + userId, userId, name: "أنت", text: chatInput.trim(), time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) };
+    const myId = myIdRef.current || "local";
+    const msg: ChatMsg = { id: `${Date.now()}-${myId}`, userId: myId, name: "أنت", text: chatInput.trim(), time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) };
     setChat(prev => [...prev, msg]);
     sendWs({ type: "webrtc_chat", roomId, text: chatInput.trim(), name: userName });
     setChatInput("");
-  }, [chatInput, userId, userName, roomId, sendWs]);
+  }, [chatInput, userName, roomId, sendWs]);
 
   const leave = useCallback(() => {
     sendWs({ type: "webrtc_leave", roomId });
@@ -592,13 +606,14 @@ export default function MeetingRoom() {
   };
 
   // ── all peers for rendering ────────────────────────────────────────────────
+  const myId = myIdRef.current || userId || "local";
   const localPeer: Peer = {
-    id: userId || "local",
+    id: myId,
     name: userName,
     stream: localStream || undefined,
     audioOn, videoOn,
     raisedHand,
-    speaking: speakingPeers.has(userId || "local"),
+    speaking: speakingPeers.has(myId),
   };
   const allPeers = [localPeer, ...[...peers.values()].map(p => ({ ...p, speaking: speakingPeers.has(p.id) }))];
   const total = allPeers.length;
@@ -727,27 +742,38 @@ export default function MeetingRoom() {
   // On mobile: max 1 column. On desktop: adaptive by count
   const gridCols = isMobile ? 1 : (total === 1 ? 1 : total === 2 ? 2 : total <= 4 ? 2 : total <= 6 ? 3 : 4);
 
+  // ── Spotlight/Pin logic ───────────────────────────────────────────────────
+  const isSpotlight = layout === "spotlight" || pinnedPeerId !== null;
+  const spotlightPeer = pinnedPeerId
+    ? (allPeers.find(p => p.id === pinnedPeerId) ?? allPeers[0])
+    : (allPeers.find(p => p.speaking) ?? allPeers[0]);
+  const thumbnailPeers = allPeers.filter(p => p.id !== spotlightPeer?.id);
+
   return (
     <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative" dir="rtl">
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 py-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-white font-medium text-sm truncate max-w-[140px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
-          <span className="text-[#9aa0a6] text-xs hidden sm:block shrink-0">{timer}</span>
+          <span className="text-white font-medium text-sm truncate max-w-[120px] sm:max-w-none">{meeting?.title || "اجتماع"}</span>
+          <span className="text-[#9aa0a6] text-xs shrink-0 tabular-nums">{timer}</span>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* Participants count badge */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3c4043] text-[#9aa0a6] text-xs">
+            <Users className="w-3.5 h-3.5" />
+            <span>{total}</span>
+          </div>
           {/* Lobby waiting badge */}
           {lobbyRequests.length > 0 && (
             <button
               onClick={() => setPanel(p => p === "participants" ? "none" : "participants")}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium animate-pulse"
             >
-              <Users className="w-3.5 h-3.5" />
               <span>{lobbyRequests.length} ينتظر</span>
             </button>
           )}
-          <button onClick={copyLink} className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition">
+          <button onClick={copyLink} className="p-2 rounded-lg bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] transition" title="نسخ رابط الاجتماع">
             {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -756,20 +782,56 @@ export default function MeetingRoom() {
       {/* Main area */}
       <div className="flex flex-1 gap-2 px-2 pb-2 overflow-hidden min-h-0">
 
-        {/* Video grid */}
-        <div
-          className="flex-1 grid gap-1.5 sm:gap-2 content-center min-h-0"
-          style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
-        >
-          {allPeers.map((peer) => (
-            <div
-              key={peer.id}
-              className="rounded-xl overflow-hidden relative aspect-video"
-            >
-              <VideoTile peer={peer} isSelf={peer.id === (userId || "local")} size="large" />
+        {/* Video grid / Spotlight */}
+        {isSpotlight && spotlightPeer ? (
+          <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
+            {/* Main spotlight */}
+            <div className="flex-1 rounded-xl overflow-hidden relative min-h-0">
+              <VideoTile peer={spotlightPeer} isSelf={spotlightPeer.id === myId} size="large" />
+              {pinnedPeerId && (
+                <button
+                  onClick={() => setPinnedPeerId(null)}
+                  className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 text-white text-xs hover:bg-black/80 transition backdrop-blur-sm flex items-center gap-1.5"
+                >
+                  <span>إلغاء التثبيت</span>
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+            {/* Thumbnail strip */}
+            {thumbnailPeers.length > 0 && (
+              <div className="flex gap-2 shrink-0 overflow-x-auto pb-1 h-24 sm:h-28">
+                {thumbnailPeers.map(peer => (
+                  <div
+                    key={peer.id}
+                    onClick={() => setPinnedPeerId(peer.id)}
+                    className="rounded-lg overflow-hidden relative shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+                    style={{ aspectRatio: "16/9", height: "100%" }}
+                  >
+                    <VideoTile peer={peer} isSelf={peer.id === myId} size="small" />
+                    {peer.speaking && (
+                      <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className="flex-1 grid gap-1.5 sm:gap-2 content-center min-h-0"
+            style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
+          >
+            {allPeers.map((peer) => (
+              <div
+                key={peer.id}
+                onClick={() => { if (allPeers.length > 1) setPinnedPeerId(peer.id); }}
+                className={`rounded-xl overflow-hidden relative aspect-video ${allPeers.length > 1 ? "cursor-pointer" : ""}`}
+              >
+                <VideoTile peer={peer} isSelf={peer.id === myId} size="large" />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Side panel — desktop only (full overlay on mobile handled below) */}
         {panel !== "none" && (
@@ -803,9 +865,9 @@ export default function MeetingRoom() {
                     <div className="text-center text-[#9aa0a6] text-sm mt-8">لا توجد رسائل بعد</div>
                   )}
                   {chat.map(msg => (
-                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.userId === userId ? "items-end" : "items-start"}`}>
-                      <span className="text-[#9aa0a6] text-xs">{msg.userId === userId ? "أنت" : msg.name} · {msg.time}</span>
-                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white leading-relaxed ${msg.userId === userId ? "bg-blue-600" : "bg-[#3c4043]"}`}>
+                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.userId === myId ? "items-end" : "items-start"}`}>
+                      <span className="text-[#9aa0a6] text-xs">{msg.userId === myId ? "أنت" : msg.name} · {msg.time}</span>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white leading-relaxed ${msg.userId === myId ? "bg-blue-600" : "bg-[#3c4043]"}`}>
                         {msg.text}
                       </div>
                     </div>
@@ -856,7 +918,7 @@ export default function MeetingRoom() {
                       {peer.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm truncate">{peer.id === (userId || "local") ? `${peer.name} (أنت)` : peer.name}</p>
+                      <p className="text-white text-sm truncate">{peer.id === myId ? `${peer.name} (أنت)` : peer.name}</p>
                       {peer.raisedHand && <p className="text-amber-400 text-xs">✋ رفع يده</p>}
                     </div>
                     <div className="flex gap-1.5">
@@ -918,9 +980,9 @@ export default function MeetingRoom() {
                 <div className="flex-1 overflow-y-auto p-3 space-y-3" style={{ maxHeight: "50vh" }}>
                   {chat.length === 0 && <div className="text-center text-[#9aa0a6] text-sm mt-8">لا توجد رسائل بعد</div>}
                   {chat.map(msg => (
-                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.userId === userId ? "items-end" : "items-start"}`}>
-                      <span className="text-[#9aa0a6] text-xs">{msg.userId === userId ? "أنت" : msg.name} · {msg.time}</span>
-                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.userId === userId ? "bg-blue-600" : "bg-[#3c4043]"}`}>{msg.text}</div>
+                    <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.userId === myId ? "items-end" : "items-start"}`}>
+                      <span className="text-[#9aa0a6] text-xs">{msg.userId === myId ? "أنت" : msg.name} · {msg.time}</span>
+                      <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm text-white ${msg.userId === myId ? "bg-blue-600" : "bg-[#3c4043]"}`}>{msg.text}</div>
                     </div>
                   ))}
                   <div ref={chatEndRef} />
@@ -953,7 +1015,7 @@ export default function MeetingRoom() {
                   <div key={peer.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-[#3c4043]">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white shrink-0 text-sm" style={{ background: getAvatarColor(peer.name) }}>{peer.name.charAt(0).toUpperCase()}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm truncate">{peer.id === (userId || "local") ? `${peer.name} (أنت)` : peer.name}</p>
+                      <p className="text-white text-sm truncate">{peer.id === myId ? `${peer.name} (أنت)` : peer.name}</p>
                     </div>
                     <div className="flex gap-1">
                       {!peer.audioOn && <MicOff className="w-3.5 h-3.5 text-red-400" />}
@@ -1090,11 +1152,12 @@ export default function MeetingRoom() {
 
           {/* Right: chat + participants */}
           <div className="hidden md:flex items-center gap-2 w-44 justify-end">
-            <button onClick={() => setLayout(l => l === "grid" ? "spotlight" : "grid")}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4a4d51] transition"
+            <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedPeerId(null); }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-blue-600 hover:bg-blue-700" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}
+              title={isSpotlight ? "وضع الشبكة" : "وضع التركيز"}
               data-testid="button-toggle-layout"
             >
-              <Grid3X3 className="w-4 h-4 text-[#9aa0a6]" />
+              {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
             </button>
             <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}

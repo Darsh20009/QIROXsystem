@@ -1,6 +1,47 @@
 # Qirox Platform
 
-## Latest Changes (Mar 26, 2026)
+## Latest Changes (Mar 26, 2026) — Session 2
+
+### QMeet Critical Bug Fixes & New Features
+
+**Critical Bug Fixes — `myIdRef` pattern completed:**
+- All `userId || "local"` comparisons replaced with `myId` (computed from `myIdRef.current || userId || "local"`) throughout MeetingRoom render
+- `sendChat`: uses `myIdRef.current` for msg.userId (fixes guest messages showing wrong side)
+- `toggleHand` & `sendReaction`: use `myIdRef.current` (fixed stale closure for guests)
+- `sendChat` id: changed from `Date.now() + userId` to template literal (TypeScript fix)
+- Speaking detection useEffect: uses `myIdRef.current` internally (fixed guest speaking detection)
+- All chat panel comparisons (`msg.userId === userId`) → `msg.userId === myId`
+- All participant panel comparisons (`peer.id === (userId || "local")`) → `peer.id === myId`
+
+**New Feature — Pin to Spotlight:**
+- `pinnedPeerId` state added — clicking any peer in grid view pins them to spotlight
+- Spotlight layout: large main view + horizontal thumbnail strip at bottom
+- Clicking a thumbnail swaps it to the main view
+- "إلغاء التثبيت" button on pinned peer
+- Thumbnail strip shows green dot indicator on speaking peers
+- Grid view: clicking peers (when >1 participant) pins them automatically
+
+**Improved Spotlight Mode:**
+- `isSpotlight = layout === "spotlight" || pinnedPeerId !== null`
+- Auto-spotlight shows loudest speaking peer in large view
+- Layout switcher button shows active state (blue when in spotlight/pinned)
+- Toggling layout clears pinned peer
+
+**VideoTile Improvements:**
+- Green speaking ring on outer tile border (`ring-2 ring-green-400`)
+- Proper small-size styling for thumbnails (smaller avatar, smaller text/icons)
+- "الكاميرا مغلقة" label only in large tiles
+- Info bar uses proportional icon/text sizes
+
+**Top Bar Improvements:**
+- Timer now always visible (removed `hidden sm:block`)
+- Participant count badge (👥 N) in top-right area
+- Lobby waiting badge has `animate-pulse`
+- "نسخ الرابط" button has tooltip
+
+---
+
+## Latest Changes (Mar 26, 2026) — Session 1
 
 ### QMeet Fixes & Screen Sharing Restriction
 
