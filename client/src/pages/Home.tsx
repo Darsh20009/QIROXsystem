@@ -15,6 +15,7 @@ import type { Partner } from "@shared/schema";
 
 import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
 import paymobLogo from "@assets/download_1774503289938.png";
+import qiroxNoBgLogo from "@assets/qirox_without_background_1771716363944.png";
 import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
 import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
 import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
@@ -513,9 +514,14 @@ export default function Home() {
                     {/* Qirox logo box */}
                     <motion.div
                       whileHover={{ scale: 1.05 }}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center p-2.5"
                     >
-                      <span className="text-white font-black text-lg sm:text-xl tracking-tight font-heading">Q</span>
+                      <img
+                        src={qiroxNoBgLogo}
+                        alt="Qirox"
+                        className="w-full h-full object-contain"
+                        style={{ filter: "invert(1) brightness(1.2)" }}
+                      />
                     </motion.div>
 
                     {/* Connection indicator */}
