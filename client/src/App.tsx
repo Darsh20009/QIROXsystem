@@ -146,6 +146,7 @@ const AdminReferrals = lazy(() => import("@/pages/AdminReferrals"));
 const AdminAddonSubscriptions = lazy(() => import("@/pages/AdminAddonSubscriptions"));
 const EmployeeSubscriptions = lazy(() => import("@/pages/EmployeeSubscriptions"));
 const AdminContactMessages = lazy(() => import("@/pages/AdminContactMessages"));
+const AdminProjectData = lazy(() => import("@/pages/AdminProjectData"));
 const ClientHelp = lazy(() => import("@/pages/ClientHelp"));
 const AdminReviews = lazy(() => import("@/pages/AdminReviews"));
 const AdminContracts = lazy(() => import("@/pages/AdminContracts"));
@@ -225,6 +226,7 @@ function AdminRouter() {
         <Route path="/admin" component={AdminSystemMap} />
         <Route path="/admin/services" component={AdminServices} />
         <Route path="/admin/orders" component={AdminOrders} />
+        <Route path="/admin/project-data" component={AdminProjectData} />
         <Route path="/admin/employees" component={AdminEmployees} />
         <Route path="/admin/finance" component={AdminFinance} />
         <Route path="/admin/templates" component={AdminTemplates} />

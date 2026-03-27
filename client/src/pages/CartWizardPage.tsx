@@ -19,8 +19,10 @@ import {
   Database, BarChart3, Palette, Server, ArrowLeft, Eye, EyeOff,
   Zap, Package, Send, Hash, Cpu, ShoppingCart,
   Plus, Cloud, Image as ImageIcon, Headphones, Wifi, CreditCard, Settings,
-  IdCard, ShieldCheck, Briefcase, AlertCircle
+  IdCard, ShieldCheck, Briefcase, AlertCircle,
+  Info, ExternalLink, Percent, Pen, Download, Globe2, CheckCircle2
 } from "lucide-react";
+import paymobLogo from "@assets/download_1774503289938.png";
 import { QiroxIcon } from "@/components/qirox-brand";
 import type { Cart, CartItem } from "@shared/schema";
 
@@ -48,6 +50,16 @@ function AddonIcon({ iconName, imageUrl, selected }: { iconName?: string; imageU
     </div>
   );
 }
+
+const PAYMOB_REGISTER_URL = "https://ksa.paymob.com/portal2/en/register?accept_sales_owner=Amira_nabil";
+
+const PAYMOB_FEE_TABLE = [
+  { method: "رسوم الإعداد",                        fee: "مجانًا",          free: true },
+  { method: "مدى و STC Pay",                       fee: "1% + 1 ر.س",      free: false },
+  { method: "الكروت المحلية (فيزا - ماستركارد)",  fee: "2.7% + 1 ر.س",   free: false },
+  { method: "كروت دولية",                          fee: "3.7% + 1 ر.س",   free: false },
+  { method: "Apple Pay",                            fee: "حسب نوع الكارت", free: false },
+];
 
 const DAYS  = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 const TIMES = ["8:00 ص","9:00 ص","10:00 ص","11:00 ص","12:00 م","1:00 م","2:00 م","3:00 م","4:00 م","5:00 م","6:00 م","7:00 م","8:00 م","9:00 م"];
@@ -79,6 +91,10 @@ interface WizardData {
   taxNumber: string;
   idNumber: string;
   idPhotoFile: string;
+  // Paymob registration & agreement
+  paymobRegistered: boolean;
+  paymobPolicyAccepted: boolean;
+  paymobSignatureName: string;
 }
 
 const defaultData: WizardData = {
@@ -89,6 +105,7 @@ const defaultData: WizardData = {
   expectedCustomers: "", extraFiles: [],
   legalDocType: "commercial", legalDocNumber: "", legalDocFile: "", ibanCertFile: "",
   taxNumber: "", idNumber: "", idPhotoFile: "",
+  paymobRegistered: false, paymobPolicyAccepted: false, paymobSignatureName: "",
   competitorUrl: "", hadPrevSite: false, prevSiteFeedback: "",
   technicalLevel: "", technicalDetails: "", hasDevTeam: false, devTeamDetails: "",
   technicalFeatures: [], projectTechIdeas: "",
@@ -243,7 +260,7 @@ export default function CartWizardPage() {
   const planTier: string = planItem?.config?.tier || "lite";
   const maxFeatures = planTier === "infinite" ? 20 : planTier === "pro" ? 10 : 5;
 
-  const TOTAL_STEPS = hasPhysical ? 7 : 6;
+  const TOTAL_STEPS = hasPhysical ? 9 : 8;
 
   const STEP_INFO = [
     null,
@@ -251,6 +268,8 @@ export default function CartWizardPage() {
     { title: "اختيار المميزات",              icon: Sparkles,    desc: `اختر حتى ${maxFeatures} مميزة`,    color: "amber" },
     { title: "الملفات والبيانات",            icon: FileText,    desc: "الوثائق والهوية البصرية",           color: "violet" },
     { title: "المعلومات القانونية",          icon: ShieldCheck, desc: "وثائق النشاط والهوية الوطنية",     color: "rose" },
+    { title: "تسجيل Paymob",                 icon: CreditCard,  desc: "تفعيل بوابة الدفع الإلكتروني",    color: "indigo" },
+    { title: "اتفاقية Paymob",               icon: CheckCircle2,desc: "رسوم الخدمة والموافقة على الشروط", color: "teal" },
     { title: "المعلومات التنافسية",          icon: Target,      desc: "فهم احتياجاتك بعمق",               color: "green" },
     { title: "جدولة الاجتماع",              icon: Calendar,    desc: "حدد مواعيدك المناسبة",             color: "cyan" },
     ...(hasPhysical ? [{ title: "عنوان التوصيل", icon: MapPin, desc: "بيانات شحن المنتجات", color: "orange" }] : []),
@@ -264,6 +283,8 @@ export default function CartWizardPage() {
     green:  "bg-green-500/10 text-green-400 border-green-500/20",
     cyan:   "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
     orange: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    indigo: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+    teal:   "bg-teal-500/10 text-teal-400 border-teal-500/20",
   };
 
   function upd(key: keyof WizardData, val: any) {
@@ -283,8 +304,10 @@ export default function CartWizardPage() {
       data.idNumber.trim().length >= 10 &&
       data.idPhotoFile.trim().length > 0
     );
-    if (step === 6 || (hasPhysical && step === 7)) {
-      if (hasPhysical && step === 7) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
+    if (step === 5) return data.paymobRegistered === true;
+    if (step === 6) return data.paymobPolicyAccepted === true && data.paymobSignatureName.trim().length >= 3;
+    if (step === 8 || (hasPhysical && step === 9)) {
+      if (hasPhysical && step === 9) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
       return data.preferredTimes.length >= 1 && data.preferredDays.length >= 1;
     }
     return true;
@@ -772,8 +795,182 @@ export default function CartWizardPage() {
                 </div>
               )}
 
-              {/* ══ STEP 5: STRATEGIC ═════════════════════════════════════════ */}
+              {/* ══ STEP 5: PAYMOB REGISTRATION ══════════════════════════════ */}
               {step === 5 && (
+                <div className="space-y-5">
+                  {/* Partner logos */}
+                  <div className="flex items-center justify-center gap-4 py-3">
+                    <QiroxIcon className="w-8 h-8 text-gray-400 dark:text-slate-500" />
+                    <span className="text-gray-300 dark:text-slate-600 font-thin text-xl">×</span>
+                    <img src={paymobLogo} alt="Paymob" className="h-7 object-contain opacity-70" />
+                  </div>
+
+                  {/* Info alert */}
+                  <div className="p-4 bg-indigo-500/[0.07] border border-indigo-500/20 rounded-2xl flex gap-3">
+                    <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">تعليمات مهمة قبل التسجيل</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                        استخدم <strong>نفس رقم الجوال</strong> المرتبط بحسابك في Qirox عند التسجيل في Paymob.
+                        هذا يضمن ربط حسابك بشكل صحيح وتفعيل الدفع تلقائياً.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Steps */}
+                  <div className="space-y-3">
+                    {[
+                      { num: "١", title: "افتح رابط تسجيل Paymob", desc: "اضغط على الزر أدناه لفتح صفحة التسجيل في نافذة جديدة" },
+                      { num: "٢", title: "أدخل بياناتك", desc: "استخدم نفس رقم الجوال المسجل في Qirox" },
+                      { num: "٣", title: "أكمل التسجيل", desc: "اتبع تعليمات Paymob حتى تصل لصفحة التأكيد" },
+                      { num: "٤", title: "عُد هنا وأكّد", desc: "فعّل المربع أدناه بعد إتمام التسجيل" },
+                    ].map((s, i) => (
+                      <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04]">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 font-black text-sm">{s.num}</div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-800 dark:text-white">{s.title}</p>
+                          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA Button */}
+                  <a
+                    href={PAYMOB_REGISTER_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-all shadow-lg shadow-indigo-600/20"
+                    data-testid="btn-paymob-register"
+                  >
+                    <Globe2 className="w-4 h-4" />
+                    فتح صفحة تسجيل Paymob
+                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                  </a>
+
+                  {/* Confirmation checkbox */}
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="paymob-done"
+                      checked={data.paymobRegistered}
+                      onChange={e => upd("paymobRegistered", e.target.checked)}
+                      className="w-4 h-4 rounded accent-indigo-500"
+                      data-testid="checkbox-paymob-registered"
+                    />
+                    <label htmlFor="paymob-done" className="text-sm text-gray-600 dark:text-slate-400 cursor-pointer leading-snug">
+                      أؤكد أنني أكملت التسجيل في منصة Paymob وسأرسل اسم المستخدم لفريق Qirox
+                    </label>
+                  </div>
+
+                  {!data.paymobRegistered && (
+                    <p className="text-xs text-amber-500 dark:text-amber-400 flex items-center gap-1.5 justify-center">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      يجب التسجيل في Paymob أولاً قبل المتابعة
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ══ STEP 6: PAYMOB POLICY & AGREEMENT ════════════════════════ */}
+              {step === 6 && (
+                <div className="space-y-5">
+
+                  {/* Fee Table */}
+                  <div>
+                    <h3 className="text-sm font-black text-gray-800 dark:text-white flex items-center gap-2 mb-3">
+                      <Percent className="w-4 h-4 text-teal-400" />
+                      جدول رسوم بوابة الدفع
+                    </h3>
+                    <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/[0.07]">
+                      <div className="bg-teal-50 dark:bg-teal-500/10 border-b border-teal-100 dark:border-teal-500/15 px-4 py-2.5 text-center">
+                        <p className="text-xs font-black text-teal-700 dark:text-teal-300 uppercase tracking-widest">جدول الرسوم</p>
+                      </div>
+                      {PAYMOB_FEE_TABLE.map((row, i) => (
+                        <div key={i} className={`flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/[0.03] last:border-0 ${i % 2 === 0 ? "bg-gray-50/50 dark:bg-white/[0.01]" : ""}`}>
+                          <span className="text-sm text-gray-600 dark:text-slate-400 font-medium">{row.method}</span>
+                          <span className={`text-sm font-black ${row.free ? "text-green-600 dark:text-green-400" : "text-gray-800 dark:text-white"}`}>{row.fee}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Policy Summary */}
+                  <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black text-gray-800 dark:text-white flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-teal-400" />
+                        أبرز بنود اتفاقية Paymob
+                      </h3>
+                      <a
+                        href="/paymob-policy.txt"
+                        download="paymob-policy.txt"
+                        className="text-xs text-teal-500 dark:text-teal-400 hover:text-teal-600 flex items-center gap-1 transition-colors"
+                      >
+                        <Download className="w-3 h-3" />
+                        تحميل النص الكامل
+                      </a>
+                    </div>
+                    {[
+                      "الرسوم تُخصم تلقائياً من المبالغ المحولة قبل التسوية",
+                      "بعد إتمام الدفع لا يمكن التراجع عنه",
+                      "يلتزم التاجر بحماية بيانات العملاء",
+                      "يلتزم Paymob بتزويدك بتقارير العمليات",
+                      "يمكن إنهاء الاتفاقية بإشعار كتابي قبل 30 يوماً",
+                    ].map((point, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <Check className="w-3.5 h-3.5 text-teal-500 mt-0.5 shrink-0" />
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{point}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Agreement + Signature */}
+                  <div className="p-4 bg-teal-500/[0.05] border border-teal-500/15 rounded-2xl space-y-4">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="paymob-policy"
+                        checked={data.paymobPolicyAccepted}
+                        onChange={e => upd("paymobPolicyAccepted", e.target.checked)}
+                        className="w-4 h-4 rounded accent-teal-500 mt-0.5"
+                        data-testid="checkbox-paymob-policy"
+                      />
+                      <label htmlFor="paymob-policy" className="text-sm text-gray-600 dark:text-slate-400 cursor-pointer leading-relaxed">
+                        أقر بأنني قرأت وفهمت واتفقت على جميع شروط وأحكام اتفاقية Paymob بما فيها جدول الرسوم أعلاه.
+                      </label>
+                    </div>
+
+                    {data.paymobPolicyAccepted && (
+                      <div className="pt-3 border-t border-teal-500/10 space-y-2">
+                        <label className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <Pen className="w-3 h-3" />
+                          التوقيع الرقمي — اكتب اسمك الكامل *
+                        </label>
+                        <input
+                          type="text"
+                          value={data.paymobSignatureName}
+                          onChange={e => upd("paymobSignatureName", e.target.value)}
+                          placeholder="اسمك الكامل بالعربية أو الإنجليزية"
+                          className="w-full h-11 px-4 rounded-xl bg-white dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-teal-500/60 transition-all font-bold"
+                          data-testid="input-paymob-signature"
+                        />
+                        {data.paymobSignatureName && data.paymobSignatureName.trim().length >= 3 && (
+                          <div className="flex items-center justify-between p-3 bg-white dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-white/[0.05]">
+                            <span className="text-xs text-gray-400 dark:text-slate-500">التوقيع الرقمي المعتمد:</span>
+                            <span className="text-gray-800 dark:text-white font-bold text-base" style={{ fontFamily: "Georgia, serif" }}>
+                              {data.paymobSignatureName}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ══ STEP 7: STRATEGIC ═════════════════════════════════════════ */}
+              {step === 7 && (
                 <div className="space-y-4">
                   <Field label="رابط موقع منافس" hint="يساعدنا في فهم السوق المستهدف">
                     <TInput value={data.competitorUrl} onChange={(v: string) => upd("competitorUrl", v)} placeholder="https://competitor.com" type="url" />
@@ -849,8 +1046,8 @@ export default function CartWizardPage() {
                 </div>
               )}
 
-              {/* ══ STEP 6: MEETING ═══════════════════════════════════════════ */}
-              {step === 6 && (
+              {/* ══ STEP 8: MEETING ═══════════════════════════════════════════ */}
+              {step === 8 && (
                 <div className="space-y-4">
                   <Field label={`الأوقات المفضلة (${data.preferredTimes.length}/3)`} required hint="اختر حتى 3 أوقات مناسبة">
                     <Chips options={TIMES} value={data.preferredTimes} onChange={v => upd("preferredTimes", v)} max={3} />
@@ -868,8 +1065,8 @@ export default function CartWizardPage() {
                 </div>
               )}
 
-              {/* ══ STEP 7: ADDRESS ═══════════════════════════════════════════ */}
-              {step === 7 && hasPhysical && (
+              {/* ══ STEP 9: ADDRESS ═══════════════════════════════════════════ */}
+              {step === 9 && hasPhysical && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="اسم المستلم" required>

@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -107,6 +107,7 @@ export function AppSidebar() {
     { title: ar ? "أدوات التسويق" : "Marketing Tools", icon: Megaphone, url: "/sales/marketing", group: "employee", section: "clients", allowedRoles: SALES_ROLES },
     // Employee — work (العمل والطلبات)
     { title: ar ? "الطلبات" : "Orders", icon: FileText, url: "/admin/orders", group: "employee", section: "work" },
+    { title: ar ? "بيانات المشاريع" : "Project Data", icon: FolderOpen, url: "/admin/project-data", group: "employee", section: "work" },
     { title: ar ? "طلبات التعديل" : "Mod. Requests", icon: Wrench, url: "/admin/mod-requests", group: "employee", section: "work" },
     { title: ar ? "إدارة الديموز" : "Demos", icon: Monitor, url: "/employee/demos", group: "employee", section: "work" },
     // Employee — communication (التواصل)
