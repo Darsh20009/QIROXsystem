@@ -306,6 +306,7 @@ export default function CartWizardPage() {
     );
     if (step === 5) return data.paymobRegistered === true;
     if (step === 6) return data.paymobPolicyAccepted === true && data.paymobSignatureName.trim().length >= 3;
+    if (step === 7) return data.technicalLevel !== "";
     if (step === 8 || (hasPhysical && step === 9)) {
       if (hasPhysical && step === 9) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
       return data.preferredTimes.length >= 1 && data.preferredDays.length >= 1;

@@ -1017,8 +1017,8 @@ function ProjectBriefTab({ order, L }: { order: any; L: boolean }) {
     if (wd.prevSiteUrl)               lines.push(`رابط الموقع السابق: ${wd.prevSiteUrl}`);
     lines.push("");
     lines.push("── الاجتماع ──");
-    if (wd.meetingSlots?.length)  lines.push(`الأوقات: ${wd.meetingSlots.join(" / ")}`);
-    if (wd.meetingDays?.length)   lines.push(`الأيام: ${wd.meetingDays.join(" / ")}`);
+    if (wd.preferredTimes?.length)  lines.push(`الأوقات: ${wd.preferredTimes.join(" / ")}`);
+    if (wd.preferredDays?.length)   lines.push(`الأيام: ${wd.preferredDays.join(" / ")}`);
     if (wd.address?.city)         lines.push(`المدينة: ${wd.address.city}`);
     lines.push("");
     lines.push("── الباقة ──");
@@ -1159,8 +1159,8 @@ function ProjectBriefTab({ order, L }: { order: any; L: boolean }) {
         <Card className="md:col-span-2">
           <CardHeader><CardTitle className="text-sm font-black">تفضيلات الاجتماع</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            <Row label="الأوقات المفضلة" value={wd.meetingSlots?.join(" / ")} />
-            <Row label="الأيام المناسبة" value={wd.meetingDays?.join(" / ")} />
+            <Row label="الأوقات المفضلة" value={wd.preferredTimes?.join(" / ")} />
+            <Row label="الأيام المناسبة" value={wd.preferredDays?.join(" / ")} />
             <Row label="المدينة" value={wd.address?.city} />
           </CardContent>
         </Card>

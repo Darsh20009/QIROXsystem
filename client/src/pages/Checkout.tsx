@@ -435,8 +435,8 @@ export default function Checkout() {
       const fullyWallet = payMethod === "wallet" && effWallet >= total - 0.01;
       const method = fullyWallet ? "wallet" : payMethod === "paypal" ? "paypal" : payMethod === "card" ? "wallet" : "bank_transfer";
       const addressLine = `الشحن: ${addr.recipientName} — ${addr.recipientPhone} — ${addr.city} — ${addr.district} — ${addr.street}`;
-      const meetingLine = wizardData?.meetingSlots?.length
-        ? `موعد الاجتماع: ${wizardData.meetingSlots.join(" / ")} — أيام: ${wizardData.meetingDays?.join(" / ") || ""}`
+      const meetingLine = wizardData?.preferredTimes?.length
+        ? `موعد الاجتماع: ${wizardData.preferredTimes.join(" / ")} — أيام: ${wizardData.preferredDays?.join(" / ") || ""}`
         : "";
       const notes = [addressLine, meetingLine].filter(Boolean).join(" | ");
       const orderItems = hasWizardData
