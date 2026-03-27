@@ -160,7 +160,7 @@ const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
 const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
-const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed"];
+const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding"];
 
 function PageLoader() {
   return (
