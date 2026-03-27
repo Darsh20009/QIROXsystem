@@ -5953,6 +5953,27 @@ export async function registerRoutes(
     res.json(users);
   });
 
+  // Get client context for employee inbox (orders, projects, etc.)
+  app.get("/api/inbox/client-context/:clientId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (me.role === "client") return res.sendStatus(403);
+    try {
+      const { UserModel, OrderModel, ProjectModel, ModificationRequestModel } = await import("./models");
+      const client = await UserModel.findById(req.params.clientId).select("username fullName email phone country role avatarUrl").lean();
+      if (!client || (client as any).role !== "client") return res.sendStatus(404);
+      const [orders, modRequests] = await Promise.all([
+        OrderModel.find({ userId: req.params.clientId }).select("serviceType planTier status totalAmount createdAt businessName sector").sort({ createdAt: -1 }).limit(5).lean(),
+        ModificationRequestModel.find({ userId: req.params.clientId }).select("title status createdAt").sort({ createdAt: -1 }).limit(3).lean(),
+      ]);
+      const orderIds = (orders as any[]).map((o: any) => o._id);
+      const projects = await ProjectModel.find({ orderId: { $in: orderIds } }).select("title phase progress deadline").sort({ createdAt: -1 }).limit(3).lean();
+      res.json({ client, orders, projects, modRequests });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ═══════════════════════════════════════════════════════════
   // === CUSTOMER SERVICE CHAT ===
   // ═══════════════════════════════════════════════════════════

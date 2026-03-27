@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2, MessageSquare, Send, Users, Search, Paperclip,
   Mic, X, Download, Play, Pause, FileText, CheckCheck, Check,
-  ArrowRight, Phone, MoreVertical, Smile, Trash2
+  ArrowRight, Phone, MoreVertical, Smile, Trash2,
+  Package, Activity, Wrench, ChevronDown, ChevronUp, Mail, Globe
 } from "lucide-react";
 import { useInboxSocket } from "@/hooks/useInboxSocket";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -320,6 +321,7 @@ export default function Inbox() {
   const [messageText, setMessageText] = useState("");
   const [search, setSearch] = useState("");
   const [newContactId, setNewContactId] = useState("");
+  const [newClientId, setNewClientId] = useState("");
   const [isTypingLocal, setIsTypingLocal] = useState(false);
   const [isTypingRemote, setIsTypingRemote] = useState(false);
   const [isVoiceRemote, setIsVoiceRemote] = useState(false);
@@ -328,6 +330,7 @@ export default function Inbox() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showContacts, setShowContacts] = useState(true); // mobile view toggle
+  const [showClientContext, setShowClientContext] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -394,6 +397,27 @@ export default function Inbox() {
       return r.json();
     },
     enabled: !!user && user.role !== "client",
+  });
+
+  const { data: clients = [] } = useQuery<any[]>({
+    queryKey: ["/api/users/clients"],
+    queryFn: async () => {
+      const r = await fetch("/api/users/clients");
+      if (!r.ok) return [];
+      return r.json();
+    },
+    enabled: !!user && user.role !== "client",
+  });
+
+  const { data: clientContext } = useQuery<any>({
+    queryKey: ["/api/inbox/client-context", activeContact?.id],
+    queryFn: async () => {
+      if (!activeContact?.id) return null;
+      const r = await fetch(`/api/inbox/client-context/${activeContact.id}`);
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!activeContact?.id && activeContact?.role === "client" && me?.role !== "client",
   });
 
   // ── Contacts ──
@@ -584,6 +608,7 @@ export default function Inbox() {
     setIsTypingRemote(false);
     setIsVoiceRemote(false);
     setShowContacts(false);
+    setShowClientContext(false);
   };
 
   const backToContacts = () => {
@@ -678,22 +703,40 @@ export default function Inbox() {
           </div>
 
           {/* New Message (employees only) */}
-          {me?.role !== "client" && employees.length > 0 && (
-            <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.04]">
-              <select
-                value={newContactId}
-                onChange={e => {
-                  const u = employees.find((emp: any) => emp.id === e.target.value);
-                  if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: u.role }); setNewContactId(""); }
-                }}
-                className="w-full h-8 text-xs border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"
-                data-testid="select-new-contact"
-              >
-                <option value="">{L ? "+ رسالة جديدة للفريق" : "+ New message to team"}</option>
-                {employees.filter((e: any) => e.id !== me.id).map((e: any) => (
-                  <option key={e.id} value={e.id}>{e.fullName || e.username} ({roleLabel(e.role, L)})</option>
-                ))}
-              </select>
+          {me?.role !== "client" && (
+            <div className="px-3 py-2 border-b border-black/[0.04] dark:border-white/[0.04] space-y-1.5">
+              {employees.length > 0 && (
+                <select
+                  value={newContactId}
+                  onChange={e => {
+                    const u = employees.find((emp: any) => emp.id === e.target.value);
+                    if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: u.role }); setNewContactId(""); }
+                  }}
+                  className="w-full h-8 text-xs border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  data-testid="select-new-contact"
+                >
+                  <option value="">{L ? "+ رسالة للفريق" : "+ Message team member"}</option>
+                  {employees.filter((e: any) => e.id !== me.id).map((e: any) => (
+                    <option key={e.id} value={e.id}>{e.fullName || e.username} ({roleLabel(e.role, L)})</option>
+                  ))}
+                </select>
+              )}
+              {clients.length > 0 && (
+                <select
+                  value={newClientId}
+                  onChange={e => {
+                    const u = clients.find((c: any) => c.id === e.target.value);
+                    if (u) { openChat({ id: u.id, fullName: u.fullName || u.username, role: "client" }); setNewClientId(""); }
+                  }}
+                  className="w-full h-8 text-xs border border-violet-200 dark:border-violet-800 rounded-lg px-2 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+                  data-testid="select-new-client-contact"
+                >
+                  <option value="">{L ? "+ رسالة لعميل" : "+ Message a client"}</option>
+                  {clients.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.fullName || c.username} {c.email ? `(${c.email})` : ""}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -773,7 +816,12 @@ export default function Inbox() {
               <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.06] px-5 py-3 items-center gap-3 flex-shrink-0 shadow-sm">
                 <Avatar name={activeContact.fullName} role={activeContact.role} online={onlineUsers.has(activeContact.id)} profilePhotoUrl={activeContact.profilePhotoUrl} avatarConfig={activeContact.avatarConfig} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{activeContact.fullName}</p>
+                    {activeContact.role === "client" && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">{L ? "عميل" : "Client"}</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 h-4">
                     {isVoiceRemote ? (
                       <span className="text-[10px] text-purple-500 animate-pulse flex items-center gap-1">
@@ -794,10 +842,82 @@ export default function Inbox() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  {activeContact.role === "client" && me?.role !== "client" && (
+                    <button
+                      onClick={() => setShowClientContext(v => !v)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 px-2 py-1 rounded-lg transition-colors"
+                      data-testid="button-toggle-client-context"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      {L ? "بيانات العميل" : "Client Info"}
+                      {showClientContext ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
                   <div className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500" : "bg-red-400"}`} title={connected ? (L ? "متصل" : "Connected") : (L ? "غير متصل" : "Disconnected")} />
                 </div>
               </div>
+
+              {/* ── Client Context Panel (employees chatting with clients) ── */}
+              {showClientContext && activeContact?.role === "client" && me?.role !== "client" && clientContext && (
+                <div className="hidden md:block bg-violet-50 dark:bg-violet-900/10 border-b border-violet-100 dark:border-violet-800/30 px-5 py-3">
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Client Info */}
+                    <div>
+                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5">{L ? "بيانات العميل" : "Client Data"}</p>
+                      <div className="space-y-0.5">
+                        {clientContext.client?.email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-violet-400" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300 truncate">{clientContext.client.email}</span>
+                          </div>
+                        )}
+                        {clientContext.client?.country && (
+                          <div className="flex items-center gap-1.5">
+                            <Globe className="w-3 h-3 text-violet-400" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.country}</span>
+                          </div>
+                        )}
+                        {clientContext.client?.phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3 h-3 text-violet-400" />
+                            <span className="text-[10px] text-gray-600 dark:text-gray-300">{clientContext.client.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Orders */}
+                    <div>
+                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Package className="w-3 h-3" /> {L ? "الطلبات" : "Orders"} ({clientContext.orders?.length || 0})</p>
+                      <div className="space-y-0.5">
+                        {(clientContext.orders || []).slice(0, 2).map((o: any) => (
+                          <div key={o._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-violet-100 dark:border-violet-800/30">
+                            <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{o.businessName || o.serviceType}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${o.status === 'approved' ? "bg-green-100 text-green-700" : o.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500"}`}>{o.status}</span>
+                              {o.totalAmount && <span className="text-[8px] text-gray-400">{o.totalAmount.toLocaleString()} ر.س</span>}
+                            </div>
+                          </div>
+                        ))}
+                        {!clientContext.orders?.length && <p className="text-[10px] text-gray-400">{L ? "لا توجد طلبات" : "No orders"}</p>}
+                      </div>
+                    </div>
+                    {/* Projects */}
+                    <div>
+                      <p className="text-[9px] font-black text-violet-600/60 dark:text-violet-400/60 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Activity className="w-3 h-3" /> {L ? "المشاريع" : "Projects"} ({clientContext.projects?.length || 0})</p>
+                      <div className="space-y-0.5">
+                        {(clientContext.projects || []).slice(0, 2).map((p: any) => (
+                          <div key={p._id} className="bg-white dark:bg-gray-800 rounded px-2 py-1 border border-violet-100 dark:border-violet-800/30">
+                            <p className="text-[10px] font-bold text-gray-800 dark:text-gray-100 truncate">{p.title || (L ? "مشروع" : "Project")}</p>
+                            <p className="text-[8px] text-gray-400">{p.phase || "—"} • {p.progress || 0}%</p>
+                          </div>
+                        ))}
+                        {!clientContext.projects?.length && <p className="text-[10px] text-gray-400">{L ? "لا توجد مشاريع" : "No projects"}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── Messages Area ── */}
               <ScrollArea className="flex-1 px-3 sm:px-5 py-4">
