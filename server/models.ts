@@ -134,6 +134,14 @@ const orderSchema = new mongoose.Schema({
   requirements: { type: Map, of: mongoose.Schema.Types.Mixed },
   // Wizard brief data (full form from CartWizardPage)
   wizardData: { type: mongoose.Schema.Types.Mixed },
+  // Scheduled meeting (set by employee from client preferred times)
+  scheduledMeeting: {
+    date: String,           // e.g. "2026-03-30"
+    time: String,           // e.g. "10:00 ص"
+    meetingLink: String,
+    confirmedAt: Date,
+    confirmedBy: String,    // employee username
+  },
   // Assignment
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   adminNotes: String,

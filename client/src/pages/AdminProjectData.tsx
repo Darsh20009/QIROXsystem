@@ -1,20 +1,21 @@
 // @ts-nocheck
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import {
   Building2, FileText, CreditCard, ShieldCheck, Target, Calendar,
-  Sparkles, MapPin, Phone, Mail, Instagram, Twitter,
-  Download, ExternalLink, Search, ChevronDown, ChevronUp,
+  Sparkles, MapPin, Phone, Mail,
+  ExternalLink, Search, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Clock, Package, FolderOpen,
-  Percent, Pen, Globe2, AlertCircle, Hash, Star, Image as ImageIcon,
-  Loader2, Layers, TrendingUp, Copy, Check
+  Pen, AlertCircle, Star, Image as ImageIcon,
+  Loader2, Layers, TrendingUp, Copy, Check, Video, Send
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 /* ─── Short order ID ─────────────────────────────────── */
 function shortId(id: string): string {
@@ -152,12 +153,47 @@ function collectFiles(order: any): Array<{ url: string; label: string }> {
   return files.filter(f => { if (seen.has(f.url)) return false; seen.add(f.url); return true; });
 }
 
+/* ─── Day-of-week from Arabic day name ───────────────── */
+const DAY_NAME_TO_DOW: Record<string, number> = {
+  "الأحد": 0, "الاثنين": 1, "الثلاثاء": 2, "الأربعاء": 3,
+  "الخميس": 4, "الجمعة": 5, "السبت": 6,
+};
+function isPreferredDate(dateStr: string, preferredDays: string[]): boolean {
+  if (!preferredDays?.length || !dateStr) return true;
+  const dow = new Date(dateStr).getDay();
+  return preferredDays.some(d => DAY_NAME_TO_DOW[d] === dow);
+}
+
 /* ─── Order card ─────────────────────────────────────── */
-function OrderCard({ order }: { order: any }) {
+function OrderCard({ order: initialOrder }: { order: any }) {
+  const [order, setOrder] = useState(initialOrder);
   const [expanded, setExpanded] = useState(false);
+  const [meetDate, setMeetDate]   = useState("");
+  const [meetTime, setMeetTime]   = useState("");
+  const [meetLink, setMeetLink]   = useState("");
+  const [showMeetForm, setShowMeetForm] = useState(false);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
   const w = order.wizardData || {};
   const status = STATUS_MAP[order.status] || STATUS_MAP.pending;
   const StatusIcon = status.icon;
+
+  const scheduleMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/admin/orders/${order._id || order.id}/schedule-meeting`, {
+      date: meetDate, time: meetTime, meetingLink: meetLink,
+    }),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      if (data.scheduledMeeting) {
+        setOrder((prev: any) => ({ ...prev, scheduledMeeting: data.scheduledMeeting }));
+      }
+      setShowMeetForm(false);
+      qc.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      toast({ title: "تم تأكيد الاجتماع وإرسال الإشعار للعميل ✅" });
+    },
+    onError: () => toast({ title: "فشل تأكيد الاجتماع", variant: "destructive" }),
+  });
 
   const planLabel =
     order.planTier === "infinite" ? "إنفينتي" :
@@ -403,12 +439,64 @@ function OrderCard({ order }: { order: any }) {
               )}
 
               {/* ── جدولة الاجتماع ── */}
-              {(w.preferredTimes?.length > 0 || w.preferredDays?.length > 0) && (
+              {(w.preferredTimes?.length > 0 || w.preferredDays?.length > 0 || order.scheduledMeeting?.date) && (
                 <Section icon={Calendar} title="جدولة الاجتماع" color="cyan">
-                  <div className="grid grid-cols-2 gap-3">
+
+                  {/* Confirmed meeting badge */}
+                  {order.scheduledMeeting?.date && (
+                    <div className="mb-4 p-4 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 rounded-2xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                          <span className="text-xs font-black text-cyan-700 dark:text-cyan-300 uppercase tracking-widest">اجتماع مؤكّد</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setMeetDate(order.scheduledMeeting.date);
+                            setMeetTime(order.scheduledMeeting.time);
+                            setMeetLink(order.scheduledMeeting.meetingLink || "");
+                            setShowMeetForm(true);
+                          }}
+                          className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-bold transition-colors"
+                        >
+                          تعديل الموعد
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-2.5 bg-white dark:bg-white/[0.06] rounded-xl">
+                          <p className="text-[10px] text-gray-400 dark:text-slate-500">التاريخ</p>
+                          <p className="text-sm font-black text-gray-900 dark:text-white mt-0.5">
+                            {new Date(order.scheduledMeeting.date).toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                          </p>
+                        </div>
+                        <div className="p-2.5 bg-white dark:bg-white/[0.06] rounded-xl">
+                          <p className="text-[10px] text-gray-400 dark:text-slate-500">الوقت</p>
+                          <p className="text-sm font-black text-gray-900 dark:text-white mt-0.5">{order.scheduledMeeting.time}</p>
+                        </div>
+                      </div>
+                      {order.scheduledMeeting.meetingLink && (
+                        <a
+                          href={order.scheduledMeeting.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 flex items-center gap-2 px-3 py-2 bg-white dark:bg-white/[0.06] rounded-xl text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-all"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          رابط الاجتماع
+                          <ExternalLink className="w-3 h-3 opacity-50 mr-auto" />
+                        </a>
+                      )}
+                      <p className="mt-2 text-[10px] text-gray-400 dark:text-slate-500">
+                        أُكِّد بواسطة {order.scheduledMeeting.confirmedBy} — {new Date(order.scheduledMeeting.confirmedAt).toLocaleString("ar-SA")}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Preferred slots from client */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     {w.preferredDays?.length > 0 && (
-                      <div className="p-3 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20 rounded-xl">
-                        <p className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2">الأيام</p>
+                      <div className="p-3 bg-cyan-50/60 dark:bg-cyan-500/[0.07] border border-cyan-100 dark:border-cyan-500/15 rounded-xl">
+                        <p className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2">الأيام المفضّلة للعميل</p>
                         <div className="flex flex-wrap gap-1">
                           {w.preferredDays.map((d: string, i: number) => (
                             <span key={i} className="px-2 py-0.5 bg-white dark:bg-white/[0.08] rounded-lg text-xs font-bold text-gray-700 dark:text-white">{d}</span>
@@ -417,8 +505,8 @@ function OrderCard({ order }: { order: any }) {
                       </div>
                     )}
                     {w.preferredTimes?.length > 0 && (
-                      <div className="p-3 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-100 dark:border-cyan-500/20 rounded-xl">
-                        <p className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2">الأوقات</p>
+                      <div className="p-3 bg-cyan-50/60 dark:bg-cyan-500/[0.07] border border-cyan-100 dark:border-cyan-500/15 rounded-xl">
+                        <p className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2">الأوقات المفضّلة للعميل</p>
                         <div className="flex flex-wrap gap-1">
                           {w.preferredTimes.map((t: string, i: number) => (
                             <span key={i} className="px-2 py-0.5 bg-white dark:bg-white/[0.08] rounded-lg text-xs font-bold text-gray-700 dark:text-white">{t}</span>
@@ -427,6 +515,114 @@ function OrderCard({ order }: { order: any }) {
                       </div>
                     )}
                   </div>
+
+                  {/* Schedule button / form */}
+                  {!showMeetForm && !order.scheduledMeeting?.date && (w.preferredTimes?.length > 0 || w.preferredDays?.length > 0) && (
+                    <button
+                      onClick={() => setShowMeetForm(true)}
+                      className="w-full h-10 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-cyan-600/20"
+                      data-testid={`btn-schedule-${order._id}`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      تحديد موعد الاجتماع
+                    </button>
+                  )}
+
+                  {showMeetForm && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl space-y-3"
+                    >
+                      <p className="text-xs font-black text-gray-700 dark:text-white mb-1">اختر موعد الاجتماع</p>
+
+                      {/* Date picker */}
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest block mb-1.5">التاريخ *</label>
+                        <input
+                          type="date"
+                          value={meetDate}
+                          onChange={e => setMeetDate(e.target.value)}
+                          min={new Date().toISOString().slice(0, 10)}
+                          className={`w-full h-10 px-3 rounded-xl border text-sm bg-white dark:bg-white/[0.05] text-gray-900 dark:text-white focus:outline-none transition-all ${
+                            meetDate && w.preferredDays?.length && !isPreferredDate(meetDate, w.preferredDays)
+                              ? "border-amber-400 dark:border-amber-500/60"
+                              : "border-gray-200 dark:border-slate-700/60"
+                          }`}
+                          data-testid={`input-date-${order._id}`}
+                        />
+                        {meetDate && w.preferredDays?.length && !isPreferredDate(meetDate, w.preferredDays) && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                            <span>⚠</span> هذا اليوم ليس من الأيام المفضّلة للعميل
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Time select */}
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest block mb-1.5">الوقت *</label>
+                        {w.preferredTimes?.length > 0 ? (
+                          <select
+                            value={meetTime}
+                            onChange={e => setMeetTime(e.target.value)}
+                            className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700/60 bg-white dark:bg-white/[0.05] text-sm text-gray-900 dark:text-white focus:outline-none"
+                            data-testid={`select-time-${order._id}`}
+                          >
+                            <option value="">-- اختر الوقت --</option>
+                            {w.preferredTimes.map((t: string, i: number) => (
+                              <option key={i} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="time"
+                            value={meetTime}
+                            onChange={e => setMeetTime(e.target.value)}
+                            className="w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-slate-700/60 bg-white dark:bg-white/[0.05] text-sm text-gray-900 dark:text-white focus:outline-none"
+                            data-testid={`input-time-${order._id}`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Meeting link (optional) */}
+                      <div>
+                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest block mb-1.5">رابط الاجتماع (اختياري)</label>
+                        <div className="relative">
+                          <Video className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 dark:text-slate-600 pointer-events-none" />
+                          <input
+                            type="url"
+                            value={meetLink}
+                            onChange={e => setMeetLink(e.target.value)}
+                            placeholder="https://meet.google.com/..."
+                            className="w-full h-10 pr-10 pl-3 rounded-xl border border-gray-200 dark:border-slate-700/60 bg-white dark:bg-white/[0.05] text-sm text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-slate-600 focus:outline-none"
+                            data-testid={`input-link-${order._id}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => scheduleMutation.mutate()}
+                          disabled={!meetDate || !meetTime || scheduleMutation.isPending}
+                          className="flex-1 h-10 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                          data-testid={`btn-confirm-meeting-${order._id}`}
+                        >
+                          {scheduleMutation.isPending
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Send className="w-4 h-4" />
+                          }
+                          تأكيد وإشعار العميل
+                        </button>
+                        <button
+                          onClick={() => setShowMeetForm(false)}
+                          className="h-10 px-4 rounded-xl border border-gray-200 dark:border-white/[0.08] text-gray-500 dark:text-slate-400 font-bold text-sm hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-all"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
                 </Section>
               )}
 

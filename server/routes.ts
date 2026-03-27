@@ -1326,6 +1326,45 @@ export async function registerRoutes(
   });
 
   // Admin: reject bank transfer payment proof
+  // ── Schedule meeting from client's preferred slots ─────────────────────────
+  app.post("/api/admin/orders/:id/schedule-meeting", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
+    try {
+      const { OrderModel, NotificationModel, UserModel } = await import("./models");
+      const { date, time, meetingLink } = req.body;
+      if (!date || !time) return res.status(400).json({ error: "يجب تحديد التاريخ والوقت" });
+      const actor = req.user as any;
+      const order = await OrderModel.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: {
+            scheduledMeeting: {
+              date,
+              time,
+              meetingLink: meetingLink || "",
+              confirmedAt: new Date(),
+              confirmedBy: actor.username || actor.fullName || "الفريق",
+            }
+          }
+        },
+        { returnDocument: "after" }
+      ).lean();
+      if (!order) return res.status(404).json({ error: "الطلب غير موجود" });
+      // Notify the client
+      const clientId = String((order as any).userId);
+      const dateFormatted = new Date(date).toLocaleDateString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      const notifTitle = "تم تحديد موعد اجتماعك! 📅";
+      const notifBody  = `اجتماع بتاريخ ${dateFormatted} الساعة ${time}`;
+      try {
+        await NotificationModel.create({ userId: clientId, type: "order", title: notifTitle, body: notifBody, link: "/dashboard", icon: "📅" });
+        pushNotification(clientId, { title: notifTitle, body: notifBody, icon: "📅", link: "/dashboard" });
+      } catch (_) {}
+      res.json({ success: true, scheduledMeeting: (order as any).scheduledMeeting });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/admin/orders/:id/reject-transfer", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
