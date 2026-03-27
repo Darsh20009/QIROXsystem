@@ -18,7 +18,8 @@ import {
   TrendingUp, MessageSquare, Truck, BookOpen, Lock,
   Database, BarChart3, Palette, Server, ArrowLeft, Eye, EyeOff,
   Zap, Package, Send, Hash, Cpu, ShoppingCart,
-  Plus, Cloud, Image as ImageIcon, Headphones, Wifi, CreditCard, Settings
+  Plus, Cloud, Image as ImageIcon, Headphones, Wifi, CreditCard, Settings,
+  IdCard, ShieldCheck, Briefcase, AlertCircle
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
 import type { Cart, CartItem } from "@shared/schema";
@@ -70,6 +71,14 @@ interface WizardData {
   technicalFeatures: string[]; projectTechIdeas: string;
   preferredTimes: string[]; preferredDays: string[];
   address: { name: string; phone: string; city: string; district: string; street: string };
+  // Legal / KYC fields
+  legalDocType: "commercial" | "freelance";
+  legalDocNumber: string;
+  legalDocFile: string;
+  ibanCertFile: string;
+  taxNumber: string;
+  idNumber: string;
+  idPhotoFile: string;
 }
 
 const defaultData: WizardData = {
@@ -78,6 +87,8 @@ const defaultData: WizardData = {
   selectedFeatures: [], extraAddons: [],
   commercialReg: "", logoChoice: "none", logoFile: "", brandChoice: "none", brandFile: "",
   expectedCustomers: "", extraFiles: [],
+  legalDocType: "commercial", legalDocNumber: "", legalDocFile: "", ibanCertFile: "",
+  taxNumber: "", idNumber: "", idPhotoFile: "",
   competitorUrl: "", hadPrevSite: false, prevSiteFeedback: "",
   technicalLevel: "", technicalDetails: "", hasDevTeam: false, devTeamDetails: "",
   technicalFeatures: [], projectTechIdeas: "",
@@ -88,12 +99,12 @@ const defaultData: WizardData = {
 function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: any }) {
   return (
     <div>
-      <label className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400 mb-1.5">
+      <label className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 dark:text-slate-400 mb-1.5">
         {required && <span className="text-red-400 text-xs">*</span>}
         {label}
       </label>
       {children}
-      {hint && <p className="text-[10px] text-slate-500 mt-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">{hint}</p>}
     </div>
   );
 }
@@ -102,14 +113,14 @@ function TInput({ value, onChange, placeholder, type = "text", testId }: any) {
   return (
     <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       data-testid={testId}
-      className="w-full h-11 px-4 rounded-xl bg-white/[0.05] border border-slate-700/60 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all" />
+      className="w-full h-11 px-4 rounded-xl bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all" />
   );
 }
 
 function TArea({ value, onChange, placeholder, rows = 3, required }: any) {
   return (
     <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
-      className={`w-full px-4 py-3 rounded-xl bg-white/[0.05] border ${!value && required ? "border-red-500/30" : "border-slate-700/60"} text-white placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all resize-none leading-relaxed`} />
+      className={`w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-white/[0.05] border ${!value && required ? "border-red-500/30" : "border-gray-200 dark:border-slate-700/60"} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all resize-none leading-relaxed`} />
   );
 }
 
@@ -122,7 +133,7 @@ function Chips({ options, value, onChange, max }: { options: string[]; value: st
     <div className="flex flex-wrap gap-2">
       {options.map(o => (
         <button key={o} type="button" onClick={() => toggle(o)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${value.includes(o) ? "bg-blue-500/20 border-blue-500/50 text-blue-300" : "bg-white/[0.03] border-slate-700/60 text-slate-500 hover:border-slate-600 hover:text-slate-300"}`}>
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${value.includes(o) ? "bg-blue-500/20 border-blue-500/50 text-blue-600 dark:text-blue-300" : "bg-gray-100 dark:bg-white/[0.03] border-gray-200 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-700 dark:hover:text-slate-300"}`}>
           {o}
         </button>
       ))}
@@ -154,13 +165,13 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder={placeholder || "اكتب ثم اضغط Enter أو +"}
-          className="flex-1 h-10 px-4 rounded-xl bg-white/[0.05] border border-slate-700/60 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-green-500/60 transition-all"
+          className="flex-1 h-10 px-4 rounded-xl bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-green-500/60 transition-all"
         />
         <button
           type="button"
           onClick={addTag}
           disabled={!input.trim()}
-          className="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/30 text-green-400 hover:bg-green-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center font-black text-lg"
+          className="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center font-black text-lg"
         >
           +
         </button>
@@ -168,7 +179,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {value.map((tag, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/25 text-green-300 text-xs font-bold">
+            <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/25 text-green-700 dark:text-green-300 text-xs font-bold">
               {tag}
               <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="text-green-500/60 hover:text-red-400 transition-colors font-black leading-none">×</button>
             </span>
@@ -208,6 +219,9 @@ export default function CartWizardPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const brandRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
+  const legalDocRef = useRef<HTMLInputElement>(null);
+  const ibanRef = useRef<HTMLInputElement>(null);
+  const idPhotoRef = useRef<HTMLInputElement>(null);
 
   // Scroll to top on step change
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
@@ -229,21 +243,23 @@ export default function CartWizardPage() {
   const planTier: string = planItem?.config?.tier || "lite";
   const maxFeatures = planTier === "infinite" ? 20 : planTier === "pro" ? 10 : 5;
 
-  const TOTAL_STEPS = hasPhysical ? 6 : 5;
+  const TOTAL_STEPS = hasPhysical ? 7 : 6;
 
   const STEP_INFO = [
     null,
-    { title: "هوية المنشأة",                 icon: Building2,  desc: "اسم نشاطك ومعلومات التواصل",       color: "blue" },
-    { title: "اختيار المميزات",              icon: Sparkles,   desc: `اختر حتى ${maxFeatures} مميزة`,     color: "amber" },
-    { title: "الملفات والبيانات",            icon: FileText,   desc: "الوثائق والهوية البصرية",            color: "violet" },
-    { title: "المعلومات التنافسية",          icon: Target,     desc: "فهم احتياجاتك بعمق",                color: "green" },
-    { title: "جدولة الاجتماع",              icon: Calendar,   desc: "حدد مواعيدك المناسبة",              color: "cyan" },
+    { title: "هوية المنشأة",                 icon: Building2,   desc: "اسم نشاطك ومعلومات التواصل",       color: "blue" },
+    { title: "اختيار المميزات",              icon: Sparkles,    desc: `اختر حتى ${maxFeatures} مميزة`,    color: "amber" },
+    { title: "الملفات والبيانات",            icon: FileText,    desc: "الوثائق والهوية البصرية",           color: "violet" },
+    { title: "المعلومات القانونية",          icon: ShieldCheck, desc: "وثائق النشاط والهوية الوطنية",     color: "rose" },
+    { title: "المعلومات التنافسية",          icon: Target,      desc: "فهم احتياجاتك بعمق",               color: "green" },
+    { title: "جدولة الاجتماع",              icon: Calendar,    desc: "حدد مواعيدك المناسبة",             color: "cyan" },
     ...(hasPhysical ? [{ title: "عنوان التوصيل", icon: MapPin, desc: "بيانات شحن المنتجات", color: "orange" }] : []),
   ];
 
   const STEP_COLORS: Record<string, string> = {
     blue:   "bg-blue-500/10 text-blue-400 border-blue-500/20",
     amber:  "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    rose:   "bg-rose-500/10 text-rose-400 border-rose-500/20",
     violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
     green:  "bg-green-500/10 text-green-400 border-green-500/20",
     cyan:   "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
@@ -260,8 +276,15 @@ export default function CartWizardPage() {
   const canNext = () => {
     if (step === 1) return data.businessName.trim().length >= 2 && data.whatsapp.trim().length >= 9 && data.projectIdea.trim().length >= 10;
     if (step === 2) return data.selectedFeatures.length > 0;
-    if (step === 5 || (hasPhysical && step === 6)) {
-      if (hasPhysical && step === 6) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
+    if (step === 4) return (
+      data.legalDocNumber.trim().length >= 5 &&
+      data.legalDocFile.trim().length > 0 &&
+      data.ibanCertFile.trim().length > 0 &&
+      data.idNumber.trim().length >= 10 &&
+      data.idPhotoFile.trim().length > 0
+    );
+    if (step === 6 || (hasPhysical && step === 7)) {
+      if (hasPhysical && step === 7) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
       return data.preferredTimes.length >= 1 && data.preferredDays.length >= 1;
     }
     return true;
@@ -331,7 +354,7 @@ export default function CartWizardPage() {
 
   if (isUserLoading || isCartLoading) {
     return (
-      <div className="min-h-screen bg-[#09090f] flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex items-center justify-center" dir="rtl">
         <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     );
@@ -341,7 +364,7 @@ export default function CartWizardPage() {
   const colorClass = currentStepInfo ? STEP_COLORS[currentStepInfo.color] || STEP_COLORS.blue : STEP_COLORS.blue;
 
   return (
-    <div className="min-h-screen bg-[#09090f]" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#09090f]" dir="rtl">
       <Navigation />
 
       {/* Top accent gradient */}
@@ -355,18 +378,18 @@ export default function CartWizardPage() {
             <QiroxIcon className="w-4 h-4 text-blue-400" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">QIROX FACTORY</span>
           </div>
-          <h1 className="text-2xl font-black text-white mb-2">إتمام طلبك</h1>
-          <p className="text-slate-500 text-sm">أكمل البيانات التالية وسنبدأ مشروعك فور تأكيد الطلب</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">إتمام طلبك</h1>
+          <p className="text-gray-500 dark:text-slate-500 text-sm">أكمل البيانات التالية وسنبدأ مشروعك فور تأكيد الطلب</p>
         </div>
 
         {/* Step progress bar */}
         {step > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-slate-500">الخطوة {step} من {TOTAL_STEPS}</span>
-              <span className="text-xs font-black text-white">{STEP_INFO[step]?.title}</span>
+              <span className="text-xs font-black text-gray-400 dark:text-slate-500">الخطوة {step} من {TOTAL_STEPS}</span>
+              <span className="text-xs font-black text-gray-800 dark:text-white">{STEP_INFO[step]?.title}</span>
             </div>
-            <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-gray-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
                 initial={{ width: 0 }}
@@ -376,7 +399,7 @@ export default function CartWizardPage() {
             </div>
             <div className="flex items-center gap-1.5 mt-3">
               {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                <div key={i} className={`rounded-full transition-all duration-300 ${i + 1 === step ? "flex-1 h-2 bg-blue-500" : i + 1 < step ? "w-5 h-2 bg-blue-400/50" : "w-5 h-2 bg-slate-700"}`} />
+                <div key={i} className={`rounded-full transition-all duration-300 ${i + 1 === step ? "flex-1 h-2 bg-blue-500" : i + 1 < step ? "w-5 h-2 bg-blue-400/50" : "w-5 h-2 bg-gray-200 dark:bg-slate-700"}`} />
               ))}
             </div>
           </div>
@@ -384,13 +407,13 @@ export default function CartWizardPage() {
 
         {/* Cart summary bar */}
         {step > 0 && cartItems.length > 0 && (
-          <div className="mb-6 bg-white/[0.03] border border-white/[0.06] rounded-2xl px-4 py-3 flex items-center gap-3">
-            <ShoppingCart className="w-4 h-4 text-slate-500 shrink-0" />
+          <div className="mb-6 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-2xl px-4 py-3 flex items-center gap-3">
+            <ShoppingCart className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500">{cartItems.length} عنصر في السلة</p>
-              <p className="text-sm font-black text-white">{total.toLocaleString()} ر.س</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">{cartItems.length} عنصر في السلة</p>
+              <p className="text-sm font-black text-gray-900 dark:text-white">{total.toLocaleString()} ر.س</p>
             </div>
-            <button onClick={() => navigate("/cart")} className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1">
+            <button onClick={() => navigate("/cart")} className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors flex items-center gap-1">
               <ArrowLeft className="w-3 h-3" /> رجوع للسلة
             </button>
           </div>
@@ -403,17 +426,17 @@ export default function CartWizardPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 24 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="bg-[#0e0e1a] border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl">
+            className="bg-white dark:bg-[#0e0e1a] border border-gray-200 dark:border-white/[0.07] rounded-3xl overflow-hidden shadow-lg dark:shadow-2xl">
 
             {/* Step top bar */}
             {step > 0 && currentStepInfo && (
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] bg-white/[0.02]">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.02]">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${colorClass}`}>
                   {(() => { const Icon = currentStepInfo.icon; return <Icon className="w-5 h-5" />; })()}
                 </div>
                 <div>
-                  <p className="font-black text-white">{currentStepInfo.title}</p>
-                  <p className="text-slate-500 text-[11px]">{currentStepInfo.desc}</p>
+                  <p className="font-black text-gray-900 dark:text-white">{currentStepInfo.title}</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-[11px]">{currentStepInfo.desc}</p>
                 </div>
               </div>
             )}
@@ -427,8 +450,8 @@ export default function CartWizardPage() {
                     <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20">
                       {authMode === "login" ? <LogIn className="w-6 h-6 text-blue-400" /> : <UserPlus className="w-6 h-6 text-blue-400" />}
                     </div>
-                    <h3 className="text-lg font-black text-white">{authMode === "login" ? "سجّل الدخول للمتابعة" : "أنشئ حسابك"}</h3>
-                    <p className="text-slate-500 text-xs mt-1">منتجاتك محفوظة في السلة وستُكمل طلبك فوراً</p>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white">{authMode === "login" ? "سجّل الدخول للمتابعة" : "أنشئ حسابك"}</h3>
+                    <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">منتجاتك محفوظة في السلة وستُكمل طلبك فوراً</p>
                   </div>
                   {authMode === "register" && (
                     <Field label="الاسم الكامل">
@@ -460,7 +483,7 @@ export default function CartWizardPage() {
                     {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : authMode === "login" ? <><LogIn className="w-4 h-4" /> تسجيل الدخول</> : <><UserPlus className="w-4 h-4" /> إنشاء حساب</>}
                   </Button>
                   <div className="text-center">
-                    <button type="button" onClick={() => setAuthMode(m => m === "login" ? "register" : "login")} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                    <button type="button" onClick={() => setAuthMode(m => m === "login" ? "register" : "login")} className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors">
                       {authMode === "login" ? "ليس لديك حساب؟ أنشئ حساباً جديداً" : "لديك حساب؟ سجّل الدخول"}
                     </button>
                   </div>
@@ -489,7 +512,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-2 gap-2">
                       {["فرد واحد","2–5 أشخاص","6–20 موظف","أكثر من 20"].map(opt => (
                         <button key={opt} type="button" onClick={() => upd("teamSize", opt)}
-                          className={`h-10 rounded-xl border text-xs font-bold transition-all ${data.teamSize === opt ? "border-blue-500/60 bg-blue-500/15 text-blue-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-10 rounded-xl border text-xs font-bold transition-all ${data.teamSize === opt ? "border-blue-500/60 bg-blue-500/15 text-blue-600 dark:text-blue-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt}
                         </button>
                       ))}
@@ -500,8 +523,8 @@ export default function CartWizardPage() {
                     <Field label="تويتر / X"><TInput value={data.twitter} onChange={(v: string) => upd("twitter", v)} placeholder="@username" /></Field>
                     <Field label="سناب شات"><TInput value={data.snapchat} onChange={(v: string) => upd("snapchat", v)} placeholder="@username" /></Field>
                   </div>
-                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">شخص استلام التحديثات (اختياري)</p>
+                  <div className="bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 dark:text-slate-500">شخص استلام التحديثات (اختياري)</p>
                     <div className="grid grid-cols-2 gap-2">
                       <TInput value={data.recipientName} onChange={(v: string) => upd("recipientName", v)} placeholder="الاسم" />
                       <TInput value={data.recipientPhone} onChange={(v: string) => upd("recipientPhone", v)} placeholder="رقم الجوال" />
@@ -514,8 +537,8 @@ export default function CartWizardPage() {
               {step === 2 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-slate-500">اختر المميزات الإضافية التي تحتاجها لمشروعك</p>
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${data.selectedFeatures.length >= maxFeatures ? "bg-green-500/20 text-green-400" : "bg-white/[0.05] text-slate-400"}`}>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">اختر المميزات الإضافية التي تحتاجها لمشروعك</p>
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${data.selectedFeatures.length >= maxFeatures ? "bg-green-500/20 text-green-600 dark:text-green-400" : "bg-gray-100 dark:bg-white/[0.05] text-gray-400 dark:text-slate-400"}`}>
                       {data.selectedFeatures.length} / {maxFeatures}
                     </span>
                   </div>
@@ -544,8 +567,8 @@ export default function CartWizardPage() {
                               selected
                                 ? "border-blue-500/50 bg-blue-500/10"
                                 : disabled
-                                ? "border-slate-800/50 bg-white/[0.01] opacity-40 cursor-not-allowed"
-                                : "border-slate-800/60 bg-white/[0.02] hover:border-slate-700 hover:bg-white/[0.04]"
+                                ? "border-gray-200 dark:border-slate-800/50 bg-gray-50 dark:bg-white/[0.01] opacity-40 cursor-not-allowed"
+                                : "border-gray-200 dark:border-slate-800/60 bg-gray-50 dark:bg-white/[0.02] hover:border-gray-300 dark:hover:border-slate-700 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
                             }`}
                           >
                             <AddonIcon
@@ -554,19 +577,19 @@ export default function CartWizardPage() {
                               selected={selected}
                             />
                             <div className="flex-1 text-right min-w-0">
-                              <p className={`text-sm font-bold ${selected ? "text-white" : "text-slate-300"}`}>
+                              <p className={`text-sm font-bold ${selected ? "text-blue-700 dark:text-white" : "text-gray-700 dark:text-slate-300"}`}>
                                 {addon.nameAr || addon.name}
                               </p>
                               {addon.descriptionAr && (
-                                <p className="text-[11px] text-slate-500 truncate mt-0.5">{addon.descriptionAr}</p>
+                                <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate mt-0.5">{addon.descriptionAr}</p>
                               )}
                             </div>
                             {addon.price > 0 && (
                               <div className="text-right shrink-0">
-                                <span className={`text-xs font-black ${selected ? "text-blue-300" : "text-slate-500"}`}>
+                                <span className={`text-xs font-black ${selected ? "text-blue-600 dark:text-blue-300" : "text-gray-400 dark:text-slate-500"}`}>
                                   {addon.price.toLocaleString()}
                                 </span>
-                                <span className="text-[10px] text-slate-600 mr-0.5"> ر.س</span>
+                                <span className="text-[10px] text-gray-300 dark:text-slate-600 mr-0.5"> ر.س</span>
                               </div>
                             )}
                             {selected && <Check className="w-4 h-4 text-blue-400 shrink-0" />}
@@ -588,7 +611,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-3 gap-2">
                       {[{ v: "upload", l: "رفع شعاري" }, { v: "design", l: "تصميم بـ 15 ر.س" }, { v: "none", l: "لاحقاً" }].map(opt => (
                         <button key={opt.v} type="button" onClick={() => upd("logoChoice", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.logoChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.logoChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt.l}
                         </button>
                       ))}
@@ -599,8 +622,8 @@ export default function CartWizardPage() {
                           if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("logoFile", u); }
                         }} />
                         {data.logoFile
-                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-400" /><span className="text-xs text-green-400">تم الرفع</span></div>
-                          : <button type="button" onClick={() => logoRef.current?.click()} className="w-full h-10 border border-dashed border-slate-700 rounded-lg text-xs text-slate-500 hover:border-slate-600 hover:text-slate-400 transition-all flex items-center justify-center gap-2">
+                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-green-600 dark:text-green-400">تم الرفع</span></div>
+                          : <button type="button" onClick={() => logoRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
                               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> رفع الشعار</>}
                             </button>}
                       </div>
@@ -610,7 +633,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-3 gap-2">
                       {[{ v: "upload", l: "رفع الهوية" }, { v: "create", l: "إنشاء بـ 1800 ر.س" }, { v: "none", l: "لاحقاً" }].map(opt => (
                         <button key={opt.v} type="button" onClick={() => upd("brandChoice", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.brandChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.brandChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt.l}
                         </button>
                       ))}
@@ -621,8 +644,8 @@ export default function CartWizardPage() {
                           if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("brandFile", u); }
                         }} />
                         {data.brandFile
-                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-400" /><span className="text-xs text-green-400">تم الرفع</span></div>
-                          : <button type="button" onClick={() => brandRef.current?.click()} className="w-full h-10 border border-dashed border-slate-700 rounded-lg text-xs text-slate-500 hover:border-slate-600 hover:text-slate-400 transition-all flex items-center justify-center gap-2">
+                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-green-600 dark:text-green-400">تم الرفع</span></div>
+                          : <button type="button" onClick={() => brandRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
                               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> رفع ملف الهوية</>}
                             </button>}
                       </div>
@@ -632,7 +655,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-2 gap-2">
                       {["أقل من 100","100 – 500","500 – 2000","أكثر من 2000"].map(opt => (
                         <button key={opt} type="button" onClick={() => upd("expectedCustomers", opt)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.expectedCustomers === opt ? "border-violet-500/60 bg-violet-500/15 text-violet-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.expectedCustomers === opt ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt}
                         </button>
                       ))}
@@ -648,7 +671,7 @@ export default function CartWizardPage() {
                           }
                         }
                       }} />
-                      <button type="button" onClick={() => extraRef.current?.click()} className="w-full h-10 border border-dashed border-slate-700 rounded-lg text-xs text-slate-500 hover:border-slate-600 hover:text-slate-400 transition-all flex items-center justify-center gap-2">
+                      <button type="button" onClick={() => extraRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
                         {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> {data.extraFiles.length > 0 ? `${data.extraFiles.length} ملف مرفوع — رفع المزيد` : "رفع ملفات إضافية"}</>}
                       </button>
                     </div>
@@ -656,8 +679,101 @@ export default function CartWizardPage() {
                 </div>
               )}
 
-              {/* ══ STEP 4: STRATEGIC ═════════════════════════════════════════ */}
+              {/* ══ STEP 4: LEGAL / KYC ════════════════════════════════════════ */}
               {step === 4 && (
+                <div className="space-y-5">
+
+                  {/* Document type selector */}
+                  <Field label="نوع وثيقة النشاط" required>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { v: "commercial", l: "سجل تجاري", icon: Briefcase },
+                        { v: "freelance",  l: "وثيقة عمل حر", icon: IdCard },
+                      ].map(opt => {
+                        const Icon = opt.icon;
+                        return (
+                          <button key={opt.v} type="button" onClick={() => upd("legalDocType", opt.v)}
+                            className={`h-14 rounded-xl border flex items-center justify-center gap-2 text-sm font-bold transition-all ${data.legalDocType === opt.v ? "border-rose-500/60 bg-rose-500/10 text-rose-400 dark:text-rose-400" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700"}`}>
+                            <Icon className="w-4 h-4" />{opt.l}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
+                  {/* Document number */}
+                  <Field label={data.legalDocType === "commercial" ? "رقم السجل التجاري *" : "رقم وثيقة العمل الحر *"} required>
+                    <TInput value={data.legalDocNumber} onChange={(v: string) => upd("legalDocNumber", v)}
+                      placeholder={data.legalDocType === "commercial" ? "1234567890" : "7XXXXXXXXX"} />
+                  </Field>
+
+                  {/* Document file upload */}
+                  <Field label={data.legalDocType === "commercial" ? "ملف السجل التجاري *" : "ملف وثيقة العمل الحر *"} required
+                    hint="صورة أو PDF واضح للوثيقة">
+                    <input ref={legalDocRef} type="file" className="hidden" accept="image/*,.pdf"
+                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("legalDocFile", u); } }} />
+                    {data.legalDocFile
+                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع الوثيقة</span>
+                        </div>
+                      : <button type="button" onClick={() => legalDocRef.current?.click()}
+                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-rose-400/50 hover:text-rose-400 transition-all flex items-center justify-center gap-2">
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> ارفع الوثيقة</>}
+                        </button>}
+                  </Field>
+
+                  {/* IBAN certificate */}
+                  <Field label="شهادة الإيبان *" required hint="وثيقة تثبت رقم الحساب البنكي — مطلوبة">
+                    <input ref={ibanRef} type="file" className="hidden" accept="image/*,.pdf"
+                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("ibanCertFile", u); } }} />
+                    {data.ibanCertFile
+                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع شهادة الإيبان</span>
+                        </div>
+                      : <button type="button" onClick={() => ibanRef.current?.click()}
+                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-blue-400/50 hover:text-blue-400 transition-all flex items-center justify-center gap-2">
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> ارفع شهادة الإيبان</>}
+                        </button>}
+                  </Field>
+
+                  {/* Tax number (optional) */}
+                  <Field label="الرقم الضريبي (اختياري)" hint="أدخله إذا كنت مسجلاً في هيئة الزكاة والضريبة">
+                    <TInput value={data.taxNumber} onChange={(v: string) => upd("taxNumber", v)} placeholder="300XXXXXXXXXXX" />
+                  </Field>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-100 dark:border-white/[0.05] pt-1" />
+
+                  {/* National ID number */}
+                  <Field label="رقم الهوية الوطنية *" required>
+                    <TInput value={data.idNumber} onChange={(v: string) => upd("idNumber", v)} placeholder="1XXXXXXXXX" />
+                  </Field>
+
+                  {/* ID photo */}
+                  <Field label="صورة الهوية الوطنية *" required hint="صورة واضحة للوجه الأمامي للهوية — مطلوبة">
+                    <input ref={idPhotoRef} type="file" className="hidden" accept="image/*"
+                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("idPhotoFile", u); } }} />
+                    {data.idPhotoFile
+                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
+                          <Check className="w-4 h-4 text-green-500" />
+                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع صورة الهوية</span>
+                        </div>
+                      : <button type="button" onClick={() => idPhotoRef.current?.click()}
+                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-amber-400/50 hover:text-amber-400 transition-all flex items-center justify-center gap-2">
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><IdCard className="w-4 h-4" /> ارفع صورة الهوية</>}
+                        </button>}
+                    <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 dark:bg-amber-500/[0.05] border border-amber-200 dark:border-amber-500/20 rounded-xl">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-400">تأكد من أن الصورة واضحة وجميع البيانات مقروءة — تُحفظ بشكل آمن وسري</p>
+                    </div>
+                  </Field>
+                </div>
+              )}
+
+              {/* ══ STEP 5: STRATEGIC ═════════════════════════════════════════ */}
+              {step === 5 && (
                 <div className="space-y-4">
                   <Field label="رابط موقع منافس" hint="يساعدنا في فهم السوق المستهدف">
                     <TInput value={data.competitorUrl} onChange={(v: string) => upd("competitorUrl", v)} placeholder="https://competitor.com" type="url" />
@@ -666,7 +782,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       {[{ v: true, l: "نعم" }, { v: false, l: "لا" }].map(opt => (
                         <button key={String(opt.v)} type="button" onClick={() => upd("hadPrevSite", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hadPrevSite === opt.v ? "border-green-500/60 bg-green-500/15 text-green-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hadPrevSite === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt.l}
                         </button>
                       ))}
@@ -678,7 +794,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       {[{ v: "high", l: "لدي خلفية تقنية" }, { v: "low", l: "أعمال فقط" }].map(opt => (
                         <button key={opt.v} type="button" onClick={() => upd("technicalLevel", opt.v)}
-                          className={`h-10 rounded-lg border text-xs font-bold transition-all ${data.technicalLevel === opt.v ? "border-green-500/60 bg-green-500/15 text-green-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-10 rounded-lg border text-xs font-bold transition-all ${data.technicalLevel === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt.l}
                         </button>
                       ))}
@@ -691,7 +807,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       {[{ v: true, l: "نعم" }, { v: false, l: "لا" }].map(opt => (
                         <button key={String(opt.v)} type="button" onClick={() => upd("hasDevTeam", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hasDevTeam === opt.v ? "border-green-500/60 bg-green-500/15 text-green-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hasDevTeam === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {opt.l}
                         </button>
                       ))}
@@ -702,14 +818,14 @@ export default function CartWizardPage() {
                   </Field>
 
                   {/* ── المميزات التقنية ── */}
-                  <div className="pt-2 border-t border-white/[0.05]">
+                  <div className="pt-2 border-t border-gray-100 dark:border-white/[0.05]">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
                         <Cpu className="w-4 h-4 text-emerald-400" />
                       </div>
                       <div>
-                        <p className="font-black text-white text-sm">المتطلبات التقنية للمشروع</p>
-                        <p className="text-slate-500 text-[11px]">أضف التقنيات والأفكار التي تريدها</p>
+                        <p className="font-black text-gray-900 dark:text-white text-sm">المتطلبات التقنية للمشروع</p>
+                        <p className="text-gray-400 dark:text-slate-500 text-[11px]">أضف التقنيات والأفكار التي تريدها</p>
                       </div>
                     </div>
 
@@ -733,8 +849,8 @@ export default function CartWizardPage() {
                 </div>
               )}
 
-              {/* ══ STEP 5: MEETING ═══════════════════════════════════════════ */}
-              {step === 5 && (
+              {/* ══ STEP 6: MEETING ═══════════════════════════════════════════ */}
+              {step === 6 && (
                 <div className="space-y-4">
                   <Field label={`الأوقات المفضلة (${data.preferredTimes.length}/3)`} required hint="اختر حتى 3 أوقات مناسبة">
                     <Chips options={TIMES} value={data.preferredTimes} onChange={v => upd("preferredTimes", v)} max={3} />
@@ -744,16 +860,16 @@ export default function CartWizardPage() {
                   </Field>
                   {data.preferredTimes.length > 0 && data.preferredDays.length > 0 && (
                     <div className="bg-cyan-500/[0.07] border border-cyan-500/20 rounded-xl p-4">
-                      <p className="text-xs font-black text-cyan-400 mb-2">📅 مواعيدك المفضلة</p>
-                      <p className="text-slate-300 text-xs">الأيام: {data.preferredDays.join(" · ")}</p>
-                      <p className="text-slate-300 text-xs mt-1">الأوقات: {data.preferredTimes.join(" · ")}</p>
+                      <p className="text-xs font-black text-cyan-600 dark:text-cyan-400 mb-2">📅 مواعيدك المفضلة</p>
+                      <p className="text-gray-700 dark:text-slate-300 text-xs">الأيام: {data.preferredDays.join(" · ")}</p>
+                      <p className="text-gray-700 dark:text-slate-300 text-xs mt-1">الأوقات: {data.preferredTimes.join(" · ")}</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ══ STEP 6: ADDRESS ═══════════════════════════════════════════ */}
-              {step === 6 && hasPhysical && (
+              {/* ══ STEP 7: ADDRESS ═══════════════════════════════════════════ */}
+              {step === 7 && hasPhysical && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="اسم المستلم" required>
@@ -767,7 +883,7 @@ export default function CartWizardPage() {
                     <div className="grid grid-cols-3 gap-2">
                       {["الرياض","جدة","مكة المكرمة","المدينة","الدمام","أخرى"].map(c => (
                         <button key={c} type="button" onClick={() => updAddr("city", c)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.address.city === c ? "border-orange-500/60 bg-orange-500/15 text-orange-300" : "border-slate-800 bg-white/[0.02] text-slate-500 hover:border-slate-700 hover:text-slate-300"}`}>
+                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.address.city === c ? "border-orange-500/60 bg-orange-500/15 text-orange-600 dark:text-orange-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
                           {c}
                         </button>
                       ))}
@@ -791,9 +907,9 @@ export default function CartWizardPage() {
 
             {/* ── Bottom navigation ── */}
             {step > 0 && (
-              <div className="flex items-center gap-3 px-6 py-5 border-t border-white/[0.06] bg-white/[0.01]">
+              <div className="flex items-center gap-3 px-6 py-5 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.01]">
                 {step > 1 && (
-                  <button onClick={() => setStep(s => s - 1)} className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors font-bold h-11 px-4 rounded-xl hover:bg-white/[0.04]">
+                  <button onClick={() => setStep(s => s - 1)} className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors font-bold h-11 px-4 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.04]">
                     <ChevronRight className="w-4 h-4" /> السابق
                   </button>
                 )}
@@ -816,7 +932,7 @@ export default function CartWizardPage() {
 
         {/* Required fields note */}
         {step > 0 && (
-          <p className="text-center text-xs text-slate-600 mt-4">
+          <p className="text-center text-xs text-gray-400 dark:text-slate-600 mt-4">
             <span className="text-red-400">*</span> الحقول المطلوبة
           </p>
         )}
