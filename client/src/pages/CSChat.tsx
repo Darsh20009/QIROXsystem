@@ -69,6 +69,10 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const trackCls = isMe ? "bg-white/20" : "bg-black/10";
   const fillCls = isMe ? "bg-white/70" : "bg-black/50";
   const textCls = isMe ? "opacity-60" : "text-black/40";
+  // Pause audio on unmount to prevent memory leak / ghost playback
+  useEffect(() => {
+    return () => { if (ref.current) { ref.current.pause(); ref.current.src = ""; } };
+  }, []);
   return (
     <div className="flex items-center gap-2 min-w-[150px]">
       <audio ref={ref} src={url} onTimeUpdate={() => { if (ref.current) setProg((ref.current.currentTime / ref.current.duration) * 100 || 0); }} onLoadedMetadata={() => { if (ref.current) setDur(ref.current.duration); }} onEnded={() => { setPlaying(false); setProg(0); }} />
@@ -280,7 +284,8 @@ function ClientView({ user }: { user: any }) {
 
   const { data: session, isLoading: loadingSession, refetch: refetchSession } = useQuery<any>({
     queryKey: ["/api/cs/my-session"],
-    refetchInterval: 8000,
+    // WebSocket handles real-time updates; poll only as a fallback every 30s
+    refetchInterval: 30000,
   });
 
   const { data: messages = [], isLoading: loadingMsgs } = useQuery<any[]>({
@@ -291,7 +296,8 @@ function ClientView({ user }: { user: any }) {
       return r.json();
     },
     enabled: !!session?.id,
-    refetchInterval: 5000,
+    // WebSocket handles real-time updates; poll only as a fallback every 30s
+    refetchInterval: 30000,
   });
 
   const agentId = session?.agent?._id || session?.agent?.id;
@@ -558,7 +564,8 @@ function AgentView({ user }: { user: any }) {
       const r = await fetch(`/api/cs/sessions?status=${statusFilter}`, { credentials: "include" });
       return r.json();
     },
-    refetchInterval: 6000,
+    // WebSocket pushes cs_session_update events; poll only as a fallback every 30s
+    refetchInterval: 30000,
   });
 
   const { data: sessionDetail } = useQuery<any>({
@@ -569,7 +576,8 @@ function AgentView({ user }: { user: any }) {
       return r.json();
     },
     enabled: !!selectedId,
-    refetchInterval: 10000,
+    // WebSocket pushes updates; poll only as a fallback every 60s
+    refetchInterval: 60000,
   });
 
   const { data: messages = [], isLoading: loadingMsgs } = useQuery<any[]>({
@@ -580,7 +588,8 @@ function AgentView({ user }: { user: any }) {
       return r.json();
     },
     enabled: !!selectedId,
-    refetchInterval: 5000,
+    // WebSocket pushes new_message events; poll only as a fallback every 30s
+    refetchInterval: 30000,
   });
 
   const { data: allAgents = [] } = useQuery<any[]>({

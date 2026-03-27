@@ -1,14 +1,18 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 
 export type InboxSocketEvent =
-  | { type: "new_message"; message: any }
+  | { type: "new_message"; message: any; csSessionId?: string }
   | { type: "typing"; fromUserId: string; isTyping: boolean }
   | { type: "voice_recording"; fromUserId: string; isRecording: boolean }
   | { type: "user_online"; userId: string }
   | { type: "user_offline"; userId: string }
   | { type: "online_users"; users: string[] }
   | { type: "notification"; [key: string]: any }
-  | { type: "task_completed"; taskId: string; taskTitle: string; completedBy: string };
+  | { type: "task_completed"; taskId: string; taskTitle: string; completedBy: string }
+  | { type: "group_message"; message: any; groupId: string }
+  | { type: "group_added"; groupId: string; groupName: string }
+  | { type: "cs_session_update"; sessionId?: string }
+  | { type: "cs_assigned"; sessionId?: string };
 
 interface UseInboxSocketOptions {
   userId?: string;

@@ -112,6 +112,11 @@ function VoicePlayer({ url, isMe = false }: { url: string; isMe?: boolean }) {
   const [duration, setDuration] = useState(0);
   const [loadError, setLoadError] = useState(false);
 
+  // Pause on unmount to prevent ghost audio playback
+  useEffect(() => {
+    return () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; } };
+  }, []);
+
   const toggle = () => {
     if (!audioRef.current || loadError) return;
     if (playing) { audioRef.current.pause(); setPlaying(false); }
@@ -386,7 +391,8 @@ export default function Inbox() {
       return r.json();
     },
     enabled: !!activeContact?.id,
-    refetchInterval: 6000,
+    // Poll only when WebSocket is disconnected — prevents race condition with realtime events
+    refetchInterval: connected ? false : 6000,
   });
 
   const { data: employees = [] } = useQuery<any[]>({

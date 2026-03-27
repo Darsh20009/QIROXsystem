@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 
 interface Employee {
@@ -117,6 +117,7 @@ export default function AdminOrders() {
   const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
   const [guideForm, setGuideForm] = useState({ title: "شرح استخدام النظام", description: "", files: "" });
   const [deliveryForm, setDeliveryForm] = useState({ videoUrl: "", files: "" });
+  const formInitializedForOrder = useRef<string | null>(null);
   const [phoneReqOpen, setPhoneReqOpen] = useState(false);
   const [phoneReqNotes, setPhoneReqNotes] = useState("");
   const [rejectTransferOpen, setRejectTransferOpen] = useState(false);
@@ -149,7 +150,16 @@ export default function AdminOrders() {
     },
   });
 
+  // Reset "initialized" flag whenever the selected order changes so forms reload for the new order
   useEffect(() => {
+    formInitializedForOrder.current = null;
+  }, [selectedOrder?.id]);
+
+  // Only initialize guide/delivery forms once per order (not on background refetches)
+  useEffect(() => {
+    if (!selectedOrder?.id || orderProject === undefined) return;
+    if (formInitializedForOrder.current === selectedOrder.id) return;
+    formInitializedForOrder.current = selectedOrder.id;
     if (orderProject?.usageGuide) {
       setGuideForm({
         title: orderProject.usageGuide.title || "شرح استخدام النظام",
@@ -165,7 +175,7 @@ export default function AdminOrders() {
         ? orderProject.deliveryFiles.map((f: any) => `${f.nameAr || ""}|${f.url || ""}|${f.icon || ""}`).join("\n")
         : "",
     });
-  }, [orderProject]);
+  }, [orderProject, selectedOrder?.id]);
 
   useEffect(() => {
     if (selectedOrderSpecs) {
@@ -226,6 +236,7 @@ export default function AdminOrders() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
       toast({ title: L ? "تم حفظ المواصفات التقنية ✓" : "Technical specs saved ✓" });
     },
     onError: () => toast({ title: L ? "خطأ في حفظ المواصفات" : "Error saving specs", variant: "destructive" }),
@@ -274,7 +285,10 @@ export default function AdminOrders() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, order) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', order.id, 'project'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: L ? "تم إنشاء المشروع بنجاح" : "Project created successfully" });
       setSelectedOrder(null);
     },
@@ -298,6 +312,7 @@ export default function AdminOrders() {
       return res.json();
     },
     onSuccess: () => {
+      formInitializedForOrder.current = null; // allow form to re-init with saved data
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: L ? "✅ تم حفظ شرح الاستخدام" : "✅ Usage guide saved" });
@@ -311,6 +326,7 @@ export default function AdminOrders() {
       return res.json();
     },
     onSuccess: () => {
+      formInitializedForOrder.current = null; // allow form to re-init with saved data
       queryClient.invalidateQueries({ queryKey: ['/api/admin/orders', selectedOrder?.id, 'project'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({ title: L ? "✅ تم حفظ بيانات التسليم" : "✅ Delivery data saved" });

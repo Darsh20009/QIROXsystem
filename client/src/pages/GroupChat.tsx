@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,7 +16,7 @@ import {
   ArrowRight, MessageSquare, Search, Check, Loader2, MoreVertical,
   LogOut, Edit2
 } from "lucide-react";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useInboxSocket } from "@/hooks/useInboxSocket";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 
@@ -77,7 +77,8 @@ export default function GroupChat() {
       return r.json();
     },
     enabled: !!activeGroupId,
-    refetchInterval: false,
+    // WebSocket handles real-time delivery; poll only as a fallback every 30s
+    refetchInterval: 30000,
   });
 
   const activeGroup = groups.find((g: any) => g.id === activeGroupId || String(g._id) === activeGroupId);
@@ -88,16 +89,23 @@ export default function GroupChat() {
     enabled: createOpen || addMemberOpen,
   });
 
+  const activeGroupIdRef = useRef(activeGroupId);
+  useEffect(() => { activeGroupIdRef.current = activeGroupId; }, [activeGroupId]);
+
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   useEffect(() => { if (activeGroupId) inputRef.current?.focus(); }, [activeGroupId]);
 
-  useWebSocket((evt: any) => {
-    if (evt.type === "group_message" && evt.groupId === activeGroupId) {
-      qc.invalidateQueries({ queryKey: ["/api/groups", activeGroupId, "messages"] });
-    }
-    if (evt.type === "group_message" || evt.type === "group_added") {
-      qc.invalidateQueries({ queryKey: ["/api/groups"] });
-    }
+  // Use useInboxSocket (supports onEvent callbacks) instead of useWebSocket (which only takes userId)
+  useInboxSocket({
+    userId: uid || undefined,
+    onEvent: useCallback((evt: any) => {
+      if (evt.type === "group_message" && evt.groupId === activeGroupIdRef.current) {
+        qc.invalidateQueries({ queryKey: ["/api/groups", activeGroupIdRef.current, "messages"] });
+      }
+      if (evt.type === "group_message" || evt.type === "group_added") {
+        qc.invalidateQueries({ queryKey: ["/api/groups"] });
+      }
+    }, [qc]),
   });
 
   const createGroup = useMutation({

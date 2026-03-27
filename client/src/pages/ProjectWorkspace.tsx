@@ -128,7 +128,10 @@ export default function ProjectWorkspace() {
       const r = await apiRequest("PATCH", `/api/projects/${projectId}/features/${id}`, updates);
       return r.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "features"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "features"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
+    },
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
