@@ -1,0 +1,233 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+2:11:58 PM [express] serving on port 5000
+Initialized 12 cron jobs
+2:12:03 PM [express] POST /api/internal/push/promotional 200 in 71ms
+2:12:04 PM [express] GET /api/user 401 in 2ms
+2:12:04 PM [express] GET /api/public/settings 304 in 27ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+2:12:05 PM [express] GET /api/app-downloads 304 in 23ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+2:12:05 PM [express] GET /api/partners 304 in 28ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+2:12:05 PM [express] GET /api/templates 304 in 42ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+2:12:05 PM [express] GET /api/discount-codes/public 304 in 27ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m2:12:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+2:13:00 PM [express] POST /api/internal/push/promotional 200 in 17ms
+2:14:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:15:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+2:16:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:17:00 PM [express] POST /api/internal/push/promotional 200 in 17ms
+2:18:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:19:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:20:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:21:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:22:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:23:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:24:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:25:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:26:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:27:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:28:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:29:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:30:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:31:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:32:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+2:33:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:34:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:35:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:36:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:37:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:38:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:39:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:40:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:41:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:42:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:43:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+2:44:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:45:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:46:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:47:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:48:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:49:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:50:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:51:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:52:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:53:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:54:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:55:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+2:56:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:57:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:58:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:59:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:00:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:01:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:02:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:03:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:04:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:05:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:06:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:07:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:08:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:09:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:10:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:11:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:12:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:13:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:14:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:15:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:16:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:17:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:18:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:19:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:20:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:21:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:22:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+3:23:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:24:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:25:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:26:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:27:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:28:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:29:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:30:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:31:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:32:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:33:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:34:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:35:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:36:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:37:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:38:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:39:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:40:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:41:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:42:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:43:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:44:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:45:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:46:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:47:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:48:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:49:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:50:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:51:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:52:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:53:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:54:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:55:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:56:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+3:57:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:58:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:59:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:00:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:01:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:02:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:03:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:04:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:05:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:06:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:07:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+4:08:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:09:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:10:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:11:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:12:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:13:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:14:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:15:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:16:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:17:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:18:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:19:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:20:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:21:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:22:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:23:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:24:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:25:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:26:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:27:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:28:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:29:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:30:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:31:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:32:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:33:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:34:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:35:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:36:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:37:00 PM [express] POST /api/internal/push/promotional 200 in 20ms
+4:38:00 PM [express] POST /api/internal/push/promotional 200 in 24ms
+4:39:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:40:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+4:41:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:42:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:43:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:44:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:45:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+4:46:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:47:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:48:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:49:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:50:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:51:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:52:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:53:00 PM [express] POST /api/internal/push/promotional 200 in 19ms
+4:54:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:55:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+4:56:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:57:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:58:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:59:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+5:00:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+5:01:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+5:02:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+5:03:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+5:04:00 PM [express] POST /api/internal/push/promotional 200 in 16ms
+5:05:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+5:06:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+5:07:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+5:08:00 PM [express] POST /api/internal/push/promotional 200 in 5ms
+5:09:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+5:10:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+5:11:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+5:12:00 PM [express] POST /api/internal/push/promotional 200 in 17ms
+5:13:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+5:14:00 PM [express] POST /api/internal/push/promotional 200 in 15ms
+5:15:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+5:16:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+5:17:00 PM [express] POST /api/internal/push/promotional 200 in 21ms
+5:18:00 PM [express] POST /api/internal/push/promotional 200 in 8ms

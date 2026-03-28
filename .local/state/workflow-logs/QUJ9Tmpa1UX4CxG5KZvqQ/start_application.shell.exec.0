@@ -1,0 +1,139 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K⠼[1G[0K⠴[1G[0K⠦[1G[0K⠧[1G[0K⠇[1G[0K⠏[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:05:16 AM [express] serving on port 5000
+Initialized 12 cron jobs
+1:05:22 AM [express] GET /api/user 401 in 5ms
+1:05:23 AM [express] GET /api/public/settings 304 in 102ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+1:05:24 AM [express] GET /api/partners 304 in 28ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+1:05:24 AM [express] GET /api/app-downloads 304 in 30ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:05:24 AM [express] GET /api/templates 304 in 43ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+1:05:24 AM [express] GET /api/discount-codes/public 304 in 25ms :: []
+1:06:00 AM [express] POST /api/internal/push/promotional 200 in 15ms
+1:07:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+1:08:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+1:09:00 AM [express] POST /api/internal/push/promotional 200 in 15ms
+1:10:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+1:11:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+1:12:00 AM [express] POST /api/internal/push/promotional 200 in 14ms
+1:13:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+1:14:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+1:15:00 AM [express] POST /api/internal/push/promotional 200 in 15ms
+1:16:00 AM [express] POST /api/internal/push/promotional 200 in 11ms
+1:17:00 AM [express] POST /api/internal/push/promotional 200 in 14ms
+1:18:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+1:18:40 AM [express] GET /api/app-downloads 304 in 27ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:18:41 AM [express] GET /api/public/settings 304 in 24ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+1:19:00 AM [express] POST /api/internal/push/promotional 200 in 31ms
+1:20:00 AM [express] POST /api/internal/push/promotional 200 in 17ms
+1:21:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:21:12 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:21:23 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m [33m(x2)[39m
+1:22:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+1:22:14 AM [express] GET /api/public/settings 304 in 26ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:22:17 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m [33m(x3)[39m
+1:23:00 AM [express] POST /api/internal/push/promotional 200 in 15ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:23:44 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m [33m(x4)[39m

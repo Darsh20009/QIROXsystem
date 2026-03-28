@@ -1,0 +1,143 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:23:55 AM [express] serving on port 5000
+Initialized 12 cron jobs
+1:24:00 AM [express] POST /api/internal/push/promotional 200 in 46ms
+1:24:00 AM [express] GET /api/user 401 in 4ms
+1:24:01 AM [express] GET /api/user 401 in 1ms
+1:24:01 AM [express] GET /api/public/settings 304 in 43ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+1:24:10 AM [express] GET /api/user 401 in 1ms
+1:24:20 AM [express] GET /api/user 401 in 0ms
+1:25:00 AM [express] POST /api/internal/push/promotional 200 in 10ms
+1:26:00 AM [express] POST /api/internal/push/promotional 200 in 25ms
+1:27:00 AM [express] POST /api/internal/push/promotional 200 in 19ms
+1:28:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+1:28:02 AM [express] GET /api/user 401 in 0ms
+1:28:02 AM [express] GET /api/public/settings 304 in 29ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:28:57 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Home.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:28:57 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: /home/runner/workspace/client/src/pages/Home.tsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (2380:4)
+
+[0m [90m 2378 |[31m         [33m<[31m[33m/[31m[33mDialogContent[31m[33m>[31m
+ [90m 2379 |[31m       [33m<[31m[33m/[31m[33mDialog[31m[33m>[31m
+[31m[1m>[22m[31m[90m 2380 |[31m     [33m<[31m[33m/[31m[33msection[31m[33m>[31m
+ [90m      |[31m     [31m[1m^[22m[31m
+ [90m 2381 |[31m   )[33m;[31m
+ [90m 2382 |[31m }
+ [90m 2383 |[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36m/home/runner/workspace/client/src/pages/Home.tsx[39m:2380:4
+[33m  2378 |          </DialogContent>
+  2379 |        </Dialog>
+  2380 |      </section>
+       |      ^
+  2381 |    );
+  2382 |  }[39m
+      at toParseError (/home/runner/workspace/node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at raise (/home/runner/workspace/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+      at jsxParseElementAt (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:543:20)
+      at jsxParseElement (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:559:19)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:581:21)
+      at parseExprSubscripts (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:742:23)
+      at parseUpdate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:721:21)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:683:23)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3893:20)
+      at parseMaybeUnaryOrPrivate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:417:14)
+      at parseExprOps (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:429:23)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:384:23)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at fn (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3745:23)
+      at tryParse (/home/runner/workspace/node_modules/@babel/parser/src/parser/util.ts:174:20)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3744:20)
+      at parseExpressionBase (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:226:23)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:39)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3189:16)
+      at parseExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:17)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:688:23)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at parseStatementListItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+      at parseBlockOrModuleBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1444:16)
+      at parseBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at parseBlock (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1385:10)
+      at parseFunctionBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2618:24)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2587:10)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:2609:20)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1695:12)
+      at withSmartMixTopicForbiddingContext (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3168:14)
+      at parseFunction (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1693:10)
+      at parseFunctionStatement (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at parseModuleItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at parseBlockOrModuleBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at parseBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at parseProgram (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at parseTopLevel (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/parser/index.ts:83:25)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (/home/runner/workspace/node_modules/@babel/core/src/parser/index.ts:29:19)
+      at parser.next (<anonymous>)
+      at normalizeFile (/home/runner/workspace/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+      at normalizeFile.next (<anonymous>)
+      at run (/home/runner/workspace/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[1G[0K⠙[1G[0K[1G[0K⠙[1G[0K

@@ -1,0 +1,377 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:00:31 PM [express] serving on port 5000
+Initialized 12 cron jobs
+1:00:37 PM [express] GET /api/user 401 in 1ms
+1:00:39 PM [express] GET /api/user 401 in 1ms
+1:00:39 PM [express] GET /api/public/settings 304 in 39ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+1:00:41 PM [express] GET /api/discount-codes/public 304 in 25ms :: []
+1:00:41 PM [express] GET /api/partners 304 in 27ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+1:00:41 PM [express] GET /api/app-downloads 304 in 25ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:00:41 PM [express] GET /api/templates 304 in 44ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+1:00:53 PM [express] GET /api/user 401 in 0ms
+1:01:00 PM [express] POST /api/internal/push/promotional 200 in 22ms
+1:01:03 PM [express] GET /api/user 401 in 1ms
+1:02:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:03:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+1:04:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+1:05:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:06:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:07:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+1:08:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:09:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:10:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:11:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:12:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:13:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:14:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:15:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:16:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:17:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:18:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:19:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:20:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+1:21:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:22:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:23:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:24:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:25:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:26:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+1:27:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+1:28:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+1:29:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:30:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:31:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:32:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:33:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+1:34:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:35:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:36:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:37:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:38:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:39:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:40:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:41:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:42:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:43:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:44:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:45:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:46:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:47:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:48:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:49:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:50:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:51:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:52:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+1:53:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:54:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:54:41 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:54:48 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:54:59 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+1:55:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:55:08 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:55:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:55:42 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x6)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:55:49 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x7)[39m
+1:56:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:56:19 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x8)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:56:39 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x9)[39m
+1:57:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+1:58:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+1:59:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:59:39 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x10)[39m
+2:00:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:01:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+2:02:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:03:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:04:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m2:04:07 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x11)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m2:04:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x12)[39m
