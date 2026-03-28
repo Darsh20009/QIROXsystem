@@ -1487,6 +1487,214 @@ export default function Home() {
 
       <InstallPrompt />
       <Footer />
+
+      {/* PAYMOB MODAL */}
+      <Dialog open={showPaymobModal} onOpenChange={setShowPaymobModal}>
+        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
+          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a, #1d90f5, #0f172a)" }} />
+          <div className="px-6 pt-6 pb-2">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.07] flex items-center justify-center p-2 shadow-sm">
+                  <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
+                </div>
+                <DialogTitle className="text-lg font-bold text-black dark:text-white">
+                  {lang === "ar" ? "Qirox × Paymob — بوابة الدفع الرسمية" : "Qirox × Paymob — Official Payment Gateway"}
+                </DialogTitle>
+              </div>
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                {lang === "ar" ? "الرسوم والسياسات والميزات الرئيسية" : "Fees, policies, and key features"}
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "جدول الرسوم" : "Fee Schedule"}
+              </h4>
+              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
+                <table className="w-full text-sm" dir={dir}>
+                  <thead>
+                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
+                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
+                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                    {(lang === "ar" ? [
+                      ["رسوم الإعداد", "مجانية"],
+                      ["اشتراك شهري", "0 ريال"],
+                      ["Visa / Mastercard", "2.9% + 1 ريال"],
+                      ["المحافظ الرقمية (Vodafone / OPay)", "2.5%"],
+                      ["تحويل بنكي (ACH)", "1%"],
+                      ["فوري / Fawry", "2%"],
+                      ["تسوية الأرباح", "يوم عمل واحد"],
+                    ] : [
+                      ["Setup Fee", "Free"],
+                      ["Monthly Subscription", "0 SAR"],
+                      ["Visa / Mastercard", "2.9% + 1 SAR"],
+                      ["Digital Wallets (Vodafone / OPay)", "2.5%"],
+                      ["Bank Transfer (ACH)", "1%"],
+                      ["Fawry", "2%"],
+                      ["Settlement Period", "1 Business Day"],
+                    ]).map(([label, val], i) => (
+                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
+                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
+                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "أبرز نقاط السياسة" : "Policy Highlights"}
+              </h4>
+              <div className="space-y-2">
+                {(lang === "ar" ? [
+                  { icon: Shield,     text: "متوافق مع معيار PCI-DSS المستوى الأول" },
+                  { icon: Lock,       text: "تشفير SSL 256-bit على جميع المعاملات" },
+                  { icon: Zap,        text: "تسوية الأرباح خلال يوم عمل واحد" },
+                  { icon: Clock,      text: "دعم فني على مدار الساعة 7 أيام" },
+                  { icon: CreditCard, text: "لا حد أدنى للحجم الشهري من المبيعات" },
+                  { icon: Globe2,     text: "دعم 15+ وسيلة دفع محلية ودولية" },
+                ] : [
+                  { icon: Shield,     text: "PCI-DSS Level 1 Compliant" },
+                  { icon: Lock,       text: "256-bit SSL Encryption on all transactions" },
+                  { icon: Zap,        text: "Settlement within 1 business day" },
+                  { icon: Clock,      text: "24/7 technical support, 7 days a week" },
+                  { icon: CreditCard, text: "No minimum monthly sales volume" },
+                  { icon: Globe2,     text: "15+ local and international payment methods" },
+                ]).map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-3.5 h-3.5 text-blue-500" />
+                    </div>
+                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <a href="https://paymob.com/ar/accept/developer" target="_blank" rel="noopener noreferrer" className="flex-1" data-testid="btn-paymob-pdf">
+                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
+                  <Download className="w-4 h-4" />
+                  {lang === "ar" ? "تحميل ملف السياسة PDF" : "Download Policy PDF"}
+                </Button>
+              </a>
+              <Link href="/paymob-onboarding" className="flex-1" onClick={() => setShowPaymobModal(false)}>
+                <Button className="w-full rounded-xl gap-2 font-semibold text-sm" style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }} data-testid="btn-paymob-start-activation">
+                  <Zap className="w-4 h-4" />
+                  {lang === "ar" ? "ابدأ التفعيل الآن" : "Start Activation Now"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PAYPAL MODAL */}
+      <Dialog open={showPaypalModal} onOpenChange={setShowPaypalModal}>
+        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
+          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #003087, #009cde, #003087)" }} />
+          <div className="px-6 pt-6 pb-2">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-xl bg-[#003087] flex items-center justify-center p-2 shadow-sm">
+                  <svg viewBox="0 0 124 33" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
+                    <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/><path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/><path d="M55 11h-3.4c-.4 0-.7.2-.9.5L46.5 18l-1.9-6.2c-.1-.5-.6-.8-1-.8H40.3c-.5 0-.8.5-.6.9l3.5 10.3-3.3 4.7c-.3.5 0 1.1.6 1.1h3.4c.4 0 .7-.2.9-.5l10.6-15.4c.3-.4 0-1.1-.4-1.1z" fill="#fff"/>
+                  </svg>
+                </div>
+                <DialogTitle className="text-lg font-bold text-black dark:text-white">
+                  {lang === "ar" ? "PayPal — المدفوعات الدولية" : "PayPal — International Payments"}
+                </DialogTitle>
+              </div>
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                {lang === "ar" ? "قبول المدفوعات من أكثر من 200 دولة عبر PayPal" : "Accept payments from 200+ countries via PayPal"}
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "المميزات الرئيسية" : "Key Features"}
+              </h4>
+              <div className="space-y-2">
+                {(lang === "ar" ? [
+                  { icon: Globe2,     text: "قبول المدفوعات من 200+ دولة حول العالم" },
+                  { icon: Shield,     text: "حماية المشتري والبائع المدمجة من PayPal" },
+                  { icon: CreditCard, text: "تحويل العملات تلقائياً إلى ريال سعودي" },
+                  { icon: Zap,        text: "خيار الشراء الآن والدفع لاحقاً (Pay Later)" },
+                  { icon: Lock,       text: "معاملات مشفرة بالكامل وآمنة" },
+                  { icon: Smartphone, text: "تكامل API احترافي مع منظومة Qirox" },
+                ] : [
+                  { icon: Globe2,     text: "Accept payments from 200+ countries worldwide" },
+                  { icon: Shield,     text: "Built-in PayPal Buyer & Seller Protection" },
+                  { icon: CreditCard, text: "Automatic currency conversion to local currency" },
+                  { icon: Zap,        text: "Buy Now, Pay Later option" },
+                  { icon: Lock,       text: "Fully encrypted and secure transactions" },
+                  { icon: Smartphone, text: "Professional API integration with Qirox platform" },
+                ]).map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-3.5 h-3.5 text-[#009cde]" />
+                    </div>
+                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "نظرة سريعة على الرسوم" : "Quick Fee Overview"}
+              </h4>
+              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
+                <table className="w-full text-sm" dir={dir}>
+                  <thead>
+                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
+                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع المعاملة" : "Transaction Type"}</th>
+                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "الرسوم" : "Fee"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                    {(lang === "ar" ? [
+                      ["مدفوعات محلية", "2.9% + ثابت"],
+                      ["مدفوعات دولية", "4.4% + ثابت"],
+                      ["استلام من تجار موثوقين", "مجانية"],
+                      ["تحويل العملات", "2.5% فوق سعر السوق"],
+                    ] : [
+                      ["Domestic Payments", "2.9% + fixed fee"],
+                      ["International Payments", "4.4% + fixed fee"],
+                      ["Receiving from merchants", "Free"],
+                      ["Currency Conversion", "2.5% above market rate"],
+                    ]).map(([label, val], i) => (
+                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
+                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
+                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <a href="https://www.paypal.com/sa/webapps/mpp/merchant" target="_blank" rel="noopener noreferrer" className="flex-1" data-testid="btn-paypal-website">
+                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
+                  <Globe className="w-4 h-4" />
+                  {lang === "ar" ? "زيارة موقع PayPal" : "Visit PayPal Website"}
+                </Button>
+              </a>
+              <Link href="/checkout" className="flex-1" onClick={() => setShowPaypalModal(false)}>
+                <Button className="w-full rounded-xl gap-2 font-semibold text-sm" style={{ background: "linear-gradient(135deg, #003087, #009cde)", color: "#fff" }} data-testid="btn-paypal-start">
+                  <Zap className="w-4 h-4" />
+                  {lang === "ar" ? "ابدأ مشروعك الآن" : "Start Your Project Now"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -2123,256 +2331,6 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
             </div>
           </DialogContent>
         )}
-      </Dialog>
-
-      {/* PAYMOB MODAL */}
-      <Dialog open={showPaymobModal} onOpenChange={setShowPaymobModal}>
-        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
-          {/* Header bar */}
-          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a, #1d90f5, #0f172a)" }} />
-          <div className="px-6 pt-6 pb-2">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.07] flex items-center justify-center p-2 shadow-sm">
-                  <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
-                </div>
-                <DialogTitle className="text-lg font-bold text-black dark:text-white">
-                  {lang === "ar" ? "Qirox × Paymob — بوابة الدفع الرسمية" : "Qirox × Paymob — Official Payment Gateway"}
-                </DialogTitle>
-              </div>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                {lang === "ar"
-                  ? "الرسوم والسياسات والميزات الرئيسية"
-                  : "Fees, policies, and key features"}
-              </p>
-            </DialogHeader>
-          </div>
-
-          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
-            {/* Fee Table */}
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "جدول الرسوم" : "Fee Schedule"}
-              </h4>
-              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
-                <table className="w-full text-sm" dir={dir}>
-                  <thead>
-                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                    {(lang === "ar" ? [
-                      ["رسوم الإعداد", "مجانية"],
-                      ["اشتراك شهري", "0 ريال"],
-                      ["Visa / Mastercard", "2.9% + 1 ريال"],
-                      ["المحافظ الرقمية (Vodafone / OPay)", "2.5%"],
-                      ["تحويل بنكي (ACH)", "1%"],
-                      ["فوري / Fawry", "2%"],
-                      ["تسوية الأرباح", "يوم عمل واحد"],
-                    ] : [
-                      ["Setup Fee", "Free"],
-                      ["Monthly Subscription", "0 SAR"],
-                      ["Visa / Mastercard", "2.9% + 1 SAR"],
-                      ["Digital Wallets (Vodafone / OPay)", "2.5%"],
-                      ["Bank Transfer (ACH)", "1%"],
-                      ["Fawry", "2%"],
-                      ["Settlement Period", "1 Business Day"],
-                    ]).map(([label, val], i) => (
-                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Policy Highlights */}
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "أبرز نقاط السياسة" : "Policy Highlights"}
-              </h4>
-              <div className="space-y-2">
-                {(lang === "ar" ? [
-                  { icon: Shield,     text: "متوافق مع معيار PCI-DSS المستوى الأول" },
-                  { icon: Lock,       text: "تشفير SSL 256-bit على جميع المعاملات" },
-                  { icon: Zap,        text: "تسوية الأرباح خلال يوم عمل واحد" },
-                  { icon: Clock,      text: "دعم فني على مدار الساعة 7 أيام" },
-                  { icon: CreditCard, text: "لا حد أدنى للحجم الشهري من المبيعات" },
-                  { icon: Globe2,     text: "دعم 15+ وسيلة دفع محلية ودولية" },
-                ] : [
-                  { icon: Shield,     text: "PCI-DSS Level 1 Compliant" },
-                  { icon: Lock,       text: "256-bit SSL Encryption on all transactions" },
-                  { icon: Zap,        text: "Settlement within 1 business day" },
-                  { icon: Clock,      text: "24/7 technical support, 7 days a week" },
-                  { icon: CreditCard, text: "No minimum monthly sales volume" },
-                  { icon: Globe2,     text: "15+ local and international payment methods" },
-                ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-blue-500" />
-                    </div>
-                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <a
-                href="https://paymob.com/ar/accept/developer"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-                data-testid="btn-paymob-pdf"
-              >
-                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
-                  <Download className="w-4 h-4" />
-                  {lang === "ar" ? "تحميل ملف السياسة PDF" : "Download Policy PDF"}
-                </Button>
-              </a>
-              <Link href="/paymob-onboarding" className="flex-1" onClick={() => setShowPaymobModal(false)}>
-                <Button
-                  className="w-full rounded-xl gap-2 font-semibold text-sm"
-                  style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }}
-                  data-testid="btn-paymob-start-activation"
-                >
-                  <Zap className="w-4 h-4" />
-                  {lang === "ar" ? "ابدأ التفعيل الآن" : "Start Activation Now"}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* PAYPAL MODAL */}
-      <Dialog open={showPaypalModal} onOpenChange={setShowPaypalModal}>
-        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
-          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #003087, #009cde, #003087)" }} />
-          <div className="px-6 pt-6 pb-2">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-xl bg-[#003087] border border-[#003087] flex items-center justify-center p-2 shadow-sm">
-                  <svg viewBox="0 0 124 33" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-                    <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/>
-                    <path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/>
-                    <path d="M55 11h-3.4c-.4 0-.7.2-.9.5L46.5 18l-1.9-6.2c-.1-.5-.6-.8-1-.8H40.3c-.5 0-.8.5-.6.9l3.5 10.3-3.3 4.7c-.3.5 0 1.1.6 1.1h3.4c.4 0 .7-.2.9-.5l10.6-15.4c.3-.4 0-1.1-.4-1.1z" fill="#fff"/>
-                    <path d="M67.9 4.8h-6.6c-.5 0-.9.3-1 .8L57.7 21.9c-.1.4.2.7.6.7h3.5c.3 0 .6-.2.7-.6l.7-4.6c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3-.9-1.1-2.5-1.6-4.8-1.6h.7zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.9.7.3.4.4 1 .2 1.6z" fill="#009cde"/>
-                    <path d="M90.6 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#009cde"/>
-                    <path d="M96.6 5.3l-2.7 17.3c-.1.4.2.7.6.7h2.8c.5 0 .9-.3 1-.8l2.6-16.4c.1-.4-.2-.7-.6-.7h-3.1c-.3 0-.6.2-.6.5v-.6z" fill="#009cde"/>
-                  </svg>
-                </div>
-                <DialogTitle className="text-lg font-bold text-black dark:text-white">
-                  {lang === "ar" ? "PayPal — المدفوعات الدولية" : "PayPal — International Payments"}
-                </DialogTitle>
-              </div>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
-                {lang === "ar"
-                  ? "قبول المدفوعات من أكثر من 200 دولة عبر PayPal"
-                  : "Accept payments from 200+ countries via PayPal"}
-              </p>
-            </DialogHeader>
-          </div>
-
-          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
-            {/* Key Features */}
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "المميزات الرئيسية" : "Key Features"}
-              </h4>
-              <div className="space-y-2">
-                {(lang === "ar" ? [
-                  { icon: Globe2,     text: "قبول المدفوعات من 200+ دولة حول العالم" },
-                  { icon: Shield,     text: "حماية المشتري والبائع المدمجة من PayPal" },
-                  { icon: CreditCard, text: "تحويل العملات تلقائياً إلى ريال سعودي" },
-                  { icon: Zap,        text: "خيار الشراء الآن والدفع لاحقاً (Pay Later)" },
-                  { icon: Lock,       text: "معاملات مشفرة بالكامل وآمنة" },
-                  { icon: Smartphone, text: "تكامل API احترافي مع منظومة Qirox" },
-                ] : [
-                  { icon: Globe2,     text: "Accept payments from 200+ countries worldwide" },
-                  { icon: Shield,     text: "Built-in PayPal Buyer & Seller Protection" },
-                  { icon: CreditCard, text: "Automatic currency conversion to local currency" },
-                  { icon: Zap,        text: "Buy Now, Pay Later (Pay Later) option" },
-                  { icon: Lock,       text: "Fully encrypted and secure transactions" },
-                  { icon: Smartphone, text: "Professional API integration with Qirox platform" },
-                ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
-                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3.5 h-3.5 text-[#009cde]" />
-                    </div>
-                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Fee overview */}
-            <div>
-              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
-                {lang === "ar" ? "نظرة سريعة على الرسوم" : "Quick Fee Overview"}
-              </h4>
-              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
-                <table className="w-full text-sm" dir={dir}>
-                  <thead>
-                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع المعاملة" : "Transaction Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "الرسوم" : "Fee"}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                    {(lang === "ar" ? [
-                      ["مدفوعات محلية (داخل المملكة)", "2.9% + ثابت"],
-                      ["مدفوعات دولية (خارج المملكة)", "4.4% + ثابت"],
-                      ["استلام من تجار موثوقين", "مجانية"],
-                      ["تحويل العملات", "2.5% فوق سعر السوق"],
-                    ] : [
-                      ["Domestic Payments", "2.9% + fixed fee"],
-                      ["International Payments", "4.4% + fixed fee"],
-                      ["Receiving from merchants", "Free"],
-                      ["Currency Conversion", "2.5% above market rate"],
-                    ]).map(([label, val], i) => (
-                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <a
-                href="https://www.paypal.com/sa/webapps/mpp/merchant"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-                data-testid="btn-paypal-website"
-              >
-                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
-                  <Globe className="w-4 h-4" />
-                  {lang === "ar" ? "زيارة موقع PayPal" : "Visit PayPal Website"}
-                </Button>
-              </a>
-              <Link href="/checkout" className="flex-1" onClick={() => setShowPaypalModal(false)}>
-                <Button
-                  className="w-full rounded-xl gap-2 font-semibold text-sm"
-                  style={{ background: "linear-gradient(135deg, #003087, #009cde)", color: "#fff" }}
-                  data-testid="btn-paypal-start"
-                >
-                  <Zap className="w-4 h-4" />
-                  {lang === "ar" ? "ابدأ مشروعك الآن" : "Start Your Project Now"}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </DialogContent>
       </Dialog>
     </section>
   );
