@@ -1528,7 +1528,7 @@ export default function Home() {
                       ["المحافظ الرقمية (Vodafone / OPay)", "2.5%"],
                       ["تحويل بنكي (ACH)", "1%"],
                       ["فوري / Fawry", "2%"],
-                      ["تسوية الأرباح", "يوم عمل واحد"],
+                      ["تسوية الأرباح", "الاثنين والأربعاء"],
                     ] : [
                       ["Setup Fee", "Free"],
                       ["Monthly Subscription", "0 SAR"],
@@ -1536,7 +1536,7 @@ export default function Home() {
                       ["Digital Wallets (Vodafone / OPay)", "2.5%"],
                       ["Bank Transfer (ACH)", "1%"],
                       ["Fawry", "2%"],
-                      ["Settlement Period", "1 Business Day"],
+                      ["Settlement Period", "Mon & Wed"],
                     ]).map(([label, val], i) => (
                       <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
                         <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
@@ -1555,14 +1555,14 @@ export default function Home() {
                 {(lang === "ar" ? [
                   { icon: Shield,     text: "متوافق مع معيار PCI-DSS المستوى الأول" },
                   { icon: Lock,       text: "تشفير SSL 256-bit على جميع المعاملات" },
-                  { icon: Zap,        text: "تسوية الأرباح خلال يوم عمل واحد" },
+                  { icon: Zap,        text: "تسوية الأرباح كل الاثنين والأربعاء" },
                   { icon: Clock,      text: "دعم فني على مدار الساعة 7 أيام" },
                   { icon: CreditCard, text: "لا حد أدنى للحجم الشهري من المبيعات" },
                   { icon: Globe2,     text: "دعم 15+ وسيلة دفع محلية ودولية" },
                 ] : [
                   { icon: Shield,     text: "PCI-DSS Level 1 Compliant" },
                   { icon: Lock,       text: "256-bit SSL Encryption on all transactions" },
-                  { icon: Zap,        text: "Settlement within 1 business day" },
+                  { icon: Zap,        text: "Settlement every Monday & Wednesday" },
                   { icon: Clock,      text: "24/7 technical support, 7 days a week" },
                   { icon: CreditCard, text: "No minimum monthly sales volume" },
                   { icon: Globe2,     text: "15+ local and international payment methods" },
