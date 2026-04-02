@@ -6553,22 +6553,18 @@ export async function registerRoutes(
     if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
     const client = quotation.userId as any;
     if (!client?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
-    const { sendEmail } = await import("./email");
+    const { sendQuotationEmail } = await import("./email");
     const siteUrl = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
     const link = `${siteUrl}/client/quotations/${(quotation as any)._id}`;
-    const ok = await sendEmail({
-      to: client.email,
-      subject: `عرض سعر رقم ${quotation.quotationNumber}`,
-      html: `
-        <div dir="rtl" style="font-family:Cairo,Arial,sans-serif;max-width:600px;margin:auto">
-          <h2 style="color:#111">مرحباً ${client.fullName || client.username}،</h2>
-          <p>نرفق لكم عرض السعر رقم <strong>${quotation.quotationNumber}</strong>.</p>
-          ${quotation.title ? `<p><strong>الموضوع:</strong> ${quotation.title}</p>` : ""}
-          <p><strong>الإجمالي:</strong> ${(quotation as any).totalAmount?.toLocaleString()} ريال سعودي</p>
-          ${(quotation as any).validUntil ? `<p><strong>صالح حتى:</strong> ${new Date((quotation as any).validUntil).toLocaleDateString("ar-SA")}</p>` : ""}
-          <p style="margin-top:20px"><a href="${link}" style="background:#111;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">عرض التفاصيل</a></p>
-          <p style="color:#888;font-size:12px;margin-top:30px">QIROX Studio — qiroxstudio.online</p>
-        </div>`,
+    const ok = await sendQuotationEmail(client.email, client.fullName || client.username, {
+      quotationNumber: quotation.quotationNumber,
+      title: (quotation as any).title,
+      totalAmount: (quotation as any).totalAmount,
+      vatRate: (quotation as any).vatRate,
+      validUntil: (quotation as any).validUntil,
+      items: (quotation as any).items,
+      notes: (quotation as any).notes,
+      link,
     });
     if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
     await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status: "sent" } });

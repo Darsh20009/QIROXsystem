@@ -661,6 +661,47 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
   return sendEmail(to, clientName, `سند قبض رقم ${receipt.receiptNumber} | QIROX`, html);
 }
 
+export async function sendQuotationEmail(to: string, clientName: string, quotation: {
+  quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
+  validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
+  notes?: string; link: string;
+}): Promise<boolean> {
+  const itemsHtml = quotation.items && quotation.items.length > 0
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
+        <tr style="background:#f9fafb;">
+          <th style="padding:8px 12px;text-align:right;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">البند</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">الكمية</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">سعر الوحدة</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e5e5;color:#555555;font-weight:600;">المجموع</th>
+        </tr>
+        ${quotation.items.map(i => `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${i.name}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.qty}</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.unitPrice.toLocaleString()} ر.س</td>
+          <td style="padding:8px 12px;text-align:center;border-bottom:1px solid #f0f0f0;">${i.total.toLocaleString()} ر.س</td>
+        </tr>`).join("")}
+      </table>`
+    : "";
+  const rows: [string, string][] = [
+    ["رقم العرض", `<span style="font-family:Courier New,Courier,monospace;font-weight:900;">${quotation.quotationNumber}</span>`],
+    ["تاريخ الإصدار", new Date().toLocaleDateString('ar-SA')],
+  ];
+  if (quotation.title) rows.push(["الموضوع", quotation.title]);
+  if (quotation.validUntil) rows.push(["صالح حتى", new Date(quotation.validUntil).toLocaleDateString('ar-SA')]);
+  if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
+  rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
+  const html = baseTemplate(
+    tag("عرض سعر") +
+    title(`عرض سعر رقم ${quotation.quotationNumber}`) +
+    text(`عزيزي ${clientName}، نرفق لكم عرض السعر التالي من فريق QIROX:`) +
+    infoTable(rows) +
+    itemsHtml +
+    (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
+    btn(quotation.link, "عرض التفاصيل والرد على العرض")
+  );
+  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html);
+}
+
 export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {
   bookingId: string;
   date: string;
