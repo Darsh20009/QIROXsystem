@@ -11,6 +11,8 @@ const METHOD_LABELS: Record<string, string> = {
   apple_pay: "Apple Pay", paypal: "PayPal", other: "أخرى",
 };
 
+const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "" };
+
 export default function ReceiptPrint() {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -25,6 +27,11 @@ export default function ReceiptPrint() {
     },
     enabled: !!params.id,
   });
+
+  const { data: bankSettings } = useQuery<typeof DEFAULT_BANK>({
+    queryKey: ["/api/bank-settings"],
+  });
+  const bank = bankSettings || DEFAULT_BANK;
 
   const sendEmailMutation = useMutation({
     mutationFn: async () => {
@@ -144,6 +151,22 @@ export default function ReceiptPrint() {
                 <p className="font-bold text-black">{METHOD_LABELS[receipt.paymentMethod] || receipt.paymentMethod}</p>
                 {receipt.paymentRef && <p className="text-xs text-black/40 mt-0.5 font-mono">{receipt.paymentRef}</p>}
               </div>
+              {receipt.paymentMethod === "bank_transfer" && (
+                <>
+                  <div>
+                    <p className="text-xs font-bold text-black/30 mb-1">البنك</p>
+                    <p className="font-bold text-black">{bank.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-black/30 mb-1">اسم المستفيد</p>
+                    <p className="font-bold text-black">{bank.beneficiaryName}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs font-bold text-black/30 mb-1">رقم الآيبان (IBAN)</p>
+                    <p className="font-bold text-black font-mono tracking-wide" dir="ltr">{bank.iban}</p>
+                  </div>
+                </>
+              )}
               {receipt.description && (
                 <div className="col-span-2">
                   <p className="text-xs font-bold text-black/30 mb-1">الغرض / الوصف</p>

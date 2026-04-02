@@ -1,12 +1,13 @@
 import SARIcon from "@/components/SARIcon";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+
+const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "", notes: "" };
 
 export default function InvoicePrint() {
   const params = useParams<{ id: string }>();
@@ -23,6 +24,11 @@ export default function InvoicePrint() {
     },
     enabled: !!params.id,
   });
+
+  const { data: bankSettings } = useQuery<typeof DEFAULT_BANK>({
+    queryKey: ["/api/bank-settings"],
+  });
+  const bank = bankSettings || DEFAULT_BANK;
 
   const sendEmailMutation = useMutation({
     mutationFn: async () => {
@@ -211,17 +217,23 @@ export default function InvoicePrint() {
                   <p className="font-bold text-black/70">تحويل بنكي</p>
                 </div>
                 <div>
+                  <p className="text-black/30">البنك</p>
+                  <p className="font-bold text-black/70">{bank.bankName}</p>
+                </div>
+                <div>
                   <p className="text-black/30">رقم الآيبان (IBAN)</p>
-                  <p className="font-bold text-black/70 font-mono">SA0380205098017222121010</p>
+                  <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.iban}</p>
                 </div>
                 <div>
                   <p className="text-black/30">اسم المستفيد</p>
-                  <p className="font-bold text-black/70">QIROX Studio</p>
+                  <p className="font-bold text-black/70">{bank.beneficiaryName}</p>
                 </div>
-                <div>
-                  <p className="text-black/30">بريد التواصل</p>
-                  <p className="font-bold text-black/70">info@qiroxstudio.online</p>
-                </div>
+                {bank.accountNumber && (
+                  <div>
+                    <p className="text-black/30">رقم الحساب</p>
+                    <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.accountNumber}</p>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -161,6 +161,9 @@ const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
 const AdminPushNotifications = lazy(() => import("@/pages/AdminPushNotifications"));
 const EcommerceStore = lazy(() => import("@/pages/EcommerceStore"));
+const AdminQuotations = lazy(() => import("@/pages/AdminQuotations"));
+const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
+const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding"];
 
 function PageLoader() {
@@ -251,6 +254,8 @@ function AdminRouter() {
         <Route path="/admin/invoice-print/:id" component={InvoicePrint} />
         <Route path="/admin/receipts" component={AdminReceipts} />
         <Route path="/admin/receipt-print/:id" component={ReceiptPrint} />
+        <Route path="/admin/quotations" component={AdminQuotations} />
+        <Route path="/admin/quotation-print/:id" component={QuotationPrint} />
         <Route path="/admin/consultations" component={AdminConsultation} />
         <Route path="/admin/qmeet" component={AdminQMeet} />
         <Route path="/admin/qmeet/:id" component={AdminQMeetDetail} />
@@ -308,6 +313,8 @@ function AdminRouter() {
         <Route path="/admin/stores" component={EcommerceStore} />
         <Route path="/client/contracts" component={ClientContracts} />
         <Route path="/client/invoices" component={ClientInvoices} />
+        <Route path="/client/quotations" component={ClientQuotations} />
+        <Route path="/client/quotation-print/:id" component={QuotationPrint} />
         <Route path="/client/invoice-print/:id" component={ClientInvoicePrint} />
         <Route path="/client/loyalty" component={ClientLoyalty} />
         <Route path="/qmeet" component={ClientQMeet} />

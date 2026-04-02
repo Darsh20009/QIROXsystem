@@ -1,5 +1,46 @@
 # Qirox Platform
 
+## Latest Changes (Apr 2, 2026) — Session 4
+
+### Bug Fixes & New Quotation Feature
+
+**ReceiptPrint.tsx — Bank Transfer Details Fix:**
+- Added `/api/bank-settings` query to fetch live bank info (bankName, beneficiaryName, iban)
+- Added conditional bank info section when `paymentMethod === "bank_transfer"`
+- Shows: bank name, beneficiary name, IBAN in print layout
+
+**QMeet — DB Lobby Approval Fix (`server/index.ts`):**
+- `webrtc_approve_lobby` handler now runs async IIFE for DB-backed rooms
+- Fetches join request from MongoDB (`QMeetingModel.findOne`) to get user display name
+- Calls `joinMeetRoom()` to add approved user to in-memory room state
+- Sends `webrtc_peers` to approved user (full peer list + room state)
+- Broadcasts `webrtc_peer_joined` to all existing room members
+- Fix wrapped in IIFE to avoid `await` in synchronous message handler
+
+**New Feature: Price Quotations (عروض الأسعار):**
+
+*Backend (`server/models.ts`):*
+- `QuotationModel` schema: quotationNumber (auto QT-YYYY-NNNN), userId, title, items[], amount, vatRate, vatAmount, totalAmount, validUntil, status (draft/sent/accepted/rejected/expired), notes, termsAndConditions
+
+*Backend (`server/routes.ts`):*
+- `GET /api/quotations` — admin: all, client: own (excludes drafts)
+- `GET /api/quotations/:id` — with client access control
+- `POST /api/quotations` — admin/manager/accountant only, auto-calculates VAT
+- `PATCH /api/quotations/:id` — update fields + recalculate totals
+- `DELETE /api/quotations/:id` — admin/manager/accountant only
+- `POST /api/quotations/:id/send-email` — sends Arabic HTML email with link, marks as "sent"
+- `POST /api/quotations/:id/status` — client: accept/reject; admin: any status
+
+*Frontend pages:*
+- `AdminQuotations.tsx` — full CRUD: create form (items builder, VAT, validity), list with search/filter, email send, print navigation, delete, mark-sent button
+- `ClientQuotations.tsx` — client view of sent quotations with accept/reject buttons and item breakdown table
+- `QuotationPrint.tsx` — print-ready layout matching invoice style: header (black), client info, items table with totals, bank info section, notes/terms, print button
+
+*Routing & Navigation:*
+- Admin routes: `/admin/quotations`, `/admin/quotation-print/:id`
+- Client routes: `/client/quotations`, `/client/quotation-print/:id`
+- Sidebar: "عروض الأسعار" added under Finance for admin/employee; under Account for clients
+
 ## Latest Changes (Mar 26, 2026) — Session 3
 
 ### QMeet Advanced Features UI Completion

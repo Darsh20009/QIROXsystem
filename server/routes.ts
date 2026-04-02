@@ -6458,6 +6458,138 @@ export async function registerRoutes(
     }
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // === QUOTATIONS (عروض الأسعار) ===
+  // ═══════════════════════════════════════════════════════════
+
+  async function generateQuotationNumber(): Promise<string> {
+    const { QuotationModel } = await import("./models");
+    const count = await QuotationModel.countDocuments();
+    const pad = String(count + 1).padStart(4, "0");
+    const year = new Date().getFullYear();
+    return `QT-${year}-${pad}`;
+  }
+
+  app.get("/api/quotations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { QuotationModel } = await import("./models");
+    const user = req.user as any;
+    const query = user.role === "client" ? { userId: user.id, status: { $ne: 'draft' } } : {};
+    const quotations = await QuotationModel.find(query)
+      .populate("userId", "username fullName email")
+      .sort({ createdAt: -1 });
+    res.json(quotations);
+  });
+
+  app.get("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { QuotationModel } = await import("./models");
+    const user = req.user as any;
+    const quotation = await QuotationModel.findById(req.params.id)
+      .populate("userId", "username fullName email phone country");
+    if (!quotation) return res.sendStatus(404);
+    if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
+    res.json(quotation);
+  });
+
+  app.post("/api/quotations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { QuotationModel } = await import("./models");
+    const { userId, title, items, vatRate, validUntil, notes, termsAndConditions } = req.body;
+    if (!userId) return res.status(400).json({ error: "يجب تحديد العميل" });
+    const itemList = Array.isArray(items) ? items : [];
+    const amount = itemList.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
+    const vat = (Number(vatRate) ?? 15) / 100;
+    const vatAmount = Math.round(amount * vat * 100) / 100;
+    const totalAmount = Math.round((amount + vatAmount) * 100) / 100;
+    const quotationNumber = await generateQuotationNumber();
+    const quotation = await QuotationModel.create({
+      quotationNumber, userId, title: title || "", items: itemList,
+      amount, vatRate: Number(vatRate) ?? 15, vatAmount, totalAmount,
+      validUntil: validUntil || null, notes: notes || "", termsAndConditions: termsAndConditions || "",
+      status: "draft", createdBy: user.id,
+    });
+    res.json(quotation);
+  });
+
+  app.patch("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { QuotationModel } = await import("./models");
+    const { items, vatRate, status, title, notes, termsAndConditions, validUntil, userId } = req.body;
+    const updates: any = { title, notes, termsAndConditions, validUntil, userId };
+    if (status) updates.status = status;
+    if (Array.isArray(items)) {
+      updates.items = items;
+      updates.amount = items.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
+      const vat = ((Number(vatRate) ?? 15) || 15) / 100;
+      updates.vatRate = Number(vatRate) ?? 15;
+      updates.vatAmount = Math.round(updates.amount * vat * 100) / 100;
+      updates.totalAmount = Math.round((updates.amount + updates.vatAmount) * 100) / 100;
+    }
+    const quotation = await QuotationModel.findByIdAndUpdate(req.params.id, { $set: updates }, { returnDocument: "after", new: true });
+    if (!quotation) return res.sendStatus(404);
+    res.json(quotation);
+  });
+
+  app.delete("/api/quotations/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (!["admin", "manager", "accountant"].includes(user.role)) return res.sendStatus(403);
+    const { QuotationModel } = await import("./models");
+    await QuotationModel.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  });
+
+  app.post("/api/quotations/:id/send-email", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { QuotationModel } = await import("./models");
+    const quotation = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
+    if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
+    const client = quotation.userId as any;
+    if (!client?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
+    const { sendEmail } = await import("./email");
+    const siteUrl = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
+    const link = `${siteUrl}/client/quotations/${(quotation as any)._id}`;
+    const ok = await sendEmail({
+      to: client.email,
+      subject: `عرض سعر رقم ${quotation.quotationNumber}`,
+      html: `
+        <div dir="rtl" style="font-family:Cairo,Arial,sans-serif;max-width:600px;margin:auto">
+          <h2 style="color:#111">مرحباً ${client.fullName || client.username}،</h2>
+          <p>نرفق لكم عرض السعر رقم <strong>${quotation.quotationNumber}</strong>.</p>
+          ${quotation.title ? `<p><strong>الموضوع:</strong> ${quotation.title}</p>` : ""}
+          <p><strong>الإجمالي:</strong> ${(quotation as any).totalAmount?.toLocaleString()} ريال سعودي</p>
+          ${(quotation as any).validUntil ? `<p><strong>صالح حتى:</strong> ${new Date((quotation as any).validUntil).toLocaleDateString("ar-SA")}</p>` : ""}
+          <p style="margin-top:20px"><a href="${link}" style="background:#111;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">عرض التفاصيل</a></p>
+          <p style="color:#888;font-size:12px;margin-top:30px">QIROX Studio — qiroxstudio.online</p>
+        </div>`,
+    });
+    if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
+    await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status: "sent" } });
+    res.json({ ok: true, message: "تم إرسال العرض بنجاح" });
+  });
+
+  app.post("/api/quotations/:id/status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { QuotationModel } = await import("./models");
+    const user = req.user as any;
+    const { status } = req.body;
+    const quotation = await QuotationModel.findById(req.params.id);
+    if (!quotation) return res.sendStatus(404);
+    if (user.role === "client") {
+      if (!["accepted", "rejected"].includes(status)) return res.status(400).json({ error: "غير مسموح" });
+      if (String((quotation as any).userId) !== String(user.id)) return res.sendStatus(403);
+    }
+    await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status } });
+    res.json({ ok: true });
+  });
+
   app.get("/api/admin/finance/summary", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     const { InvoiceModel, OrderModel, UserModel } = await import("./models");

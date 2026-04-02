@@ -1876,3 +1876,22 @@ export const EmbedTokenModel = mongoose.models.EmbedToken || mongoose.model("Emb
 paymobOnboardingSchema.set('toJSON', { transform });
 paymobOnboardingSchema.set('toObject', { transform });
 export const PaymobOnboardingModel = mongoose.models.PaymobOnboarding || mongoose.model("PaymobOnboarding", paymobOnboardingSchema);
+
+// ── Quotation (عروض الأسعار) ──────────────────────────────────────────────────
+const quotationSchema = new mongoose.Schema({
+  quotationNumber: { type: String, required: true, unique: true },
+  userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  title:          { type: String, default: "" },
+  items:          [{ name: String, description: String, qty: Number, unitPrice: Number, total: Number }],
+  amount:         { type: Number, default: 0 },
+  vatRate:        { type: Number, default: 15 },
+  vatAmount:      { type: Number, default: 0 },
+  totalAmount:    { type: Number, default: 0 },
+  validUntil:     { type: Date },
+  status:         { type: String, enum: ['draft', 'sent', 'accepted', 'rejected', 'expired'], default: 'draft' },
+  notes:          { type: String, default: "" },
+  termsAndConditions: { type: String, default: "" },
+  createdBy:      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+quotationSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
+export const QuotationModel = mongoose.models.Quotation || mongoose.model("Quotation", quotationSchema);

@@ -90,6 +90,7 @@ export function AppSidebar() {
     { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/client/loyalty", group: "client", section: "account" },
     { title: ar ? "عقودي" : "My Contracts", icon: FileText, url: "/client/contracts", group: "client", section: "account" },
     { title: ar ? "فواتيري" : "My Invoices", icon: Receipt, url: "/client/invoices", group: "client", section: "account" },
+    { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/client/quotations", group: "client", section: "account" },
     { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "client", section: "tools" },
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
@@ -122,6 +123,7 @@ export function AppSidebar() {
     { title: ar ? "محافظ العملاء" : "Client Wallets", icon: CreditCard, url: "/admin/wallet", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
+    { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/admin/quotations", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "كشف الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "employee", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "التقسيط" : "Installments", icon: DollarSign, url: "/admin/installments", group: "employee", section: "finance", allowedRoles: STAFF_ROLES },
     // Employee — tools (الأدوات)
@@ -174,6 +176,7 @@ export function AppSidebar() {
     // Admin — finance
     { title: ar ? "الفواتير" : "Invoices", icon: FileText, url: "/admin/invoices", group: "admin", section: "finance", allowedRoles: STAFF_ROLES },
     { title: ar ? "سندات القبض" : "Receipts", icon: FileCheck, url: "/admin/receipts", group: "admin", section: "finance", allowedRoles: STAFF_ROLES },
+    { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/admin/quotations", group: "admin", section: "finance", allowedRoles: STAFF_ROLES },
     { title: ar ? "الرواتب" : "Payroll", icon: Banknote, url: "/admin/payroll", group: "admin", section: "finance", allowedRoles: FINANCE_ROLES },
     { title: ar ? "الاشتراكات والأسعار" : "Subscriptions & Pricing", icon: Crown, url: "/admin/subscription-plans", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "إعدادات البنك" : "Bank Settings", icon: Building2, url: "/admin/bank-settings", group: "admin", section: "finance", allowedRoles: MANAGEMENT_ROLES },

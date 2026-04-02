@@ -531,8 +531,31 @@ wss.on("connection", (ws) => {
           return;
         }
 
-        // Handle DB lobby approval (HTTP fallback is handled client-side)
-        pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+        // Handle DB lobby approval — join the user to the room and send peer list
+        (async () => {
+          try {
+            const { QMeetingModel: QMF } = await import("./qmeet-db");
+            const meeting = await (QMF() as any).findOne({ roomName: rId });
+            const joinReq = (meeting?.joinRequests || []).find((r: any) => String(r.userId) === targetId);
+            const pName = joinReq?.userName || targetId;
+            const existingPeers = joinMeetRoom(rId, targetId, pName, "");
+            const currentHostId = getRoomHost(rId);
+            const peerInfoList = getMeetRoomPeerInfo(rId).filter((p: any) => p.userId !== targetId);
+            pushToUser(targetId, {
+              type: "webrtc_peers",
+              peers: existingPeers,
+              peerInfoList,
+              roomId: rId,
+              hostId: currentHostId,
+              isLocked: isRoomLocked(rId),
+              activePoll: null,
+            });
+            for (const peerId of existingPeers) {
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pName, photoUrl: "", roomId: rId });
+            }
+          } catch { /* on error, still approve */ }
+          pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
+        })();
         return;
       }
 
