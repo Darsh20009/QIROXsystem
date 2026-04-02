@@ -15,6 +15,7 @@ import type { Partner } from "@shared/schema";
 
 import { SiApple, SiGoogleplay, SiInstagram, SiX, SiLinkedin, SiTiktok, SiSnapchat, SiYoutube, SiWhatsapp } from "react-icons/si";
 import qiroxNoBgLogo from "@assets/qirox_without_background_1771716363944.png";
+import paymobLogo from "@assets/download_1774503289938.png";
 import qahwaCupLogo from "@assets/Elegant_Coffee_Culture_Design_1757428233689_1771717217775.png";
 import genMZLogo from "@assets/Screenshot_2025-12-24_203835_1771717230405.png";
 import beFluentLogo from "@assets/Screenshot_2026-01-25_182548_1771717248784.png";
@@ -115,6 +116,7 @@ export default function Home() {
   ].filter(s => !!s.url);
 
   const [activeCarouselIdx, setActiveCarouselIdx] = useState(0);
+  const [showPaymobModal, setShowPaymobModal] = useState(false);
   const [showPaypalModal, setShowPaypalModal] = useState(false);
 
   const currentCode = discountCodes && discountCodes.length > 0
@@ -1053,6 +1055,121 @@ export default function Home() {
       </section>
 
 
+      {/* PAYMOB PARTNERSHIP SECTION */}
+      <section className="py-14 md:py-20 relative" data-testid="section-paymob-partnership">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={fadeUp}
+            custom={0}
+            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
+            style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
+          >
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a 0%, #1d90f5 50%, #0f172a 100%)" }} />
+
+            <div className="px-6 sm:px-10 md:px-14 py-10 md:py-14">
+              <div className="flex flex-col items-center text-center mb-10 md:mb-12">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
+                  <Shield className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
+                    {lang === "ar" ? "إعلان رسمي — شراكة استراتيجية" : "Official Announcement — Strategic Partnership"}
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-black dark:text-white tracking-tight mb-3">
+                  {lang === "ar" ? "Qirox تعتمد Paymob بوابةً رسمية للدفع" : "Qirox Adopts Paymob as Official Payment Gateway"}
+                </h2>
+                <p className="text-black/40 dark:text-white/40 text-sm sm:text-base max-w-xl leading-relaxed">
+                  {lang === "ar"
+                    ? "في إطار توسّع Qirox وتعزيز منظومتها الرقمية، أبرمت الشركة اتفاقية شراكة رسمية مع Paymob لتوفير بوابة دفع آمنة ومتوافقة لجميع عملائها."
+                    : "As part of Qirox's expansion and digital ecosystem enhancement, the company has signed an official partnership agreement with Paymob to provide a secure, compliant payment gateway for all its clients."}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-10 md:mb-12">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black flex items-center justify-center p-4 shadow-sm">
+                    <img src={qiroxNoBgLogo} alt="Qirox" className="w-full h-full object-contain" style={{ filter: "invert(1) brightness(1.1)" }} />
+                  </div>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Qirox Studio</span>
+                </div>
+                <div className="flex flex-row sm:flex-col items-center gap-2">
+                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
+                  <div className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center bg-white dark:bg-gray-900 shadow-sm">
+                    <span className="text-black/30 dark:text-white/30 text-xs font-bold">×</span>
+                  </div>
+                  <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white flex items-center justify-center p-4 shadow-sm">
+                    <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
+                  </div>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Paymob</span>
+                </div>
+              </div>
+
+              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-10" />
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6" dir={dir}>
+                {(lang === "ar"
+                  ? [
+                      { icon: CreditCard, label: "Visa & Mastercard" },
+                      { icon: Shield,     label: "تشفير SSL معتمد" },
+                      { icon: Zap,        label: "تسوية فورية" },
+                      { icon: Globe2,     label: "محافظ رقمية" },
+                      { icon: Clock,      label: "دعم على مدار الساعة" },
+                    ]
+                  : [
+                      { icon: CreditCard, label: "Visa & Mastercard" },
+                      { icon: Shield,     label: "SSL Encryption" },
+                      { icon: Zap,        label: "Instant Settlement" },
+                      { icon: Globe2,     label: "Digital Wallets" },
+                      { icon: Clock,      label: "24/7 Support" },
+                    ]
+                ).map(({ icon: Icon, label }, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 text-center p-3 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
+                    <div className="w-8 h-8 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center">
+                      <Icon className="w-4 h-4 text-black/40 dark:text-white/40" />
+                    </div>
+                    <span className="text-[11px] font-medium text-black/50 dark:text-white/50 leading-tight">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 sm:px-10 md:px-14 pb-10 md:pb-12 flex flex-col items-center gap-4">
+              <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-2" />
+              <p className="text-sm text-black/50 dark:text-white/50 text-center max-w-md">
+                {lang === "ar"
+                  ? "هل تريد تفعيل بوابة Paymob على نظامك الخاص؟ ابدأ الآن وأكمل عملية التسجيل في دقائق."
+                  : "Want to activate Paymob gateway on your own system? Start now and complete registration in minutes."}
+              </p>
+              <Button
+                onClick={() => setShowPaymobModal(true)}
+                className="rounded-xl px-6 py-2.5 font-semibold"
+                style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }}
+                data-testid="btn-paymob-learn-more"
+              >
+                {lang === "ar" ? "تعرف أكثر — ابدأ التفعيل" : "Learn More — Start Activation"}
+              </Button>
+            </div>
+
+            <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-black/[0.05] dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
+              <span className="text-[11px] text-black/30 dark:text-white/30 tracking-wide">
+                {lang === "ar" ? "اتفاقية شراكة رسمية — مارس 2026" : "Official Partnership Agreement — March 2026"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
+                  {lang === "ar" ? "نشط ومفعّل" : "Active & Live"}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* PAYPAL SECTION */}
       <section className="py-10 md:py-14 relative" data-testid="section-paypal">
         <div className="container mx-auto px-4">
@@ -1354,6 +1471,112 @@ export default function Home() {
       <InstallPrompt />
       <Footer />
 
+
+      {/* PAYMOB MODAL */}
+      <Dialog open={showPaymobModal} onOpenChange={setShowPaymobModal}>
+        <DialogContent className="max-w-lg w-full rounded-2xl p-0 overflow-hidden" dir={dir}>
+          <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a, #1d90f5, #0f172a)" }} />
+          <div className="px-6 pt-6 pb-2">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.07] flex items-center justify-center p-2 shadow-sm">
+                  <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
+                </div>
+                <DialogTitle className="text-lg font-bold text-black dark:text-white">
+                  {lang === "ar" ? "Qirox × Paymob — بوابة الدفع الرسمية" : "Qirox × Paymob — Official Payment Gateway"}
+                </DialogTitle>
+              </div>
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
+                {lang === "ar" ? "الرسوم والسياسات والميزات الرئيسية" : "Fees, policies, and key features"}
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "جدول الرسوم" : "Fee Schedule"}
+              </h4>
+              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
+                <table className="w-full text-sm" dir={dir}>
+                  <thead>
+                    <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
+                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
+                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+                    {(lang === "ar" ? [
+                      ["رسوم الإعداد", "مجانية"],
+                      ["اشتراك شهري", "0 ريال"],
+                      ["Visa / Mastercard", "2.9% + 1 ريال"],
+                      ["المحافظ الرقمية (Vodafone / OPay)", "2.5%"],
+                      ["تحويل بنكي (ACH)", "1%"],
+                      ["فوري / Fawry", "2%"],
+                      ["تسوية الأرباح", "الاثنين والأربعاء"],
+                    ] : [
+                      ["Setup Fee", "Free"],
+                      ["Monthly Subscription", "0 SAR"],
+                      ["Visa / Mastercard", "2.9% + 1 SAR"],
+                      ["Digital Wallets (Vodafone / OPay)", "2.5%"],
+                      ["Bank Transfer (ACH)", "1%"],
+                      ["Fawry", "2%"],
+                      ["Settlement Period", "Mon & Wed"],
+                    ]).map(([label, val], i) => (
+                      <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
+                        <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
+                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
+                {lang === "ar" ? "أبرز نقاط السياسة" : "Policy Highlights"}
+              </h4>
+              <div className="space-y-2">
+                {(lang === "ar" ? [
+                  { icon: Shield,     text: "متوافق مع معيار PCI-DSS المستوى الأول" },
+                  { icon: Lock,       text: "تشفير SSL 256-bit على جميع المعاملات" },
+                  { icon: Zap,        text: "تسوية الأرباح كل الاثنين والأربعاء" },
+                  { icon: Clock,      text: "دعم فني على مدار الساعة 7 أيام" },
+                  { icon: CreditCard, text: "لا حد أدنى للحجم الشهري من المبيعات" },
+                  { icon: Globe2,     text: "دعم 15+ وسيلة دفع محلية ودولية" },
+                ] : [
+                  { icon: Shield,     text: "PCI-DSS Level 1 Compliant" },
+                  { icon: Lock,       text: "256-bit SSL Encryption on all transactions" },
+                  { icon: Zap,        text: "Settlement every Monday & Wednesday" },
+                  { icon: Clock,      text: "24/7 technical support, 7 days a week" },
+                  { icon: CreditCard, text: "No minimum monthly sales volume" },
+                  { icon: Globe2,     text: "15+ local and international payment methods" },
+                ]).map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                    <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-3.5 h-3.5 text-blue-500" />
+                    </div>
+                    <span className="text-sm text-black/70 dark:text-white/70 leading-relaxed">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <a href="https://paymob.com/ar/accept/developer" target="_blank" rel="noopener noreferrer" className="flex-1" data-testid="btn-paymob-pdf">
+                <Button variant="outline" className="w-full rounded-xl gap-2 font-semibold text-sm">
+                  <Download className="w-4 h-4" />
+                  {lang === "ar" ? "تحميل ملف السياسة PDF" : "Download Policy PDF"}
+                </Button>
+              </a>
+              <Link href="/paymob-onboarding" className="flex-1" onClick={() => setShowPaymobModal(false)}>
+                <Button className="w-full rounded-xl gap-2 font-semibold text-sm" style={{ background: "linear-gradient(135deg, #1d4ed8, #1d90f5)", color: "#fff" }} data-testid="btn-paymob-start-activation">
+                  <Zap className="w-4 h-4" />
+                  {lang === "ar" ? "ابدأ التفعيل الآن" : "Start Activation Now"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* PAYPAL MODAL */}
       <Dialog open={showPaypalModal} onOpenChange={setShowPaypalModal}>
