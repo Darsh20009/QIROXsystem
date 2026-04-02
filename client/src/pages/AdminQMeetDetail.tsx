@@ -65,7 +65,7 @@ export default function AdminQMeetDetail() {
   const { data: meeting, isLoading } = useQuery<any>({
     queryKey: ["/api/qmeet/meetings", id],
     queryFn: async () => {
-      const r = await fetch(`/api/qmeet/meetings/${id}`);
+      const r = await fetch(`/api/qmeet/meetings/${id}`, { credentials: "include" });
       if (!r.ok) throw new Error(L ? "لم يتم العثور على الاجتماع" : "Meeting not found");
       return r.json();
     },
@@ -75,7 +75,7 @@ export default function AdminQMeetDetail() {
   const { data: feedbacks, isLoading: feedbacksLoading } = useQuery<any[]>({
     queryKey: ["/api/qmeet/meetings", id, "feedback"],
     queryFn: async () => {
-      const r = await fetch(`/api/qmeet/meetings/${id}/feedback`);
+      const r = await fetch(`/api/qmeet/meetings/${id}/feedback`, { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
@@ -85,7 +85,7 @@ export default function AdminQMeetDetail() {
   const { data: reports, isLoading: reportsLoading } = useQuery<any[]>({
     queryKey: ["/api/qmeet/meetings", id, "reports"],
     queryFn: async () => {
-      const r = await fetch(`/api/qmeet/meetings/${id}/reports`);
+      const r = await fetch(`/api/qmeet/meetings/${id}/reports`, { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },

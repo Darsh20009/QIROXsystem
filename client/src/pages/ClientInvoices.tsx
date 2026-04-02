@@ -23,7 +23,7 @@ export default function ClientInvoices() {
   const { data: invoices = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
     queryFn: async () => {
-      const r = await fetch("/api/invoices");
+      const r = await fetch("/api/invoices", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },

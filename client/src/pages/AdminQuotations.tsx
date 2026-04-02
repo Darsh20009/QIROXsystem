@@ -43,7 +43,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users/clients");
+      const r = await fetch("/api/users/clients", { credentials: "include" });
       if (!r.ok) return [];
       const data = await r.json();
       return Array.isArray(data) ? data : data.users || [];

@@ -33,7 +33,7 @@ export default function AdminFinance() {
   }>({
     queryKey: ["/api/admin/finance/summary"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/finance/summary");
+      const r = await fetch("/api/admin/finance/summary", { credentials: "include" });
       if (!r.ok) return null;
       return r.json();
     },

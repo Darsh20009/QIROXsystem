@@ -43,7 +43,7 @@ export default function AdminAISessions() {
   const { data, isLoading } = useQuery<SessionsResponse>({
     queryKey: ["/api/admin/ai-sessions", page],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/ai-sessions?page=${page}&limit=20`);
+      const res = await fetch(`/api/admin/ai-sessions?page=${page}&limit=20`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
@@ -51,7 +51,7 @@ export default function AdminAISessions() {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/ai-sessions/${id}/read`, { method: "PATCH" });
+      const res = await fetch(`/api/admin/ai-sessions/${id}/read`, { method: "PATCH", credentials: "include" });
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },

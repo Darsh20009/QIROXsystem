@@ -36,7 +36,7 @@ export default function AdminActivityLog() {
   const { data: logs, isLoading } = useQuery<LogEntry[]>({
     queryKey: ["/api/admin/activity-log"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/activity-log");
+      const r = await fetch("/api/admin/activity-log", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

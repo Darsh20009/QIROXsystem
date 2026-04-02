@@ -62,7 +62,8 @@ export default function AdminInvestors() {
     queryKey: ["/api/admin/investment-payments", paymentFilter],
     queryFn: async () => {
       const p = paymentFilter !== "all" ? `?status=${paymentFilter}` : "";
-      const r = await fetch(`/api/admin/investment-payments${p}`);
+      const r = await fetch(`/api/admin/investment-payments${p}`, { credentials: "include" });
+      if (!r.ok) return [];
       return r.json();
     },
   });
@@ -70,7 +71,8 @@ export default function AdminInvestors() {
   const { data: allUsersResp } = useQuery<AllUsersResp>({
     queryKey: ["/api/admin/all-users"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/all-users?limit=200");
+      const r = await fetch("/api/admin/all-users?limit=200", { credentials: "include" });
+      if (!r.ok) return { users: [], total: 0 };
       return r.json();
     },
     enabled: addOpen,

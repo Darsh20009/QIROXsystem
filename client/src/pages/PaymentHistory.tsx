@@ -29,7 +29,7 @@ export default function PaymentHistory() {
   const { data, isLoading } = useQuery<PaymentData>({
     queryKey: ["/api/client/payments"],
     queryFn: async () => {
-      const r = await fetch("/api/client/payments");
+      const r = await fetch("/api/client/payments", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

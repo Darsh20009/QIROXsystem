@@ -65,7 +65,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users/clients");
+      const r = await fetch("/api/users/clients", { credentials: "include" });
       if (!r.ok) return [];
       const d = await r.json();
       return Array.isArray(d) ? d : d.users || [];
@@ -75,7 +75,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
   const { data: invoices } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
     queryFn: async () => {
-      const r = await fetch("/api/invoices");
+      const r = await fetch("/api/invoices", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
@@ -114,7 +114,7 @@ function ReceiptForm({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
       if (sendEmail && data?.id) {
         try {
-          await fetch(`/api/receipts/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          await fetch(`/api/receipts/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "include" });
           toast({ title: L ? "تم إصدار السند وإرساله بالبريد ✅" : "Receipt issued and sent ✅" });
         } catch {
           toast({ title: L ? "تم إصدار السند، لكن فشل إرسال البريد" : "Receipt issued, but email failed", variant: "destructive" });
@@ -246,7 +246,7 @@ export default function AdminReceipts() {
   const { data: receipts, isLoading } = useQuery({
     queryKey: ["/api/receipts"],
     queryFn: async () => {
-      const r = await fetch("/api/receipts");
+      const r = await fetch("/api/receipts", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },

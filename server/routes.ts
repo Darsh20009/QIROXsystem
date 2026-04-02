@@ -6419,10 +6419,16 @@ export async function registerRoutes(
 
   async function generateQuotationNumber(): Promise<string> {
     const { QuotationModel } = await import("./models");
-    const count = await QuotationModel.countDocuments();
-    const pad = String(count + 1).padStart(4, "0");
     const year = new Date().getFullYear();
-    return `QT-${year}-${pad}`;
+    const prefix = `QT-${year}-`;
+    const count = await QuotationModel.countDocuments({ quotationNumber: new RegExp(`^${prefix}`) });
+    let seq = count + 1;
+    let num = `${prefix}${String(seq).padStart(4, "0")}`;
+    while (await QuotationModel.exists({ quotationNumber: num })) {
+      seq++;
+      num = `${prefix}${String(seq).padStart(4, "0")}`;
+    }
+    return num;
   }
 
   app.get("/api/quotations", async (req, res) => {
@@ -6475,7 +6481,12 @@ export async function registerRoutes(
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
     const { items, vatRate, status, title, notes, termsAndConditions, validUntil, userId } = req.body;
-    const updates: any = { title, notes, termsAndConditions, validUntil, userId };
+    const updates: any = {};
+    if (title !== undefined) updates.title = title;
+    if (notes !== undefined) updates.notes = notes;
+    if (termsAndConditions !== undefined) updates.termsAndConditions = termsAndConditions;
+    if (validUntil !== undefined) updates.validUntil = validUntil || null;
+    if (userId !== undefined) updates.userId = userId;
     if (status) updates.status = status;
     if (Array.isArray(items)) {
       updates.items = items;

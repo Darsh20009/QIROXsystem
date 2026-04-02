@@ -387,7 +387,8 @@ export default function Inbox() {
     queryKey: ["/api/inbox/thread", activeContact?.id],
     queryFn: async () => {
       if (!activeContact?.id) return [];
-      const r = await fetch(`/api/inbox/thread/${activeContact.id}`);
+      const r = await fetch(`/api/inbox/thread/${activeContact.id}`, { credentials: "include" });
+      if (!r.ok) return [];
       return r.json();
     },
     enabled: !!activeContact?.id,
@@ -398,7 +399,7 @@ export default function Inbox() {
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ["/api/employees"],
     queryFn: async () => {
-      const r = await fetch("/api/employees");
+      const r = await fetch("/api/employees", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
@@ -408,7 +409,7 @@ export default function Inbox() {
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users/clients");
+      const r = await fetch("/api/users/clients", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
@@ -419,7 +420,7 @@ export default function Inbox() {
     queryKey: ["/api/inbox/client-context", activeContact?.id],
     queryFn: async () => {
       if (!activeContact?.id) return null;
-      const r = await fetch(`/api/inbox/client-context/${activeContact.id}`);
+      const r = await fetch(`/api/inbox/client-context/${activeContact.id}`, { credentials: "include" });
       if (!r.ok) return null;
       return r.json();
     },

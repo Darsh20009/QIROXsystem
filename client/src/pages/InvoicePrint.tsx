@@ -18,7 +18,7 @@ export default function InvoicePrint() {
   const { data: invoice, isLoading } = useQuery({
     queryKey: ["/api/invoices", params.id],
     queryFn: async () => {
-      const r = await fetch(`/api/invoices/${params.id}`);
+      const r = await fetch(`/api/invoices/${params.id}`, { credentials: "include" });
       if (!r.ok) throw new Error("not found");
       return r.json();
     },

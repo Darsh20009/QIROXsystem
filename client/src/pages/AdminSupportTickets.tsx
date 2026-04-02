@@ -58,7 +58,7 @@ export default function AdminSupportTickets() {
   const { data: tickets, isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/support-tickets"],
     queryFn: async () => {
-      const r = await fetch("/api/support-tickets");
+      const r = await fetch("/api/support-tickets", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

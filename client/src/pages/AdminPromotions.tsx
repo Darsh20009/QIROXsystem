@@ -84,7 +84,8 @@ export default function AdminPromotions() {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (filterRole !== "all") params.set("role", filterRole);
-      const r = await fetch(`/api/admin/all-users?${params}`);
+      const r = await fetch(`/api/admin/all-users?${params}`, { credentials: "include" });
+      if (!r.ok) return { users: [], total: 0 };
       return r.json();
     },
     enabled: tab === "users",

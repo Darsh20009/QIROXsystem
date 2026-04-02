@@ -65,7 +65,7 @@ export default function AdminAttendance() {
   const { data: attendanceData, isLoading, refetch } = useQuery<any[]>({
     queryKey: ["/api/admin/attendance"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/attendance");
+      const r = await fetch("/api/admin/attendance", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

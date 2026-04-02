@@ -21,7 +21,7 @@ export default function ReceiptPrint() {
   const { data: receipt, isLoading } = useQuery({
     queryKey: ["/api/receipts", params.id],
     queryFn: async () => {
-      const r = await fetch(`/api/receipts/${params.id}`);
+      const r = await fetch(`/api/receipts/${params.id}`, { credentials: "include" });
       if (!r.ok) throw new Error("not found");
       return r.json();
     },

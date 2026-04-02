@@ -51,7 +51,7 @@ export default function AdminContactMessages() {
   const { data: messages, isLoading, isError, refetch } = useQuery<ContactMessage[]>({
     queryKey: ["/api/admin/contact-messages"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/contact-messages");
+      const r = await fetch("/api/admin/contact-messages", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

@@ -51,7 +51,7 @@ export default function AdminPayroll() {
   const { data: records, isLoading } = useQuery<PayrollRecord[]>({
     queryKey: ["/api/admin/payroll"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/payroll");
+      const r = await fetch("/api/admin/payroll", { credentials: "include" });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },

@@ -17,7 +17,7 @@ export default function QuotationPrint() {
   const { data: quotation, isLoading } = useQuery({
     queryKey: ["/api/quotations", params.id],
     queryFn: async () => {
-      const r = await fetch(`/api/quotations/${params.id}`);
+      const r = await fetch(`/api/quotations/${params.id}`, { credentials: "include" });
       if (!r.ok) throw new Error("not found");
       return r.json();
     },

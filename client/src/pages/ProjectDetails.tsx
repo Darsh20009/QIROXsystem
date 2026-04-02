@@ -57,7 +57,7 @@ export default function ProjectDetails() {
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
     queryKey: ["/api/projects", project?.id, "messages"],
     queryFn: async () => {
-      const res = await fetch(`/api/projects/${project.id}/messages`);
+      const res = await fetch(`/api/projects/${project.id}/messages`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch messages");
       return await res.json();
     },

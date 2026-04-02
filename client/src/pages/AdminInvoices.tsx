@@ -54,7 +54,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
     queryFn: async () => {
-      const r = await fetch("/api/users/clients");
+      const r = await fetch("/api/users/clients", { credentials: "include" });
       if (!r.ok) return [];
       const data = await r.json();
       return Array.isArray(data) ? data : data.users || [];
@@ -64,7 +64,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   const { data: orders } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
     queryFn: async () => {
-      const r = await fetch("/api/orders");
+      const r = await fetch("/api/orders", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
@@ -135,7 +135,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["/api/invoices"] });
       if (sendEmail && data?.id) {
         try {
-          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          await fetch(`/api/invoices/${data.id}/send-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "include" });
           toast({ title: L ? "تم إنشاء الفاتورة وإرسالها بالبريد ✅" : "Invoice created and emailed ✅" });
         } catch {
           toast({ title: L ? "تم إنشاء الفاتورة، لكن فشل إرسال البريد" : "Invoice created, but email failed", variant: "destructive" });
@@ -286,7 +286,7 @@ export default function AdminInvoices() {
   const { data: invoices, isLoading } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
     queryFn: async () => {
-      const r = await fetch("/api/invoices");
+      const r = await fetch("/api/invoices", { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },

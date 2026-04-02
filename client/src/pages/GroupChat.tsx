@@ -72,7 +72,7 @@ export default function GroupChat() {
     queryKey: ["/api/groups", activeGroupId, "messages"],
     queryFn: async () => {
       if (!activeGroupId) return [];
-      const r = await fetch(`/api/groups/${activeGroupId}/messages`);
+      const r = await fetch(`/api/groups/${activeGroupId}/messages`, { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },

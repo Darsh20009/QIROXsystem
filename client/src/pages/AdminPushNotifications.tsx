@@ -82,7 +82,7 @@ export default function AdminPushNotifications() {
 
   const { data: subData } = useQuery<{ count: number; registeredCount: number }>({
     queryKey: ["/api/admin/push/subscribers", pushForm.targetRole],
-    queryFn: () => fetch(`/api/admin/push/subscribers?targetRole=${pushForm.targetRole}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/admin/push/subscribers?targetRole=${pushForm.targetRole}`, { credentials: "include" }).then(r => r.json()),
     refetchInterval: 30000,
   });
 
