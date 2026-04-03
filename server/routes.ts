@@ -10834,7 +10834,8 @@ export async function registerRoutes(
   app.get("/api/admin/analytics/qmeet", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
     try {
-      const { QMeetingModel } = await import("./models");
+      const { QMeetingModel: QMF } = await import("./qmeet-db");
+      const QMeetingModel = QMF();
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const months = Array.from({ length: 6 }, (_, i) => {
