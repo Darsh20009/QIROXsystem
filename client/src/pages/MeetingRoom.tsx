@@ -78,6 +78,7 @@ interface MeetingPoll {
 
 interface CaptionEntry { id: string; name: string; text: string; isSelf: boolean }
 interface AttendanceEntry { userId: string; name: string; action: "join" | "leave"; time: string }
+interface FloatReaction { id: string; emoji: string; left: number }
 
 // ── VideoTile ────────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ export default function MeetingRoom() {
   const [lobbyRequests, setLobbyRequests] = useState<any[]>([]);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [floatReactions, setFloatReactions] = useState<{ id: string; emoji: string }[]>([]);
+  const [floatReactions, setFloatReactions] = useState<FloatReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -645,7 +646,8 @@ export default function MeetingRoom() {
     // ── Reactions ─────────────────────────────────────────────────────────────
     if (msg.type === "webrtc_reaction") {
       const id = `${Date.now()}-${Math.random()}`;
-      setFloatReactions(prev => [...prev, { id, emoji: msg.emoji }]);
+      const left = 20 + Math.random() * 60;
+      setFloatReactions(prev => [...prev, { id, emoji: msg.emoji, left }]);
       setTimeout(() => setFloatReactions(prev => prev.filter(r => r.id !== id)), 3000);
       return;
     }
@@ -745,18 +747,34 @@ export default function MeetingRoom() {
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "auth", userId: effectiveId }));
-      ws.send(JSON.stringify({
+    const doJoin = (socket: WebSocket, eId: string) => {
+      socket.send(JSON.stringify({ type: "auth", userId: eId }));
+      socket.send(JSON.stringify({
         type: "webrtc_join",
         roomId,
         name: userName,
         photoUrl: (user as any)?.photoUrl || "",
       }));
     };
+
+    ws.onopen = () => doJoin(ws, effectiveId);
     ws.onmessage = (e) => handleMessage(e.data);
-    ws.onclose = () => {};
     ws.onerror = () => {};
+    ws.onclose = () => {
+      // Auto-reconnect after 2.5 seconds if still in meeting
+      if (wsRef.current === ws) {
+        setTimeout(() => {
+          if (wsRef.current !== ws) return; // another reconnect already happened
+          const protocol2 = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const ws2 = new WebSocket(`${protocol2}//${window.location.host}/ws`);
+          wsRef.current = ws2;
+          ws2.onopen = () => doJoin(ws2, effectiveId);
+          ws2.onmessage = (e) => handleMessage(e.data);
+          ws2.onerror = () => {};
+          ws2.onclose = () => {};
+        }, 2500);
+      }
+    };
 
     setJoined(true);
   }, [roomId, userId, userName, user, getMedia, handleMessage]);
@@ -1011,7 +1029,8 @@ export default function MeetingRoom() {
 
   const sendReaction = useCallback((emoji: string) => {
     const id = `${Date.now()}-local`;
-    setFloatReactions(prev => [...prev, { id, emoji }]);
+    const left = 20 + Math.random() * 60;
+    setFloatReactions(prev => [...prev, { id, emoji, left }]);
     setTimeout(() => setFloatReactions(prev => prev.filter(r => r.id !== id)), 3000);
     sendWs({ type: "webrtc_reaction", roomId, emoji, name: userName, userId: myIdRef.current });
     setShowEmojiPicker(false);
@@ -1411,7 +1430,7 @@ export default function MeetingRoom() {
       {/* Floating emoji reactions */}
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
         {floatReactions.map(r => (
-          <div key={r.id} className="absolute bottom-32 left-1/2 text-4xl animate-bounce" style={{ animationDuration: "0.6s", left: `${20 + Math.random() * 60}%` }}>
+          <div key={r.id} className="absolute bottom-32 text-4xl animate-bounce" style={{ animationDuration: "0.6s", left: `${r.left}%` }}>
             {r.emoji}
           </div>
         ))}
@@ -1906,14 +1925,17 @@ export default function MeetingRoom() {
 
       {/* Emoji picker */}
       {showEmojiPicker && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#3c4043] rounded-2xl p-3 shadow-2xl">
-          <div className="flex gap-2 flex-wrap justify-center max-w-[220px]">
-            {["👍","❤️","😂","😮","😢","🎉","🔥","👏","💯","🙏"].map(e => (
-              <button key={e} onClick={() => sendReaction(e)}
-                className="text-2xl hover:scale-125 transition-transform p-1">{e}</button>
-            ))}
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#3c4043] rounded-2xl p-3 shadow-2xl">
+            <div className="flex gap-2 flex-wrap justify-center max-w-[220px]">
+              {["👍","❤️","😂","😮","😢","🎉","🔥","👏","💯","🙏"].map(e => (
+                <button key={e} onClick={() => sendReaction(e)}
+                  className="text-2xl hover:scale-125 transition-transform p-1">{e}</button>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* ── Control bar ── */}
@@ -1933,7 +1955,7 @@ export default function MeetingRoom() {
             className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
             <Smile className="w-4 h-4 text-[#9aa0a6]" />
           </button>
-          {isHost && (
+          {isRoomHost && (
             <button onClick={muteAll}
               className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
               <MicOff className="w-4 h-4 text-[#9aa0a6]" />
@@ -1962,7 +1984,7 @@ export default function MeetingRoom() {
               className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition">
               <Smile className="w-4 h-4 text-[#9aa0a6]" />
             </button>
-            {isHost && (
+            {isRoomHost && (
               <button onClick={muteAll}
                 className="w-10 h-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center transition" title="كتم الجميع">
                 <MicOff className="w-4 h-4 text-[#9aa0a6]" />
