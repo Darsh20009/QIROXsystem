@@ -11918,8 +11918,9 @@ export async function registerRoutes(
       let account = await (LoyaltyAccountModel as any).findOne({ clientId: me._id || me.id });
       if (!account) account = { points: 0, totalEarned: 0, totalRedeemed: 0 };
       const transactions = await (LoyaltyTransactionModel as any).find({ clientId: me._id || me.id }).sort({ createdAt: -1 }).limit(20);
+      // Auto-create config in DB if not exists (so it persists as enabled)
       let config = await (LoyaltyConfigModel as any).findOne();
-      if (!config) config = { pointsPerSAR: 1, minRedeemPoints: 100, sarPerPoint: 0.1, isEnabled: true };
+      if (!config) config = await (LoyaltyConfigModel as any).create({ pointsPerSAR: 1, minRedeemPoints: 100, sarPerPoint: 0.1, isEnabled: true, expiryDays: 365 });
       res.json({ account, transactions, config });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });

@@ -40,12 +40,52 @@ export default function ClientLoyalty() {
     onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
-  if (isLoading) return <div className="text-center py-16 text-black/30 font-sans">{L ? "جاري التحميل..." : "Loading..."}</div>;
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-24" dir={dir}>
+      <div className="text-center space-y-3">
+        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto animate-pulse">
+          <Star className="w-6 h-6 text-amber-400" />
+        </div>
+        <p className="text-sm text-black/30 dark:text-white/30 font-sans">{L ? "جاري تحميل نقاطك..." : "Loading your points..."}</p>
+      </div>
+    </div>
+  );
 
   const account = data?.account || { points: 0, totalEarned: 0, totalRedeemed: 0 };
   const transactions = data?.transactions || [];
   const config = data?.config || { pointsPerSAR: 1, minRedeemPoints: 100, sarPerPoint: 0.1, isEnabled: true };
   const discountValue = redeemPoints ? (Number(redeemPoints) * config.sarPerPoint).toFixed(2) : "0";
+
+  // ── Program disabled state ────────────────────────────────────────────────
+  if (!config.isEnabled) return (
+    <div className="p-6 font-sans max-w-2xl mx-auto" dir={dir}>
+      <div>
+        <h1 className="text-2xl font-bold text-black dark:text-white">{L ? "نقاط الولاء" : "Loyalty Points"}</h1>
+        <p className="text-black/50 dark:text-white/40 text-sm">{L ? "اكسب نقاطاً مع كل طلب واستردّها كخصومات" : "Earn points with every order and redeem them as discounts"}</p>
+      </div>
+      <div className="mt-16 flex flex-col items-center text-center">
+        <div className="w-24 h-24 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-6">
+          <Star className="w-10 h-10 text-amber-300" />
+        </div>
+        <h2 className="text-xl font-bold text-black dark:text-white mb-2">{L ? "برنامج الولاء قادم قريباً" : "Loyalty Program Coming Soon"}</h2>
+        <p className="text-black/40 dark:text-white/30 text-sm max-w-xs leading-relaxed">
+          {L
+            ? "نعمل على تفعيل برنامج النقاط. ستتمكن قريباً من كسب نقاط مع كل طلب واستردادها كخصومات حصرية."
+            : "We're activating the points program. Soon you'll earn points with every order and redeem them for exclusive discounts."}
+        </p>
+        <div className="mt-8 grid grid-cols-3 gap-4 w-full max-w-sm opacity-30 pointer-events-none select-none">
+          {[L ? "أتمّ طلباً" : "Place Order", L ? "اكسب نقاطاً" : "Earn Points", L ? "احصل على خصم" : "Get Discount"].map((s, i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center">
+                {i === 0 ? <CheckCircle className="w-5 h-5" /> : i === 1 ? <Star className="w-5 h-5" /> : <Gift className="w-5 h-5" />}
+              </div>
+              <span className="text-xs font-medium text-black/60 dark:text-white/40">{s}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-6 font-sans max-w-2xl mx-auto" dir={dir}>
@@ -53,10 +93,6 @@ export default function ClientLoyalty() {
         <h1 className="text-2xl font-bold text-black dark:text-white">{L ? "نقاط الولاء" : "Loyalty Points"}</h1>
         <p className="text-black/50 dark:text-white/40 text-sm">{L ? "اكسب نقاطاً مع كل طلب واستردّها كخصومات" : "Earn points with every order and redeem them as discounts"}</p>
       </div>
-
-      {!config.isEnabled && (
-        <Card className="border-black/10 bg-black/5"><CardContent className="p-4 text-center text-black/40 text-sm">{L ? "برنامج الولاء غير متاح حالياً" : "Loyalty program is currently unavailable"}</CardContent></Card>
-      )}
 
       <Card className="border-black/10 bg-gradient-to-br from-amber-50 to-orange-50" data-testid="card-loyalty-balance">
         <CardContent className="p-6">
