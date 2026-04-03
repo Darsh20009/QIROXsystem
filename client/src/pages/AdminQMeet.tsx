@@ -17,7 +17,8 @@ import {
   BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
   Copy, Radio, Search, Zap,
   Loader2, RefreshCw, Key, Hash, Pencil, Check,
-  Shield, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook
+  Shield, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook,
+  Network, ServerCrash, PlusCircle, Save
 } from "lucide-react";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -70,7 +71,7 @@ export default function AdminQMeet() {
   const [instantForm, setInstantForm] = useState({ title: "", durationMinutes: "60" });
 
   // API Keys tab
-  const [mainTab, setMainTab] = useState<"meetings" | "apikeys">("meetings");
+  const [mainTab, setMainTab] = useState<"meetings" | "apikeys" | "turn">("meetings");
   const [openNewKey, setOpenNewKey] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({ name: "", plan: "basic" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -80,6 +81,54 @@ export default function AdminQMeet() {
     queryKey: ["/api/qmeet/api-keys"],
     enabled: mainTab === "apikeys",
   });
+
+  // TURN server config
+  const [turnEnabled, setTurnEnabled] = useState(false);
+  const [turnServers, setTurnServers] = useState<{ url: string; username: string; credential: string }[]>([]);
+  const [turnTestResult, setTurnTestResult] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+
+  const { isLoading: turnLoading } = useQuery<any>({
+    queryKey: ["/api/admin/turn-config"],
+    enabled: mainTab === "turn",
+    select: (d: any) => {
+      setTurnEnabled(d.turnEnabled ?? false);
+      setTurnServers(d.turnServers ?? []);
+      return d;
+    },
+  });
+
+  const saveTurnMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/turn-config", { turnEnabled, turnServers }).then(r => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/turn-config"] });
+      toast({ title: "✅ تم حفظ إعدادات TURN بنجاح" });
+    },
+    onError: () => toast({ title: "فشل الحفظ", variant: "destructive" }),
+  });
+
+  const testTurn = async () => {
+    if (!turnServers.length || !turnServers[0].url) {
+      toast({ title: "أضف عنوان TURN أولاً", variant: "destructive" }); return;
+    }
+    setTurnTestResult("testing");
+    try {
+      const iceServers: RTCIceServer[] = [
+        ...turnServers.filter(s => s.url).map(s => ({ urls: s.url, username: s.username || undefined, credential: s.credential || undefined })),
+      ];
+      const pc = new RTCPeerConnection({ iceServers });
+      pc.createDataChannel("test");
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(() => { pc.close(); reject(new Error("timeout")); }, 8000);
+        pc.onicecandidate = e => {
+          if (e.candidate?.type === "relay") { clearTimeout(t); pc.close(); resolve(); }
+          else if (!e.candidate) { clearTimeout(t); pc.close(); reject(new Error("no relay")); }
+        };
+      });
+      setTurnTestResult("ok");
+    } catch { setTurnTestResult("fail"); }
+  };
 
   const copyInstant = (text: string, field: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -430,6 +479,129 @@ export default function AdminQMeet() {
           </div>
         )}
 
+        {/* ── TURN Server Section ── */}
+        {mainTab === "turn" && isManagement && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-black dark:text-white">TURN Server — اختراق NAT</h2>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">يحل مشكلة عدم الاتصال بين المستخدمين خلف الجدران النارية المؤسسية</p>
+              </div>
+              <Button onClick={() => saveTurnMutation.mutate()} disabled={saveTurnMutation.isPending} className="gap-2 bg-green-600 hover:bg-green-700 text-white border-0" data-testid="button-save-turn">
+                {saveTurnMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                حفظ الإعدادات
+              </Button>
+            </div>
+
+            {/* Info box */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-4 flex gap-3">
+              <Network className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 text-xs text-blue-800 dark:text-blue-300">
+                <p className="font-bold">ما هو TURN؟</p>
+                <p>عندما يكون مستخدمان خلف شبكات NAT صارمة (مكاتب، جامعات، شبكات مؤسسية)، لا يستطيع WebRTC الاتصال المباشر. يقوم TURN بتمرير البيانات عبر سيرفر وسيط موثوق.</p>
+                <p className="font-semibold mt-1">مزودون مجانيين: <span className="font-mono">openrelay.metered.ca</span> · مزودون مدفوعون: Twilio, Metered.ca, Xirsys</p>
+              </div>
+            </div>
+
+            {/* Enable toggle */}
+            <div className="flex items-center justify-between bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4">
+              <div>
+                <p className="font-bold text-sm text-black dark:text-white">تفعيل TURN Server</p>
+                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">عند التفعيل، يُضاف TURN لكل اجتماع تلقائياً إلى جانب STUN</p>
+              </div>
+              <button onClick={() => setTurnEnabled(v => !v)} data-testid="toggle-turn-enabled"
+                className={`transition-colors ${turnEnabled ? "text-green-600" : "text-black/20 dark:text-white/20"}`}>
+                {turnEnabled ? <ToggleRight className="w-9 h-9" /> : <ToggleLeft className="w-9 h-9" />}
+              </button>
+            </div>
+
+            {/* Server list */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-black dark:text-white">قائمة السيرفرات</p>
+                <button onClick={() => setTurnServers(v => [...v, { url: "", username: "", credential: "" }])}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+                  data-testid="button-add-turn-server">
+                  <PlusCircle className="w-4 h-4" /> إضافة سيرفر
+                </button>
+              </div>
+
+              {turnServers.length === 0 && (
+                <div className="text-center py-10 bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl border border-dashed border-black/[0.08] dark:border-white/[0.08]">
+                  <ServerCrash className="w-10 h-10 mx-auto mb-2 text-black/10 dark:text-white/10" />
+                  <p className="text-sm text-black/30 dark:text-white/30">لا يوجد سيرفرات TURN — أضف سيرفراً للبدء</p>
+                  <p className="text-xs text-black/20 dark:text-white/20 mt-1 font-mono">مثال: turn:openrelay.metered.ca:80</p>
+                </div>
+              )}
+
+              {turnServers.map((s, i) => (
+                <div key={i} className="bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-black/50 dark:text-white/50">سيرفر {i + 1}</span>
+                    <button onClick={() => setTurnServers(v => v.filter((_, j) => j !== i))}
+                      className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-black/20 hover:text-red-500 transition-colors"
+                      data-testid={`button-remove-turn-${i}`}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="label-xs">عنوان URL</label>
+                    <Input value={s.url} onChange={e => setTurnServers(v => v.map((x, j) => j === i ? { ...x, url: e.target.value } : x))}
+                      placeholder="turn:your.turn.server:3478" dir="ltr" className="mt-1 font-mono text-sm"
+                      data-testid={`input-turn-url-${i}`} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label-xs">اسم المستخدم (اختياري)</label>
+                      <Input value={s.username} onChange={e => setTurnServers(v => v.map((x, j) => j === i ? { ...x, username: e.target.value } : x))}
+                        placeholder="username" dir="ltr" className="mt-1 font-mono text-sm"
+                        data-testid={`input-turn-user-${i}`} />
+                    </div>
+                    <div>
+                      <label className="label-xs">كلمة المرور (اختياري)</label>
+                      <Input value={s.credential} onChange={e => setTurnServers(v => v.map((x, j) => j === i ? { ...x, credential: e.target.value } : x))}
+                        placeholder="password" dir="ltr" type="password" className="mt-1 font-mono text-sm"
+                        data-testid={`input-turn-cred-${i}`} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick templates */}
+            <div className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 space-y-2">
+              <p className="text-xs font-bold text-black/50 dark:text-white/50 mb-3">قوالب جاهزة</p>
+              <div className="grid md:grid-cols-2 gap-2">
+                {[
+                  { label: "OpenRelay (مجاني)", servers: [{ url: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" }, { url: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }, { url: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }] },
+                  { label: "Metered.ca (أدخل بياناتك)", servers: [{ url: "turn:global.relay.metered.ca:80", username: "", credential: "" }, { url: "turn:global.relay.metered.ca:443", username: "", credential: "" }, { url: "turns:global.relay.metered.ca:443", username: "", credential: "" }] },
+                ].map(t => (
+                  <button key={t.label} onClick={() => setTurnServers(t.servers)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-black/[0.07] dark:border-white/[0.07] hover:border-black/20 dark:hover:border-white/20 text-xs font-semibold text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-all text-right"
+                    data-testid={`template-${t.label}`}>
+                    <Zap className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Test button */}
+            <div className="flex items-center gap-3">
+              <Button onClick={testTurn} disabled={turnTestResult === "testing"} variant="outline" className="gap-2" data-testid="button-test-turn">
+                {turnTestResult === "testing" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                اختبار الاتصال
+              </Button>
+              {turnTestResult === "ok" && (
+                <span className="flex items-center gap-1.5 text-sm text-green-600 font-semibold"><CheckCircle className="w-4 h-4" /> اتصال relay ناجح ✓</span>
+              )}
+              {turnTestResult === "fail" && (
+                <span className="flex items-center gap-1.5 text-sm text-red-500 font-semibold"><XCircle className="w-4 h-4" /> فشل الاتصال — تحقق من البيانات</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Main Tab Switch */}
         {isManagement && (
           <div className="flex gap-2">
@@ -441,7 +613,12 @@ export default function AdminQMeet() {
             <button onClick={() => setMainTab("apikeys")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border transition-all ${mainTab === "apikeys" ? "bg-black dark:bg-white text-white dark:text-black border-transparent shadow" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
               data-testid="tab-apikeys">
-              <Webhook className="w-3.5 h-3.5" /> مفاتيح API
+              <Key className="w-3.5 h-3.5" /> API Keys
+            </button>
+            <button onClick={() => setMainTab("turn")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border transition-all ${mainTab === "turn" ? "bg-black dark:bg-white text-white dark:text-black border-transparent shadow" : "border-black/10 dark:border-white/10 text-black/50 dark:text-white/50 hover:border-black/20 dark:hover:border-white/20"}`}
+              data-testid="tab-turn">
+              <Network className="w-3.5 h-3.5" /> TURN Server
             </button>
           </div>
         )}

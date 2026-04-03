@@ -1257,6 +1257,9 @@ const qiroxSystemSettingsSchema = new mongoose.Schema({
   systemValuation:    { type: Number, default: 0 },   // Total company value in SAR
   currency:           { type: String, default: "SAR" },
   profitDistribution: { type: [{ roleType: String, percentage: Number, label: String }], default: [] },
+  // TURN Server (WebRTC NAT traversal)
+  turnEnabled:        { type: Boolean, default: false },
+  turnServers:        { type: [{ url: String, username: String, credential: String }], default: [] },
   // Modification Tracking
   lastModifiedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });

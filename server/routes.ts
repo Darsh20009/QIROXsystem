@@ -1528,16 +1528,56 @@ export async function registerRoutes(
     res.json(employees.map((u: any) => ({ id: u.id, fullName: u.fullName, username: u.username, role: u.role, email: u.email })));
   });
 
-  // ICE server credentials endpoint
-  app.get("/api/ice-servers", (_req, res) => {
-    const iceServers = [
+  // ICE server credentials endpoint — STUN always + TURN if configured
+  app.get("/api/ice-servers", async (_req, res) => {
+    const stunServers: RTCIceServer[] = [
       { urls: "stun:stun.l.google.com:19302" },
       { urls: "stun:stun1.l.google.com:19302" },
       { urls: "stun:stun2.l.google.com:19302" },
       { urls: "stun:stun3.l.google.com:19302" },
     ];
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      const cfg = await QiroxSystemSettingsModel.findOne({ key: "main" }).lean() as any;
+      if (cfg?.turnEnabled && Array.isArray(cfg.turnServers) && cfg.turnServers.length > 0) {
+        const turnServers: RTCIceServer[] = cfg.turnServers
+          .filter((s: any) => s?.url)
+          .map((s: any) => ({ urls: s.url, username: s.username || undefined, credential: s.credential || undefined }));
+        res.setHeader("Cache-Control", "no-store");
+        return res.json([...stunServers, ...turnServers]);
+      }
+    } catch { /* fall through to STUN-only */ }
     res.setHeader("Cache-Control", "public, max-age=3600");
-    res.json(iceServers);
+    res.json(stunServers);
+  });
+
+  // Admin: get TURN config
+  app.get("/api/admin/turn-config", async (req: any, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { QiroxSystemSettingsModel } = await import("./models");
+      const cfg = await QiroxSystemSettingsModel.findOne({ key: "main" }).lean() as any;
+      res.json({ turnEnabled: cfg?.turnEnabled ?? false, turnServers: cfg?.turnServers ?? [] });
+    } catch { res.status(500).json({ error: "فشل تحميل الإعدادات" }); }
+  });
+
+  // Admin: save TURN config
+  app.post("/api/admin/turn-config", async (req: any, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { turnEnabled, turnServers } = req.body;
+      const { QiroxSystemSettingsModel } = await import("./models");
+      await QiroxSystemSettingsModel.findOneAndUpdate(
+        { key: "main" },
+        { $set: { turnEnabled: !!turnEnabled, turnServers: Array.isArray(turnServers) ? turnServers : [], lastModifiedBy: me._id } },
+        { upsert: true }
+      );
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "فشل الحفظ" }); }
   });
 
   app.get("/api/public/team", async (_req, res) => {
