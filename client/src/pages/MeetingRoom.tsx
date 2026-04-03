@@ -37,6 +37,8 @@ function useElapsedTimer(active: boolean) {
 const STUN: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
 ];
 async function getIce(): Promise<RTCIceServer[]> {
   try {
@@ -230,6 +232,8 @@ export default function MeetingRoom() {
   // Keep refs in sync with state
   useEffect(() => { audioOnRef.current = audioOn; }, [audioOn]);
   useEffect(() => { videoOnRef.current = videoOn; }, [videoOn]);
+  const panelRef = useRef<typeof panel>("none");
+  useEffect(() => { panelRef.current = panel; }, [panel]);
 
   // resize
   useEffect(() => {
@@ -267,7 +271,14 @@ export default function MeetingRoom() {
       try {
         const s = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+            channelCount: 1,
+            latency: { ideal: 0.01 },
+          },
         });
         localStreamRef.current = s; setLocalStream(s); setMediaError(null);
         return s;
@@ -326,7 +337,12 @@ export default function MeetingRoom() {
   const createPc = useCallback(async (peerId: string, isInitiator: boolean): Promise<RTCPeerConnection> => {
     // Close any existing connection
     pcsRef.current.get(peerId)?.close();
-    const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
+    const pc = new RTCPeerConnection({
+      iceServers: iceServersRef.current,
+      iceCandidatePoolSize: 10,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require",
+    });
     pcsRef.current.set(peerId, pc);
 
     // Add local tracks
@@ -358,9 +374,25 @@ export default function MeetingRoom() {
       });
     };
 
-    // Connection state
+    // Connection state — try ICE restart before giving up
+    let iceRestartAttempts = 0;
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+      if (pc.connectionState === "failed") {
+        if (isInitiator && iceRestartAttempts < 2 && pc.signalingState === "stable") {
+          iceRestartAttempts++;
+          pc.createOffer({ iceRestart: true })
+            .then(o => pc.setLocalDescription(o))
+            .then(() => sendWs({ type: "webrtc_offer", to: peerId, offer: pc.localDescription }))
+            .catch(() => {
+              pcsRef.current.delete(peerId);
+              setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+            });
+        } else {
+          pcsRef.current.delete(peerId);
+          setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
+        }
+      }
+      if (pc.connectionState === "closed") {
         pcsRef.current.delete(peerId);
         setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
       }
@@ -500,36 +532,8 @@ export default function MeetingRoom() {
         }
         return m;
       });
-      // Create PC but DO NOT initiate — wait for their offer
-      const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
-      pcsRef.current.get(peerId)?.close();
-      pcsRef.current.set(peerId, pc);
-      if (localStreamRef.current) addStreamToPc(pc, localStreamRef.current);
-      pc.onicecandidate = ({ candidate }) => {
-        if (candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: candidate.toJSON() });
-      };
-      pc.ontrack = (evt) => {
-        const stream = evt.streams[0] || new MediaStream([evt.track]);
-        setPeers(prev => {
-          const m = new Map(prev);
-          const ex = m.get(peerId);
-          m.set(peerId, { ...(ex || { id: peerId, name: msg.name || peerId, audioOn: true, videoOn: true }), stream });
-          return m;
-        });
-      };
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "failed" || pc.connectionState === "closed") {
-          pcsRef.current.delete(peerId);
-          setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
-        }
-      };
-      pc.onsignalingstatechange = () => {
-        if (pc.signalingState === "stable") {
-          const cands = pendingIce.current.get(peerId) || [];
-          pendingIce.current.delete(peerId);
-          cands.forEach(c => pc.addIceCandidate(c).catch(() => {}));
-        }
-      };
+      // Create a receiver PC with full handlers (isInitiator=false → no offer sent)
+      createPc(peerId, false).catch(() => {});
       return;
     }
 
@@ -549,31 +553,15 @@ export default function MeetingRoom() {
       const peerId: string = msg.from;
       let pc = pcsRef.current.get(peerId);
       if (!pc) {
-        // Shouldn't happen but create a receiving PC just in case
-        pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
-        pcsRef.current.set(peerId, pc);
-        if (localStreamRef.current) addStreamToPc(pc, localStreamRef.current);
-        pc.onicecandidate = ({ candidate }) => {
-          if (candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: candidate.toJSON() });
-        };
-        pc.ontrack = (evt) => {
-          const stream = evt.streams[0] || new MediaStream([evt.track]);
-          setPeers(prev => {
-            const m = new Map(prev);
-            const ex = m.get(peerId);
-            m.set(peerId, { ...(ex || { id: peerId, name: peerNamesRef.current.get(peerId) || peerId, audioOn: true, videoOn: true }), stream });
-            return m;
-          });
-        };
-        pc.onconnectionstatechange = () => {
-          if (pc!.connectionState === "failed" || pc!.connectionState === "closed") {
-            pcsRef.current.delete(peerId);
-            setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
-          }
-        };
+        // Peer joined but webrtc_peer_joined wasn't processed yet — create full PC via createPc
+        pc = await createPc(peerId, false);
+      }
+      // If PC is in wrong state (e.g. after ICE restart), close and recreate
+      if (pc.signalingState !== "stable" && pc.signalingState !== "have-remote-offer") {
+        pc = await createPc(peerId, false);
       }
       await pc.setRemoteDescription(new RTCSessionDescription(msg.offer));
-      // Flush buffered ICE candidates
+      // Flush buffered ICE candidates after remote description is set
       const cands = pendingIce.current.get(peerId) || [];
       pendingIce.current.delete(peerId);
       for (const c of cands) await pc.addIceCandidate(c).catch(() => {});
@@ -617,7 +605,7 @@ export default function MeetingRoom() {
       const time = new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
       const chatMsg: ChatMsg = { id: `${Date.now()}-${msg.from}`, fromId: msg.from, name: msg.name || msg.from, text: msg.text, time, isSelf: false };
       setChat(prev => [...prev, chatMsg]);
-      if (panel !== "chat") setUnread(n => n + 1);
+      if (panelRef.current !== "chat") setUnread(n => n + 1);
       return;
     }
 
@@ -757,23 +745,42 @@ export default function MeetingRoom() {
       }));
     };
 
+    const attachWsHandlers = (socket: WebSocket) => {
+      socket.onopen = () => {
+        // Clean up stale peer connections before rejoining
+        pcsRef.current.forEach(pc => { try { pc.close(); } catch {} });
+        pcsRef.current.clear();
+        pendingIce.current.clear();
+        setPeers(new Map());
+        doJoin(socket, effectiveId);
+      };
+      socket.onmessage = (e) => handleMessage(e.data);
+      socket.onerror = () => {};
+      socket.onclose = () => {
+        if (wsRef.current !== socket) return; // already replaced
+        setTimeout(() => {
+          if (wsRef.current !== socket) return;
+          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const next = new WebSocket(`${proto}//${window.location.host}/ws`);
+          wsRef.current = next;
+          attachWsHandlers(next);
+        }, 2500);
+      };
+    };
+
+    // First connection: don't clean up PCs (they don't exist yet)
     ws.onopen = () => doJoin(ws, effectiveId);
     ws.onmessage = (e) => handleMessage(e.data);
     ws.onerror = () => {};
     ws.onclose = () => {
-      // Auto-reconnect after 2.5 seconds if still in meeting
-      if (wsRef.current === ws) {
-        setTimeout(() => {
-          if (wsRef.current !== ws) return; // another reconnect already happened
-          const protocol2 = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const ws2 = new WebSocket(`${protocol2}//${window.location.host}/ws`);
-          wsRef.current = ws2;
-          ws2.onopen = () => doJoin(ws2, effectiveId);
-          ws2.onmessage = (e) => handleMessage(e.data);
-          ws2.onerror = () => {};
-          ws2.onclose = () => {};
-        }, 2500);
-      }
+      if (wsRef.current !== ws) return;
+      setTimeout(() => {
+        if (wsRef.current !== ws) return;
+        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const next = new WebSocket(`${proto}//${window.location.host}/ws`);
+        wsRef.current = next;
+        attachWsHandlers(next);
+      }, 2500);
     };
 
     setJoined(true);
