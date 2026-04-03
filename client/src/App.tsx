@@ -38,6 +38,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const OrderFlow = lazy(() => import("@/pages/OrderFlow"));
 const ProjectDetails = lazy(() => import("@/pages/ProjectDetails"));
 const About = lazy(() => import("@/pages/About"));
+const ServiceDetail = lazy(() => import("@/pages/ServiceDetail"));
 const Prices = lazy(() => import("@/pages/Prices"));
 const Customers = lazy(() => import("@/pages/Customers"));
 const News = lazy(() => import("@/pages/News"));
@@ -181,6 +182,7 @@ function PublicRouter() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
+        <Route path="/service/:id" component={ServiceDetail} />
         <Route path="/prices" component={Prices} />
         <Route path="/customers" component={Customers} />
         <Route path="/news" component={News} />
@@ -477,7 +479,7 @@ function GlobalSearch() {
                 {ar ? "العملاء" : "Clients"}
               </div>
               {results.clients.map((c: any) => (
-                <button key={c.id} onClick={() => go(`/admin/users`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
+                <button key={c.id} onClick={() => go(`/admin/customers`)} className="w-full text-right flex items-center gap-3 px-3 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors border-b border-black/[0.04] dark:border-white/[0.03] last:border-0">
                   <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
                     <span className="text-[10px] font-black text-violet-600 dark:text-violet-400">{(c.fullName || c.username || "?")[0]?.toUpperCase()}</span>
                   </div>

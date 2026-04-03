@@ -471,7 +471,7 @@ wss.on("connection", (ws) => {
         const peers = getMeetRoomPeers(String(msg.roomId));
         for (const peerId of peers) {
           if (peerId !== userId) {
-            pushToUser(peerId, { type: "webrtc_media_state", from: userId, audio: msg.audio, video: msg.video });
+            pushToUser(peerId, { type: "webrtc_media_state", from: userId, audio: msg.audio, video: msg.video, ...(msg.facingMode ? { facingMode: msg.facingMode } : {}) });
           }
         }
         return;
@@ -522,8 +522,9 @@ wss.on("connection", (ws) => {
               isLocked: false,
               activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
             });
+            const entryInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === entry.userId);
             for (const peerId of existingPeers) {
-              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: entry.userId, name: entry.name, photoUrl: "", roomId: rId });
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: entry.userId, name: entry.name, photoUrl: "", facingMode: entryInfo?.facingMode || "user", roomId: rId });
             }
             pushToUser(entry.userId, { type: "webrtc_lobby_approved", roomId: rId });
           }
@@ -554,8 +555,9 @@ wss.on("connection", (ws) => {
             activePoll: (() => { const p = getActivePoll(rId); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
           });
           // Notify existing peers of the new joiner
+          const pendingInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === targetId);
           for (const peerId of existingPeers) {
-            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pending.name, photoUrl: "", roomId: rId });
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pending.name, photoUrl: "", facingMode: pendingInfo?.facingMode || "user", roomId: rId });
           }
           // Dismiss lobby screen on the approved user
           pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
@@ -581,8 +583,9 @@ wss.on("connection", (ws) => {
               isLocked: isRoomLocked(rId),
               activePoll: null,
             });
+            const dbApprovedInfo = getMeetRoomPeerInfo(rId).find((p: any) => p.userId === targetId);
             for (const peerId of existingPeers) {
-              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pName, photoUrl: "", roomId: rId });
+              pushToUser(peerId, { type: "webrtc_peer_joined", peerId: targetId, name: pName, photoUrl: "", facingMode: dbApprovedInfo?.facingMode || "user", roomId: rId });
             }
           } catch { /* on error, still approve */ }
           pushToUser(targetId, { type: "webrtc_lobby_approved", roomId: rId });
@@ -857,7 +860,8 @@ app.use((req, res, next) => {
   const nodeCron = await import("node-cron");
   nodeCron.default.schedule("*/2 * * * *", async () => {
     try {
-      const { QMeetingModel } = await import("./models");
+      const { QMeetingModel: QMF } = await import("./qmeet-db");
+      const QMeetingModel = QMF();
       const { pushNotification } = await import("./ws");
       const now = new Date();
       const in5  = new Date(now.getTime() + 5  * 60 * 1000);

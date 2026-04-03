@@ -456,6 +456,30 @@ export default function MeetingRoom() {
       return;
     }
 
+    // ── Screen share notifications from other peers ───────────────────────────
+    if (msg.type === "webrtc_screen_share") {
+      if (msg.active) {
+        toast({ title: `🖥️ ${msg.name || "مشارك"} بدأ مشاركة شاشته` });
+      } else {
+        toast({ title: `🖥️ ${msg.name || "مشارك"} أوقف مشاركة الشاشة` });
+      }
+      return;
+    }
+
+    // ── Screen share request/approval/denial ─────────────────────────────────
+    if (msg.type === "webrtc_screen_share_request") {
+      toast({ title: `${msg.name || "مشارك"} يطلب مشاركة شاشته`, description: "اعتمد الطلب من لوحة المشاركين" });
+      return;
+    }
+    if (msg.type === "webrtc_screen_share_approved") {
+      toast({ title: "✅ تمت الموافقة على مشاركة شاشتك" });
+      return;
+    }
+    if (msg.type === "webrtc_screen_share_denied") {
+      toast({ title: "❌ رُفض طلب مشاركة الشاشة", variant: "destructive" });
+      return;
+    }
+
     // ── Host receives a lock-lobby join request ───────────────────────────────
     if (msg.type === "webrtc_lock_join_request") {
       setLobbyRequests(prev => {
