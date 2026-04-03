@@ -6971,11 +6971,21 @@ export async function registerRoutes(
 
   app.get("/api/admin/activity-log", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role === "client") return res.sendStatus(403);
-    const { ActivityLogModel } = await import("./models");
-    const logs = await ActivityLogModel.find()
-      .sort({ createdAt: -1 }).limit(200)
-      .populate("userId", "fullName role username");
-    res.json(logs);
+    try {
+      const { ActivityLogModel } = await import("./models");
+      const { from, to, search, entity } = req.query as any;
+      const query: any = {};
+      if (from || to) {
+        query.createdAt = {};
+        if (from) query.createdAt.$gte = new Date(from);
+        if (to) { const d = new Date(to); d.setHours(23, 59, 59, 999); query.createdAt.$lte = d; }
+      }
+      if (entity) query.entity = entity;
+      const logs = await ActivityLogModel.find(query)
+        .sort({ createdAt: -1 }).limit(500)
+        .populate("userId", "fullName role username");
+      res.json(logs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   // ═══════════════════════════════════════════════════════════

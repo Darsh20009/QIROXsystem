@@ -392,7 +392,7 @@ wss.on("connection", (ws) => {
             }
           }
           currentRoomId = rId;
-          const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "");
+          const existingPeers = joinMeetRoom(currentRoomId, uid, msg.name || uid, msg.photoUrl || "", msg.facingMode || "user");
           const hostId = getRoomHost(currentRoomId);
           const peerInfoList = getMeetRoomPeerInfo(currentRoomId).filter(p => p.userId !== uid);
           ws.send(JSON.stringify({
@@ -405,7 +405,7 @@ wss.on("connection", (ws) => {
             activePoll: (() => { const p = getActivePoll(currentRoomId!); return p ? { id: p.id, question: p.question, options: p.options, hostId: p.hostId } : null; })(),
           }));
           for (const peerId of existingPeers) {
-            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: uid, name: msg.name || uid, photoUrl: msg.photoUrl || "", roomId: currentRoomId });
+            pushToUser(peerId, { type: "webrtc_peer_joined", peerId: uid, name: msg.name || uid, photoUrl: msg.photoUrl || "", facingMode: msg.facingMode || "user", roomId: currentRoomId });
           }
         })();
         return;
@@ -853,8 +853,42 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // Daily installment late-payment check at 8 AM
+  // Pre-meeting reminders — runs every 2 minutes
   const nodeCron = await import("node-cron");
+  nodeCron.default.schedule("*/2 * * * *", async () => {
+    try {
+      const { QMeetingModel } = await import("./models");
+      const { pushNotification } = await import("./ws");
+      const now = new Date();
+      const in5  = new Date(now.getTime() + 5  * 60 * 1000);
+      const in15 = new Date(now.getTime() + 15 * 60 * 1000);
+      // Meetings starting in the next 5-15 min that haven't sent reminder yet
+      const upcoming = await (QMeetingModel as any).find({
+        status: "scheduled",
+        reminderSent: { $ne: true },
+        scheduledAt: { $gt: in5, $lte: in15 },
+      });
+      for (const meeting of upcoming) {
+        const minutesLeft = Math.round((new Date(meeting.scheduledAt).getTime() - now.getTime()) / 60000);
+        const payload = {
+          title: `اجتماع قادم: ${meeting.title}`,
+          body: `يبدأ خلال ${minutesLeft} دقيقة`,
+          type: "meeting_reminder",
+          link: `/meeting/${meeting.roomName}`,
+          icon: "🎥",
+        };
+        // Notify host
+        if (meeting.hostId) pushNotification(String(meeting.hostId), payload);
+        // Notify participants
+        for (const pid of (meeting.participantIds || [])) {
+          pushNotification(String(pid), payload);
+        }
+        await (QMeetingModel as any).findByIdAndUpdate(meeting._id, { reminderSent: true });
+      }
+    } catch (e: any) { console.error("[MeetingReminder] error:", e.message); }
+  });
+
+  // Daily installment late-payment check at 8 AM
   nodeCron.default.schedule("0 8 * * *", async () => {
     try {
       const result = await runInstallmentLateCheck();

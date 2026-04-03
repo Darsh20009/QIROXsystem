@@ -156,6 +156,7 @@ const ClientInvoicePrint = lazy(() => import("@/pages/InvoicePrint"));
 const AdminSLA = lazy(() => import("@/pages/AdminSLA"));
 const AdminLoyalty = lazy(() => import("@/pages/AdminLoyalty"));
 const ClientLoyalty = lazy(() => import("@/pages/ClientLoyalty"));
+const ClientShipments = lazy(() => import("@/pages/ClientShipments"));
 const ClientQMeet = lazy(() => import("@/pages/ClientQMeet"));
 const AdminSuppliers = lazy(() => import("@/pages/AdminSuppliers"));
 const SupplierDashboard = lazy(() => import("@/pages/SupplierDashboard"));
@@ -317,6 +318,7 @@ function AdminRouter() {
         <Route path="/client/quotation-print/:id" component={QuotationPrint} />
         <Route path="/client/invoice-print/:id" component={ClientInvoicePrint} />
         <Route path="/client/loyalty" component={ClientLoyalty} />
+        <Route path="/client/shipments" component={ClientShipments} />
         <Route path="/qmeet" component={ClientQMeet} />
         <Route path="/supplier/dashboard" component={SupplierDashboard} />
         <Route path="/security/2fa" component={TwoFactorSetup} />

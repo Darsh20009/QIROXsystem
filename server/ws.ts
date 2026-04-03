@@ -77,7 +77,7 @@ export function broadcastToUsers(userIds: string[], payload: object) {
 }
 
 // ── WebRTC Meet Room Management ───────────────────────────────────────────────
-const meetRooms = new Map<string, Map<string, { name: string; userId: string; photoUrl?: string }>>();
+const meetRooms = new Map<string, Map<string, { name: string; userId: string; photoUrl?: string; facingMode?: string }>>();
 
 // ── Room metadata (lock, host, bans, polls) ───────────────────────────────────
 interface PollOption { text: string; votes: number }
@@ -183,11 +183,11 @@ export function isLockPending(roomId: string, userId: string): boolean {
   return !!getRoomMeta(roomId).lockPending.find(e => e.userId === userId);
 }
 
-export function joinMeetRoom(roomId: string, userId: string, name: string, photoUrl?: string): string[] {
+export function joinMeetRoom(roomId: string, userId: string, name: string, photoUrl?: string, facingMode?: string): string[] {
   if (!meetRooms.has(roomId)) meetRooms.set(roomId, new Map());
   const room = meetRooms.get(roomId)!;
   const existingPeers = [...room.keys()].filter(id => id !== userId);
-  room.set(userId, { name, userId, photoUrl });
+  room.set(userId, { name, userId, photoUrl, facingMode: facingMode || "user" });
   // First joiner becomes host if no host set
   if (existingPeers.length === 0) setRoomHost(roomId, userId);
   // Log attendance
@@ -213,7 +213,7 @@ export function getMeetRoomPeers(roomId: string): string[] {
   return [...(meetRooms.get(roomId)?.keys() || [])];
 }
 
-export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: string; photoUrl?: string }[] {
+export function getMeetRoomPeerInfo(roomId: string): { userId: string; name: string; photoUrl?: string; facingMode?: string }[] {
   const room = meetRooms.get(roomId);
   if (!room) return [];
   return [...room.values()];

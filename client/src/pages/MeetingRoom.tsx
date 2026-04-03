@@ -58,6 +58,7 @@ interface PeerState {
   videoOn: boolean;
   photoUrl?: string;
   raisedHand?: boolean;
+  facingMode?: "user" | "environment";
 }
 
 interface ChatMsg {
@@ -501,7 +502,7 @@ export default function MeetingRoom() {
             setPeers(prev => {
               const m = new Map(prev);
               if (!m.has(p.userId)) {
-                m.set(p.userId, { id: p.userId, name: p.name, stream: null, audioOn: true, videoOn: true, photoUrl: p.photoUrl });
+                m.set(p.userId, { id: p.userId, name: p.name, stream: null, audioOn: true, videoOn: true, photoUrl: p.photoUrl, facingMode: p.facingMode || "user" });
               }
               return m;
             });
@@ -529,7 +530,7 @@ export default function MeetingRoom() {
       setPeers(prev => {
         const m = new Map(prev);
         if (!m.has(peerId)) {
-          m.set(peerId, { id: peerId, name: msg.name || peerId, stream: null, audioOn: true, videoOn: true, photoUrl: msg.photoUrl });
+          m.set(peerId, { id: peerId, name: msg.name || peerId, stream: null, audioOn: true, videoOn: true, photoUrl: msg.photoUrl, facingMode: msg.facingMode || "user" });
         }
         return m;
       });
@@ -626,7 +627,7 @@ export default function MeetingRoom() {
       setPeers(prev => {
         const m = new Map(prev);
         const p = m.get(msg.from);
-        if (p) m.set(msg.from, { ...p, audioOn: !!msg.audio, videoOn: !!msg.video });
+        if (p) m.set(msg.from, { ...p, audioOn: !!msg.audio, videoOn: !!msg.video, ...(msg.facingMode ? { facingMode: msg.facingMode } : {}) });
         return m;
       });
       return;
@@ -754,6 +755,7 @@ export default function MeetingRoom() {
         roomId,
         name: userName,
         photoUrl: (user as any)?.photoUrl || "",
+        facingMode: facingModeRef.current,
       }));
     };
 
@@ -979,6 +981,7 @@ export default function MeetingRoom() {
       if (!newTrack) throw new Error("no video track");
       replaceTrackInPcs(newTrack, "video");
       facingModeRef.current = next;
+      sendWs({ type: "webrtc_media_state", roomId, audio: audioOnRef.current, video: videoOnRef.current, facingMode: next });
     } catch {
       toast({ title: "تعذّر قلب الكاميرا — جهازك قد لا يدعم كاميرا خلفية", variant: "destructive" });
     } finally {

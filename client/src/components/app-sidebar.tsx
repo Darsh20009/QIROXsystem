@@ -88,6 +88,7 @@ export function AppSidebar() {
     { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "client", section: "tools" },
     { title: ar ? "برنامج الإحالات" : "Referral Program", icon: Gift, url: "/referral", group: "client", section: "account" },
     { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/client/loyalty", group: "client", section: "account" },
+    { title: ar ? "تتبع الشحنات" : "Track Shipments", icon: Package, url: "/client/shipments", group: "client", section: "account" },
     { title: ar ? "عقودي" : "My Contracts", icon: FileText, url: "/client/contracts", group: "client", section: "account" },
     { title: ar ? "فواتيري" : "My Invoices", icon: Receipt, url: "/client/invoices", group: "client", section: "account" },
     { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/client/quotations", group: "client", section: "account" },
