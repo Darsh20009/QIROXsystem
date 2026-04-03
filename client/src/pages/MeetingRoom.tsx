@@ -8,7 +8,7 @@ import {
   MessageSquare, Users, Copy, Check, Loader2, Send,
   Hand, Grid3X3, Maximize2, Smile, X,
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
-  CircleDot, Download, QrCode, Sparkles, FlipHorizontal2,
+  CircleDot, Download, QrCode, Sparkles, FlipHorizontal2, Crown,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -535,6 +535,17 @@ export default function MeetingRoom() {
       });
       // Create a receiver PC with full handlers (isInitiator=false → no offer sent)
       createPc(peerId, false).catch(() => {});
+      return;
+    }
+
+    // ── Host transferred (automatic or manual) ────────────────────────────────
+    if (msg.type === "webrtc_host_changed") {
+      const amNowHost = String(msg.newHostId) === myId;
+      setIsRoomHost(amNowHost);
+      isRoomHostRef.current = amNowHost;
+      if (amNowHost) {
+        toast({ title: "👑 أنت الآن مضيف الاجتماع", description: "تمت إحالة إدارة الغرفة إليك" });
+      }
       return;
     }
 
@@ -1762,6 +1773,13 @@ export default function MeetingRoom() {
                       {/* Host controls per peer */}
                       {isRoomHost && p.id !== myId && (
                         <>
+                          <button onClick={() => {
+                              if (!confirm(`نقل صلاحية المضيف إلى ${p.name}؟`)) return;
+                              sendWs({ type: "webrtc_transfer_host", roomId, targetId: p.id });
+                            }} title="نقل المضيف"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-yellow-500/20 text-[#9aa0a6] hover:text-yellow-400 transition">
+                            <Crown className="w-3.5 h-3.5" />
+                          </button>
                           <button onClick={() => mutePeer(p.id)} title="كتم"
                             className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-[#9aa0a6] hover:text-white transition">
                             <VolumeX className="w-3.5 h-3.5" />

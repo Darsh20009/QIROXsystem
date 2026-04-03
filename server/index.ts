@@ -6,7 +6,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { connectToDatabase } from "./db";
 import { WebSocketServer } from "ws";
-import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, setActivePoll, getActivePoll, getAttendanceLog, addLockPending, removeLockPending, getLockPending } from "./ws";
+import { registerSocket, unregisterSocket, pushToUser, getOnlineUsers, joinMeetRoom, leaveMeetRoom, getMeetRoomPeers, getMeetRoomPeerInfo, leaveAllMeetRooms, subscribeSandboxLogs, unsubscribeSandboxLogs, isRoomLocked, setRoomLocked, isBannedFromRoom, banFromRoom, getRoomHost, forceSetRoomHost, setActivePoll, getActivePoll, getAttendanceLog, addLockPending, removeLockPending, getLockPending } from "./ws";
 import { initCronJobs } from "./cron";
 import { startQMeetScheduler, registerQMeetRoutes } from "./qmeet";
 import { registerSandboxRoutes } from "./sandbox-routes";
@@ -377,9 +377,18 @@ wss.on("connection", (ws) => {
 
           // ── Normal join ───────────────────────────────────────────────────
           if (currentRoomId && currentRoomId !== rId) {
-            const remaining = leaveMeetRoom(currentRoomId, uid);
+            const prevRoomId = currentRoomId;
+            const wasHostPrev = getRoomHost(prevRoomId) === uid;
+            const remaining = leaveMeetRoom(prevRoomId, uid);
             for (const peerId of remaining) {
-              pushToUser(peerId, { type: "webrtc_peer_left", peerId: uid, roomId: currentRoomId });
+              pushToUser(peerId, { type: "webrtc_peer_left", peerId: uid, roomId: prevRoomId });
+            }
+            if (wasHostPrev && remaining.length > 0) {
+              const newHostId = remaining[0];
+              forceSetRoomHost(prevRoomId, newHostId);
+              for (const peerId of remaining) {
+                pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: prevRoomId });
+              }
             }
           }
           currentRoomId = rId;
@@ -418,11 +427,33 @@ wss.on("connection", (ws) => {
       }
 
       if (msg.type === "webrtc_leave" && msg.roomId) {
-        const remaining = leaveMeetRoom(String(msg.roomId), userId);
+        const rId = String(msg.roomId);
+        const wasHost = getRoomHost(rId) === userId;
+        const remaining = leaveMeetRoom(rId, userId);
         for (const peerId of remaining) {
-          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: msg.roomId });
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: rId });
+        }
+        if (wasHost && remaining.length > 0) {
+          const newHostId = remaining[0];
+          forceSetRoomHost(rId, newHostId);
+          for (const peerId of remaining) {
+            pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: rId });
+          }
         }
         currentRoomId = null;
+        return;
+      }
+
+      // Manual host transfer (current host → chosen participant)
+      if (msg.type === "webrtc_transfer_host" && msg.roomId && msg.targetId) {
+        const rId = String(msg.roomId);
+        if (getRoomHost(rId) !== userId) return; // only host can transfer
+        const targetId = String(msg.targetId);
+        forceSetRoomHost(rId, targetId);
+        const peers = getMeetRoomPeers(rId);
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_host_changed", newHostId: targetId, roomId: rId });
+        }
         return;
       }
 
@@ -733,9 +764,18 @@ wss.on("connection", (ws) => {
     if (userId) {
       unregisterSocket(userId, ws);
       if (currentRoomId) {
-        const remaining = leaveMeetRoom(currentRoomId, userId);
+        const closedRoomId = currentRoomId;
+        const wasHost = getRoomHost(closedRoomId) === userId;
+        const remaining = leaveMeetRoom(closedRoomId, userId);
         for (const peerId of remaining) {
-          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: currentRoomId });
+          pushToUser(peerId, { type: "webrtc_peer_left", peerId: userId, roomId: closedRoomId });
+        }
+        if (wasHost && remaining.length > 0) {
+          const newHostId = remaining[0];
+          forceSetRoomHost(closedRoomId, newHostId);
+          for (const peerId of remaining) {
+            pushToUser(peerId, { type: "webrtc_host_changed", newHostId, roomId: closedRoomId });
+          }
         }
         currentRoomId = null;
       }

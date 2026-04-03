@@ -116,6 +116,10 @@ export function setRoomHost(roomId: string, userId: string): void {
   if (!meta.hostId) meta.hostId = userId;
 }
 
+export function forceSetRoomHost(roomId: string, userId: string): void {
+  getRoomMeta(roomId).hostId = userId;
+}
+
 export function getRoomHost(roomId: string): string {
   return getRoomMeta(roomId).hostId;
 }
@@ -243,11 +247,12 @@ export function broadcastSandboxLog(projectId: string, stream: "stdout" | "stder
   }
 }
 
-export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: string[] }[] {
-  const left: { roomId: string; remaining: string[] }[] = [];
+export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: string[]; newHostId?: string }[] {
+  const left: { roomId: string; remaining: string[]; newHostId?: string }[] = [];
   for (const [roomId, room] of meetRooms.entries()) {
     if (room.has(userId)) {
       const peerInfo = room.get(userId);
+      const wasHost = getRoomMeta(roomId).hostId === userId;
       room.delete(userId);
       if (room.size === 0) {
         meetRooms.delete(roomId);
@@ -256,7 +261,13 @@ export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: 
         if (peerInfo) {
           addAttendanceLog(roomId, { userId, name: peerInfo.name, action: "leave", time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) });
         }
-        left.push({ roomId, remaining: [...room.keys()] });
+        const remaining = [...room.keys()];
+        let newHostId: string | undefined;
+        if (wasHost && remaining.length > 0) {
+          newHostId = remaining[0];
+          forceSetRoomHost(roomId, newHostId);
+        }
+        left.push({ roomId, remaining, newHostId });
       }
     }
   }
