@@ -542,7 +542,6 @@ export async function registerRoutes(
               await OtpModel.updateMany({ email: eu.email.toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
               await OtpModel.create({ email: eu.email.toLowerCase().trim(), code, expiresAt, type: "email_verify" });
               sendEmailVerificationEmail(eu.email, eu.fullName || eu.username, code).catch(console.error);
-              console.log(`[EMAIL-VERIFY] Resend for existing unverified ${eu.email}: ${code}`);
             }
             return res.status(200).json({ ...sanitizeUser(eu), needsVerification: true, resent: true });
           });
@@ -564,7 +563,6 @@ export async function registerRoutes(
               await OtpModel.updateMany({ email: incomingEmail, used: false, type: "email_verify" }, { used: true });
               await OtpModel.create({ email: incomingEmail, code, expiresAt, type: "email_verify" });
               sendEmailVerificationEmail(incomingEmail, ee.fullName || ee.username, code).catch(console.error);
-              console.log(`[EMAIL-VERIFY] Resend for existing unverified email ${incomingEmail}: ${code}`);
               return res.status(200).json({ ...sanitizeUser(ee), needsVerification: true, resent: true });
             });
           }
@@ -601,7 +599,6 @@ export async function registerRoutes(
           await OtpModel.updateMany({ email: String(user.email).toLowerCase().trim(), used: false, type: "email_verify" }, { used: true });
           await OtpModel.create({ email: String(user.email).toLowerCase().trim(), code, expiresAt, type: "email_verify" });
           sendEmailVerificationEmail(user.email, user.fullName || user.username, code).catch(console.error);
-          console.log(`[EMAIL-VERIFY] Code for ${user.email}: ${code}`);
           sendAdminNewClientEmail("info@qiroxstudio.online", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
           sendAdminNewClientEmail("qiroxsystem@gmail.com", user.fullName || user.username, user.email, (user as any).phone || "", "التسجيل الذاتي").catch(console.error);
           fireNotifyAdmins(`🆕 عميل جديد انضم إلى المنصة`, `${user.fullName || user.username} (${user.email}) — ${(user as any).businessType || 'تسجيل ذاتي'}`, { type: 'info', link: '/admin/customers', icon: '🆕' });
@@ -1951,7 +1948,6 @@ export async function registerRoutes(
           await UserModel.findByIdAndUpdate(client._id, {
             $set: { subscriptionStartDate: startDate, subscriptionExpiresAt: expiresAt, subscriptionStatus: "active" },
           });
-          console.log(`[Subscription] Auto-started for client ${client._id} on project delivery. Expires: ${expiresAt.toISOString()}`);
           // Notify all managers/admins
           const staff = await UserModel.find({ role: { $in: ["admin","manager"] } }).select("_id").lean();
           const clientName = (client as any).fullName || (client as any).username || "العميل";
@@ -4951,9 +4947,7 @@ export async function registerRoutes(
       await OtpModel.create({ email: String(email).toLowerCase().trim(), code, expiresAt, type: "forgot_password" });
       const emailSent = await sendOtpEmail(email, user.fullName || user.username, code);
       if (emailSent) {
-        console.log(`[OTP] ✅ Code for ${email}: ${code} (expires in 10 min)`);
       } else {
-        console.error(`[OTP] ❌ Failed to send email to ${email} — Code: ${code}`);
       }
       res.json({ ok: true, emailSent });
     } catch (err) {
@@ -4993,7 +4987,6 @@ export async function registerRoutes(
       if (!otp) {
         // Debug: show what OTPs exist for this email (non-sensitive)
         const anyOtp = await OtpModel.findOne({ email: cleanEmail, type: "email_verify" }).sort({ createdAt: -1 });
-        console.log(`[OTP] verify-email FAILED for ${cleanEmail} — entered: "${cleanCode}" — latest in DB: "${anyOtp?.code || 'none'}" used:${anyOtp?.used} expired:${anyOtp ? anyOtp.expiresAt < new Date() : 'N/A'}`);
         return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية" });
       }
 
@@ -5022,7 +5015,6 @@ export async function registerRoutes(
 
       const userName = (user as any).fullName || (user as any).username || "عميل";
       sendWelcomeEmail(cleanEmail, userName).catch(e => console.error("[Email] welcome failed:", e));
-      console.log(`[OTP] verify-email SUCCESS for ${cleanEmail} — session extended to 14 days`);
       res.json({ ok: true, verified: true, role: (user as any).role || "client" });
     } catch (err) {
       console.error("[OTP] verify-email exception:", err);
@@ -5042,7 +5034,6 @@ export async function registerRoutes(
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       await OtpModel.create({ email: cleanUserEmail, code, expiresAt, type: "email_verify" });
       await sendEmailVerificationEmail(user.email, user.fullName || user.username, code);
-      console.log(`[EMAIL-VERIFY RESEND] Code for ${user.email}: ${code}`);
       res.json({ ok: true });
     } catch (err) {
       res.status(500).json({ error: "حدث خطأ، حاول مجدداً" });
@@ -5153,13 +5144,11 @@ export async function registerRoutes(
     // Find the latest login OTP for this email
     const latestOtp = await OtpModel.findOne({ email, type: "login_otp" }).sort({ createdAt: -1 });
     if (!latestOtp) {
-      console.log(`[OTP-verify-login] No OTP found for email=${email}`);
       return res.status(400).json({ error: "لم يتم إرسال رمز تحقق، أعد تسجيل الدخول" });
     }
     const isExpired = latestOtp.expiresAt < new Date();
     const isUsed = latestOtp.used;
     const codeMatch = latestOtp.code === enteredCode;
-    console.log(`[OTP-verify-login] email=${email} entered="${enteredCode}" stored="${latestOtp.code}" match=${codeMatch} used=${isUsed} expired=${isExpired}`);
 
     if (isUsed) return res.status(400).json({ error: "تم استخدام هذا الرمز من قبل، اطلب رمزاً جديداً" });
     if (isExpired) return res.status(400).json({ error: "انتهت صلاحية الرمز، اطلب رمزاً جديداً" });
@@ -8847,7 +8836,6 @@ export async function registerRoutes(
         console.warn(`[ExtraAddon] Delete failed — document not found: ${req.params.id}`);
         return res.status(404).json({ error: "الإضافة غير موجودة أو تم حذفها مسبقاً" });
       }
-      console.log(`[ExtraAddon] Deleted: ${deleted.nameAr} (${req.params.id})`);
       res.json({ ok: true });
     } catch (err: any) {
       console.error(`[ExtraAddon] Delete error for ${req.params.id}:`, err.message);
@@ -11212,7 +11200,6 @@ export async function registerRoutes(
         console.error("[TGGateway] Error:", data);
         return { ok: false, error: data.error?.message || "Gateway error" };
       }
-      console.log("[TGGateway] OTP sent to", phone);
       return { ok: true };
     } catch (e: any) {
       console.error("[TGGateway]", e.message);
