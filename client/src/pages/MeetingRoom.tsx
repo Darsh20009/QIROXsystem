@@ -223,6 +223,7 @@ export default function MeetingRoom() {
   // Recording
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const keepaliveRef = useRef<number | null>(null);
   // Captions
   const speechRef = useRef<any>(null);
   const captionsEndRef = useRef<HTMLDivElement>(null);
@@ -783,12 +784,21 @@ export default function MeetingRoom() {
       }, 2500);
     };
 
+    // ── Keepalive: send ping every 25s to prevent idle WS disconnect ───────
+    if (keepaliveRef.current) clearInterval(keepaliveRef.current);
+    keepaliveRef.current = window.setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 25000);
+
     setJoined(true);
   }, [roomId, userId, userName, user, getMedia, handleMessage]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
+      if (keepaliveRef.current) clearInterval(keepaliveRef.current);
       wsRef.current?.close();
       pcsRef.current.forEach(pc => pc.close());
       localStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -1015,8 +1025,22 @@ export default function MeetingRoom() {
           if (sender) sender.replaceTrack(screenTrack).catch(() => {});
         });
         if (localStreamRef.current) setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-        // When the user stops sharing from the browser UI
-        screenTrack.onended = () => {
+        // When the user stops sharing from the browser UI — restore camera
+        screenTrack.onended = async () => {
+          try {
+            const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            const camTrack = camStream.getVideoTracks()[0];
+            camTrack.enabled = videoOnRef.current;
+            if (localStreamRef.current) {
+              localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
+              localStreamRef.current.addTrack(camTrack);
+              pcsRef.current.forEach(pc => {
+                const sender = pc.getSenders().find(s => s.track?.kind === "video");
+                if (sender) sender.replaceTrack(camTrack).catch(() => {});
+              });
+              setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+            }
+          } catch { /* no camera → continue without video */ }
           setScreenSharing(false);
           sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
         };

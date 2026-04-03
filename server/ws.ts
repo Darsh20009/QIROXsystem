@@ -247,9 +247,17 @@ export function leaveAllMeetRooms(userId: string): { roomId: string; remaining: 
   const left: { roomId: string; remaining: string[] }[] = [];
   for (const [roomId, room] of meetRooms.entries()) {
     if (room.has(userId)) {
+      const peerInfo = room.get(userId);
       room.delete(userId);
-      if (room.size === 0) meetRooms.delete(roomId);
-      else left.push({ roomId, remaining: [...room.keys()] });
+      if (room.size === 0) {
+        meetRooms.delete(roomId);
+        meetRoomMeta.delete(roomId);
+      } else {
+        if (peerInfo) {
+          addAttendanceLog(roomId, { userId, name: peerInfo.name, action: "leave", time: new Date().toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" }) });
+        }
+        left.push({ roomId, remaining: [...room.keys()] });
+      }
     }
   }
   return left;
