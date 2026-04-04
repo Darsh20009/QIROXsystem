@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-auth";

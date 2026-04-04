@@ -30,6 +30,13 @@
 - `qx-page-bg` — admin page background
 - `qx-icon-bg` — icon container background
 
+**TypeScript @ts-nocheck Removal — 32 files cleaned:**
+- Removed ALL `@ts-nocheck` directives from 29 pages + 3 components
+- Fixed QiroxAI.tsx AIPanel() misplaced hook declaration (was inside type params)
+- Zero TypeScript compilation errors remaining
+- Pages: AdminActivityLog, AdminAddonSubscriptions, AdminAnalytics, AdminAppPublish, AdminAttendance, AdminContracts, AdminDataRequests, AdminInstallments, AdminLoyalty, AdminProfitReport, AdminProjectData, AdminReferrals, AdminReviews, AdminSLA, AdminSuppliers, AdminSystemMap, Cart, CartWizardPage, ClientContracts, ClientDataRequests, ClientInstallments, ClientInvoices, ClientLoyalty, ClientOnboarding, ClientShipments, EmployeeNewOrder, EmployeeSubscriptions, QMeetJoinByCode, SupplierDashboard
+- Components: DashboardWidgets, PackageFinderModal, QiroxAI
+
 ## Latest Changes (Apr 2, 2026) — Session 4
 
 ### Bug Fixes & New Quotation Feature

@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import SARIcon from "@/components/SARIcon";

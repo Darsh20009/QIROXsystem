@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -309,10 +309,10 @@ function NavigateCard({ url, label, onNavigate }: { url: string; label: string; 
    AIPanel — main component
 ══════════════════════════════════════════════════════════ */
 export function AIPanel({ className = "", quickActions }: {
-  const { dir } = useI18n();
   className?: string;
   quickActions?: Array<{ icon: any; label: string; prompt: string; color?: string }>;
 }) {
+  const { dir } = useI18n();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

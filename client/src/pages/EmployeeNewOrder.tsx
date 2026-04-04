@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import SARIcon from "@/components/SARIcon";
 import { useState, useRef } from "react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";

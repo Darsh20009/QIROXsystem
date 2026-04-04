@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Activity, User, FileText, ShoppingCart, Briefcase, Star, Download, Filter, X, Calendar } from "lucide-react";

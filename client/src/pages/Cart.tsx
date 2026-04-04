@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import SARIcon from "@/components/SARIcon";
 import PayPalCheckoutButton from "@/components/PayPalCheckoutButton";
 import { useQuery, useMutation } from "@tanstack/react-query";

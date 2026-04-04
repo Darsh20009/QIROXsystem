@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { useI18n } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Gift, Loader2, TrendingUp, Clock, Award, BarChart2 } from "lucide-react";
