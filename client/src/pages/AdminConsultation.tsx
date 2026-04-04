@@ -14,20 +14,24 @@ import { motion } from "framer-motion";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 
-const bookingStatusConfig: Record<string, { label: string; color: string }> = {
-  pending:   { label: "في انتظار تحديد الموعد", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  confirmed: { label: "تم تأكيد الموعد",        color: "bg-green-50 text-green-700 border-green-200" },
-  rejected:  { label: "مرفوض",                  color: "bg-red-50 text-red-700 border-red-200" },
-  cancelled: { label: "ملغي",                    color: "bg-gray-50 text-gray-600 border-gray-200" },
-  completed: { label: "مكتمل",                   color: "bg-blue-50 text-blue-700 border-blue-200" },
-};
+function getBookingStatusConfig(L: boolean): Record<string, { label: string; color: string }> {
+  return {
+    pending:   { label: L ? "في انتظار تحديد الموعد" : "Awaiting Scheduling", color: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" },
+    confirmed: { label: L ? "تم تأكيد الموعد" : "Confirmed", color: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" },
+    rejected:  { label: L ? "مرفوض" : "Rejected", color: "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800" },
+    cancelled: { label: L ? "ملغي" : "Cancelled", color: "bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700" },
+    completed: { label: L ? "مكتمل" : "Completed", color: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" },
+  };
+}
 
-const typeConfig: Record<string, { label: string; icon: any }> = {
-  video:     { label: "فيديو",    icon: Video },
-  phone:     { label: "هاتف",     icon: Phone },
-  in_person: { label: "حضوري",   icon: MapPin },
-  any:       { label: "أي نوع",  icon: Calendar },
-};
+function getTypeConfig(L: boolean): Record<string, { label: string; icon: any }> {
+  return {
+    video:     { label: L ? "فيديو" : "Video", icon: Video },
+    phone:     { label: L ? "هاتف" : "Phone", icon: Phone },
+    in_person: { label: L ? "حضوري" : "In-Person", icon: MapPin },
+    any:       { label: L ? "أي نوع" : "Any Type", icon: Calendar },
+  };
+}
 
 const emptyAssign = {
   date: "", startTime: "10:00", endTime: "11:00",
@@ -38,7 +42,8 @@ const emptyAssign = {
 export default function AdminConsultation() {
   const { data: user } = useUser();
   const { toast } = useToast();
-  const { dir } = useI18n();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
 
   const [viewBooking, setViewBooking] = useState<any>(null);
   const [assignBooking, setAssignBooking] = useState<any>(null);
@@ -62,14 +67,14 @@ export default function AdminConsultation() {
     onSuccess: () => {
       setReminderBooking(null);
       setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" });
-      toast({ title: "تم جدولة التذكير بنجاح", description: "سيظهر في صفحة تذكيرات التحول" });
+      toast({ title: L ? "تم جدولة التذكير بنجاح" : "Reminder scheduled successfully", description: L ? "سيظهر في صفحة تذكيرات التحول" : "It will appear on the switch reminders page" });
     },
-    onError: (e: any) => toast({ title: e.message || "فشل إنشاء التذكير", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل إنشاء التذكير" : "Failed to create reminder"), variant: "destructive" }),
   });
 
   const handleCreateReminder = () => {
     if (!reminderForm.currentProvider.trim() || !reminderForm.subscriptionEndDate) {
-      return toast({ title: "اسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبان", variant: "destructive" });
+      return toast({ title: L ? "اسم الشركة الحالية وتاريخ انتهاء الاشتراك مطلوبان" : "Company name and subscription end date are required", variant: "destructive" });
     }
     createReminderMutation.mutate({
       name: reminderBooking.clientName,
@@ -98,9 +103,9 @@ export default function AdminConsultation() {
       setRejectBooking(null);
       setAssignForm({ ...emptyAssign });
       setRejectNotes("");
-      toast({ title: "تم تحديث الطلب بنجاح" });
+      toast({ title: L ? "تم تحديث الطلب بنجاح" : "Request updated successfully" });
     },
-    onError: (e: any) => toast({ title: e.message || "فشل التحديث", variant: "destructive" }),
+    onError: (e: any) => toast({ title: e.message || (L ? "فشل التحديث" : "Update failed"), variant: "destructive" }),
   });
 
   const openAssign = (b: any) => {
@@ -118,7 +123,7 @@ export default function AdminConsultation() {
 
   const handleAssign = () => {
     if (!assignForm.date || !assignForm.startTime || !assignForm.endTime) {
-      return toast({ title: "يرجى تحديد التاريخ والوقت", variant: "destructive" });
+      return toast({ title: L ? "يرجى تحديد التاريخ والوقت" : "Please set the date and time", variant: "destructive" });
     }
     updateBookingMutation.mutate({
       id: assignBooking.id || assignBooking._id,
@@ -167,18 +172,18 @@ export default function AdminConsultation() {
       <PageGraphics variant="dashboard" />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-black dark:text-white">نظام الاستشارات</h1>
-          <p className="text-sm text-black/40 dark:text-white/40 mt-1">مراجعة طلبات الاستشارة وتحديد المواعيد</p>
+          <h1 className="text-xl md:text-2xl font-black text-black dark:text-white">{L ? "نظام الاستشارات" : "Consultation System"}</h1>
+          <p className="text-sm text-black/40 dark:text-white/40 mt-1">{L ? "مراجعة طلبات الاستشارة وتحديد المواعيد" : "Review consultation requests and schedule appointments"}</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "إجمالي الطلبات", value: stats.total,     icon: Calendar,     color: "text-black dark:text-white" },
-          { label: "قيد الانتظار",   value: stats.pending,   icon: Clock,        color: "text-amber-600" },
-          { label: "مؤكدة",          value: stats.confirmed, icon: CheckCircle,  color: "text-green-600" },
-          { label: "مكتملة",         value: stats.completed, icon: Users,        color: "text-blue-600" },
+          { label: L ? "إجمالي الطلبات" : "Total Requests", value: stats.total,     icon: Calendar,     color: "text-black dark:text-white" },
+          { label: L ? "قيد الانتظار" : "Pending",   value: stats.pending,   icon: Clock,        color: "text-amber-600" },
+          { label: L ? "مؤكدة" : "Confirmed",          value: stats.confirmed, icon: CheckCircle,  color: "text-green-600" },
+          { label: L ? "مكتملة" : "Completed",         value: stats.completed, icon: Users,        color: "text-blue-600" },
         ].map(s => (
           <div key={s.label} className="bg-white dark:bg-gray-900 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
             <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
@@ -190,13 +195,13 @@ export default function AdminConsultation() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <Input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="بحث بالاسم أو البريد أو الموضوع..."
+          placeholder={L ? "بحث بالاسم أو البريد أو الموضوع..." : "Search by name, email or topic..."}
           className="max-w-xs rounded-xl" data-testid="input-search-bookings" />
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48 rounded-xl" data-testid="select-filter-status"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            {Object.entries(bookingStatusConfig).map(([k, v]) => (
+            <SelectItem value="all">{L ? "جميع الحالات" : "All Statuses"}</SelectItem>
+            {Object.entries(getBookingStatusConfig(L)).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label}</SelectItem>
             ))}
           </SelectContent>
@@ -209,13 +214,15 @@ export default function AdminConsultation() {
       ) : filteredBookings.length === 0 ? (
         <div className="text-center py-16 text-black/30 dark:text-white/30">
           <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-70" />
-          <p>{search || filterStatus !== "all" ? "لا توجد نتائج مطابقة" : "لا توجد طلبات استشارة بعد"}</p>
+          <p>{search || filterStatus !== "all" ? (L ? "لا توجد نتائج مطابقة" : "No matching results") : (L ? "لا توجد طلبات استشارة بعد" : "No consultation requests yet")}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredBookings.map((b: any) => {
-            const sc = bookingStatusConfig[b.status] || bookingStatusConfig.pending;
-            const tc = typeConfig[b.consultationType] || typeConfig.phone;
+            const bsc = getBookingStatusConfig(L);
+            const tc0 = getTypeConfig(L);
+            const sc = bsc[b.status] || bsc.pending;
+            const tc = tc0[b.consultationType] || tc0.phone;
             const TIcon = tc.icon;
             return (
               <motion.div key={b.id || b._id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -241,7 +248,7 @@ export default function AdminConsultation() {
                       <div className="flex items-center gap-3 mt-2 text-xs text-black/50 dark:text-white/50">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {new Date(b.date).toLocaleDateString("ar-SA", { weekday: "short", month: "short", day: "numeric" })}
+                          {new Date(b.date).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" })}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />{b.startTime} — {b.endTime}
@@ -252,7 +259,7 @@ export default function AdminConsultation() {
                       </div>
                     )}
                     <p className="text-[10px] text-black/20 dark:text-white/20 mt-1">
-                      {new Date(b.createdAt).toLocaleString("ar-SA")}
+                      {new Date(b.createdAt).toLocaleString(L ? "ar-SA" : "en-US")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
@@ -261,12 +268,12 @@ export default function AdminConsultation() {
                         <Button size="sm" onClick={() => openAssign(b)}
                           className="bg-black dark:bg-white text-white dark:text-black rounded-xl text-xs h-8 gap-1.5"
                           data-testid={`button-assign-${b.id || b._id}`}>
-                          <CalendarClock className="w-3.5 h-3.5" />تحديد موعد
+                          <CalendarClock className="w-3.5 h-3.5" />{L ? "تحديد موعد" : "Schedule"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => { setRejectBooking(b); setRejectNotes(""); }}
                           className="rounded-xl text-xs h-8 text-red-500 border-red-200 hover:bg-red-50"
                           data-testid={`button-reject-${b.id || b._id}`}>
-                          <XCircle className="w-3.5 h-3.5" />رفض
+                          <XCircle className="w-3.5 h-3.5" />{L ? "رفض" : "Reject"}
                         </Button>
                       </>
                     )}
@@ -275,26 +282,26 @@ export default function AdminConsultation() {
                         <Button size="sm" variant="outline" onClick={() => openAssign(b)}
                           className="rounded-xl text-xs h-8 gap-1 border-black/10"
                           data-testid={`button-edit-assign-${b.id || b._id}`}>
-                          <CalendarClock className="w-3 h-3" />تعديل الموعد
+                          <CalendarClock className="w-3 h-3" />{L ? "تعديل الموعد" : "Edit Schedule"}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleComplete(b)}
                           disabled={updateBookingMutation.isPending}
                           className="rounded-xl text-xs h-8 text-blue-600 border-blue-200 hover:bg-blue-50"
                           data-testid={`button-complete-${b.id || b._id}`}>
-                          <CheckCircle className="w-3 h-3" />مكتمل
+                          <CheckCircle className="w-3 h-3" />{L ? "مكتمل" : "Complete"}
                         </Button>
                       </>
                     )}
                     <Button size="sm" variant="outline" onClick={() => setViewBooking(b)}
                       className="rounded-xl text-xs h-8 gap-1 border-black/10 dark:border-white/10"
                       data-testid={`button-view-${b.id || b._id}`}>
-                      <Eye className="w-3 h-3" />عرض
+                      <Eye className="w-3 h-3" />{L ? "عرض" : "View"}
                     </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => { setReminderBooking(b); setReminderForm({ currentProvider: "", serviceType: "", subscriptionEndDate: "", notes: "" }); }}
                       className="rounded-xl text-xs h-8 gap-1 border-amber-200 text-amber-600 hover:bg-amber-50"
                       data-testid={`button-reminder-${b.id || b._id}`}>
-                      <Bell className="w-3 h-3" />تذكير
+                      <Bell className="w-3 h-3" />{L ? "تذكير" : "Remind"}
                     </Button>
                   </div>
                 </div>
@@ -310,7 +317,7 @@ export default function AdminConsultation() {
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <CalendarClock className="w-5 h-5" />
-              {assignBooking?.status === "confirmed" ? "تعديل الموعد" : "تحديد الموعد"}
+              {assignBooking?.status === "confirmed" ? (L ? "تعديل الموعد" : "Edit Appointment") : (L ? "تحديد الموعد" : "Schedule Appointment")}
             </DialogTitle>
           </DialogHeader>
           {assignBooking && (
@@ -319,11 +326,11 @@ export default function AdminConsultation() {
               <div className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-sm">
                 <p className="font-bold text-black dark:text-white">{assignBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{assignBooking.clientEmail}</p>
-                {assignBooking.topic && <p className="text-xs text-black/60 dark:text-white/60 mt-1">الموضوع: {assignBooking.topic}</p>}
+                {assignBooking.topic && <p className="text-xs text-black/60 dark:text-white/60 mt-1">{L ? "الموضوع:" : "Topic:"} {assignBooking.topic}</p>}
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">التاريخ *</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "التاريخ *" : "Date *"}</label>
                 <Input type="date" value={assignForm.date} onChange={e => setAssignForm(f => ({ ...f, date: e.target.value }))}
                   min={new Date().toISOString().split("T")[0]}
                   className="rounded-xl border-black/10 dark:border-white/10" data-testid="input-assign-date" />
@@ -331,61 +338,61 @@ export default function AdminConsultation() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">وقت البداية *</label>
+                  <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "وقت البداية *" : "Start Time *"}</label>
                   <Input type="time" value={assignForm.startTime} onChange={e => setAssignForm(f => ({ ...f, startTime: e.target.value }))}
                     className="rounded-xl border-black/10 dark:border-white/10" data-testid="input-assign-start" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">وقت النهاية *</label>
+                  <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "وقت النهاية *" : "End Time *"}</label>
                   <Input type="time" value={assignForm.endTime} onChange={e => setAssignForm(f => ({ ...f, endTime: e.target.value }))}
                     className="rounded-xl border-black/10 dark:border-white/10" data-testid="input-assign-end" />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">نوع الجلسة</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "نوع الجلسة" : "Session Type"}</label>
                 <Select value={assignForm.consultationType || "phone"} onValueChange={v => setAssignForm(f => ({ ...f, consultationType: v }))}>
                   <SelectTrigger className="rounded-xl border-black/10 dark:border-white/10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="phone"><span className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />هاتف</span></SelectItem>
-                    <SelectItem value="video"><span className="flex items-center gap-2"><Video className="w-3.5 h-3.5" />فيديو</span></SelectItem>
-                    <SelectItem value="in_person"><span className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" />حضوري</span></SelectItem>
+                    <SelectItem value="phone"><span className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />{L ? "هاتف" : "Phone"}</span></SelectItem>
+                    <SelectItem value="video"><span className="flex items-center gap-2"><Video className="w-3.5 h-3.5" />{L ? "فيديو" : "Video"}</span></SelectItem>
+                    <SelectItem value="in_person"><span className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" />{L ? "حضوري" : "In-Person"}</span></SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">اسم المستشار (اختياري)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "اسم المستشار (اختياري)" : "Consultant Name (optional)"}</label>
                 <Input value={assignForm.employeeName} onChange={e => setAssignForm(f => ({ ...f, employeeName: e.target.value }))}
-                  placeholder="اسم الموظف المسؤول عن الاستشارة"
+                  placeholder={L ? "اسم الموظف المسؤول عن الاستشارة" : "Employee responsible for the consultation"}
                   className="rounded-xl border-black/10 dark:border-white/10" data-testid="input-assign-employee" />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">رابط الاجتماع (اختياري)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "رابط الاجتماع (اختياري)" : "Meeting Link (optional)"}</label>
                 <Input value={assignForm.meetingLink} onChange={e => setAssignForm(f => ({ ...f, meetingLink: e.target.value }))}
                   placeholder="https://meet.google.com/..." dir="ltr"
                   className="rounded-xl border-black/10 dark:border-white/10" data-testid="input-assign-link" />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">ملاحظات للعميل (اختياري)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "ملاحظات للعميل (اختياري)" : "Notes for Client (optional)"}</label>
                 <Textarea value={assignForm.adminNotes} onChange={e => setAssignForm(f => ({ ...f, adminNotes: e.target.value }))}
-                  placeholder="أي تعليمات أو معلومات تود إرسالها للعميل..."
+                  placeholder={L ? "أي تعليمات أو معلومات تود إرسالها للعميل..." : "Any instructions or information for the client..."}
                   className="rounded-xl border-black/10 dark:border-white/10 resize-none" rows={2}
                   data-testid="input-assign-notes" />
               </div>
 
               <div className="flex gap-2 pt-1">
-                <Button variant="outline" onClick={() => setAssignBooking(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                <Button variant="outline" onClick={() => setAssignBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
                 <Button onClick={handleAssign} disabled={updateBookingMutation.isPending}
                   className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-2"
                   data-testid="button-confirm-assign">
                   {updateBookingMutation.isPending
                     ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <><CheckCircle className="w-4 h-4" />تأكيد الموعد</>}
+                    : <><CheckCircle className="w-4 h-4" />{L ? "تأكيد الموعد" : "Confirm Appointment"}</>}
                 </Button>
               </div>
             </div>
@@ -398,7 +405,7 @@ export default function AdminConsultation() {
         <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2 text-red-500">
-              <XCircle className="w-5 h-5" />رفض طلب الاستشارة
+              <XCircle className="w-5 h-5" />{L ? "رفض طلب الاستشارة" : "Reject Consultation Request"}
             </DialogTitle>
           </DialogHeader>
           {rejectBooking && (
@@ -408,18 +415,18 @@ export default function AdminConsultation() {
                 <p className="text-xs text-black/40 dark:text-white/40">{rejectBooking.clientEmail}</p>
               </div>
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">سبب الرفض (اختياري)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "سبب الرفض (اختياري)" : "Rejection Reason (optional)"}</label>
                 <Textarea value={rejectNotes} onChange={e => setRejectNotes(e.target.value)}
-                  placeholder="يمكنك إخبار العميل بسبب الرفض..."
+                  placeholder={L ? "يمكنك إخبار العميل بسبب الرفض..." : "You can inform the client about the reason..."}
                   className="rounded-xl border-black/10 dark:border-white/10 resize-none" rows={3}
                   data-testid="input-reject-notes" />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setRejectBooking(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                <Button variant="outline" onClick={() => setRejectBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
                 <Button onClick={handleReject} disabled={updateBookingMutation.isPending}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-xl gap-1.5"
                   data-testid="button-confirm-reject">
-                  {updateBookingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" />تأكيد الرفض</>}
+                  {updateBookingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" />{L ? "تأكيد الرفض" : "Confirm Rejection"}</>}
                 </Button>
               </div>
             </div>
@@ -433,7 +440,7 @@ export default function AdminConsultation() {
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
               <Bell className="w-5 h-5 text-amber-500" />
-              جدولة تذكير تحوّل للعميل
+              {L ? "جدولة تذكير تحوّل للعميل" : "Schedule Client Switch Reminder"}
             </DialogTitle>
           </DialogHeader>
           {reminderBooking && (
@@ -441,46 +448,46 @@ export default function AdminConsultation() {
               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 text-sm">
                 <p className="font-bold text-black dark:text-white">{reminderBooking.clientName}</p>
                 <p className="text-xs text-black/40 dark:text-white/40">{reminderBooking.clientEmail}{reminderBooking.clientPhone ? ` · ${reminderBooking.clientPhone}` : ""}</p>
-                <p className="text-[11px] text-amber-600 mt-1">سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً</p>
+                <p className="text-[11px] text-amber-600 mt-1">{L ? "سيُضاف هذا العميل في قائمة تذكيرات التحول تلقائياً" : "This client will be automatically added to the switch reminders list"}</p>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
-                  الشركة / النظام الحالي <span className="text-red-400">*</span>
+                  {L ? "الشركة / النظام الحالي" : "Current Company / System"} <span className="text-red-400">*</span>
                 </label>
                 <Input
                   value={reminderForm.currentProvider}
                   onChange={e => setReminderForm(f => ({ ...f, currentProvider: e.target.value }))}
-                  placeholder="مثال: زد، سلة، ودّ، شركة X"
+                  placeholder={L ? "مثال: زد، سلة، ودّ، شركة X" : "e.g. Zid, Salla, Company X"}
                   className="rounded-xl border-black/10 dark:border-white/10"
                   data-testid="input-reminder-provider"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">نوع الخدمة</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "نوع الخدمة" : "Service Type"}</label>
                 <Select value={reminderForm.serviceType || ""} onValueChange={v => setReminderForm(f => ({ ...f, serviceType: v }))}>
                   <SelectTrigger className="rounded-xl border-black/10 dark:border-white/10">
-                    <SelectValue placeholder="اختر نوع الخدمة" />
+                    <SelectValue placeholder={L ? "اختر نوع الخدمة" : "Select service type"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="website">موقع إلكتروني</SelectItem>
-                    <SelectItem value="ecommerce">متجر إلكتروني</SelectItem>
-                    <SelectItem value="app">تطبيق جوال</SelectItem>
-                    <SelectItem value="erp">ERP / إدارة</SelectItem>
-                    <SelectItem value="pos">نقطة بيع</SelectItem>
+                    <SelectItem value="website">{L ? "موقع إلكتروني" : "Website"}</SelectItem>
+                    <SelectItem value="ecommerce">{L ? "متجر إلكتروني" : "E-Commerce"}</SelectItem>
+                    <SelectItem value="app">{L ? "تطبيق جوال" : "Mobile App"}</SelectItem>
+                    <SelectItem value="erp">{L ? "ERP / إدارة" : "ERP / Management"}</SelectItem>
+                    <SelectItem value="pos">{L ? "نقطة بيع" : "POS"}</SelectItem>
                     <SelectItem value="crm">CRM</SelectItem>
-                    <SelectItem value="design">تصميم وهوية</SelectItem>
-                    <SelectItem value="marketing">تسويق رقمي</SelectItem>
-                    <SelectItem value="hosting">استضافة</SelectItem>
-                    <SelectItem value="other">أخرى</SelectItem>
+                    <SelectItem value="design">{L ? "تصميم وهوية" : "Design & Branding"}</SelectItem>
+                    <SelectItem value="marketing">{L ? "تسويق رقمي" : "Digital Marketing"}</SelectItem>
+                    <SelectItem value="hosting">{L ? "استضافة" : "Hosting"}</SelectItem>
+                    <SelectItem value="other">{L ? "أخرى" : "Other"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">
-                  تاريخ انتهاء اشتراكه الحالي <span className="text-red-400">*</span>
+                  {L ? "تاريخ انتهاء اشتراكه الحالي" : "Current Subscription End Date"} <span className="text-red-400">*</span>
                 </label>
                 <Input
                   type="date"
@@ -492,11 +499,11 @@ export default function AdminConsultation() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">ملاحظات (اختياري)</label>
+                <label className="text-xs font-semibold text-black/60 dark:text-white/60 mb-1 block">{L ? "ملاحظات (اختياري)" : "Notes (optional)"}</label>
                 <Textarea
                   value={reminderForm.notes}
                   onChange={e => setReminderForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="معلومات إضافية أو سبب الاستشارة..."
+                  placeholder={L ? "معلومات إضافية أو سبب الاستشارة..." : "Additional information or consultation reason..."}
                   className="rounded-xl border-black/10 dark:border-white/10 resize-none"
                   rows={2}
                   data-testid="input-reminder-notes"
@@ -504,7 +511,7 @@ export default function AdminConsultation() {
               </div>
 
               <div className="flex gap-2 pt-1">
-                <Button variant="outline" onClick={() => setReminderBooking(null)} className="flex-1 rounded-xl">إلغاء</Button>
+                <Button variant="outline" onClick={() => setReminderBooking(null)} className="flex-1 rounded-xl">{L ? "إلغاء" : "Cancel"}</Button>
                 <Button
                   onClick={handleCreateReminder}
                   disabled={createReminderMutation.isPending}
@@ -513,7 +520,7 @@ export default function AdminConsultation() {
                 >
                   {createReminderMutation.isPending
                     ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <><Bell className="w-4 h-4" />جدولة التذكير</>}
+                    : <><Bell className="w-4 h-4" />{L ? "جدولة التذكير" : "Schedule Reminder"}</>}
                 </Button>
               </div>
             </div>
@@ -525,23 +532,23 @@ export default function AdminConsultation() {
       <Dialog open={!!viewBooking} onOpenChange={v => !v && setViewBooking(null)}>
         <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
-            <DialogTitle className="text-right">تفاصيل طلب الاستشارة</DialogTitle>
+            <DialogTitle className="text-right">{L ? "تفاصيل طلب الاستشارة" : "Consultation Request Details"}</DialogTitle>
           </DialogHeader>
           {viewBooking && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  ["العميل",         viewBooking.clientName],
-                  ["البريد",         viewBooking.clientEmail],
-                  ["الهاتف",         viewBooking.clientPhone || "—"],
-                  ["النوع المفضل",   typeConfig[viewBooking.consultationType]?.label || viewBooking.consultationType],
-                  ["الموضوع",        viewBooking.topic || "—"],
-                  ["تاريخ الطلب",    new Date(viewBooking.createdAt).toLocaleDateString("ar-SA")],
+                  [L ? "العميل" : "Client",         viewBooking.clientName],
+                  [L ? "البريد" : "Email",         viewBooking.clientEmail],
+                  [L ? "الهاتف" : "Phone",         viewBooking.clientPhone || "—"],
+                  [L ? "النوع المفضل" : "Preferred Type",   getTypeConfig(L)[viewBooking.consultationType]?.label || viewBooking.consultationType],
+                  [L ? "الموضوع" : "Topic",        viewBooking.topic || "—"],
+                  [L ? "تاريخ الطلب" : "Request Date",    new Date(viewBooking.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")],
                   ...(viewBooking.date ? [
-                    ["الموعد المحدد", `${new Date(viewBooking.date).toLocaleDateString("ar-SA", { weekday: "short", month: "short", day: "numeric" })}`],
-                    ["الوقت",         `${viewBooking.startTime} — ${viewBooking.endTime}`],
+                    [L ? "الموعد المحدد" : "Scheduled", `${new Date(viewBooking.date).toLocaleDateString(L ? "ar-SA" : "en-US", { weekday: "short", month: "short", day: "numeric" })}`],
+                    [L ? "الوقت" : "Time",         `${viewBooking.startTime} — ${viewBooking.endTime}`],
                   ] : []),
-                  ...(viewBooking.employeeName ? [["المستشار", viewBooking.employeeName]] : []),
+                  ...(viewBooking.employeeName ? [[L ? "المستشار" : "Consultant", viewBooking.employeeName]] : []),
                 ].map(([k, v]) => (
                   <div key={k} className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3">
                     <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">{k}</p>
@@ -551,28 +558,28 @@ export default function AdminConsultation() {
               </div>
               {viewBooking.notes && (
                 <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3">
-                  <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">ملاحظات العميل</p>
+                  <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">{L ? "ملاحظات العميل" : "Client Notes"}</p>
                   <p className="text-xs text-black dark:text-white leading-relaxed">{viewBooking.notes}</p>
                 </div>
               )}
               {viewBooking.adminNotes && (
                 <div className="bg-black/[0.03] dark:bg-white/[0.04] rounded-xl p-3">
-                  <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">ملاحظات الإدارة</p>
+                  <p className="text-[10px] text-black/40 dark:text-white/40 mb-0.5">{L ? "ملاحظات الإدارة" : "Admin Notes"}</p>
                   <p className="text-xs text-black dark:text-white leading-relaxed">{viewBooking.adminNotes}</p>
                 </div>
               )}
               {viewBooking.meetingLink && (
                 <a href={viewBooking.meetingLink} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs text-blue-600 hover:underline px-1">
-                  <Video className="w-3.5 h-3.5" />رابط الاجتماع
+                  <Video className="w-3.5 h-3.5" />{L ? "رابط الاجتماع" : "Meeting Link"}
                 </a>
               )}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" onClick={() => setViewBooking(null)} className="flex-1 rounded-xl">إغلاق</Button>
+                <Button variant="outline" onClick={() => setViewBooking(null)} className="flex-1 rounded-xl">{L ? "إغلاق" : "Close"}</Button>
                 {viewBooking.status === "pending" && (
                   <Button onClick={() => { setViewBooking(null); openAssign(viewBooking); }}
                     className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded-xl gap-1.5 text-xs">
-                    <CalendarClock className="w-4 h-4" />تحديد الموعد
+                    <CalendarClock className="w-4 h-4" />{L ? "تحديد الموعد" : "Schedule"}
                   </Button>
                 )}
               </div>

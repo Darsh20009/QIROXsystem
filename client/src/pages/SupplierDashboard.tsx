@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,34 +9,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Package, Plus, Trash2, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
+import { Package, Plus, Trash2, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  reviewing: { label: "تحت الدراسة", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  accepted: { label: "مقبول ✓", color: "bg-green-100 text-green-700 border-green-200" },
-  rejected: { label: "مرفوض", color: "bg-red-100 text-red-700 border-red-200" },
-};
-
 export default function SupplierDashboard() {
-  const { dir } = useI18n();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { toast } = useToast();
   const [createDialog, setCreateDialog] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", price: "", category: "", attachmentUrl: "" });
+
+  const STATUS_MAP: Record<string, { label: string; color: string }> = {
+    pending: { label: L ? "قيد المراجعة" : "Pending", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800" },
+    reviewing: { label: L ? "تحت الدراسة" : "Reviewing", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" },
+    accepted: { label: L ? "مقبول ✓" : "Accepted ✓", color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800" },
+    rejected: { label: L ? "مرفوض" : "Rejected", color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800" },
+  };
 
   const { data: offers = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/supplier/offers"] });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/supplier/offers", data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/supplier/offers"] }); setCreateDialog(false); setForm({ title: "", description: "", price: "", category: "", attachmentUrl: "" }); toast({ title: "تم إرسال العرض بنجاح" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/supplier/offers"] }); setCreateDialog(false); setForm({ title: "", description: "", price: "", category: "", attachmentUrl: "" }); toast({ title: L ? "تم إرسال العرض بنجاح" : "Offer submitted successfully" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/supplier/offers/${id}`),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/supplier/offers"] }); toast({ title: "تم حذف العرض" }); },
-    onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/supplier/offers"] }); toast({ title: L ? "تم حذف العرض" : "Offer deleted" }); },
+    onError: (e: any) => toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" }),
   });
 
   const stats = {
@@ -50,61 +51,63 @@ export default function SupplierDashboard() {
     <div className="p-6 space-y-6 font-sans max-w-3xl mx-auto" dir={dir}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-black">لوحة المورد</h1>
-          <p className="text-black/50 text-sm">أرسل عروضك وتابع حالتها</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{L ? "لوحة المورد" : "Supplier Dashboard"}</h1>
+          <p className="text-gray-500 dark:text-white/50 text-sm">{L ? "أرسل عروضك وتابع حالتها" : "Submit your offers and track their status"}</p>
         </div>
-        <Button onClick={() => setCreateDialog(true)} className="bg-black text-white hover:bg-black/80 gap-2" data-testid="button-new-offer">
-          <Plus className="w-4 h-4" /> عرض جديد
+        <Button onClick={() => setCreateDialog(true)} className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 gap-2" data-testid="button-new-offer">
+          <Plus className="w-4 h-4" /> {L ? "عرض جديد" : "New Offer"}
         </Button>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "إجمالي", value: stats.total, color: "text-black" },
-          { label: "قيد المراجعة", value: stats.pending, color: "text-amber-600" },
-          { label: "مقبولة", value: stats.accepted, color: "text-green-600" },
-          { label: "مرفوضة", value: stats.rejected, color: "text-red-500" },
+          { label: L ? "إجمالي" : "Total", value: stats.total, color: "text-gray-900 dark:text-white" },
+          { label: L ? "قيد المراجعة" : "Pending", value: stats.pending, color: "text-amber-600 dark:text-amber-400" },
+          { label: L ? "مقبولة" : "Accepted", value: stats.accepted, color: "text-green-600 dark:text-green-400" },
+          { label: L ? "مرفوضة" : "Rejected", value: stats.rejected, color: "text-red-500 dark:text-red-400" },
         ].map((s, i) => (
-          <Card key={i} className="border-black/10"><CardContent className="p-3 text-center"><div className={`text-2xl font-bold ${s.color}`}>{s.value}</div><div className="text-xs text-black/40">{s.label}</div></CardContent></Card>
+          <Card key={i} className="border-black/10 dark:border-white/10"><CardContent className="p-3 text-center"><div className={`text-2xl font-bold ${s.color}`}>{s.value}</div><div className="text-xs text-gray-400 dark:text-white/40">{s.label}</div></CardContent></Card>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-black/30">جاري التحميل...</div>
+        <div className="text-center py-12 text-gray-400 dark:text-white/30 flex items-center justify-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> {L ? "جاري التحميل..." : "Loading..."}
+        </div>
       ) : offers.length === 0 ? (
-        <div className="text-center py-16 text-black/30">
+        <div className="text-center py-16 text-gray-400 dark:text-white/30">
           <Package className="w-14 h-14 mx-auto mb-3 opacity-20" />
-          <p className="font-medium">لم ترسل أي عروض بعد</p>
-          <p className="text-sm mt-1">ابدأ بإرسال عرضك الأول</p>
-          <Button onClick={() => setCreateDialog(true)} size="sm" className="mt-4 bg-black text-white" data-testid="button-create-first-offer">إرسال عرض</Button>
+          <p className="font-medium">{L ? "لم ترسل أي عروض بعد" : "No offers submitted yet"}</p>
+          <p className="text-sm mt-1">{L ? "ابدأ بإرسال عرضك الأول" : "Start by submitting your first offer"}</p>
+          <Button onClick={() => setCreateDialog(true)} size="sm" className="mt-4 bg-black dark:bg-white text-white dark:text-black" data-testid="button-create-first-offer">{L ? "إرسال عرض" : "Submit Offer"}</Button>
         </div>
       ) : (
         <div className="space-y-3">
           {offers.map(offer => {
             const st = STATUS_MAP[offer.status] || STATUS_MAP.pending;
             return (
-              <Card key={offer.id} className="border-black/10 hover:border-black/20 transition-all" data-testid={`card-offer-${offer.id}`}>
+              <Card key={offer.id} className="border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all" data-testid={`card-offer-${offer.id}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="font-semibold">{offer.title}</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">{offer.title}</div>
                         <Badge className={`${st.color} border text-xs`}>{st.label}</Badge>
                       </div>
-                      {offer.category && <div className="text-xs text-black/40 mb-1">{offer.category}</div>}
-                      {offer.description && <p className="text-sm text-black/60 mb-2">{offer.description}</p>}
+                      {offer.category && <div className="text-xs text-gray-400 dark:text-white/40 mb-1">{offer.category}</div>}
+                      {offer.description && <p className="text-sm text-gray-500 dark:text-white/60 mb-2">{offer.description}</p>}
                       <div className="flex items-center gap-3">
-                        <div className="font-bold text-black">{offer.price?.toLocaleString()} {offer.currency || "SAR"}</div>
-                        <div className="text-xs text-black/30">{new Date(offer.createdAt).toLocaleDateString("ar-SA")}</div>
+                        <div className="font-bold text-gray-900 dark:text-white">{offer.price?.toLocaleString()} {offer.currency || "SAR"}</div>
+                        <div className="text-xs text-gray-400 dark:text-white/30">{new Date(offer.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}</div>
                       </div>
                       {offer.adminNote && (
-                        <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-2 text-xs text-blue-700">
-                          <strong>ملاحظة الإدارة:</strong> {offer.adminNote}
+                        <div className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2 text-xs text-blue-700 dark:text-blue-400">
+                          <strong>{L ? "ملاحظة الإدارة:" : "Admin Note:"}</strong> {offer.adminNote}
                         </div>
                       )}
                     </div>
                     {offer.status === "pending" && (
-                      <Button size="sm" variant="outline" className="border-red-200 text-red-500 hover:bg-red-50 flex-shrink-0" onClick={() => { if (confirm("حذف هذا العرض؟")) deleteMutation.mutate(offer.id); }} data-testid={`button-delete-offer-${offer.id}`}>
+                      <Button size="sm" variant="outline" className="border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0" onClick={() => { if (confirm(L ? "حذف هذا العرض؟" : "Delete this offer?")) deleteMutation.mutate(offer.id); }} data-testid={`button-delete-offer-${offer.id}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     )}
@@ -118,30 +121,30 @@ export default function SupplierDashboard() {
 
       <Dialog open={createDialog} onOpenChange={setCreateDialog}>
         <DialogContent className="sm:max-w-lg font-sans" dir={dir}>
-          <DialogHeader><DialogTitle>إرسال عرض جديد</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{L ? "إرسال عرض جديد" : "Submit New Offer"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">عنوان العرض *</label>
-              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="مثال: تصميم هوية بصرية احترافية" className="border-black/20" data-testid="input-offer-title" />
+              <label className="text-sm font-medium mb-1 block">{L ? "عنوان العرض *" : "Offer Title *"}</label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={L ? "مثال: تصميم هوية بصرية احترافية" : "e.g. Professional brand identity design"} data-testid="input-offer-title" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">السعر (SAR) *</label>
-                <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" className="border-black/20" data-testid="input-offer-price" />
+                <label className="text-sm font-medium mb-1 block">{L ? "السعر (SAR) *" : "Price (SAR) *"}</label>
+                <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" data-testid="input-offer-price" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">الفئة</label>
-                <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="مثال: تصميم، برمجة..." className="border-black/20" data-testid="input-offer-category" />
+                <label className="text-sm font-medium mb-1 block">{L ? "الفئة" : "Category"}</label>
+                <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder={L ? "مثال: تصميم، برمجة..." : "e.g. Design, Development..."} data-testid="input-offer-category" />
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">وصف العرض</label>
-              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="اشرح ما تقدمه بالتفصيل..." className="border-black/20 min-h-28" data-testid="textarea-offer-description" />
+              <label className="text-sm font-medium mb-1 block">{L ? "وصف العرض" : "Offer Description"}</label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={L ? "اشرح ما تقدمه بالتفصيل..." : "Describe your offer in detail..."} className="min-h-28" data-testid="textarea-offer-description" />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setCreateDialog(false)}>إلغاء</Button>
-              <Button onClick={() => createMutation.mutate({ ...form, price: Number(form.price) })} disabled={createMutation.isPending || !form.title || !form.price} className="bg-black text-white hover:bg-black/80" data-testid="button-submit-offer">
-                {createMutation.isPending ? "جاري الإرسال..." : "إرسال العرض"}
+              <Button variant="outline" onClick={() => setCreateDialog(false)}>{L ? "إلغاء" : "Cancel"}</Button>
+              <Button onClick={() => createMutation.mutate({ ...form, price: Number(form.price) })} disabled={createMutation.isPending || !form.title || !form.price} className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80" data-testid="button-submit-offer">
+                {createMutation.isPending ? (L ? "جاري الإرسال..." : "Submitting...") : (L ? "إرسال العرض" : "Submit Offer")}
               </Button>
             </div>
           </div>

@@ -13,7 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Briefcase, MapPin, Clock, Users, Code2, Palette, Server, BarChart3,
-  CheckCircle2, Loader2, Send, ArrowLeft, Star, Zap, Heart
+  CheckCircle2, Loader2, Send, ArrowLeft, ArrowRight, Star, Zap, Heart
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -36,15 +36,18 @@ const typeColors: Record<string, string> = {
   "تدريب": "bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800",
 };
 
-const perks = [
-  { icon: Star, title: "بيئة ابتكارية", desc: "نُشجع الأفكار الجديدة ونمنح فريقنا الحرية في التجريب والتعلم" },
-  { icon: Zap, title: "نمو مستمر", desc: "دعم كامل لمسيرتك المهنية من تدريب وشهادات وفرص ترقٍّ" },
-  { icon: Heart, title: "ثقافة محترمة", desc: "فريق صغير ومتعاون يقدّر كل فرد ويُقدّم بيئة عمل صحية" },
-  { icon: Users, title: "تأثير حقيقي", desc: "عملك يُبنى ويُطلق — تأثيرك مباشر على عشرات العملاء" },
-];
+function getPerks(L: boolean) {
+  return [
+    { icon: Star, title: L ? "بيئة ابتكارية" : "Innovative Environment", desc: L ? "نُشجع الأفكار الجديدة ونمنح فريقنا الحرية في التجريب والتعلم" : "We encourage new ideas and give our team the freedom to experiment and learn" },
+    { icon: Zap, title: L ? "نمو مستمر" : "Continuous Growth", desc: L ? "دعم كامل لمسيرتك المهنية من تدريب وشهادات وفرص ترقٍّ" : "Full support for your career with training, certifications, and promotion opportunities" },
+    { icon: Heart, title: L ? "ثقافة محترمة" : "Respectful Culture", desc: L ? "فريق صغير ومتعاون يقدّر كل فرد ويُقدّم بيئة عمل صحية" : "A small, collaborative team that values each individual and promotes a healthy work environment" },
+    { icon: Users, title: L ? "تأثير حقيقي" : "Real Impact", desc: L ? "عملك يُبنى ويُطلق — تأثيرك مباشر على عشرات العملاء" : "Your work gets built and launched — your impact is directly felt by dozens of clients" },
+  ];
+}
 
 export default function JoinUs() {
-  const { dir } = useI18n();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", resumeUrl: "", coverLetter: "" });
@@ -68,13 +71,13 @@ export default function JoinUs() {
       setSubmitted(true);
       setForm({ fullName: "", email: "", phone: "", resumeUrl: "", coverLetter: "" });
     },
-    onError: () => toast({ title: "فشل إرسال الطلب، يرجى المحاولة لاحقاً", variant: "destructive" }),
+    onError: () => toast({ title: L ? "فشل إرسال الطلب، يرجى المحاولة لاحقاً" : "Failed to submit application, please try again later", variant: "destructive" }),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName || !form.email) {
-      toast({ title: "يرجى تعبئة الاسم والبريد الإلكتروني", variant: "destructive" });
+      toast({ title: L ? "يرجى تعبئة الاسم والبريد الإلكتروني" : "Please fill in your name and email", variant: "destructive" });
       return;
     }
     applyMutation.mutate();
@@ -101,11 +104,10 @@ export default function JoinUs() {
               <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">Careers</span>
             </motion.div>
             <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl font-black font-heading text-black dark:text-white mb-6 tracking-tight">
-              انضم إلى <span className="text-gray-400">QIROX</span>
+              {L ? "انضم إلى" : "Join"} <span className="text-gray-400">QIROX</span>
             </motion.h1>
             <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-lg max-w-2xl mx-auto leading-relaxed">
-              نبحث عن مواهب استثنائية لبناء أنظمة رقمية تُحدث فرقاً حقيقياً.
-              هل أنت مستعد لبناء الأنظمة؟
+              {L ? "نبحث عن مواهب استثنائية لبناء أنظمة رقمية تُحدث فرقاً حقيقياً. هل أنت مستعد لبناء الأنظمة؟" : "We're looking for exceptional talent to build digital systems that make a real difference. Are you ready to build?"}
             </motion.p>
           </motion.div>
         </div>
@@ -115,7 +117,7 @@ export default function JoinUs() {
       <section className="py-16 bg-[#fafafa] dark:bg-gray-900/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-            {perks.map((perk, i) => (
+            {getPerks(L).map((perk, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -140,13 +142,13 @@ export default function JoinUs() {
       <section className="py-20 container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-10" dir={dir}>
-            <span className="text-black/40 dark:text-white/40 text-sm font-semibold">الوظائف المتاحة</span>
+            <span className="text-black/40 dark:text-white/40 text-sm font-semibold">{L ? "الوظائف المتاحة" : "Open Positions"}</span>
             <h2 className="text-2xl md:text-3xl font-bold font-heading text-black dark:text-white mt-2">
-              {isLoading ? "جاري التحميل..." : jobs.filter((j: any) => j.status === "open").length > 0 ? "انضم إلى فريقنا" : "لا توجد وظائف مفتوحة حالياً"}
+              {isLoading ? (L ? "جاري التحميل..." : "Loading...") : jobs.filter((j: any) => j.status === "open").length > 0 ? (L ? "انضم إلى فريقنا" : "Join Our Team") : (L ? "لا توجد وظائف مفتوحة حالياً" : "No Open Positions Currently")}
             </h2>
             {jobs.filter((j: any) => j.status === "open").length === 0 && !isLoading && (
               <p className="text-black/40 dark:text-white/40 text-sm mt-2">
-                تابعنا على منصات التواصل الاجتماعي أو تواصل معنا مباشرة لإرسال طلبك الرقمي.
+                {L ? "تابعنا على منصات التواصل الاجتماعي أو تواصل معنا مباشرة لإرسال طلبك الرقمي." : "Follow us on social media or contact us directly to submit your digital application."}
               </p>
             )}
           </div>
@@ -178,9 +180,9 @@ export default function JoinUs() {
                             <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-black dark:text-white text-base mb-1">{job.titleAr || job.title}</h3>
+                            <h3 className="font-bold text-black dark:text-white text-base mb-1">{L ? (job.titleAr || job.title) : (job.title || job.titleAr)}</h3>
                             <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-3 line-clamp-2">
-                              {job.descriptionAr || job.description}
+                              {L ? (job.descriptionAr || job.description) : (job.description || job.descriptionAr)}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                               {job.type && (
@@ -208,8 +210,8 @@ export default function JoinUs() {
                           className="flex-shrink-0 h-10 px-5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-sm font-bold hover:bg-gray-900 dark:hover:bg-gray-100 gap-1.5"
                           data-testid={`button-apply-${job._id || job.id}`}
                         >
-                          تقدم الآن
-                          <ArrowLeft className="w-4 h-4" />
+                          {L ? "تقدم الآن" : "Apply Now"}
+                          {L ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                         </Button>
                       </div>
                     </div>
@@ -230,16 +232,16 @@ export default function JoinUs() {
             <div className="w-14 h-14 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
               <Briefcase className="w-6 h-6 text-black/40 dark:text-white/40" />
             </div>
-            <h3 className="font-bold text-black dark:text-white text-base mb-2">لا تجد وظيفة مناسبة؟</h3>
+            <h3 className="font-bold text-black dark:text-white text-base mb-2">{L ? "لا تجد وظيفة مناسبة؟" : "Can't find a suitable position?"}</h3>
             <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6 max-w-sm mx-auto">
-              أرسل طلبك المفتوح وسنتواصل معك عند توفر فرصة تناسب مهاراتك.
+              {L ? "أرسل طلبك المفتوح وسنتواصل معك عند توفر فرصة تناسب مهاراتك." : "Submit an open application and we'll reach out when a suitable opportunity becomes available."}
             </p>
             <Button
               onClick={() => openApply({ _id: "open", titleAr: "طلب مفتوح", title: "Open Application" })}
               className="premium-btn px-6 rounded-xl"
               data-testid="button-open-application"
             >
-              إرسال طلب مفتوح
+              {L ? "إرسال طلب مفتوح" : "Submit Open Application"}
             </Button>
           </motion.div>
         </div>
@@ -253,7 +255,7 @@ export default function JoinUs() {
               <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center flex-shrink-0">
                 <Briefcase className="w-4 h-4 text-white dark:text-black" />
               </div>
-              {selectedJob?.titleAr || selectedJob?.title || "التقديم"}
+              {L ? (selectedJob?.titleAr || selectedJob?.title || "التقديم") : (selectedJob?.title || selectedJob?.titleAr || "Apply")}
             </DialogTitle>
           </DialogHeader>
 
@@ -262,9 +264,9 @@ export default function JoinUs() {
               <div className="w-16 h-16 bg-green-50 dark:bg-green-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
-              <h3 className="text-lg font-bold text-black dark:text-white mb-2">تم إرسال طلبك!</h3>
+              <h3 className="text-lg font-bold text-black dark:text-white mb-2">{L ? "تم إرسال طلبك!" : "Application Submitted!"}</h3>
               <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">
-                شكراً لاهتمامك بالانضمام إلى QIROX. سيراجع فريقنا طلبك ويتواصل معك قريباً.
+                {L ? "شكراً لاهتمامك بالانضمام إلى QIROX. سيراجع فريقنا طلبك ويتواصل معك قريباً." : "Thank you for your interest in joining QIROX. Our team will review your application and get back to you soon."}
               </p>
               <Button
                 variant="outline"
@@ -272,23 +274,23 @@ export default function JoinUs() {
                 onClick={() => setSelectedJob(null)}
                 data-testid="button-close-dialog"
               >
-                إغلاق
+                {L ? "إغلاق" : "Close"}
               </Button>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">الاسم الكامل <span className="text-red-400">*</span></label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "الاسم الكامل" : "Full Name"} <span className="text-red-400">*</span></label>
                 <Input
                   value={form.fullName}
                   onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))}
-                  placeholder="محمد أحمد"
+                  placeholder={L ? "محمد أحمد" : "John Doe"}
                   className="h-11 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25"
                   data-testid="input-apply-name"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">البريد الإلكتروني <span className="text-red-400">*</span></label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "البريد الإلكتروني" : "Email"} <span className="text-red-400">*</span></label>
                 <Input
                   type="email"
                   value={form.email}
@@ -299,7 +301,7 @@ export default function JoinUs() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">رقم الهاتف</label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "رقم الهاتف" : "Phone Number"}</label>
                 <Input
                   value={form.phone}
                   onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
@@ -309,7 +311,7 @@ export default function JoinUs() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">رابط السيرة الذاتية أو Portfolio</label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "رابط السيرة الذاتية أو Portfolio" : "Resume or Portfolio Link"}</label>
                 <Input
                   value={form.resumeUrl}
                   onChange={e => setForm(p => ({ ...p, resumeUrl: e.target.value }))}
@@ -320,11 +322,11 @@ export default function JoinUs() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">لماذا QIROX؟</label>
+                <label className="text-sm font-medium text-black/50 dark:text-white/50 block mb-1.5">{L ? "لماذا QIROX؟" : "Why QIROX?"}</label>
                 <Textarea
                   value={form.coverLetter}
                   onChange={e => setForm(p => ({ ...p, coverLetter: e.target.value }))}
-                  placeholder="أخبرنا عن نفسك ولماذا تريد الانضمام إلى فريقنا..."
+                  placeholder={L ? "أخبرنا عن نفسك ولماذا تريد الانضمام إلى فريقنا..." : "Tell us about yourself and why you want to join our team..."}
                   rows={4}
                   className="rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 resize-none"
                   data-testid="input-apply-cover"
@@ -337,7 +339,7 @@ export default function JoinUs() {
                 data-testid="button-submit-application"
               >
                 {applyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {applyMutation.isPending ? "جاري الإرسال..." : "إرسال الطلب"}
+                {applyMutation.isPending ? (L ? "جاري الإرسال..." : "Submitting...") : (L ? "إرسال الطلب" : "Submit Application")}
               </Button>
             </form>
           )}

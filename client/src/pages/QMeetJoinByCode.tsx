@@ -33,15 +33,17 @@ function getOrCreateGuestId(): string {
   return id;
 }
 
-function formatWaitTime(seconds: number): string {
-  if (seconds < 60) return `${seconds} ثانية`;
+function formatWaitTime(seconds: number, isAr: boolean): string {
+  if (seconds < 60) return isAr ? `${seconds} ثانية` : `${seconds}s`;
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return s > 0 ? `${m} د ${s} ث` : `${m} دقيقة`;
+  if (isAr) return s > 0 ? `${m} د ${s} ث` : `${m} دقيقة`;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
 export default function QMeetJoinByCode() {
-  const { dir } = useI18n();
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -75,9 +77,9 @@ export default function QMeetJoinByCode() {
       setCode(urlCode);
       setLoading(true);
       fetch(`/api/qmeet/by-code/${urlCode}`)
-        .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || "كود غير صحيح"))))
+        .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(new Error(e.message || (L ? "كود غير صحيح" : "Invalid code")))))
         .then(data => { setMeetingInfo(data); setStep("meeting_info"); })
-        .catch(err => toast({ title: "خطأ", description: err?.message || "كود غير صحيح", variant: "destructive" }))
+        .catch(err => toast({ title: L ? "خطأ" : "Error", description: err?.message || (L ? "كود غير صحيح" : "Invalid code"), variant: "destructive" }))
         .finally(() => setLoading(false));
     }
   }, [toast]);
@@ -145,17 +147,17 @@ export default function QMeetJoinByCode() {
 
   const lookupCode = async () => {
     if (code.length !== 6) {
-      toast({ title: "الكود يجب أن يكون 6 أحرف", variant: "destructive" });
+      toast({ title: L ? "الكود يجب أن يكون 6 أحرف" : "Code must be 6 characters", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
       const res = await fetch(`/api/qmeet/by-code/${code}`);
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "كود غير صحيح");
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || (L ? "كود غير صحيح" : "Invalid code"));
       setMeetingInfo(await res.json());
       setStep("meeting_info");
     } catch (err: any) {
-      toast({ title: "خطأ", description: err?.message || "كود غير صحيح أو الاجتماع غير متاح", variant: "destructive" });
+      toast({ title: L ? "خطأ" : "Error", description: err?.message || (L ? "كود غير صحيح أو الاجتماع غير متاح" : "Invalid code or meeting unavailable"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -164,7 +166,7 @@ export default function QMeetJoinByCode() {
   const requestJoin = async () => {
     if (!meetingInfo) return;
     if (!user && !guestName.trim()) {
-      toast({ title: "مطلوب", description: "أدخل اسمك قبل الانضمام", variant: "destructive" });
+      toast({ title: L ? "مطلوب" : "Required", description: L ? "أدخل اسمك قبل الانضمام" : "Enter your name before joining", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -181,11 +183,11 @@ export default function QMeetJoinByCode() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "حدث خطأ");
+      if (!res.ok) throw new Error(data.message || (L ? "حدث خطأ" : "An error occurred"));
       if (data.status === "approved") { setMeetingLink(data.meetingLink); setStep("approved"); }
       else if (data.status === "pending") setStep("pending");
     } catch (err: any) {
-      toast({ title: "خطأ", description: err?.message || "حدث خطأ", variant: "destructive" });
+      toast({ title: L ? "خطأ" : "Error", description: err?.message || (L ? "حدث خطأ" : "An error occurred"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -196,7 +198,7 @@ export default function QMeetJoinByCode() {
     live: "bg-green-500/20 text-green-300 border-green-500/30",
     completed: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   };
-  const statusLabels: Record<string, string> = { scheduled: "مجدول", live: "مباشر الآن", completed: "انتهى" };
+  const statusLabels: Record<string, string> = { scheduled: L ? "مجدول" : "Scheduled", live: L ? "مباشر الآن" : "Live Now", completed: L ? "انتهى" : "Ended" };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" dir={dir}
@@ -210,19 +212,19 @@ export default function QMeetJoinByCode() {
             <Video className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-white text-2xl font-bold tracking-tight">QMeet</h1>
-          <p className="text-white/40 text-sm mt-1">انضم باستخدام كود الاجتماع</p>
+          <p className="text-white/40 text-sm mt-1">{L ? "انضم باستخدام كود الاجتماع" : "Join using a meeting code"}</p>
         </div>
 
         {/* ─── Enter Code ─── */}
         {step === "enter_code" && (
           <div className="rounded-2xl p-6 space-y-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="space-y-2">
-              <label className="text-white/70 text-sm font-medium block">كود الاجتماع (6 أحرف)</label>
+              <label className="text-white/70 text-sm font-medium block">{L ? "كود الاجتماع (6 أحرف)" : "Meeting Code (6 characters)"}</label>
               <Input
                 value={code}
                 onChange={(e) => handleCodeInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && code.length === 6 && lookupCode()}
-                placeholder="مثال: QM4X7B"
+                placeholder={L ? "مثال: QM4X7B" : "e.g. QM4X7B"}
                 className="text-center text-2xl font-mono tracking-[0.4em] h-14 placeholder:text-gray-600 placeholder:tracking-normal"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}
                 maxLength={6}
@@ -242,10 +244,10 @@ export default function QMeetJoinByCode() {
               style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}
               data-testid="button-lookup-code"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "بحث عن الاجتماع"}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (L ? "بحث عن الاجتماع" : "Find Meeting")}
             </Button>
             <button onClick={() => navigate("/dashboard")} className="w-full text-white/30 hover:text-white/60 text-sm transition-colors text-center">
-              رجوع للرئيسية
+              {L ? "رجوع للرئيسية" : "Back to Home"}
             </button>
           </div>
         )}
@@ -261,7 +263,7 @@ export default function QMeetJoinByCode() {
                 <h2 className="text-white text-lg font-bold leading-tight">{meetingInfo.title}</h2>
               </div>
               <div className="rounded-xl px-3 py-2 text-center shrink-0" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <p className="text-[10px] text-white/40">كود</p>
+                <p className="text-[10px] text-white/40">{L ? "كود" : "Code"}</p>
                 <p className="text-white font-mono font-bold text-sm tracking-widest">{meetingInfo.joinCode}</p>
               </div>
             </div>
@@ -269,32 +271,32 @@ export default function QMeetJoinByCode() {
             <div className="space-y-2.5 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)" }}>
               <div className="flex items-center gap-3 text-white/60 text-sm">
                 <Users className="w-4 h-4 shrink-0 text-blue-400" />
-                <span>المضيف: <span className="text-white/90 font-medium">{meetingInfo.hostName}</span></span>
+                <span>{L ? "المضيف:" : "Host:"} <span className="text-white/90 font-medium">{meetingInfo.hostName}</span></span>
               </div>
               <div className="flex items-center gap-3 text-white/60 text-sm">
                 <Calendar className="w-4 h-4 shrink-0 text-blue-400" />
-                <span>{new Date(meetingInfo.scheduledAt).toLocaleString("ar-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                <span>{new Date(meetingInfo.scheduledAt).toLocaleString(L ? "ar-SA" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
               <div className="flex items-center gap-3 text-white/60 text-sm">
                 <Timer className="w-4 h-4 shrink-0 text-blue-400" />
-                <span>المدة: <span className="text-white/80">{meetingInfo.durationMinutes} دقيقة</span></span>
+                <span>{L ? "المدة:" : "Duration:"} <span className="text-white/80">{meetingInfo.durationMinutes} {L ? "دقيقة" : "min"}</span></span>
               </div>
             </div>
 
             <div className="rounded-xl p-3 flex items-start gap-2.5" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
               <Shield className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <p className="text-amber-300/90 text-xs leading-relaxed">
-                الاجتماع محمي — سيُشعَر المضيف بطلبك ويقرر قبوله أو رفضه.
+                {L ? "الاجتماع محمي — سيُشعَر المضيف بطلبك ويقرر قبوله أو رفضه." : "This meeting is protected — the host will be notified and will decide to accept or reject your request."}
               </p>
             </div>
 
             {!user && (
               <div>
-                <label className="text-white/60 text-xs font-medium block mb-1.5">اسمك <span className="text-red-400">*</span></label>
+                <label className="text-white/60 text-xs font-medium block mb-1.5">{L ? "اسمك" : "Your Name"} <span className="text-red-400">*</span></label>
                 <Input
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
-                  placeholder="أدخل اسمك ليظهر للمضيف"
+                  placeholder={L ? "أدخل اسمك ليظهر للمضيف" : "Enter your name for the host"}
                   style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}
                   className="placeholder:text-gray-500"
                   data-testid="input-guest-name"
@@ -311,7 +313,7 @@ export default function QMeetJoinByCode() {
                 style={{ background: "linear-gradient(135deg, #16a34a, #15803d)" }}
                 data-testid="button-request-join"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "طلب الانضمام"}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "طلب الانضمام" : "Request to Join")}
               </Button>
               <Button
                 onClick={() => setStep("enter_code")}
@@ -319,7 +321,7 @@ export default function QMeetJoinByCode() {
                 variant="outline"
                 data-testid="button-back-code"
               >
-                تغيير
+                {L ? "تغيير" : "Change"}
               </Button>
             </div>
           </div>
@@ -331,8 +333,8 @@ export default function QMeetJoinByCode() {
             {/* Header bar */}
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(245,158,11,0.08)" }}>
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-amber-300 text-xs font-semibold">صالة الانتظار</span>
-              <span className="mr-auto text-white/30 text-xs font-mono">{formatWaitTime(waitSeconds)}</span>
+              <span className="text-amber-300 text-xs font-semibold">{L ? "صالة الانتظار" : "Waiting Room"}</span>
+              <span className={`${L ? "mr-auto" : "ml-auto"} text-white/30 text-xs font-mono`}>{formatWaitTime(waitSeconds, L)}</span>
             </div>
 
             <div className="p-8 space-y-7 text-center">
@@ -347,9 +349,9 @@ export default function QMeetJoinByCode() {
 
               {/* Text */}
               <div className="space-y-2">
-                <h2 className="text-white text-xl font-bold">في انتظار موافقة المضيف</h2>
+                <h2 className="text-white text-xl font-bold">{L ? "في انتظار موافقة المضيف" : "Waiting for host approval"}</h2>
                 <p className="text-white/50 text-sm leading-relaxed">
-                  تم إرسال طلبك إلى المضيف. ستنتقل تلقائياً للاجتماع فور الموافقة.
+                  {L ? "تم إرسال طلبك إلى المضيف. ستنتقل تلقائياً للاجتماع فور الموافقة." : "Your request has been sent to the host. You'll be redirected automatically once approved."}
                 </p>
               </div>
 
@@ -357,10 +359,10 @@ export default function QMeetJoinByCode() {
               {meetingInfo && (
                 <div className="rounded-xl p-3.5 text-right" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                   <p className="text-white font-semibold text-sm truncate">{meetingInfo.title}</p>
-                  <p className="text-white/40 text-xs mt-1">المضيف: {meetingInfo.hostName}</p>
+                  <p className="text-white/40 text-xs mt-1">{L ? "المضيف:" : "Host:"} {meetingInfo.hostName}</p>
                   <div className="mt-2 flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-amber-400/80 text-xs">في انتظار الموافقة...</span>
+                    <span className="text-amber-400/80 text-xs">{L ? "في انتظار الموافقة..." : "Waiting for approval..."}</span>
                   </div>
                 </div>
               )}
@@ -368,7 +370,7 @@ export default function QMeetJoinByCode() {
               {/* Live connection indicator */}
               <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
                 <Wifi className="w-3.5 h-3.5" />
-                <span>متصل ببث مباشر — لا تغلق الصفحة</span>
+                <span>{L ? "متصل ببث مباشر — لا تغلق الصفحة" : "Connected to live stream — don't close this page"}</span>
               </div>
 
               {/* Bouncing dots */}
@@ -389,7 +391,7 @@ export default function QMeetJoinByCode() {
           <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(22,163,74,0.1)" }}>
               <CheckCircle2 className="w-4 h-4 text-green-400" />
-              <span className="text-green-300 text-xs font-semibold">تمت الموافقة على انضمامك</span>
+              <span className="text-green-300 text-xs font-semibold">{L ? "تمت الموافقة على انضمامك" : "Your join request was approved"}</span>
             </div>
             <div className="p-8 space-y-6 text-center">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
@@ -397,8 +399,8 @@ export default function QMeetJoinByCode() {
                 <CheckCircle2 className="w-10 h-10 text-green-400" />
               </div>
               <div>
-                <h2 className="text-white text-xl font-bold mb-1">مرحباً بك!</h2>
-                <p className="text-white/50 text-sm">وافق المضيف على انضمامك</p>
+                <h2 className="text-white text-xl font-bold mb-1">{L ? "مرحباً بك!" : "Welcome!"}</h2>
+                <p className="text-white/50 text-sm">{L ? "وافق المضيف على انضمامك" : "The host approved your join request"}</p>
                 {meetingInfo && <p className="text-white/30 text-xs mt-2">{meetingInfo.title}</p>}
               </div>
               <Button
@@ -407,8 +409,8 @@ export default function QMeetJoinByCode() {
                 style={{ background: "linear-gradient(135deg, #16a34a, #15803d)" }}
                 data-testid="button-join-now"
               >
-                <Video className="w-5 h-5 ml-2" />
-                ادخل الاجتماع
+                <Video className={`w-5 h-5 ${L ? "ml-2" : "mr-2"}`} />
+                {L ? "ادخل الاجتماع" : "Join Meeting"}
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 text-xs font-bold flex items-center justify-center">
                   {autoJoinCount}
                 </span>
@@ -422,7 +424,7 @@ export default function QMeetJoinByCode() {
           <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <div className="px-5 py-3 flex items-center gap-2.5 border-b border-white/[0.06]" style={{ background: "rgba(239,68,68,0.1)" }}>
               <XCircle className="w-4 h-4 text-red-400" />
-              <span className="text-red-300 text-xs font-semibold">تم رفض الطلب</span>
+              <span className="text-red-300 text-xs font-semibold">{L ? "تم رفض الطلب" : "Request Rejected"}</span>
             </div>
             <div className="p-8 space-y-6 text-center">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto"
@@ -430,8 +432,8 @@ export default function QMeetJoinByCode() {
                 <XCircle className="w-10 h-10 text-red-400" />
               </div>
               <div>
-                <h2 className="text-white text-xl font-bold mb-1">لم تُقبَل</h2>
-                <p className="text-white/50 text-sm">رفض المضيف طلب انضمامك لهذا الاجتماع.</p>
+                <h2 className="text-white text-xl font-bold mb-1">{L ? "لم تُقبَل" : "Not Accepted"}</h2>
+                <p className="text-white/50 text-sm">{L ? "رفض المضيف طلب انضمامك لهذا الاجتماع." : "The host rejected your request to join this meeting."}</p>
               </div>
               <div className="flex gap-3">
                 <Button
@@ -439,14 +441,14 @@ export default function QMeetJoinByCode() {
                   className="flex-1 border-white/10 text-white/60 hover:bg-white/5 h-11"
                   variant="outline"
                 >
-                  محاولة بكود آخر
+                  {L ? "محاولة بكود آخر" : "Try Another Code"}
                 </Button>
                 <Button
                   onClick={() => navigate("/dashboard")}
                   className="flex-1 h-11 text-white font-bold"
                   style={{ background: "rgba(255,255,255,0.08)" }}
                 >
-                  الرئيسية
+                  {L ? "الرئيسية" : "Home"}
                 </Button>
               </div>
             </div>
