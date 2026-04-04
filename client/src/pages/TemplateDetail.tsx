@@ -1188,7 +1188,7 @@ export default function TemplateDetail() {
               <p className="text-black/40 dark:text-white/40 mt-2 text-sm max-w-xl mx-auto">أجهزة الشائعة في السعودية — متكاملة كلياً مع نظام الكافيه بدون أي إعداد إضافي.</p>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
+            <div className="relative rounded-3xl overflow-hidden bg-gray-900 dark:bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
               <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='white' stroke-width='0.5'%3E%3Cpath d='M20 0v10M20 30v10M0 20h10M30 20h10'/%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "40px 40px" }} />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full blur-3xl opacity-20" style={{ background: color }} />
 
@@ -1556,7 +1556,7 @@ export default function TemplateDetail() {
 
           {/* ── Payment Methods Showcase ─────────────────────────── */}
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <div className="relative rounded-3xl overflow-hidden bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
+            <div className="relative rounded-3xl overflow-hidden bg-gray-900 dark:bg-[#0d0d0f] border border-white/[0.06] p-6 sm:p-8">
               <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='white' stroke-width='0.5'%3E%3Cpath d='M20 0v10M20 30v10M0 20h10M30 20h10'/%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E\")", backgroundSize: "40px 40px" }} />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full blur-3xl opacity-20" style={{ background: color }} />
 

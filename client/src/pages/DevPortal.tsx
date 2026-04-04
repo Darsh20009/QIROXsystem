@@ -2,6 +2,7 @@ import SARIcon from "@/components/SARIcon";
 import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 import {
   Code2, Terminal, GitBranch, Database, Cloud, Shield, Zap, Layers,
   Globe, Server, Cpu, Lock, RefreshCw, Webhook, Package, BarChart3,
@@ -256,6 +257,8 @@ function highlight(line: string): string {
 
 /* ── Component ─────────────────────────────────────────────────────────── */
 export default function DevPortal() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -267,7 +270,7 @@ export default function DevPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir={dir}>
       <Navigation />
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -311,9 +314,9 @@ export default function DevPortal() {
               { value: "99.9%", label: "معدل نجاح النشر" },
               { value: "+3", label: "سنوات خبرة" },
             ].map((s, i) => (
-              <div key={i} className="bg-[#0a0a0a] py-6 text-center">
-                <p className="text-2xl font-black text-white mb-1">{s.value}</p>
-                <p className="text-[11px] text-white/30">{s.label}</p>
+              <div key={i} className="bg-background py-6 text-center">
+                <p className="text-2xl font-black text-foreground mb-1">{s.value}</p>
+                <p className="text-[11px] text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>
@@ -495,7 +498,7 @@ export default function DevPortal() {
                 <span className="text-[10px] text-white/20 font-mono">{CODE_TABS[activeTab].lang}</span>
               </div>
 
-              <div className="bg-[#111] border border-t-0 border-white/[0.06] rounded-b-2xl overflow-hidden">
+              <div className="bg-gray-950 dark:bg-[#111] border border-t-0 border-white/[0.06] rounded-b-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.05]">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-white/[0.1]" />

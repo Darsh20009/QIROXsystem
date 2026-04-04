@@ -803,7 +803,7 @@ function AppInner() {
     return (
       <PageErrorBoundary>
         <TooltipProvider>
-          <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`}>
+          <div className={`min-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-x-hidden w-full ${dir}`} data-public-layout>
             <PublicRouter />
             {location === "/" && <FloatingBrandPulse />}
             <Toaster />
@@ -822,11 +822,11 @@ function AppInner() {
     <PageErrorBoundary>
     <TooltipProvider>
       <SidebarProvider style={style as React.CSSProperties}>
-        <div className={`min-h-screen flex w-full bg-white dark:bg-gray-950 overflow-x-hidden ${dir}`}>
+        <div className={`min-h-screen flex w-full bg-slate-50 dark:bg-gray-950 overflow-x-hidden ${dir}`}>
           <AppSidebar />
           <div className="flex-1 flex flex-col min-h-screen">
             <header
-              className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-950 md:bg-white/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl sticky top-0 z-40"
+              className="border-b border-black/[0.06] dark:border-white/[0.06] bg-slate-50 dark:bg-gray-950 md:bg-slate-50/90 md:dark:bg-gray-950/90 md:backdrop-blur-xl sticky top-0 z-40"
               style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
             >
               <div className="h-14 md:h-16 flex items-center justify-between px-3 md:px-4">
@@ -863,7 +863,7 @@ function AppInner() {
             </header>
             <GlobalNotificationBanner />
             <main
-              className={`flex-1 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 pb-[80px] sm:p-5 sm:pb-[80px] md:p-8"}`}
+              className={`flex-1 bg-slate-50 dark:bg-gray-950 ${isFullBleed ? "overflow-hidden flex flex-col" : "overflow-auto p-3 pb-[80px] sm:p-5 sm:pb-[80px] md:p-8"}`}
               id="main-content"
             >
               {isFullBleed ? (

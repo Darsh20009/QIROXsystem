@@ -7,6 +7,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import {
@@ -208,6 +209,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 }
 
 export default function CartWizardPage() {
+  const { dir } = useI18n();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { data: user, isLoading: isUserLoading } = useUser();
@@ -378,7 +380,7 @@ export default function CartWizardPage() {
 
   if (isUserLoading || isCartLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex items-center justify-center" dir={dir}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     );
@@ -388,7 +390,7 @@ export default function CartWizardPage() {
   const colorClass = currentStepInfo ? STEP_COLORS[currentStepInfo.color] || STEP_COLORS.blue : STEP_COLORS.blue;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#09090f]" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#09090f]" dir={dir}>
       <Navigation />
 
       {/* Top accent gradient */}

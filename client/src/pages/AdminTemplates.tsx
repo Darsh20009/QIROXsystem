@@ -1,6 +1,7 @@
 import SARIcon from "@/components/SARIcon";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { useTemplates, usePricingPlans } from "@/hooks/use-templates";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -457,6 +458,8 @@ function PlanForm({ plan, onClose, templates, defaultSegment }: { plan?: Pricing
 }
 
 export default function AdminTemplates() {
+  const { lang, dir } = useI18n();
+  const L = lang === "ar";
   const { data: templates, isLoading: templatesLoading } = useTemplates();
   const { data: plans, isLoading: plansLoading } = usePricingPlans();
   const { toast } = useToast();
@@ -493,20 +496,20 @@ export default function AdminTemplates() {
       : 0;
 
   return (
-    <div className="relative overflow-hidden space-y-8" data-testid="page-admin-templates">
+    <div className="relative overflow-hidden space-y-8" dir={dir} data-testid="page-admin-templates">
       <PageGraphics variant="dashboard" />
       <div>
-        <h1 className="text-2xl font-bold font-heading text-black dark:text-white">إدارة القوالب والباقات</h1>
-        <p className="text-black/40 dark:text-white/40 mt-1 text-sm">أنظمة QIROX وباقات الأسعار والعروض</p>
+        <h1 className="text-2xl font-bold font-heading text-black dark:text-white">{L ? "إدارة القوالب والباقات" : "Templates & Plans Management"}</h1>
+        <p className="text-black/40 dark:text-white/40 mt-1 text-sm">{L ? "أنظمة QIROX وباقات الأسعار والعروض" : "QIROX systems, pricing plans and offers"}</p>
       </div>
 
       <Tabs defaultValue="pricing" className="w-full">
         <TabsList className="grid w-full max-w-xs grid-cols-2">
           <TabsTrigger value="pricing" className="flex items-center gap-1.5" data-testid="tab-pricing">
-            <CreditCard className="w-3.5 h-3.5" /> الباقات ({plans?.length || 0})
+            <CreditCard className="w-3.5 h-3.5" /> {L ? "الباقات" : "Plans"} ({plans?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-1.5" data-testid="tab-templates">
-            <Layers className="w-3.5 h-3.5" /> القوالب ({templates?.length || 0})
+            <Layers className="w-3.5 h-3.5" /> {L ? "القوالب" : "Templates"} ({templates?.length || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -514,10 +517,10 @@ export default function AdminTemplates() {
         <TabsContent value="pricing" className="mt-6">
           <div className="flex items-center justify-between mb-5">
             <div className="text-xs text-black/40 dark:text-white/40">
-              {plans?.length || 0} باقة موزّعة على {Object.keys(SEGMENT_META).length} قطاعات
+              {L ? `${plans?.length || 0} باقة موزّعة على ${Object.keys(SEGMENT_META).length} قطاعات` : `${plans?.length || 0} plans across ${Object.keys(SEGMENT_META).length} segments`}
             </div>
             <Button onClick={openNewPlan} className="premium-btn" data-testid="button-add-plan">
-              <Plus className="w-4 h-4 ml-2" /> إضافة باقة
+              <Plus className="w-4 h-4 ml-2" /> {L ? "إضافة باقة" : "Add Plan"}
             </Button>
           </div>
 
@@ -703,7 +706,7 @@ export default function AdminTemplates() {
         <TabsContent value="templates" className="mt-6">
           <div className="flex justify-end mb-4">
             <Button onClick={() => { setEditingTemplate(undefined); setTemplateDialog(true); }} className="premium-btn" data-testid="button-add-template">
-              <Plus className="w-4 h-4 ml-2" /> إضافة قالب
+              <Plus className="w-4 h-4 ml-2" /> {L ? "إضافة قالب" : "Add Template"}
             </Button>
           </div>
 
@@ -757,7 +760,7 @@ export default function AdminTemplates() {
       <Dialog open={templateDialog} onOpenChange={setTemplateDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingTemplate ? "تعديل القالب" : "قالب جديد"}</DialogTitle>
+            <DialogTitle>{editingTemplate ? (L ? "تعديل القالب" : "Edit Template") : (L ? "قالب جديد" : "New Template")}</DialogTitle>
           </DialogHeader>
           <TemplateForm template={editingTemplate} onClose={() => setTemplateDialog(false)} />
         </DialogContent>
@@ -769,7 +772,7 @@ export default function AdminTemplates() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              {editingPlan ? "تعديل الباقة" : "إنشاء باقة جديدة"}
+              {editingPlan ? (L ? "تعديل الباقة" : "Edit Plan") : (L ? "إنشاء باقة جديدة" : "Create New Plan")}
             </DialogTitle>
           </DialogHeader>
           <PlanForm plan={editingPlan} onClose={() => setPlanDialog(false)} templates={templates ?? []} defaultSegment={activeSegment} />

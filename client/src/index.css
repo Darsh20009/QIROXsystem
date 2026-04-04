@@ -1214,3 +1214,46 @@
     bottom: 2rem;
   }
 }
+
+/* ── QX Admin Utilities — theme-aware card/surface patterns ────────────── */
+/* These utilities provide consistent dark/light mode styles across all admin pages */
+
+@layer utilities {
+  /* Admin glass card pattern — adapts to dark/light */
+  .qx-card {
+    @apply bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.07] dark:border-white/[0.07] rounded-xl;
+  }
+  .qx-card-hover {
+    @apply hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors;
+  }
+
+  /* Admin text utilities */
+  .qx-text { @apply text-gray-900 dark:text-white; }
+  .qx-text-muted { @apply text-gray-500 dark:text-white/50; }
+  .qx-text-dim { @apply text-gray-400 dark:text-white/35; }
+
+  /* Admin input/form styling */
+  .qx-input {
+    @apply bg-white dark:bg-white/[0.05] border border-black/[0.08] dark:border-white/[0.08]
+           text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30
+           focus:outline-none focus:border-blue-500/50 rounded-xl;
+  }
+
+  /* Admin button (ghost/secondary) */
+  .qx-btn-ghost {
+    @apply bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.06] dark:hover:bg-white/[0.07]
+           border border-black/[0.07] dark:border-white/[0.08]
+           text-gray-700 dark:text-white/70 rounded-xl transition-colors;
+  }
+
+  /* Divider/border */
+  .qx-border { @apply border-black/[0.07] dark:border-white/[0.07]; }
+
+  /* Admin page background — for full-screen admin views */
+  .qx-page-bg { @apply bg-slate-50 dark:bg-[#0a0b0f]; }
+
+  /* Icon container */
+  .qx-icon-bg {
+    @apply bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.07];
+  }
+}

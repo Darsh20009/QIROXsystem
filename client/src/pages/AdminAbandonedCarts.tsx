@@ -49,32 +49,32 @@ function EmailModal({ cart, onClose }: { cart: AbandonedCart; onClose: () => voi
   });
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" dir={dir}>
-      <div className="bg-[#131c2e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+      <div className="bg-white dark:bg-[#131c2e] border border-black/[0.08] dark:border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-black/[0.08] dark:border-white/10">
           <div className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-blue-400" />
-            <h3 className="font-black text-white">{L ? "إرسال بريد إلكتروني" : "Send Email"}</h3>
+            <h3 className="font-black text-gray-900 dark:text-white">{L ? "إرسال بريد إلكتروني" : "Send Email"}</h3>
           </div>
-          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-white/40 hover:text-gray-700 dark:hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs text-white/50 mb-1 block">{L ? "إلى" : "To"}: <span className="text-blue-400">{cart.client.email}</span></label>
+            <label className="text-xs text-gray-500 dark:text-white/50 mb-1 block">{L ? "إلى" : "To"}: <span className="text-blue-500 dark:text-blue-400">{cart.client.email}</span></label>
           </div>
           <div>
-            <label className="text-xs text-white/50 mb-1 block">{L ? "موضوع البريد" : "Subject"}</label>
-            <input value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50" />
+            <label className="text-xs text-gray-500 dark:text-white/50 mb-1 block">{L ? "موضوع البريد" : "Subject"}</label>
+            <input value={subject} onChange={e => setSubject(e.target.value)} className="w-full bg-gray-50 dark:bg-white/5 border border-black/[0.08] dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:border-blue-500/50" />
           </div>
           <div>
-            <label className="text-xs text-white/50 mb-1 block">{L ? "نص الرسالة" : "Message"}</label>
-            <textarea value={message} onChange={e => setMessage(e.target.value)} rows={6} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 resize-none" />
+            <label className="text-xs text-gray-500 dark:text-white/50 mb-1 block">{L ? "نص الرسالة" : "Message"}</label>
+            <textarea value={message} onChange={e => setMessage(e.target.value)} rows={6} className="w-full bg-gray-50 dark:bg-white/5 border border-black/[0.08] dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 resize-none" />
           </div>
         </div>
-        <div className="p-5 border-t border-white/10 flex gap-3">
+        <div className="p-5 border-t border-black/[0.08] dark:border-white/10 flex gap-3">
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors">
             {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> {L ? "إرسال" : "Send"}</>}
           </button>
-          <button onClick={onClose} className="px-5 h-11 bg-white/5 hover:bg-white/10 text-white/70 rounded-xl text-sm transition-colors">{L ? "إلغاء" : "Cancel"}</button>
+          <button onClick={onClose} className="px-5 h-11 bg-black/[0.04] dark:bg-white/5 hover:bg-black/[0.07] dark:hover:bg-white/10 text-gray-600 dark:text-white/70 rounded-xl text-sm transition-colors">{L ? "إلغاء" : "Cancel"}</button>
         </div>
       </div>
     </div>
@@ -298,29 +298,29 @@ export default function AdminAbandonedCarts() {
   const withContact = carts.filter(c => c.client.hasContact).length;
 
   return (
-    <div className="min-h-screen bg-[#0c1322] p-4 md:p-6" dir={dir}>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0c1322] p-4 md:p-6" dir={dir}>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
             <ShoppingCart className="w-6 h-6 text-blue-400" />
             {L ? "عربات التسوق النشطة" : "Active Shopping Carts"}
           </h1>
-          <p className="text-white/40 text-sm mt-1">{L ? "متابعة العملاء الذين لديهم منتجات في عرباتهم" : "Track clients who have items in their carts"}</p>
+          <p className="text-gray-500 dark:text-white/40 text-sm mt-1">{L ? "متابعة العملاء الذين لديهم منتجات في عرباتهم" : "Track clients who have items in their carts"}</p>
         </div>
-        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] text-white/60 rounded-xl text-sm transition-colors">
+        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-black/[0.04] dark:bg-white/[0.05] hover:bg-black/[0.07] dark:hover:bg-white/[0.08] border border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-white/60 rounded-xl text-sm transition-colors">
           {L ? "تحديث" : "Refresh"}
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: L ? "إجمالي العربات" : "Total Carts", value: carts.length, color: "text-white" },
-          { label: L ? "يمكن التواصل معهم" : "Contactable", value: withContact, color: "text-green-400" },
-          { label: L ? "قيمة العربات" : "Cart Value", value: totalValue.toLocaleString(L ? "ar-SA" : "en-US"), color: "text-blue-400" },
+          { label: L ? "إجمالي العربات" : "Total Carts", value: carts.length, color: "text-gray-900 dark:text-white" },
+          { label: L ? "يمكن التواصل معهم" : "Contactable", value: withContact, color: "text-green-600 dark:text-green-400" },
+          { label: L ? "قيمة العربات" : "Cart Value", value: totalValue.toLocaleString(L ? "ar-SA" : "en-US"), color: "text-blue-600 dark:text-blue-400" },
         ].map(s => (
-          <div key={s.label} className="bg-[#131c2e] border border-white/[0.08] rounded-2xl p-4 text-center">
+          <div key={s.label} className="bg-white dark:bg-[#131c2e] border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-4 text-center">
             <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-white/40 text-xs mt-1">{s.label}</p>
+            <p className="text-gray-400 dark:text-white/40 text-xs mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -330,12 +330,12 @@ export default function AdminAbandonedCarts() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={L ? "بحث بالاسم أو البريد أو الهاتف..." : "Search by name, email or phone..."}
-          className="flex-1 min-w-[200px] bg-[#131c2e] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/40"
+          className="flex-1 min-w-[200px] bg-white dark:bg-[#131c2e] border border-black/[0.08] dark:border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none focus:border-blue-500/40"
         />
         <div className="flex gap-2">
           {(["all", "contact", "no-contact"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-[#131c2e] border border-white/[0.08] text-white/50 hover:text-white"}`}>
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-white dark:bg-[#131c2e] border border-black/[0.08] dark:border-white/[0.08] text-gray-500 dark:text-white/50 hover:text-gray-800 dark:hover:text-white"}`}>
               {f === "all" ? (L ? "الكل" : "All") : f === "contact" ? (L ? "يمكن التواصل" : "Contactable") : (L ? "بلا تواصل" : "No Contact")}
             </button>
           ))}
