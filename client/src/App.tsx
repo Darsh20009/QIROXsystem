@@ -374,6 +374,7 @@ function GlobalSearch() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { data: user } = useUser();
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -393,6 +394,23 @@ function GlobalSearch() {
     const handle = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setOpen(true);
+      }
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQ("");
+        inputRef.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
   }, []);
 
   const isAdmin = user?.role !== "client";
@@ -432,17 +450,22 @@ function GlobalSearch() {
           : <Search className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
         }
         <input
+          ref={inputRef}
           value={q}
           onChange={e => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          placeholder={ar ? "ابحث عن صفحة، عميل، مشروع..." : "Search pages, clients, projects..."}
+          placeholder={ar ? "ابحث... (Ctrl+K)" : "Search... (Ctrl+K)"}
           className="bg-transparent border-none outline-none text-sm text-black dark:text-white placeholder:text-black/25 dark:placeholder:text-white/25 w-36 md:w-52"
           data-testid="input-global-search"
         />
-        {q && (
+        {q ? (
           <button onClick={() => { setQ(""); setOpen(false); }} className="text-black/30 dark:text-white/30 hover:text-black/50 dark:hover:text-white/50">
             <X className="w-3.5 h-3.5" />
           </button>
+        ) : (
+          <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-black/10 dark:border-white/10 text-[10px] text-black/30 dark:text-white/30 font-mono select-none">
+            Ctrl+K
+          </kbd>
         )}
       </div>
 
