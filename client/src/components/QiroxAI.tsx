@@ -307,7 +307,10 @@ function NavigateCard({ url, label, onNavigate }: { url: string; label: string; 
 /* ══════════════════════════════════════════════════════════
    AIPanel — main component
 ══════════════════════════════════════════════════════════ */
-export function AIPanel({ className = "" }: { className?: string }) {
+export function AIPanel({ className = "", quickActions }: {
+  className?: string;
+  quickActions?: Array<{ icon: any; label: string; prompt: string; color?: string }>;
+}) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -354,11 +357,19 @@ export function AIPanel({ className = "" }: { className?: string }) {
   useEffect(() => {
     if (!initialized.current) {
       initialized.current = true;
+      const name = user?.fullName || user?.username || "";
+      const hi = name ? ` ${name}` : "";
       const welcomes: Record<string, string> = {
-        admin: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI** العامل.\n\nيمكنني **تنفيذ عمليات فعلية** على النظام:\n• عرض الطلبات والعملاء والإحصاءات\n• تغيير حالات الطلبات مباشرة\n• إرسال إشعارات للمستخدمين\n• إنشاء مهام في المشاريع\n\nماذا تريد أن أفعل؟`,
-        manager: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! 👑 أنا **QIROX AI** العامل. يمكنني إدارة الطلبات وإرسال الإشعارات وعرض التحليلات مباشرة. ماذا تريد؟`,
-        developer: `أهلاً${user?.fullName ? ` ${user.fullName}` : ""}! 💻 أنا **QIROX AI**. يمكنني عرض الطلبات والمشاريع المعينة لك، وإنشاء مهام، وتغيير حالات الطلبات. ماذا تحتاج؟`,
-        client: `مرحباً${user?.fullName ? ` ${user.fullName}` : ""}! ⭐ أنا **QIROX AI**، مساعدك الشخصي.\n\nيمكنني:\n• عرض طلباتك ومشاريعك ورصيدك\n• إلغاء طلب معلّق\n• إرسال تذكرة دعم\n\nكيف أساعدك؟`,
+        admin: `مرحباً${hi}! 👑 أنا **QIROX AI** العامل.\n\nيمكنني **تنفيذ عمليات فعلية** على النظام:\n• عرض الطلبات والعملاء والإحصاءات\n• تغيير حالات الطلبات مباشرة\n• إرسال إشعارات للمستخدمين\n• إنشاء مهام في المشاريع\n\nماذا تريد أن أفعل؟`,
+        manager: `مرحباً${hi}! 👑 أنا **QIROX AI** العامل. يمكنني إدارة الطلبات وإرسال الإشعارات وعرض التحليلات مباشرة. ماذا تريد؟`,
+        developer: `أهلاً${hi}! 💻 أنا **QIROX AI** الإبداعي.\n\nيمكنني مساعدتك في:\n• كتابة ومراجعة الكود بأي لغة\n• شرح المفاهيم التقنية\n• إنشاء خطط وتقارير\n• عرض مهامك وطلباتك في النظام\n• وأي شيء تحتاجه!\n\nاستخدم الأزرار السريعة أو اكتب سؤالك مباشرةً ✨`,
+        designer: `أهلاً${hi}! 🎨 أنا **QIROX AI** الإبداعي.\n\nيمكنني مساعدتك في:\n• كتابة محتوى إبداعي وتصميمي\n• توليد أفكار وإلهام بصري\n• صياغة رسائل ومقترحات\n• عرض مهامك ومشاريعك\n• وأي شيء تحتاجه!\n\nاستخدم الأزرار السريعة أو اكتب سؤالك ✨`,
+        support: `أهلاً${hi}! 🎯 أنا **QIROX AI**.\n\nيمكنني مساعدتك في الرد على العملاء، كتابة ردود احترافية، وعرض الطلبات. كيف أساعدك؟`,
+        sales: `أهلاً${hi}! 📈 أنا **QIROX AI**.\n\nيمكنني مساعدتك في صياغة عروض المبيعات، تحليل العملاء، وكتابة أي محتوى تحتاجه. كيف أساعدك؟`,
+        sales_manager: `مرحباً${hi}! 📊 أنا **QIROX AI**. يمكنني مساعدتك في إدارة الفريق وتحليل المبيعات وكتابة التقارير. ماذا تريد؟`,
+        accountant: `مرحباً${hi}! 💰 أنا **QIROX AI**. يمكنني مساعدتك في تحليل البيانات المالية وكتابة التقارير. كيف أساعدك؟`,
+        merchant: `مرحباً${hi}! 🏪 أنا **QIROX AI**. يمكنني مساعدتك في إدارة متجرك وكتابة أوصاف المنتجات وأي شيء آخر. كيف أساعدك؟`,
+        client: `مرحباً${hi}! ⭐ أنا **QIROX AI**، مساعدك الشخصي.\n\nيمكنني:\n• عرض طلباتك ومشاريعك ورصيدك\n• إلغاء طلب معلّق\n• إرسال تذكرة دعم\n\nكيف أساعدك؟`,
         guest: `مرحباً! أنا **QIROX AI**.\n\nيمكنني مساعدتك في اختيار الباقة المناسبة أو الإجابة على أسئلتك.`,
       };
       addAiMsg(welcomes[role] || welcomes.guest);
@@ -379,6 +390,7 @@ export function AIPanel({ className = "" }: { className?: string }) {
     try {
       const res = await fetch("/api/ai/message", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text.trim(),
@@ -457,6 +469,24 @@ export function AIPanel({ className = "" }: { className?: string }) {
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* ── Quick Action Chips (shown when no messages yet) ── */}
+      {quickActions && msgs.length === 0 && !loading && (
+        <div className="px-3 pt-3 pb-1 flex flex-wrap gap-2 flex-shrink-0">
+          {quickActions.map((qa, i) => (
+            <button
+              key={i}
+              onClick={() => sendMessage(qa.prompt)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all
+                ${qa.color || "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}
+              data-testid={`quick-action-${i}`}
+            >
+              {qa.icon && <qa.icon className="w-3.5 h-3.5 flex-shrink-0" />}
+              {qa.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin scrollbar-thumb-white/10 min-h-0">

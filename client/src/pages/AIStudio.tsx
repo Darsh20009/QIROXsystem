@@ -12,11 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Sparkles, Calculator, FileText, Globe, Heart, Users, TrendingUp,
   Share2, Video, Copy, Check, Loader2, AlertTriangle, ChevronRight,
-  BarChart3, Clock, DollarSign, Zap, Shield, Star, Wand2, Bot, MessageSquare, Wrench
+  BarChart3, Clock, DollarSign, Zap, Shield, Star, Wand2, Bot, MessageSquare, Wrench,
+  Code2, Mail, Languages, Lightbulb, ListChecks, BarChart2, PenLine, BookOpen,
+  Laptop, BrainCircuit, Newspaper, FlaskConical
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIPanel } from "@/components/QiroxAI";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+
+const EMPLOYEE_ROLES = ["developer", "designer", "support", "sales", "sales_manager", "accountant", "merchant"];
+
+const EMPLOYEE_QUICK_ACTIONS = [
+  { icon: Code2,        label: "اكتب كود",          prompt: "اكتب لي كود لـ ",                          color: "bg-blue-500/10 border-blue-500/20 text-blue-300 hover:bg-blue-500/20" },
+  { icon: Mail,         label: "صيغ بريد",           prompt: "اكتب بريد إلكتروني احترافي لـ ",           color: "bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20" },
+  { icon: Languages,    label: "ترجم",               prompt: "ترجم هذا النص للإنجليزية: ",               color: "bg-green-500/10 border-green-500/20 text-green-300 hover:bg-green-500/20" },
+  { icon: Lightbulb,    label: "أفكار إبداعية",      prompt: "أعطني أفكاراً إبداعية لـ ",               color: "bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20" },
+  { icon: ListChecks,   label: "خطة عمل",            prompt: "ضع لي خطة عمل تفصيلية لـ ",               color: "bg-cyan-500/10 border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20" },
+  { icon: BarChart2,    label: "حلّل البيانات",       prompt: "حلّل هذه البيانات وأعطني نتائج: ",         color: "bg-rose-500/10 border-rose-500/20 text-rose-300 hover:bg-rose-500/20" },
+  { icon: PenLine,      label: "اكتب تقرير",         prompt: "اكتب تقريراً احترافياً عن ",               color: "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20" },
+  { icon: BookOpen,     label: "اشرح لي",            prompt: "اشرح لي بالتفصيل مفهوم ",                 color: "bg-teal-500/10 border-teal-500/20 text-teal-300 hover:bg-teal-500/20" },
+  { icon: Newspaper,    label: "محتوى سوشيال",       prompt: "اكتب منشوراً احترافياً لـ ",               color: "bg-pink-500/10 border-pink-500/20 text-pink-300 hover:bg-pink-500/20" },
+  { icon: FlaskConical, label: "راجع كودي",          prompt: "راجع هذا الكود وأخبرني بالتحسينات:\n\n```\n", color: "bg-orange-500/10 border-orange-500/20 text-orange-300 hover:bg-orange-500/20" },
+  { icon: BrainCircuit, label: "استشارة تقنية",     prompt: "أحتاج مشورة تقنية في ",                    color: "bg-violet-500/10 border-violet-500/20 text-violet-300 hover:bg-violet-500/20" },
+  { icon: Laptop,       label: "اسألني أي شيء",     prompt: "",                                          color: "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white" },
+];
 
 type ToolId = "estimate" | "proposal" | "website" | "sentiment" | "assignment" | "delay" | "social" | "meeting";
 
@@ -612,6 +631,60 @@ function MeetingPanel({ L }: { L: boolean }) {
 
 /* ────────────────── Main Page ────────────────── */
 
+/* ────────────────── Employee Creative AI View ────────────────── */
+
+function EmployeeAIView({ L, dir, userName }: { L: boolean; dir: string; userName?: string }) {
+  const roleLabels: Record<string, string> = {
+    developer: "مطور", designer: "مصمم", support: "دعم فني", sales: "مبيعات",
+    sales_manager: "مدير مبيعات", accountant: "محاسب", merchant: "تاجر",
+  };
+  const { data: user } = useUser();
+  const roleLabel = roleLabels[user?.role || ""] || "موظف";
+
+  return (
+    <div className="min-h-screen bg-[#0a0b0f] text-white flex flex-col" dir={dir}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-violet-950/60 via-indigo-950/40 to-slate-900/60 border-b border-white/[0.06] px-4 sm:px-6 py-4 flex-shrink-0">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
+          <div className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex-shrink-0 overflow-hidden">
+            <img src={qiroxLogoPath} alt="QIROX AI" className="w-full h-full object-cover invert" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-[#0a0b0f]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-xl font-bold text-white leading-tight flex items-center gap-2">
+              QIROX AI
+              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 text-[10px] px-2">
+                {L ? "إبداعي" : "Creative"}
+              </Badge>
+            </h1>
+            <p className="text-white/50 text-xs sm:text-sm">
+              {L
+                ? `مرحباً ${userName || ""}${roleLabel ? ` (${roleLabel})` : ""} — أنا هنا لمساعدتك في أي شيء!`
+                : `Welcome${userName ? ` ${userName}` : ""} — I'm here to help with anything!`}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-green-400 text-xs font-medium hidden sm:block">
+              {L ? "متصل" : "Online"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Full-screen creative chat */}
+      <div className="flex-1 min-h-0 max-w-5xl mx-auto w-full px-3 sm:px-4 py-3 flex flex-col">
+        <AIPanel
+          className="flex-1 min-h-0 h-full"
+          quickActions={EMPLOYEE_QUICK_ACTIONS}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────── Main Page ────────────────── */
+
 export default function AIStudio() {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
@@ -619,6 +692,11 @@ export default function AIStudio() {
   const [activeTool, setActiveTool] = useState<ToolId>("estimate");
   // Mobile view: "tools" | "chat"
   const [mobileView, setMobileView] = useState<"tools" | "chat">("tools");
+
+  // ── Employee view: full-screen creative chat ──
+  if (user && EMPLOYEE_ROLES.includes(user.role)) {
+    return <EmployeeAIView L={L} dir={dir} userName={user.fullName || user.username} />;
+  }
 
   const activeDef = TOOLS.find(t => t.id === activeTool)!;
 
