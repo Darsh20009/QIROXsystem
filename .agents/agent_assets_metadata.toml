@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Q0-XRgw_eLcpTngyhHDuk"
+uri = "file://ROADMAP.md"
+type = "text"
+title = "خطة تطوير Qirox Systems — نحو الريادة"
