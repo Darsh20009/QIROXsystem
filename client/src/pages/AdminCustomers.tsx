@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Loader2, Users, Mail, Phone, Calendar, Search, Trash2,
   AlertTriangle, MessageCircle, X, PhoneOff, CheckCircle2,
-  Clock, ChevronDown, ChevronUp, Send,
+  Clock, ChevronDown, ChevronUp, Send, Download,
 } from "lucide-react";
 import { SiTelegram, SiWhatsapp } from "react-icons/si";
 import { type User } from "@shared/schema";
@@ -142,20 +142,27 @@ export default function Customers() {
             <p className="text-sm text-foreground/40">{customers?.length || 0} {L ? "عميل مسجل" : "registered customers"}</p>
           </div>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={L ? "ابحث بالاسم أو البريد أو الهاتف..." : "Search by name, email, or phone..."}
-            className="pr-9 bg-background border-foreground/10"
-            data-testid="input-customer-search"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={L ? "ابحث بالاسم أو البريد أو الهاتف..." : "Search by name, email, or phone..."}
+              className="pr-9 bg-background border-foreground/10"
+              data-testid="input-customer-search"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/api/admin/customers/export", "_blank")}
+            className="gap-1.5 shrink-0"
+            data-testid="button-export-customers"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {L ? "تصدير CSV" : "Export CSV"}
+          </Button>
         </div>
       </div>
 

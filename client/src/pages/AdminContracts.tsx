@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   FileText, Plus, Search, CheckCircle, XCircle, Clock,
-  Trash2, Eye, Bell, ShieldCheck, MapPin, Monitor, Hash
+  Trash2, Eye, Bell, ShieldCheck, MapPin, Monitor, Hash, Wand2, Loader2, Copy
 } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -51,6 +51,10 @@ export default function AdminContracts() {
   const [createDialog, setCreateDialog] = useState(false);
   const [viewDialog, setViewDialog]   = useState<any>(null);
   const [form, setForm] = useState({ orderId: "", clientId: "", terms: "", totalAmount: "", notes: "" });
+  const [aiDialog, setAiDialog] = useState(false);
+  const [aiForm, setAiForm] = useState({ projectType: "", clientName: "", totalAmount: "", services: "", duration: "3 أشهر", notes: "" });
+  const [aiResult, setAiResult] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const { data: contracts = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/admin/contracts"] });
   const { data: orders = [] }   = useQuery<any[]>({ queryKey: ["/api/admin/orders"] });
@@ -101,14 +105,19 @@ export default function AdminContracts() {
     <div className="p-6 space-y-6 font-sans" dir={dir}>
       <PageGraphics />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-black dark:text-white">{L ? "العقود الإلكترونية" : "Electronic Contracts"}</h1>
           <p className="text-black/50 dark:text-white/40 text-sm">{L ? "إنشاء وإدارة عقود موقّعة بـ OTP للتحقق القانوني" : "Create and manage OTP-verified legally binding contracts"}</p>
         </div>
-        <Button onClick={() => setCreateDialog(true)} className="bg-black text-white hover:bg-black/80 gap-2" data-testid="button-create-contract">
-          <Plus className="w-4 h-4" /> {L ? "إنشاء عقد" : "Create Contract"}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setAiResult(""); setAiDialog(true); }} className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30" data-testid="button-ai-generate-contract">
+            <Wand2 className="w-4 h-4" /> {L ? "توليد بالذكاء الاصطناعي" : "AI Generate"}
+          </Button>
+          <Button onClick={() => setCreateDialog(true)} className="bg-black text-white hover:bg-black/80 gap-2" data-testid="button-create-contract">
+            <Plus className="w-4 h-4" /> {L ? "إنشاء عقد" : "Create Contract"}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -332,6 +341,84 @@ export default function AdminContracts() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Contract Generation Dialog */}
+      <Dialog open={aiDialog} onOpenChange={setAiDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+              <Wand2 className="w-5 h-5" />
+              {L ? "توليد عقد بالذكاء الاصطناعي" : "AI Contract Generation"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!aiResult ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "نوع المشروع" : "Project Type"}</label>
+                    <input value={aiForm.projectType} onChange={e => setAiForm(p => ({...p, projectType: e.target.value}))} placeholder={L ? "مثال: تطوير موقع إلكتروني" : "e.g. Website Development"} className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "اسم العميل" : "Client Name"}</label>
+                    <input value={aiForm.clientName} onChange={e => setAiForm(p => ({...p, clientName: e.target.value}))} placeholder={L ? "اسم العميل أو الشركة" : "Client or company name"} className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "المبلغ الإجمالي (ر.س)" : "Total Amount (SAR)"}</label>
+                    <input type="number" value={aiForm.totalAmount} onChange={e => setAiForm(p => ({...p, totalAmount: e.target.value}))} placeholder="5000" className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "مدة التنفيذ" : "Duration"}</label>
+                    <input value={aiForm.duration} onChange={e => setAiForm(p => ({...p, duration: e.target.value}))} placeholder={L ? "مثال: 3 أشهر" : "e.g. 3 months"} className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "الخدمات المقدمة" : "Services Provided"}</label>
+                  <textarea value={aiForm.services} onChange={e => setAiForm(p => ({...p, services: e.target.value}))} placeholder={L ? "صف الخدمات المقدمة..." : "Describe the services..."} rows={2} className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white resize-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-black/60 dark:text-white/50 block mb-1">{L ? "ملاحظات إضافية" : "Additional Notes"}</label>
+                  <textarea value={aiForm.notes} onChange={e => setAiForm(p => ({...p, notes: e.target.value}))} placeholder={L ? "أي شروط خاصة..." : "Any special terms..."} rows={2} className="w-full border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 dark:text-white resize-none" />
+                </div>
+                <Button
+                  onClick={async () => {
+                    setAiLoading(true);
+                    try {
+                      const r = await fetch("/api/ai/generate-contract", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(aiForm) });
+                      const d = await r.json();
+                      setAiResult(d.contract || "");
+                    } catch { toast({ title: L ? "خطأ في توليد العقد" : "Contract generation failed", variant: "destructive" }); }
+                    finally { setAiLoading(false); }
+                  }}
+                  disabled={aiLoading || !aiForm.projectType}
+                  className="w-full bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                  data-testid="button-ai-generate-submit"
+                >
+                  {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  {L ? "توليد العقد" : "Generate Contract"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-black/10 dark:border-white/10">
+                  <pre className="text-sm text-black/80 dark:text-white/80 whitespace-pre-wrap font-sans leading-relaxed">{aiResult}</pre>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => { navigator.clipboard.writeText(aiResult); toast({ title: L ? "تم النسخ" : "Copied!" }); }} className="gap-2 flex-1">
+                    <Copy className="w-4 h-4" /> {L ? "نسخ العقد" : "Copy Contract"}
+                  </Button>
+                  <Button variant="outline" onClick={() => { setAiResult(""); }} className="gap-2">
+                    {L ? "توليد جديد" : "Regenerate"}
+                  </Button>
+                  <Button onClick={() => { setForm(p => ({...p, terms: aiResult})); setAiDialog(false); setCreateDialog(true); }} className="gap-2 bg-black text-white hover:bg-black/80">
+                    <Plus className="w-4 h-4" /> {L ? "استخدام في العقد" : "Use in Contract"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

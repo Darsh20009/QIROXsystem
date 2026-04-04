@@ -421,17 +421,29 @@ export default function AdminOrders() {
           </h1>
           <p className="text-xs text-black/35 mt-0.5">{L ? "عرض وإدارة وملء بيانات جميع الطلبات" : "View, manage, and fill in all order data"}</p>
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40 h-9 text-xs" data-testid="select-filter-status">
-            <SelectValue placeholder={L ? "تصفية الحالة" : "Filter Status"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{L ? "الكل" : "All"} ({orders?.length || 0})</SelectItem>
-            {Object.entries(statusMap).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v.label} ({orders?.filter(o => o.status === k).length || 0})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/api/admin/orders/export", "_blank")}
+            className="gap-1.5 h-9 text-xs"
+            data-testid="button-export-orders"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {L ? "تصدير CSV" : "Export CSV"}
+          </Button>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40 h-9 text-xs" data-testid="select-filter-status">
+              <SelectValue placeholder={L ? "تصفية الحالة" : "Filter Status"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{L ? "الكل" : "All"} ({orders?.length || 0})</SelectItem>
+              {Object.entries(statusMap).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v.label} ({orders?.filter(o => o.status === k).length || 0})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Row */}

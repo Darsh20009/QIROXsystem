@@ -33,6 +33,7 @@ const AdminSystemMap = lazy(() => import("@/pages/AdminSystemMap"));
 const AdminServices = lazy(() => import("@/pages/AdminServices"));
 const AdminOrders = lazy(() => import("@/pages/AdminOrders"));
 const AdminEmployees = lazy(() => import("@/pages/AdminEmployees"));
+const AdminGamification = lazy(() => import("@/pages/AdminGamification"));
 const AdminFinance = lazy(() => import("@/pages/AdminFinance"));
 const Login = lazy(() => import("@/pages/Login"));
 const OrderFlow = lazy(() => import("@/pages/OrderFlow"));
@@ -234,6 +235,7 @@ function AdminRouter() {
         <Route path="/admin/orders" component={AdminOrders} />
         <Route path="/admin/project-data" component={AdminProjectData} />
         <Route path="/admin/employees" component={AdminEmployees} />
+        <Route path="/admin/gamification" component={AdminGamification} />
         <Route path="/admin/finance" component={AdminFinance} />
         <Route path="/admin/templates" component={AdminTemplates} />
         <Route path="/admin/partners" component={AdminPartners} />

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Video, ArrowRight, Calendar, Clock, Users, Copy,
   Star, FileText, Plus, Trash2, Send, CheckCircle, Play, XCircle,
-  User, MessageSquare, Clipboard
+  User, MessageSquare, Clipboard, Wand2, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -61,6 +61,7 @@ export default function AdminQMeetDetail() {
   const [reportActions, setReportActions] = useState<string[]>([]);
   const [reportAttendeesCount, setReportAttendeesCount] = useState("");
   const [reportDuration, setReportDuration] = useState("");
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
 
   const { data: meeting, isLoading } = useQuery<any>({
     queryKey: ["/api/qmeet/meetings", id],
@@ -380,6 +381,56 @@ export default function AdminQMeetDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* AI Summary */}
+          <Card className="border-0 shadow-sm border border-violet-100 dark:border-violet-900/40">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2 text-violet-700 dark:text-violet-300">
+                  <Wand2 className="w-4 h-4" />
+                  {L ? "ملخص الاجتماع بالذكاء الاصطناعي" : "AI Meeting Summary"}
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/30"
+                  disabled={aiSummaryLoading}
+                  onClick={async () => {
+                    setAiSummaryLoading(true);
+                    try {
+                      const r = await fetch(`/api/qmeet/meetings/${id}/ai-summary`, { method: "POST", credentials: "include" });
+                      const d = await r.json();
+                      if (!r.ok) throw new Error(d.error || "Failed");
+                      toast({ title: L ? "تم توليد الملخص بنجاح ✓" : "Summary generated ✓" });
+                      queryClient.invalidateQueries({ queryKey: ["/api/qmeet/meetings", id] });
+                    } catch (e: any) {
+                      toast({ title: L ? "خطأ" : "Error", description: e.message, variant: "destructive" });
+                    } finally { setAiSummaryLoading(false); }
+                  }}
+                  data-testid="button-ai-summary"
+                >
+                  {aiSummaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                  {L ? "توليد الملخص" : "Generate Summary"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {meeting.aiSummary ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{meeting.aiSummary}</p>
+                  {meeting.aiSummaryAt && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {L ? "تم التوليد في" : "Generated at"}: {format(new Date(meeting.aiSummaryAt), "dd MMM yyyy HH:mm", { locale: L ? ar : undefined })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+                  {L ? "لا يوجد ملخص بعد. اضغط على 'توليد الملخص' لإنشاء ملخص ذكي للاجتماع." : "No summary yet. Click 'Generate Summary' to create an AI summary for this meeting."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Host */}
           <Card className="border-0 shadow-sm">

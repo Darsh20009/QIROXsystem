@@ -349,29 +349,87 @@ export default function ProjectDetails() {
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="font-heading">{L ? "المخطط الزمني" : "Timeline"}</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="font-heading flex items-center justify-between">
+                    <span>{L ? "المخطط الزمني" : "Timeline"}</span>
+                    {tasks && tasks.length > 0 && (
+                      <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                        {Math.round((tasks.filter((t: any) => t.status === 'completed').length / tasks.length) * 100)}% {L ? "مكتمل" : "complete"}
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
                 <CardContent>
-                   <div className="space-y-6">
-                    {[
-                      { title: L ? "تحليل المتطلبات" : "Requirements Analysis", status: "completed", date: "05/02/2026" },
-                      { title: L ? "تصميم واجهات المستخدم UI/UX" : "UI/UX Design", status: "completed", date: "12/02/2026" },
-                      { title: L ? "برمجة الواجهة الأمامية" : "Frontend Programming", status: "in-progress", date: "25/02/2026" },
-                      { title: L ? "تطوير النظام الخلفي والربط" : "Backend Development & Integration", status: "pending", date: "05/03/2026" },
-                    ].map((step, i) => (
-                      <div key={i} className="flex gap-4 relative">
-                        {i !== 3 && <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-slate-100" />}
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
-                          step.status === 'completed' ? 'bg-green-500 text-white' : 
-                          step.status === 'in-progress' ? 'bg-secondary text-primary' : 'bg-slate-200'
-                        }`}>
-                          {step.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <p className="font-bold text-primary text-sm">{step.title}</p>
-                          <p className="text-[10px] text-slate-500 mt-1">{L ? "الموعد:" : "Date:"} {step.date}</p>
-                        </div>
+                  {/* Overall progress bar */}
+                  {tasks && tasks.length > 0 && (
+                    <div className="mb-5">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full transition-all duration-700"
+                          style={{ width: `${Math.round((tasks.filter((t: any) => t.status === 'completed').length / tasks.length) * 100)}%` }}
+                        />
                       </div>
-                    ))}
+                      <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+                        <span>{tasks.filter((t: any) => t.status === 'completed').length} {L ? "مكتملة" : "done"}</span>
+                        <span>{tasks.length} {L ? "إجمالي" : "total"}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-3">
+                    {isLoadingTasks ? (
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-slate-300" />
+                    ) : tasks?.length === 0 ? (
+                      <div className="space-y-4">
+                        {[
+                          { title: L ? "تحليل المتطلبات" : "Requirements Analysis", status: "completed" },
+                          { title: L ? "تصميم UI/UX" : "UI/UX Design", status: "completed" },
+                          { title: L ? "البرمجة الأمامية" : "Frontend Dev", status: "in-progress" },
+                          { title: L ? "البرمجة الخلفية" : "Backend Dev", status: "pending" },
+                        ].map((step, i, arr) => (
+                          <div key={i} className="flex gap-3 relative">
+                            {i !== arr.length - 1 && <div className="absolute right-[9px] top-5 bottom-0 w-[2px] bg-slate-100" />}
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 text-[10px] font-bold ${
+                              step.status === 'completed' ? 'bg-green-500 text-white' :
+                              step.status === 'in-progress' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400'
+                            }`}>
+                              {step.status === 'completed' ? '✓' : i + 1}
+                            </div>
+                            <div className="flex-1 pb-3">
+                              <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{step.title}</p>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                step.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                step.status === 'in-progress' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
+                              }`}>
+                                {step.status === 'completed' ? (L ? 'مكتملة' : 'Done') : step.status === 'in-progress' ? (L ? 'جارية' : 'Active') : (L ? 'قادمة' : 'Pending')}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      tasks.map((task: any, i: number) => (
+                        <div key={task.id} className="flex gap-3 relative">
+                          {i !== tasks.length - 1 && <div className="absolute right-[9px] top-5 bottom-0 w-[2px] bg-slate-100" />}
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 text-[10px] font-bold ${
+                            task.status === 'completed' ? 'bg-green-500 text-white' :
+                            task.priority === 'high' ? 'bg-orange-400 text-white' : 'bg-blue-500 text-white'
+                          }`}>
+                            {task.status === 'completed' ? '✓' : i + 1}
+                          </div>
+                          <div className="flex-1 pb-3">
+                            <p className={`text-sm font-medium ${task.status === 'completed' ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{task.title}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                task.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                task.priority === 'high' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
+                              }`}>
+                                {task.status === 'completed' ? (L ? 'مكتملة' : 'Done') : task.priority === 'high' ? (L ? 'أولوية قصوى' : 'High') : (L ? 'جارية' : 'Active')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>

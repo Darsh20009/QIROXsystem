@@ -18,7 +18,7 @@ import {
   Newspaper, Wrench, Globe, Cpu, ShoppingCart, Package, MessageSquare,
   BarChart3, Activity, LifeBuoy, Banknote, User, UserPlus, Receipt, CreditCard, FileCheck, ListChecks, Building2, Crown, Palette,
   CalendarCheck, Tag, Truck, Database, Smartphone, Settings2, Headphones, LayoutGrid, Moon, Sun, Video, Paintbrush, ClipboardList, Wand2,
-  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen
+  TrendingUp, Shield, Bell, KeyRound, Sparkles, Gift, Timer, Mail, HelpCircle, Monitor, Star, Award, Megaphone, Bot, Store, FolderOpen, Trophy
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -169,6 +169,7 @@ export function AppSidebar() {
     { title: ar ? "لوحة المشاريع" : "Project Board", icon: LayoutGrid, url: "/admin/kanban", group: "admin", section: "clients_ops", allowedRoles: STAFF_ROLES },
     // Admin — team
     { title: ar ? "الموظفون" : "Employees", icon: Users, url: "/admin/employees", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
+    { title: ar ? "لوحة التميّز" : "Excellence Board", icon: Trophy, url: "/admin/gamification", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "الترقيات والأدوار" : "Promotions & Roles", icon: Shield, url: "/admin/promotions", group: "admin", section: "team", allowedRoles: MANAGEMENT_ROLES },
     { title: ar ? "تذاكر الدعم" : "Support Tickets", icon: LifeBuoy, url: "/admin/support-tickets", group: "admin", section: "team", allowedRoles: STAFF_ROLES },
     { title: ar ? "رسائل التواصل" : "Contact Messages", icon: Mail, url: "/admin/contact-messages", group: "admin", section: "team", allowedRoles: STAFF_ROLES },

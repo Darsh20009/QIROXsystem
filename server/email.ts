@@ -850,6 +850,38 @@ export async function sendQMeetReminderEmail(to: string, name: string, data: QMe
   return sendEmail(to, name, `⏰ تذكير: ${data.title} — يبدأ خلال دقيقتين`, html);
 }
 
+export async function sendWeeklyReportEmail(to: string, name: string, data: {
+  weekLabel: string;
+  newClients: number;
+  newOrders: number;
+  completedOrders: number;
+  weekRevenue: number;
+  activeProjects: number;
+  newMeetings: number;
+  openTickets: number;
+  currency?: string;
+}): Promise<boolean> {
+  const displayName = cleanName(name);
+  const cur = data.currency || "ر.س";
+  const html = baseTemplate(
+    tag("تقرير أسبوعي") +
+    title(`ملخص أسبوع ${data.weekLabel}`) +
+    text(`مرحباً ${displayName}، إليك ملخص أداء المنصة للأسبوع الماضي:`) +
+    infoTable([
+      ["عملاء جدد", `${data.newClients} عميل`],
+      ["طلبات جديدة", `${data.newOrders} طلب`],
+      ["طلبات مكتملة", `${data.completedOrders} طلب`],
+      ["إيرادات الأسبوع", `${data.weekRevenue.toLocaleString("ar-SA")} ${cur}`],
+      ["مشاريع نشطة", `${data.activeProjects} مشروع`],
+      ["اجتماعات QMeet", `${data.newMeetings} اجتماع`],
+      ["تذاكر دعم مفتوحة", `${data.openTickets} تذكرة`],
+    ]) +
+    text("للاطلاع على التفاصيل الكاملة، قم بزيارة لوحة التحكم.") +
+    btn(`${getEmailCfg().siteUrl}/admin/analytics`, "عرض التحليلات الكاملة")
+  );
+  return sendEmail(to, displayName, `📊 التقرير الأسبوعي | ${data.weekLabel} | QIROX`, html);
+}
+
 export async function sendTestEmail(to: string, name: string): Promise<boolean> {
   const html = baseTemplate(
     tag("بريد تجريبي") +

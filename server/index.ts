@@ -900,6 +900,15 @@ app.use((req, res, next) => {
     } catch (e: any) { console.error("[Installment] Late check error:", e.message); }
   });
 
+  // Weekly report email — every Sunday at 8 AM
+  nodeCron.default.schedule("0 8 * * 0", async () => {
+    try {
+      const r = await fetch(`http://127.0.0.1:${process.env.PORT || 5000}/api/internal/weekly-report`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const data = await r.json() as any;
+      console.log(`[WeeklyReport] Sent to ${data.sent} admins — ${data.weekLabel}`);
+    } catch (e: any) { console.error("[WeeklyReport] error:", e.message); }
+  });
+
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen({ port, host: "0.0.0.0" }, () => {
     log(`serving on port ${port}`);

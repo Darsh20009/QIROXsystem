@@ -1070,6 +1070,57 @@ export function registerQMeetRoutes(app: Express) {
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // POST /api/qmeet/meetings/:id/ai-summary — generate & save AI summary for admin
+  app.post("/api/qmeet/meetings/:id/ai-summary", requireManagement, async (req: any, res) => {
+    try {
+      const meeting = await QMeetingModel.findById(req.params.id);
+      if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "QMeet AI Summary" },
+      });
+      const m = meeting as any;
+      const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
+
+عنوان الاجتماع: ${m.title}
+الوصف: ${m.description || "لا يوجد"}
+النوع: ${m.type}
+المضيف: ${m.hostName}
+عدد المشاركين: ${(m.participantIds || []).length}
+المدة المخططة: ${m.durationMinutes} دقيقة
+الأجندة: ${(m.agenda || []).join("، ") || "لا توجد أجندة مسجلة"}
+الحالة: ${m.status}
+ملاحظات: ${m.notes || "لا توجد"}
+
+اكتب ملخصاً منظماً بهذا التنسيق:
+
+## ملخص الاجتماع
+[ملخص مختصر في 2-3 جمل]
+
+## النقاط الرئيسية
+- [نقطة 1]
+- [نقطة 2]
+
+## الإجراءات المقترحة
+- [إجراء 1]
+
+## الخلاصة
+[جملة ختامية]`;
+      const completion = await openai.chat.completions.create({
+        model: "openai/gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 700,
+      });
+      const summary = completion.choices[0]?.message?.content || "تعذّر إنشاء الملخص";
+      await QMeetingModel.findByIdAndUpdate(req.params.id, { aiSummary: summary, aiSummaryAt: new Date() });
+      res.json({ summary });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "خطأ في الذكاء الاصطناعي" });
+    }
+  });
+
   // POST /api/qmeet/room/:roomId/ai-summary — generate AI meeting summary
   app.post("/api/qmeet/room/:roomId/ai-summary", async (req: any, res) => {
     try {

@@ -12188,6 +12188,209 @@ export async function registerRoutes(
     }
   });
 
+  // ── Weekly Report Trigger ──────────────────────────────────────────────────
+  app.post("/api/internal/weekly-report", async (req, res) => {
+    try {
+      const { sendWeeklyReportEmail } = await import("./email");
+      const { OrderModel, ProjectModel, UserModel } = await import("./models");
+
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - 7);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekLabel = `${weekStart.toLocaleDateString("ar-SA")} – ${now.toLocaleDateString("ar-SA")}`;
+
+      const [newClients, newOrders, completedOrders, activeProjects, openTickets, weekOrders] = await Promise.all([
+        (UserModel as any).countDocuments({ role: "client", createdAt: { $gte: weekStart } }),
+        (OrderModel as any).countDocuments({ createdAt: { $gte: weekStart } }),
+        (OrderModel as any).countDocuments({ status: "completed", updatedAt: { $gte: weekStart } }),
+        (ProjectModel as any).countDocuments({ status: "in_progress" }),
+        (OrderModel as any).countDocuments({ status: "pending" }),
+        (OrderModel as any).find({ createdAt: { $gte: weekStart }, isDepositPaid: true }).select("totalAmount depositAmount"),
+      ]);
+
+      const weekRevenue = (weekOrders as any[]).reduce((sum: number, o: any) => sum + (o.depositAmount || o.totalAmount || 0), 0);
+
+      const { QMeetingModel: QMF } = await import("./qmeet-db");
+      const QMeetModel = QMF();
+      const newMeetings = await (QMeetModel as any).countDocuments({ createdAt: { $gte: weekStart } });
+
+      const admins = await (UserModel as any).find({ role: { $in: ["admin", "manager"] }, email: { $exists: true, $ne: "" } }).select("email fullName username");
+      let sent = 0;
+      for (const admin of admins) {
+        const ok = await sendWeeklyReportEmail(admin.email, admin.fullName || admin.username, {
+          weekLabel, newClients, newOrders, completedOrders, weekRevenue, activeProjects, newMeetings, openTickets,
+        });
+        if (ok) sent++;
+      }
+      res.json({ success: true, sent, weekLabel });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── AI Contract Generation ─────────────────────────────────────────────────
+  app.post("/api/ai/generate-contract", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "Qirox Contract Generator" },
+      });
+
+      const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
+
+نوع المشروع: ${projectType || "تطوير برمجي"}
+اسم العميل: ${clientName || "العميل"}
+المبلغ الإجمالي: ${totalAmount || 0} ريال سعودي
+الخدمات المقدمة: ${services || projectType || "خدمات تقنية"}
+مدة المشروع: ${duration || "3 أشهر"}
+ملاحظات: ${notes || "لا توجد"}
+
+اكتب العقد بشكل كامل ومنظم يشمل:
+1. مقدمة العقد والأطراف
+2. نطاق العمل والخدمات
+3. المدة الزمنية
+4. الرسوم وطريقة الدفع
+5. حقوق الملكية الفكرية
+6. السرية وعدم الإفصاح
+7. إنهاء العقد
+8. القانون الحاكم (المملكة العربية السعودية)
+9. التوقيعات
+
+اجعل العقد رسمياً واحترافياً ومناسباً للبيئة السعودية.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "openai/gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1500,
+      });
+      const contractText = completion.choices[0]?.message?.content || "تعذّر توليد العقد";
+      res.json({ contract: contractText });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── CSV Export Endpoints ───────────────────────────────────────────────────
+  app.get("/api/admin/customers/export", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { UserModel } = await import("./models");
+      const clients = await (UserModel as any).find({ role: "client" }).select("fullName username email phone businessType walletBalance createdAt").lean();
+      const headers = ["الاسم الكامل", "اسم المستخدم", "البريد الالكتروني", "الهاتف", "نوع النشاط", "رصيد المحفظة", "تاريخ التسجيل"];
+      const rows = (clients as any[]).map(c => [
+        c.fullName || "",
+        c.username || "",
+        c.email || "",
+        c.phone || "",
+        c.businessType || "",
+        c.walletBalance || 0,
+        c.createdAt ? new Date(c.createdAt).toLocaleDateString("ar-SA") : "",
+      ]);
+      const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="customers-${Date.now()}.csv"`);
+      res.send("\uFEFF" + csv);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/admin/orders/export", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager", "accountant"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { OrderModel, UserModel } = await import("./models");
+      const orders = await (OrderModel as any).find({}).sort({ createdAt: -1 }).limit(2000)
+        .populate("userId", "fullName username email").lean();
+      const headers = ["رقم الطلب", "العميل", "نوع المشروع", "القطاع", "المبلغ الإجمالي", "الحالة", "طريقة الدفع", "تاريخ الطلب"];
+      const rows = (orders as any[]).map(o => [
+        String(o._id).slice(-8).toUpperCase(),
+        o.userId?.fullName || o.userId?.username || "",
+        o.projectType || "",
+        o.sector || "",
+        o.totalAmount || 0,
+        o.status || "",
+        o.paymentMethod || "",
+        o.createdAt ? new Date(o.createdAt).toLocaleDateString("ar-SA") : "",
+      ]);
+      const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="orders-${Date.now()}.csv"`);
+      res.send("\uFEFF" + csv);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/admin/invoices/export", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager", "accountant"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { InvoiceModel } = await import("./models");
+      const invoices = await (InvoiceModel as any).find({}).sort({ createdAt: -1 }).limit(2000).lean();
+      const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "تاريخ الاستحقاق", "تاريخ الإنشاء"];
+      const rows = (invoices as any[]).map(inv => [
+        inv.invoiceNumber || String(inv._id).slice(-8).toUpperCase(),
+        inv.clientName || inv.clientEmail || "",
+        inv.amount || inv.totalAmount || 0,
+        inv.status || "",
+        inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("ar-SA") : "",
+        inv.createdAt ? new Date(inv.createdAt).toLocaleDateString("ar-SA") : "",
+      ]);
+      const csv = [headers, ...rows].map(r => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="invoices-${Date.now()}.csv"`);
+      res.send("\uFEFF" + csv);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Gamification leaderboard
+  app.get("/api/admin/gamification/leaderboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { UserModel, TaskModel, OrderModel } = await import("./models");
+      const employees = await (UserModel as any).find({ role: { $ne: "client" } }).lean();
+      const tasks     = await (TaskModel as any).find({}).lean();
+      const orders    = await (OrderModel as any).find({ status: "active" }).lean();
+
+      const leaderboard = employees.map((emp: any) => {
+        const empId = String(emp._id);
+        const completedTasks = tasks.filter((t: any) => String(t.assignedTo) === empId && t.status === "completed").length;
+        const pendingTasks   = tasks.filter((t: any) => String(t.assignedTo) === empId && t.status !== "completed").length;
+        const activeProjects = orders.filter((o: any) => String(o.assignedTo) === empId || String(o.managerId) === empId).length;
+        const roleBonus = emp.role === "admin" ? 50 : emp.role === "manager" ? 30 : emp.role === "developer" ? 20 : 10;
+        const points = completedTasks * 10 + activeProjects * 5 + roleBonus;
+        let badge = "مبتدئ";
+        if (points >= 200) badge = "محترف";
+        else if (points >= 100) badge = "متميز";
+        else if (points >= 50)  badge = "نشط";
+        return { id: empId, fullName: emp.fullName || emp.username, username: emp.username, role: emp.role, avatar: emp.profilePicture || null, points, badge, completedTasks, pendingTasks, activeProjects };
+      });
+
+      leaderboard.sort((a: any, b: any) => b.points - a.points);
+      leaderboard.forEach((e: any, i: number) => { (e as any).rank = i + 1; });
+      res.json(leaderboard);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return httpServer;
 }
 
