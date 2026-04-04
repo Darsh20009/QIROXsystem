@@ -1,22 +1,32 @@
 // @ts-nocheck
 /**
- * QIROX AI — Agentic Intelligence (Pollinations AI — Free, No API Key)
- * Full function-calling system: reads, writes, sends notifications,
- * changes order status, manages tasks — all from natural language.
+ * QIROX AI — Agentic Intelligence
+ * Uses Groq (ultra-fast, free) if GROQ_API_KEY is set,
+ * falls back to Pollinations AI (no key needed).
  */
 import type { Express } from "express";
 import OpenAI from "openai";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
 
-/* ─── Pollinations AI client (Free, OpenAI-compatible) ─── */
+/* ─── AI Provider — Groq (fast) or Pollinations (free fallback) ─── */
+const GROQ_KEY = process.env.GROQ_API_KEY;
+const USE_GROQ  = !!GROQ_KEY;
+
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
   if (!_openai) {
-    _openai = new OpenAI({
-      apiKey: "pollinations",
-      baseURL: "https://text.pollinations.ai/openai",
-    });
+    if (USE_GROQ) {
+      _openai = new OpenAI({
+        apiKey: GROQ_KEY!,
+        baseURL: "https://api.groq.com/openai/v1",
+      });
+    } else {
+      _openai = new OpenAI({
+        apiKey: "pollinations",
+        baseURL: "https://text.pollinations.ai/openai",
+      });
+    }
   }
   return _openai;
 }
@@ -26,7 +36,11 @@ const openai = new Proxy({} as OpenAI, {
   },
 });
 
-const AI_MODEL = "openai";
+// Groq: llama-3.3-70b-versatile — smart, fast, supports tool calling
+// Pollinations: openai — GPT-4o based, free but slower
+const AI_MODEL = USE_GROQ ? "llama-3.3-70b-versatile" : "openai";
+
+console.log(`[AI] Provider: ${USE_GROQ ? "Groq (llama-3.3-70b-versatile) ⚡" : "Pollinations AI (openai)"}}`);
 
 /* ─── Serper.dev web search ─── */
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";

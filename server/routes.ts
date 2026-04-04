@@ -12238,10 +12238,11 @@ export async function registerRoutes(
     try {
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
       const OpenAI = (await import("openai")).default;
-      const openai = new OpenAI({
-        apiKey: "pollinations",
-        baseURL: "https://text.pollinations.ai/openai",
-      });
+      const groqKey = process.env.GROQ_API_KEY;
+      const openai = new OpenAI(groqKey ? {
+        apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1",
+      } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" });
+      const contractModel = groqKey ? "llama-3.3-70b-versatile" : "openai";
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
 
@@ -12266,7 +12267,7 @@ export async function registerRoutes(
 اجعل العقد رسمياً واحترافياً ومناسباً للبيئة السعودية.`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai",
+        model: contractModel,
         messages: [{ role: "user", content: prompt }],
         max_tokens: 1500,
       });

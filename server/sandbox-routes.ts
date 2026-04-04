@@ -211,10 +211,13 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
 
 async function getOpenAIClient() {
   const OpenAI = (await import("openai")).default;
-  return new OpenAI({
-    apiKey: "pollinations",
-    baseURL: "https://text.pollinations.ai/openai",
-  });
+  const groqKey = process.env.GROQ_API_KEY;
+  return {
+    client: new OpenAI(groqKey ? {
+      apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1",
+    } : { apiKey: "pollinations", baseURL: "https://text.pollinations.ai/openai" }),
+    model: groqKey ? "llama-3.3-70b-versatile" : "openai",
+  };
 }
 
 const proxyCache = new Map<string, ReturnType<typeof createProxyMiddleware>>();
@@ -749,7 +752,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
       const validModes = ["create", "edit", "explain", "full-project"];
       const activeMode = validModes.includes(mode) ? mode : "create";
 
-      const openai = await getOpenAIClient();
+      const { client: openai, model: sandboxModel } = await getOpenAIClient();
       const { listTree, readFile, writeFile } = await import("./sandbox-fs");
       const pid = String(ctx.project._id);
 
@@ -763,7 +766,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       if (activeMode === "full-project") {
         const completion = await openai.chat.completions.create({
-          model: "openai",
+          model: sandboxModel,
           messages: [
             {
               role: "system",
@@ -813,7 +816,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       if (activeMode === "explain") {
         const completion = await openai.chat.completions.create({
-          model: "openai",
+          model: sandboxModel,
           messages: [
             {
               role: "system",
@@ -843,7 +846,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
         : `أنشئ كود ${targetFile ? `للملف ${targetFile}` : ""}: ${prompt}`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai",
+        model: sandboxModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMsg },
