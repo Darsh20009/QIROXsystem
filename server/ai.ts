@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * QIROX AI — Agentic Intelligence (OpenAI via OpenRouter)
+ * QIROX AI — Agentic Intelligence (Pollinations AI — Free, No API Key)
  * Full function-calling system: reads, writes, sends notifications,
  * changes order status, manages tasks — all from natural language.
  */
@@ -9,17 +9,13 @@ import OpenAI from "openai";
 import { sendDirectEmail } from "./email";
 import axios from "axios";
 
-/* ─── OpenAI client (OpenRouter) ─── */
+/* ─── Pollinations AI client (Free, OpenAI-compatible) ─── */
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
   if (!_openai) {
     _openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-      baseURL: "https://openrouter.ai/api/v1",
-      defaultHeaders: {
-        "HTTP-Referer": "https://qiroxstudio.online",
-        "X-Title": "QIROX Studio AI",
-      },
+      apiKey: "pollinations",
+      baseURL: "https://text.pollinations.ai/openai",
     });
   }
   return _openai;
@@ -30,7 +26,7 @@ const openai = new Proxy({} as OpenAI, {
   },
 });
 
-const AI_MODEL = "openai/gpt-4o-mini";
+const AI_MODEL = "openai";
 
 /* ─── Serper.dev web search ─── */
 const SERPER_KEY = process.env.SERPER_API_KEY || "1e7d5649e4f81662619b41ffe249c5bea3341eef";

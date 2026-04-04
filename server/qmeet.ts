@@ -1077,9 +1077,8 @@ export function registerQMeetRoutes(app: Express) {
       if (!meeting) return res.status(404).json({ error: "الاجتماع غير موجود" });
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "QMeet AI Summary" },
+        apiKey: "pollinations",
+        baseURL: "https://text.pollinations.ai/openai",
       });
       const m = meeting as any;
       const prompt = `أنت مساعد ذكي. قم بكتابة ملخص احترافي لهذا الاجتماع باللغة العربية.
@@ -1109,7 +1108,7 @@ export function registerQMeetRoutes(app: Express) {
 ## الخلاصة
 [جملة ختامية]`;
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o-mini",
+        model: "openai",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 700,
       });
@@ -1127,9 +1126,8 @@ export function registerQMeetRoutes(app: Express) {
       const { chat = [], captions = [], title = "اجتماع" } = req.body;
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "QMeet AI Summary" },
+        apiKey: "pollinations",
+        baseURL: "https://text.pollinations.ai/openai",
       });
 
       const chatText = chat.map((m: any) => `${m.name}: ${m.text}`).join("\n");
@@ -1159,7 +1157,7 @@ ${captionText ? `محادثات الاجتماع:\n${captionText}\n` : ""}
 [خلاصة نهائية]`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o-mini",
+        model: "openai",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 800,
       });

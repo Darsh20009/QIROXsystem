@@ -212,12 +212,8 @@ const TEMPLATES: Record<string, { files: Record<string, string>; entryFile: stri
 async function getOpenAIClient() {
   const OpenAI = (await import("openai")).default;
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-    baseURL: "https://openrouter.ai/api/v1",
-    defaultHeaders: {
-      "HTTP-Referer": "https://qiroxstudio.online",
-      "X-Title": "QIROX Sandbox AI",
-    },
+    apiKey: "pollinations",
+    baseURL: "https://text.pollinations.ai/openai",
   });
 }
 
@@ -767,7 +763,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       if (activeMode === "full-project") {
         const completion = await openai.chat.completions.create({
-          model: "openai/gpt-4o",
+          model: "openai",
           messages: [
             {
               role: "system",
@@ -817,7 +813,7 @@ export function registerSandboxRoutes(app: Express, httpServer?: HttpServer): vo
 
       if (activeMode === "explain") {
         const completion = await openai.chat.completions.create({
-          model: "openai/gpt-4o",
+          model: "openai",
           messages: [
             {
               role: "system",
@@ -847,7 +843,7 @@ ${activeMode === "edit" ? "المطلوب تعديل الكود الموجود �
         : `أنشئ كود ${targetFile ? `للملف ${targetFile}` : ""}: ${prompt}`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o",
+        model: "openai",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMsg },

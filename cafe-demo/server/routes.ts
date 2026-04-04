@@ -16535,16 +16535,14 @@ ${existingIngredients ? `المكونات الحالية: ${existingIngredients}
 
       const userPrompt = tasks[task] || tasks.description_ar;
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const response = await fetch("https://text.pollinations.ai/openai/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
+          "Authorization": "Bearer pollinations",
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://qirox.cafe",
-          "X-Title": "QIROX Café AI Assistant",
         },
         body: JSON.stringify({
-          model: "google/gemini-flash-1.5",
+          model: "openai-large",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },

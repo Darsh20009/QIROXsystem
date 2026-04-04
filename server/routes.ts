@@ -12239,9 +12239,8 @@ export async function registerRoutes(
       const { projectType, clientName, totalAmount, services, notes, duration } = req.body;
       const OpenAI = (await import("openai")).default;
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: { "HTTP-Referer": "https://qiroxstudio.online", "X-Title": "Qirox Contract Generator" },
+        apiKey: "pollinations",
+        baseURL: "https://text.pollinations.ai/openai",
       });
 
       const prompt = `أنت محامي وخبير في صياغة العقود التجارية السعودية. اكتب عقداً احترافياً باللغة العربية للمعلومات التالية:
@@ -12267,7 +12266,7 @@ export async function registerRoutes(
 اجعل العقد رسمياً واحترافياً ومناسباً للبيئة السعودية.`;
 
       const completion = await openai.chat.completions.create({
-        model: "openai/gpt-4o-mini",
+        model: "openai",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 1500,
       });
