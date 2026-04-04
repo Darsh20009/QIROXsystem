@@ -14,6 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { CheckCircle2, Bell, ArrowLeft, Sparkles, Shield, Clock, Zap, Star, Phone, User, Building2, Calendar, FileText, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n";
 
 const schema = z.object({
   name: z.string().min(2, "الاسم مطلوب"),
@@ -48,6 +49,7 @@ const BENEFITS = [
 ];
 
 export default function SwitchReminder() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -81,7 +83,7 @@ export default function SwitchReminder() {
   const minDate = today.toISOString().split("T")[0];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-white dark:bg-gray-950" dir={dir}>
       {/* Hero */}
       <div className="relative bg-black overflow-hidden">
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Zap, FileText, Bell, BarChart3 } from "lucide-react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 const STORAGE_KEY = (uid: string) => `qirox_ai_intro_v3_${uid}`;
 const AUTO_DISMISS_SEC = 10;
@@ -78,6 +79,7 @@ interface Props {
 }
 
 export function AIWelcomeIntro({ userId, userName, userRole, onOpen }: Props) {
+  const { dir } = useI18n();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export function AIWelcomeIntro({ userId, userName, userRole, onOpen }: Props) {
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
             className="fixed z-[1000] inset-x-4 bottom-4 sm:inset-auto sm:bottom-6 sm:end-6 sm:w-[320px]"
-            dir="rtl"
+            dir={dir}
             onClick={e => e.stopPropagation()}
           >
             <div className="relative rounded-2xl overflow-hidden w-full"

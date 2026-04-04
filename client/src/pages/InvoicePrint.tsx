@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "", notes: "" };
 
 export default function InvoicePrint() {
+  const { dir } = useI18n();
   const params = useParams<{ id: string }>();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
@@ -67,7 +69,7 @@ export default function InvoicePrint() {
       `}</style>
 
       {/* Controls - hidden on print */}
-      <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir="rtl">
+      <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir={dir}>
         <button onClick={() => setLocation(isClientView ? "/client/invoices" : "/admin/invoices")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
           <ArrowRight className="w-4 h-4" />
           {isClientView ? "رجوع لفواتيري" : "رجوع للفواتير"}
@@ -95,7 +97,7 @@ export default function InvoicePrint() {
         <div
           className="print-page bg-white w-full max-w-[800px] shadow-lg rounded-xl overflow-hidden"
           style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
-          dir="rtl"
+          dir={dir}
         >
           {/* Header */}
           <div className="bg-black px-10 py-8 flex items-center justify-between">

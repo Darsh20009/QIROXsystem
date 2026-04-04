@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 interface Props { projectId: string; currentUser: any; }
 
@@ -19,6 +20,7 @@ function Avatar({ user }: { user: any }) {
 }
 
 export default function ProjectComments({ projectId, currentUser }: Props) {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [body, setBody] = useState("");
@@ -51,7 +53,7 @@ export default function ProjectComments({ projectId, currentUser }: Props) {
   });
 
   return (
-    <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden" dir="rtl">
+    <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden" dir={dir}>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.05]">
         <MessageSquare className="w-4 h-4 text-black/40 dark:text-white/40" />
         <span className="text-sm font-bold text-black dark:text-white">التعليقات والتواصل</span>

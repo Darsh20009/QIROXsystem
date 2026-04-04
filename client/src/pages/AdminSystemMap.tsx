@@ -150,7 +150,7 @@ const MANAGEMENT_ROLES = ["admin", "manager"];
 // ─── Main Component ───────────────────────────────────────────
 export default function AdminSystemMap() {
   const { data: user } = useUser();
-  const { language: lang } = useI18n();
+  const { language: lang, dir } = useI18n();
   const ar = lang === "ar";
   const [, navigate] = useLocation();
 
@@ -184,7 +184,7 @@ export default function AdminSystemMap() {
   );
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f7f7f7] dark:bg-[#0d1117]">
+    <div dir={dir} className="min-h-screen bg-[#f7f7f7] dark:bg-[#0d1117]">
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/* HEADER                                                  */}

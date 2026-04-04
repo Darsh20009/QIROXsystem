@@ -1,5 +1,35 @@
 # Qirox Platform
 
+## Latest Changes (Apr 4, 2026) — Session 5
+
+### Full i18n (dir) + Dark/Light Mode Sweep
+
+**i18n Direction Fix — 47 files fixed:**
+- Removed ALL hardcoded `dir="rtl"` across 34 pages + 13 components
+- Each file now uses `const { dir } = useI18n()` and `dir={dir}` dynamically
+- Only exception: App.tsx ErrorBoundary (class component, can't use hooks)
+- Intentional `dir="ltr"` on technical inputs (URLs, code, IBAN) preserved
+
+**Pages fixed:** AdminProjectData, AdminProjectFeatures, AdminQMeetDetail, AdminSubscriptionPlans, AdminSuppliers, AdminSystemFeatures, AdminSystemMap, AIStudio, ClientsGroup, CSChat, Dashboard, Demos, DevChecklist, Devices, EcommerceStore, EmbedDashboard, EmployeeChangelog, EmployeeDemos, EmployeeSubscriptions, Home, InvestorPortal, InvoicePrint, JoinUs, MeetingRoom, News, PaymobOnboarding, ProjectDetails, ProjectDetailsSetup, QMeetJoinByCode, QuotationPrint, ReceiptPrint, SupplierDashboard, SwitchReminder, ToolPage
+
+**Components fixed:** AIWelcomeIntro, BiometricManager, DashboardWidgets, FloatingClientChat, GlobalNotificationBanner, NotificationBell, PackageFinderModal, ProjectComments, PushPermissionBanner, QuickPinButton, TimeTracker, WelcomeAssistant, QiroxAI
+
+**Dark/Light Mode Fixes:**
+- AdminAbandonedCarts.tsx — email modal: `bg-white dark:bg-[#131c2e]`, inputs, borders, text all theme-aware
+- TemplateDetail.tsx — 2x CTA sections: `bg-gray-900 dark:bg-[#0d0d0f]`
+- Cart.tsx — removed stray `bg-[#0c1322]` from grid wrapper
+- CartWizardPage.tsx — added useI18n + dir={dir}
+
+**CSS Utilities Added (index.css):**
+- `qx-card` — theme-aware card with border
+- `qx-card-hover` — card hover state
+- `qx-text`, `qx-text-muted`, `qx-text-dim` — text utilities
+- `qx-input` — form input styling
+- `qx-btn-ghost` — ghost button
+- `qx-border` — theme-aware border
+- `qx-page-bg` — admin page background
+- `qx-icon-bg` — icon container background
+
 ## Latest Changes (Apr 2, 2026) — Session 4
 
 ### Bug Fixes & New Quotation Feature

@@ -22,6 +22,7 @@ import {
   Square, Volume2, Globe2, Printer, Plus, Minus, RefreshCw, Wand2,
   Layers3, SquareDashed, FlipVertical, MoveHorizontal
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 // ─── All 62 Tool Definitions ─────────────────────────────────────────────────
 export const ALL_TOOLS = [
@@ -356,7 +357,7 @@ function DocxToPdfPanel() {
       if (!res.ok) throw new Error();
       const { html } = await res.json();
       const w = window.open("", "_blank");
-      if (w) { w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>Word Doc</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto;line-height:1.6;}</style></head><body>${html}<script>window.onload=()=>{window.print();}<\/script></body></html>`); w.document.close(); toast({ title: "✅ افتح نافذة الطباعة لحفظ PDF" }); }
+      if (w) { w.document.write(`<!DOCTYPE html><html dir="${dir}"><head><meta charset="UTF-8"><title>Word Doc</title><style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto;line-height:1.6;}</style></head><body>${html}<script>window.onload=()=>{window.print();}<\/script></body></html>`); w.document.close(); toast({ title: "✅ افتح نافذة الطباعة لحفظ PDF" }); }
     } catch { toast({ title: "خطأ في التحويل", variant: "destructive" }); }
     setLoading(false);
   };
@@ -1501,7 +1502,7 @@ function InvoiceGenPanel() {
   const addItem = () => setItems(i => [...i, {desc:"",qty:1,price:0}]);
   const remItem = (idx: number) => setItems(i => i.filter((_,j) => j!==idx));
   const print = () => {
-    const html = `<html dir="rtl"><head><meta charset="UTF-8"><title>فاتورة ${inv.number}</title><style>body{font-family:Arial,sans-serif;padding:40px;direction:rtl}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f5f5f5}.total{font-size:1.2em;font-weight:bold}</style></head><body><h1>فاتورة</h1><p>رقم الفاتورة: ${inv.number} | التاريخ: ${inv.date}</p><p>من: ${inv.company} | إلى: ${inv.client}</p><table><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>${items.map(i=>`<tr><td>${i.desc}</td><td>${i.qty}</td><td>${i.price} ر.س</td><td>${(i.qty*i.price).toFixed(2)} ر.س</td></tr>`).join("")}<tr class="total"><td colspan="3">الإجمالي</td><td>${total.toFixed(2)} ر.س</td></tr></table><script>window.onload=()=>window.print()<\/script></body></html>`;
+    const html = `<html dir="${dir}"><head><meta charset="UTF-8"><title>فاتورة ${inv.number}</title><style>body{font-family:Arial,sans-serif;padding:40px;direction:rtl}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{background:#f5f5f5}.total{font-size:1.2em;font-weight:bold}</style></head><body><h1>فاتورة</h1><p>رقم الفاتورة: ${inv.number} | التاريخ: ${inv.date}</p><p>من: ${inv.company} | إلى: ${inv.client}</p><table><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>${items.map(i=>`<tr><td>${i.desc}</td><td>${i.qty}</td><td>${i.price} ر.س</td><td>${(i.qty*i.price).toFixed(2)} ر.س</td></tr>`).join("")}<tr class="total"><td colspan="3">الإجمالي</td><td>${total.toFixed(2)} ر.س</td></tr></table><script>window.onload=()=>window.print()<\/script></body></html>`;
     const w = window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
   };
   return (
@@ -1812,13 +1813,14 @@ function ImgResizePanel() {
 // ARABIC TOOLS
 
 function TashkeelRemoverPanel() {
+  const { dir } = useI18n();
   const [input, setInput] = useState("");
   const remove = (s: string) => s.replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,"");
   const result = remove(input);
   const removed = input.length - result.length;
   return (
     <div className="space-y-4">
-      <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أَدْخِلْ نَصّاً مُشَكَّلاً هُنَا..." rows={5} dir="rtl" data-testid="textarea-tashkeel" />
+      <Textarea value={input} onChange={e => setInput(e.target.value)} placeholder="أَدْخِلْ نَصّاً مُشَكَّلاً هُنَا..." rows={5} dir={dir} data-testid="textarea-tashkeel" />
       {input && <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-600 dark:text-amber-400 text-center">تم إزالة {removed} حركة تشكيل</div>}
       <ResultBox value={result} label="النص بدون تشكيل:" />
     </div>
@@ -2099,6 +2101,7 @@ function ToolPanel({ id }: { id: string }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function ToolPage() {
+  const { dir } = useI18n();
   const [, params] = useRoute("/my-tools/:toolId");
   const [, navigate] = useLocation();
   const toolId = params?.toolId;
@@ -2106,7 +2109,7 @@ export default function ToolPage() {
 
   if (!tool) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4" dir="rtl">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4" dir={dir}>
         <p className="text-xl font-bold text-black dark:text-white">الأداة غير موجودة</p>
         <Button onClick={() => navigate("/my-tools")} className="gap-2"><ArrowLeft className="w-4 h-4"/>العودة للأدوات</Button>
       </div>
@@ -2117,7 +2120,7 @@ export default function ToolPage() {
   const cat = CATEGORIES.find(c => c.id === tool.cat);
 
   return (
-    <div className="relative min-h-screen bg-white dark:bg-gray-950" dir="rtl">
+    <div className="relative min-h-screen bg-white dark:bg-gray-950" dir={dir}>
       {/* Background glow */}
       <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-5 dark:opacity-10 pointer-events-none`} />
 

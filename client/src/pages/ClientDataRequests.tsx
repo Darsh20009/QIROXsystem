@@ -212,6 +212,7 @@ function RequestCard({ req, index, onOpen, statusMeta, priorityMeta, L }: { req:
 
 /* ── Request Dialog ─────────────────────────────────────── */
 function RequestDialog({ req, onClose, onSubmitted, statusMeta, L }: { req: any; onClose: () => void; onSubmitted: () => void; statusMeta: any; L: boolean }) {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [responses, setResponses] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};

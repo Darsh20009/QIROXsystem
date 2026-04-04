@@ -15,6 +15,7 @@ import {
   Loader2, CheckCircle2, Clock, XCircle, Upload, Pen, X,
   BarChart3, Users, Star, Lock
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type InvestorData = {
   profile: { id: string; stakePercentage: number; totalInvested: number; isVerified: boolean; isActive: boolean; notes: string; joinedAt: string; userId: { fullName: string; email: string; profilePhotoUrl?: string } };
@@ -111,6 +112,7 @@ function SignaturePad({ onChange }: { onChange: (data: string) => void }) {
 type Tab = "overview" | "payments" | "submit";
 
 export default function InvestorPortal() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const { data: currentUser } = useUser();
   const [tab, setTab] = useState<Tab>("overview");
@@ -159,7 +161,7 @@ export default function InvestorPortal() {
 
   if (currentUser && !isInvestorOrAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-8" dir="rtl">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 text-center p-8" dir={dir}>
         <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <Lock className="w-10 h-10 text-amber-500" />
         </div>
@@ -174,7 +176,7 @@ export default function InvestorPortal() {
   if (error || !data) {
     console.error("Investor Portal Error:", error);
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4 text-center" dir="rtl">
+      <div className="flex flex-col items-center justify-center py-32 gap-4 text-center" dir={dir}>
         <div className="w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
           <Lock className="w-10 h-10 text-amber-500" />
         </div>
@@ -191,7 +193,7 @@ export default function InvestorPortal() {
   const pendingPayments = payments.filter(p => p.status === "pending").length;
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-4xl mx-auto space-y-6">
 

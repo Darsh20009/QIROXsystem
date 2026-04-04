@@ -121,6 +121,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
   onAddToCart: (shipping?: typeof emptyShipping | null, notes?: string, selectedBundle?: any) => void;
   isPending: boolean;
 }) {
+  const { dir } = useI18n();
   const cfg = categoryConfig[p.category] || categoryConfig.other;
   const Icon = cfg.icon;
   const isPhysical = PHYSICAL_CATS.includes(p.category);
@@ -146,7 +147,7 @@ function ProductDetailSheet({ product: p, user, onClose, onAddToCart, isPending 
   const imgs = (p.images || []).filter(Boolean);
 
   return (
-    <div className="flex flex-col h-full" dir="rtl">
+    <div className="flex flex-col h-full" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
         <button onClick={onClose} className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors" data-testid="button-close-product-sheet">
@@ -800,7 +801,7 @@ export default function Devices() {
 
       {/* Product Detail Sheet */}
       <Sheet open={!!selectedProduct} onOpenChange={v => !v && setSelectedProduct(null)}>
-        <SheetContent side="left" className="w-full sm:max-w-lg p-0 overflow-hidden border-0" dir="rtl">
+        <SheetContent side="left" className="w-full sm:max-w-lg p-0 overflow-hidden border-0" dir={dir}>
           {selectedProduct && (
             <ProductDetailSheet
               product={selectedProduct}

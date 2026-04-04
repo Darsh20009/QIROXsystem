@@ -14,6 +14,7 @@ import {
   Globe, ChevronDown, Palette, Video, FileText, Zap, Clock, Eye,
   CheckCircle2, Play, Upload, File as FileIcon, AlertCircle,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface TemplateFile {
   nameAr: string;
@@ -82,6 +83,7 @@ async function uploadFile(file: File, large = false): Promise<string> {
 }
 
 export default function EmployeeDemos() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const videoRef = useRef<HTMLInputElement>(null);
@@ -239,7 +241,7 @@ export default function EmployeeDemos() {
   const isVideoUploaded = form.howToUseVideoUrl.startsWith("/uploads/");
 
   return (
-    <div className="relative overflow-hidden space-y-6 max-w-4xl" dir="rtl">
+    <div className="relative overflow-hidden space-y-6 max-w-4xl" dir={dir}>
       <PageGraphics variant="dashboard" />
 
       {/* Hidden inputs */}

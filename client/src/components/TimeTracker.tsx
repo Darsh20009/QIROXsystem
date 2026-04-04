@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 interface Props { projectId: string; tasks: any[]; currentUser: any; }
 
 export default function TimeTracker({ projectId, tasks, currentUser }: Props) {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [running, setRunning] = useState<{ taskId: string; startedAt: Date; desc: string } | null>(null);
@@ -60,7 +62,7 @@ export default function TimeTracker({ projectId, tasks, currentUser }: Props) {
   const totalMinutes = logs.reduce((a: number, l: any) => a + (l.durationMinutes || 0), 0);
 
   return (
-    <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden" dir="rtl">
+    <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden" dir={dir}>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.05]">
         <Timer className="w-4 h-4 text-black/40 dark:text-white/40" />
         <span className="text-sm font-bold text-black dark:text-white">تتبع الوقت</span>

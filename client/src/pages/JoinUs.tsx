@@ -15,6 +15,7 @@ import {
   Briefcase, MapPin, Clock, Users, Code2, Palette, Server, BarChart3,
   CheckCircle2, Loader2, Send, ArrowLeft, Star, Zap, Heart
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -43,6 +44,7 @@ const perks = [
 ];
 
 export default function JoinUs() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", resumeUrl: "", coverLetter: "" });
@@ -137,7 +139,7 @@ export default function JoinUs() {
       {/* Jobs */}
       <section className="py-20 container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-10" dir="rtl">
+          <div className="mb-10" dir={dir}>
             <span className="text-black/40 dark:text-white/40 text-sm font-semibold">الوظائف المتاحة</span>
             <h2 className="text-2xl md:text-3xl font-bold font-heading text-black dark:text-white mt-2">
               {isLoading ? "جاري التحميل..." : jobs.filter((j: any) => j.status === "open").length > 0 ? "انضم إلى فريقنا" : "لا توجد وظائف مفتوحة حالياً"}
@@ -170,7 +172,7 @@ export default function JoinUs() {
                       className="bg-white dark:bg-gray-900/60 border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 hover:border-black/[0.12] dark:hover:border-white/[0.12] hover:shadow-lg hover:shadow-black/[0.04] transition-all group"
                       data-testid={`job-card-${job._id || job.id}`}
                     >
-                      <div className="flex items-start justify-between gap-4" dir="rtl">
+                      <div className="flex items-start justify-between gap-4" dir={dir}>
                         <div className="flex items-start gap-4 flex-1 min-w-0">
                           <div className="w-12 h-12 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
                             <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
@@ -245,7 +247,7 @@ export default function JoinUs() {
 
       {/* Apply Dialog */}
       <Dialog open={!!selectedJob} onOpenChange={v => { if (!v) setSelectedJob(null); }}>
-        <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-right">
               <div className="w-9 h-9 bg-black dark:bg-white rounded-xl flex items-center justify-center flex-shrink-0">

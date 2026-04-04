@@ -5,6 +5,7 @@ import {
   XCircle, AlertCircle, Loader2, ShieldX, ArrowUpRight, ArrowDownLeft,
   BarChart3,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type EmbedData = {
@@ -51,6 +52,7 @@ function fmtSAR(n: number) {
 // MAIN EMBED DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════════
 export default function EmbedDashboard() {
+  const { dir } = useI18n();
   const [location] = useLocation();
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
@@ -99,7 +101,7 @@ export default function EmbedDashboard() {
   const { client, stats, recentOrders, recentProjects, walletTransactions } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans" dir="rtl" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 font-sans" dir={dir} style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
       {/* Top bar */}
       <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

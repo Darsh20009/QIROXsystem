@@ -175,7 +175,7 @@ export default function AdminQMeetDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir="rtl">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir={dir}>
         <Skeleton className="h-10 w-40 mb-6" />
         <Skeleton className="h-48 rounded-xl" />
       </div>
@@ -196,7 +196,7 @@ export default function AdminQMeetDetail() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir={dir}>
       {/* Back */}
       <button onClick={() => navigate("/admin/qmeet")}
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-black dark:hover:text-white mb-4 transition-colors"

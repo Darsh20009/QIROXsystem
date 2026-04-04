@@ -11,6 +11,7 @@ import {
   ChevronRight, Briefcase, Bell, Search, CreditCard, Mic, MicOff,
 } from "lucide-react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -308,6 +309,7 @@ function NavigateCard({ url, label, onNavigate }: { url: string; label: string; 
    AIPanel — main component
 ══════════════════════════════════════════════════════════ */
 export function AIPanel({ className = "", quickActions }: {
+  const { dir } = useI18n();
   className?: string;
   quickActions?: Array<{ icon: any; label: string; prompt: string; color?: string }>;
 }) {
@@ -441,7 +443,7 @@ export function AIPanel({ className = "", quickActions }: {
         border: "1px solid rgba(14,165,233,0.18)",
         boxShadow: "0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
-      dir="rtl"
+      dir={dir}
     >
       {/* ── Header ── */}
       <div className={`relative flex items-center gap-2.5 px-4 py-3 flex-shrink-0 bg-gradient-to-l ${cfg.gradient}`}>

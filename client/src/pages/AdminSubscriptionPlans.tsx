@@ -241,7 +241,7 @@ export default function AdminSubscriptionPlans() {
   const pendingReqs = subRequests?.filter(r => r.status === "pending").length || 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] relative overflow-hidden" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="bg-white border-b border-black/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
@@ -567,7 +567,7 @@ export default function AdminSubscriptionPlans() {
 
       {/* ─── QUICK RENEWAL DIALOG ─── */}
       <Dialog open={renewDialog} onOpenChange={setRenewDialog}>
-        <DialogContent className="max-w-sm rounded-3xl" dir="rtl">
+        <DialogContent className="max-w-sm rounded-3xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg text-right flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
@@ -623,7 +623,7 @@ export default function AdminSubscriptionPlans() {
 
       {/* ─── SEGMENT DIALOG ─── */}
       <Dialog open={segmentDialog} onOpenChange={setSegmentDialog}>
-        <DialogContent className="max-w-lg rounded-2xl" dir="rtl">
+        <DialogContent className="max-w-lg rounded-2xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg">{isEditMode ? (L ? "تعديل القطاع" : "Edit Sector") : (L ? "إضافة قطاع جديد" : "Add New Sector")}</DialogTitle>
           </DialogHeader>
@@ -719,7 +719,7 @@ export default function AdminSubscriptionPlans() {
 
       {/* ─── SET SUBSCRIPTION DIALOG ─── */}
       <Dialog open={subDialog} onOpenChange={setSubDialog}>
-        <DialogContent className="max-w-md rounded-2xl" dir="rtl">
+        <DialogContent className="max-w-md rounded-2xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg">{L ? "تعيين اشتراك للعميل" : "Assign Client Subscription"}</DialogTitle>
           </DialogHeader>
@@ -791,7 +791,7 @@ export default function AdminSubscriptionPlans() {
 
       {/* ─── REQUEST REVIEW DIALOG ─── */}
       <Dialog open={reqDialog} onOpenChange={setReqDialog}>
-        <DialogContent className="max-w-md rounded-2xl" dir="rtl">
+        <DialogContent className="max-w-md rounded-2xl" dir={dir}>
           <DialogHeader>
             <DialogTitle className="font-black text-lg">{L ? "مراجعة طلب الخدمة الفرعية" : "Review Sub-Service Request"}</DialogTitle>
           </DialogHeader>

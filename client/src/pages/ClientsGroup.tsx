@@ -266,7 +266,7 @@ export default function ClientsGroup() {
               exit={{ opacity: 0, y: 20 }}
               onClick={e => e.stopPropagation()}
               className="relative bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
-              dir="rtl"
+              dir={dir}
             >
               <div className="sticky top-0 bg-white dark:bg-gray-900 px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06] rounded-t-3xl flex items-center justify-between">
                 <h2 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
@@ -330,7 +330,7 @@ export default function ClientsGroup() {
               exit={{ opacity: 0, scale: 0.96 }}
               onClick={e => e.stopPropagation()}
               className="relative bg-white dark:bg-gray-900 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
-              dir="rtl"
+              dir={dir}
             >
               {selectedMsg.imageUrl && (
                 <div className="aspect-video overflow-hidden rounded-t-3xl">

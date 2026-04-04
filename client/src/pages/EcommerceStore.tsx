@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 const STORE_URL = "https://e-commerce.qiroxstudio.online";
 
@@ -78,6 +79,7 @@ function CopyBtn({ text }: { text: string }) {
 }
 
 export default function EcommerceStore() {
+  const { dir } = useI18n();
   const [activeTab, setActiveTab] = useState<"overview" | "embed">("overview");
   const [currentPath, setCurrentPath] = useState("/");
   const [showPassword, setShowPassword] = useState(false);
@@ -104,7 +106,7 @@ export default function EcommerceStore() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-0" dir="rtl">
+    <div className="h-full flex flex-col gap-0" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-950 flex-shrink-0">
         <div className="flex items-center gap-3">

@@ -156,7 +156,7 @@ export default function AdminSystemFeatures() {
       }
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="max-w-lg" dir={dir}>
           <DialogHeader><DialogTitle>{editId ? "تعديل الميزة" : "إضافة ميزة جديدة"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">

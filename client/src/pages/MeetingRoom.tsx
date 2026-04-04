@@ -10,6 +10,7 @@ import {
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
   CircleDot, Download, QrCode, Sparkles, FlipHorizontal2, Crown,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -133,6 +134,7 @@ function VideoTile({
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function MeetingRoom() {
+  const { dir } = useI18n();
   const { roomId } = useParams<{ roomId: string }>();
   const [, navigate] = useLocation();
   const { data: user } = useUser();
@@ -1329,7 +1331,7 @@ export default function MeetingRoom() {
   // ── PRE-JOIN SCREEN ────────────────────────────────────────────────────────
   if (!joined) {
     return (
-      <div className="min-h-screen bg-[#202124] flex flex-col items-center justify-center px-4" dir="rtl">
+      <div className="min-h-screen bg-[#202124] flex flex-col items-center justify-center px-4" dir={dir}>
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-white text-2xl font-bold">{meeting?.title || "اجتماع"}</h1>
@@ -1449,7 +1451,7 @@ export default function MeetingRoom() {
   // ── LOBBY WAITING ──────────────────────────────────────────────────────────
   if (lobbyWaiting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#202124] px-4" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-[#202124] px-4" dir={dir}>
         <div className="w-full max-w-sm bg-[#292b2f] rounded-2xl p-8 flex flex-col items-center gap-5 shadow-2xl text-center">
           {/* Animated waiting icon */}
           <div className="relative">
@@ -1494,7 +1496,7 @@ export default function MeetingRoom() {
 
   // ── MEETING ROOM ───────────────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative select-none" dir="rtl">
+    <div className="h-screen flex flex-col bg-[#202124] overflow-hidden relative select-none" dir={dir}>
 
       {/* Floating emoji reactions */}
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
@@ -1646,7 +1648,7 @@ export default function MeetingRoom() {
         {/* ── Poll Creator Modal ── */}
         {showPollCreator && isRoomHost && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowPollCreator(false)}>
-            <div className="bg-[#292b2f] rounded-2xl p-5 shadow-2xl w-80 space-y-3" onClick={e => e.stopPropagation()} dir="rtl">
+            <div className="bg-[#292b2f] rounded-2xl p-5 shadow-2xl w-80 space-y-3" onClick={e => e.stopPropagation()} dir={dir}>
               <div className="flex items-center justify-between">
                 <span className="text-white font-semibold flex items-center gap-2"><BarChart2 className="w-4 h-4 text-blue-400" /> إنشاء استطلاع</span>
                 <button onClick={() => setShowPollCreator(false)} className="text-[#9aa0a6] hover:text-white"><X className="w-4 h-4" /></button>

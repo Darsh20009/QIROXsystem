@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Fingerprint, Smartphone, Trash2, Plus, Loader2, ShieldCheck, Monitor, TabletSmartphone, KeyRound, Eye, EyeOff, Hash } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Credential {
   id: string;
@@ -30,6 +31,7 @@ function formatDate(d?: string) {
 }
 
 function QuickPinManager() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [showSetDialog, setShowSetDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -69,7 +71,7 @@ function QuickPinManager() {
   };
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={dir}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Hash className="w-5 h-5 text-primary" />
@@ -122,7 +124,7 @@ function QuickPinManager() {
       )}
 
       <Dialog open={showSetDialog} onOpenChange={setShowSetDialog}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><KeyRound className="w-4 h-4" /> تفعيل الرمز السريع</DialogTitle>
             <DialogDescription>اختر رمزاً من 4 إلى 8 أرقام لتسجيل الدخول بسرعة</DialogDescription>
@@ -170,7 +172,7 @@ function QuickPinManager() {
       </Dialog>
 
       <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle>إلغاء الرمز السريع</DialogTitle>
             <DialogDescription>هل أنت متأكد؟ لن تتمكن من تسجيل الدخول بالرمز بعد الإلغاء</DialogDescription>
@@ -189,6 +191,7 @@ function QuickPinManager() {
 }
 
 export function BiometricManager() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [available, setAvailable] = useState<boolean | null>(null);
   const [registering, setRegistering] = useState(false);
@@ -248,7 +251,7 @@ export function BiometricManager() {
   );
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={dir}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Fingerprint className="w-5 h-5 text-primary" />
@@ -322,7 +325,7 @@ export function BiometricManager() {
       )}
 
       <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
-        <DialogContent className="max-w-sm" dir="rtl">
+        <DialogContent className="max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle>إضافة جهاز بالبصمة</DialogTitle>
             <DialogDescription>سيطلب منك الجهاز التحقق بالبصمة أو الوجه</DialogDescription>

@@ -12,6 +12,7 @@ import {
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Hash, Loader2, Eye, EyeOff } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 interface Props {
   prefillIdentifier?: string;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function QuickPinButton({ prefillIdentifier = "", onSuccess, className }: Props) {
+  const { dir } = useI18n();
   const [biometricAvailable, setBiometricAvailable] = useState<boolean | null>(null);
   const [pinSetLocally, setPinSetLocally] = useState(false);
   const [open, setOpen] = useState(false);
@@ -93,7 +95,7 @@ export function QuickPinButton({ prefillIdentifier = "", onSuccess, className }:
       </Button>
 
       <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) setPin(""); }}>
-        <DialogContent className="max-w-xs" dir="rtl">
+        <DialogContent className="max-w-xs" dir={dir}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Hash className="w-4 h-4 text-primary" />

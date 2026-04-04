@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 
 interface VersionFeature {
   title: string;
@@ -220,6 +221,7 @@ function GuideSection({ section, index }: { section: SystemGuideSection; index: 
 }
 
 export default function EmployeeChangelog() {
+  const { dir } = useI18n();
   const [activeTab, setActiveTab] = useState<"changelog" | "guide">("changelog");
   const { data: user } = useUser();
 
@@ -250,7 +252,7 @@ export default function EmployeeChangelog() {
   const latest = data.changelog[0];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6" dir="rtl">
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6" dir={dir}>
 
       {/* Header */}
       <motion.div

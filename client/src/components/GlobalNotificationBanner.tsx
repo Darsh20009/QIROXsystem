@@ -8,6 +8,7 @@ import {
   Bell, ChevronLeft, ChevronRight, AlertCircle,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 
 const TYPE_CONFIG: Record<string, { icon: any; gradient: string; border: string; iconBg: string; label: string }> = {
   message: {
@@ -60,6 +61,7 @@ function timeAgo(date: string) {
 }
 
 export function GlobalNotificationBanner() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -145,7 +147,7 @@ export function GlobalNotificationBanner() {
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="overflow-hidden z-50 relative"
-          dir="rtl"
+          dir={dir}
         >
           <div className={`bg-gradient-to-l ${cfg.gradient} border-b ${cfg.border} px-4 py-2.5`}>
             <div className="max-w-7xl mx-auto flex items-center gap-3">

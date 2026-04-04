@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { PricingPlan } from "@shared/schema";
+import { useI18n } from "@/lib/i18n";
 
 type Tier = "lite" | "pro" | "infinite";
 
@@ -152,6 +153,7 @@ function renderMsg(text: string) {
 interface ChatMsg { id: string; from: "ai" | "user"; text: string; }
 
 export function PackageFinderModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { dir } = useI18n();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -251,7 +253,7 @@ export function PackageFinderModal({ open, onClose }: { open: boolean; onClose: 
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="relative w-full max-w-lg bg-[#0d0d1a] border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
           style={{ maxHeight: "92vh" }}
-          dir="rtl"
+          dir={dir}
         >
           {/* ── Header ── */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07] flex-shrink-0">

@@ -13,6 +13,7 @@ import {
   ExternalLink, Info
 } from "lucide-react";
 import { CHANGELOG, CURRENT_VERSION } from "@/lib/changelog";
+import { useI18n } from "@/lib/i18n";
 
 /* ── helpers ── */
 function timeAgo(date: string) {
@@ -41,6 +42,7 @@ const TYPE_LABEL: Record<string, string> = {
    NotificationsWidget — ويدجت الإشعارات
 ════════════════════════════════════════ */
 export function NotificationsWidget() {
+  const { dir } = useI18n();
   const [, navigate] = useLocation();
 
   const { data: countData } = useQuery<{ count: number }>({
@@ -78,7 +80,7 @@ export function NotificationsWidget() {
     <div
       className="rounded-2xl overflow-hidden"
       style={{ border: "1px solid rgba(0,0,0,0.06)" }}
-      dir="rtl"
+      dir={dir}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-black/[0.05] dark:border-white/[0.06]">
@@ -181,6 +183,7 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export function WhatsNewWidget({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const { dir } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
   const latest = CHANGELOG[0];
   if (!latest) return null;
@@ -191,7 +194,7 @@ export function WhatsNewWidget({ defaultOpen = false }: { defaultOpen?: boolean 
     <div
       className="rounded-2xl overflow-hidden bg-white dark:bg-gray-900"
       style={{ border: "1px solid rgba(0,0,0,0.06)" }}
-      dir="rtl"
+      dir={dir}
     >
       {/* Header */}
       <div

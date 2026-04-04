@@ -664,6 +664,7 @@ function OrderCard({ order: initialOrder }: { order: any }) {
 
 /* ─── Main page ────────────────────────────────────────── */
 export default function AdminProjectData() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
@@ -687,7 +688,7 @@ export default function AdminProjectData() {
   const username = (user as any)?.username;
   if (!["admin", "employee", "manager", "developer", "designer", "support", "accountant", "sales", "sales_manager"].includes(role) && username !== "qadmin") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950" dir={dir}>
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
           <p className="text-gray-500 dark:text-slate-400 font-bold">غير مصرح بالوصول</p>
@@ -722,7 +723,7 @@ export default function AdminProjectData() {
   const totalFiles        = orders.reduce((acc: number, o: any) => acc + collectFiles(o).length, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={dir}>
       <div className="h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-600" />
 
       {/* Header */}

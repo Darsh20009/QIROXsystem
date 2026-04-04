@@ -14,6 +14,7 @@ import {
   Loader2, MessageCircle, CreditCard, CalendarCheck, ArrowRight,
   LayoutDashboard, ClipboardList, Sparkles
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const LANGUAGES = [
   { v: "ar", label: "عربي", flag: "🇸🇦" },
@@ -35,6 +36,7 @@ const SECTIONS = [
 ];
 
 export default function ProjectDetailsSetup() {
+  const { dir } = useI18n();
   const [, params] = useRoute("/order-setup/:orderId");
   const orderId = params?.orderId || "";
   const { data: user } = useUser();
@@ -83,7 +85,7 @@ export default function ProjectDetailsSetup() {
 
   if (saved) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center p-4" dir={dir}>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <Check className="w-12 h-12 text-emerald-600" />
@@ -96,7 +98,7 @@ export default function ProjectDetailsSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50/30" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50/30" dir={dir}>
       {/* Hero header */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-5 pt-safe-top pb-8">
         <div className="max-w-xl mx-auto pt-6">

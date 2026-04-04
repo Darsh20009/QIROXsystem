@@ -12,6 +12,7 @@ import {
   CheckCheck, Check, Clock, ChevronDown, Wifi, WifiOff,
   Paperclip, Mic, MicOff, RefreshCw, FileText, Download, Play, Pause,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 function FloatVoicePlayer({ url }: { url: string }) {
   const ref = useRef<HTMLAudioElement>(null);
@@ -73,12 +74,14 @@ function playNotif() {
 }
 
 export function FloatingClientChat() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   if (!user || user.role !== "client") return null;
   return <FloatingClientChatInner user={user} />;
 }
 
 function FloatingClientChatInner({ user }: { user: any }) {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -314,7 +317,7 @@ function FloatingClientChatInner({ user }: { user: any }) {
   };
 
   return (
-    <div className="hidden md:flex fixed md:bottom-6 left-4 md:left-6 z-[9999] flex-col items-start gap-3" dir="rtl">
+    <div className="hidden md:flex fixed md:bottom-6 left-4 md:left-6 z-[9999] flex-col items-start gap-3" dir={dir}>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -645,7 +648,7 @@ function FloatingClientChatInner({ user }: { user: any }) {
                             placeholder={recording ? "جارٍ التسجيل..." : "اكتب رسالتك..."}
                             disabled={recording}
                             className="bg-white/[0.05] border-white/[0.08] text-white text-sm rounded-2xl h-9 px-3 placeholder:text-white/20 focus:bg-white/[0.07] focus:border-white/[0.15] transition-all"
-                            dir="rtl"
+                            dir={dir}
                             data-testid="input-chat-message"
                           />
                         </div>

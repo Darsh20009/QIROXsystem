@@ -217,7 +217,7 @@ export default function AdminProjectFeatures() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-5xl mx-auto space-y-5">
         {/* Header */}
@@ -351,7 +351,7 @@ export default function AdminProjectFeatures() {
 
       {/* Add dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md" dir={dir}>
           <DialogHeader><DialogTitle className="font-black">{L ? "إضافة ميزة جديدة" : "Add New Feature"}</DialogTitle></DialogHeader>
           <FeatureForm onSubmit={() => addMutation.mutate(formData)} loading={addMutation.isPending} />
         </DialogContent>
@@ -359,7 +359,7 @@ export default function AdminProjectFeatures() {
 
       {/* Edit dialog */}
       <Dialog open={!!editFeature} onOpenChange={v => !v && setEditFeature(null)}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md" dir={dir}>
           <DialogHeader><DialogTitle className="font-black">{L ? "تعديل الميزة" : "Edit Feature"}</DialogTitle></DialogHeader>
           <FeatureForm onSubmit={() => editMutation.mutate(formData)} loading={editMutation.isPending} />
         </DialogContent>

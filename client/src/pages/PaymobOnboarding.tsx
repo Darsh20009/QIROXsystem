@@ -621,7 +621,7 @@ export default function PaymobOnboarding() {
                       <div
                         ref={policyRef}
                         className="bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-5 h-56 overflow-y-auto text-sm text-black/50 dark:text-white/40 leading-relaxed whitespace-pre-line scroll-smooth"
-                        dir="rtl"
+                        dir={dir}
                         data-testid="policy-text"
                       >
                         {POLICY_TEXT}

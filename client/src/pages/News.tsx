@@ -78,6 +78,7 @@ function NewsCard({ item, index, onClick, lang }: { item: NewsItem; index: numbe
 }
 
 function NewsModal({ item, onClose, lang }: { item: NewsItem; onClose: () => void; lang: string }) {
+  const { dir } = useI18n();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
@@ -93,7 +94,7 @@ function NewsModal({ item, onClose, lang }: { item: NewsItem; onClose: () => voi
             <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="p-7" dir="rtl">
+        <div className="p-7" dir={dir}>
           {item.category && (
             <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-black dark:bg-white text-white dark:text-black px-2.5 py-1 rounded-full mb-4">
               {item.category}

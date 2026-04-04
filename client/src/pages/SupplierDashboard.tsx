@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Package, Plus, Trash2, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pending: { label: "قيد المراجعة", color: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -19,6 +20,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export default function SupplierDashboard() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [createDialog, setCreateDialog] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", price: "", category: "", attachmentUrl: "" });
@@ -45,7 +47,7 @@ export default function SupplierDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 font-sans max-w-3xl mx-auto" dir="rtl">
+    <div className="p-6 space-y-6 font-sans max-w-3xl mx-auto" dir={dir}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-black">لوحة المورد</h1>
@@ -115,7 +117,7 @@ export default function SupplierDashboard() {
       )}
 
       <Dialog open={createDialog} onOpenChange={setCreateDialog}>
-        <DialogContent className="sm:max-w-lg font-sans" dir="rtl">
+        <DialogContent className="sm:max-w-lg font-sans" dir={dir}>
           <DialogHeader><DialogTitle>إرسال عرض جديد</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>

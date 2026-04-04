@@ -246,7 +246,7 @@ export default function ProjectDetails() {
         </div>
       </div>
 
-      <Tabs defaultValue={section} className="w-full" dir="rtl">
+      <Tabs defaultValue={section} className="w-full" dir={dir}>
         <TabsList className="bg-white border p-1 h-auto flex-wrap justify-start gap-2 hidden md:flex">
           <TabsTrigger value="status" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "حالة المشروع" : "Project Status"}</TabsTrigger>
           <TabsTrigger value="implementation" className="data-[state=active]:bg-primary data-[state=active]:text-white">{L ? "مراحل التنفيذ" : "Implementation"}</TabsTrigger>

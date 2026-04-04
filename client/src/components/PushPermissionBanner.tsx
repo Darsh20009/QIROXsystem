@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Bell, BellOff, X, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useI18n } from "@/lib/i18n";
 
 const DISMISSED_KEY = "qirox_push_banner_dismissed_v2";
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function PushPermissionBanner({ show }: Props) {
+  const { dir } = useI18n();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -53,7 +55,7 @@ export function PushPermissionBanner({ show }: Props) {
     <div
       className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 duration-300"
       data-testid="push-permission-banner"
-      dir="rtl"
+      dir={dir}
     >
       <div className="relative bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-4 flex gap-3 items-start">
         {/* Icon */}

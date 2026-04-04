@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Bell, BellRing, Check, CheckCheck, Package, MessageSquare, FileText, Loader2, X, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n } from "@/lib/i18n";
 
 function NotifIcon({ type }: { type: string }) {
   if (type === "order") return <Package className="w-3.5 h-3.5 text-blue-500" />;
@@ -19,6 +20,7 @@ function timeAgo(date: string) {
 }
 
 export function NotificationBell() {
+  const { dir } = useI18n();
   const [open, setOpen] = useState(false);
 
   const { data: countData } = useQuery<{ count: number }>({
@@ -60,7 +62,7 @@ export function NotificationBell() {
   const hasRead = notifications.some((n: any) => n.read);
 
   return (
-    <div className="relative" dir="rtl">
+    <div className="relative" dir={dir}>
       <button
         onClick={() => setOpen(!open)}
         className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors"

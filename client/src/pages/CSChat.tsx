@@ -516,7 +516,7 @@ function ClientView({ user }: { user: any }) {
 
       {/* Rating dialog */}
       <Dialog open={showRating} onOpenChange={setShowRating}>
-        <DialogContent className="sm:max-w-sm" dir="rtl">
+        <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader><DialogTitle className="font-black text-center">{L ? "كيف كانت تجربتك؟" : "How was your experience?"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2 text-center">
             <p className="text-sm text-black/50 dark:text-white/40">{L ? "قيّم جودة الخدمة التي تلقيتها" : "Rate the quality of service you received"}</p>
@@ -919,7 +919,7 @@ function AgentView({ user }: { user: any }) {
 
       {/* Transfer Dialog */}
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
-        <DialogContent className="sm:max-w-sm" dir="rtl">
+        <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader><DialogTitle className="font-black">{L ? "تحويل المحادثة" : "Transfer Conversation"}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div>

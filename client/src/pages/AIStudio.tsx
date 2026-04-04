@@ -484,6 +484,7 @@ function DelayPanel({ L }: { L: boolean }) {
 }
 
 function SocialPanel({ L }: { L: boolean }) {
+  const { dir } = useI18n();
   const [form, setForm] = useState({ projectName: "", clientName: "", service: "", result: "" });
   const [output, setOutput] = useState<any>(null);
   const { copy, copied } = useCopy();
@@ -524,7 +525,7 @@ function SocialPanel({ L }: { L: boolean }) {
         {output && !output.error && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
             {output.arabic && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 relative" dir="rtl">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 relative" dir={dir}>
                 <div className="text-xs text-white/40 mb-2 font-semibold">🇸🇦 النسخة العربية</div>
                 <p className="text-white/80 text-sm leading-relaxed pe-8">{output.arabic.caption}</p>
                 <div className="flex flex-wrap gap-1 mt-3">{(output.arabic.hashtags || []).map((h: string, i: number) => <span key={i} className="text-pink-400 text-xs">{h}</span>)}</div>

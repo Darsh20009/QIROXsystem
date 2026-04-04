@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { X, ChevronLeft, Sparkles } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/lib/i18n";
 
 interface QuickAction {
   label: string;
@@ -38,6 +39,7 @@ function getGreeting(name: string, role: string, orderCount: number): string {
 }
 
 export function WelcomeAssistant() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
@@ -91,7 +93,7 @@ export function WelcomeAssistant() {
           exit={{ opacity: 0, y: 10, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="fixed z-[9998] inset-x-4 bottom-4 sm:inset-auto sm:bottom-6 sm:start-6 sm:w-[300px] pointer-events-auto"
-          dir="rtl"
+          dir={dir}
         >
           <div className="relative bg-white dark:bg-zinc-900 border border-black/8 dark:border-white/8 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/40 overflow-hidden">
 

@@ -10,6 +10,7 @@ import {
   Video, Loader2, CheckCircle2, XCircle, Clock,
   Users, Calendar, Timer, Shield, Wifi
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type Step = "enter_code" | "meeting_info" | "pending" | "approved" | "rejected";
 
@@ -40,6 +41,7 @@ function formatWaitTime(seconds: number): string {
 }
 
 export default function QMeetJoinByCode() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -197,7 +199,7 @@ export default function QMeetJoinByCode() {
   const statusLabels: Record<string, string> = { scheduled: "مجدول", live: "مباشر الآن", completed: "انتهى" };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6" dir="rtl"
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" dir={dir}
       style={{ background: "linear-gradient(160deg, #060c18 0%, #080e1a 50%, #060c18 100%)" }}>
       <div className="w-full max-w-md space-y-6">
 

@@ -12,6 +12,7 @@ import {
   ShoppingBag, UtensilsCrossed, GraduationCap, Building2, Home, Heart,
   Loader2, Sparkles, Package, Play, Video,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const CATEGORY_META: Record<string, { labelAr: string; icon: any; color: string; bg: string; border: string }> = {
   restaurant:  { labelAr: "مطاعم ومقاهي",    icon: UtensilsCrossed, color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
@@ -133,6 +134,7 @@ function TemplateCard({ template, index }: { template: SectorTemplate; index: nu
 }
 
 export default function Demos() {
+  const { dir } = useI18n();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
 
@@ -157,7 +159,7 @@ export default function Demos() {
   const withDemo = activeTemplates.filter(t => t.demoUrl && t.status === "active").length;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950" dir={dir}>
       <Navigation />
 
       {/* Hero */}

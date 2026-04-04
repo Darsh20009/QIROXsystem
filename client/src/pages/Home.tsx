@@ -249,7 +249,7 @@ export default function Home() {
             )}
 
             {/* Main banner content */}
-            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4" dir="rtl">
+            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4" dir={dir}>
 
               {/* Flame + discount badge */}
               <motion.div

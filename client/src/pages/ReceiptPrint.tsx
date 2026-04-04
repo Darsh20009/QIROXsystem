@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 const METHOD_LABELS: Record<string, string> = {
   bank_transfer: "تحويل بنكي", cash: "نقداً", stc_pay: "STC Pay",
@@ -14,6 +15,7 @@ const METHOD_LABELS: Record<string, string> = {
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "" };
 
 export default function ReceiptPrint() {
+  const { dir } = useI18n();
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -68,7 +70,7 @@ export default function ReceiptPrint() {
       `}</style>
 
       {/* Controls */}
-      <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir="rtl">
+      <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir={dir}>
         <button onClick={() => setLocation("/admin/receipts")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
           <ArrowRight className="w-4 h-4" />
           رجوع لسندات القبض
@@ -96,7 +98,7 @@ export default function ReceiptPrint() {
         <div
           className="print-page bg-white w-full max-w-[680px] shadow-lg rounded-xl overflow-hidden"
           style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
-          dir="rtl"
+          dir={dir}
         >
           {/* Header */}
           <div className="bg-black px-8 py-6 flex items-center justify-between">

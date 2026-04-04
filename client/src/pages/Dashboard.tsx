@@ -508,6 +508,7 @@ const orderStatusColors: Record<string, { bg: string; text: string; label: strin
 };
 
 function EmployeeDashboard({ user }: { user: any }) {
+  const { dir } = useI18n();
   const { data: orders, isLoading: isLoadingOrders } = useOrders();
   const { data: attendanceStatus } = useAttendanceStatus();
   const checkInMutation = useCheckIn();
@@ -691,7 +692,7 @@ function EmployeeDashboard({ user }: { user: any }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="employee-dashboard" dir="rtl">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-gray-950 relative" data-testid="employee-dashboard" dir={dir}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] px-6 py-5">
         <div className="max-w-[1300px] mx-auto flex items-center justify-between flex-wrap gap-4">
@@ -823,7 +824,7 @@ function EmployeeDashboard({ user }: { user: any }) {
 
       {/* Order Detail Sheet */}
       <Sheet open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <SheetContent side="left" className="w-full sm:max-w-3xl p-0 overflow-hidden" dir="rtl">
+        <SheetContent side="left" className="w-full sm:max-w-3xl p-0 overflow-hidden" dir={dir}>
           {selectedOrder && (
             <div className="flex flex-col h-full">
               {/* Sheet Header */}
@@ -1349,7 +1350,7 @@ function EmployeeDashboard({ user }: { user: any }) {
 
       {/* Check-in notes dialog */}
       <Dialog open={showCheckInDialog} onOpenChange={setShowCheckInDialog}>
-        <DialogContent className="sm:max-w-sm" dir="rtl">
+        <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
               <LogIn className="w-4 h-4 text-green-600" />تسجيل الحضور
@@ -1382,7 +1383,7 @@ function EmployeeDashboard({ user }: { user: any }) {
 
       {/* Check-out notes dialog */}
       <Dialog open={showCheckOutDialog} onOpenChange={setShowCheckOutDialog}>
-        <DialogContent className="sm:max-w-sm" dir="rtl">
+        <DialogContent className="sm:max-w-sm" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
               <LogOut className="w-4 h-4 text-red-500" />تسجيل الانصراف
@@ -2486,7 +2487,7 @@ export default function Dashboard() {
 
             {/* ─── API-Linked Project Dashboard (Inline) ─── */}
             {user?.role === 'client' && linkedApiKeys.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6" dir="rtl">
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6" dir={dir}>
 
                 {/* Section header */}
                 <div className="flex items-center justify-between mb-3">
@@ -2755,7 +2756,7 @@ export default function Dashboard() {
             if (pendingProofOrders.length === 0) return null;
             return (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="col-span-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl p-4 mb-2" dir="rtl">
+                className="col-span-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-700/30 rounded-2xl p-4 mb-2" dir={dir}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center shrink-0">
                     <Upload className="w-3.5 h-3.5 text-white" />
@@ -2816,7 +2817,7 @@ export default function Dashboard() {
             if (rejectedOrders.length === 0) return null;
             return (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="col-span-full bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-700/30 rounded-2xl p-4 mb-2" dir="rtl">
+                className="col-span-full bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-700/30 rounded-2xl p-4 mb-2" dir={dir}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center shrink-0">
                     <XCircle className="w-3.5 h-3.5 text-white" />
@@ -3985,7 +3986,7 @@ export default function Dashboard() {
 
       {/* ─── Linked API Project Detail Sheet ─── */}
       <Sheet open={!!linkedProjectKeyId} onOpenChange={v => { if (!v) setLinkedProjectKeyId(null); }}>
-        <SheetContent side="left" className="w-full sm:max-w-xl p-0" dir="rtl">
+        <SheetContent side="left" className="w-full sm:max-w-xl p-0" dir={dir}>
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
             <SheetTitle className="text-right font-black text-lg flex items-center gap-2">
               <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">

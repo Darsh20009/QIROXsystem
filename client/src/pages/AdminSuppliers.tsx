@@ -148,7 +148,7 @@ export default function AdminSuppliers() {
       )}
 
       <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
-        <DialogContent className="sm:max-w-md font-sans" dir="rtl">
+        <DialogContent className="sm:max-w-md font-sans" dir={dir}>
           <DialogHeader><DialogTitle>دعوة مورد جديد</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -183,7 +183,7 @@ export default function AdminSuppliers() {
       </Dialog>
 
       <Dialog open={!!createdSupplier} onOpenChange={() => setCreatedSupplier(null)}>
-        <DialogContent className="sm:max-w-sm font-sans" dir="rtl">
+        <DialogContent className="sm:max-w-sm font-sans" dir={dir}>
           <DialogHeader><DialogTitle>{L ? "تم إنشاء حساب المورد" : "Supplier Account Created"}</DialogTitle></DialogHeader>
           {createdSupplier && (
             <div className="space-y-4">
@@ -207,7 +207,7 @@ export default function AdminSuppliers() {
       </Dialog>
 
       <Dialog open={!!viewOffer} onOpenChange={() => setViewOffer(null)}>
-        <DialogContent className="sm:max-w-lg font-sans" dir="rtl">
+        <DialogContent className="sm:max-w-lg font-sans" dir={dir}>
           <DialogHeader><DialogTitle>{L ? "تفاصيل العرض" : "Offer Details"}</DialogTitle></DialogHeader>
           {viewOffer && (
             <div className="space-y-4">

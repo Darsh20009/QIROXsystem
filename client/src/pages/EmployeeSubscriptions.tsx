@@ -12,6 +12,7 @@ import {
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useI18n } from "@/lib/i18n";
 
 const PERIOD_OPTIONS = [
   { value: "monthly",  label: "شهري",          days: 30  },
@@ -60,6 +61,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
 }
 
 export default function EmployeeSubscriptions() {
+  const { dir } = useI18n();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -162,7 +164,7 @@ export default function EmployeeSubscriptions() {
   }
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-black/[0.02] dark:bg-black p-4 md:p-8" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-black/[0.02] dark:bg-black p-4 md:p-8" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-5xl mx-auto space-y-6">
 

@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { Loader2, Printer, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import { useI18n } from "@/lib/i18n";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة", sent: "مُرسل", accepted: "مقبول", rejected: "مرفوض", expired: "منتهي الصلاحية",
@@ -11,6 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—" };
 
 export default function QuotationPrint() {
+  const { dir } = useI18n();
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
 
@@ -43,7 +45,7 @@ export default function QuotationPrint() {
   const statusLabel = STATUS_LABELS[quotation.status] || quotation.status;
 
   return (
-    <div className="min-h-screen bg-black/[0.03]" dir="rtl">
+    <div className="min-h-screen bg-black/[0.03]" dir={dir}>
       <div className="print:hidden max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
         <Button variant="outline" size="sm" className="gap-1.5 border-black/[0.15] text-black/60 h-8 text-xs"
           onClick={() => setLocation(-1 as any)}>

@@ -20,6 +20,7 @@ import {
   GitBranch, Terminal, FileCode, Layers, ChevronDown, ChevronUp, Barcode,
   UserCheck, Send, User, MessageSquare, PartyPopper, ClipboardList, Clock
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const PRIORITY_CONFIG = {
   low:    { label: "منخفضة", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", dot: "bg-gray-400" },
@@ -69,6 +70,7 @@ const EMPTY_FORM = { title: "", description: "", priority: "medium", category: "
 type Tab = "mine" | "assigned-to-me" | "assigned-by-me";
 
 export default function DevChecklist() {
+  const { dir } = useI18n();
   const { data: user } = useUser();
   const { toast } = useToast();
   const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications();
@@ -217,7 +219,7 @@ export default function DevChecklist() {
   ];
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir="rtl">
+    <div className="relative overflow-hidden min-h-screen bg-white dark:bg-gray-950 p-6" dir={dir}>
       <PageGraphics variant="dashboard" />
       <div className="max-w-4xl mx-auto space-y-6">
 
@@ -527,7 +529,7 @@ export default function DevChecklist() {
 
       {/* Add / Assign Dialog */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black">
               {form.assignedTo && form.assignedTo !== "none" ? "تكليف موظف بمهمة" : "مهمة جديدة"}
@@ -626,7 +628,7 @@ export default function DevChecklist() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={v => !v && setEditItem(null)}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md" dir={dir}>
           <DialogHeader>
             <DialogTitle className="text-right font-black">تعديل المهمة</DialogTitle>
           </DialogHeader>
