@@ -15,6 +15,7 @@ import {
   Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes, Headphones, ChevronDown
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
+import { SiApple, SiGoogleplay, SiGoogle, SiGoogleanalytics, SiSemrush, SiFigma, SiAdobephotoshop, SiCanva } from "react-icons/si";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
@@ -875,24 +876,96 @@ export default function Prices() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(lang === "ar" ? [
-              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
+              {
+                label: "تطبيق جوال", sub: "iOS + Android", price: "1,000+",
+                features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"],
+                border: "border-gray-200 dark:border-slate-700/50",
+                logoBg: "bg-black",
+                logos: [
+                  { el: <SiApple className="w-5 h-5 text-white" />, label: "App Store" },
+                  { el: <SiGoogleplay className="w-5 h-5 text-white" />, label: "Google Play" },
+                ],
+                accentColor: "text-slate-700 dark:text-white",
+              },
+              {
+                label: "SEO & تسويق", sub: "تحسين محركات البحث", price: "500+",
+                features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],
+                border: "border-violet-200 dark:border-violet-700/30",
+                logoBg: "bg-white dark:bg-white/10",
+                logos: [
+                  { el: <SiGoogle className="w-5 h-5 text-[#4285F4]" />, label: "Google" },
+                  { el: <SiGoogleanalytics className="w-5 h-5 text-[#E37400]" />, label: "Analytics" },
+                  { el: <SiSemrush className="w-5 h-5 text-[#FF642D]" />, label: "Semrush" },
+                ],
+                accentColor: "text-violet-600 dark:text-violet-300",
+              },
+              {
+                label: "هوية بصرية", sub: "شعار + هوية كاملة", price: "800+",
+                features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],
+                border: "border-amber-200 dark:border-amber-700/30",
+                logoBg: "bg-white dark:bg-white/10",
+                logos: [
+                  { el: <SiFigma className="w-5 h-5 text-[#F24E1E]" />, label: "Figma" },
+                  { el: <SiAdobephotoshop className="w-5 h-5 text-[#31A8FF]" />, label: "Photoshop" },
+                  { el: <SiCanva className="w-5 h-5 text-[#00C4CC]" />, label: "Canva" },
+                ],
+                accentColor: "text-amber-600 dark:text-amber-300",
+              },
             ] : [
-              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
+              {
+                label: "Mobile App", sub: "iOS + Android", price: "1,000+",
+                features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"],
+                border: "border-gray-200 dark:border-slate-700/50",
+                logoBg: "bg-black",
+                logos: [
+                  { el: <SiApple className="w-5 h-5 text-white" />, label: "App Store" },
+                  { el: <SiGoogleplay className="w-5 h-5 text-white" />, label: "Google Play" },
+                ],
+                accentColor: "text-slate-700 dark:text-white",
+              },
+              {
+                label: "SEO & Marketing", sub: "Search optimization", price: "500+",
+                features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"],
+                border: "border-violet-200 dark:border-violet-700/30",
+                logoBg: "bg-white dark:bg-white/10",
+                logos: [
+                  { el: <SiGoogle className="w-5 h-5 text-[#4285F4]" />, label: "Google" },
+                  { el: <SiGoogleanalytics className="w-5 h-5 text-[#E37400]" />, label: "Analytics" },
+                  { el: <SiSemrush className="w-5 h-5 text-[#FF642D]" />, label: "Semrush" },
+                ],
+                accentColor: "text-violet-600 dark:text-violet-300",
+              },
+              {
+                label: "Brand Identity", sub: "Logo + full identity", price: "800+",
+                features: ["Logo design","Brand guide","Colors & fonts","All formats"],
+                border: "border-amber-200 dark:border-amber-700/30",
+                logoBg: "bg-white dark:bg-white/10",
+                logos: [
+                  { el: <SiFigma className="w-5 h-5 text-[#F24E1E]" />, label: "Figma" },
+                  { el: <SiAdobephotoshop className="w-5 h-5 text-[#31A8FF]" />, label: "Photoshop" },
+                  { el: <SiCanva className="w-5 h-5 text-[#00C4CC]" />, label: "Canva" },
+                ],
+                accentColor: "text-amber-600 dark:text-amber-300",
+              },
             ]).map((a, ai) => (
               <motion.div
                 key={a.label}
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: ai * 0.08 }}
                 className={`relative rounded-xl border ${a.border} bg-white dark:bg-white/[0.025] p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors`}
               >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-5">
-                  <a.icon className={`w-5 h-5 ${a.color}`} />
+                {/* Logos row */}
+                <div className="flex items-center gap-2 mb-5">
+                  {a.logos.map((logo, li) => (
+                    <div key={li} className="flex flex-col items-center gap-1">
+                      <div className={`w-10 h-10 rounded-xl ${a.logoBg} border border-gray-100 dark:border-white/10 flex items-center justify-center shadow-sm`}>
+                        {logo.el}
+                      </div>
+                      <span className="text-[8px] font-bold text-gray-400 dark:text-slate-600">{logo.label}</span>
+                    </div>
+                  ))}
                 </div>
                 <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
-                <p className="text-gray-900 dark:text-white font-black text-base mb-4">{a.sub}</p>
+                <p className={`font-black text-base mb-4 ${a.accentColor}`}>{a.sub}</p>
                 <div className="flex items-baseline gap-1.5 mb-5">
                   <span className="text-3xl font-black text-gray-900 dark:text-white">{a.price}</span>
                   {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
