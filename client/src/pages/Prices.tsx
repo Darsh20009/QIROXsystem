@@ -12,10 +12,9 @@ import {
   Smartphone, Palette, TrendingUp, Infinity as InfinityIcon, Crown, CalendarDays, CalendarRange,
   Calendar, Zap, Star, UtensilsCrossed, ShoppingBag, GraduationCap, Building2, Home, Heart, ChevronRight,
   Dumbbell, Store, CheckCircle2, Sparkles, ShoppingCart, Cpu, Code2, Server, Database, LayoutDashboard,
-  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes, Headphones, ChevronDown
+  Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
-import { SiApple, SiGoogleplay, SiGoogle, SiGoogleanalytics, SiSemrush, SiFigma, SiAdobephotoshop, SiCanva } from "react-icons/si";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
@@ -167,41 +166,6 @@ function GridPattern({ className = "" }: { className?: string }) {
       </defs>
       <rect width="100%" height="100%" fill="url(#grid-sm)" />
     </svg>
-  );
-}
-
-/* ─── FAQ Item ────────────────────────────────────────────────────────── */
-function FAQItem({ question, answer, idx }: { question: string; answer: string; idx: number }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: idx * 0.06, duration: 0.4 }}
-      className={`rounded-2xl border transition-all duration-200 overflow-hidden ${open ? "border-blue-500/30 bg-blue-50/30 dark:bg-blue-500/5 dark:border-blue-500/20" : "border-gray-200 dark:border-slate-800 bg-white dark:bg-transparent hover:border-gray-300 dark:hover:border-slate-700"}`}
-      data-testid={`faq-item-${idx}`}
-    >
-      <button
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-right text-sm font-bold text-gray-900 dark:text-white"
-        onClick={() => setOpen(v => !v)}
-      >
-        <span>{question}</span>
-        <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-blue-500" : ""}`} />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <p className="px-5 pb-5 text-sm text-gray-500 dark:text-slate-400 leading-relaxed">{answer}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
   );
 }
 
@@ -557,107 +521,6 @@ export default function Prices() {
         </div>
       </section>
 
-      {/* ─── CLIENT JOURNEY ─── */}
-      <section className="py-16 bg-white dark:bg-[#080810] border-b border-gray-100 dark:border-slate-800/40">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 mb-5">
-              <Rocket className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="text-blue-600 dark:text-blue-400 text-[11px] font-black tracking-widest uppercase">
-                {lang === "ar" ? "رحلتك معنا" : "YOUR JOURNEY"}
-              </span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-3" dir={dir}>
-              {lang === "ar" ? "من الفكرة إلى الإطلاق في 4 خطوات" : "From Idea to Launch in 4 Steps"}
-            </h2>
-            <p className="text-gray-400 dark:text-slate-500 text-sm max-w-md mx-auto" dir={dir}>
-              {lang === "ar" ? "نظامك جاهز للعمل خلال أيام — لا تأخير، لا تعقيدات" : "Your system ready in days — no delays, no complications"}
-            </p>
-          </div>
-
-          {/* Steps */}
-          <div className="relative">
-            {/* Connecting line — desktop */}
-            <div className="hidden md:block absolute top-8 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent z-0" />
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
-              {[
-                {
-                  step: "01",
-                  icon: Tag,
-                  color: "text-blue-500", bgColor: "bg-blue-50 dark:bg-blue-500/10", borderColor: "border-blue-200 dark:border-blue-500/20",
-                  title: lang === "ar" ? "اختر قطاعك" : "Choose Sector",
-                  desc: lang === "ar" ? "حدد مجال عملك — مطعم، متجر، تعليم، شركة..." : "Select your field — restaurant, store, education, corporate..."
-                },
-                {
-                  step: "02",
-                  icon: Layers,
-                  color: "text-violet-500", bgColor: "bg-violet-50 dark:bg-violet-500/10", borderColor: "border-violet-200 dark:border-violet-500/20",
-                  title: lang === "ar" ? "اختر الباقة" : "Pick a Plan",
-                  desc: lang === "ar" ? "لايت للبداية، برو للنمو، إنفينيتي بلا حدود" : "Lite to start, Pro to grow, Infinite with no limits"
-                },
-                {
-                  step: "03",
-                  icon: Cpu,
-                  color: "text-emerald-500", bgColor: "bg-emerald-50 dark:bg-emerald-500/10", borderColor: "border-emerald-200 dark:border-emerald-500/20",
-                  title: lang === "ar" ? "نبدأ البناء" : "We Start Building",
-                  desc: lang === "ar" ? "فريقنا يبني نظامك المخصص من الصفر بأسرع وقت" : "Our team builds your custom system from scratch, fast"
-                },
-                {
-                  step: "04",
-                  icon: Rocket,
-                  color: "text-amber-500", bgColor: "bg-amber-50 dark:bg-amber-500/10", borderColor: "border-amber-200 dark:border-amber-500/20",
-                  title: lang === "ar" ? "الإطلاق 🚀" : "Launch 🚀",
-                  desc: lang === "ar" ? "نظامك يعمل، فريقك يُدرَّب، ودعمنا معك دائماً" : "System live, team trained, our support always with you"
-                },
-              ].map((s, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="flex flex-col items-center text-center gap-4"
-                  data-testid={`journey-step-${i}`}
-                >
-                  {/* Step icon circle */}
-                  <div className={`relative w-16 h-16 rounded-2xl border-2 ${s.borderColor} ${s.bgColor} flex items-center justify-center flex-shrink-0 bg-white dark:bg-[#080810]`}>
-                    <s.icon className={`w-6 h-6 ${s.color}`} />
-                    <span className={`absolute -top-2 -right-2 text-[10px] font-black ${s.color} bg-white dark:bg-[#080810] border ${s.borderColor} rounded-full w-6 h-6 flex items-center justify-center`}>
-                      {s.step}
-                    </span>
-                  </div>
-                  <div dir={dir}>
-                    <p className="font-black text-gray-900 dark:text-white text-sm mb-1.5">{s.title}</p>
-                    <p className="text-gray-400 dark:text-slate-500 text-xs leading-relaxed">{s.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── PLATFORM TRUST STRIP ─── */}
-      <section className="py-8 bg-gray-50 dark:bg-[#0a0a14] border-b border-gray-200 dark:border-slate-800/60">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-            {[
-              { icon: Shield, text: lang === "ar" ? "SSL + تشفير كامل" : "SSL + Full Encryption" },
-              { icon: Users, text: lang === "ar" ? "100+ عميل نشط" : "100+ Active Clients" },
-              { icon: Globe, text: lang === "ar" ? "دومين مجاني" : "Free Domain" },
-              { icon: Headphones, text: lang === "ar" ? "دعم 7 أيام" : "7-Day Support" },
-              { icon: Rocket, text: lang === "ar" ? "إطلاق سريع" : "Fast Launch" },
-            ].map(({ icon: Icon, text }, i) => (
-              <div key={i} className="flex items-center gap-2 text-gray-400 dark:text-slate-500">
-                <Icon className="w-4 h-4 text-blue-500/60 dark:text-blue-400/60" />
-                <span className="text-xs font-semibold">{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ─── SEGMENT SELECTOR ─── */}
       <section className="py-6 border-b border-gray-200 dark:border-slate-800/80 bg-gray-50/80 dark:bg-[#0a0a14] sticky top-0 z-20 backdrop-blur-sm">
         <div className="container mx-auto px-4 max-w-5xl">
@@ -876,96 +739,24 @@ export default function Prices() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(lang === "ar" ? [
-              {
-                label: "تطبيق جوال", sub: "iOS + Android", price: "1,000+",
-                features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"],
-                border: "border-gray-200 dark:border-slate-700/50",
-                logoBg: "bg-black",
-                logos: [
-                  { el: <SiApple className="w-5 h-5 text-white" />, label: "App Store" },
-                  { el: <SiGoogleplay className="w-5 h-5 text-white" />, label: "Google Play" },
-                ],
-                accentColor: "text-slate-700 dark:text-white",
-              },
-              {
-                label: "SEO & تسويق", sub: "تحسين محركات البحث", price: "500+",
-                features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],
-                border: "border-violet-200 dark:border-violet-700/30",
-                logoBg: "bg-white dark:bg-white/10",
-                logos: [
-                  { el: <SiGoogle className="w-5 h-5 text-[#4285F4]" />, label: "Google" },
-                  { el: <SiGoogleanalytics className="w-5 h-5 text-[#E37400]" />, label: "Analytics" },
-                  { el: <SiSemrush className="w-5 h-5 text-[#FF642D]" />, label: "Semrush" },
-                ],
-                accentColor: "text-violet-600 dark:text-violet-300",
-              },
-              {
-                label: "هوية بصرية", sub: "شعار + هوية كاملة", price: "800+",
-                features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],
-                border: "border-amber-200 dark:border-amber-700/30",
-                logoBg: "bg-white dark:bg-white/10",
-                logos: [
-                  { el: <SiFigma className="w-5 h-5 text-[#F24E1E]" />, label: "Figma" },
-                  { el: <SiAdobephotoshop className="w-5 h-5 text-[#31A8FF]" />, label: "Photoshop" },
-                  { el: <SiCanva className="w-5 h-5 text-[#00C4CC]" />, label: "Canva" },
-                ],
-                accentColor: "text-amber-600 dark:text-amber-300",
-              },
+              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,000+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
             ] : [
-              {
-                label: "Mobile App", sub: "iOS + Android", price: "1,000+",
-                features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"],
-                border: "border-gray-200 dark:border-slate-700/50",
-                logoBg: "bg-black",
-                logos: [
-                  { el: <SiApple className="w-5 h-5 text-white" />, label: "App Store" },
-                  { el: <SiGoogleplay className="w-5 h-5 text-white" />, label: "Google Play" },
-                ],
-                accentColor: "text-slate-700 dark:text-white",
-              },
-              {
-                label: "SEO & Marketing", sub: "Search optimization", price: "500+",
-                features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"],
-                border: "border-violet-200 dark:border-violet-700/30",
-                logoBg: "bg-white dark:bg-white/10",
-                logos: [
-                  { el: <SiGoogle className="w-5 h-5 text-[#4285F4]" />, label: "Google" },
-                  { el: <SiGoogleanalytics className="w-5 h-5 text-[#E37400]" />, label: "Analytics" },
-                  { el: <SiSemrush className="w-5 h-5 text-[#FF642D]" />, label: "Semrush" },
-                ],
-                accentColor: "text-violet-600 dark:text-violet-300",
-              },
-              {
-                label: "Brand Identity", sub: "Logo + full identity", price: "800+",
-                features: ["Logo design","Brand guide","Colors & fonts","All formats"],
-                border: "border-amber-200 dark:border-amber-700/30",
-                logoBg: "bg-white dark:bg-white/10",
-                logos: [
-                  { el: <SiFigma className="w-5 h-5 text-[#F24E1E]" />, label: "Figma" },
-                  { el: <SiAdobephotoshop className="w-5 h-5 text-[#31A8FF]" />, label: "Photoshop" },
-                  { el: <SiCanva className="w-5 h-5 text-[#00C4CC]" />, label: "Canva" },
-                ],
-                accentColor: "text-amber-600 dark:text-amber-300",
-              },
+              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,000+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
+              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
+              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
             ]).map((a, ai) => (
               <motion.div
                 key={a.label}
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: ai * 0.08 }}
                 className={`relative rounded-xl border ${a.border} bg-white dark:bg-white/[0.025] p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors`}
               >
-                {/* Logos row */}
-                <div className="flex items-center gap-2 mb-5">
-                  {a.logos.map((logo, li) => (
-                    <div key={li} className="flex flex-col items-center gap-1">
-                      <div className={`w-10 h-10 rounded-xl ${a.logoBg} border border-gray-100 dark:border-white/10 flex items-center justify-center shadow-sm`}>
-                        {logo.el}
-                      </div>
-                      <span className="text-[8px] font-bold text-gray-400 dark:text-slate-600">{logo.label}</span>
-                    </div>
-                  ))}
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-5">
+                  <a.icon className={`w-5 h-5 ${a.color}`} />
                 </div>
                 <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
-                <p className={`font-black text-base mb-4 ${a.accentColor}`}>{a.sub}</p>
+                <p className="text-gray-900 dark:text-white font-black text-base mb-4">{a.sub}</p>
                 <div className="flex items-baseline gap-1.5 mb-5">
                   <span className="text-3xl font-black text-gray-900 dark:text-white">{a.price}</span>
                   {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
@@ -983,49 +774,6 @@ export default function Prices() {
                   </Button>
                 </Link>
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FAQ ─── */}
-      <section className="py-16 bg-white dark:bg-[#080810] border-t border-gray-100 dark:border-slate-800/40">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 mb-5">
-              <span className="text-gray-500 dark:text-slate-400 text-[11px] font-black tracking-widest uppercase">
-                {lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
-              </span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-3" dir={dir}>
-              {lang === "ar" ? "أسئلة يسألها عملاؤنا دائماً" : "Questions Our Clients Always Ask"}
-            </h2>
-          </div>
-
-          <div className="space-y-3" dir={dir}>
-            {[
-              {
-                q: lang === "ar" ? "هل الباقات قابلة للتخصيص؟" : "Are plans customizable?",
-                a: lang === "ar" ? "نعم، كل باقة تُبنى بالكامل وفق متطلباتك — ليست قوالب جاهزة، بل أنظمة مخصصة من الصفر." : "Yes, every plan is built entirely to your requirements — not templates, but custom systems from scratch."
-              },
-              {
-                q: lang === "ar" ? "كم يستغرق تسليم النظام؟" : "How long does delivery take?",
-                a: lang === "ar" ? "يعتمد على حجم النظام. النسخة التجريبية تُسلَّم خلال أيام قليلة، والباقات الكاملة بين أسبوعين وشهر." : "Depends on system size. Trial delivered in days, full plans between 2 weeks and a month."
-              },
-              {
-                q: lang === "ar" ? "ما الفرق بين لايت وبرو وإنفينيتي؟" : "What's the difference between Lite, Pro, and Infinite?",
-                a: lang === "ar" ? "لايت: للشركات الناشئة. برو: تطبيق جوال ودعم 6 أشهر وميزات أوسع. إنفينيتي: بلا حدود، تطبيق جوال، دعم 24/7." : "Lite: for startups. Pro: mobile app, 6-month support, broader features. Infinite: no limits, mobile app, 24/7 support."
-              },
-              {
-                q: lang === "ar" ? "هل هناك دعم فني بعد التسليم؟" : "Is there support after delivery?",
-                a: lang === "ar" ? "نعم، كل باقة تتضمن فترة دعم مجانية — شهر في لايت، 6 أشهر في برو، ودعم أولوية 24/7 في إنفينيتي." : "Yes, each plan includes free support — 1 month in Lite, 6 months in Pro, and 24/7 priority support in Infinite."
-              },
-              {
-                q: lang === "ar" ? "هل يمكنني تجربة النظام قبل الدفع الكامل؟" : "Can I try the system before full payment?",
-                a: lang === "ar" ? "بالتأكيد! النسخة التجريبية بـ 30 ريال فقط لمدة 7 أيام، وتُحسم من قيمة الباقة عند الاشتراك." : "Absolutely! The trial is only 30 SAR for 7 days, deducted from the plan price on subscribe."
-              },
-            ].map((faq, i) => (
-              <FAQItem key={i} question={faq.q} answer={faq.a} idx={i} />
             ))}
           </div>
         </div>
