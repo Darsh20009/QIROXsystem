@@ -2859,8 +2859,8 @@ export async function registerRoutes(
         amount: usdAmount,
         currency: "USD",
         intent: "CAPTURE",
-        return_url: `${req.protocol}://${req.get("host")}/client-wallet?paypal_wallet_return=1`,
-        cancel_url: `${req.protocol}://${req.get("host")}/client-wallet?paypal_wallet_cancel=1`,
+        return_url: `${req.protocol}://${req.get("host")}/wallet?paypal_wallet_return=1`,
+        cancel_url: `${req.protocol}://${req.get("host")}/wallet?paypal_wallet_cancel=1`,
       };
       return await _cp(req, res);
     } catch (e: any) {

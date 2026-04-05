@@ -171,8 +171,20 @@ const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", 
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
-      <Loader2 className="w-6 h-6 animate-spin text-black/20 dark:text-white/20" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4">
+      <div className="relative">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 animate-pulse" />
+        <div className="absolute inset-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 animate-ping opacity-30" />
+      </div>
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map(i => (
+          <div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"
+            style={{ animation: `bounce 1s infinite`, animationDelay: `${i * 0.15}s` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -336,7 +348,7 @@ function AdminRouter() {
         <Route path="/inbox" component={Inbox} />
         <Route path="/groups/:id" component={GroupChat} />
         <Route path="/groups" component={GroupChat} />
-        <Route path="/admin/settings">{() => { window.location.replace("/admin/qirox-settings"); return null; }}</Route>
+        <Route path="/admin/settings">{() => { const [, nav] = useLocation(); nav("/admin/qirox-settings"); return null; }}</Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -380,6 +392,7 @@ function GlobalSearch() {
   const { data: user } = useUser();
   const { lang } = useI18n();
   const ar = lang === "ar";
+  const [, navigate] = useLocation();
 
   const { data: results, isLoading } = useQuery({
     queryKey: ["/api/search", q],
@@ -442,7 +455,12 @@ function GlobalSearch() {
     return "text-black/40 dark:text-white/40";
   };
 
-  const go = (url: string) => { setOpen(false); setQ(""); window.location.href = url; };
+  const go = (url: string) => {
+    setOpen(false);
+    setQ("");
+    if (url.startsWith("http")) window.open(url, "_blank", "noopener");
+    else navigate(url);
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -690,32 +708,62 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: "1rem",
+            gap: 0,
             padding: "2rem",
-            fontFamily: "sans-serif",
+            fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
             textAlign: "center",
+            background: "linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
           }}
         >
-          <p style={{ fontSize: "1.1rem", color: "#555" }}>حدث خطأ في تحميل الصفحة</p>
+          {/* Animated icon */}
+          <div style={{
+            width: 80, height: 80, borderRadius: 24,
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 24, boxShadow: "0 0 40px rgba(99,102,241,0.4)",
+          }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>
+            حدث خطأ غير متوقع
+          </h1>
+          <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 28px", maxWidth: 400, lineHeight: 1.6 }}>
+            حدث خطأ أثناء تحميل هذه الصفحة. يمكنك إعادة المحاولة أو العودة للرئيسية.
+          </p>
           {this.state.errorMsg && (
-            <p style={{ fontSize: "0.75rem", color: "#e55", background: "#fff0f0", padding: "0.5rem 1rem", borderRadius: "6px", maxWidth: "600px", wordBreak: "break-word", direction: "ltr", textAlign: "left" }}>
-              {this.state.errorMsg}
-            </p>
+            <details style={{ marginBottom: 24, maxWidth: 500 }}>
+              <summary style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", cursor: "pointer", marginBottom: 8 }}>
+                تفاصيل الخطأ التقنية
+              </summary>
+              <p style={{ fontSize: "0.7rem", color: "#f87171", background: "rgba(239,68,68,0.1)", padding: "0.75rem 1rem", borderRadius: 8, maxWidth: 500, wordBreak: "break-word", direction: "ltr", textAlign: "left", border: "1px solid rgba(239,68,68,0.2)", margin: 0 }}>
+                {this.state.errorMsg}
+              </p>
+            </details>
           )}
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "0.6rem 1.5rem",
-              background: "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
-          >
-            إعادة المحاولة
-          </button>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: "0.75rem 1.75rem", background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                color: "#fff", border: "none", borderRadius: 12, cursor: "pointer",
+                fontSize: "0.95rem", fontWeight: 700, boxShadow: "0 4px 20px rgba(99,102,241,0.35)",
+              }}
+            >
+              ↻ إعادة التحميل
+            </button>
+            <button
+              onClick={() => { window.location.href = "/"; }}
+              style={{
+                padding: "0.75rem 1.75rem", background: "rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12, cursor: "pointer", fontSize: "0.95rem", fontWeight: 600,
+              }}
+            >
+              العودة للرئيسية
+            </button>
+          </div>
         </div>
       );
     }

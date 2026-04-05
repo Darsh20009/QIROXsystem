@@ -177,7 +177,7 @@ export default function ClientWallet() {
     const token = params.get("token");
 
     if (isReturn && token) {
-      window.history.replaceState({}, "", "/client-wallet");
+      window.history.replaceState({}, "", "/wallet");
       const pendingSar = sessionStorage.getItem("paypal_wallet_sar");
       sessionStorage.removeItem("paypal_wallet_sar");
       if (!pendingSar) {
@@ -204,7 +204,7 @@ export default function ClientWallet() {
         }
       })();
     } else if (isCancel) {
-      window.history.replaceState({}, "", "/client-wallet");
+      window.history.replaceState({}, "", "/wallet");
       toast({ title: "تم إلغاء عملية الشحن عبر PayPal", variant: "destructive" });
     }
   }, []);

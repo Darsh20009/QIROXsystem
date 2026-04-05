@@ -1351,7 +1351,7 @@ export default function Cart() {
                           </p>
                         ) : (
                           <p className="text-xs mt-0.5 text-black/30">رصيدك صفر —{" "}
-                            <Link href="/client-wallet" className="text-cyan-600 underline font-semibold hover:text-cyan-700">اشحن محفظتك</Link>
+                            <Link href="/wallet" className="text-cyan-600 underline font-semibold hover:text-cyan-700">اشحن محفظتك</Link>
                           </p>
                         )}
                       </div>

@@ -1,5 +1,14 @@
 # Qirox Platform
 
+## Latest Changes (Apr 5, 2026) — Session 9 Bug Fixes
+
+### Critical Bug Fix: Wallet URL Inconsistency
+- **PayPal redirect after wallet top-up** was landing on 404 page due to URL mismatch
+- Fixed `server/routes.ts`: PayPal `return_url`/`cancel_url` changed from `/client-wallet` → `/wallet`
+- Fixed `client/src/pages/ClientWallet.tsx`: `window.history.replaceState` now uses `/wallet`
+- Fixed `client/src/pages/Cart.tsx`: "اشحن محفظتك" link now correctly points to `/wallet`
+- Route in `App.tsx` has always been `/wallet` — inconsistency now fully resolved
+
 ## Latest Changes (Apr 5, 2026) — Session 7 QMeet WebRTC Critical Fixes
 
 ### QMeet WebRTC — Critical Issues Resolved
