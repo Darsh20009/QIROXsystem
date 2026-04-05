@@ -171,19 +171,79 @@ const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", 
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4">
-      <div className="relative">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 animate-pulse" />
-        <div className="absolute inset-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 animate-ping opacity-30" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-950 relative overflow-hidden">
+      {/* Background ambient glow */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-80 h-80 rounded-full bg-violet-500/6 dark:bg-violet-400/8 blur-3xl" />
+        <div className="absolute w-48 h-48 rounded-full bg-blue-500/5 dark:bg-blue-400/6 blur-2xl translate-x-8 translate-y-4" />
       </div>
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map(i => (
+
+      <div className="relative flex flex-col items-center gap-8">
+        {/* Orbital logo mark */}
+        <div className="relative flex items-center justify-center w-28 h-28">
+
+          {/* Outermost slow dashed ring */}
           <div
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-black/20 dark:bg-white/20"
-            style={{ animation: `bounce 1s infinite`, animationDelay: `${i * 0.15}s` }}
+            className="absolute inset-0 rounded-full border border-dashed border-violet-300/30 dark:border-violet-500/25"
+            style={{ animation: "spin 12s linear infinite" }}
           />
-        ))}
+          {/* Outer spinning arc — clockwise */}
+          <div
+            className="absolute inset-[6px] rounded-full border-2 border-transparent"
+            style={{
+              borderTopColor: "rgb(139 92 246)",
+              borderRightColor: "rgba(139,92,246,0.35)",
+              animation: "spin 1.4s cubic-bezier(0.5,0,0.5,1) infinite",
+            }}
+          />
+          {/* Inner spinning arc — counter-clockwise */}
+          <div
+            className="absolute inset-[14px] rounded-full border-2 border-transparent"
+            style={{
+              borderBottomColor: "rgb(96 165 250)",
+              borderLeftColor: "rgba(96,165,250,0.35)",
+              animation: "spin 1.9s cubic-bezier(0.5,0,0.5,1) infinite reverse",
+            }}
+          />
+          {/* Small accent dot orbiting */}
+          <div
+            className="absolute inset-[6px] rounded-full"
+            style={{ animation: "spin 1.4s cubic-bezier(0.5,0,0.5,1) infinite" }}
+          >
+            <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50" />
+          </div>
+
+          {/* Center logo block */}
+          <div
+            className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-violet-500 via-violet-600 to-blue-600 flex items-center justify-center shadow-2xl shadow-violet-500/30"
+            style={{ animation: "pulse 2.4s ease-in-out infinite" }}
+          >
+            <span className="text-white font-black text-2xl leading-none select-none" style={{ fontFamily: "system-ui, sans-serif", letterSpacing: "-0.02em" }}>Q</span>
+          </div>
+        </div>
+
+        {/* Brand label + wave dots */}
+        <div className="flex flex-col items-center gap-3.5">
+          <span
+            className="text-[9px] font-extrabold tracking-[0.45em] uppercase select-none text-black/20 dark:text-white/20"
+          >
+            QIROX
+          </span>
+          <div className="flex gap-[7px] items-end">
+            {[0, 1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="rounded-full bg-violet-400/50 dark:bg-violet-500/50"
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  animation: "bounce 1.3s ease-in-out infinite",
+                  animationDelay: `${i * 0.16}s`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
