@@ -481,7 +481,19 @@ export default function Checkout() {
       } catch { /* ok */ }
       setStep(3);
     },
-    onError: (e: any) => toast({ title: e?.message || "فشل إرسال الطلب", variant: "destructive" }),
+    onError: (e: any) => {
+      const msg = e?.message || "";
+      if (msg.includes("wallet_pin_invalid") || msg.includes("كلمة مرور المحفظة غير صحيحة")) {
+        setWalletPin("");
+        toast({ title: "كلمة مرور المحفظة غير صحيحة", description: "أعد إدخال الرقم السري للمحفظة", variant: "destructive" });
+      } else if (msg.includes("wallet_pin_required") || msg.includes("يجب إدخال كلمة مرور المحفظة")) {
+        toast({ title: "يجب إدخال رقم سري", description: "أدخل الرقم السري للمحفظة للمتابعة", variant: "destructive" });
+      } else if (msg.includes("رصيد") || msg.includes("insufficient") || msg.includes("Insufficient")) {
+        toast({ title: "رصيد المحفظة غير كافٍ", description: "يرجى اختيار طريقة دفع أخرى أو إعادة شحن المحفظة", variant: "destructive" });
+      } else {
+        toast({ title: msg || "فشل إرسال الطلب", variant: "destructive" });
+      }
+    },
   });
 
   const proofMutation = useMutation({

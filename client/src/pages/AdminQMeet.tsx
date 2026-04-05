@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import {
   Video, Plus, Calendar, Users, Clock, Trash2,
-  BarChart3, Star, FileText, Send, CheckCircle, XCircle, Play,
+  BarChart3, Star, FileText, Send, CheckCircle, CheckCircle2, XCircle, Play,
   Copy, Radio, Search, Zap,
   Loader2, RefreshCw, Key, Hash, Pencil, Check,
   Shield, Eye, EyeOff, ToggleLeft, ToggleRight, Code, Webhook,
@@ -325,6 +325,25 @@ export default function AdminQMeet() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={() => {
+                const rows = [
+                  ["العنوان","المضيف","النوع","الحالة","الموعد","المدة (دقيقة)","عدد المشاركين"],
+                  ...meetings.map(m => [
+                    m.title, m.hostName || "",
+                    (TYPES as any)[m.type]?.label || m.type,
+                    (STATUS as any)[m.status]?.label || m.status,
+                    m.scheduledAt ? format(new Date(m.scheduledAt), "yyyy-MM-dd HH:mm") : "",
+                    m.durationMinutes || "",
+                    (m.participantIds || []).length,
+                  ])
+                ];
+                const csv = rows.map(r => r.map((c: any) => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+                const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }));
+                const a = document.createElement("a"); a.href = url; a.download = "qmeet-meetings.csv"; a.click();
+                URL.revokeObjectURL(url);
+              }} className="gap-2" data-testid="btn-export-csv" title="تصدير CSV">
+                <FileText className="w-3.5 h-3.5" />
+              </Button>
               <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2" data-testid="btn-refresh">
                 <RefreshCw className="w-3.5 h-3.5" />
               </Button>
@@ -353,10 +372,14 @@ export default function AdminQMeet() {
           {isManagement && (
             <div className="relative mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "إجمالي", value: stats?.total || 0, icon: Video, color: "text-blue-500" },
-                { label: "مجدولة", value: stats?.scheduled || 0, icon: Calendar, color: "text-blue-500" },
-                { label: "مباشرة", value: stats?.live || 0, icon: Radio, color: "text-green-500" },
+                { label: "إجمالي الاجتماعات", value: stats?.total || 0, icon: Video, color: "text-blue-500" },
+                { label: "هذا الأسبوع", value: stats?.thisWeek ?? "—", icon: Calendar, color: "text-blue-500" },
+                { label: "هذا الشهر", value: stats?.thisMonth ?? "—", icon: Calendar, color: "text-cyan-500" },
+                { label: "مباشرة الآن", value: stats?.live || 0, icon: Radio, color: "text-green-500" },
+                { label: "منتهية", value: stats?.completed || 0, icon: CheckCircle2, color: "text-gray-400" },
+                { label: "مجدولة", value: stats?.scheduled || 0, icon: Clock, color: "text-purple-500" },
                 { label: "متوسط التقييم", value: stats?.avgRating || "—", icon: Star, color: "text-amber-500" },
+                { label: "متوسط المشاركين", value: stats?.avgParticipants || "—", icon: Users, color: "text-indigo-500" },
               ].map(stat => (
                 <div key={stat.label} className="bg-white/60 dark:bg-gray-900/60 backdrop-blur border border-black/[0.07] dark:border-white/[0.07] rounded-2xl p-4" data-testid={`stat-${stat.label}`}>
                   <stat.icon className={`w-4 h-4 ${stat.color} mb-2`} />
@@ -708,6 +731,12 @@ export default function AdminQMeet() {
                               <Users className="w-3.5 h-3.5" />
                               {(meeting.participantEmails || []).length} مشارك
                             </span>
+                            {meeting.endedAt && (
+                              <span className="flex items-center gap-1 text-black/30 dark:text-white/30">
+                                <CheckCircle2 className="w-3 h-3 text-gray-400" />
+                                انتهى: {format(new Date(meeting.endedAt), "HH:mm")}
+                              </span>
+                            )}
                               <span className="text-black/25 dark:text-white/25">{timeAgo}</span>
                             {meeting.joinCode && (
                               <span className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] text-black/50 dark:text-white/50 px-2 py-0.5 rounded-full font-mono text-[10px] font-bold cursor-pointer hover:bg-black/[0.08] transition-colors"

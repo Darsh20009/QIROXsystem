@@ -41,6 +41,7 @@ const qMeetingSchema = new mongoose.Schema({
   lobbyEnabled:   { type: Boolean, default: false },
   aiSummary:      { type: String, default: "" },
   aiSummaryAt:    { type: Date, default: null },
+  endedAt:        { type: Date, default: null },
   joinRequests:   [{
     userId:      { type: String, required: true },
     userName:    { type: String, default: "" },

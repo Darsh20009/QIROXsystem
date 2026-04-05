@@ -3074,8 +3074,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const dataString = fields.map(v => String(v ?? '')).join('');
           const calculatedHmac = crypto.createHmac('sha512', hmacSecret).update(dataString).digest('hex');
           if (calculatedHmac !== receivedHmac) {
-            console.warn('[Paymob Webhook] HMAC mismatch');
+            console.warn('[Paymob Webhook] HMAC mismatch — rejected');
+            return res.status(401).json({ error: 'Invalid HMAC signature' });
           }
+        } else {
+          console.warn('[Paymob Webhook] No HMAC provided — rejected');
+          return res.status(401).json({ error: 'Missing HMAC signature' });
         }
       }
 

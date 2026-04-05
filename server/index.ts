@@ -700,6 +700,27 @@ wss.on("connection", (ws) => {
         return;
       }
 
+      // ── End meeting for all (host only) ──────────────────────────────────
+      if (msg.type === "webrtc_end_meeting" && msg.roomId) {
+        const rId = String(msg.roomId);
+        const hostId = getRoomHost(rId);
+        if (String(userId) !== hostId) return; // only host can end for all
+        const peers = getMeetRoomPeers(rId);
+        // Notify all participants that the meeting has ended
+        for (const peerId of peers) {
+          pushToUser(peerId, { type: "webrtc_meeting_ended", roomId: rId, by: userId });
+          leaveMeetRoom(rId, peerId);
+        }
+        // Also update the meeting status in DB if possible (non-blocking)
+        (async () => {
+          try {
+            const { QMeetingModel: QM } = await import("./qmeet-db");
+            await QM().findOneAndUpdate({ roomName: rId }, { status: "completed", endedAt: new Date() });
+          } catch { /* non-critical */ }
+        })();
+        return;
+      }
+
       if (msg.type === "webrtc_screen_share" && msg.roomId) {
         const peers = getMeetRoomPeers(String(msg.roomId));
         for (const peerId of peers) {

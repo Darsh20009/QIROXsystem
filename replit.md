@@ -1,5 +1,49 @@
 # Qirox Platform
 
+## Latest Changes (Apr 5, 2026) — Session 6
+
+### QMeet & Payment Gateway Comprehensive Improvements
+
+**QMeet — Recording:**
+- `getDisplayMedia` used for recording — captures ALL participants on screen (not just local camera)
+- Audio mixing: combines display audio + local microphone for full audio capture
+- Fallback: records local camera if screen capture is denied (with warning toast)
+- Better recording filename: `qmeet-{meeting-title}-{date}.webm` instead of generic timestamp
+
+**QMeet — End Meeting for All:**
+- New server WebSocket handler: `webrtc_end_meeting` (host-only)
+- Notifies all peers with `webrtc_meeting_ended` → they navigate to /qmeet
+- Auto-updates meeting status to "completed" + sets `endedAt` in DB
+- "إنهاء للجميع" button added to desktop toolbar (next to leave button)
+- "إنهاء للجميع" button added to mobile secondary toolbar (red icon, host-only)
+- `endedAt` field added to QMeet schema in `server/qmeet-db.ts`
+
+**QMeet — Lobby Waiting Room:**
+- Added elapsed wait timer using existing `timer` state
+- Added "إعادة إرسال الطلب" button to re-send join request without leaving
+
+**QMeet — Admin Statistics (`/api/qmeet/stats`):**
+- Added `thisWeek` count (meetings created this week)
+- Added `thisMonth` count (meetings created this month)
+- Added `totalParticipants` (aggregate sum across all meetings)
+- Added `avgParticipants` (average participants per meeting)
+- AdminQMeet stats grid updated to show 8 cards (2 rows × 4 cols)
+- Added `CheckCircle2` to AdminQMeet imports
+
+**QMeet — Admin Meeting List:**
+- Export to CSV button: downloads all meetings with title, host, type, status, date, duration, participants
+- Shows `endedAt` time for completed meetings in meeting card
+- CSV includes UTF-8 BOM for proper Arabic display in Excel
+
+**Payment Gateway — Checkout:**
+- `wallet_pin_invalid` error: clears PIN input field + shows descriptive toast with title+description
+- `wallet_pin_required` error: shows descriptive toast with title+description
+- Insufficient balance error: shows specific message with suggestion to choose another method
+- Other errors: still show raw message from server
+
+**Payment Gateway — Paymob Webhook (cafe-demo):**
+- HMAC mismatch now returns HTTP 401 and aborts processing (previously only logged warning)
+
 ## Latest Changes (Apr 4, 2026) — Session 5
 
 ### Full i18n (dir) + Dark/Light Mode Sweep

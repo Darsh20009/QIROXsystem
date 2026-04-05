@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff,
   MessageSquare, Users, Copy, Check, Loader2, Send,
-  Hand, Grid3X3, Maximize2, Smile, X,
+  Hand, Grid3X3, Maximize2, Smile, X, XCircle,
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
   CircleDot, Download, QrCode, Sparkles, FlipHorizontal2, Crown,
 } from "lucide-react";
@@ -443,6 +443,14 @@ export default function MeetingRoom() {
     }
     if (msg.type === "webrtc_banned") {
       toast({ title: "تم حظرك من هذا الاجتماع", variant: "destructive" });
+      navigate("/qmeet");
+      return;
+    }
+    if (msg.type === "webrtc_meeting_ended") {
+      toast({ title: "انتهى الاجتماع", description: "أنهى المضيف الاجتماع للجميع" });
+      wsRef.current?.close();
+      pcsRef.current.forEach(pc => pc.close());
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
       navigate("/qmeet");
       return;
     }
@@ -1216,19 +1224,73 @@ export default function MeetingRoom() {
     toast({ title: "✏️ التعليقات المباشرة تعمل" });
   }, [captionsOn, roomId, userName, sendWs, toast]);
 
-  // ── Recording (MediaRecorder) ────────────────────────────────────────────
+  // ── Recording (MediaRecorder + getDisplayMedia for full-room capture) ────
+  const captureStreamRef = useRef<MediaStream | null>(null);
+
   const toggleRecording = useCallback(async () => {
     if (recording) {
       mediaRecorderRef.current?.stop();
       return;
     }
-    if (!localStreamRef.current) {
-      toast({ title: "لا يوجد stream للتسجيل", variant: "destructive" });
-      return;
-    }
     try {
       recordedChunksRef.current = [];
-      const recorder = new MediaRecorder(localStreamRef.current, { mimeType: "video/webm;codecs=vp8,opus" });
+      let recordStream: MediaStream;
+
+      // Try screen/tab capture first — this records ALL participants on screen
+      try {
+        const displayStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { displaySurface: "browser", frameRate: 30 } as MediaTrackConstraints,
+          audio: { echoCancellation: false, noiseSuppression: false } as MediaTrackConstraints,
+        });
+        captureStreamRef.current = displayStream;
+
+        // Mix display audio + local mic for full audio
+        if (localStreamRef.current?.getAudioTracks().length) {
+          try {
+            const audioCtx = new AudioContext();
+            const dest = audioCtx.createMediaStreamDestination();
+            audioCtx.createMediaStreamSource(localStreamRef.current).connect(dest);
+            if (displayStream.getAudioTracks().length > 0) {
+              audioCtx.createMediaStreamSource(displayStream).connect(dest);
+            }
+            recordStream = new MediaStream([
+              ...displayStream.getVideoTracks(),
+              ...dest.stream.getAudioTracks(),
+            ]);
+          } catch {
+            recordStream = displayStream;
+          }
+        } else {
+          recordStream = displayStream;
+        }
+
+        // Auto-stop when user ends screen sharing
+        displayStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+          if (mediaRecorderRef.current?.state === "recording") {
+            mediaRecorderRef.current.stop();
+          }
+        });
+      } catch (displayErr: any) {
+        if (displayErr?.name === "NotAllowedError") {
+          toast({ title: "تم إلغاء التسجيل", variant: "destructive" });
+          return;
+        }
+        // Fallback: record local stream only
+        if (!localStreamRef.current) {
+          toast({ title: "لا يوجد stream للتسجيل", variant: "destructive" });
+          return;
+        }
+        recordStream = localStreamRef.current;
+        toast({ title: "⚠️ تسجيل الكاميرا فقط", description: "لم يتم السماح بتسجيل الشاشة" });
+      }
+
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+        ? "video/webm;codecs=vp8,opus"
+        : "video/webm";
+
+      const recorder = new MediaRecorder(recordStream, { mimeType });
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunksRef.current.push(e.data);
       };
@@ -1236,13 +1298,15 @@ export default function MeetingRoom() {
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
         setRecordingBlob(blob);
         setRecording(false);
+        captureStreamRef.current?.getTracks().forEach(t => t.stop());
+        captureStreamRef.current = null;
         toast({ title: "✅ التسجيل جاهز للتنزيل" });
       };
       recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setRecording(true);
       setRecordingBlob(null);
-      toast({ title: "⏺ بدأ التسجيل" });
+      toast({ title: "⏺ بدأ تسجيل الاجتماع", description: "اختر التبويب الحالي لتسجيل جميع المشاركين" });
     } catch {
       toast({ title: "تعذّر بدء التسجيل", variant: "destructive" });
     }
@@ -1253,7 +1317,9 @@ export default function MeetingRoom() {
     const url = URL.createObjectURL(recordingBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `meeting-${roomId}-${Date.now()}.webm`;
+    const safeTitle = (meeting?.title || roomId).replace(/[^a-zA-Z0-9\u0600-\u06FF_-]/g, "_").slice(0, 40);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `qmeet-${safeTitle}-${dateStr}.webm`;
     a.click();
     URL.revokeObjectURL(url);
   }, [recordingBlob, roomId]);
@@ -1480,10 +1546,21 @@ export default function MeetingRoom() {
             ))}
           </div>
 
-          <div className="w-full pt-2 border-t border-white/[0.08]">
-            <p className="text-[#9aa0a6] text-xs mb-3">
+          {/* Wait timer */}
+          <div className="px-4 py-2 rounded-xl bg-[#3c4043] text-[#9aa0a6] text-sm flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>في انتظار الموافقة · {timer}</span>
+          </div>
+
+          <div className="w-full pt-2 border-t border-white/[0.08] space-y-2">
+            <p className="text-[#9aa0a6] text-xs">
               {meeting?.title ? `«${meeting.title}»` : "الاجتماع"} · {userName}
             </p>
+            <button
+              onClick={() => sendWs({ type: "webrtc_lobby_request", roomId, name: userName, userId: myIdRef.current })}
+              className="w-full py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 text-sm font-medium transition border border-blue-500/30">
+              إعادة إرسال الطلب
+            </button>
             <button onClick={leave}
               className="w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-400 text-sm font-medium transition border border-red-500/30">
               إلغاء الطلب والخروج
@@ -2039,6 +2116,23 @@ export default function MeetingRoom() {
               <MicOff className="w-4 h-4 text-[#9aa0a6]" />
             </button>
           )}
+          {isRoomHost && (
+            <button
+              onClick={() => {
+                if (confirm("هل تريد إنهاء الاجتماع للجميع المشاركين؟")) {
+                  sendWs({ type: "webrtc_end_meeting", roomId });
+                  wsRef.current?.close();
+                  pcsRef.current.forEach(pc => pc.close());
+                  localStreamRef.current?.getTracks().forEach(t => t.stop());
+                  navigate("/qmeet");
+                }
+              }}
+              className="w-10 h-10 rounded-full bg-red-900 hover:bg-red-800 flex items-center justify-center transition"
+              title="إنهاء للجميع"
+              data-testid="button-end-for-all-mobile">
+              <XCircle className="w-4 h-4 text-red-300" />
+            </button>
+          )}
           <button onClick={() => { setLayout(l => l === "grid" ? "spotlight" : "grid"); setPinnedId(null); }}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition ${isSpotlight ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
             {isSpotlight ? <Grid3X3 className="w-4 h-4 text-white" /> : <Maximize2 className="w-4 h-4 text-[#9aa0a6]" />}
@@ -2095,9 +2189,28 @@ export default function MeetingRoom() {
             )}
             <button onClick={leave}
               className="w-14 h-12 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition shadow-lg"
+              title="مغادرة الاجتماع"
               data-testid="button-leave">
               <PhoneOff className="w-5 h-5 text-white" />
             </button>
+            {isRoomHost && (
+              <button
+                onClick={() => {
+                  if (confirm("هل تريد إنهاء الاجتماع للجميع المشاركين؟")) {
+                    sendWs({ type: "webrtc_end_meeting", roomId });
+                    wsRef.current?.close();
+                    pcsRef.current.forEach(pc => pc.close());
+                    localStreamRef.current?.getTracks().forEach(t => t.stop());
+                    navigate("/qmeet");
+                  }
+                }}
+                className="px-3 h-12 rounded-full bg-red-900 hover:bg-red-800 flex items-center justify-center gap-1.5 transition shadow-lg text-white text-xs font-semibold"
+                title="إنهاء الاجتماع للجميع"
+                data-testid="button-end-for-all">
+                <XCircle className="w-4 h-4" />
+                <span className="hidden sm:block">إنهاء للجميع</span>
+              </button>
+            )}
           </div>
 
           {/* Right */}
@@ -2134,8 +2247,12 @@ export default function MeetingRoom() {
             </button>
           </div>
 
-          {/* Mobile: chat + participants */}
+          {/* Mobile: chat + participants + recording */}
           <div className="flex md:hidden items-center gap-2">
+            <button onClick={toggleRecording} title={recording ? "إيقاف التسجيل" : "تسجيل"}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition ${recording ? "bg-red-600 animate-pulse" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
+              <CircleDot className={`w-4 h-4 ${recording ? "text-white" : "text-[#9aa0a6]"}`} />
+            </button>
             <button onClick={() => { setPanel(p => p === "chat" ? "none" : "chat"); setUnread(0); }}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition relative ${panel === "chat" ? "bg-blue-600" : "bg-[#3c4043] hover:bg-[#4a4d51]"}`}>
               <MessageSquare className="w-5 h-5 text-white" />

@@ -861,7 +861,13 @@ export function registerQMeetRoutes(app: Express) {
 
   app.get("/api/qmeet/stats", requireManagement, async (_req, res) => {
     try {
-      const [total, scheduled, live, completed, cancelled, feedbackCount, reportCount, feedbacks] = await Promise.all([
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [total, scheduled, live, completed, cancelled, feedbackCount, reportCount, feedbacks, thisWeek, thisMonth, totalParticipants] = await Promise.all([
         QMeetingModel.countDocuments(),
         QMeetingModel.countDocuments({ status: "scheduled" }),
         QMeetingModel.countDocuments({ status: "live" }),
@@ -870,11 +876,19 @@ export function registerQMeetRoutes(app: Express) {
         QFeedbackModel.countDocuments(),
         QReportModel.countDocuments(),
         QFeedbackModel.find({}, { rating: 1 }),
+        QMeetingModel.countDocuments({ createdAt: { $gte: startOfWeek } }),
+        QMeetingModel.countDocuments({ createdAt: { $gte: startOfMonth } }),
+        QMeetingModel.aggregate([
+          { $project: { count: { $size: { $ifNull: ["$participantIds", []] } } } },
+          { $group: { _id: null, total: { $sum: "$count" } } },
+        ]),
       ]);
       const avgRating = feedbacks.length
         ? (feedbacks.reduce((s: number, f: any) => s + f.rating, 0) / feedbacks.length).toFixed(1)
         : "0";
-      res.json({ total, scheduled, live, completed, cancelled, feedbackCount, reportCount, avgRating });
+      const totalParticipantCount = totalParticipants?.[0]?.total ?? 0;
+      const avgParticipants = total > 0 ? (totalParticipantCount / total).toFixed(1) : "0";
+      res.json({ total, scheduled, live, completed, cancelled, feedbackCount, reportCount, avgRating, thisWeek, thisMonth, totalParticipants: totalParticipantCount, avgParticipants });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
