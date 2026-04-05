@@ -13,12 +13,11 @@ import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 export default function VerifyEmail() {
-  const { dir } = useI18n();
+  const { dir, lang } = useI18n();
   const [, setLocation] = useLocation();
   const { data: user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { dir, lang } = useI18n();
   const L = lang === "ar";
 
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
