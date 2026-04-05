@@ -9,6 +9,7 @@ import {
   Hand, Grid3X3, Maximize2, Smile, X, XCircle,
   Lock, LockOpen, UserX, VolumeX, BarChart2, Subtitles,
   CircleDot, Download, QrCode, Sparkles, FlipHorizontal2, Crown,
+  Volume2, VolumeOff, AlertTriangle, Wifi, ShieldAlert, Camera,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -35,16 +36,26 @@ function useElapsedTimer(active: boolean) {
     : `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
+// Default ICE servers: STUN + free open TURN relays for NAT traversal
 const STUN: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun2.l.google.com:19302" },
-  { urls: "stun:stun3.l.google.com:19302" },
+  // Free TURN relay servers (Open Relay Project) — fallback when STUN fails
+  { urls: "turn:openrelay.metered.ca:80",   username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turn:openrelay.metered.ca:443",  username: "openrelayproject", credential: "openrelayproject" },
+  { urls: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
 ];
 async function getIce(): Promise<RTCIceServer[]> {
   try {
     const r = await fetch("/api/ice-servers");
-    if (r.ok) return await r.json();
+    if (r.ok) {
+      const servers = await r.json();
+      // Always include free TURN as last-resort fallback
+      const hasTurn = servers.some((s: any) => String(s.urls).startsWith("turn:") || (Array.isArray(s.urls) && s.urls.some((u: string) => u.startsWith("turn:"))));
+      if (!hasTurn) return [...servers, ...STUN.filter(s => String(s.urls).startsWith("turn:"))];
+      return servers;
+    }
   } catch {}
   return STUN;
 }
@@ -60,6 +71,7 @@ interface PeerState {
   photoUrl?: string;
   raisedHand?: boolean;
   facingMode?: "user" | "environment";
+  connectionState?: "connecting" | "connected" | "failed" | "disconnected";
 }
 
 interface ChatMsg {
@@ -92,16 +104,30 @@ function VideoTile({
   peer: PeerState; isSelf: boolean; speaking: boolean; small?: boolean; mirrored?: boolean;
 }) {
   const vidRef = useRef<HTMLVideoElement>(null);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+
   useEffect(() => {
     const el = vidRef.current;
     if (!el) return;
     if (peer.stream) {
       el.srcObject = peer.stream;
-      el.play().catch(() => {});
+      el.play().catch((err) => {
+        // NotAllowedError = browser blocked autoplay (requires user gesture)
+        if (err?.name === "NotAllowedError" || err?.name === "AbortError") {
+          if (!isSelf) setAudioBlocked(true);
+        }
+      });
     } else {
       el.srcObject = null;
     }
-  }, [peer.stream]);
+  }, [peer.stream, isSelf]);
+
+  const unlockAudio = () => {
+    const el = vidRef.current;
+    if (!el) return;
+    el.muted = false;
+    el.play().then(() => setAudioBlocked(false)).catch(() => {});
+  };
 
   const showVideo = !!(peer.stream && peer.videoOn);
   const bg = avatarColor(peer.name);
@@ -114,13 +140,40 @@ function VideoTile({
         ? <video ref={vidRef} autoPlay playsInline muted={isSelf}
             className="w-full h-full object-cover"
             style={{ transform: (isSelf && mirrored !== false) ? "scaleX(-1)" : undefined }} />
-        : <div className="flex flex-col items-center gap-1">
-            <div className="rounded-full flex items-center justify-center font-bold text-white"
-              style={{ background: bg, width: small ? 44 : 80, height: small ? 44 : 80, fontSize: small ? 18 : 30 }}>
-              {peer.name?.charAt(0)?.toUpperCase() || "?"}
+        : <>
+            <video ref={vidRef} autoPlay playsInline muted={isSelf} className="hidden" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="rounded-full flex items-center justify-center font-bold text-white"
+                style={{ background: bg, width: small ? 44 : 80, height: small ? 44 : 80, fontSize: small ? 18 : 30 }}>
+                {peer.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
             </div>
-          </div>
+          </>
       }
+      {/* Connecting overlay — shown while WebRTC is establishing */}
+      {!isSelf && !peer.stream && peer.connectionState !== "failed" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#3c4043]/80 gap-2 z-10">
+          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+          <span className="text-[#9aa0a6] text-xs">جارٍ الاتصال...</span>
+        </div>
+      )}
+      {/* Failed connection overlay */}
+      {!isSelf && peer.connectionState === "failed" && !peer.stream && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/30 gap-2 z-10">
+          <Wifi className="w-5 h-5 text-red-400" />
+          <span className="text-red-300 text-xs">فشل الاتصال</span>
+        </div>
+      )}
+      {/* Audio unlock overlay — appears when browser blocks autoplay */}
+      {audioBlocked && !isSelf && (
+        <button
+          onClick={unlockAudio}
+          className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 gap-2 z-10 cursor-pointer"
+          title="اضغط لتفعيل الصوت">
+          <VolumeOff className="w-6 h-6 text-yellow-300" />
+          <span className="text-yellow-300 text-xs font-medium">اضغط لتشغيل الصوت</span>
+        </button>
+      )}
       <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-1">
         {!peer.audioOn && <MicOff className={`${small ? "w-3 h-3" : "w-3.5 h-3.5"} text-red-400 shrink-0`} />}
         {peer.raisedHand && <span className={small ? "text-xs" : "text-sm"}>✋</span>}
@@ -357,12 +410,28 @@ export default function MeetingRoom() {
       if (candidate) sendWs({ type: "webrtc_ice", to: peerId, candidate: candidate.toJSON() });
     };
 
-    // Remote stream
+    // Remote stream — handle tracks arriving one-by-one or in a bundle
     pc.ontrack = (evt) => {
-      const stream = evt.streams[0] || new MediaStream([evt.track]);
       setPeers(prev => {
         const m = new Map(prev);
         const existing = m.get(peerId);
+
+        let stream: MediaStream;
+        if (evt.streams && evt.streams[0]) {
+          // Tracks are bundled in a stream — use it directly
+          stream = evt.streams[0];
+        } else if (existing?.stream) {
+          // Track arrives without stream — add to existing stream
+          const s = existing.stream;
+          if (!s.getTracks().find(t => t.id === evt.track.id)) {
+            s.addTrack(evt.track);
+          }
+          // Create new object reference so React re-renders
+          stream = new MediaStream(s.getTracks());
+        } else {
+          stream = new MediaStream([evt.track]);
+        }
+
         if (existing) {
           m.set(peerId, { ...existing, stream });
         } else {
@@ -378,11 +447,23 @@ export default function MeetingRoom() {
       });
     };
 
-    // Connection state — try ICE restart before giving up
+    // Connection state — update UI + try ICE restart before giving up
     let iceRestartAttempts = 0;
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") {
-        if (isInitiator && iceRestartAttempts < 2 && pc.signalingState === "stable") {
+      const state = pc.connectionState;
+
+      // Update peer connection state in UI
+      if (state === "connected" || state === "connecting" || state === "failed" || state === "disconnected") {
+        setPeers(prev => {
+          const m = new Map(prev);
+          const p = m.get(peerId);
+          if (p) m.set(peerId, { ...p, connectionState: state as any });
+          return m;
+        });
+      }
+
+      if (state === "failed") {
+        if (isInitiator && iceRestartAttempts < 3 && pc.signalingState === "stable") {
           iceRestartAttempts++;
           pc.createOffer({ iceRestart: true })
             .then(o => pc.setLocalDescription(o))
@@ -396,7 +477,7 @@ export default function MeetingRoom() {
           setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
         }
       }
-      if (pc.connectionState === "closed") {
+      if (state === "closed") {
         pcsRef.current.delete(peerId);
         setPeers(prev => { const m = new Map(prev); m.delete(peerId); return m; });
       }
@@ -853,6 +934,21 @@ export default function MeetingRoom() {
     };
   }, []);
 
+  // ── Resume AudioContext on first user gesture (fixes Chrome audio policy) ──
+  useEffect(() => {
+    const resume = () => {
+      if (audioCtxRef.current?.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    };
+    document.addEventListener("click", resume);
+    document.addEventListener("touchstart", resume);
+    return () => {
+      document.removeEventListener("click", resume);
+      document.removeEventListener("touchstart", resume);
+    };
+  }, []);
+
   // ── Speaking detection ────────────────────────────────────────────────────
   useEffect(() => {
     if (!joined) return;
@@ -1023,82 +1119,69 @@ export default function MeetingRoom() {
     }
   }, [screenSharing, flippingCamera, replaceTrackInPcs, toast]);
 
+  const revertToCamera = useCallback(async () => {
+    try {
+      const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const camTrack = camStream.getVideoTracks()[0];
+      if (camTrack) {
+        camTrack.enabled = videoOnRef.current;
+        if (localStreamRef.current) {
+          localStreamRef.current.getVideoTracks().forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+          localStreamRef.current.addTrack(camTrack);
+          pcsRef.current.forEach(pc => {
+            const sender = pc.getSenders().find(s => s.track?.kind === "video");
+            if (sender) sender.replaceTrack(camTrack).catch(() => {});
+          });
+          setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+        }
+      }
+    } catch { /* camera unavailable — continue without video */ }
+    setScreenSharing(false);
+    sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
+  }, [roomId, sendWs, userName]);
+
   const toggleScreen = useCallback(async () => {
     if (screenSharing) {
-      // Stop screen share, revert to camera
-      // Only request a new camera video track — keep existing audio tracks
-      try {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        const camTrack = camStream.getVideoTracks()[0];
-        camTrack.enabled = videoOnRef.current;
-
-        if (localStreamRef.current) {
-          // Stop old screen track(s)
-          localStreamRef.current.getVideoTracks().forEach(t => t.stop());
-          // Swap video track in stream
-          localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
-          localStreamRef.current.addTrack(camTrack);
-        } else {
-          localStreamRef.current = camStream;
-        }
-        // Replace in PCs
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(camTrack).catch(() => {});
-        });
-        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-      } catch {
-        toast({ title: "تعذّر العودة للكاميرا", variant: "destructive" });
+      await revertToCamera();
+      return;
+    }
+    // Check API availability
+    if (!(navigator.mediaDevices as any).getDisplayMedia) {
+      toast({ title: "متصفحك لا يدعم مشاركة الشاشة", description: "استخدم Chrome أو Edge أو Firefox" });
+      return;
+    }
+    try {
+      const screen = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: { frameRate: { ideal: 30 } },
+        audio: false,
+      });
+      const screenTrack = screen.getVideoTracks()[0];
+      if (!screenTrack) return;
+      // Swap into local stream
+      if (localStreamRef.current) {
+        localStreamRef.current.getVideoTracks().forEach(t => { t.stop(); localStreamRef.current!.removeTrack(t); });
+        localStreamRef.current.addTrack(screenTrack);
+      } else {
+        localStreamRef.current = screen;
       }
-      setScreenSharing(false);
-      sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
-    } else {
-      const isMob = /Android|iPhone|iPad/i.test(navigator.userAgent);
-      if (isMob) {
-        toast({ title: "مشاركة الشاشة متاحة على الكمبيوتر فقط" });
-        return;
-      }
-      try {
-        const screen = await (navigator.mediaDevices as any).getDisplayMedia({ video: true });
-        const screenTrack = screen.getVideoTracks()[0];
-        // Stop existing camera video tracks
-        if (localStreamRef.current) {
-          localStreamRef.current.getVideoTracks().forEach(t => t.stop());
-          localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
-          localStreamRef.current.addTrack(screenTrack);
-        }
-        // Replace video track in all PCs
-        pcsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === "video");
-          if (sender) sender.replaceTrack(screenTrack).catch(() => {});
-        });
-        if (localStreamRef.current) setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-        // When the user stops sharing from the browser UI — restore camera
-        screenTrack.onended = async () => {
-          try {
-            const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            const camTrack = camStream.getVideoTracks()[0];
-            camTrack.enabled = videoOnRef.current;
-            if (localStreamRef.current) {
-              localStreamRef.current.getVideoTracks().forEach(t => localStreamRef.current!.removeTrack(t));
-              localStreamRef.current.addTrack(camTrack);
-              pcsRef.current.forEach(pc => {
-                const sender = pc.getSenders().find(s => s.track?.kind === "video");
-                if (sender) sender.replaceTrack(camTrack).catch(() => {});
-              });
-              setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-            }
-          } catch { /* no camera → continue without video */ }
-          setScreenSharing(false);
-          sendWs({ type: "webrtc_screen_share", roomId, active: false, name: userName });
-        };
-        setScreenSharing(true);
-        sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
-      } catch (e: any) {
-        if (e?.name !== "NotAllowedError") toast({ title: "تعذّر مشاركة الشاشة", variant: "destructive" });
+      // Replace video track in all PCs
+      pcsRef.current.forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (sender) sender.replaceTrack(screenTrack).catch(() => {});
+        else pc.addTrack(screenTrack, localStreamRef.current!);
+      });
+      setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+      // When user stops sharing from browser UI
+      screenTrack.onended = () => revertToCamera();
+      setScreenSharing(true);
+      sendWs({ type: "webrtc_screen_share", roomId, active: true, name: userName });
+      toast({ title: "🖥️ بدأت مشاركة الشاشة", description: "المشاركون الآخرون يرون شاشتك الآن" });
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError") {
+        toast({ title: "تعذّر مشاركة الشاشة", description: "تأكد من منح الإذن لمشاركة الشاشة", variant: "destructive" });
       }
     }
-  }, [screenSharing, roomId, sendWs, toast, userName]);
+  }, [screenSharing, roomId, sendWs, toast, userName, revertToCamera]);
 
   const toggleHand = useCallback(() => {
     const on = !raisedHand;
@@ -1396,80 +1479,132 @@ export default function MeetingRoom() {
 
   // ── PRE-JOIN SCREEN ────────────────────────────────────────────────────────
   if (!joined) {
+    const permissionDenied = mediaError?.includes("رُفض") || mediaError?.includes("غير مصرح");
+    const noDevice = mediaError?.includes("لا توجد");
+    const inUse = mediaError?.includes("مستخدمة");
     return (
-      <div className="min-h-screen bg-[#202124] flex flex-col items-center justify-center px-4" dir={dir}>
+      <div className="min-h-screen bg-[#202124] flex flex-col items-center justify-center px-4 py-6" dir={dir}>
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-white text-2xl font-bold">{meeting?.title || "اجتماع"}</h1>
-          <p className="text-[#9aa0a6] text-sm mt-1">تحقق من إعداداتك قبل الانضمام</p>
+        <div className="mb-6 text-center">
+          <h1 className="text-white text-2xl font-bold">{meeting?.title || "اجتماع QMeet"}</h1>
+          <p className="text-[#9aa0a6] text-sm mt-1">جهّز الكاميرا والميكروفون قبل الدخول</p>
         </div>
 
-        <div className="w-full max-w-3xl flex flex-col lg:flex-row gap-6 items-center">
+        <div className="w-full max-w-3xl flex flex-col lg:flex-row gap-5 items-start justify-center">
           {/* Camera preview */}
-          <div className="w-full lg:flex-1 bg-[#3c4043] rounded-2xl overflow-hidden relative"
-            style={{ aspectRatio: "16/9", maxHeight: "42vh" }}>
-            {localStream && videoOn
-              ? <video ref={el => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); }}}
-                  autoPlay muted playsInline className="w-full h-full object-cover"
-                  style={{ transform: facingModeRef.current === "user" ? "scaleX(-1)" : undefined }} />
-              : <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold text-white"
-                    style={{ background: avatarColor(userName) }}>
-                    {userName?.charAt(0)?.toUpperCase() || "م"}
+          <div className="w-full lg:flex-1 flex flex-col gap-3">
+            <div className="bg-[#3c4043] rounded-2xl overflow-hidden relative" style={{ aspectRatio: "16/9" }}>
+              {localStream && videoOn
+                ? <video ref={el => { if (el && localStream) { el.srcObject = localStream; el.play().catch(() => {}); }}}
+                    autoPlay muted playsInline className="w-full h-full object-cover"
+                    style={{ transform: facingModeRef.current === "user" ? "scaleX(-1)" : undefined }} />
+                : <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl font-bold text-white"
+                      style={{ background: avatarColor(userName) }}>
+                      {userName?.charAt(0)?.toUpperCase() || "م"}
+                    </div>
+                    <span className="text-[#9aa0a6] text-sm">
+                      {mediaError ? "الكاميرا غير متاحة" : "الكاميرا مغلقة"}
+                    </span>
                   </div>
-                  <span className="text-[#9aa0a6] text-sm">{mediaError || "الكاميرا مغلقة"}</span>
-                </div>
-            }
-            {/* Controls overlay */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
-              <button onClick={toggleAudio}
-                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}>
-                {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
-              </button>
-              <button onClick={toggleVideo}
-                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}>
-                {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
-              </button>
-              {videoOn && (
-                <button onClick={flipCamera} disabled={flippingCamera}
-                  className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition bg-black/50 hover:bg-black/70 backdrop-blur-sm disabled:opacity-50"
-                  title="قلب الكاميرا">
-                  {flippingCamera ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <FlipHorizontal2 className="w-5 h-5 text-white" />}
+              }
+              {/* Controls overlay */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+                <button onClick={toggleAudio}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${audioOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
+                  title={audioOn ? "إيقاف الميكروفون" : "تشغيل الميكروفون"}>
+                  {audioOn ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5 text-white" />}
                 </button>
-              )}
+                <button onClick={toggleVideo}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition ${videoOn ? "bg-black/50 hover:bg-black/70 backdrop-blur-sm" : "bg-red-600 hover:bg-red-700"}`}
+                  title={videoOn ? "إيقاف الكاميرا" : "تشغيل الكاميرا"}>
+                  {videoOn ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+                </button>
+                {videoOn && (
+                  <button onClick={flipCamera} disabled={flippingCamera}
+                    className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition bg-black/50 hover:bg-black/70 backdrop-blur-sm disabled:opacity-50"
+                    title="قلب الكاميرا">
+                    {flippingCamera ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <FlipHorizontal2 className="w-5 h-5 text-white" />}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Device status indicators */}
+            <div className="flex gap-2">
+              <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                audioOn && localStream?.getAudioTracks()[0]?.readyState === "live"
+                  ? "bg-green-500/10 border border-green-500/30 text-green-400"
+                  : mediaError ? "bg-red-500/10 border border-red-500/30 text-red-400"
+                  : "bg-[#3c4043] text-[#9aa0a6]"
+              }`}>
+                <Mic className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{
+                  localStream?.getAudioTracks()[0]?.readyState === "live" ? "الميكروفون يعمل ✓"
+                  : mediaError ? "لا يوجد ميكروفون" : "في الانتظار..."
+                }</span>
+              </div>
+              <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                videoOn && localStream?.getVideoTracks()[0]?.readyState === "live"
+                  ? "bg-green-500/10 border border-green-500/30 text-green-400"
+                  : "bg-[#3c4043] text-[#9aa0a6]"
+              }`}>
+                <Camera className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{
+                  localStream?.getVideoTracks()[0]?.readyState === "live" ? "الكاميرا تعمل ✓"
+                  : videoOn ? "مغلقة" : "معطّلة"
+                }</span>
+              </div>
             </div>
           </div>
 
           {/* Join card */}
           <div className="w-full lg:w-72 flex flex-col gap-3">
 
-            {/* Media error / permission warning */}
+            {/* Permission error with fix guide */}
             {mediaError && (
-              <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 space-y-2">
-                <p className="text-yellow-300 text-xs leading-relaxed">{mediaError}</p>
+              <div className={`p-4 rounded-xl space-y-3 ${permissionDenied ? "bg-red-500/10 border border-red-500/30" : "bg-yellow-500/10 border border-yellow-500/30"}`}>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${permissionDenied ? "text-red-400" : "text-yellow-400"}`} />
+                  <div>
+                    <p className={`text-xs font-semibold mb-1 ${permissionDenied ? "text-red-300" : "text-yellow-300"}`}>
+                      {permissionDenied ? "لم يتم منح الإذن" : noDevice ? "لا يوجد جهاز" : inUse ? "الجهاز مستخدم" : "مشكلة في الوصول"}
+                    </p>
+                    <p className={`text-xs leading-relaxed ${permissionDenied ? "text-red-400" : "text-yellow-400"}`}>
+                      {permissionDenied
+                        ? "اضغط على أيقونة القفل 🔒 في شريط العنوان واختر «السماح» للكاميرا والميكروفون"
+                        : noDevice
+                        ? "تأكد من توصيل كاميرا وميكروفون بجهازك ثم حاول مجدداً"
+                        : inUse
+                        ? "أغلق أي تطبيقات أخرى تستخدم الكاميرا أو الميكروفون (Zoom، Teams...) ثم حاول مجدداً"
+                        : mediaError}
+                    </p>
+                  </div>
+                </div>
                 <button onClick={() => getMedia()}
-                  className="w-full py-1.5 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 text-xs font-medium transition">
-                  أعد المحاولة
+                  className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition flex items-center justify-center gap-2">
+                  <Camera className="w-3.5 h-3.5" /> أعد المحاولة
                 </button>
               </div>
             )}
 
             {/* HTTPS warning */}
             {window.location.protocol !== "https:" && window.location.hostname !== "localhost" && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs leading-relaxed">
-                ⚠️ يجب فتح الاجتماع عبر HTTPS (الرابط المنشور) لاستخدام الكاميرا والميكروفون
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs leading-relaxed flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>يجب فتح الاجتماع عبر رابط آمن (HTTPS) لاستخدام الكاميرا والميكروفون</span>
               </div>
             )}
 
             {/* Name input for guests */}
             {!defaultName && (
               <div>
-                <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك</label>
+                <label className="text-[#9aa0a6] text-xs mb-1.5 block">اسمك في الاجتماع</label>
                 <input
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && (guestName.trim() || defaultName) && joinMeeting()}
-                  placeholder="أدخل اسمك"
+                  placeholder="أدخل اسمك..."
                   maxLength={40}
                   className="w-full px-4 py-3 rounded-xl bg-[#3c4043] text-white placeholder:text-[#9aa0a6] outline-none border border-transparent focus:border-blue-500 transition"
                   data-testid="input-guest-name"
@@ -1489,20 +1624,31 @@ export default function MeetingRoom() {
               </div>
             )}
 
+            {/* Permission request if no media yet */}
+            {!localStream && !mediaError && (
+              <button onClick={() => getMedia()}
+                className="w-full py-3 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-white text-sm font-medium transition flex items-center justify-center gap-2 border border-white/10">
+                <Camera className="w-4 h-4" /> تفعيل الكاميرا والميكروفون
+              </button>
+            )}
+
             {/* Join button */}
             <button
               onClick={joinMeeting}
               disabled={!defaultName && !guestName.trim()}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-base transition"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition shadow-lg"
               data-testid="button-join-meeting"
             >
               انضمام الآن
             </button>
 
-            {/* Browser compatibility note */}
-            <p className="text-[#9aa0a6] text-xs text-center leading-relaxed">
-              يعمل على Chrome · Firefox · Safari · Edge
-            </p>
+            {/* Tips */}
+            <div className="p-3 rounded-xl bg-white/[0.04] space-y-1.5">
+              <p className="text-[#9aa0a6] text-[11px] font-medium">نصائح للحصول على أفضل تجربة:</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• استخدم Chrome أو Edge للحصول على أفضل أداء</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• اضغط «السماح» عند طلب إذن الكاميرا/الميك</p>
+              <p className="text-[#9aa0a6] text-[11px] leading-relaxed">• في بيئة مكتبية: تأكد من السماح بـ WebRTC</p>
+            </div>
 
             <button onClick={() => navigate("/qmeet")}
               className="w-full py-2.5 rounded-xl bg-[#3c4043] hover:bg-[#4a4d51] text-[#9aa0a6] text-sm transition">

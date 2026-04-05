@@ -1,6 +1,49 @@
 # Qirox Platform
 
-## Latest Changes (Apr 5, 2026) — Session 6
+## Latest Changes (Apr 5, 2026) — Session 7 QMeet WebRTC Critical Fixes
+
+### QMeet WebRTC — Critical Issues Resolved
+
+**1. No Audio Fix (Browser Autoplay Policy):**
+- VideoTile now detects `NotAllowedError`/`AbortError` from `el.play()`
+- When audio is blocked, shows yellow overlay "اضغط لتشغيل الصوت" on that peer's tile
+- Clicking the overlay calls `el.play()` with user gesture → audio works
+- `AudioContext` is resumed on first `click`/`touchstart` event (fixes speaking detection muting)
+
+**2. TURN Servers Added (NAT Traversal):**
+- Free Open Relay Project TURN servers added directly in client fallback: `turn:openrelay.metered.ca:80/443` + `turns:openrelay.metered.ca:443`
+- `getIce()` now checks if `/api/ice-servers` response includes TURN; if not, appends free TURN servers automatically
+- Fixes connections behind corporate NAT/firewalls where STUN alone fails
+
+**3. Screen Sharing Overhauled:**
+- Removed mobile device restriction (let browser handle capability)
+- Added `getDisplayMedia` availability check with user-friendly error
+- `revertToCamera()` helper refactored as standalone callback (reused on stop/error)
+- `screenTrack.onended` properly calls `revertToCamera()` when user stops from browser UI
+- Success toast shown when screen sharing starts
+- `getDisplayMedia` options set with `frameRate: { ideal: 30 }`
+
+**4. Stream/Track Handling Fixed:**
+- `pc.ontrack` now handles both bundled streams (`evt.streams[0]`) and individual tracks
+- When track arrives without stream: added to existing peer stream + new `MediaStream` object created (forces React re-render)
+- ICE restart attempts increased from 2 to 3 before giving up
+
+**5. Connection State UI:**
+- `PeerState` now includes `connectionState` field
+- VideoTile shows "جارٍ الاتصال..." (blue spinner) while connecting
+- VideoTile shows "فشل الاتصال" (red WiFi icon) if connection fails permanently
+- `pc.onconnectionstatechange` updates peer connection state in real-time
+
+**6. Pre-Join Screen Improved:**
+- Device status indicators (mic/camera live state) with green checkmarks
+- Context-sensitive permission error messages (denied vs no device vs in-use)
+- Step-by-step fix guide for each error type
+- "تفعيل الكاميرا والميكروفون" button shown if no stream yet
+- Browser compatibility tips added
+
+---
+
+## Previous Changes (Apr 5, 2026) — Session 6
 
 ### QMeet & Payment Gateway Comprehensive Improvements
 
