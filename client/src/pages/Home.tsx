@@ -474,6 +474,126 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── ABOUT QIROX ─── */}
+      <section className="py-20 md:py-28 relative overflow-hidden bg-black dark:bg-black" data-testid="section-about">
+        {/* Background grid dots */}
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        {/* Glow blobs */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-violet-600/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[250px] bg-blue-600/15 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={stagger}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              {/* Left — text */}
+              <div dir={dir}>
+                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 mb-7">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                  <span className="text-white/40 text-[11px] tracking-widest uppercase font-bold">{lang === "ar" ? "من نحن" : "About Us"}</span>
+                </motion.div>
+
+                <motion.h2 variants={fadeUp} custom={1} className="text-4xl md:text-5xl font-black text-white leading-[1.1] mb-6 tracking-tight">
+                  {lang === "ar"
+                    ? <><span className="text-white">نبني الأنظمة.</span><br /><span className="bg-gradient-to-l from-violet-400 to-blue-400 bg-clip-text text-transparent">نرفع الأعمال.</span></>
+                    : <><span className="text-white">We Build Systems.</span><br /><span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">We Elevate Business.</span></>}
+                </motion.h2>
+
+                <motion.p variants={fadeUp} custom={2} className="text-white/40 text-base leading-relaxed mb-8 max-w-md">
+                  {lang === "ar"
+                    ? "QIROX Studio مصنع أنظمة رقمية متخصص — نصمم ونبرمج ونشغّل أنظمة مخصصة لكل قطاع من الصفر، بتقنيات حديثة وفريق سعودي محلي."
+                    : "QIROX Studio is a specialized digital systems factory — we design, build, and operate custom systems for every sector from scratch, with modern tech and a local Saudi team."}
+                </motion.p>
+
+                <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-3 mb-10">
+                  {(lang === "ar"
+                    ? ["تأسسنا 2022", "100+ نظام مُسلَّم", "7 قطاعات", "فريق سعودي"]
+                    : ["Est. 2022", "100+ Systems", "7 Sectors", "Saudi Team"]
+                  ).map(tag => (
+                    <span key={tag} className="text-xs font-bold px-3.5 py-1.5 rounded-full border border-white/10 text-white/50 bg-white/5">
+                      {tag}
+                    </span>
+                  ))}
+                </motion.div>
+
+                <motion.div variants={fadeUp} custom={4}>
+                  <Link href="/about">
+                    <Button className="h-11 px-7 rounded-full font-bold bg-white text-black hover:bg-white/90 gap-2 no-default-hover-elevate" data-testid="button-about-more">
+                      {lang === "ar" ? "اعرف أكثر عنّا" : "Learn More About Us"}
+                      <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </motion.div>
+              </div>
+
+              {/* Right — value cards bento */}
+              <motion.div variants={fadeUp} custom={2} className="grid grid-cols-2 gap-3">
+                {[
+                  {
+                    icon: Cpu, label: lang === "ar" ? "تقنية حديثة" : "Modern Tech",
+                    desc: lang === "ar" ? "React, Node.js, AI" : "React, Node.js, AI",
+                    color: "from-blue-500/20 to-cyan-500/10", border: "border-blue-500/20", icon_color: "text-blue-400"
+                  },
+                  {
+                    icon: Shield, label: lang === "ar" ? "أمان محكم" : "Rock-Solid Security",
+                    desc: lang === "ar" ? "SSL + تشفير كامل" : "SSL + Full Encryption",
+                    color: "from-emerald-500/20 to-green-500/10", border: "border-emerald-500/20", icon_color: "text-emerald-400"
+                  },
+                  {
+                    icon: Headphones, label: lang === "ar" ? "دعم فني" : "Dedicated Support",
+                    desc: lang === "ar" ? "فريق متخصص 7 أيام" : "Dedicated team 7 days",
+                    color: "from-violet-500/20 to-purple-500/10", border: "border-violet-500/20", icon_color: "text-violet-400"
+                  },
+                  {
+                    icon: Sparkles, label: lang === "ar" ? "مخصص 100%" : "100% Custom",
+                    desc: lang === "ar" ? "ليس قالباً — مصنوع لك" : "Not a template — made for you",
+                    color: "from-amber-500/20 to-orange-500/10", border: "border-amber-500/20", icon_color: "text-amber-400"
+                  },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    variants={fadeUp}
+                    custom={i + 2}
+                    className={`rounded-2xl border ${item.border} bg-gradient-to-br ${item.color} p-5 flex flex-col gap-3`}
+                    data-testid={`about-card-${i}`}
+                  >
+                    <div className={`w-9 h-9 rounded-xl bg-black/30 flex items-center justify-center`}>
+                      <item.icon className={`w-4.5 h-4.5 ${item.icon_color}`} />
+                    </div>
+                    <div dir={dir}>
+                      <p className="text-white font-bold text-sm mb-1">{item.label}</p>
+                      <p className="text-white/35 text-xs leading-relaxed">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {/* Wide bottom card */}
+                <div className="col-span-2 rounded-2xl border border-white/8 bg-white/[0.03] p-5 flex items-center gap-5" dir={dir}>
+                  <div className="flex -space-x-2 rtl:space-x-reverse shrink-0">
+                    {["#7c3aed","#2563eb","#059669","#d97706"].map((color, i) => (
+                      <div key={i} className="w-9 h-9 rounded-full border-2 border-black flex items-center justify-center" style={{ background: color }}>
+                        <Star className="w-3 h-3 text-white fill-white" />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-white font-black text-sm">{lang === "ar" ? "100+ عميل راضٍ" : "100+ Happy Clients"}</p>
+                    <p className="text-white/35 text-xs">{lang === "ar" ? "من مختلف القطاعات في المملكة العربية السعودية" : "From various sectors across Saudi Arabia"}</p>
+                  </div>
+                  <div className="mr-auto rtl:ml-auto rtl:mr-0 flex items-center gap-1">
+                    {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />)}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* SERVICES GRID */}
       <section className="py-20 md:py-28 relative" data-testid="section-services">
         <div className="container mx-auto px-4 relative z-10">
@@ -565,6 +685,147 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ─── NEW FEATURES / PLATFORM INNOVATION ─── */}
+      <section className="py-20 md:py-28 relative overflow-hidden" data-testid="section-new-features">
+        {/* Decorative blobs */}
+        <div className="absolute -top-32 -right-32 w-[450px] h-[450px] rounded-full bg-violet-500/[0.06] dark:bg-violet-500/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-[300px] h-[300px] rounded-full bg-blue-500/[0.06] dark:bg-blue-500/[0.08] blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={stagger}
+          >
+            {/* Header */}
+            <div className="text-center mb-14" dir={dir}>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/5 mb-5">
+                <Sparkles className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400" />
+                <span className="text-violet-600 dark:text-violet-400 text-[11px] font-black tracking-widest uppercase">{lang === "ar" ? "الجديد في المنصة" : "WHAT'S NEW"}</span>
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-black font-heading text-black dark:text-white mb-4 leading-tight">
+                {lang === "ar" ? <>منصة كاملة<br /><span className="text-gray-400 dark:text-gray-500">في يد واحدة</span></> : <>Full Platform<br /><span className="text-gray-400 dark:text-gray-500">In One Hand</span></>}
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 max-w-lg mx-auto text-base">
+                {lang === "ar"
+                  ? "كل أدوات إدارة عملك الرقمي — مبنية في نظام واحد متكامل مخصص لك"
+                  : "All tools to manage your digital business — built into one integrated system made for you"}
+              </motion.p>
+            </div>
+
+            {/* Bento grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-fr">
+
+              {/* Large card — AI */}
+              <motion.div variants={fadeUp} custom={1} className="md:col-span-2 relative rounded-[28px] overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-gradient-to-br from-violet-600 to-blue-700 p-8 min-h-[220px] flex flex-col justify-between group" data-testid="feature-card-ai">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+                <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+                <div>
+                  <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center mb-4">
+                    <Cpu className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-black text-white mb-2" dir={dir}>{lang === "ar" ? "ذكاء اصطناعي مدمج" : "Built-in AI Intelligence"}</h3>
+                  <p className="text-white/60 text-sm leading-relaxed max-w-sm" dir={dir}>
+                    {lang === "ar" ? "مساعد AI يحلل بياناتك، يجيب على عملائك، ويقترح قرارات ذكية لرفع مبيعاتك." : "AI assistant that analyzes your data, answers customers, and suggests smart decisions to boost sales."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {(lang === "ar" ? ["تحليل بيانات", "دردشة ذكية", "توصيات تلقائية"] : ["Data Analysis", "Smart Chat", "Auto Recommendations"]).map(t => (
+                    <span key={t} className="text-[11px] font-bold px-3 py-1 rounded-full bg-white/15 text-white/80 border border-white/20">{t}</span>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* QMeet card */}
+              <motion.div variants={fadeUp} custom={2} className="relative rounded-[28px] overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-gradient-to-br from-slate-900 to-slate-800 p-7 flex flex-col justify-between group min-h-[220px]" data-testid="feature-card-qmeet">
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-blue-500/20 blur-xl" />
+                <div>
+                  <div className="w-11 h-11 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center mb-4">
+                    <MonitorSmartphone className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-2" dir={dir}>QMeet</h3>
+                  <p className="text-white/40 text-sm leading-relaxed" dir={dir}>
+                    {lang === "ar" ? "اجتماعات فيديو مباشرة داخل نظامك — بجودة HD وتشفير كامل" : "Live video meetings inside your system — HD quality & encrypted"}
+                  </p>
+                </div>
+                <Link href="/contact" className="mt-4">
+                  <span className="text-blue-400 text-xs font-black flex items-center gap-1 group-hover:gap-2 transition-all">
+                    {lang === "ar" ? "ابدأ اجتماعاً" : "Start a Meeting"} <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+                  </span>
+                </Link>
+              </motion.div>
+
+              {/* Wallet card */}
+              <motion.div variants={fadeUp} custom={3} className="relative rounded-[28px] overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-gradient-to-br from-emerald-950 to-teal-900 p-7 flex flex-col justify-between group min-h-[200px]" data-testid="feature-card-wallet">
+                <div>
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-400/15 border border-emerald-400/20 flex items-center justify-center mb-4">
+                    <CreditCard className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-2" dir={dir}>{lang === "ar" ? "محفظة إلكترونية" : "Digital Wallet"}</h3>
+                  <p className="text-white/40 text-sm leading-relaxed" dir={dir}>
+                    {lang === "ar" ? "ادفع واستقبل المبالغ — داخل النظام مباشرةً" : "Send & receive payments — right inside the system"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  <div className="text-2xl font-black text-emerald-400">PayPal</div>
+                  <span className="text-white/20 text-sm">·</span>
+                  <div className="text-sm font-bold text-white/40">Paymob</div>
+                </div>
+              </motion.div>
+
+              {/* Analytics card */}
+              <motion.div variants={fadeUp} custom={4} className="relative rounded-[28px] overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60 p-7 flex flex-col justify-between min-h-[200px]" data-testid="feature-card-analytics">
+                <div>
+                  <div className="w-11 h-11 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4">
+                    <BarChart3 className="w-5 h-5 text-black/50 dark:text-white/50" />
+                  </div>
+                  <h3 className="text-lg font-black text-black dark:text-white mb-2" dir={dir}>{lang === "ar" ? "تحليلات لحظية" : "Real-Time Analytics"}</h3>
+                  <p className="text-black/35 dark:text-white/35 text-sm leading-relaxed" dir={dir}>
+                    {lang === "ar" ? "تابع أداء نظامك لحظة بلحظة — تقارير ذكية ورسوم بيانية" : "Monitor your system performance in real-time — smart reports & charts"}
+                  </p>
+                </div>
+                {/* Mini chart graphic */}
+                <div className="flex items-end gap-1 mt-5 h-10">
+                  {[40,65,45,80,60,90,75,95].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-sm bg-black/[0.06] dark:bg-white/[0.08]" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Mobile App card */}
+              <motion.div variants={fadeUp} custom={5} className="relative rounded-[28px] overflow-hidden border border-amber-500/20 bg-gradient-to-br from-amber-950 to-orange-950 p-7 flex flex-col justify-between min-h-[200px]" data-testid="feature-card-mobile">
+                <div className="absolute -top-6 -left-6 w-28 h-28 rounded-full bg-amber-400/15 blur-2xl" />
+                <div>
+                  <div className="w-11 h-11 rounded-2xl bg-amber-400/15 border border-amber-400/20 flex items-center justify-center mb-4">
+                    <Smartphone className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-2" dir={dir}>{lang === "ar" ? "تطبيق جوال خاص" : "Your Own Mobile App"}</h3>
+                  <p className="text-white/40 text-sm leading-relaxed" dir={dir}>
+                    {lang === "ar" ? "تطبيق بحزمة Pro وأعلى — iOS وAndroid بهويتك التجارية" : "Available on Pro & above — iOS & Android with your brand"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  <SiApple className="w-4 h-4 text-white/40" />
+                  <SiGoogleplay className="w-4 h-4 text-white/40" />
+                </div>
+              </motion.div>
+
+            </div>
+
+            {/* Bottom CTA */}
+            <motion.div variants={fadeUp} custom={6} className="text-center mt-12">
+              <Link href="/prices">
+                <Button className="h-12 px-8 rounded-full font-black gap-2 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 shadow-lg shadow-black/10 no-default-hover-elevate" data-testid="button-explore-all-features">
+                  {lang === "ar" ? "استكشف كل المميزات" : "Explore All Features"}
+                  <ArrowLeft className="w-4 h-4 rtl:rotate-0 ltr:rotate-180" />
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </section>
