@@ -362,8 +362,8 @@ export default function Home() {
         <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
         {/* Dot grid pattern — neutral white */}
         <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "36px 36px" }} />
-        {/* Very subtle brand glow — bottom center */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-brand/5 blur-[120px] pointer-events-none" />
+        {/* Very subtle white glow — bottom center */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-white/[0.02] blur-[120px] pointer-events-none" />
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-36 pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
@@ -376,10 +376,10 @@ export default function Home() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.05 }}
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/[0.08] mb-7"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.05] mb-7"
               >
-                <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
-                <span className="text-violet-300/90 text-xs tracking-wide">{lang === "ar" ? "منصة الأنظمة الرقمية المتكاملة" : "Integrated Digital Systems Platform"}</span>
+                <span className="w-2 h-2 rounded-full bg-white/50 animate-pulse" />
+                <span className="text-white/55 text-xs tracking-wide">{lang === "ar" ? "منصة الأنظمة الرقمية المتكاملة" : "Integrated Digital Systems Platform"}</span>
               </motion.div>
 
               {/* Headline */}
@@ -391,7 +391,7 @@ export default function Home() {
                 <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading text-white leading-[1.05] mb-1 tracking-tight">
                   Build Systems.
                 </h1>
-                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-8 tracking-tight" style={{ color: "rgba(167,139,250,0.35)" }}>
+                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-8 tracking-tight" style={{ color: "rgba(255,255,255,0.2)" }}>
                   .Stay Human
                 </h1>
               </motion.div>
@@ -418,7 +418,7 @@ export default function Home() {
                 <Link href="/contact">
                   <Button
                     size="lg"
-                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30 no-default-hover-elevate no-default-active-elevate border-0"
+                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-white text-gray-950 hover:bg-white/90 shadow-lg shadow-black/20 no-default-hover-elevate no-default-active-elevate border-0"
                     data-testid="button-start-project"
                   >
                     <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -466,10 +466,10 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-violet-500/15 bg-violet-500/[0.06] mt-8"
+                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04] mt-8"
                 data-testid="promo-banner"
               >
-                <span className="text-[11px] font-bold tracking-wider text-white bg-violet-500/20 px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
+                <span className="text-[11px] font-bold tracking-wider text-white bg-white/15 px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
                 <span className="text-white/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
                 <ArrowLeft className="w-3 h-3 text-white/20" />
               </motion.div>
@@ -571,11 +571,11 @@ export default function Home() {
                 <motion.div
                   animate={{ scale: [1, 1.04, 1] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                  className="absolute top-1/2 -translate-y-1/2 -right-10 rounded-full border border-violet-500/20 bg-violet-600/15 backdrop-blur-sm px-3 py-1.5 shadow-lg"
+                  className="absolute top-1/2 -translate-y-1/2 -right-10 rounded-full border border-white/15 bg-white/10 backdrop-blur-sm px-3 py-1.5 shadow-lg"
                 >
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-violet-300" />
-                    <span className="text-[10px] font-bold text-violet-300">AI</span>
+                    <Sparkles className="w-3 h-3 text-white/70" />
+                    <span className="text-[10px] font-bold text-white/70">AI</span>
                   </div>
                 </motion.div>
               </div>
@@ -601,7 +601,7 @@ export default function Home() {
           >
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.05] dark:divide-white/[0.05] rtl:divide-x-reverse divide-y md:divide-y-0">
               {[
-                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-violet-600 dark:text-violet-400" },
+                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-gray-900 dark:text-white" },
                 { value: "6+", label: t("home.stats.sectorsCount"), color: "text-blue-600 dark:text-blue-400" },
                 { value: "5", label: lang === "ar" ? "باقات متنوعة" : "Pricing Plans", color: "text-emerald-600 dark:text-emerald-400" },
                 { value: "2", label: t("home.stats.locations"), color: "text-orange-500 dark:text-orange-400" },
