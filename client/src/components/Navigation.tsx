@@ -336,7 +336,7 @@ export default function Navigation() {
 
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 rounded-xl dark:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-[#ffffff]"
+                className="md:hidden p-2 rounded-xl dark:text-white/70 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-[#737070]"
                 data-testid="button-mobile-menu"
               >
                 {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
