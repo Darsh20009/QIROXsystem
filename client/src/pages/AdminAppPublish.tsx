@@ -1152,9 +1152,40 @@ export default function AdminAppPublish() {
     : 0;
   const closedTestDone = testerCount >= 12 && closedTestDays >= 14;
 
-  // ─── Quick fingerprint inline save ───────────────────────
+  // ─── Quick fingerprint inline save (Android) ─────────────
   const [quickPkg, setQuickPkg] = useState("");
   const [quickFp, setQuickFp] = useState("");
+
+  // ─── Apple App Store Checklist ───────────────────────────
+  const [appleChecks, setAppleChecks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("qirox_apple_checks") || "{}"); } catch { return {}; }
+  });
+  const toggleAppleCheck = (id: string) => {
+    const next = { ...appleChecks, [id]: !appleChecks[id] };
+    setAppleChecks(next);
+    localStorage.setItem("qirox_apple_checks", JSON.stringify(next));
+  };
+
+  // ─── TestFlight Tracker ──────────────────────────────────
+  const [tfStart, setTfStart] = useState<string>(() =>
+    localStorage.getItem("qirox_tf_start") || ""
+  );
+  const [tfTesters, setTfTesters] = useState<number>(() =>
+    parseInt(localStorage.getItem("qirox_tf_testers") || "0", 10)
+  );
+  const saveTf = (start: string, count: number) => {
+    setTfStart(start); setTfTesters(count);
+    localStorage.setItem("qirox_tf_start", start);
+    localStorage.setItem("qirox_tf_testers", count.toString());
+  };
+  const tfDays = tfStart
+    ? Math.floor((Date.now() - new Date(tfStart).getTime()) / 86400000)
+    : 0;
+  const tfExpiry = 90 - tfDays;
+
+  // ─── Quick Apple credentials ─────────────────────────────
+  const [quickTeamId, setQuickTeamId] = useState("");
+  const [quickBundleId, setQuickBundleId] = useState("");
 
   const data = form || cfg || {};
   const f = (k: string, v: string) => setForm((prev: any) => ({ ...(prev || cfg || {}), [k]: v }));
@@ -1972,31 +2003,275 @@ export default function AdminAppPublish() {
         </TabsContent>
 
         {/* ════════════════════════════════════════════════════ */}
-        {/* TAB: APPLE                                          */}
+        {/* TAB: APPLE — FULL INTERACTIVE GUIDE                */}
         {/* ════════════════════════════════════════════════════ */}
         <TabsContent value="apple">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center"><Apple className="w-4 h-4 text-white" /></div>
-                <div><h2 className="text-sm font-black">Apple App Store</h2><p className="text-[10px] text-black/40">عبر Capacitor + Xcode</p></div>
-                {data.appStoreUrl && <a href={data.appStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1"><CheckCircle2 className="w-3 h-3 text-blue-500" /> {L ? "منشور" : "Published"}</Badge></a>}
+          <div className="space-y-6">
+
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center shadow-sm">
+                  <Apple className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-black">Apple App Store</h2>
+                  <p className="text-[10px] text-black/40">دليل الرفع الكامل — Capacitor + Xcode + TestFlight</p>
+                </div>
               </div>
-              <StepCard n={1} title="توليد حزمة iOS" desc='تبويب "مولّد الحزم" → اختر iOS → توليد وتنزيل الحزمة' />
-              <StepCard n={2} title="تثبيت المتطلبات" desc="npm install && cd ios/App && pod install" />
-              <StepCard n={3} title="فتح في Xcode" desc="npx cap open ios — اضبط Bundle ID والـ Signing Team" />
-              <StepCard n={4} title="Archive وتصدير IPA" desc="Product → Archive → Distribute App → App Store Connect" />
-              <StepCard n={5} title="رفع على App Store Connect" desc="في Organizer: Upload → أكمل بيانات المتجر" link="https://appstoreconnect.apple.com" linkLabel="App Store Connect" />
+              {data.appStoreUrl
+                ? <a href={data.appStoreUrl} target="_blank" rel="noopener noreferrer"><Badge className="gap-1 bg-black text-white text-xs"><CheckCircle2 className="w-3.5 h-3.5" /> منشور على App Store</Badge></a>
+                : <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
+              }
             </div>
-            <div>
-              <p className="text-xs font-black text-black/40 mb-3">apple-app-site-association</p>
-              <CodeBlock title="apple-app-site-association" code={aasaJson} />
-              <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06]">
-                <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                  {siteUrl}/.well-known/apple-app-site-association <ExternalLink className="w-3 h-3" />
-                </a>
+
+            {/* متطلبات مسبقة */}
+            <div className="p-4 rounded-2xl border-2 border-amber-200 bg-amber-50">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-amber-800 mb-1">المتطلبات المسبقة قبل البدء</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-amber-700">
+                    {[
+                      { icon: "💻", t: "جهاز Mac", sub: "macOS 13+ (Ventura أو أحدث)" },
+                      { icon: "🍎", t: "Apple Developer Account", sub: "اشتراك $99/سنة — developer.apple.com" },
+                      { icon: "🔧", t: "Xcode 15+", sub: "من Mac App Store مجاناً" },
+                    ].map(r => (
+                      <div key={r.t} className="flex items-start gap-1.5">
+                        <span className="text-base leading-none mt-0.5">{r.icon}</span>
+                        <div><p className="font-bold">{r.t}</p><p className="text-amber-600/70">{r.sub}</p></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* === SECTION 1: TWO PATHS === */}
+            <div>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 1 — احصل على ملف IPA</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Path A: PWABuilder */}
+                <div className="p-4 rounded-2xl border-2 border-blue-200 bg-blue-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-blue-500 flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-blue-800">المسار الأسرع — PWABuilder</span>
+                    <Badge className="text-[9px] bg-blue-500 text-white mr-auto">موصى به ✓</Badge>
+                  </div>
+                  <ol className="space-y-2 text-[11px] text-blue-800">
+                    {[
+                      { n: 1, t: "افتح PWABuilder واكتب رابط موقعك", sub: "pwabuilder.com" },
+                      { n: 2, t: 'اختر "iOS" ثم اضغط Download Package', sub: "ستحصل على ZIP يحتوي مشروع Capacitor جاهز" },
+                      { n: 3, t: "افتح Terminal وشغّل:", sub: "npm install && npx cap sync ios" },
+                      { n: 4, t: "افتح في Xcode:", sub: "npx cap open ios" },
+                      { n: 5, t: "اختر Team → Product → Archive", sub: "ثم Distribute App → App Store Connect" },
+                    ].map(s => (
+                      <li key={s.n} className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-[9px] font-black text-blue-700 shrink-0 mt-0.5">{s.n}</span>
+                        <div>
+                          <span className="font-bold">{s.t}</span>
+                          {s.sub && <p className="text-blue-600/70 font-mono text-[10px] mt-0.5 break-all">{s.sub}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                  <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-blue-500 text-white text-xs font-black hover:bg-blue-600 transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" /> فتح pwabuilder.com
+                  </a>
+                </div>
+
+                {/* Path B: Capacitor Manual */}
+                <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center"><Box className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-black">المسار اليدوي — Capacitor</span>
+                  </div>
+                  <ol className="space-y-2 text-[11px] text-black/60">
+                    {[
+                      { n: 1, t: 'تبويب "مولّد الحزم" → iOS → تنزيل ZIP', sub: "" },
+                      { n: 2, t: "تثبيت المتطلبات", sub: "npm install && cd ios/App && pod install" },
+                      { n: 3, t: "فتح المشروع في Xcode", sub: "npx cap open ios" },
+                      { n: 4, t: "ضبط Bundle ID و Signing", sub: "Signing & Capabilities → Team → Automatically manage signing" },
+                      { n: 5, t: "بناء Archive ورفعه", sub: "Product → Archive → Distribute App → App Store Connect" },
+                    ].map(s => (
+                      <li key={s.n} className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full bg-black/[0.06] flex items-center justify-center text-[9px] font-black text-black/50 shrink-0 mt-0.5">{s.n}</span>
+                        <div>
+                          <span className="font-bold text-black/70">{s.t}</span>
+                          {s.sub && <p className="text-black/40 font-mono text-[10px] mt-0.5 break-all">{s.sub}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            {/* === SECTION 2: Quick Apple Credentials === */}
+            <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 2 — ادخل بيانات Apple Developer</p>
+              {hasApple ? (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-black/[0.03] border border-black/[0.08]">
+                  <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-black">تم ربط بيانات Apple ✓</p>
+                    <p className="text-[10px] text-black/50 font-mono mt-0.5">{data.appleTeamId} · {data.appleBundleId}</p>
+                  </div>
+                  <button onClick={openSettings} className="text-[10px] text-black/50 underline mr-auto shrink-0">تعديل</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-700 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>من Apple Developer Console احصل على <strong>Team ID</strong> (Account → Membership) و <strong>Bundle ID</strong> (Identifiers → App IDs) وأدخلهما هنا لتفعيل Apple Universal Links.</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-black/50 block mb-1">Team ID</label>
+                      <Input placeholder="ABCDE12345" value={quickTeamId} onChange={e => setQuickTeamId(e.target.value)} className="text-xs h-9 font-mono" dir="ltr" data-testid="input-quick-teamid" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-black/50 block mb-1">Bundle ID</label>
+                      <Input placeholder="com.qirox.studio" value={quickBundleId} onChange={e => setQuickBundleId(e.target.value)} className="text-xs h-9 font-mono" dir="ltr" data-testid="input-quick-bundleid" />
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!quickTeamId || !quickBundleId || saveMutation.isPending}
+                    data-testid="button-save-quick-apple"
+                    onClick={() => saveMutation.mutate({ ...(cfg || {}), appleTeamId: quickTeamId, appleBundleId: quickBundleId })}
+                    className="gap-2 text-xs bg-black text-white hover:bg-black/80"
+                  >
+                    {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    حفظ وتفعيل apple-app-site-association
+                  </Button>
+                </div>
+              )}
+              {hasApple && (
+                <div className="mt-3 p-2 rounded-lg bg-black/[0.02] border border-black/[0.05]">
+                  <p className="text-[10px] text-black/40 mb-1">رابط apple-app-site-association على السيرفر:</p>
+                  <a href={`${siteUrl}/.well-known/apple-app-site-association`} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-mono" dir="ltr">
+                    {siteUrl}/.well-known/apple-app-site-association <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* === SECTION 3: App Store Requirements Checklist === */}
+            <div>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 3 — متطلبات App Store Connect (اضغط لتحديد المكتمل)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { id: "dev_account", group: "الحساب", label: "Apple Developer Account نشط", sub: "اشتراك $99/سنة — developer.apple.com", link: "https://developer.apple.com/account" },
+                  { id: "app_id", group: "الحساب", label: "إنشاء App ID", sub: "Certificates → Identifiers → + → App IDs", link: "https://developer.apple.com/account/resources/identifiers/list" },
+                  { id: "app_created_asc", group: "App Store Connect", label: "إنشاء التطبيق في App Store Connect", sub: "My Apps → + → New App", link: "https://appstoreconnect.apple.com" },
+                  { id: "ipa_uploaded", group: "App Store Connect", label: "رفع ملف IPA عبر Xcode Organizer", sub: "Product → Archive → Distribute App → App Store Connect" },
+                  { id: "store_listing_ios", group: "معلومات المتجر", label: "إعداد Store Listing", sub: "اسم + وصف + كلمات مفتاحية + فئة" },
+                  { id: "screenshots_ios", group: "معلومات المتجر", label: "لقطات الشاشة", sub: "iPhone 6.9\" + iPhone 6.5\" + iPad (إذا متاح)" },
+                  { id: "privacy_policy_ios", group: "معلومات المتجر", label: "سياسة الخصوصية (مطلوبة)", sub: siteUrl + "/privacy", link: siteUrl + "/privacy" },
+                  { id: "age_rating", group: "معلومات المتجر", label: "Age Rating (استبيان)", sub: "App Information → Age Rating" },
+                  { id: "aasa_ios", group: "التقني", label: "apple-app-site-association مُفعَّل", sub: hasApple ? "✓ مفعّل على السيرفر" : "أدخل Team ID و Bundle ID أعلاه", done: hasApple },
+                  { id: "tf_build", group: "TestFlight", label: "رفع Build للاختبار عبر TestFlight", sub: "App Store Connect → TestFlight → Builds" },
+                  { id: "tf_testers", group: "TestFlight", label: "إضافة مختبرين خارجيين", sub: "TestFlight → External Testing → + Testers" },
+                  { id: "tf_approved", group: "TestFlight", label: "مراجعة Apple للـ Build (24-48 ساعة)", sub: "Apple تراجع أول Build قبل TestFlight الخارجي" },
+                  { id: "submit_review", group: "الإنتاج", label: "إرسال للمراجعة (Submit for Review)", sub: "App Store Connect → Submit for Review" },
+                  { id: "approved", group: "الإنتاج", label: "الموافقة والنشر (1-3 أيام)", sub: "Apple تراجع وتنشر التطبيق" },
+                ].map(item => {
+                  const isDone = item.done !== undefined ? item.done : !!appleChecks[item.id];
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => item.done === undefined && toggleAppleCheck(item.id)}
+                      data-testid={`apple-check-${item.id}`}
+                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-3 ${isDone ? "bg-black/[0.03] border-black/[0.12]" : "bg-white border-black/[0.08] hover:border-black/[0.16]"}`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isDone ? "bg-black border-black" : "border-black/20"}`}>
+                        {isDone && <CheckCheck className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-bold leading-tight ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
+                        <span className="text-[9px] text-black/25 block mt-0.5">{item.group}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* === SECTION 4: TestFlight Tracker === */}
+            <div className="p-5 rounded-2xl border border-black/[0.08] bg-white">
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-4">متتبع TestFlight (اختبار بيتا)</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Testers */}
+                <div className={`p-4 rounded-xl border text-center ${tfTesters > 0 ? "bg-black/[0.03] border-black/[0.1]" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className="text-3xl font-black mb-1 text-black">{tfTesters}</div>
+                  <div className="text-[10px] font-bold text-black/50">مختبر (حد أقصى 10,000)</div>
+                  <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
+                    <div className="h-full bg-black rounded-full transition-all" style={{ width: `${Math.min(100, (tfTesters / 100) * 100)}%` }} />
+                  </div>
+                </div>
+                {/* Days Active */}
+                <div className={`p-4 rounded-xl border text-center ${tfDays > 0 ? "bg-black/[0.03] border-black/[0.1]" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className="text-3xl font-black mb-1 text-black">{tfDays}</div>
+                  <div className="text-[10px] font-bold text-black/50">يوم مضى</div>
+                  <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${tfExpiry < 10 ? "bg-red-500" : "bg-blue-500"}`} style={{ width: `${Math.min(100, (tfDays / 90) * 100)}%` }} />
+                  </div>
+                </div>
+                {/* Expiry */}
+                <div className={`p-4 rounded-xl border text-center ${tfExpiry < 10 ? "bg-red-50 border-red-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${tfExpiry < 10 ? "text-red-500" : "text-black"}`}>
+                    {tfStart ? (tfExpiry > 0 ? tfExpiry : "✗") : "90"}
+                  </div>
+                  <div className="text-[10px] font-bold text-black/50">يوم متبقي (Build ينتهي بعد 90 يوم)</div>
+                  {tfExpiry < 10 && tfExpiry > 0 && <p className="text-[9px] text-red-500 font-bold mt-1">⚠ ارفع Build جديد قريباً</p>}
+                  {tfExpiry <= 0 && tfStart && <p className="text-[9px] text-red-600 font-bold mt-1">✗ انتهت صلاحية الـ Build</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-black/50 block mb-1">تاريخ رفع أول Build</label>
+                  <Input type="date" value={tfStart} onChange={e => saveTf(e.target.value, tfTesters)} className="h-9 text-sm" data-testid="input-tf-start" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-black/50 block mb-1">عدد المختبرين المشتركين</label>
+                  <Input type="number" min={0} max={10000} value={tfTesters} onChange={e => saveTf(tfStart, parseInt(e.target.value) || 0)} className="h-9 text-sm" data-testid="input-tf-testers" />
+                </div>
+              </div>
+              <div className="mt-3 p-3 rounded-xl bg-black/[0.02] border border-black/[0.06] text-[11px] text-black/50 leading-relaxed">
+                <span className="font-bold text-black/70">ملاحظة TestFlight: </span>
+                كل Build يصلح لمدة 90 يوماً فقط. المختبرون الداخليون (فريقك) يبدؤون الاختبار فوراً. المختبرون الخارجيون يحتاجون موافقة Apple (24-48 ساعة). لا حد أدنى للمختبرين للتقديم على الإنتاج.
+              </div>
+            </div>
+
+            {/* === SECTION 5: AASA File + Links === */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-black text-black/40 mb-2">ملف apple-app-site-association</p>
+                <CodeBlock title="apple-app-site-association" code={aasaJson} />
+              </div>
+              <div className="p-4 rounded-2xl border border-black/[0.08] bg-white space-y-3">
+                <p className="text-xs font-black text-black/40">روابط مهمة</p>
+                {[
+                  { label: "App Store Connect", url: "https://appstoreconnect.apple.com", color: "text-black" },
+                  { label: "Apple Developer Portal", url: "https://developer.apple.com/account", color: "text-black" },
+                  { label: "PWABuilder (توليد iOS)", url: "https://www.pwabuilder.com", color: "text-blue-600" },
+                  { label: "سياسة الخصوصية", url: siteUrl + "/privacy", color: "text-black/60" },
+                  { label: "apple-app-site-association على سيرفرك", url: siteUrl + "/.well-known/apple-app-site-association", color: "text-purple-600" },
+                ].map(link => (
+                  <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                    className={`flex items-center gap-2 text-xs font-semibold hover:underline ${link.color}`}>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" /> {link.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+
           </div>
         </TabsContent>
 
