@@ -85,6 +85,23 @@ const S = {
   badgeRed:   'display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fee2e2;color:#991b1b;',
 };
 
+function videoBanner() {
+  const { siteUrl, logoUrl } = getEmailCfg();
+  const videoUrl = `${siteUrl}/videos/email-banner.mp4`;
+  return `<tr>
+  <td style="padding:0;margin:0;line-height:0;font-size:0;background:#000000;border-radius:16px 16px 0 0;overflow:hidden;">
+    <!--[if !mso]><!-->
+    <video autoplay loop muted playsinline width="580"
+      style="display:block;width:100%;max-width:580px;height:auto;margin:0;padding:0;border:0;outline:0;">
+      <source src="${videoUrl}" type="video/mp4">
+      <img src="${logoUrl}" width="580" alt="QIROX" style="display:block;width:100%;" />
+    </video>
+    <!--<![endif]-->
+    <!--[if mso]><img src="${logoUrl}" width="580" alt="QIROX" style="display:block;width:100%;" /><![endif]-->
+  </td>
+</tr>`;
+}
+
 function baseTemplate(content: string) {
   return `<!DOCTYPE html>
 <html>
@@ -97,6 +114,7 @@ function baseTemplate(content: string) {
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 16px;">
 <tr><td align="center">
 <table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap}">
+  ${videoBanner()}
   <tr><td style="${S.header}">
     <span style="${S.logo}">QIROX</span>
   </td></tr>
@@ -159,6 +177,7 @@ export async function sendOtpEmail(to: string, name: string, otp: string): Promi
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${videoBanner()}
       <tr>
         <td style="background:#000000;padding:24px 32px;text-align:center;">
           <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
@@ -223,6 +242,7 @@ export async function sendEmailVerificationEmail(to: string, name: string, otp: 
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${videoBanner()}
       <!-- header -->
       <tr>
         <td style="background:#000000;padding:24px 32px;text-align:center;">
@@ -292,6 +312,7 @@ export async function sendLoginOtpEmail(to: string, name: string, otp: string, u
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${videoBanner()}
       <tr>
         <td style="background:#000000;padding:24px 32px;text-align:center;">
           <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
@@ -908,6 +929,7 @@ export async function sendWalletPayOtpEmail(to: string, name: string, otp: strin
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${videoBanner()}
       <tr>
         <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
           <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
@@ -967,6 +989,7 @@ export async function sendWalletTopupStatusEmail(to: string, name: string, amoun
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
+      ${videoBanner()}
       <tr>
         <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px;text-align:center;">
           <span style="color:#06b6d4;font-size:20px;font-weight:900;letter-spacing:2px;">QIROX</span>
