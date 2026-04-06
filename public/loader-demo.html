@@ -6,115 +6,191 @@
 <title>QIROX Loader Preview</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, -apple-system, sans-serif; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
-
-  .glow1 { position: absolute; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-  .glow2 { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 70%); top: calc(50% + 16px); left: calc(50% + 32px); transform: translate(-50%, -50%); pointer-events: none; }
-
-  .wrapper { position: relative; display: flex; flex-direction: column; align-items: center; gap: 32px; }
-
-  .orbit-ring { position: relative; width: 112px; height: 112px; display: flex; align-items: center; justify-content: center; }
-
-  .ring-dashed {
-    position: absolute; inset: 0; border-radius: 50%;
-    border: 1px dashed rgba(139,92,246,0.28);
-    animation: spin-cw 12s linear infinite;
-  }
-  .ring-outer {
-    position: absolute; inset: 6px; border-radius: 50%;
-    border: 2px solid transparent;
-    border-top-color: rgb(139,92,246);
-    border-right-color: rgba(139,92,246,0.35);
-    animation: spin-cw 1.4s cubic-bezier(0.5,0,0.5,1) infinite;
-  }
-  .ring-inner {
-    position: absolute; inset: 14px; border-radius: 50%;
-    border: 2px solid transparent;
-    border-bottom-color: rgb(96,165,250);
-    border-left-color: rgba(96,165,250,0.35);
-    animation: spin-ccw 1.9s cubic-bezier(0.5,0,0.5,1) infinite;
-  }
-  .orbit-dot-track {
-    position: absolute; inset: 6px; border-radius: 50%;
-    animation: spin-cw 1.4s cubic-bezier(0.5,0,0.5,1) infinite;
-  }
-  .orbit-dot {
-    position: absolute; top: -3px; left: 50%; transform: translateX(-50%);
-    width: 6px; height: 6px; border-radius: 50%;
-    background: rgb(139,92,246);
-    box-shadow: 0 0 6px rgba(139,92,246,0.6);
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8f8fb;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; overflow: hidden; position: relative;
   }
 
-  .logo-center {
-    width: 56px; height: 56px; border-radius: 18px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #2563eb 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 16px 40px -8px rgba(139,92,246,0.4), 0 4px 16px rgba(139,92,246,0.2);
-    animation: logo-pulse 2.4s ease-in-out infinite;
-  }
-  .logo-center span {
-    color: #fff; font-size: 24px; font-weight: 900; line-height: 1;
-    letter-spacing: -0.02em; user-select: none;
+  /* Dot grid */
+  .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, rgba(100,80,200,0.07) 1px, transparent 0);
+    background-size: 30px 30px;
   }
 
-  .brand-row { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-  .brand-label {
-    font-size: 9px; font-weight: 800; letter-spacing: 0.45em;
-    text-transform: uppercase; color: rgba(0,0,0,0.2); user-select: none;
-  }
-  .dots { display: flex; gap: 7px; align-items: center; }
-  .dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: rgba(139,92,246,0.5);
-    animation: bounce-dot 1.3s ease-in-out infinite;
-  }
-  .dot:nth-child(1) { animation-delay: 0s; }
-  .dot:nth-child(2) { animation-delay: 0.16s; }
-  .dot:nth-child(3) { animation-delay: 0.32s; }
-  .dot:nth-child(4) { animation-delay: 0.48s; }
-
-  @keyframes spin-cw   { from { transform: rotate(0deg); }   to { transform: rotate(360deg); } }
-  @keyframes spin-ccw  { from { transform: rotate(0deg); }   to { transform: rotate(-360deg); } }
-  @keyframes logo-pulse {
-    0%,100% { transform: scale(1); box-shadow: 0 16px 40px -8px rgba(139,92,246,0.4), 0 4px 16px rgba(139,92,246,0.2); }
-    50% { transform: scale(1.04); box-shadow: 0 20px 48px -8px rgba(139,92,246,0.5), 0 6px 20px rgba(139,92,246,0.25); }
-  }
-  @keyframes bounce-dot {
-    0%,100% { transform: translateY(0); opacity: 0.5; }
-    50% { transform: translateY(-5px); opacity: 1; }
+  /* SVG layer */
+  .svg-layer {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
   }
 
-  .label { position: absolute; bottom: 24px; font-size: 10px; color: rgba(0,0,0,0.2); letter-spacing: 0.1em; }
+  /* Central content */
+  .center {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 36px;
+  }
+
+  /* Logo wrapper */
+  .logo-wrap {
+    position: relative;
+    animation: loader-logo-fade 2.8s ease-in-out infinite;
+  }
+  .logo-glow {
+    position: absolute; inset: -32px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.13) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .logo-img {
+    position: relative;
+    width: 160px; height: auto;
+    display: block; user-select: none;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+  }
+  .progress-track {
+    width: 140px; height: 2px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 9999px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 33%;
+    background: linear-gradient(to right, transparent, #8b5cf6, transparent);
+    border-radius: 9999px;
+    animation: sweep 1.8s ease-in-out infinite;
+  }
+  .brand-text {
+    font-size: 8px; font-weight: 800;
+    letter-spacing: 0.5em; text-transform: uppercase;
+    color: rgba(0,0,0,0.15); user-select: none;
+  }
+
+  /* Animated SVG elements */
+  .line-top {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw 3.2s ease-in-out infinite;
+  }
+  .line-mid {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw2 3.2s ease-in-out infinite;
+    animation-delay: 0.8s; opacity: 0;
+  }
+  .line-bot {
+    stroke-dasharray: 700;
+    stroke-dashoffset: 700;
+    animation: dash-draw 3.2s ease-in-out infinite;
+    animation-delay: 1.4s; opacity: 0;
+  }
+  .bar-rect { animation: bar-grow 2s ease-in-out infinite; }
+
+  @keyframes dash-draw {
+    0%   { stroke-dashoffset: 700; opacity: 0; }
+    10%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes dash-draw2 {
+    0%   { stroke-dashoffset: 700; opacity: 0; }
+    15%  { opacity: 0.6; }
+    85%  { opacity: 0.6; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+  @keyframes bar-grow {
+    0%,100% { transform: scaleY(0.3); opacity: 0.3; }
+    50%     { transform: scaleY(1); opacity: 1; }
+  }
+  @keyframes loader-logo-fade {
+    0%,100% { opacity: 0.88; transform: scale(1); }
+    50%     { opacity: 1; transform: scale(1.03); }
+  }
+  @keyframes sweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
 </style>
 </head>
 <body>
-  <div class="glow1"></div>
-  <div class="glow2"></div>
+  <div class="grid-bg"></div>
 
-  <div class="wrapper">
-    <div class="orbit-ring">
-      <div class="ring-dashed"></div>
-      <div class="ring-outer"></div>
-      <div class="ring-inner"></div>
-      <div class="orbit-dot-track">
-        <div class="orbit-dot"></div>
-      </div>
-      <div class="logo-center">
-        <span>Q</span>
-      </div>
+  <svg class="svg-layer" viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lg-v" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#8b5cf6" stop-opacity="0"/>
+        <stop offset="40%"  stop-color="#8b5cf6" stop-opacity="0.7"/>
+        <stop offset="70%"  stop-color="#3b82f6" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lg-b" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#a78bfa" stop-opacity="0"/>
+        <stop offset="50%"  stop-color="#60a5fa" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lg-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%"   stop-color="#8b5cf6" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Top wave line -->
+    <path class="line-top"
+      d="M0,68 C40,50 80,82 120,58 C160,34 200,72 240,48 C280,24 320,56 360,36 C390,22 410,30 440,28"
+      fill="none" stroke="url(#lg-v)" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Middle wave line -->
+    <path class="line-mid"
+      d="M0,55 C35,72 70,38 110,60 C150,82 190,42 230,65 C270,88 310,44 350,62 C390,80 420,50 440,60"
+      fill="none" stroke="url(#lg-b)" stroke-width="1" stroke-linecap="round"/>
+
+    <!-- Bottom subtle line -->
+    <path class="line-bot"
+      d="M0,45 C50,60 90,30 140,50 C190,70 230,35 280,55 C320,72 360,40 400,58 C420,66 435,52 440,55"
+      fill="none" stroke="url(#lg-v)" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- Left bars -->
+    <rect class="bar-rect" x="14"  y="166" width="7" height="134" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:17px 300px; animation-delay:0s"/>
+    <rect class="bar-rect" x="26"  y="151" width="7" height="149" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:29px 300px; animation-delay:0.12s"/>
+    <rect class="bar-rect" x="38"  y="162" width="7" height="138" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:41px 300px; animation-delay:0.24s"/>
+    <rect class="bar-rect" x="50"  y="135" width="7" height="165" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:53px 300px; animation-delay:0.36s"/>
+    <rect class="bar-rect" x="62"  y="148" width="7" height="152" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:65px 300px; animation-delay:0.48s"/>
+    <rect class="bar-rect" x="74"  y="124" width="7" height="176" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:77px 300px; animation-delay:0.6s"/>
+    <rect class="bar-rect" x="86"  y="140" width="7" height="160" rx="2" fill="url(#lg-fill)" stroke="#8b5cf6" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:89px 300px; animation-delay:0.72s"/>
+
+    <!-- Right bars -->
+    <rect class="bar-rect" x="340" y="132" width="7" height="168" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:343px 300px; animation-delay:0.6s"/>
+    <rect class="bar-rect" x="352" y="114" width="7" height="186" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:355px 300px; animation-delay:0.72s"/>
+    <rect class="bar-rect" x="364" y="128" width="7" height="172" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:367px 300px; animation-delay:0.84s"/>
+    <rect class="bar-rect" x="376" y="109" width="7" height="191" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:379px 300px; animation-delay:0.96s"/>
+    <rect class="bar-rect" x="388" y="122" width="7" height="178" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:391px 300px; animation-delay:1.08s"/>
+    <rect class="bar-rect" x="400" y="100" width="7" height="200" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:403px 300px; animation-delay:1.2s"/>
+    <rect class="bar-rect" x="412" y="112" width="7" height="188" rx="2" fill="url(#lg-fill)" stroke="#60a5fa" stroke-width="0.6" stroke-opacity="0.5" style="transform-origin:415px 300px; animation-delay:1.32s"/>
+  </svg>
+
+  <div class="center">
+    <div class="logo-wrap">
+      <div class="logo-glow"></div>
+      <img
+        class="logo-img"
+        src="/qirox-loader-logo.png"
+        alt="QIROX"
+      />
     </div>
 
-    <div class="brand-row">
-      <span class="brand-label">QIROX</span>
-      <div class="dots">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill"></div>
       </div>
+      <span class="brand-text">QIROX</span>
     </div>
   </div>
-
-  <p class="label">Loading Screen Preview</p>
 </body>
 </html>

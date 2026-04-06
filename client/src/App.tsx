@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useState, useRef, useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
 import { SplashScreen } from "@/components/qirox-brand";
+const qiroxLoaderLogo = "/qirox-loader-logo.png";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
@@ -170,79 +171,171 @@ const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding"];
 
 function PageLoader() {
+  const LINE_PTS_TOP = "M0,68 C40,50 80,82 120,58 C160,34 200,72 240,48 C280,24 320,56 360,36 C390,22 410,30 440,28";
+  const LINE_PTS_MID = "M0,55 C35,72 70,38 110,60 C150,82 190,42 230,65 C270,88 310,44 350,62 C390,80 420,50 440,60";
+  const LINE_PTS_BOT = "M0,45 C50,60 90,30 140,50 C190,70 230,35 280,55 C320,72 360,40 400,58 C420,66 435,52 440,55";
+
+  const BAR_H = [35, 52, 40, 68, 55, 80, 48, 72, 60, 90, 75, 96];
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-950 relative overflow-hidden">
-      {/* Background ambient glow */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-80 h-80 rounded-full bg-violet-500/6 dark:bg-violet-400/8 blur-3xl" />
-        <div className="absolute w-48 h-48 rounded-full bg-blue-500/5 dark:bg-blue-400/6 blur-2xl translate-x-8 translate-y-4" />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f8fb] dark:bg-[#07070f] relative overflow-hidden">
 
-      <div className="relative flex flex-col items-center gap-8">
-        {/* Orbital logo mark */}
-        <div className="relative flex items-center justify-center w-28 h-28">
+      {/* === Dot grid background === */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(100,80,200,0.07) 1px, transparent 0)",
+          backgroundSize: "30px 30px",
+        }}
+      />
 
-          {/* Outermost slow dashed ring */}
-          <div
-            className="absolute inset-0 rounded-full border border-dashed border-violet-300/30 dark:border-violet-500/25"
-            style={{ animation: "spin 12s linear infinite" }}
-          />
-          {/* Outer spinning arc — clockwise */}
-          <div
-            className="absolute inset-[6px] rounded-full border-2 border-transparent"
+      {/* === SVG animated lines layer === */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 440 300"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="lg-v" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stopColor="#8b5cf6" stopOpacity="0" />
+            <stop offset="40%"  stopColor="#8b5cf6" stopOpacity="0.7" />
+            <stop offset="70%"  stopColor="#3b82f6" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lg-b" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stopColor="#a78bfa" stopOpacity="0" />
+            <stop offset="50%"  stopColor="#60a5fa" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="lg-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"   stopColor="#8b5cf6" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+          </linearGradient>
+
+          <style>{`
+            @keyframes dash-draw {
+              0%   { stroke-dashoffset: 700; opacity: 0; }
+              10%  { opacity: 1; }
+              80%  { opacity: 1; }
+              100% { stroke-dashoffset: 0; opacity: 0; }
+            }
+            @keyframes dash-draw2 {
+              0%   { stroke-dashoffset: 700; opacity: 0; }
+              15%  { opacity: 0.7; }
+              85%  { opacity: 0.7; }
+              100% { stroke-dashoffset: 0; opacity: 0; }
+            }
+            @keyframes bar-grow {
+              0%,100% { transform: scaleY(0.3); opacity: 0.3; }
+              50%     { transform: scaleY(1); opacity: 1; }
+            }
+            @keyframes loader-logo-fade {
+              0%,100% { opacity: 0.85; transform: scale(1); }
+              50%     { opacity: 1; transform: scale(1.03); }
+            }
+            @keyframes sweep {
+              0%   { transform: translateX(-100%); }
+              100% { transform: translateX(400%); }
+            }
+            .dark { --loader-logo-filter: brightness(0) invert(1); }
+          `}</style>
+        </defs>
+
+        {/* Top wave line */}
+        <path
+          d={LINE_PTS_TOP}
+          fill="none" stroke="url(#lg-v)" strokeWidth="1.5" strokeLinecap="round"
+          strokeDasharray="700" strokeDashoffset="700"
+          style={{ animation: "dash-draw 3.2s ease-in-out infinite" }}
+        />
+        {/* Middle wave line — offset */}
+        <path
+          d={LINE_PTS_MID}
+          fill="none" stroke="url(#lg-b)" strokeWidth="1" strokeLinecap="round"
+          strokeDasharray="700" strokeDashoffset="700"
+          style={{ animation: "dash-draw2 3.2s ease-in-out infinite", animationDelay: "0.8s", opacity: 0.5 }}
+        />
+        {/* Bottom subtle line */}
+        <path
+          d={LINE_PTS_BOT}
+          fill="none" stroke="url(#lg-v)" strokeWidth="0.8" strokeLinecap="round"
+          strokeDasharray="700" strokeDashoffset="700"
+          style={{ animation: "dash-draw 3.2s ease-in-out infinite", animationDelay: "1.4s", opacity: 0.3 }}
+        />
+
+        {/* Left bar chart */}
+        {BAR_H.slice(0, 7).map((h, i) => (
+          <rect
+            key={i}
+            x={14 + i * 12}
+            y={300 - h * 0.95}
+            width={7}
+            height={h * 0.95}
+            rx={2}
+            fill="url(#lg-fill)"
+            stroke="#8b5cf6"
+            strokeWidth="0.6"
+            strokeOpacity={0.5}
             style={{
-              borderTopColor: "rgb(139 92 246)",
-              borderRightColor: "rgba(139,92,246,0.35)",
-              animation: "spin 1.4s cubic-bezier(0.5,0,0.5,1) infinite",
+              transformOrigin: `${14 + i * 12 + 3.5}px 300px`,
+              animation: `bar-grow 2s ease-in-out infinite`,
+              animationDelay: `${i * 0.12}s`,
             }}
           />
-          {/* Inner spinning arc — counter-clockwise */}
-          <div
-            className="absolute inset-[14px] rounded-full border-2 border-transparent"
+        ))}
+
+        {/* Right bar chart */}
+        {BAR_H.slice(5).map((h, i) => (
+          <rect
+            key={i}
+            x={340 + i * 12}
+            y={300 - h * 0.9}
+            width={7}
+            height={h * 0.9}
+            rx={2}
+            fill="url(#lg-fill)"
+            stroke="#60a5fa"
+            strokeWidth="0.6"
+            strokeOpacity={0.5}
             style={{
-              borderBottomColor: "rgb(96 165 250)",
-              borderLeftColor: "rgba(96,165,250,0.35)",
-              animation: "spin 1.9s cubic-bezier(0.5,0,0.5,1) infinite reverse",
+              transformOrigin: `${340 + i * 12 + 3.5}px 300px`,
+              animation: `bar-grow 2s ease-in-out infinite`,
+              animationDelay: `${0.6 + i * 0.12}s`,
             }}
           />
-          {/* Small accent dot orbiting */}
-          <div
-            className="absolute inset-[6px] rounded-full"
-            style={{ animation: "spin 1.4s cubic-bezier(0.5,0,0.5,1) infinite" }}
-          >
-            <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50" />
-          </div>
+        ))}
+      </svg>
 
-          {/* Center logo block */}
-          <div
-            className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-violet-500 via-violet-600 to-blue-600 flex items-center justify-center shadow-2xl shadow-violet-500/30"
-            style={{ animation: "pulse 2.4s ease-in-out infinite" }}
-          >
-            <span className="text-white font-black text-2xl leading-none select-none" style={{ fontFamily: "system-ui, sans-serif", letterSpacing: "-0.02em" }}>Q</span>
-          </div>
+      {/* === Central content === */}
+      <div className="relative z-10 flex flex-col items-center gap-10">
+
+        {/* Logo */}
+        <div
+          className="relative"
+          style={{ animation: "loader-logo-fade 2.8s ease-in-out infinite" }}
+        >
+          {/* Soft glow behind logo */}
+          <div className="absolute inset-0 -m-8 rounded-full bg-violet-500/10 dark:bg-violet-400/15 blur-2xl pointer-events-none" />
+          <img
+            src={qiroxLoaderLogo}
+            alt="QIROX"
+            className="relative w-40 h-auto select-none page-loader-logo"
+            draggable={false}
+          />
         </div>
 
-        {/* Brand label + wave dots */}
-        <div className="flex flex-col items-center gap-3.5">
-          <span
-            className="text-[9px] font-extrabold tracking-[0.45em] uppercase select-none text-black/20 dark:text-white/20"
-          >
+        {/* Progress bar sweep */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-36 h-[2px] bg-black/8 dark:bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full w-1/3 bg-gradient-to-r from-transparent via-violet-500 to-transparent rounded-full"
+              style={{ animation: "sweep 1.8s ease-in-out infinite" }}
+            />
+          </div>
+          <span className="text-[8px] font-bold tracking-[0.5em] uppercase text-black/18 dark:text-white/18 select-none">
             QIROX
           </span>
-          <div className="flex gap-[7px] items-end">
-            {[0, 1, 2, 3].map(i => (
-              <div
-                key={i}
-                className="rounded-full bg-violet-400/50 dark:bg-violet-500/50"
-                style={{
-                  width: "5px",
-                  height: "5px",
-                  animation: "bounce 1.3s ease-in-out infinite",
-                  animationDelay: `${i * 0.16}s`,
-                }}
-              />
-            ))}
-          </div>
         </div>
       </div>
     </div>

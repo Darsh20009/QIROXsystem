@@ -1,5 +1,17 @@
 # Qirox Platform
 
+## Latest Changes (Apr 6, 2026) — Session 10: PageLoader Redesign
+
+### PageLoader Complete Redesign (client/src/App.tsx)
+- **Logo**: Uses the actual QIROX logo PNG (`/qirox-loader-logo.png`) — optimized from 2MB → 20KB using ImageMagick
+- **Background**: Dot grid pattern (radial-gradient, 30px spacing) on `#f8f8fb` / `#07070f` (dark mode)
+- **SVG animated lines**: 3 wavy SVG paths (top, mid, bot) with `stroke-dashoffset` draw animation via CSS keyframes (`dash-draw` / `dash-draw2`)
+- **Bar charts**: Animated bar chart groups on left and right sides with `bar-grow` scale animation (purple + blue color coded)
+- **Progress indicator**: Horizontal sweep bar + QIROX label below logo
+- **Dark mode logo**: CSS rule `.dark .page-loader-logo { filter: brightness(0) invert(1); }` in `index.css` inverts the dark logo to white
+- **Synchronous theme init**: Added inline `<script>` to `client/index.html` that sets `.dark` class synchronously from localStorage before React loads (eliminates flash-of-wrong-theme)
+- **Logo optimized**: Created `/public/qirox-loader-logo.png` (20KB) served directly as a static file — avoids Vite bundling a 2MB asset
+
 ## Latest Changes (Apr 5, 2026) — Session 9 Bug Fixes
 
 ### Critical Bug Fix: Wallet URL Inconsistency

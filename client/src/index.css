@@ -1257,3 +1257,8 @@
     @apply bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.07];
   }
 }
+
+/* PageLoader logo — dark mode invert (applied via class, works independently of React render timing) */
+.dark .page-loader-logo {
+  filter: brightness(0) invert(1);
+}
