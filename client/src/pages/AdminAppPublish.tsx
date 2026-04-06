@@ -13,7 +13,8 @@ import {
   CheckCircle2, Circle, Copy, Download, ExternalLink, Smartphone,
   Store, Settings, Shield, Globe, Cpu, Apple, RefreshCw,
   Loader2, Save, Package, Zap, Layers, FileArchive, Play, Monitor,
-  ChevronRight, Info, AlertTriangle, CheckCheck, Box, Hash, Clock, Trash2
+  ChevronRight, Info, AlertTriangle, CheckCheck, Box, Hash, Clock, Trash2,
+  CreditCard, Wallet
 } from "lucide-react";
 
 // ─── JSZip import ───────────────────────────────────────────
@@ -1187,6 +1188,31 @@ export default function AdminAppPublish() {
   const [quickTeamId, setQuickTeamId] = useState("");
   const [quickBundleId, setQuickBundleId] = useState("");
 
+  // ─── Apple Pay Checklist ──────────────────────────────────
+  const [applePayChecks, setApplePayChecks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("qirox_applepay_checks") || "{}"); } catch { return {}; }
+  });
+  const toggleApplePayCheck = (id: string) => {
+    const next = { ...applePayChecks, [id]: !applePayChecks[id] };
+    setApplePayChecks(next); localStorage.setItem("qirox_applepay_checks", JSON.stringify(next));
+  };
+  const applePaySteps = [
+    "merchant_id", "domain_verify", "cert_csr", "cert_upload",
+    "entitlement", "stripe_applepay", "test_sandbox", "go_live",
+  ];
+  const applePayDone = applePaySteps.filter(s => applePayChecks[s]).length;
+
+  // ─── QPAY Wallet Checklist ────────────────────────────────
+  const [qpayChecks, setQpayChecks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("qirox_qpay_checks") || "{}"); } catch { return {}; }
+  });
+  const toggleQpayCheck = (id: string) => {
+    const next = { ...qpayChecks, [id]: !qpayChecks[id] };
+    setQpayChecks(next); localStorage.setItem("qirox_qpay_checks", JSON.stringify(next));
+  };
+  const qpaySteps = ["pass_cert", "pass_type_id", "template_design", "pass_server", "sign_pass", "api_endpoint", "test_add", "push_update"];
+  const qpayDone = qpaySteps.filter(s => qpayChecks[s]).length;
+
   const data = form || cfg || {};
   const f = (k: string, v: string) => setForm((prev: any) => ({ ...(prev || cfg || {}), [k]: v }));
   const openSettings = () => { setForm({ ...(cfg || {}) }); setSettingsOpen(true); };
@@ -2249,7 +2275,175 @@ export default function AdminAppPublish() {
               </div>
             </div>
 
-            {/* === SECTION 5: AASA File + Links === */}
+            {/* === SECTION 5: Apple Pay Setup === */}
+            <div className="p-5 rounded-2xl border-2 border-black/[0.09] bg-white">
+              {/* Header + progress */}
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center">
+                    <CreditCard className="w-4.5 h-4.5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-black">Apple Pay — تفعيل الدفع</p>
+                    <p className="text-[10px] text-black/40">اجعل عملاءك يدفعون بلمسة واحدة على iPhone</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+                    <span className="text-white text-xs font-black">{applePayDone}/{applePaySteps.length}</span>
+                  </div>
+                  <div className="w-32">
+                    <div className="w-full h-2 rounded-full bg-black/[0.07] overflow-hidden">
+                      <div className="h-full bg-black rounded-full transition-all" style={{ width: `${(applePayDone / applePaySteps.length) * 100}%` }} />
+                    </div>
+                    <p className="text-[9px] text-black/40 mt-1 text-center">{Math.round((applePayDone / applePaySteps.length) * 100)}% مكتمل</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Architecture note */}
+              <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-[11px] text-blue-800 mb-4 flex items-start gap-2">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">كيف يعمل Apple Pay في تطبيقك؟ </span>
+                  عملاؤك يضغطون <strong>Pay with Apple Pay</strong> → يتحقق Apple من هويتهم بـ Face ID/Touch ID → المبلغ يُخصم من بطاقتهم المرتبطة بـ Apple Wallet → يصل لحسابك عبر Stripe أو بوابة الدفع.
+                </div>
+              </div>
+
+              {/* Checklist */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
+                {[
+                  { id: "merchant_id", phase: "Apple Developer", label: "إنشاء Merchant ID", sub: "Certificates → Identifiers → Merchant IDs → +", link: "https://developer.apple.com/account/resources/identifiers/list/merchant" },
+                  { id: "domain_verify", phase: "Apple Developer", label: "التحقق من النطاق (Domain Verification)", sub: `رفع ملف التحقق على: ${siteUrl}/.well-known/apple-developer-merchantid-domain-association` },
+                  { id: "cert_csr", phase: "Apple Developer", label: "توليد CSR للشهادة", sub: "Keychain Access → Certificate Assistant → Request a Certificate From a Certificate Authority" },
+                  { id: "cert_upload", phase: "Apple Developer", label: "رفع CSR واستلام شهادة Apple Pay", sub: "Merchant ID → Create Certificate → رفع CSR → تنزيل .cer" },
+                  { id: "entitlement", phase: "Xcode", label: "إضافة Apple Pay Entitlement في Xcode", sub: "Signing & Capabilities → + Capability → Apple Pay → أضف Merchant ID" },
+                  { id: "stripe_applepay", phase: "Backend", label: "تفعيل Apple Pay في Stripe/بوابة الدفع", sub: "Stripe Dashboard → Settings → Payment Methods → Apple Pay → Enable" },
+                  { id: "test_sandbox", phase: "الاختبار", label: "اختبار في Sandbox", sub: "Settings → Developer → Sandbox Apple ID → إضافة بطاقة اختبار → جرّب الدفع" },
+                  { id: "go_live", phase: "الإنتاج", label: "التحقق النهائي ونشر التطبيق", sub: "Apple تراجع Entitlement تلقائياً عند المراجعة — لا حاجة لموافقة إضافية" },
+                ].map(item => {
+                  const isDone = !!applePayChecks[item.id];
+                  return (
+                    <button key={item.id} onClick={() => toggleApplePayCheck(item.id)} data-testid={`applepay-check-${item.id}`}
+                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-2.5 ${isDone ? "bg-black/[0.03] border-black/[0.12]" : "bg-white border-black/[0.08] hover:border-black/[0.18]"}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isDone ? "bg-black border-black" : "border-black/20"}`}>
+                        {isDone && <CheckCheck className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-bold ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5 leading-tight break-all">{item.sub}</p>
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.replace("https://", "")}</a>}
+                        <span className="text-[9px] text-black/25 block mt-0.5">{item.phase}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {applePayDone === applePaySteps.length && (
+                <div className="p-3 rounded-xl bg-black text-white text-center">
+                  <p className="text-sm font-black">🎉 Apple Pay جاهز للعملاء!</p>
+                  <p className="text-[11px] text-white/60 mt-1">عملاؤك يمكنهم الآن الدفع بـ Face ID / Touch ID في تطبيقك</p>
+                </div>
+              )}
+            </div>
+
+            {/* === SECTION 6: QPAY Apple Wallet === */}
+            <div className="p-5 rounded-2xl border-2 border-black/[0.09] bg-white">
+              {/* Header + progress */}
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-black to-black/70 flex items-center justify-center">
+                    <Wallet className="w-4.5 h-4.5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-black">QPAY Card → Apple Wallet</p>
+                    <p className="text-[10px] text-black/40">يضيف العميل بطاقته في محفظة iPhone مباشرة</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
+                    <span className="text-white text-xs font-black">{qpayDone}/{qpaySteps.length}</span>
+                  </div>
+                  <div className="w-32">
+                    <div className="w-full h-2 rounded-full bg-black/[0.07] overflow-hidden">
+                      <div className="h-full bg-black rounded-full transition-all" style={{ width: `${(qpayDone / qpaySteps.length) * 100}%` }} />
+                    </div>
+                    <p className="text-[9px] text-black/40 mt-1 text-center">{Math.round((qpayDone / qpaySteps.length) * 100)}% مكتمل</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* How it works */}
+              <div className="p-3 rounded-xl bg-black/[0.03] border border-black/[0.07] mb-4">
+                <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mb-2">كيف يعمل QPAY Wallet Pass؟</p>
+                <div className="flex items-center gap-0 overflow-x-auto">
+                  {[
+                    { step: "العميل", desc: 'يضغط\n"أضف إلى Wallet"' },
+                    { step: "سيرفر QIROX", desc: "يولّد ملف\n.pkpass موقّع" },
+                    { step: "iPhone", desc: "يفتح Apple\nWallet تلقائياً" },
+                    { step: "البطاقة", desc: "تظهر في\nمحفظة العميل" },
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-center gap-0 shrink-0">
+                      <div className="text-center px-2">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mx-auto mb-1">
+                          <span className="text-white text-[10px] font-black">{i + 1}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-black">{s.step}</p>
+                        <p className="text-[9px] text-black/40 whitespace-pre-line">{s.desc}</p>
+                      </div>
+                      {i < 3 && <ChevronRight className="w-4 h-4 text-black/20 shrink-0" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Checklist */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-4">
+                {[
+                  { id: "pass_cert", phase: "Apple Developer", label: "إنشاء Pass Type ID", sub: "Certificates → Identifiers → Pass Type IDs → + (مثال: pass.online.qiroxstudio.qpay)", link: "https://developer.apple.com/account/resources/identifiers/list/passTypeId" },
+                  { id: "pass_type_id", phase: "Apple Developer", label: "إنشاء وتنزيل شهادة PassKit (.p12)", sub: "Pass Type ID → Create Certificate → رفع CSR → تنزيل .cer → تصديره كـ .p12 من Keychain" },
+                  { id: "template_design", phase: "التصميم", label: "تصميم قالب البطاقة", sub: 'نوع البطاقة: storeCard — يحتوي اسم العميل + رصيد QPAY + باركود QR + شعار QIROX' },
+                  { id: "pass_server", phase: "Backend", label: "إعداد Pass Generation Server", sub: "مكتبة: passkit-generator (Node.js) — يولّد ملف .pkpass مخصص لكل عميل" },
+                  { id: "sign_pass", phase: "Backend", label: "توقيع الـ Pass بشهادة Apple", sub: "passkit-generator.createNewPass({...}) → sign با .p12 → ملف .pkpass جاهز" },
+                  { id: "api_endpoint", phase: "Backend", label: "إضافة API لتوليد وتحميل الـ Pass", sub: "GET /api/wallet/qpay-pass → يُرجع .pkpass → المتصفح يفتح Wallet تلقائياً" },
+                  { id: "test_add", phase: "الاختبار", label: "اختبار الإضافة على iPhone حقيقي", sub: "فتح الرابط من Safari iOS → 'Add to Apple Wallet' يظهر تلقائياً" },
+                  { id: "push_update", phase: "التحديثات", label: "Push Updates — تحديث الرصيد تلقائياً", sub: "عند تغير رصيد QPAY → السيرفر يرسل push لـ Apple → البطاقة تتحدث بدون تدخل العميل" },
+                ].map(item => {
+                  const isDone = !!qpayChecks[item.id];
+                  return (
+                    <button key={item.id} onClick={() => toggleQpayCheck(item.id)} data-testid={`qpay-check-${item.id}`}
+                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-2.5 ${isDone ? "bg-black/[0.03] border-black/[0.12]" : "bg-white border-black/[0.08] hover:border-black/[0.18]"}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${isDone ? "bg-black border-black" : "border-black/20"}`}>
+                        {isDone && <CheckCheck className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-bold ${isDone ? "text-black/40 line-through" : "text-black"}`}>{item.label}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.replace("https://", "")}</a>}
+                        <span className="text-[9px] text-black/25 block mt-0.5">{item.phase}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Tech summary */}
+              <div className="p-3 rounded-xl bg-black/[0.02] border border-black/[0.06] text-[11px] text-black/50 leading-relaxed">
+                <span className="font-bold text-black/70">المكتبة المقترحة: </span>
+                <code className="font-mono text-[10px] bg-black/[0.06] px-1 rounded">passkit-generator</code> على Node.js — تدعم storeCard, generic, coupon, boardingPass, eventTicket.
+                الملف النهائي <code className="font-mono text-[10px] bg-black/[0.06] px-1 rounded">.pkpass</code> هو ZIP مضغوط يحتوي: <code className="font-mono text-[10px] bg-black/[0.06] px-1 rounded">pass.json + icon.png + logo.png + signature + manifest.json</code>
+              </div>
+
+              {qpayDone === qpaySteps.length && (
+                <div className="mt-3 p-3 rounded-xl bg-black text-white text-center">
+                  <p className="text-sm font-black">🎉 QPAY Wallet جاهز!</p>
+                  <p className="text-[11px] text-white/60 mt-1">عملاؤك يمكنهم الآن إضافة بطاقة QPAY لـ Apple Wallet</p>
+                </div>
+              )}
+            </div>
+
+            {/* === SECTION 7: AASA File + Links === */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs font-black text-black/40 mb-2">ملف apple-app-site-association</p>
@@ -2260,9 +2454,10 @@ export default function AdminAppPublish() {
                 {[
                   { label: "App Store Connect", url: "https://appstoreconnect.apple.com", color: "text-black" },
                   { label: "Apple Developer Portal", url: "https://developer.apple.com/account", color: "text-black" },
+                  { label: "Apple Pay Setup Guide", url: "https://developer.apple.com/apple-pay/implementation", color: "text-green-700" },
+                  { label: "PassKit Identifiers", url: "https://developer.apple.com/account/resources/identifiers/list/passTypeId", color: "text-purple-600" },
                   { label: "PWABuilder (توليد iOS)", url: "https://www.pwabuilder.com", color: "text-blue-600" },
                   { label: "سياسة الخصوصية", url: siteUrl + "/privacy", color: "text-black/60" },
-                  { label: "apple-app-site-association على سيرفرك", url: siteUrl + "/.well-known/apple-app-site-association", color: "text-purple-600" },
                 ].map(link => (
                   <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
                     className={`flex items-center gap-2 text-xs font-semibold hover:underline ${link.color}`}>
