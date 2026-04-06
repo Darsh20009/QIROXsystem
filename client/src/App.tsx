@@ -5,7 +5,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useState, useRef, useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
-import { SplashScreen } from "@/components/qirox-brand";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
@@ -169,204 +168,10 @@ const ClientQuotations = lazy(() => import("@/pages/ClientQuotations"));
 const QuotationPrint = lazy(() => import("@/pages/QuotationPrint"));
 const publicRoutes = ["/", "/about", "/prices", "/customers", "/news", "/jobs", "/join", "/contact", "/privacy", "/terms", "/segments", "/login", "/register", "/employee/register-secret", "/order", "/internal-gate", "/devices", "/forgot-password", "/verify-email", "/developers", "/partners", "/consultation", "/systems", "/clients-group", "/barcode-studio", "/switch-reminder", "/demos", "/embed", "/paymob-onboarding"];
 
-function PageLoader() {
-  const LINE_PTS_TOP = "M0,68 C40,50 80,82 120,58 C160,34 200,72 240,48 C280,24 320,56 360,36 C390,22 410,30 440,28";
-  const LINE_PTS_MID = "M0,55 C35,72 70,38 110,60 C150,82 190,42 230,65 C270,88 310,44 350,62 C390,80 420,50 440,60";
-  const LINE_PTS_BOT = "M0,45 C50,60 90,30 140,50 C190,70 230,35 280,55 C320,72 360,40 400,58 C420,66 435,52 440,55";
-
-  const BAR_H = [35, 52, 40, 68, 55, 80, 48, 72, 60, 90, 75, 96];
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] relative overflow-hidden">
-
-      {/* === Dot grid background === */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(100,80,200,0.07) 1px, transparent 0)",
-          backgroundSize: "30px 30px",
-        }}
-      />
-
-      {/* === SVG animated lines layer === */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 440 300"
-        preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="lg-v" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="#8b5cf6" stopOpacity="0" />
-            <stop offset="40%"  stopColor="#8b5cf6" stopOpacity="0.7" />
-            <stop offset="70%"  stopColor="#3b82f6" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="lg-b" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="#a78bfa" stopOpacity="0" />
-            <stop offset="50%"  stopColor="#60a5fa" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="lg-fill" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%"   stopColor="#8b5cf6" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-          </linearGradient>
-
-          <style>{`
-            @keyframes dash-draw {
-              0%   { stroke-dashoffset: 700; opacity: 0; }
-              10%  { opacity: 1; }
-              80%  { opacity: 1; }
-              100% { stroke-dashoffset: 0; opacity: 0; }
-            }
-            @keyframes dash-draw2 {
-              0%   { stroke-dashoffset: 700; opacity: 0; }
-              15%  { opacity: 0.7; }
-              85%  { opacity: 0.7; }
-              100% { stroke-dashoffset: 0; opacity: 0; }
-            }
-            @keyframes bar-grow {
-              0%,100% { transform: scaleY(0.3); opacity: 0.3; }
-              50%     { transform: scaleY(1); opacity: 1; }
-            }
-            @keyframes loader-logo-fade {
-              0%,100% { opacity: 0.85; transform: scale(1); }
-              50%     { opacity: 1; transform: scale(1.03); }
-            }
-            @keyframes sweep {
-              0%   { transform: translateX(-100%); }
-              100% { transform: translateX(400%); }
-            }
-          `}</style>
-        </defs>
-
-        {/* Top wave line */}
-        <path
-          d={LINE_PTS_TOP}
-          fill="none" stroke="url(#lg-v)" strokeWidth="1.5" strokeLinecap="round"
-          strokeDasharray="700" strokeDashoffset="700"
-          style={{ animation: "dash-draw 3.2s ease-in-out infinite" }}
-        />
-        {/* Middle wave line — offset */}
-        <path
-          d={LINE_PTS_MID}
-          fill="none" stroke="url(#lg-b)" strokeWidth="1" strokeLinecap="round"
-          strokeDasharray="700" strokeDashoffset="700"
-          style={{ animation: "dash-draw2 3.2s ease-in-out infinite", animationDelay: "0.8s", opacity: 0.5 }}
-        />
-        {/* Bottom subtle line */}
-        <path
-          d={LINE_PTS_BOT}
-          fill="none" stroke="url(#lg-v)" strokeWidth="0.8" strokeLinecap="round"
-          strokeDasharray="700" strokeDashoffset="700"
-          style={{ animation: "dash-draw 3.2s ease-in-out infinite", animationDelay: "1.4s", opacity: 0.3 }}
-        />
-
-        {/* Left bar chart */}
-        {BAR_H.slice(0, 7).map((h, i) => (
-          <rect
-            key={i}
-            x={14 + i * 12}
-            y={300 - h * 0.95}
-            width={7}
-            height={h * 0.95}
-            rx={2}
-            fill="url(#lg-fill)"
-            stroke="#8b5cf6"
-            strokeWidth="0.6"
-            strokeOpacity={0.5}
-            style={{
-              transformOrigin: `${14 + i * 12 + 3.5}px 300px`,
-              animation: `bar-grow 2s ease-in-out infinite`,
-              animationDelay: `${i * 0.12}s`,
-            }}
-          />
-        ))}
-
-        {/* Right bar chart */}
-        {BAR_H.slice(5).map((h, i) => (
-          <rect
-            key={i}
-            x={340 + i * 12}
-            y={300 - h * 0.9}
-            width={7}
-            height={h * 0.9}
-            rx={2}
-            fill="url(#lg-fill)"
-            stroke="#60a5fa"
-            strokeWidth="0.6"
-            strokeOpacity={0.5}
-            style={{
-              transformOrigin: `${340 + i * 12 + 3.5}px 300px`,
-              animation: `bar-grow 2s ease-in-out infinite`,
-              animationDelay: `${0.6 + i * 0.12}s`,
-            }}
-          />
-        ))}
-      </svg>
-
-      {/* === Central content === */}
-      <div className="relative z-10 flex flex-col items-center gap-10">
-
-        {/* Logo */}
-        <div
-          className="relative"
-          style={{ animation: "loader-logo-fade 2.8s ease-in-out infinite" }}
-        >
-          {/* Soft glow behind logo */}
-          <div className="absolute inset-0 -m-10 rounded-full bg-violet-500/15 dark:bg-violet-400/20 blur-3xl pointer-events-none" />
-          {/* QIROX inline SVG logo — hardcoded white for dark loader bg */}
-          <svg
-            viewBox="0 0 220 70"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            width="208"
-            height="66"
-            className="relative select-none"
-            aria-label="QIROX"
-            draggable={false}
-          >
-            {/* Q */}
-            <circle cx="22" cy="26" r="14" stroke="white" strokeWidth="3.5" />
-            <line x1="32" y1="36" x2="42" y2="46" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-            {/* I */}
-            <rect x="52" y="12" width="4" height="28" rx="2" fill="white" />
-            {/* R */}
-            <rect x="64" y="12" width="4" height="28" rx="2" fill="white" />
-            <path d="M68 12 Q82 12 82 20 Q82 28 68 28" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            <line x1="70" y1="28" x2="83" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-            {/* O */}
-            <ellipse cx="101" cy="26" rx="11" ry="14" stroke="white" strokeWidth="3.5" />
-            {/* X */}
-            <line x1="118" y1="12" x2="136" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-            <line x1="136" y1="12" x2="118" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-            {/* Purple accent dot */}
-            <circle cx="142" cy="12" r="3.5" fill="#8b5cf6" />
-            {/* Tagline */}
-            <text x="2" y="62" fontFamily="system-ui,-apple-system,sans-serif" fontSize="7" fill="white" fillOpacity="0.45" letterSpacing="4">BUSINESS PLATFORM</text>
-          </svg>
-        </div>
-
-        {/* Progress bar sweep */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-36 h-[2px] bg-black/8 dark:bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full w-1/3 bg-gradient-to-r from-transparent via-violet-500 to-transparent rounded-full"
-              style={{ animation: "sweep 1.8s ease-in-out infinite" }}
-            />
-          </div>
-          <span className="text-[8px] font-bold tracking-[0.5em] uppercase text-black/18 dark:text-white/18 select-none">
-            QIROX
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function PublicRouter() {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
@@ -407,7 +212,7 @@ function PublicRouter() {
 
 function AdminRouter() {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={null}>
       <Switch>
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/onboarding" component={ClientOnboarding} />
@@ -946,16 +751,8 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
   }
 }
 
-const SPLASH_KEY = "qirox_splash_v1";
 
 function AppInner() {
-  const [showSplash, setShowSplash] = useState(() => {
-    try {
-      return !sessionStorage.getItem(SPLASH_KEY);
-    } catch {
-      return true;
-    }
-  });
   const [location, navigate] = useLocation();
   const isFullBleed = location === "/cs-chat" || location === "/ai-studio" || location === "/auth/push-approve" || location === "/admin/stores" || location.startsWith("/project/") && location.endsWith("/workspace");
   const { data: user, isLoading: userLoading } = useUser();
@@ -987,21 +784,10 @@ function AppInner() {
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, []);
 
-  if (showSplash) {
-    return (
-      <SplashScreen
-        onComplete={() => {
-          try { sessionStorage.setItem(SPLASH_KEY, "1"); } catch {}
-          setShowSplash(false);
-        }}
-      />
-    );
-  }
-
   if (location.startsWith("/meet/") || location === "/meet/join") {
     return (
       <PageErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={null}>
           <Switch>
             <Route path="/meet/join" component={QMeetJoinByCode} />
             <Route path="/meet/:roomId" component={MeetingRoom} />
