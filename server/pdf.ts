@@ -1,7 +1,10 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
+import * as fontkitModule from "@pdf-lib/fontkit";
 import * as fs from "fs";
 import * as path from "path";
+
+/* @pdf-lib/fontkit is a CJS module with no default export — grab the module object */
+const fontkit = (fontkitModule as any).default ?? fontkitModule;
 
 interface QuotationData {
   quotationNumber: string;
