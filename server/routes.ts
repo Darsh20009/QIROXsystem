@@ -6546,12 +6546,43 @@ export async function registerRoutes(
     const { QuotationModel } = await import("./models");
     const quotation = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
     if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
+
+    const { externalEmail, externalName, companyName } = req.body || {};
+
     const client = quotation.userId as any;
-    if (!client?.email) return res.status(400).json({ error: "البريد الإلكتروني للعميل غير موجود" });
+    const targetEmail: string = externalEmail?.trim() || client?.email;
+    const targetName: string = externalName?.trim() || client?.fullName || client?.username || "العميل";
+
+    if (!targetEmail) return res.status(400).json({ error: "البريد الإلكتروني غير موجود" });
+
     const { sendQuotationEmail } = await import("./email");
+    const { generateQuotationPdf } = await import("./pdf");
     const siteUrl = process.env.EMAIL_SITE_URL || "https://qiroxstudio.online";
-    const link = `${siteUrl}/client/quotations/${(quotation as any)._id}`;
-    const ok = await sendQuotationEmail(client.email, client.fullName || client.username, {
+
+    const isRegistered = !!client?.email && !externalEmail;
+    const link = isRegistered ? `${siteUrl}/client/quotations/${(quotation as any)._id}` : undefined;
+
+    let pdfBytes: Uint8Array | undefined;
+    try {
+      pdfBytes = await generateQuotationPdf({
+        quotationNumber: quotation.quotationNumber,
+        title: (quotation as any).title,
+        clientName: companyName ? `${targetName} — ${companyName}` : targetName,
+        clientEmail: targetEmail,
+        totalAmount: (quotation as any).totalAmount,
+        vatRate: (quotation as any).vatRate,
+        vatAmount: (quotation as any).vatAmount,
+        amount: (quotation as any).amount,
+        validUntil: (quotation as any).validUntil,
+        items: (quotation as any).items,
+        notes: (quotation as any).notes,
+        createdAt: (quotation as any).createdAt,
+      });
+    } catch (pdfErr) {
+      console.error("[PDF] generation error:", pdfErr);
+    }
+
+    const ok = await sendQuotationEmail(targetEmail, targetName, {
       quotationNumber: quotation.quotationNumber,
       title: (quotation as any).title,
       totalAmount: (quotation as any).totalAmount,
@@ -6560,10 +6591,11 @@ export async function registerRoutes(
       items: (quotation as any).items,
       notes: (quotation as any).notes,
       link,
+      pdfBytes,
     });
     if (!ok) return res.status(500).json({ error: "فشل إرسال البريد" });
     await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status: "sent" } });
-    res.json({ ok: true, message: "تم إرسال العرض بنجاح" });
+    res.json({ ok: true, message: `تم إرسال العرض إلى ${targetEmail}` });
   });
 
   app.post("/api/quotations/:id/status", async (req, res) => {

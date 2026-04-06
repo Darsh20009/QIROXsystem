@@ -198,6 +198,16 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+interface SendEmailState {
+  quotationId: string;
+  clientEmail?: string;
+  clientName?: string;
+  useExternal: boolean;
+  externalEmail: string;
+  externalName: string;
+  companyName: string;
+}
+
 export default function AdminQuotations() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -207,17 +217,25 @@ export default function AdminQuotations() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [emailDialog, setEmailDialog] = useState<SendEmailState | null>(null);
 
   const { data: quotations, isLoading } = useQuery<Quotation[]>({ queryKey: ["/api/quotations"] });
 
   const emailMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await apiRequest("POST", `/api/quotations/${id}/send-email`, {});
+    mutationFn: async (state: SendEmailState) => {
+      const body: Record<string, string> = {};
+      if (state.useExternal) {
+        if (state.externalEmail) body.externalEmail = state.externalEmail;
+        if (state.externalName) body.externalName = state.externalName;
+        if (state.companyName) body.companyName = state.companyName;
+      }
+      const r = await apiRequest("POST", `/api/quotations/${state.quotationId}/send-email`, body);
       return r.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/quotations"] });
-      toast({ title: L ? "تم إرسال العرض بالبريد ✅" : "Quotation emailed ✅" });
+      setEmailDialog(null);
+      toast({ title: data?.message || (L ? "تم إرسال العرض بالبريد ✅" : "Quotation emailed ✅") });
     },
     onError: () => toast({ title: L ? "فشل إرسال البريد" : "Email failed", variant: "destructive" }),
   });
@@ -344,8 +362,15 @@ export default function AdminQuotations() {
                     )}
                     <Button size="sm" variant="outline"
                       className="h-8 text-xs gap-1 border-black/[0.12]"
-                      onClick={() => emailMutation.mutate(q.id)}
-                      disabled={emailMutation.isPending}
+                      onClick={() => setEmailDialog({
+                        quotationId: q.id,
+                        clientEmail: client?.email,
+                        clientName: client?.fullName || client?.username,
+                        useExternal: !client?.email,
+                        externalEmail: "",
+                        externalName: "",
+                        companyName: "",
+                      })}
                       data-testid={`button-email-quotation-${q.id}`}>
                       <Mail className="w-3 h-3" /> {L ? "إرسال" : "Email"}
                     </Button>
@@ -369,6 +394,101 @@ export default function AdminQuotations() {
           </div>
         )}
       </div>
+
+      {/* Send Email Dialog */}
+      <Dialog open={!!emailDialog} onOpenChange={(v) => { if (!v) setEmailDialog(null); }}>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              {L ? "إرسال عرض السعر بالبريد" : "Send Quotation by Email"}
+            </DialogTitle>
+          </DialogHeader>
+          {emailDialog && (
+            <div className="space-y-4 pt-2">
+              {emailDialog.clientEmail && (
+                <div className="space-y-2">
+                  <p className="text-xs text-black/50">{L ? "الإرسال إلى:" : "Sending to:"}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEmailDialog(s => s ? { ...s, useExternal: false } : s)}
+                      className={`flex-1 text-xs rounded-lg border px-3 py-2 text-right transition-colors ${!emailDialog.useExternal ? "border-black bg-black text-white" : "border-black/10 text-black/60 hover:border-black/20"}`}
+                      data-testid="button-send-to-client">
+                      <div className="font-bold">{emailDialog.clientName || "—"}</div>
+                      <div className="opacity-70">{emailDialog.clientEmail}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEmailDialog(s => s ? { ...s, useExternal: true } : s)}
+                      className={`flex-1 text-xs rounded-lg border px-3 py-2 text-right transition-colors ${emailDialog.useExternal ? "border-black bg-black text-white" : "border-black/10 text-black/60 hover:border-black/20"}`}
+                      data-testid="button-send-to-external">
+                      <div className="font-bold">{L ? "بريد آخر" : "Other Email"}</div>
+                      <div className="opacity-70">{L ? "عميل خارجي" : "External recipient"}</div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {emailDialog.useExternal && (
+                <div className="space-y-3 pt-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">{L ? "الاسم" : "Name"} *</Label>
+                    <Input
+                      placeholder={L ? "اسم المستلم" : "Recipient name"}
+                      value={emailDialog.externalName}
+                      onChange={e => setEmailDialog(s => s ? { ...s, externalName: e.target.value } : s)}
+                      className="h-9 text-sm border-black/10"
+                      data-testid="input-external-name"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">{L ? "البريد الإلكتروني" : "Email"} *</Label>
+                    <Input
+                      type="email"
+                      placeholder="example@company.com"
+                      value={emailDialog.externalEmail}
+                      onChange={e => setEmailDialog(s => s ? { ...s, externalEmail: e.target.value } : s)}
+                      className="h-9 text-sm border-black/10"
+                      data-testid="input-external-email"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold">{L ? "اسم الشركة (اختياري)" : "Company (optional)"}</Label>
+                    <Input
+                      placeholder={L ? "اسم الشركة أو المنشأة" : "Company name"}
+                      value={emailDialog.companyName}
+                      onChange={e => setEmailDialog(s => s ? { ...s, companyName: e.target.value } : s)}
+                      className="h-9 text-sm border-black/10"
+                      data-testid="input-company-name"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-black/[0.03] rounded-lg px-3 py-2 text-xs text-black/50 flex items-start gap-2">
+                <span>📎</span>
+                <span>{L ? "سيتم إرفاق ملف PDF للعرض تلقائياً مع البريد الإلكتروني." : "A PDF of the quotation will be automatically attached to the email."}</span>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  className="flex-1 bg-black text-white h-9 text-sm gap-2"
+                  disabled={emailMutation.isPending || (emailDialog.useExternal && (!emailDialog.externalEmail || !emailDialog.externalName))}
+                  onClick={() => emailMutation.mutate(emailDialog)}
+                  data-testid="button-confirm-send-email">
+                  {emailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {L ? "إرسال الآن" : "Send Now"}
+                </Button>
+                <Button variant="outline" className="h-9 border-black/10" onClick={() => setEmailDialog(null)}
+                  data-testid="button-cancel-email">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

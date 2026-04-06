@@ -19,7 +19,13 @@ function cleanName(name: string): string {
   return name;
 }
 
-async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string): Promise<boolean> {
+interface EmailAttachment {
+  filename: string;
+  fileblob: string;
+  mimetype: string;
+}
+
+async function sendEmail(to: string, toName: string, subject: string, htmlBody: string, textBody?: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const cfg = getEmailCfg();
   try {
     const payload: Record<string, any> = {
@@ -30,6 +36,9 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
       html_body: htmlBody,
       text_body: textBody || stripHtml(htmlBody),
     };
+    if (attachments && attachments.length > 0) {
+      payload.attachments = attachments;
+    }
     const res = await fetch(BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -685,7 +694,7 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
   quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string; link: string;
+  notes?: string; link?: string; pdfBytes?: Uint8Array;
 }): Promise<boolean> {
   const itemsHtml = quotation.items && quotation.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
@@ -711,6 +720,13 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
   if (quotation.validUntil) rows.push(["صالح حتى", new Date(quotation.validUntil).toLocaleDateString('ar-SA')]);
   if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
   rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
+
+  const hasPdf = !!quotation.pdfBytes;
+  const pdfNote = hasPdf
+    ? text(`<span style="font-size:13px;color:#666;">📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF يمكنك فتحه وطباعته مباشرةً.</span>`)
+    : "";
+  const linkBtn = quotation.link ? btn(quotation.link, "عرض التفاصيل والرد على العرض") : "";
+
   const html = baseTemplate(
     tag("عرض سعر") +
     title(`عرض سعر رقم ${quotation.quotationNumber}`) +
@@ -718,9 +734,17 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     infoTable(rows) +
     itemsHtml +
     (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
-    btn(quotation.link, "عرض التفاصيل والرد على العرض")
+    pdfNote +
+    linkBtn
   );
-  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html);
+
+  const attachments: EmailAttachment[] = hasPdf ? [{
+    filename: `quotation-${quotation.quotationNumber}.pdf`,
+    fileblob: Buffer.from(quotation.pdfBytes!).toString("base64"),
+    mimetype: "application/pdf",
+  }] : [];
+
+  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html, undefined, attachments);
 }
 
 export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {
