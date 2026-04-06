@@ -53,6 +53,11 @@
   --chart-5: 0 0% 75%;
 
   --radius: 0.75rem;
+
+  --brand: 262 83% 58%;
+  --brand-foreground: 0 0% 100%;
+  --brand-muted: 262 83% 97%;
+  --brand-dark: 262 83% 45%;
 }
 
 .dark {
@@ -98,6 +103,11 @@
   --chart-3: 0 0% 55%;
   --chart-4: 0 0% 40%;
   --chart-5: 0 0% 25%;
+
+  --brand: 262 83% 63%;
+  --brand-foreground: 0 0% 5%;
+  --brand-muted: 262 47% 14%;
+  --brand-dark: 262 83% 50%;
 }
 
 @layer base {

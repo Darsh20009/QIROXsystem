@@ -356,96 +356,242 @@ export default function Home() {
       </AnimatePresence>
 
       {/* HERO */}
-      <section className="relative overflow-hidden w-full min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center pt-20 sm:pt-28 pb-12 sm:pb-16" data-testid="section-hero">
-        <PageGraphics variant="hero-light" />
-        <div className="absolute inset-0 bg-white dark:bg-gray-950" />
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-        <div className="absolute top-40 left-1/4 w-96 h-96 rounded-full bg-black/[0.015] hidden md:block blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 w-72 h-72 rounded-full bg-black/[0.01] hidden md:block blur-3xl" />
+      <section className="relative overflow-hidden w-full min-h-[92vh] flex items-center" data-testid="section-hero">
+        {/* Dark gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#06030f] via-[#0c0620] to-[#080415]" />
+        {/* Top violet glow */}
+        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-violet-950/40 via-violet-900/10 to-transparent pointer-events-none" />
+        {/* Dot grid pattern */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #a78bfa 1px, transparent 0)", backgroundSize: "36px 36px" }} />
+        {/* Center ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-violet-600/8 blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 rounded-full bg-violet-500/5 blur-[80px] pointer-events-none" />
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.05 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-8"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-black/40 dark:text-white/40 text-xs tracking-wider">{lang === "ar" ? "منصة الأنظمة الرقمية المتكاملة" : "Integrated Digital Systems Platform"}</span>
-            </motion.div>
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-36 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              <h1 dir="ltr" className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black font-heading text-black dark:text-white leading-[1.1] mb-2 tracking-tight">
-                Build Systems.
-              </h1>
-              <h1
-                dir="ltr"
-                className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black font-heading leading-[1.1] mb-10 tracking-tight text-gray-300 dark:text-gray-700"
+            {/* ── Content Column ── */}
+            <div className={lang === "ar" ? "text-center lg:text-right order-1" : "text-center lg:text-left order-1"} dir={dir}>
+
+              {/* Top badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.05 }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/[0.08] mb-7"
               >
-                .Stay Human
-              </h1>
-            </motion.div>
+                <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                <span className="text-violet-300/90 text-xs tracking-wide">{lang === "ar" ? "منصة الأنظمة الرقمية المتكاملة" : "Integrated Digital Systems Platform"}</span>
+              </motion.div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-lg sm:text-xl text-black/40 dark:text-white/40 mb-10 max-w-2xl mx-auto leading-relaxed"
-              dir={dir}
-            >
-              {t("home.hero.subtitleFull")}
-            </motion.p>
+              {/* Headline */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.65, delay: 0.1 }}
+              >
+                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading text-white leading-[1.05] mb-1 tracking-tight">
+                  Build Systems.
+                </h1>
+                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-8 tracking-tight" style={{ color: "rgba(167,139,250,0.35)" }}>
+                  .Stay Human
+                </h1>
+              </motion.div>
 
+              {/* Subtitle */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+                className="text-base sm:text-lg text-white/45 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                dir={dir}
+              >
+                {t("home.hero.subtitleFull")}
+              </motion.p>
+
+              {/* CTA Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.32 }}
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-11"
+                dir="ltr"
+              >
+                <Link href="/contact">
+                  <Button
+                    size="lg"
+                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30 no-default-hover-elevate no-default-active-elevate border-0"
+                    data-testid="button-start-project"
+                  >
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {t("home.startProject")}
+                  </Button>
+                </Link>
+                <Link href="/prices">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full font-semibold border-white/12 text-white/65 bg-white/[0.05] hover:bg-white/[0.1] hover:text-white/90 hover:border-white/20"
+                    data-testid="button-explore-solutions"
+                  >
+                    {lang === "ar" ? "عرض الأسعار" : "View Pricing"}
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Inline stats */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.42 }}
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-6"
+                dir={dir}
+              >
+                {[
+                  { value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients" },
+                  { value: "6+", label: lang === "ar" ? "قطاعات" : "Sectors" },
+                  { value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating" },
+                  { value: "2", label: lang === "ar" ? "مدينة" : "Cities" },
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-center gap-2.5">
+                    {i > 0 && <div className="w-px h-7 bg-white/10" />}
+                    <div>
+                      <div className="text-lg sm:text-xl font-black text-white font-heading leading-none">{stat.value}</div>
+                      <div className="text-[11px] text-white/30 mt-0.5">{stat.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Promo pill */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-violet-500/15 bg-violet-500/[0.06] mt-8"
+                data-testid="promo-banner"
+              >
+                <span className="text-[11px] font-bold tracking-wider text-white bg-violet-500/20 px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
+                <span className="text-white/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
+                <ArrowLeft className="w-3 h-3 text-white/20" />
+              </motion.div>
+            </div>
+
+            {/* ── Visual Column (Desktop) ── */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10"
+              initial={{ opacity: 0, x: lang === "ar" ? -40 : 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden lg:flex items-center justify-center order-2 relative"
+              dir="ltr"
             >
-              <Link href="/contact">
-                <Button
-                  size="lg"
-                  className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2 font-bold bg-black text-white hover:bg-gray-900 no-default-hover-elevate no-default-active-elevate shadow-lg shadow-black/10"
-                  data-testid="button-start-project"
+              <div className="relative w-full max-w-[420px]">
+                {/* Main dashboard card */}
+                <div className="rounded-2xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-md p-5 shadow-2xl shadow-black/60">
+                  {/* Window chrome */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                    </div>
+                    <div className="text-[10px] text-white/25 font-mono tracking-wider">dashboard.qirox</div>
+                    <div className="w-5 h-5 rounded-md bg-violet-500/20 flex items-center justify-center">
+                      <Sparkles className="w-3 h-3 text-violet-400" />
+                    </div>
+                  </div>
+                  {/* KPI Row */}
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    {[
+                      { label: lang === "ar" ? "المبيعات" : "Revenue", value: "12.4k", sub: "+18%", color: "text-violet-400", bg: "bg-violet-500/10" },
+                      { label: lang === "ar" ? "الطلبات" : "Orders", value: "384", sub: "+7%", color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                      { label: lang === "ar" ? "العملاء" : "Clients", value: "94", sub: "+3%", color: "text-sky-400", bg: "bg-sky-500/10" },
+                    ].map((item, i) => (
+                      <div key={i} className={`rounded-xl ${item.bg} border border-white/[0.06] p-3`}>
+                        <div className="text-[10px] text-white/35 mb-1">{item.label}</div>
+                        <div className={`text-xl font-black font-heading ${item.color}`}>{item.value}</div>
+                        <div className="text-[9px] text-emerald-400/70 mt-0.5">{item.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Bar chart */}
+                  <div className="h-20 flex items-end gap-1 mb-3">
+                    {[38, 62, 45, 78, 52, 88, 68, 82, 57, 94, 73, 100].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-t-sm"
+                        style={{
+                          height: `${h}%`,
+                          background: i === 11
+                            ? "linear-gradient(to top, rgba(139,92,246,0.9), rgba(167,139,250,0.5))"
+                            : "linear-gradient(to top, rgba(139,92,246,0.35), rgba(139,92,246,0.1))"
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[9px] text-white/20">{lang === "ar" ? "مبيعات الشهر" : "Monthly Sales"}</div>
+                    <div className="text-[9px] text-violet-400/70 font-bold">{lang === "ar" ? "↑ 18% من الشهر الماضي" : "↑ 18% vs last month"}</div>
+                  </div>
+                </div>
+
+                {/* Floating: New Order notification */}
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -top-5 -right-6 rounded-xl border border-white/[0.1] bg-[#0c0520]/95 backdrop-blur-sm p-3 shadow-xl shadow-black/50 min-w-[168px]"
                 >
-                  {t("home.startProject")}
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
-              </Link>
-              <Link href="/prices">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto border-black/10 text-black/60 rounded-full font-semibold bg-transparent hover:bg-black/[0.03] dark:text-white/60 dark:border-white/10"
-                  data-testid="button-explore-solutions"
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-white leading-tight">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
+                      <div className="text-[9px] text-white/35 mt-0.5">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "Gold Coffee — 3 items"}</div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Floating: QR Orders */}
+                <motion.div
+                  animate={{ y: [0, 7, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                  className="absolute -bottom-5 -left-7 rounded-xl border border-white/[0.1] bg-[#0c0520]/95 backdrop-blur-sm p-3 shadow-xl shadow-black/50 min-w-[160px]"
                 >
-                  {lang === "ar" ? "عرض الأسعار" : "View Pricing"}
-                </Button>
-              </Link>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+                      <QrCode className="w-4 h-4 text-violet-400" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-white leading-tight">{lang === "ar" ? "قائمة QR فعّالة" : "Active QR Menu"}</div>
+                      <div className="text-[9px] text-white/35 mt-0.5">{lang === "ar" ? "48 طلب اليوم" : "48 orders today"}</div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Floating: AI badge */}
+                <motion.div
+                  animate={{ scale: [1, 1.04, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                  className="absolute top-1/2 -translate-y-1/2 -right-10 rounded-full border border-violet-500/20 bg-violet-600/15 backdrop-blur-sm px-3 py-1.5 shadow-lg"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-violet-300" />
+                    <span className="text-[10px] font-bold text-violet-300">AI</span>
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02]"
-              data-testid="promo-banner"
-            >
-              <span className="text-[11px] font-bold tracking-wider text-black dark:text-white bg-black/[0.06] dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
-              <span className="text-black/40 dark:text-white/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
-              <ArrowLeft className="w-3.5 h-3.5 text-black/20 dark:text-white/20" />
-            </motion.div>
           </div>
         </div>
       </section>
 
+      {/* ── Hero → Stats Transition ── */}
+      <div className="h-16 bg-gradient-to-b from-[#06030f] to-white dark:to-gray-950 relative z-10" />
+
       {/* STATS */}
-      <section className="py-6 relative z-10" data-testid="section-stats">
+      <section className="py-10 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -453,21 +599,53 @@ export default function Home() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="border border-black/[0.06] dark:border-white/[0.06] rounded-2xl overflow-hidden bg-white dark:bg-gray-900/50"
+            className="rounded-2xl overflow-hidden border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 shadow-lg shadow-black/[0.04]"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.06] dark:divide-white/[0.06] rtl:divide-x-reverse divide-y md:divide-y-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.05] dark:divide-white/[0.05] rtl:divide-x-reverse divide-y md:divide-y-0">
               {[
-                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems") },
-                { value: "6+", label: t("home.stats.sectorsCount") },
-                { value: "5", label: "باقات متنوعة" },
-                { value: "2", label: t("home.stats.locations") },
+                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-violet-600 dark:text-violet-400" },
+                { value: "6+", label: t("home.stats.sectorsCount"), color: "text-blue-600 dark:text-blue-400" },
+                { value: "5", label: lang === "ar" ? "باقات متنوعة" : "Pricing Plans", color: "text-emerald-600 dark:text-emerald-400" },
+                { value: "2", label: t("home.stats.locations"), color: "text-orange-500 dark:text-orange-400" },
               ].map((stat, idx) => (
-                <div key={idx} className="px-3 py-5 sm:px-6 sm:py-8 text-center" data-testid={`stat-card-${idx}`}>
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-black mb-1 sm:mb-2 font-heading text-black dark:text-white">
+                <div key={idx} className="px-4 py-7 sm:px-8 sm:py-9 text-center group" data-testid={`stat-card-${idx}`}>
+                  <div className={`text-3xl sm:text-4xl md:text-5xl font-black mb-2 font-heading ${stat.color}`}>
                     {stat.value}
                   </div>
-                  <div className="text-black/35 dark:text-white/35 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
+                  <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
                 </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Trusted By Bar ── */}
+      <section className="py-10 bg-white dark:bg-gray-950 border-b border-black/[0.04] dark:border-white/[0.04]" data-testid="section-trust-bar">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10"
+          >
+            <p className="text-[11px] tracking-[0.28em] uppercase text-black/30 dark:text-white/30 font-semibold whitespace-nowrap shrink-0" dir={dir}>
+              {lang === "ar" ? "يثقون بنا" : "Trusted By"}
+            </p>
+            <div className="w-px h-8 bg-black/[0.06] dark:bg-white/[0.06] hidden sm:block shrink-0" />
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-8">
+              {staticPartners.slice(0, 7).map((partner, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  className="flex items-center gap-2 grayscale opacity-40 hover:grayscale-0 hover:opacity-80 transition-all duration-300"
+                >
+                  <img src={partner.logo} alt={partner.name} className="h-7 w-auto max-w-[80px] object-contain" />
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -505,7 +683,12 @@ export default function Home() {
                   desc: t("home.services.restaurants.desc"),
                   features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
                   badge: lang === "ar" ? "🍽️ مطاعم وكافيهات"     : "🍽️ Restaurants & Cafes",
-                  accent: "hover:shadow-orange-500/10"
+                  accentBorder: "hover:border-orange-200 dark:hover:border-orange-500/20",
+                  accentShadow: "hover:shadow-orange-500/8",
+                  accentIcon: "bg-orange-50 dark:bg-orange-500/10",
+                  accentIconText: "text-orange-500 dark:text-orange-400",
+                  accentBadge: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
+                  accentTag: "border-orange-100 dark:border-orange-500/15 bg-orange-50/50 dark:bg-orange-500/5 text-orange-600/70 dark:text-orange-400/70",
                 },
                 {
                   icon: Store,
@@ -513,7 +696,12 @@ export default function Home() {
                   desc: t("home.services.stores.desc"),
                   features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
                   badge: lang === "ar" ? "🛍️ متاجر إلكترونية"    : "🛍️ E-Commerce Stores",
-                  accent: "hover:shadow-blue-500/10"
+                  accentBorder: "hover:border-blue-200 dark:hover:border-blue-500/20",
+                  accentShadow: "hover:shadow-blue-500/8",
+                  accentIcon: "bg-blue-50 dark:bg-blue-500/10",
+                  accentIconText: "text-blue-500 dark:text-blue-400",
+                  accentBadge: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                  accentTag: "border-blue-100 dark:border-blue-500/15 bg-blue-50/50 dark:bg-blue-500/5 text-blue-600/70 dark:text-blue-400/70",
                 },
                 {
                   icon: GraduationCap,
@@ -521,7 +709,12 @@ export default function Home() {
                   desc: t("home.services.education.desc"),
                   features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
                   badge: lang === "ar" ? "📚 تعليم وأكاديميات"    : "📚 Education & Academies",
-                  accent: "hover:shadow-violet-500/10"
+                  accentBorder: "hover:border-violet-200 dark:hover:border-violet-500/20",
+                  accentShadow: "hover:shadow-violet-500/8",
+                  accentIcon: "bg-violet-50 dark:bg-violet-500/10",
+                  accentIconText: "text-violet-600 dark:text-violet-400",
+                  accentBadge: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                  accentTag: "border-violet-100 dark:border-violet-500/15 bg-violet-50/50 dark:bg-violet-500/5 text-violet-600/70 dark:text-violet-400/70",
                 },
                 {
                   icon: Building2,
@@ -529,25 +722,30 @@ export default function Home() {
                   desc: t("home.services.enterprise.desc"),
                   features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
                   badge: lang === "ar" ? "🏢 شركات ومؤسسات"      : "🏢 Corporates & Enterprises",
-                  accent: "hover:shadow-gray-500/10"
+                  accentBorder: "hover:border-emerald-200 dark:hover:border-emerald-500/20",
+                  accentShadow: "hover:shadow-emerald-500/8",
+                  accentIcon: "bg-emerald-50 dark:bg-emerald-500/10",
+                  accentIconText: "text-emerald-600 dark:text-emerald-400",
+                  accentBadge: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  accentTag: "border-emerald-100 dark:border-emerald-500/15 bg-emerald-50/50 dark:bg-emerald-500/5 text-emerald-600/70 dark:text-emerald-400/70",
                 },
               ].map((path, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 p-5 sm:p-8 md:p-10 h-full group transition-all duration-300 hover:border-black/[0.1] dark:hover:border-white/[0.1] hover:shadow-xl ${path.accent}`}
+                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-5 sm:p-8 md:p-10 h-full group transition-all duration-300 ${path.accentBorder} hover:shadow-xl ${path.accentShadow}`}
                     data-testid={`service-path-${idx}`}
                     dir={dir}
                   >
                     <div className="flex items-start justify-between mb-6">
-                      <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium">
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${path.accentBadge}`}>
                         {path.badge}
                       </span>
                       <Link href="/systems">
-                        <ArrowUpRight className="w-5 h-5 text-black/10 dark:text-white/10 group-hover:text-black/40 dark:group-hover:text-white/40 transition-all duration-300 cursor-pointer" />
+                        <ArrowUpRight className={`w-5 h-5 text-black/10 dark:text-white/10 group-hover:${path.accentIconText} transition-all duration-300 cursor-pointer`} />
                       </Link>
                     </div>
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] transition-all duration-300 mb-5">
-                      <path.icon className="w-6 h-6 text-black/40 dark:text-white/40" />
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${path.accentIcon} transition-all duration-300 mb-5 group-hover:scale-110`}>
+                      <path.icon className={`w-6 h-6 ${path.accentIconText}`} />
                     </div>
                     <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-3">{path.title}</h3>
                     <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6">{path.desc}</p>
@@ -555,7 +753,7 @@ export default function Home() {
                       {path.features.map((f, i) => (
                         <span
                           key={i}
-                          className="text-[11px] px-3.5 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] text-black/40 dark:text-white/40 bg-black/[0.02] dark:bg-white/[0.02]"
+                          className={`text-[11px] px-3.5 py-1.5 rounded-full border ${path.accentTag}`}
                         >
                           {f}
                         </span>
@@ -603,17 +801,30 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {cafeFeatures.map((feature, idx) => (
-                <motion.div key={idx} variants={fadeUp} custom={idx}>
-                  <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 h-full group hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300" data-testid={`cafe-feature-${idx}`}>
-                    <div className="w-11 h-11 rounded-xl bg-white/[0.07] flex items-center justify-center mb-4 group-hover:bg-white/[0.1] transition-colors">
-                      <feature.icon className="w-5 h-5 text-white/60" />
+              {cafeFeatures.map((feature, idx) => {
+                const iconColors = [
+                  "text-orange-400 bg-orange-500/15",
+                  "text-sky-400 bg-sky-500/15",
+                  "text-emerald-400 bg-emerald-500/15",
+                  "text-yellow-400 bg-yellow-500/15",
+                  "text-violet-400 bg-violet-500/15",
+                  "text-pink-400 bg-pink-500/15",
+                  "text-cyan-400 bg-cyan-500/15",
+                  "text-green-400 bg-green-500/15",
+                ];
+                const [iconText, iconBg] = iconColors[idx % iconColors.length].split(" ");
+                return (
+                  <motion.div key={idx} variants={fadeUp} custom={idx}>
+                    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 h-full group hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300" data-testid={`cafe-feature-${idx}`}>
+                      <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                        <feature.icon className={`w-5 h-5 ${iconText}`} />
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
+                      <p className="text-xs text-white/35 leading-relaxed">{feature.desc}</p>
                     </div>
-                    <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
-                    <p className="text-xs text-white/35 leading-relaxed">{feature.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         </div>
@@ -652,17 +863,29 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {storeFeatures.map((feature, idx) => (
-                <motion.div key={idx} variants={fadeUp} custom={idx}>
-                  <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 h-full group hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1] transition-all duration-300" data-testid={`store-feature-${idx}`}>
-                    <div className="w-11 h-11 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4 group-hover:bg-black/[0.07] dark:group-hover:bg-white/[0.07] transition-colors">
-                      <feature.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
+              {storeFeatures.map((feature, idx) => {
+                const iconConfig = [
+                  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10" },
+                  { text: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
+                  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+                  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
+                  { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-500/10" },
+                  { text: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
+                  { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+                  { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10" },
+                ][idx % 8];
+                return (
+                  <motion.div key={idx} variants={fadeUp} custom={idx}>
+                    <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 h-full group hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1] transition-all duration-300" data-testid={`store-feature-${idx}`}>
+                      <div className={`w-11 h-11 rounded-xl ${iconConfig.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300`}>
+                        <feature.icon className={`w-5 h-5 ${iconConfig.text}`} />
+                      </div>
+                      <h3 className="text-sm font-bold text-black dark:text-white mb-2">{feature.title}</h3>
+                      <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{feature.desc}</p>
                     </div>
-                    <h3 className="text-sm font-bold text-black dark:text-white mb-2">{feature.title}</h3>
-                    <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{feature.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         </div>

@@ -1,5 +1,26 @@
 # Qirox Platform
 
+## Latest Changes (Apr 6, 2026) — Session 11: UI/UX Overhaul
+
+### Brand Color & Global Styling
+- Added `--brand: 262 83% 58%` (violet) CSS variable in `index.css` + `brand` Tailwind class in `tailwind.config.ts`
+
+### Navigation (`client/src/components/Navigation.tsx`)
+- **Announcement bar**: Dismissible violet bar at top showing Enterprise plan promo; persisted via `sessionStorage`; nav's `top` CSS adjusts based on `annBarHeight` (40px when visible)
+- **Dark-hero awareness**: `isOnDarkHero` flag (true when on `/` and not scrolled) makes nav links, icons, and logo **white** on the dark Hero background; reverts to standard dark/light text on other pages or when scrolled
+
+### Home Page Hero (`client/src/pages/Home.tsx`)
+- Full redesign: dark gradient background (`from-[#06051a] via-[#0d0b2e] to-[#090820]`) with two-column layout
+- Left column: animated dashboard mockup card with floating notification cards (new order + QR cafe queue)
+- Right column: "Build Systems. Stay Human." typography, violet CTA button, outlined secondary CTA
+- Micro-stats bar below CTAs: 100+ active clients, 6+ sectors, ★5 rating, 2 cities
+
+### Home Page Sections
+- **Stats section**: gradient transition band dark→white, colored stat numbers (violet/blue/emerald/orange)
+- **Trusted By bar**: partner logo strip between Stats and Services Grid for social proof
+- **Service cards**: color-coded accent themes (orange=restaurants, blue=stores, violet=education, emerald=enterprise)
+- **Feature cards** (cafe/store): distinct colored icons per feature
+
 ## Latest Changes (Apr 6, 2026) — Session 10: PageLoader Redesign
 
 ### PageLoader Complete Redesign (client/src/App.tsx)

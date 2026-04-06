@@ -191,6 +191,14 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const { t, lang, dir, setLang } = useI18n();
   const { theme, toggle } = useTheme();
+  const [annDismissed, setAnnDismissed] = useState(() => {
+    try { return sessionStorage.getItem("qirox_ann_dismissed") === "1"; } catch { return false; }
+  });
+
+  const dismissAnn = () => {
+    try { sessionStorage.setItem("qirox_ann_dismissed", "1"); } catch {}
+    setAnnDismissed(true);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -215,8 +223,46 @@ export default function Navigation() {
 
   const allLinks = [...navLinks, ...adminLinks];
 
+  const annBarHeight = annDismissed ? 0 : 40;
+  const isOnDarkHero = location === "/" && !scrolled;
+
   return (
     <>
+      {/* ── Announcement Bar ── */}
+      <AnimatePresence>
+        {!annDismissed && (
+          <motion.div
+            key="ann-bar"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 40, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+            className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
+            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          >
+            <div className="h-10 bg-gradient-to-r from-violet-700 via-violet-600 to-violet-700 flex items-center justify-center px-4 relative">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] sm:text-xs font-black text-white/90 bg-white/15 px-2 py-0.5 rounded-full">{lang === "ar" ? "جديد" : "NEW"}</span>
+                <span className="text-[11px] sm:text-xs text-white/85 font-medium">
+                  {lang === "ar" ? "باقة Enterprise متاحة الآن — نظام متكامل للشركات الكبرى" : "Enterprise plan now available — Full system for large companies"}
+                </span>
+                <Link href="/prices" className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-white/90 hover:text-white underline-offset-2 underline">
+                  {lang === "ar" ? "اكتشف" : "Explore"}
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <button
+                onClick={dismissAnn}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+                data-testid="button-dismiss-ann"
+              >
+                <X className="w-3 h-3 text-white/50" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Status bar background — covers the notch/camera area on mobile */}
       <div
         className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-950 z-[52] pointer-events-none"
@@ -226,8 +272,8 @@ export default function Navigation() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)", top: `${annBarHeight}px` }}
+        className={`fixed left-0 right-0 z-50 transition-all duration-500 ${
           scrolled ? "py-2" : "py-4"
         }`}
       >
@@ -239,7 +285,7 @@ export default function Navigation() {
           }`}>
             <div className="flex justify-between items-center h-16">
               <Link href="/" className="flex items-center gap-2 group shrink-0" data-testid="link-logo">
-                <img src={qiroxLogoPath} alt="QIROX" className="h-8 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity dark:invert" />
+                <img src={qiroxLogoPath} alt="QIROX" className={`h-8 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity ${isOnDarkHero ? "invert" : "dark:invert"}`} />
               </Link>
 
               <div className="hidden lg:flex items-center gap-1">
@@ -247,13 +293,15 @@ export default function Navigation() {
                   <Link key={link.href} href={link.href}>
                     <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       location === link.href
-                        ? "text-black dark:text-white"
-                        : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
+                        ? isOnDarkHero ? "text-white" : "text-black dark:text-white"
+                        : isOnDarkHero
+                          ? "text-white/50 hover:text-white/85"
+                          : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
                     }`} data-testid={`nav-link-${link.href.replace('/', '') || 'home'}`}>
                       {location === link.href && (
                         <motion.div
                           layoutId="nav-active"
-                          className="absolute inset-0 rounded-xl bg-black/[0.05] dark:bg-white/[0.05]"
+                          className={`absolute inset-0 rounded-xl ${isOnDarkHero ? "bg-white/[0.08]" : "bg-black/[0.05] dark:bg-white/[0.05]"}`}
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
@@ -268,8 +316,10 @@ export default function Navigation() {
                   <Link key={link.href} href={link.href}>
                     <div className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       location === link.href
-                        ? "text-black dark:text-white"
-                        : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
+                        ? isOnDarkHero ? "text-white" : "text-black dark:text-white"
+                        : isOnDarkHero
+                          ? "text-white/50 hover:text-white/85"
+                          : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
                     }`} data-testid={`nav-link-admin-${link.href.replace('/', '')}`}>
                       <span className="relative z-10">{link.label}</span>
                     </div>
@@ -281,7 +331,7 @@ export default function Navigation() {
 
                 <button
                   onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-                  className="p-2 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all"
+                  className={`p-2 rounded-lg transition-all ${isOnDarkHero ? "text-white/40 hover:text-white/75 hover:bg-white/[0.08]" : "text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
                   data-testid="button-lang-toggle-nav"
                   title={lang === "ar" ? "English" : "عربي"}
                 >
@@ -289,11 +339,11 @@ export default function Navigation() {
                 </button>
                 <button
                   onClick={toggle}
-                  className="p-2 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all"
+                  className={`p-2 rounded-lg transition-all ${isOnDarkHero ? "text-white/40 hover:text-white/75 hover:bg-white/[0.08]" : "text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]"}`}
                   data-testid="button-theme-toggle-nav"
                   title={lang === "ar" ? (theme === "dark" ? "وضع نهاري" : "وضع ليلي") : (theme === "dark" ? "Light mode" : "Dark mode")}
                 >
-                  {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4" />}
+                  {theme === "dark" ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className={`w-4 h-4 ${isOnDarkHero ? "text-white/40" : ""}`} />}
                 </button>
                 {user ? (
                   <div className="flex items-center gap-3">
