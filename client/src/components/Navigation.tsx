@@ -240,13 +240,13 @@ export default function Navigation() {
             className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
             style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           >
-            <div className="h-10 bg-gradient-to-r from-violet-700 via-violet-600 to-violet-700 flex items-center justify-center px-4 relative">
+            <div className="h-10 bg-[#0a0a0f] border-b border-white/[0.07] flex items-center justify-center px-4 relative">
               <div className="flex items-center gap-2.5">
-                <span className="text-[10px] sm:text-xs font-black text-white/90 bg-white/15 px-2 py-0.5 rounded-full">{lang === "ar" ? "جديد" : "NEW"}</span>
-                <span className="text-[11px] sm:text-xs text-white/85 font-medium">
+                <span className="text-[10px] sm:text-xs font-black text-white px-2 py-0.5 rounded-full bg-brand">{lang === "ar" ? "جديد" : "NEW"}</span>
+                <span className="text-[11px] sm:text-xs text-white/70 font-medium">
                   {lang === "ar" ? "باقة Enterprise متاحة الآن — نظام متكامل للشركات الكبرى" : "Enterprise plan now available — Full system for large companies"}
                 </span>
-                <Link href="/prices" className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-white/90 hover:text-white underline-offset-2 underline">
+                <Link href="/prices" className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-brand hover:text-white underline-offset-2 underline">
                   {lang === "ar" ? "اكتشف" : "Explore"}
                   <ArrowRight className="w-3 h-3" />
                 </Link>
