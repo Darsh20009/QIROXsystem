@@ -1125,6 +1125,37 @@ export default function AdminAppPublish() {
     onError: (e: any) => toast({ title: "خطأ", description: e.message, variant: "destructive" }),
   });
 
+  // ─── Play Console Checklist State ────────────────────────
+  const [playChecks, setPlayChecks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("qirox_play_checks") || "{}"); } catch { return {}; }
+  });
+  const togglePlayCheck = (id: string) => {
+    const next = { ...playChecks, [id]: !playChecks[id] };
+    setPlayChecks(next);
+    localStorage.setItem("qirox_play_checks", JSON.stringify(next));
+  };
+
+  // ─── Closed Testing Tracker ───────────────────────────────
+  const [closedTestStart, setClosedTestStart] = useState<string>(() =>
+    localStorage.getItem("qirox_closed_test_start") || ""
+  );
+  const [testerCount, setTesterCount] = useState<number>(() =>
+    parseInt(localStorage.getItem("qirox_tester_count") || "0", 10)
+  );
+  const saveClosedTest = (start: string, count: number) => {
+    setClosedTestStart(start); setTesterCount(count);
+    localStorage.setItem("qirox_closed_test_start", start);
+    localStorage.setItem("qirox_tester_count", count.toString());
+  };
+  const closedTestDays = closedTestStart
+    ? Math.floor((Date.now() - new Date(closedTestStart).getTime()) / 86400000)
+    : 0;
+  const closedTestDone = testerCount >= 12 && closedTestDays >= 14;
+
+  // ─── Quick fingerprint inline save ───────────────────────
+  const [quickPkg, setQuickPkg] = useState("");
+  const [quickFp, setQuickFp] = useState("");
+
   const data = form || cfg || {};
   const f = (k: string, v: string) => setForm((prev: any) => ({ ...(prev || cfg || {}), [k]: v }));
   const openSettings = () => { setForm({ ...(cfg || {}) }); setSettingsOpen(true); };
@@ -1686,33 +1717,257 @@ export default function AdminAppPublish() {
         </TabsContent>
 
         {/* ════════════════════════════════════════════════════ */}
-        {/* TAB: GOOGLE PLAY                                    */}
+        {/* TAB: GOOGLE PLAY — FULL INTERACTIVE GUIDE          */}
         {/* ════════════════════════════════════════════════════ */}
         <TabsContent value="google">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-green-500 flex items-center justify-center"><Smartphone className="w-4 h-4 text-white" /></div>
-                <div><h2 className="text-sm font-black">Google Play Store</h2><p className="text-[10px] text-black/40">عبر Trusted Web Activity (TWA)</p></div>
-                {data.playStoreUrl && <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer" className="mr-auto"><Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-200"><CheckCircle2 className="w-3 h-3" /> {L ? "منشور" : "Published"}</Badge></a>}
+          <div className="space-y-6">
+
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-green-500 flex items-center justify-center shadow-sm">
+                  <Smartphone className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-black">Google Play Store</h2>
+                  <p className="text-[10px] text-black/40">دليل الرفع الكامل خطوة بخطوة — Trusted Web Activity (TWA)</p>
+                </div>
               </div>
-              <StepCard n={1} title="توليد حزمة Android" desc='اضغط على تبويب "مولّد الحزم" → اختر Android → توليد وتنزيل' />
-              <StepCard n={2} title="فتح في Android Studio" desc="افتح المجلد المُستخرج من ZIP في Android Studio" />
-              <StepCard n={3} title="إنشاء Keystore" desc="keytool -genkey -v -keystore release.keystore -alias qirox -keyalg RSA -keysize 2048 -validity 10000" />
-              <StepCard n={4} title="الحصول على SHA-256" desc="keytool -list -v -keystore release.keystore | grep SHA256 ثم أدخله في إعدادات المتاجر" />
-              <StepCard n={5} title="بناء AAB" desc="./gradlew bundleRelease → app/build/outputs/bundle/release/*.aab" />
-              <StepCard n={6} title="رفع على Google Play Console" desc="أنشئ تطبيقاً جديداً وارفع ملف AAB" link="https://play.google.com/console" linkLabel="Google Play Console" />
+              {data.playStoreUrl
+                ? <a href={data.playStoreUrl} target="_blank" rel="noopener noreferrer"><Badge className="gap-1 bg-green-500 text-white text-xs"><CheckCircle2 className="w-3.5 h-3.5" /> منشور على Play Store</Badge></a>
+                : <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" /> في انتظار النشر</Badge>
+              }
             </div>
+
+            {/* === SECTION 1: TWO PATHS === */}
             <div>
-              <p className="text-xs font-black text-black/40 mb-3">{L ? "ملف bubblewrap التلقائي" : "Auto bubblewrap file"}</p>
-              <CodeBlock title="bubblewrap.config.json" code={bubblewrapConfig} />
-              <div className="p-3 bg-black/[0.02] rounded-xl border border-black/[0.06]">
-                <p className="text-[10px] font-bold text-black/50 mb-2">assetlinks.json:</p>
-                <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                  {siteUrl}/.well-known/assetlinks.json <ExternalLink className="w-3 h-3" />
-                </a>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 1 — احصل على ملف AAB</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Path A: PWABuilder */}
+                <div className="p-4 rounded-2xl border-2 border-green-200 bg-green-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-green-500 flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-green-800">المسار الأسرع — بدون كود</span>
+                    <Badge className="text-[9px] bg-green-500 text-white mr-auto">موصى به ✓</Badge>
+                  </div>
+                  <ol className="space-y-2 text-[11px] text-green-800">
+                    {[
+                      { n: 1, t: "افتح PWABuilder في متصفحك", sub: "pwabuilder.com" },
+                      { n: 2, t: "اكتب رابط موقعك واضغط Start", sub: siteUrl },
+                      { n: 3, t: 'اختر "Android" ثم اضغط Download Package', sub: "ستحصل على ZIP يحتوي AAB + assetlinks.json" },
+                      { n: 4, t: "الـ AAB جاهز للرفع على Play Console", sub: "لا تحتاج Android Studio أو Gradle" },
+                    ].map(s => (
+                      <li key={s.n} className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full bg-green-200 flex items-center justify-center text-[9px] font-black text-green-700 shrink-0 mt-0.5">{s.n}</span>
+                        <div>
+                          <span className="font-bold">{s.t}</span>
+                          {s.sub && <p className="text-green-600/70 font-mono text-[10px] mt-0.5">{s.sub}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                  <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-green-500 text-white text-xs font-black hover:bg-green-600 transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" /> فتح pwabuilder.com
+                  </a>
+                </div>
+
+                {/* Path B: Android Studio */}
+                <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-black flex items-center justify-center"><Box className="w-3.5 h-3.5 text-white" /></div>
+                    <span className="text-sm font-black text-black">المسار المتقدم — Android Studio</span>
+                  </div>
+                  <ol className="space-y-2 text-[11px] text-black/60">
+                    {[
+                      { n: 1, t: 'تبويب "مولّد الحزم" → Android → تنزيل ZIP', sub: "" },
+                      { n: 2, t: "افتح ZIP في Android Studio", sub: "" },
+                      { n: 3, t: "أنشئ Keystore", sub: "keytool -genkey -v -keystore release.keystore -alias qirox -keyalg RSA -keysize 2048" },
+                      { n: 4, t: "استخرج SHA-256 وادخله في الحقول أدناه", sub: "keytool -list -v -keystore release.keystore | grep SHA256" },
+                      { n: 5, t: "ابنِ AAB", sub: "./gradlew bundleRelease" },
+                    ].map(s => (
+                      <li key={s.n} className="flex gap-2">
+                        <span className="w-5 h-5 rounded-full bg-black/[0.06] flex items-center justify-center text-[9px] font-black text-black/50 shrink-0 mt-0.5">{s.n}</span>
+                        <div>
+                          <span className="font-bold text-black/70">{s.t}</span>
+                          {s.sub && <p className="text-black/40 font-mono text-[10px] mt-0.5 break-all">{s.sub}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               </div>
             </div>
+
+            {/* === SECTION 2: SHA-256 Quick Entry === */}
+            <div className="p-4 rounded-2xl border border-black/[0.08] bg-white">
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 2 — ادخل بيانات التطبيق (بعد الحصول على AAB)</p>
+              {hasAndroid ? (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
+                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-green-700">تم ربط التطبيق بالسيرفر ✓</p>
+                    <p className="text-[10px] text-green-600 font-mono mt-0.5">{data.androidPackage}</p>
+                  </div>
+                  <button onClick={openSettings} className="text-[10px] text-green-700 underline mr-auto shrink-0">تعديل</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-700 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>بعد تنزيل AAB من PWABuilder، افتح ملف <strong>assetlinks.json</strong> داخل ZIP واحصل منه على الـ Package Name و SHA-256 Fingerprint وأدخلهما هنا.</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-black/50 block mb-1">Package Name</label>
+                      <Input placeholder="com.qirox.studio" value={quickPkg} onChange={e => setQuickPkg(e.target.value)} className="text-xs h-9 font-mono" dir="ltr" data-testid="input-quick-pkg" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-black/50 block mb-1">SHA-256 Fingerprint</label>
+                      <Input placeholder="AA:BB:CC:DD:..." value={quickFp} onChange={e => setQuickFp(e.target.value)} className="text-xs h-9 font-mono" dir="ltr" data-testid="input-quick-fp" />
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!quickPkg || !quickFp || saveMutation.isPending}
+                    data-testid="button-save-quick-android"
+                    onClick={() => saveMutation.mutate({ ...(cfg || {}), androidPackage: quickPkg, androidFingerprint: quickFp })}
+                    className="gap-2 text-xs"
+                  >
+                    {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    حفظ وتفعيل assetlinks.json
+                  </Button>
+                </div>
+              )}
+              {hasAndroid && (
+                <div className="mt-3 p-2 rounded-lg bg-black/[0.02] border border-black/[0.05]">
+                  <p className="text-[10px] text-black/40 mb-1">رابط assetlinks.json على السيرفر:</p>
+                  <a href={`${siteUrl}/.well-known/assetlinks.json`} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 font-mono" dir="ltr">
+                    {siteUrl}/.well-known/assetlinks.json <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* === SECTION 3: Play Console Requirements === */}
+            <div>
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-3">الخطوة 3 — متطلبات Play Console (اضغط لتحديد المكتمل)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { id: "app_created", group: "إعداد التطبيق", label: "إنشاء التطبيق في Play Console", sub: "Play Console → إنشاء تطبيق → Android App", link: "https://play.google.com/console" },
+                  { id: "aab_uploaded", group: "إعداد التطبيق", label: "رفع ملف AAB", sub: "Internal Testing → Create Release → رفع AAB" },
+                  { id: "store_listing", group: "معلومات المتجر", label: "إعداد Store Listing", sub: "اسم + وصف + تصنيف + أيقونة + صور" },
+                  { id: "privacy_policy", group: "معلومات المتجر", label: "سياسة الخصوصية", sub: siteUrl + "/privacy", link: siteUrl + "/privacy" },
+                  { id: "content_rating", group: "معلومات المتجر", label: "Content Rating (استبيان)", sub: "Policy → App Content → Content Rating" },
+                  { id: "target_audience", group: "معلومات المتجر", label: "الجمهور المستهدف (Target Audience)", sub: "Policy → App Content → Target Audience" },
+                  { id: "data_safety", group: "معلومات المتجر", label: "Data Safety (بيانات الخصوصية)", sub: "Policy → App Content → Data Safety" },
+                  { id: "assetlinks", group: "التقني", label: "assetlinks.json مُفعَّل على السيرفر", sub: hasAndroid ? "✓ مفعّل" : "أدخل Package Name و SHA-256 أعلاه", done: hasAndroid },
+                  { id: "closed_test_track", group: "الاختبار المغلق", label: "إعداد Closed Test Track", sub: "Testing → Closed testing → Create Track" },
+                  { id: "countries", group: "الاختبار المغلق", label: "اختيار الدول والمناطق", sub: "Select countries and regions" },
+                  { id: "testers_12", group: "الاختبار المغلق", label: "12+ مختبر قبلوا الدعوة", sub: "اضغط Opt-in link → شارك مع 12 شخص", done: testerCount >= 12 },
+                  { id: "test_14days", group: "الاختبار المغلق", label: "14 يوم من الاختبار", sub: closedTestStart ? `بدأ: ${closedTestStart} · ${closedTestDays} يوم مر` : "سجّل تاريخ البدء أدناه", done: closedTestDays >= 14 },
+                  { id: "apply_production", group: "الإنتاج", label: "التقديم على Production Access", sub: "بعد اكتمال الاختبار المغلق" },
+                ].map(item => {
+                  const isDone = item.done !== undefined ? item.done : !!playChecks[item.id];
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => item.done === undefined && togglePlayCheck(item.id)}
+                      data-testid={`play-check-${item.id}`}
+                      className={`text-right w-full p-3 rounded-xl border transition-all flex items-start gap-3 ${isDone ? "bg-green-50 border-green-200" : "bg-white border-black/[0.08] hover:border-black/[0.16]"}`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isDone ? "bg-green-500 border-green-500" : "border-black/20"}`}>
+                        {isDone && <CheckCheck className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-bold leading-tight ${isDone ? "text-green-800 line-through opacity-70" : "text-black"}`}>{item.label}</p>
+                        <p className="text-[10px] text-black/40 mt-0.5 leading-tight">{item.sub}</p>
+                        {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-blue-500 hover:underline">{item.link.length > 40 ? item.link.slice(0, 40) + "…" : item.link}</a>}
+                        <span className="text-[9px] text-black/25 block mt-0.5">{item.group}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* === SECTION 4: Closed Testing Tracker === */}
+            <div className="p-5 rounded-2xl border border-black/[0.08] bg-white">
+              <p className="text-[10px] font-black text-black/30 uppercase tracking-widest mb-4">متتبع الاختبار المغلق (Closed Testing)</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Testers */}
+                <div className={`p-4 rounded-xl border text-center ${testerCount >= 12 ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${testerCount >= 12 ? "text-green-600" : "text-black"}`}>{testerCount}</div>
+                  <div className="text-[10px] font-bold text-black/50">/ 12 مختبر</div>
+                  <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${Math.min(100, (testerCount / 12) * 100)}%` }} />
+                  </div>
+                  {testerCount >= 12 && <p className="text-[9px] text-green-600 font-bold mt-1">✓ مكتمل</p>}
+                </div>
+                {/* Days */}
+                <div className={`p-4 rounded-xl border text-center ${closedTestDays >= 14 ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${closedTestDays >= 14 ? "text-green-600" : "text-black"}`}>{closedTestDays}</div>
+                  <div className="text-[10px] font-bold text-black/50">/ 14 يوم</div>
+                  <div className="w-full h-1.5 rounded-full bg-black/[0.06] mt-2 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${Math.min(100, (closedTestDays / 14) * 100)}%` }} />
+                  </div>
+                  {closedTestDays >= 14 && <p className="text-[9px] text-green-600 font-bold mt-1">✓ مكتمل</p>}
+                </div>
+                {/* Overall */}
+                <div className={`p-4 rounded-xl border text-center ${closedTestDone ? "bg-green-50 border-green-200" : "bg-black/[0.02] border-black/[0.07]"}`}>
+                  <div className={`text-3xl font-black mb-1 ${closedTestDone ? "text-green-600" : "text-black/30"}`}>{closedTestDone ? "✓" : "⏳"}</div>
+                  <div className="text-[10px] font-bold text-black/50">الحالة الكلية</div>
+                  <div className="text-[11px] mt-2 font-bold text-black/50">
+                    {closedTestDone ? "جاهز للإنتاج! 🎉" : `${Math.max(0, 12 - testerCount)} مختبر + ${Math.max(0, 14 - closedTestDays)} يوم`}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-black/50 block mb-1">تاريخ بدء الاختبار</label>
+                  <Input type="date" value={closedTestStart} onChange={e => saveClosedTest(e.target.value, testerCount)} className="h-9 text-sm" data-testid="input-test-start" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-black/50 block mb-1">عدد المختبرين المشتركين</label>
+                  <Input type="number" min={0} max={999} value={testerCount} onChange={e => saveClosedTest(closedTestStart, parseInt(e.target.value) || 0)} className="h-9 text-sm" data-testid="input-tester-count" />
+                </div>
+              </div>
+              {closedTestDone && (
+                <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 text-center">
+                  <p className="text-sm font-black text-green-700">🎉 شروط الاختبار مكتملة!</p>
+                  <p className="text-[11px] text-green-600 mt-1">يمكنك الآن التقديم على Production في Play Console</p>
+                  <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-green-700 underline">
+                    اذهب إلى Play Console <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* === SECTION 5: Bubblewrap Config + Link === */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-black text-black/40 mb-2">ملف bubblewrap.config.json (للمسار المتقدم)</p>
+                <CodeBlock title="bubblewrap.config.json" code={bubblewrapConfig} />
+              </div>
+              <div className="p-4 rounded-2xl border border-black/[0.08] bg-white space-y-3">
+                <p className="text-xs font-black text-black/40">روابط مهمة</p>
+                {[
+                  { label: "Google Play Console", url: "https://play.google.com/console", color: "text-green-600" },
+                  { label: "PWABuilder (توليد AAB)", url: "https://www.pwabuilder.com", color: "text-blue-600" },
+                  { label: "سياسة الخصوصية", url: siteUrl + "/privacy", color: "text-black/60" },
+                  { label: "assetlinks.json على سيرفرك", url: siteUrl + "/.well-known/assetlinks.json", color: "text-purple-600" },
+                ].map(link => (
+                  <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                    className={`flex items-center gap-2 text-xs font-semibold hover:underline ${link.color}`}>
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" /> {link.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+
           </div>
         </TabsContent>
 
