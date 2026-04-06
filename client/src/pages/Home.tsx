@@ -356,15 +356,14 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative overflow-hidden w-full min-h-[92vh] flex items-center" data-testid="section-hero">
-        {/* Dark gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#06030f] via-[#0c0620] to-[#080415]" />
-        {/* Top violet glow */}
-        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-violet-950/40 via-violet-900/10 to-transparent pointer-events-none" />
-        {/* Dot grid pattern */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #a78bfa 1px, transparent 0)", backgroundSize: "36px 36px" }} />
-        {/* Center ambient glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-violet-600/8 blur-[100px] pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-64 h-64 rounded-full bg-violet-500/5 blur-[80px] pointer-events-none" />
+        {/* Dark background — system dark navy */}
+        <div className="absolute inset-0 bg-[#060b14]" />
+        {/* Subtle top fade */}
+        <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+        {/* Dot grid pattern — neutral white */}
+        <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "36px 36px" }} />
+        {/* Very subtle brand glow — bottom center */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-brand/5 blur-[120px] pointer-events-none" />
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-36 pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
@@ -587,7 +586,7 @@ export default function Home() {
       </section>
 
       {/* ── Hero → Stats Transition ── */}
-      <div className="h-16 bg-gradient-to-b from-[#06030f] to-white dark:to-gray-950 relative z-10" />
+      <div className="h-16 bg-gradient-to-b from-[#060b14] to-white dark:to-gray-950 relative z-10" />
 
       {/* STATS */}
       <section className="py-10 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
