@@ -191,15 +191,6 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const { t, lang, dir, setLang } = useI18n();
   const { theme, toggle } = useTheme();
-  const [annDismissed, setAnnDismissed] = useState(() => {
-    try { return sessionStorage.getItem("qirox_ann_dismissed") === "1"; } catch { return false; }
-  });
-
-  const dismissAnn = () => {
-    try { sessionStorage.setItem("qirox_ann_dismissed", "1"); } catch {}
-    setAnnDismissed(true);
-  };
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
@@ -223,45 +214,10 @@ export default function Navigation() {
 
   const allLinks = [...navLinks, ...adminLinks];
 
-  const annBarHeight = annDismissed ? 0 : 40;
   const isOnDarkHero = location === "/" && !scrolled;
 
   return (
     <>
-      {/* ── Announcement Bar ── */}
-      <AnimatePresence>
-        {!annDismissed && (
-          <motion.div
-            key="ann-bar"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 40, opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="fixed top-0 left-0 right-0 z-[60] overflow-hidden"
-            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-          >
-            <div className="h-10 bg-[#0a0a0f] border-b border-white/[0.07] flex items-center justify-center px-4 relative">
-              <div className="flex items-center gap-2.5">
-                <span className="text-[10px] sm:text-xs font-black text-gray-900 px-2 py-0.5 rounded-full bg-white">{lang === "ar" ? "جديد" : "NEW"}</span>
-                <span className="text-[11px] sm:text-xs text-white/65 font-medium">
-                  {lang === "ar" ? "باقة Enterprise متاحة الآن — نظام متكامل للشركات الكبرى" : "Enterprise plan now available — Full system for large companies"}
-                </span>
-                <Link href="/prices" className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-white/80 hover:text-white underline-offset-2 underline">
-                  {lang === "ar" ? "اكتشف" : "Explore"}
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-              <button
-                onClick={dismissAnn}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
-                data-testid="button-dismiss-ann"
-              >
-                <X className="w-3 h-3 text-white/50" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Status bar background — covers the notch/camera area on mobile */}
       <div
@@ -272,7 +228,7 @@ export default function Navigation() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)", top: `${annBarHeight}px` }}
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)", top: 0 }}
         className={`fixed left-0 right-0 z-50 transition-all duration-500 ${
           scrolled ? "py-2" : "py-4"
         }`}

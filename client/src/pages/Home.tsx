@@ -365,8 +365,8 @@ export default function Home() {
         {/* Very subtle white glow — bottom center */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] rounded-full bg-white/[0.02] blur-[120px] pointer-events-none" />
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-36 pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 pt-24 sm:pt-28 lg:pt-36 pb-14 sm:pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center max-w-6xl mx-auto">
 
             {/* ── Content Column ── */}
             <div className={lang === "ar" ? "text-center lg:text-right order-1" : "text-center lg:text-left order-1"} dir={dir}>
@@ -388,10 +388,10 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, delay: 0.1 }}
               >
-                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading text-white leading-[1.05] mb-1 tracking-tight">
+                <h1 dir="ltr" className="text-[clamp(2.2rem,8vw,5.5rem)] font-black font-heading text-white leading-[1.05] mb-1 tracking-tight">
                   Build Systems.
                 </h1>
-                <h1 dir="ltr" className="text-[clamp(2.8rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-8 tracking-tight" style={{ color: "rgba(255,255,255,0.2)" }}>
+                <h1 dir="ltr" className="text-[clamp(2.2rem,8vw,5.5rem)] font-black font-heading leading-[1.05] mb-6 sm:mb-8 tracking-tight" style={{ color: "rgba(255,255,255,0.2)" }}>
                   .Stay Human
                 </h1>
               </motion.div>
@@ -401,7 +401,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.25 }}
-                className="text-base sm:text-lg text-white/45 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                className="text-sm sm:text-lg text-white/45 mb-7 sm:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed"
                 dir={dir}
               >
                 {t("home.hero.subtitleFull")}
@@ -412,13 +412,13 @@ export default function Home() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.32 }}
-                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-11"
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 mb-7 sm:mb-11"
                 dir="ltr"
               >
                 <Link href="/contact">
                   <Button
                     size="lg"
-                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-white text-gray-950 hover:bg-white/90 shadow-lg shadow-black/20 no-default-hover-elevate no-default-active-elevate border-0"
+                    className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full gap-2.5 font-bold bg-white text-gray-950 hover:bg-white/90 shadow-lg shadow-black/20 no-default-hover-elevate no-default-active-elevate border-0"
                     data-testid="button-start-project"
                   >
                     <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -429,7 +429,7 @@ export default function Home() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="h-12 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full font-semibold border-white/12 text-white/65 bg-white/[0.05] hover:bg-white/[0.1] hover:text-white/90 hover:border-white/20"
+                    className="h-11 sm:h-14 px-7 sm:px-10 text-sm sm:text-base w-full sm:w-auto rounded-full font-semibold border-white/12 text-white/65 bg-white/[0.05] hover:bg-white/[0.1] hover:text-white/90 hover:border-white/20"
                     data-testid="button-explore-solutions"
                   >
                     {lang === "ar" ? "عرض الأسعار" : "View Pricing"}
@@ -442,7 +442,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.42 }}
-                className="flex flex-wrap items-center justify-center lg:justify-start gap-6"
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6"
                 dir={dir}
               >
                 {[
@@ -461,18 +461,6 @@ export default function Home() {
                 ))}
               </motion.div>
 
-              {/* Promo pill */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04] mt-8"
-                data-testid="promo-banner"
-              >
-                <span className="text-[11px] font-bold tracking-wider text-white bg-white/15 px-2.5 py-0.5 rounded-full">{t("home.promo.new")}</span>
-                <span className="text-white/40 text-sm" dir={dir}>{t("home.promo.text")}</span>
-                <ArrowLeft className="w-3 h-3 text-white/20" />
-              </motion.div>
             </div>
 
             {/* ── Visual Column (Desktop) ── */}
