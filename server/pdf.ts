@@ -1,10 +1,11 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import * as fontkitModule from "@pdf-lib/fontkit";
+import { createRequire } from "module";
 import * as fs from "fs";
 import * as path from "path";
 
-/* @pdf-lib/fontkit is a CJS module with no default export — grab the module object */
-const fontkit = (fontkitModule as any).default ?? fontkitModule;
+/* @pdf-lib/fontkit is CJS — use createRequire to get the correct module object */
+const _require = createRequire(import.meta.url);
+const fontkit = _require("@pdf-lib/fontkit");
 
 interface QuotationData {
   quotationNumber: string;
@@ -60,9 +61,13 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   if (arabicFontBytes) {
     try {
       arabicFont = await pdfDoc.embedFont(arabicFontBytes);
-    } catch {
+      console.log("[PDF] Arabic font embedded:", arabicFont?.name);
+    } catch(err: any) {
+      console.error("[PDF] Arabic font embed FAILED:", err?.message);
       arabicFont = null;
     }
+  } else {
+    console.warn("[PDF] Arabic font file not found");
   }
 
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -93,9 +98,18 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const latinFont = helveticaBold;
   const latinReg  = helvetica;
 
+  /* auto-switch to arabicFont if text contains Arabic and a Latin font was requested */
+  const hasArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
   const drawText = (txt: string, x: number, y: number, size: number, color = BLACK, font = textFont) => {
     if (!txt) return;
-    page.drawText(txt, { x, y, size, color, font });
+    const safeFont = (arabicFont && hasArabic(txt)) ? arabicFont : font;
+    try {
+      page.drawText(txt, { x, y, size, color, font: safeFont });
+    } catch {
+      /* strip Arabic if font still can't encode — draw latin-only fallback */
+      const fallback = txt.replace(/[\u0600-\u06FF\s]+/g, " ").trim();
+      if (fallback) page.drawText(fallback, { x, y, size, color, font: latinReg });
+    }
   };
 
   const drawRect = (x: number, y: number, w: number, h: number, color = LGRAY) => {
