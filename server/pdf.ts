@@ -29,15 +29,33 @@ function loadArabicFont(): Buffer | null {
 }
 
 
+function loadLogo(): Buffer | null {
+  try {
+    /* prefer transparent RGBA PNG for use on dark backgrounds */
+    const paths = [
+      path.resolve(process.cwd(), "attached_assets/qirox_1771715726312.png"),
+      path.resolve(process.cwd(), "client/public/logo.png"),
+      path.resolve(process.cwd(), "public/logo.png"),
+    ];
+    for (const p of paths) {
+      if (fs.existsSync(p)) return fs.readFileSync(p);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
 
+  /* register fontkit once for custom fonts */
+  pdfDoc.registerFontkit(fontkit);
+
   const arabicFontBytes = loadArabicFont();
   let arabicFont: any = null;
-
   if (arabicFontBytes) {
     try {
-      pdfDoc.registerFontkit(fontkit);
       arabicFont = await pdfDoc.embedFont(arabicFontBytes);
     } catch {
       arabicFont = null;
@@ -46,6 +64,17 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  /* embed logo image */
+  const logoBytes = loadLogo();
+  let logoImage: any = null;
+  if (logoBytes) {
+    try {
+      logoImage = await pdfDoc.embedPng(logoBytes);
+    } catch {
+      logoImage = null;
+    }
+  }
 
   const page = pdfDoc.addPage([595, 842]);
   const { width, height } = page.getSize();
@@ -77,11 +106,32 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   let curY = height - 40;
 
   /* ── Header bar ── */
-  drawRect(0, curY - 10, width, 60, BLACK);
-  drawText("QIROX", 30, curY + 20, 28, WHITE, latinFont);
-  drawText("STUDIO", 110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
-  drawText("qiroxstudio.online", width - 175, curY + 22, 9, rgb(0.6, 0.6, 0.6), latinReg);
-  drawText("QUOTATION", width - 175, curY + 8, 7, rgb(0.5, 0.5, 0.5), latinReg);
+  const headerH = 64;
+  drawRect(0, curY - 14, width, headerH, BLACK);
+
+  if (logoImage) {
+    /* fit logo into 90×44 box in header, maintain aspect ratio */
+    const logoNatW: number = logoImage.width;
+    const logoNatH: number = logoImage.height;
+    const maxW = 90, maxH = 44;
+    const scale = Math.min(maxW / logoNatW, maxH / logoNatH);
+    const lw = logoNatW * scale;
+    const lh = logoNatH * scale;
+    page.drawImage(logoImage, {
+      x: 28,
+      y: curY - 14 + (headerH - lh) / 2,
+      width: lw,
+      height: lh,
+    });
+    /* small domain label to the right of logo */
+    drawText("qiroxstudio.online", 28 + lw + 8, curY + 16, 8, rgb(0.55, 0.55, 0.55), latinReg);
+  } else {
+    /* text fallback */
+    drawText("QIROX", 30, curY + 20, 28, WHITE, latinFont);
+    drawText("STUDIO", 110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
+    drawText("qiroxstudio.online", width - 175, curY + 22, 9, rgb(0.6, 0.6, 0.6), latinReg);
+  }
+  drawText("QUOTATION", width - 100, curY + 8, 7, rgb(0.5, 0.5, 0.5), latinReg);
   curY -= 70;
 
   /* ── Quotation number & date ── */

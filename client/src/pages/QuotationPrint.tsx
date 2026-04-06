@@ -209,7 +209,7 @@ export default function QuotationPrint() {
           {/* Header */}
           <div className="bg-black px-10 py-8 flex items-start justify-between">
             <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 brightness-0 invert opacity-90" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto mb-3 invert opacity-90" />
               <p className="text-white/40 text-xs">qiroxstudio.online</p>
             </div>
             <div className="text-left">

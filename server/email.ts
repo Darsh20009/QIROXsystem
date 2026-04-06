@@ -8,8 +8,8 @@ function getEmailCfg() {
     apiKey: s.apiKey || process.env.SMTP2GO_API_KEY || "",
     sender: s.sender || process.env.SMTP2GO_SENDER || "noreply@qiroxstudio.online",
     senderName: s.senderName || process.env.SMTP2GO_SENDER_NAME || "Qirox",
-    logoUrl: s.logoUrl || process.env.EMAIL_LOGO_URL || "https://raw.githubusercontent.com/Darsh20009/QIROXsystem/main/client/public/logo.png",
     siteUrl: s.siteUrl || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online",
+    logoUrl: s.logoUrl || process.env.EMAIL_LOGO_URL || `${s.siteUrl || process.env.EMAIL_SITE_URL || "https://qiroxstudio.online"}/logo.png`,
   };
 }
 
@@ -95,27 +95,28 @@ const S = {
 };
 
 function emailBanner() {
+  const logoUrl = getEmailCfg().logoUrl;
   return `<tr>
   <td style="padding:0;margin:0;background:#000000;border-radius:16px 16px 0 0;overflow:hidden;">
     <table width="580" cellpadding="0" cellspacing="0" border="0" style="background:#000000;width:100%;max-width:580px;">
       <tr>
-        <td style="padding:28px 32px 24px;">
+        <td style="padding:24px 32px 20px;vertical-align:middle;">
           <table cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td>
-                <p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:900;letter-spacing:-1px;color:#ffffff;line-height:1;">QIROX</p>
-                <p style="margin:4px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">STUDIO</p>
+              <td style="vertical-align:middle;padding-left:0;">
+                ${logoUrl
+                  ? `<img src="${logoUrl}" alt="QIROX" width="120" height="80" style="border:0;display:block;max-width:120px;height:auto;background:#ffffff;padding:6px 10px;border-radius:8px;" />`
+                  : `<p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:900;letter-spacing:-1px;color:#ffffff;line-height:1;">QIROX</p>
+                     <p style="margin:4px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">STUDIO</p>`
+                }
               </td>
             </tr>
           </table>
-          <p style="margin:20px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">منصة إدارة الأعمال الرقمية &bull; qiroxstudio.online</p>
-        </td>
-        <td style="padding:0;text-align:left;vertical-align:middle;padding-left:32px;">
-          <div style="width:60px;height:60px;background:rgba(255,255,255,0.05);border-radius:16px;border:1px solid rgba(255,255,255,0.08);display:inline-block;"></div>
+          <p style="margin:14px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">منصة إدارة الأعمال الرقمية &bull; qiroxstudio.online</p>
         </td>
       </tr>
       <tr>
-        <td colspan="2" style="padding:0 0 0;height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000);"></td>
+        <td colspan="1" style="padding:0;height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000000);font-size:0;line-height:0;">&nbsp;</td>
       </tr>
     </table>
   </td>
@@ -135,9 +136,6 @@ function baseTemplate(content: string) {
 <tr><td align="center">
 <table width="580" cellpadding="0" cellspacing="0" border="0" style="${S.wrap}">
   ${emailBanner()}
-  <tr><td style="${S.header}">
-    <span style="${S.logo}">QIROX</span>
-  </td></tr>
   <tr><td style="${S.body}">${content}</td></tr>
   <tr><td style="${S.footer}">
     <p style="${S.footerText}">&#169; 2026 QIROX Studio &bull; <a href="${getEmailCfg().siteUrl}" style="color:#9ca3af;text-decoration:none;">qiroxstudio.online</a></p>

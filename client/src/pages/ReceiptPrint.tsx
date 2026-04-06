@@ -103,7 +103,7 @@ export default function ReceiptPrint() {
           {/* Header */}
           <div className="bg-black px-8 py-6 flex items-center justify-between">
             <div>
-              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain brightness-[2] opacity-90" />
+              <img src={qiroxLogoPath} alt="QIROX" className="h-9 w-auto object-contain invert opacity-90" />
               <p className="text-white/40 text-xs mt-1">qiroxstudio.online</p>
             </div>
             <div className="text-left">
