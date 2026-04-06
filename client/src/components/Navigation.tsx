@@ -214,7 +214,8 @@ export default function Navigation() {
 
   const allLinks = [...navLinks, ...adminLinks];
 
-  const isOnDarkHero = location === "/" && !scrolled;
+  const darkHeroRoutes = ["/", "/devices", "/demos", "/consultation"];
+  const isOnDarkHero = darkHeroRoutes.includes(location) && !scrolled;
 
   return (
     <>

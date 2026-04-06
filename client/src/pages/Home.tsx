@@ -461,6 +461,29 @@ export default function Home() {
                 ))}
               </motion.div>
 
+              {/* ── Mobile Feature Pills ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.55 }}
+                className="flex lg:hidden flex-wrap justify-center gap-2 mt-6"
+                dir={dir}
+              >
+                {[
+                  { icon: BarChart3, label: lang === "ar" ? "تقارير فورية" : "Live Reports" },
+                  { icon: CreditCard, label: lang === "ar" ? "مدفوعات متكاملة" : "Payments" },
+                  { icon: Smartphone, label: lang === "ar" ? "تطبيق جوال" : "Mobile App" },
+                  { icon: Shield, label: lang === "ar" ? "أمان عالي" : "High Security" },
+                  { icon: Zap, label: lang === "ar" ? "سريع وموثوق" : "Fast & Reliable" },
+                  { icon: MessageSquare, label: lang === "ar" ? "دعم فوري" : "Live Support" },
+                ].map(({ icon: Icon, label }, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.05] backdrop-blur-sm">
+                    <Icon className="w-3 h-3 text-white/50" />
+                    <span className="text-[11px] text-white/55 font-medium">{label}</span>
+                  </div>
+                ))}
+              </motion.div>
+
             </div>
 
             {/* ── Visual Column (Desktop) ── */}

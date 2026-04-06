@@ -99,7 +99,7 @@ export default function About() {
       <Navigation />
 
       {/* Hero */}
-      <section className="pt-40 pb-36 relative overflow-hidden">
+      <section className="pt-28 pb-20 relative overflow-hidden">
         <PageGraphics variant="full-light" />
         <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div className="container mx-auto px-4 relative z-10">

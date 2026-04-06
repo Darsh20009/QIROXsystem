@@ -482,7 +482,7 @@ export default function Login() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { value: "+200", label: "عميل" },
+              { value: "+100", label: "عميل" },
               { value: "+8", label: "قطاعات" },
               { value: "99%", label: "رضا" },
             ].map(s => (
@@ -1401,6 +1401,7 @@ export default function Login() {
                         <Input
                           type={showPw ? "text" : "password"}
                           placeholder="••••••••"
+                          autoComplete={isRegister ? "new-password" : "current-password"}
                           {...field}
                           className={`${inputBase} pr-10 pl-10`}
                           data-testid="input-password"
@@ -1432,6 +1433,7 @@ export default function Login() {
                           <Input
                             type={showConfirmPw ? "text" : "password"}
                             placeholder="••••••••"
+                            autoComplete="new-password"
                             {...field}
                             className={`${inputBase} pr-10 pl-10`}
                             data-testid="input-confirmPassword"
