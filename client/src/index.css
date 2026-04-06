@@ -1258,7 +1258,3 @@
   }
 }
 
-/* PageLoader logo — dark mode invert (applied via class, works independently of React render timing) */
-.dark .page-loader-logo {
-  filter: brightness(0) invert(1);
-}

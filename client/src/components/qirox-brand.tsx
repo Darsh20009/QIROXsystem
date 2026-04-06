@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
-import qiroxNoBgPath from "@assets/qirox_without_background_1771716363944.png";
+import qiroxNoBgPath from "@assets/qirox_1771715726312.png";
 
 const BAR_DATA = [38, 55, 42, 70, 58, 85, 63, 92, 74, 100, 82, 96];
 const LINE_POINTS = [

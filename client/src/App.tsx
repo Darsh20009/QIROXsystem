@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useState, useRef, useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from "react";
 import { SplashScreen } from "@/components/qirox-brand";
-const qiroxLoaderLogo = "/qirox-loader-logo.png";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { useUser } from "@/hooks/use-auth";
@@ -178,7 +177,7 @@ function PageLoader() {
   const BAR_H = [35, 52, 40, 68, 55, 80, 48, 72, 60, 90, 75, 96];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f8fb] dark:bg-[#07070f] relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] relative overflow-hidden">
 
       {/* === Dot grid background === */}
       <div
@@ -238,7 +237,6 @@ function PageLoader() {
               0%   { transform: translateX(-100%); }
               100% { transform: translateX(400%); }
             }
-            .dark { --loader-logo-filter: brightness(0) invert(1); }
           `}</style>
         </defs>
 
@@ -316,13 +314,37 @@ function PageLoader() {
           style={{ animation: "loader-logo-fade 2.8s ease-in-out infinite" }}
         >
           {/* Soft glow behind logo */}
-          <div className="absolute inset-0 -m-8 rounded-full bg-violet-500/10 dark:bg-violet-400/15 blur-2xl pointer-events-none" />
-          <img
-            src={qiroxLoaderLogo}
-            alt="QIROX"
-            className="relative w-40 h-auto select-none page-loader-logo"
+          <div className="absolute inset-0 -m-10 rounded-full bg-violet-500/15 dark:bg-violet-400/20 blur-3xl pointer-events-none" />
+          {/* QIROX inline SVG logo — hardcoded white for dark loader bg */}
+          <svg
+            viewBox="0 0 220 70"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            width="208"
+            height="66"
+            className="relative select-none"
+            aria-label="QIROX"
             draggable={false}
-          />
+          >
+            {/* Q */}
+            <circle cx="22" cy="26" r="14" stroke="white" strokeWidth="3.5" />
+            <line x1="32" y1="36" x2="42" y2="46" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+            {/* I */}
+            <rect x="52" y="12" width="4" height="28" rx="2" fill="white" />
+            {/* R */}
+            <rect x="64" y="12" width="4" height="28" rx="2" fill="white" />
+            <path d="M68 12 Q82 12 82 20 Q82 28 68 28" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <line x1="70" y1="28" x2="83" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+            {/* O */}
+            <ellipse cx="101" cy="26" rx="11" ry="14" stroke="white" strokeWidth="3.5" />
+            {/* X */}
+            <line x1="118" y1="12" x2="136" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="136" y1="12" x2="118" y2="40" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+            {/* Purple accent dot */}
+            <circle cx="142" cy="12" r="3.5" fill="#8b5cf6" />
+            {/* Tagline */}
+            <text x="2" y="62" fontFamily="system-ui,-apple-system,sans-serif" fontSize="7" fill="white" fillOpacity="0.45" letterSpacing="4">BUSINESS PLATFORM</text>
+          </svg>
         </div>
 
         {/* Progress bar sweep */}
