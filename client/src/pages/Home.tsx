@@ -203,7 +203,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#080811]">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Navigation />
 
       {/* ── Creative Discount Banner ── */}
@@ -587,10 +587,10 @@ export default function Home() {
       </section>
 
       {/* ── Hero → Stats Transition ── */}
-      <div className="h-16 bg-gradient-to-b from-[#06030f] to-[#080811] relative z-10" />
+      <div className="h-16 bg-gradient-to-b from-[#06030f] to-white dark:to-gray-950 relative z-10" />
 
       {/* STATS */}
-      <section className="py-10 relative z-10 bg-[#080811]" data-testid="section-stats">
+      <section className="py-10 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -598,20 +598,20 @@ export default function Home() {
             viewport={{ once: true }}
             variants={fadeUp}
             custom={0}
-            className="rounded-2xl overflow-hidden border border-white/[0.07] bg-[#0d0d1c] shadow-lg shadow-black/[0.04]"
+            className="rounded-2xl overflow-hidden border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 shadow-lg shadow-black/[0.04]"
           >
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.05] dark:divide-white/[0.05] rtl:divide-x-reverse divide-y md:divide-y-0">
               {[
-                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-violet-400" },
-                { value: "6+", label: t("home.stats.sectorsCount"), color: "text-blue-400" },
-                { value: "5", label: lang === "ar" ? "باقات متنوعة" : "Pricing Plans", color: "text-emerald-400" },
-                { value: "2", label: t("home.stats.locations"), color: "text-orange-400" },
+                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-violet-600 dark:text-violet-400" },
+                { value: "6+", label: t("home.stats.sectorsCount"), color: "text-blue-600 dark:text-blue-400" },
+                { value: "5", label: lang === "ar" ? "باقات متنوعة" : "Pricing Plans", color: "text-emerald-600 dark:text-emerald-400" },
+                { value: "2", label: t("home.stats.locations"), color: "text-orange-500 dark:text-orange-400" },
               ].map((stat, idx) => (
                 <div key={idx} className="px-4 py-7 sm:px-8 sm:py-9 text-center group" data-testid={`stat-card-${idx}`}>
                   <div className={`text-3xl sm:text-4xl md:text-5xl font-black mb-2 font-heading ${stat.color}`}>
                     {stat.value}
                   </div>
-                  <div className="text-white/40 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
+                  <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -620,7 +620,7 @@ export default function Home() {
       </section>
 
       {/* ── Trusted By Bar ── */}
-      <section className="py-10 bg-[#080811] border-b border-white/[0.05]" data-testid="section-trust-bar">
+      <section className="py-10 bg-white dark:bg-gray-950 border-b border-black/[0.04] dark:border-white/[0.04]" data-testid="section-trust-bar">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -629,7 +629,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10"
           >
-            <p className="text-[11px] tracking-[0.28em] uppercase text-white/30 font-semibold whitespace-nowrap shrink-0" dir={dir}>
+            <p className="text-[11px] tracking-[0.28em] uppercase text-black/30 dark:text-white/30 font-semibold whitespace-nowrap shrink-0" dir={dir}>
               {lang === "ar" ? "يثقون بنا" : "Trusted By"}
             </p>
             <div className="w-px h-8 bg-black/[0.06] dark:bg-white/[0.06] hidden sm:block shrink-0" />
@@ -661,15 +661,15 @@ export default function Home() {
             variants={stagger}
           >
             <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] mb-5">
-                <Zap className="w-3.5 h-3.5 text-white/40" />
-                <span className="text-white/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
+                <Zap className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.services.badge")}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
                 {t("home.services.title")}{" "}
-                <span className="text-gray-500">{t("home.services.titleHighlight")}</span>
+                <span className="text-gray-400 dark:text-gray-500">{t("home.services.titleHighlight")}</span>
               </motion.h2>
-              <motion.p variants={fadeUp} custom={2} className="text-white/35 max-w-xl mx-auto text-base">
+              <motion.p variants={fadeUp} custom={2} className="text-black/35 dark:text-white/35 max-w-xl mx-auto text-base">
                 {t("home.services.subtitle")}
               </motion.p>
             </div>
@@ -682,12 +682,12 @@ export default function Home() {
                   desc: t("home.services.restaurants.desc"),
                   features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
                   badge: lang === "ar" ? "🍽️ مطاعم وكافيهات"     : "🍽️ Restaurants & Cafes",
-                  accentBorder: "hover:border-orange-500/25",
+                  accentBorder: "hover:border-orange-200 dark:hover:border-orange-500/20",
                   accentShadow: "hover:shadow-orange-500/8",
-                  accentIcon: "bg-orange-500/10",
-                  accentIconText: "text-orange-400",
-                  accentBadge: "bg-orange-500/10 text-orange-400",
-                  accentTag: "border-orange-500/15 bg-orange-500/5 text-orange-400/70",
+                  accentIcon: "bg-orange-50 dark:bg-orange-500/10",
+                  accentIconText: "text-orange-500 dark:text-orange-400",
+                  accentBadge: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
+                  accentTag: "border-orange-100 dark:border-orange-500/15 bg-orange-50/50 dark:bg-orange-500/5 text-orange-600/70 dark:text-orange-400/70",
                 },
                 {
                   icon: Store,
@@ -695,12 +695,12 @@ export default function Home() {
                   desc: t("home.services.stores.desc"),
                   features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
                   badge: lang === "ar" ? "🛍️ متاجر إلكترونية"    : "🛍️ E-Commerce Stores",
-                  accentBorder: "hover:border-blue-500/25",
+                  accentBorder: "hover:border-blue-200 dark:hover:border-blue-500/20",
                   accentShadow: "hover:shadow-blue-500/8",
-                  accentIcon: "bg-blue-500/10",
-                  accentIconText: "text-blue-400",
-                  accentBadge: "bg-blue-500/10 text-blue-400",
-                  accentTag: "border-blue-500/15 bg-blue-500/5 text-blue-400/70",
+                  accentIcon: "bg-blue-50 dark:bg-blue-500/10",
+                  accentIconText: "text-blue-500 dark:text-blue-400",
+                  accentBadge: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                  accentTag: "border-blue-100 dark:border-blue-500/15 bg-blue-50/50 dark:bg-blue-500/5 text-blue-600/70 dark:text-blue-400/70",
                 },
                 {
                   icon: GraduationCap,
@@ -708,12 +708,12 @@ export default function Home() {
                   desc: t("home.services.education.desc"),
                   features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
                   badge: lang === "ar" ? "📚 تعليم وأكاديميات"    : "📚 Education & Academies",
-                  accentBorder: "hover:border-violet-500/25",
+                  accentBorder: "hover:border-violet-200 dark:hover:border-violet-500/20",
                   accentShadow: "hover:shadow-violet-500/8",
-                  accentIcon: "bg-violet-500/10",
-                  accentIconText: "text-violet-400",
-                  accentBadge: "bg-violet-500/10 text-violet-400",
-                  accentTag: "border-violet-500/15 bg-violet-500/5 text-violet-400/70",
+                  accentIcon: "bg-violet-50 dark:bg-violet-500/10",
+                  accentIconText: "text-violet-600 dark:text-violet-400",
+                  accentBadge: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                  accentTag: "border-violet-100 dark:border-violet-500/15 bg-violet-50/50 dark:bg-violet-500/5 text-violet-600/70 dark:text-violet-400/70",
                 },
                 {
                   icon: Building2,
@@ -721,17 +721,17 @@ export default function Home() {
                   desc: t("home.services.enterprise.desc"),
                   features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
                   badge: lang === "ar" ? "🏢 شركات ومؤسسات"      : "🏢 Corporates & Enterprises",
-                  accentBorder: "hover:border-emerald-500/25",
+                  accentBorder: "hover:border-emerald-200 dark:hover:border-emerald-500/20",
                   accentShadow: "hover:shadow-emerald-500/8",
-                  accentIcon: "bg-emerald-500/10",
-                  accentIconText: "text-emerald-400",
-                  accentBadge: "bg-emerald-500/10 text-emerald-400",
-                  accentTag: "border-emerald-500/15 bg-emerald-500/5 text-emerald-400/70",
+                  accentIcon: "bg-emerald-50 dark:bg-emerald-500/10",
+                  accentIconText: "text-emerald-600 dark:text-emerald-400",
+                  accentBadge: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  accentTag: "border-emerald-100 dark:border-emerald-500/15 bg-emerald-50/50 dark:bg-emerald-500/5 text-emerald-600/70 dark:text-emerald-400/70",
                 },
               ].map((path, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`rounded-[24px] border border-white/[0.07] bg-[#0d0d1c] p-5 sm:p-8 md:p-10 h-full group transition-all duration-300 ${path.accentBorder} hover:shadow-xl ${path.accentShadow}`}
+                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-5 sm:p-8 md:p-10 h-full group transition-all duration-300 ${path.accentBorder} hover:shadow-xl ${path.accentShadow}`}
                     data-testid={`service-path-${idx}`}
                     dir={dir}
                   >
@@ -740,14 +740,14 @@ export default function Home() {
                         {path.badge}
                       </span>
                       <Link href="/systems">
-                        <ArrowUpRight className={`w-5 h-5 text-white/10 group-hover:${path.accentIconText} transition-all duration-300 cursor-pointer`} />
+                        <ArrowUpRight className={`w-5 h-5 text-black/10 dark:text-white/10 group-hover:${path.accentIconText} transition-all duration-300 cursor-pointer`} />
                       </Link>
                     </div>
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${path.accentIcon} transition-all duration-300 mb-5 group-hover:scale-110`}>
                       <path.icon className={`w-6 h-6 ${path.accentIconText}`} />
                     </div>
-                    <h3 className="text-xl font-bold font-heading text-white mb-3">{path.title}</h3>
-                    <p className="text-sm text-white/40 leading-relaxed mb-6">{path.desc}</p>
+                    <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-3">{path.title}</h3>
+                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6">{path.desc}</p>
                     <div className="flex flex-wrap gap-2">
                       {path.features.map((f, i) => (
                         <span
@@ -830,7 +830,7 @@ export default function Home() {
       </section>
 
       {/* STORE / E-COMMERCE DEEP DIVE */}
-      <section className="py-20 md:py-28 bg-[#080811] relative" data-testid="section-store">
+      <section className="py-20 md:py-28 bg-[#fafafa] dark:bg-gray-900/30 relative" data-testid="section-store">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -840,14 +840,14 @@ export default function Home() {
           >
             <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-16" dir={dir}>
               <div>
-                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.07] bg-[#0d0d1c] mb-5">
-                  <ShoppingBag className="w-3.5 h-3.5 text-white/40" />
-                  <span className="text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "نظام المتاجر الإلكترونية" : "E-Commerce Store System"}</span>
+                <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 mb-5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                  <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "نظام المتاجر الإلكترونية" : "E-Commerce Store System"}</span>
                 </motion.div>
-                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
-                  {lang === "ar" ? <>متجرك الاحترافي<br /><span className="text-gray-500">بكل ما تحتاج</span></> : <>Your professional store<br /><span className="text-gray-500">with everything you need</span></>}
+                <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
+                  {lang === "ar" ? <>متجرك الاحترافي<br /><span className="text-gray-400 dark:text-gray-500">بكل ما تحتاج</span></> : <>Your professional store<br /><span className="text-gray-400 dark:text-gray-500">with everything you need</span></>}
                 </motion.h2>
-                <motion.p variants={fadeUp} custom={2} className="text-white/40 max-w-lg text-base leading-relaxed">
+                <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 max-w-lg text-base leading-relaxed">
                   {lang === "ar" ? "من إدارة المنتجات والمخزون إلى Apple Pay وتقارير المبيعات — كل شيء في مكان واحد" : "From product management to Apple Pay and sales reports — everything in one place"}
                 </motion.p>
               </div>
@@ -864,10 +864,10 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {storeFeatures.map((feature, idx) => {
                 const iconConfig = [
-                  { text: "text-blue-400", bg: "bg-blue-500/10" },
-                  { text: "text-violet-400", bg: "bg-violet-500/10" },
-                  { text: "text-emerald-400", bg: "bg-emerald-500/10" },
-                  { text: "text-orange-400", bg: "bg-orange-500/10" },
+                  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10" },
+                  { text: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
+                  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+                  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
                   { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-500/10" },
                   { text: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
                   { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
@@ -875,12 +875,12 @@ export default function Home() {
                 ][idx % 8];
                 return (
                   <motion.div key={idx} variants={fadeUp} custom={idx}>
-                    <div className="rounded-2xl border border-white/[0.07] bg-[#0d0d1c] p-6 h-full group hover:shadow-xl hover:shadow-black/[0.05] hover:border-white/[0.1] transition-all duration-300" data-testid={`store-feature-${idx}`}>
+                    <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 h-full group hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1] transition-all duration-300" data-testid={`store-feature-${idx}`}>
                       <div className={`w-11 h-11 rounded-xl ${iconConfig.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-all duration-300`}>
                         <feature.icon className={`w-5 h-5 ${iconConfig.text}`} />
                       </div>
-                      <h3 className="text-sm font-bold text-white mb-2">{feature.title}</h3>
-                      <p className="text-xs text-white/35 leading-relaxed">{feature.desc}</p>
+                      <h3 className="text-sm font-bold text-black dark:text-white mb-2">{feature.title}</h3>
+                      <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{feature.desc}</p>
                     </div>
                   </motion.div>
                 );
@@ -1011,7 +1011,7 @@ export default function Home() {
       </section>
 
       {/* APP DOWNLOADS SECTION */}
-      <section className="py-20 md:py-28 relative bg-[#080811]" data-testid="section-downloads">
+      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-downloads">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -1020,14 +1020,14 @@ export default function Home() {
             variants={stagger}
           >
             <div className="text-center mb-14" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] mb-5">
-                <Download className="w-3.5 h-3.5 text-white/40" />
-                <span className="text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "تحميل الأنظمة" : "Download Our Apps"}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.04] mb-5">
+                <Download className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{lang === "ar" ? "تحميل الأنظمة" : "Download Our Apps"}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-white mb-4">
-                {lang === "ar" ? <>حمّل نظامك<br /><span className="text-white/30">على جميع الأجهزة</span></> : <>Download Your System<br /><span className="text-white/30">on All Devices</span></>}
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4">
+                {lang === "ar" ? <>حمّل نظامك<br /><span className="text-black/30 dark:text-white/30">على جميع الأجهزة</span></> : <>Download Your System<br /><span className="text-black/30 dark:text-white/30">on All Devices</span></>}
               </motion.h2>
-              <motion.p variants={fadeUp} custom={2} className="text-white/40 text-base max-w-xl mx-auto leading-relaxed">
+              <motion.p variants={fadeUp} custom={2} className="text-black/40 dark:text-white/40 text-base max-w-xl mx-auto leading-relaxed">
                 {lang === "ar"
                   ? "أنظمة QIROX متاحة على متجر آبل، جوجل بلاي، ومتجر مايكروسوفت. حمّل تطبيقك الآن أو انتظر الإطلاق قريباً."
                   : "QIROX systems are available on App Store, Google Play, and Microsoft Store. Download your app now or wait for the upcoming launch."}
@@ -1184,7 +1184,7 @@ export default function Home() {
       </section>
 
       {/* SYSTEMS CAROUSEL */}
-      <section className="py-20 md:py-28 relative bg-[#080811]" data-testid="section-carousel">
+      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-carousel">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -1195,12 +1195,12 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <div className="lg:col-span-3" dir={dir}>
                 <motion.div variants={fadeUp} custom={0}>
-                  <span className="text-white/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
-                  <h2 className="text-3xl md:text-4xl font-bold font-heading text-white mb-4 leading-tight">
+                  <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3 block">{t("home.carousel.label")}</span>
+                  <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
                     {t("home.carousel.title")}{" "}
-                    <span className="text-gray-500">{t("home.carousel.titleHighlight")}</span>
+                    <span className="text-gray-400 dark:text-gray-500">{t("home.carousel.titleHighlight")}</span>
                   </h2>
-                  <p className="text-white/40 text-sm leading-relaxed mb-8">
+                  <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed mb-8">
                     {t("home.carousel.desc")}
                   </p>
                   <div className="flex gap-2">
@@ -1209,8 +1209,8 @@ export default function Home() {
                         key={idx}
                         className={`rounded-full transition-all duration-300 ${
                           idx === activeCarouselIdx
-                            ? "w-6 h-2 bg-white"
-                            : "w-2 h-2 bg-white/10"
+                            ? "w-6 h-2 bg-black dark:bg-white"
+                            : "w-2 h-2 bg-black/10 dark:bg-white/10"
                         }`}
                       />
                     ))}
@@ -1222,14 +1222,14 @@ export default function Home() {
                 <div className="flex items-center gap-3 mb-4 justify-end">
                   <button
                     onClick={() => scrollCarousel("right")}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
                     data-testid="button-carousel-prev"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => scrollCarousel("left")}
-                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-white/30 hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
+                    className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:border-black/20 dark:hover:border-white/20 transition-all"
                     data-testid="button-carousel-next"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -1247,22 +1247,22 @@ export default function Home() {
                     return (
                       <Link key={template.id} href="/systems" className="flex-shrink-0 block w-[260px] sm:w-[300px] snap-start" data-carousel-card>
                         <div
-                          className="w-full h-full bg-[#0d0d1c] rounded-[24px] p-6 sm:p-8 cursor-pointer group border border-white/[0.05] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-xl hover:shadow-black/[0.3]"
+                          className="w-full h-full bg-white dark:bg-gray-900/60 rounded-[24px] p-6 sm:p-8 cursor-pointer group border border-black/[0.04] dark:border-white/[0.04] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all hover:shadow-xl hover:shadow-black/[0.04]"
                           data-testid={`carousel-card-${template.slug}`}
                         >
-                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white/[0.05] mb-6">
-                            <Icon className="w-5 h-5 text-white/40" />
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.04] mb-6">
+                            <Icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                           </div>
-                          <h3 className="text-lg font-bold text-white mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
-                          <p className="text-sm text-white/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
+                          <h3 className="text-lg font-bold text-black dark:text-white mb-2" dir={dir}>{lang === "ar" ? template.nameAr : (template.name || template.nameAr)}</h3>
+                          <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6 line-clamp-3" dir={dir}>
                             {lang === "ar" ? template.descriptionAr : (template.description || template.descriptionAr)}
                           </p>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs px-3 py-1.5 rounded-full bg-white/[0.05] text-white/40 font-medium max-w-[130px] truncate block">
+                            <span className="text-xs px-3 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.04] text-black/40 dark:text-white/40 font-medium max-w-[130px] truncate block">
                               {template.category}
                             </span>
-                            <div className="w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white group-hover:text-white transition-colors">
-                              <ArrowUpRight className="w-4 h-4 text-white/30 group-hover:text-white dark:group-hover:text-black transition-colors" />
+                            <div className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center group-hover:bg-black dark:group-hover:bg-white group-hover:text-white transition-colors">
+                              <ArrowUpRight className="w-4 h-4 text-black/30 dark:text-white/30 group-hover:text-white dark:group-hover:text-black transition-colors" />
                             </div>
                           </div>
                         </div>
@@ -1286,23 +1286,23 @@ export default function Home() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             custom={0}
-            className="relative rounded-2xl overflow-hidden border border-white/[0.07] bg-[#0d0d1c]"
+            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
             style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
           >
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0f172a 0%, #1d90f5 50%, #0f172a 100%)" }} />
 
             <div className="px-6 sm:px-10 md:px-14 py-10 md:py-14">
               <div className="flex flex-col items-center text-center mb-10 md:mb-12">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] mb-5">
-                  <Shield className="w-3.5 h-3.5 text-white/30" />
-                  <span className="text-white/40 text-[11px] font-semibold tracking-widest uppercase">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-5">
+                  <Shield className="w-3.5 h-3.5 text-black/30 dark:text-white/30" />
+                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
                     {lang === "ar" ? "إعلان رسمي — شراكة استراتيجية" : "Official Announcement — Strategic Partnership"}
                   </span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-white tracking-tight mb-3">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-black dark:text-white tracking-tight mb-3">
                   {lang === "ar" ? "Qirox تعتمد Paymob بوابةً رسمية للدفع" : "Qirox Adopts Paymob as Official Payment Gateway"}
                 </h2>
-                <p className="text-white/40 text-sm sm:text-base max-w-xl leading-relaxed">
+                <p className="text-black/40 dark:text-white/40 text-sm sm:text-base max-w-xl leading-relaxed">
                   {lang === "ar"
                     ? "في إطار توسّع Qirox وتعزيز منظومتها الرقمية، أبرمت الشركة اتفاقية شراكة رسمية مع Paymob لتوفير بوابة دفع آمنة ومتوافقة لجميع عملائها."
                     : "As part of Qirox's expansion and digital ecosystem enhancement, the company has signed an official partnership agreement with Paymob to provide a secure, compliant payment gateway for all its clients."}
@@ -1311,23 +1311,23 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 mb-10 md:mb-12">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-24 h-24 rounded-xl border border-white/[0.07] bg-black flex items-center justify-center p-4 shadow-sm">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black flex items-center justify-center p-4 shadow-sm">
                     <img src={qiroxNoBgLogo} alt="Qirox" className="w-full h-full object-contain" style={{ filter: "invert(1) brightness(1.1)" }} />
                   </div>
-                  <span className="text-[11px] font-semibold tracking-widest text-white/30 uppercase">Qirox Studio</span>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Qirox Studio</span>
                 </div>
                 <div className="flex flex-row sm:flex-col items-center gap-2">
                   <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
-                  <div className="w-7 h-7 rounded-full border border-white/[0.08] flex items-center justify-center bg-[#111125] shadow-sm">
-                    <span className="text-white/30 text-xs font-bold">×</span>
+                  <div className="w-7 h-7 rounded-full border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center bg-white dark:bg-gray-900 shadow-sm">
+                    <span className="text-black/30 dark:text-white/30 text-xs font-bold">×</span>
                   </div>
                   <div className="w-10 sm:w-px h-px sm:h-10 bg-black/10 dark:bg-white/10" />
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-24 h-24 rounded-xl border border-white/[0.07] bg-white flex items-center justify-center p-4 shadow-sm">
+                  <div className="w-24 h-24 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white flex items-center justify-center p-4 shadow-sm">
                     <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
                   </div>
-                  <span className="text-[11px] font-semibold tracking-widest text-white/30 uppercase">Paymob</span>
+                  <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">Paymob</span>
                 </div>
               </div>
 
@@ -1350,11 +1350,11 @@ export default function Home() {
                       { icon: Clock,      label: "24/7 Support" },
                     ]
                 ).map(({ icon: Icon, label }, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 text-center p-3 rounded-xl border border-white/[0.05] bg-white/[0.02]">
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center">
-                      <Icon className="w-4 h-4 text-white/40" />
+                  <div key={i} className="flex flex-col items-center gap-2 text-center p-3 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-black/[0.01] dark:bg-white/[0.01]">
+                    <div className="w-8 h-8 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center">
+                      <Icon className="w-4 h-4 text-black/40 dark:text-white/40" />
                     </div>
-                    <span className="text-[11px] font-medium text-white/50 leading-tight">{label}</span>
+                    <span className="text-[11px] font-medium text-black/50 dark:text-white/50 leading-tight">{label}</span>
                   </div>
                 ))}
               </div>
@@ -1362,7 +1362,7 @@ export default function Home() {
 
             <div className="px-6 sm:px-10 md:px-14 pb-10 md:pb-12 flex flex-col items-center gap-4">
               <div className="w-full h-px bg-black/[0.06] dark:bg-white/[0.06] mb-2" />
-              <p className="text-sm text-white/50 text-center max-w-md">
+              <p className="text-sm text-black/50 dark:text-white/50 text-center max-w-md">
                 {lang === "ar"
                   ? "هل تريد تفعيل بوابة Paymob على نظامك الخاص؟ ابدأ الآن وأكمل عملية التسجيل في دقائق."
                   : "Want to activate Paymob gateway on your own system? Start now and complete registration in minutes."}
@@ -1377,13 +1377,13 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
-              <span className="text-[11px] text-white/30 tracking-wide">
+            <div className="px-6 sm:px-10 md:px-14 py-4 border-t border-black/[0.05] dark:border-white/[0.05] flex flex-col sm:flex-row items-center justify-between gap-3" dir={dir}>
+              <span className="text-[11px] text-black/30 dark:text-white/30 tracking-wide">
                 {lang === "ar" ? "اتفاقية شراكة رسمية — مارس 2026" : "Official Partnership Agreement — March 2026"}
               </span>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-semibold text-emerald-400 tracking-wide">
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">
                   {lang === "ar" ? "نشط ومفعّل" : "Active & Live"}
                 </span>
               </div>
@@ -1401,14 +1401,14 @@ export default function Home() {
             viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             custom={0}
-            className="relative rounded-2xl overflow-hidden border border-white/[0.07] bg-[#0d0d1c]"
+            className="relative rounded-2xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900/60"
             style={{ boxShadow: "0 2px 40px 0 rgba(0,0,0,0.06)" }}
           >
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #003087 0%, #009cde 50%, #012169 100%)" }} />
             <div className="px-6 sm:px-10 md:px-14 py-8 md:py-10 flex flex-col md:flex-row items-center gap-8 md:gap-14" dir={dir}>
               {/* Logo + title */}
               <div className="flex flex-col items-center gap-3 shrink-0">
-                <div className="w-20 h-20 rounded-2xl border border-white/[0.07] bg-[#003087] flex items-center justify-center p-4 shadow-sm">
+                <div className="w-20 h-20 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-[#003087] flex items-center justify-center p-4 shadow-sm">
                   <svg viewBox="0 0 124 33" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
                     <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/>
                     <path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/>
@@ -1418,21 +1418,21 @@ export default function Home() {
                     <path d="M96.6 5.3l-2.7 17.3c-.1.4.2.7.6.7h2.8c.5 0 .9-.3 1-.8l2.6-16.4c.1-.4-.2-.7-.6-.7h-3.1c-.3 0-.6.2-.6.5v-.6z" fill="#009cde"/>
                   </svg>
                 </div>
-                <span className="text-[11px] font-semibold tracking-widest text-white/30 uppercase">PayPal</span>
+                <span className="text-[11px] font-semibold tracking-widest text-black/30 dark:text-white/30 uppercase">PayPal</span>
               </div>
 
               {/* Text content */}
               <div className="flex-1 text-center md:text-start">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] mb-3">
                   <Globe2 className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-white/40 text-[11px] font-semibold tracking-widest uppercase">
+                  <span className="text-black/40 dark:text-white/40 text-[11px] font-semibold tracking-widest uppercase">
                     {lang === "ar" ? "دفع دولي" : "International Payments"}
                   </span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold font-heading text-white tracking-tight mb-2">
+                <h3 className="text-xl sm:text-2xl font-bold font-heading text-black dark:text-white tracking-tight mb-2">
                   {lang === "ar" ? "قبول المدفوعات الدولية عبر PayPal" : "Accept International Payments via PayPal"}
                 </h3>
-                <p className="text-white/40 text-sm leading-relaxed mb-5 max-w-xl">
+                <p className="text-black/40 dark:text-white/40 text-sm leading-relaxed mb-5 max-w-xl">
                   {lang === "ar"
                     ? "تدعم منصة Qirox التكامل مع PayPal لتمكين العملاء من استقبال مدفوعات آمنة من أكثر من 200 دولة حول العالم، مع حماية المشتري المدمجة وتحويل العملات التلقائي."
                     : "Qirox supports PayPal integration, enabling clients to receive secure payments from 200+ countries worldwide, with built-in buyer protection and automatic currency conversion."}
@@ -1442,7 +1442,7 @@ export default function Home() {
                     ? ["200+ دولة", "حماية المشتري", "تحويل عملات تلقائي", "الدفع بالقسط (Pay Later)", "تكامل API سهل"]
                     : ["200+ Countries", "Buyer Protection", "Auto Currency Conversion", "Pay Later", "Easy API Integration"]
                   ).map((tag, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                    <span key={i} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/40">
                       {tag}
                     </span>
                   ))}
@@ -1461,7 +1461,7 @@ export default function Home() {
                 </Button>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] font-semibold text-emerald-400">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                     {lang === "ar" ? "مدعوم ومتاح" : "Supported & Available"}
                   </span>
                 </div>
@@ -1481,13 +1481,13 @@ export default function Home() {
             variants={stagger}
           >
             <div className="text-center mb-16" dir={dir}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.07] bg-[#0d0d1c] mb-5">
-                <Sparkles className="w-3.5 h-3.5 text-white/40" />
-                <span className="text-white/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/60 mb-5">
+                <Sparkles className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
+                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("home.why.badge")}</span>
               </motion.div>
-              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
+              <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-black dark:text-white mb-4">
                 {t("home.why.title")}{" "}
-                <span className="text-gray-500">QIROX</span>
+                <span className="text-gray-400 dark:text-gray-500">QIROX</span>
                 {lang === "ar" ? "؟" : "?"}
               </motion.h2>
             </div>
@@ -1501,15 +1501,15 @@ export default function Home() {
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`rounded-[24px] border border-white/[0.07] bg-gradient-to-br ${item.accent} p-5 sm:p-8 h-full transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.3] hover:border-white/[0.1]`}
+                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-gradient-to-br ${item.accent} p-5 sm:p-8 h-full transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.04] hover:border-black/[0.1] dark:hover:border-white/[0.1]`}
                     data-testid={`why-card-${idx}`}
                     dir={dir}
                   >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-white/[0.05]">
-                      <item.icon className="w-5 h-5 text-white/40" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-black/[0.04] dark:bg-white/[0.04]">
+                      <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                     </div>
-                    <h3 className="text-base font-bold font-heading text-white mb-3">{item.title}</h3>
-                    <p className="text-sm text-white/35 leading-relaxed">{item.desc}</p>
+                    <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title}</h3>
+                    <p className="text-sm text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -1521,13 +1521,13 @@ export default function Home() {
                 { icon: Lock, title: "حماية متقدمة للبيانات", desc: "SSL، تشفير كامل، نسخ احتياطي يومي" },
                 { icon: Globe2, title: "متعدد اللغات RTL/LTR", desc: "يدعم العربية والإنجليزية بشكل كامل" },
               ].map((item, i) => (
-                <div key={i} className="rounded-2xl border border-white/[0.07] bg-[#0d0d1c] p-6 flex items-start gap-4" data-testid={`trust-feature-${i}`}>
-                  <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-white/40" />
+                <div key={i} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/40 p-6 flex items-start gap-4" data-testid={`trust-feature-${i}`}>
+                  <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
                   </div>
                   <div dir={dir}>
-                    <p className="text-sm font-bold text-white mb-1">{item.title}</p>
-                    <p className="text-xs text-white/35 leading-relaxed">{item.desc}</p>
+                    <p className="text-sm font-bold text-black dark:text-white mb-1">{item.title}</p>
+                    <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               ))}
@@ -1537,7 +1537,7 @@ export default function Home() {
       </section>
 
       {/* PATHFINDER */}
-      <section className="py-20 md:py-28 relative bg-[#080811]" data-testid="section-pathfinder">
+      <section className="py-20 md:py-28 relative bg-[#fafafa] dark:bg-gray-900/30" data-testid="section-pathfinder">
         <div className="container mx-auto px-4">
           <motion.div
             initial="hidden"
@@ -1545,15 +1545,15 @@ export default function Home() {
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeUp}
             custom={0}
-            className="rounded-[24px] border border-white/[0.07] bg-[#0d0d1c] overflow-hidden"
+            className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/50 overflow-hidden"
           >
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="p-6 sm:p-10 md:p-14 flex flex-col justify-center" dir={dir}>
-                <span className="text-white/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
-                <h2 className="text-3xl md:text-4xl font-bold font-heading text-white mb-4 leading-tight">
+                <span className="text-black/40 dark:text-white/40 text-sm font-semibold mb-3">{t("home.pathfinder.label")}</span>
+                <h2 className="text-3xl md:text-4xl font-bold font-heading text-black dark:text-white mb-4 leading-tight">
                   {t("home.pathfinder.title")}
                 </h2>
-                <p className="text-white/40 text-base leading-relaxed mb-8 max-w-md">
+                <p className="text-black/40 dark:text-white/40 text-base leading-relaxed mb-8 max-w-md">
                   {t("home.pathfinder.desc")}
                 </p>
                 <div>
@@ -1570,8 +1570,8 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="p-6 sm:p-10 md:p-14 border-t md:border-t-0 md:border-r border-white/[0.07] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06] dark:rtl:border-white/[0.06]" dir={dir}>
-                <h3 className="text-white/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
+              <div className="p-6 sm:p-10 md:p-14 border-t md:border-t-0 md:border-r border-black/[0.06] dark:border-white/[0.06] rtl:md:border-r-0 rtl:md:border-l rtl:border-black/[0.06] dark:rtl:border-white/[0.06]" dir={dir}>
+                <h3 className="text-black/40 dark:text-white/40 text-sm font-semibold mb-8 tracking-wider uppercase">{t("home.pathfinder.quickLinks")}</h3>
                 <div className="space-y-1">
                   {[
                     { href: "/systems", labelKey: "home.pathfinder.systems" as const },
@@ -1581,7 +1581,7 @@ export default function Home() {
                   ].map((link) => (
                     <Link key={link.href} href={link.href}>
                       <div
-                        className="flex items-center justify-between py-4 px-4 rounded-xl text-white/50 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer group"
+                        className="flex items-center justify-between py-4 px-4 rounded-xl text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-all cursor-pointer group"
                         data-testid={`pathfinder-link-${link.href.replace("/", "")}`}
                       >
                         <span className="text-base font-medium">{t(link.labelKey)}</span>
@@ -1668,7 +1668,7 @@ export default function Home() {
       {SOCIAL_ITEMS.length > 0 && (
         <section className="py-16 relative" data-testid="section-social">
           <div className="container mx-auto px-4 text-center">
-            <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-semibold mb-8" dir={dir}>
+            <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-8" dir={dir}>
               {lang === "ar" ? "تابعنا على منصات التواصل" : "Follow Us"}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -1680,7 +1680,7 @@ export default function Home() {
                   rel="noopener noreferrer"
                   aria-label={s.label}
                   data-testid={`home-social-${s.key}`}
-                  className="w-12 h-12 rounded-2xl bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-white/[0.07] flex items-center justify-center text-white/35 hover:text-white dark:hover:text-black transition-all duration-200 hover:scale-105"
+                  className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black dark:hover:bg-white border border-black/[0.07] dark:border-white/[0.07] flex items-center justify-center text-black/35 dark:text-white/35 hover:text-white dark:hover:text-black transition-all duration-200 hover:scale-105"
                 >
                   {s.icon}
                 </a>
@@ -1704,26 +1704,26 @@ export default function Home() {
                 <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.07] flex items-center justify-center p-2 shadow-sm">
                   <img src={paymobLogo} alt="Paymob" className="w-full h-full object-contain" />
                 </div>
-                <DialogTitle className="text-lg font-bold text-white">
+                <DialogTitle className="text-lg font-bold text-black dark:text-white">
                   {lang === "ar" ? "Qirox × Paymob — بوابة الدفع الرسمية" : "Qirox × Paymob — Official Payment Gateway"}
                 </DialogTitle>
               </div>
-              <p className="text-sm text-white/40 mt-1">
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
                 {lang === "ar" ? "الرسوم والسياسات والميزات الرئيسية" : "Fees, policies, and key features"}
               </p>
             </DialogHeader>
           </div>
           <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
             <div>
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
                 {lang === "ar" ? "جدول الرسوم" : "Fee Schedule"}
               </h4>
-              <div className="rounded-xl overflow-hidden border border-white/[0.07]">
+              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
                 <table className="w-full text-sm" dir={dir}>
                   <thead>
                     <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
+                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع الرسوم" : "Fee Type"}</th>
+                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "القيمة" : "Rate"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
@@ -1746,7 +1746,7 @@ export default function Home() {
                     ]).map(([label, val], i) => (
                       <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
                         <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-white text-sm">{val}</td>
+                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1754,7 +1754,7 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
                 {lang === "ar" ? "أبرز نقاط السياسة" : "Policy Highlights"}
               </h4>
               <div className="space-y-2">
@@ -1773,7 +1773,7 @@ export default function Home() {
                   { icon: CreditCard, text: "No minimum monthly sales volume" },
                   { icon: Globe2,     text: "15+ local and international payment methods" },
                 ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
                     <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
                       <Icon className="w-3.5 h-3.5 text-blue-500" />
                     </div>
@@ -1812,18 +1812,18 @@ export default function Home() {
                     <path d="M12.2 4.8H5.6C5.1 4.8 4.7 5.1 4.6 5.6L2 21.9c-.1.4.2.7.6.7h3.3c.5 0 .9-.3 1-.8l.7-4.4c.1-.5.5-.8 1-.8h2.1c4.4 0 6.9-2.1 7.5-6.3.3-1.8 0-3.3-.8-4.3C16 5.3 14.4 4.8 12.2 4.8zm.8 6.2c-.4 2.4-2.1 2.4-3.8 2.4h-1l.7-4.2c0-.3.3-.5.6-.5h.4c1.2 0 2.3 0 2.8.7.4.4.5 1 .3 1.6z" fill="#fff"/><path d="M34.9 11h-3.3c-.3 0-.6.2-.6.5l-.2.9-.2-.3c-.7-1-2.1-1.4-3.6-1.4-3.4 0-6.3 2.6-6.8 6.2-.3 1.8.1 3.5 1.1 4.7 1 1.1 2.3 1.5 3.9 1.5 2.7 0 4.2-1.7 4.2-1.7l-.2.9c-.1.4.2.7.6.7h3c.5 0 .9-.3 1-.8l1.8-10.5c.1-.3-.2-.7-.7-.7zm-4.6 6c-.3 1.8-1.7 3-3.5 3-1 0-1.7-.3-2.2-.9-.5-.6-.7-1.4-.5-2.3.3-1.7 1.7-3 3.5-3 .9 0 1.7.3 2.2.9.5.6.7 1.5.5 2.3z" fill="#fff"/><path d="M55 11h-3.4c-.4 0-.7.2-.9.5L46.5 18l-1.9-6.2c-.1-.5-.6-.8-1-.8H40.3c-.5 0-.8.5-.6.9l3.5 10.3-3.3 4.7c-.3.5 0 1.1.6 1.1h3.4c.4 0 .7-.2.9-.5l10.6-15.4c.3-.4 0-1.1-.4-1.1z" fill="#fff"/>
                   </svg>
                 </div>
-                <DialogTitle className="text-lg font-bold text-white">
+                <DialogTitle className="text-lg font-bold text-black dark:text-white">
                   {lang === "ar" ? "PayPal — المدفوعات الدولية" : "PayPal — International Payments"}
                 </DialogTitle>
               </div>
-              <p className="text-sm text-white/40 mt-1">
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">
                 {lang === "ar" ? "قبول المدفوعات من أكثر من 200 دولة عبر PayPal" : "Accept payments from 200+ countries via PayPal"}
               </p>
             </DialogHeader>
           </div>
           <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[65vh]">
             <div>
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
                 {lang === "ar" ? "المميزات الرئيسية" : "Key Features"}
               </h4>
               <div className="space-y-2">
@@ -1842,7 +1842,7 @@ export default function Home() {
                   { icon: Lock,       text: "Fully encrypted and secure transactions" },
                   { icon: Smartphone, text: "Professional API integration with Qirox platform" },
                 ]).map(({ icon: Icon, text }, i) => (
-                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                  <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
                     <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0 mt-0.5">
                       <Icon className="w-3.5 h-3.5 text-[#009cde]" />
                     </div>
@@ -1852,15 +1852,15 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
+              <h4 className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-widest mb-2">
                 {lang === "ar" ? "نظرة سريعة على الرسوم" : "Quick Fee Overview"}
               </h4>
-              <div className="rounded-xl overflow-hidden border border-white/[0.07]">
+              <div className="rounded-xl overflow-hidden border border-black/[0.07] dark:border-white/[0.07]">
                 <table className="w-full text-sm" dir={dir}>
                   <thead>
                     <tr className="bg-black/[0.03] dark:bg-white/[0.03]">
-                      <th className="px-4 py-2.5 text-start text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع المعاملة" : "Transaction Type"}</th>
-                      <th className="px-4 py-2.5 text-end text-white/50 font-semibold text-xs">{lang === "ar" ? "الرسوم" : "Fee"}</th>
+                      <th className="px-4 py-2.5 text-start text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "نوع المعاملة" : "Transaction Type"}</th>
+                      <th className="px-4 py-2.5 text-end text-black/50 dark:text-white/50 font-semibold text-xs">{lang === "ar" ? "الرسوم" : "Fee"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
@@ -1877,7 +1877,7 @@ export default function Home() {
                     ]).map(([label, val], i) => (
                       <tr key={i} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
                         <td className="px-4 py-2.5 text-black/70 dark:text-white/70 text-sm">{label}</td>
-                        <td className="px-4 py-2.5 text-end font-semibold text-white text-sm">{val}</td>
+                        <td className="px-4 py-2.5 text-end font-semibold text-black dark:text-white text-sm">{val}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2287,13 +2287,13 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
   const allCompanies = categories.flatMap(cat => cat.companies);
 
   return (
-    <section className="py-14 md:py-20 border-t border-white/[0.05]" data-testid="section-integration-partners">
+    <section className="py-14 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-integration-partners">
       {/* Header */}
       <div className="container mx-auto px-4 mb-10 text-center">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-semibold mb-2" dir={dir}>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold mb-2" dir={dir}>
           {L ? "شركاء التكامل" : "Integration Partners"}
         </p>
-        <p className="text-sm text-white/30" dir={dir}>
+        <p className="text-sm text-black/35 dark:text-white/30" dir={dir}>
           {L
             ? "منظومة متكاملة من الشركاء في الدفع والتوصيل والمحاسبة وأكثر"
             : "A complete ecosystem of partners across payments, delivery, accounting, and more"}
@@ -2303,8 +2303,8 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
       {/* Single ping-pong strip */}
       <div className="relative" data-testid="integration-single-strip">
         {/* Edge fades */}
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-[#07070e] to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-[#07070e] to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
         {/* Overflow wrapper — dir=ltr forces left-to-right layout in RTL pages */}
         <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
@@ -2319,11 +2319,11 @@ function IntegrationPartnersMarquee({ lang, dir }: { lang: string; dir: string }
                 href={`https://${company.domain}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
+                className="group/chip flex items-center gap-2.5 mx-2 px-4 py-2.5 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] shadow-sm hover:shadow-lg hover:border-black/15 dark:hover:border-white/15 hover:scale-[1.04] transition-all duration-200 shrink-0"
                 data-testid={`integration-chip-all-${ci}`}
               >
                 <CompanyLogo domain={company.domain} name={company.name} />
-                <span className="text-[13px] font-medium text-white/50 group-hover/chip:text-white transition-colors whitespace-nowrap">
+                <span className="text-[13px] font-medium text-black/60 dark:text-white/50 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
                   {company.name}
                 </span>
               </a>
@@ -2441,16 +2441,16 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
     L ? (p.featuresAr?.length ? p.featuresAr : p.features || []) : (p.features || []);
 
   return (
-    <section className="py-16 md:py-20 border-t border-white/[0.05]" data-testid="section-partners">
+    <section className="py-16 md:py-20 border-t border-black/[0.04] dark:border-white/[0.04]" data-testid="section-partners">
       <div className="container mx-auto px-4 mb-10 text-center">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-semibold" dir={dir}>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-black/25 dark:text-white/25 font-semibold" dir={dir}>
           {L ? "يثقون بنا" : "Trusted By"}
         </p>
       </div>
 
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-[#07070e] to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-[#07070e] to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
         <div ref={wrapRef} dir="ltr" className="overflow-hidden w-full py-3 px-2">
           <div
@@ -2462,11 +2462,11 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
               <button
                 key={`${partner.name}-${i}`}
                 onClick={() => setSelected(partner)}
-                className="group/chip flex items-center gap-2.5 mx-2 px-3 py-2 rounded-xl border border-white/10 bg-white/[0.07] shadow-sm hover:shadow-md hover:border-white/20 hover:scale-[1.03] transition-all duration-200 shrink-0"
+                className="group/chip flex items-center gap-2.5 mx-2 px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.07] shadow-sm hover:shadow-md hover:border-black/20 dark:hover:border-white/20 hover:scale-[1.03] transition-all duration-200 shrink-0"
                 data-testid={`partner-chip-${i}`}
               >
                 <PartnerLogoAvatar name={partner.name} logo={partner.logo} />
-                <span className="text-[13px] font-medium text-white/70 group-hover/chip:text-white transition-colors whitespace-nowrap">
+                <span className="text-[13px] font-medium text-black/70 dark:text-white/70 group-hover/chip:text-black dark:group-hover/chip:text-white transition-colors whitespace-nowrap">
                   {displayName(partner)}
                 </span>
               </button>
@@ -2483,7 +2483,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
             dir={dir}
           >
             {/* Sticky header */}
-            <DialogHeader className="px-5 pt-5 pb-3 border-b border-white/[0.07] shrink-0">
+            <DialogHeader className="px-5 pt-5 pb-3 border-b border-black/[0.06] dark:border-white/[0.06] shrink-0">
               <div className="flex items-center gap-3">
                 <PartnerLogoAvatar name={selected.name} logo={selected.logo} size="lg" />
                 <div className="text-start min-w-0">
@@ -2491,12 +2491,12 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
                     {L ? (selected.nameAr || selected.name) : selected.name}
                   </DialogTitle>
                   {selected.nameAr && selected.nameAr !== selected.name && (
-                    <p className="text-xs text-white/40 mt-0.5 truncate">
+                    <p className="text-xs text-black/40 dark:text-white/40 mt-0.5 truncate">
                       {L ? selected.name : selected.nameAr}
                     </p>
                   )}
                   {selected.category && (
-                    <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-white/[0.08] text-white/50 font-medium">
+                    <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-black/[0.06] dark:bg-white/[0.08] text-black/50 dark:text-white/50 font-medium">
                       {selected.category}
                     </span>
                   )}
@@ -2507,7 +2507,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
               {displayDesc(selected) && (
-                <p className="text-sm text-white/55 leading-relaxed">
+                <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
                   {displayDesc(selected)}
                 </p>
               )}
@@ -2515,7 +2515,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
               {displayFeatures(selected).length > 0 && (
                 <ul className="space-y-2">
                   {displayFeatures(selected).map((f: string, fi: number) => (
-                    <li key={fi} className="flex items-start gap-2 text-sm text-white/55">
+                    <li key={fi} className="flex items-start gap-2 text-sm text-black/60 dark:text-white/55">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
@@ -2528,7 +2528,7 @@ function PartnersMarquee({ lang, dir }: { lang: string; dir: string }) {
                   href={selected.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-400 hover:underline break-all"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline break-all"
                 >
                   <Globe className="w-4 h-4 shrink-0" />
                   {selected.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
