@@ -328,11 +328,17 @@ function AdminRouter() {
         <Route path="/inbox" component={Inbox} />
         <Route path="/groups/:id" component={GroupChat} />
         <Route path="/groups" component={GroupChat} />
-        <Route path="/admin/settings">{() => { const [, nav] = useLocation(); nav("/admin/qirox-settings"); return null; }}</Route>
+        <Route path="/admin/settings"><AdminSettingsRedirect /></Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>
   );
+}
+
+function AdminSettingsRedirect() {
+  const [, nav] = useLocation();
+  useEffect(() => { nav("/admin/qirox-settings"); }, []);
+  return null;
 }
 
 const ALL_PAGES = [

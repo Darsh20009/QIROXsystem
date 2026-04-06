@@ -2,7 +2,6 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import InstallPrompt from "@/components/InstallPrompt";
 import SARIcon from "@/components/SARIcon";
-import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";

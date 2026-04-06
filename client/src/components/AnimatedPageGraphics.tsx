@@ -371,143 +371,62 @@ type Variant =
   | "full-dark";
 
 export function PageGraphics({ variant = "hero-light" }: { variant?: Variant }) {
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    const isDark = variant === "hero-dark" || variant === "full-dark" || variant === "auth";
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {isDark ? <GridPattern dark opacity={0.02} /> : <DotPattern opacity={0.018} />}
-      </div>
-    );
-  }
 
   switch (variant) {
-    case "hero-dark":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <GridPattern dark opacity={0.025} />
-          <GlowOrb dark position="center" intensity={0.04} />
-          <AnimatedBars data={BAR_SETS.ascending} dark className="absolute bottom-8 left-6 md:left-14" label="Revenue" />
-          <AnimatedBars data={BAR_SETS.pulse} dark className="absolute bottom-8 right-6 md:right-14" width={140} gap={14} label="Orders" />
-          <AnimatedLine points={CHART_SETS.growth} dark className="absolute top-8 left-0 right-0 px-8 md:px-20" label="Performance" />
-          <AnimatedRing percent={87} dark className="absolute left-6 md:left-12 top-1/2 -translate-y-1/2" label="Efficiency" />
-          <AnimatedRing percent={93} dark className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2" label="Uptime" />
-          <FloatingMetrics dark metrics={[
-            { value: "+12.4%", x: "18%", y: "22%" },
-            { value: "SAR 2.1M", x: "75%", y: "28%" },
-            { value: "1,847 req/s", x: "20%", y: "65%" },
-            { value: "< 40ms", x: "78%", y: "68%" },
-          ]} />
-        </div>
-      );
-
-    case "hero-light":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.025} />
-          <GlowOrb position="top-right" intensity={0.03} size={400} />
-          <GlowOrb position="bottom-left" intensity={0.02} size={350} />
-          <AnimatedLine points={CHART_SETS.smooth} className="absolute top-6 left-0 right-0 px-10 md:px-24 opacity-50" height={50} />
-          <AnimatedRing percent={78} className="absolute right-6 md:right-14 bottom-10 opacity-50" label="Quality" />
-        </div>
-      );
-
-    case "bars-corners":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.02} />
-          <AnimatedBars data={BAR_SETS.ascending} className="absolute bottom-4 left-4 md:left-10 opacity-40" width={120} height={60} barWidth={6} gap={9} />
-          <AnimatedBars data={BAR_SETS.pulse} className="absolute bottom-4 right-4 md:right-10 opacity-40" width={120} height={60} barWidth={6} gap={9} />
-        </div>
-      );
-
-    case "line-top":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.02} />
-          <AnimatedLine points={CHART_SETS.wave} className="absolute top-4 left-0 right-0 px-6 md:px-16 opacity-50" height={45} />
-          <GlowOrb position="top-right" intensity={0.025} size={300} />
-        </div>
-      );
-
-    case "rings-sides":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.02} />
-          <AnimatedRing percent={72} className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 opacity-50" label="Active" />
-          <AnimatedRing percent={91} className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 opacity-50" label="Complete" />
-          <GlowOrb position="center" intensity={0.02} size={300} />
-        </div>
-      );
-
-    case "dashboard":
-      return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.015} />
-          <AnimatedLine points={CHART_SETS.smooth} className="absolute top-0 left-0 right-0 px-10 opacity-30" height={35} />
-        </div>
-      );
-
     case "auth":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <GridPattern dark opacity={0.02} />
           <GlowOrb dark position="center" intensity={0.03} size={400} />
-          <AnimatedLine points={CHART_SETS.spike} dark className="absolute top-6 left-0 right-0 px-12 opacity-25" height={40} />
         </div>
       );
 
-    case "minimal":
+    case "hero-dark":
+    case "full-dark":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.02} />
-          <GlowOrb position="top-right" intensity={0.02} size={250} />
+          <GridPattern dark opacity={0.02} />
+          <GlowOrb dark position="top-left" intensity={0.035} size={450} />
+          <GlowOrb dark position="bottom-right" intensity={0.025} size={380} />
+        </div>
+      );
+
+    case "hero-light":
+    case "bars-corners":
+    case "line-top":
+    case "rings-sides":
+      return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <DotPattern opacity={0.022} />
+          <GlowOrb position="top-right" intensity={0.025} size={380} />
+          <GlowOrb position="bottom-left" intensity={0.018} size={320} />
         </div>
       );
 
     case "full-light":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <DotPattern opacity={0.025} />
-          <GlowOrb position="top-left" intensity={0.03} size={400} />
-          <GlowOrb position="bottom-right" intensity={0.025} size={350} />
-          <AnimatedBars data={BAR_SETS.ascending} className="absolute bottom-6 left-6 md:left-14 opacity-50" label="Growth" />
-          <AnimatedBars data={BAR_SETS.pulse} className="absolute bottom-6 right-6 md:right-14 opacity-50" width={140} gap={14} label="Orders" />
-          <AnimatedLine points={CHART_SETS.growth} className="absolute top-6 left-0 right-0 px-8 md:px-20 opacity-50" label="Performance" />
-          <AnimatedRing percent={82} className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 opacity-45" label="Projects" />
-          <AnimatedRing percent={95} className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 opacity-45" label="Satisfaction" />
-          <FloatingMetrics metrics={[
-            { value: "+24.6%", x: "18%", y: "20%" },
-            { value: "SAR 1.8M", x: "76%", y: "25%" },
-            { value: "874 مشروع", x: "15%", y: "70%" },
-            { value: "99.9% SLA", x: "80%", y: "72%" },
-          ]} />
+          <DotPattern opacity={0.022} />
+          <GlowOrb position="top-left" intensity={0.028} size={420} />
+          <GlowOrb position="bottom-right" intensity={0.022} size={360} />
         </div>
       );
 
-    case "full-dark":
+    case "dashboard":
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <GridPattern dark opacity={0.025} />
-          <GlowOrb dark position="top-left" intensity={0.04} />
-          <GlowOrb dark position="bottom-right" intensity={0.03} size={400} />
-          <AnimatedBars data={BAR_SETS.ascending} dark className="absolute bottom-8 left-6 md:left-14" label="Revenue" />
-          <AnimatedBars data={BAR_SETS.pulse} dark className="absolute bottom-8 right-6 md:right-14" width={140} gap={14} label="Engagement" />
-          <AnimatedLine points={CHART_SETS.spike} dark className="absolute top-8 left-0 right-0 px-8 md:px-20" label="Throughput" />
-          <AnimatedRing percent={87} dark className="absolute left-6 md:left-12 top-1/2 -translate-y-1/2" label="Efficiency" />
-          <AnimatedRing percent={93} dark className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2" label="Uptime" />
-          <FloatingMetrics dark metrics={[
-            { value: "+18.2%", x: "20%", y: "22%" },
-            { value: "4,291 عميل", x: "74%", y: "28%" },
-            { value: "2,100 req/s", x: "16%", y: "68%" },
-            { value: "< 25ms", x: "80%", y: "65%" },
-          ]} />
+          <DotPattern opacity={0.013} />
         </div>
       );
 
+    case "minimal":
     default:
-      return null;
+      return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <DotPattern opacity={0.018} />
+          <GlowOrb position="top-right" intensity={0.018} size={260} />
+        </div>
+      );
   }
 }
 

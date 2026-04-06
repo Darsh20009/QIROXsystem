@@ -61,15 +61,16 @@ export default function InvoicePrint() {
   return (
     <>
       <style>{`
+        @page { margin: 15mm; size: A4; }
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
-          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+          .print-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; max-width: 100% !important; }
         }
       `}</style>
 
       {/* Controls - hidden on print */}
-      <div className="no-print bg-black/[0.04] border-b border-black/[0.08] px-6 py-3 flex items-center justify-between" dir={dir}>
+      <div className="no-print bg-white border-b border-black/[0.07] px-6 py-3 flex items-center justify-between sticky top-0 z-10" dir={dir}>
         <button onClick={() => setLocation(isClientView ? "/client/invoices" : "/admin/invoices")} className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors">
           <ArrowRight className="w-4 h-4" />
           {isClientView ? "رجوع لفواتيري" : "رجوع للفواتير"}
@@ -85,9 +86,19 @@ export default function InvoicePrint() {
             {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
             إرسال للعميل
           </Button>
-          <Button onClick={() => window.print()} size="sm" className="bg-black text-white h-8 text-xs gap-1.5">
+          <Button
+            onClick={() => {
+              const title = document.title;
+              document.title = `فاتورة-${invoice?.invoiceNumber || "QIROX"}`;
+              window.print();
+              setTimeout(() => { document.title = title; }, 1000);
+            }}
+            size="sm"
+            className="bg-black text-white h-8 text-xs gap-1.5"
+            data-testid="button-print-invoice"
+          >
             <Printer className="w-3 h-3" />
-            طباعة / PDF
+            تحميل PDF
           </Button>
         </div>
       </div>
