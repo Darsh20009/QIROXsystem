@@ -1882,9 +1882,12 @@ export const PaymobOnboardingModel = mongoose.models.PaymobOnboarding || mongoos
 
 // ── Quotation (عروض الأسعار) ──────────────────────────────────────────────────
 const quotationSchema = new mongoose.Schema({
-  quotationNumber: { type: String, required: true, unique: true },
-  userId:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  title:          { type: String, default: "" },
+  quotationNumber:  { type: String, required: true, unique: true },
+  userId:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  externalName:     { type: String, default: "" },
+  externalEmail:    { type: String, default: "" },
+  externalCompany:  { type: String, default: "" },
+  title:            { type: String, default: "" },
   items:          [{ name: String, description: String, qty: Number, unitPrice: Number, total: Number }],
   amount:         { type: Number, default: 0 },
   vatRate:        { type: Number, default: 15 },
@@ -1895,6 +1898,7 @@ const quotationSchema = new mongoose.Schema({
   notes:          { type: String, default: "" },
   termsAndConditions: { type: String, default: "" },
   createdBy:      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  orderId:        { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
 }, { timestamps: true });
 quotationSchema.set('toJSON', { transform: (_, ret: any) => { ret.id = ret._id?.toString(); return ret; } });
 export const QuotationModel = mongoose.models.Quotation || mongoose.model("Quotation", quotationSchema);

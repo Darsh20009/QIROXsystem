@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
-import { Loader2, Printer, ArrowRight, Download, Mail } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "wouter";
+import { Loader2, Printer, ArrowRight, Download, Mail, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
@@ -19,8 +19,19 @@ const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }>
 export default function QuotationPrint() {
   const { dir } = useI18n();
   const params = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const qc = useQueryClient();
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const { data: me } = useQuery<{ role: string }>({
+    queryKey: ["/api/user"],
+    queryFn: async () => {
+      const r = await fetch("/api/user", { credentials: "include" });
+      if (!r.ok) return { role: "client" };
+      return r.json();
+    },
+  });
+  const isAdmin = me?.role && me.role !== "client";
 
   const { data: quotation, isLoading } = useQuery({
     queryKey: ["/api/quotations", params.id],
@@ -37,15 +48,52 @@ export default function QuotationPrint() {
       const r = await apiRequest("POST", `/api/quotations/${params.id}/send-email`, {});
       return r.json();
     },
-    onSuccess: () => toast({ title: "تم إرسال العرض بالبريد ✅" }),
+    onSuccess: (data) => {
+      toast({ title: data?.message || "تم إرسال العرض بالبريد ✅" });
+      qc.invalidateQueries({ queryKey: ["/api/quotations", params.id] });
+    },
     onError: () => toast({ title: "فشل إرسال البريد", variant: "destructive" }),
   });
 
-  const handleDownloadPDF = () => {
-    const title = document.title;
-    document.title = `عرض-سعر-${quotation?.quotationNumber || "QIROX"}`;
+  const convertMutation = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", `/api/quotations/${params.id}/convert-to-order`, {});
+      return r.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: data?.message || "تم تحويل العرض إلى طلب ✅" });
+      qc.invalidateQueries({ queryKey: ["/api/quotations", params.id] });
+    },
+    onError: (err: any) => toast({ title: err?.message || "فشل التحويل", variant: "destructive" }),
+  });
+
+  const handleDownloadPDF = async () => {
+    if (!params.id) return;
+    setPdfLoading(true);
+    try {
+      const r = await fetch(`/api/quotations/${params.id}/pdf`, { credentials: "include" });
+      if (!r.ok) {
+        toast({ title: "فشل توليد PDF", variant: "destructive" });
+        return;
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quotation-${quotation?.quotationNumber || params.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: "فشل تحميل PDF", variant: "destructive" });
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
     window.print();
-    setTimeout(() => { document.title = title; }, 1000);
   };
 
   if (isLoading) return (
@@ -61,12 +109,20 @@ export default function QuotationPrint() {
   );
 
   const client = typeof quotation.userId === "object" ? quotation.userId : null;
+  const clientName = quotation.externalName || client?.fullName || client?.username || "—";
+  const clientEmail = quotation.externalEmail || client?.email || "";
+  const clientPhone = client?.phone || "";
+  const clientCountry = client?.country || "";
+  const clientCompany = quotation.externalCompany || "";
+
   const st = STATUS_LABELS[quotation.status] || { label: quotation.status, bg: "#f3f4f6", text: "#6b7280" };
+  const isExternal = !!quotation.externalEmail && !client;
+  const canConvert = isAdmin && quotation.status === "accepted" && client && !quotation.orderId;
 
   return (
     <>
       <style>{`
-        @page { margin: 15mm; size: A4; }
+        @page { margin: 12mm; size: A4; }
         @media print {
           body { background: white !important; }
           .no-print { display: none !important; }
@@ -82,31 +138,62 @@ export default function QuotationPrint() {
       {/* Controls – hidden on print */}
       <div className="no-print bg-white border-b border-black/[0.07] px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <button
-          onClick={() => setLocation(-1 as any)}
+          onClick={() => window.history.back()}
           className="flex items-center gap-1.5 text-sm text-black/50 hover:text-black transition-colors"
         >
           <ArrowRight className="w-4 h-4" />
           رجوع
         </button>
         <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5 border-black/[0.12]"
+              onClick={() => sendEmailMutation.mutate()}
+              disabled={sendEmailMutation.isPending}
+              data-testid="button-email-quotation"
+            >
+              {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+              إرسال للعميل
+            </Button>
+          )}
+          {canConvert && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
+              onClick={() => convertMutation.mutate()}
+              disabled={convertMutation.isPending}
+              data-testid="button-convert-to-order"
+            >
+              {convertMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              تحويل لطلب
+            </Button>
+          )}
+          {quotation.orderId && (
+            <span className="text-xs text-green-600 font-bold bg-green-50 border border-green-100 px-2 py-1 rounded-lg">
+              ✓ تم التحويل لطلب
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1.5 border-black/[0.12]"
-            onClick={() => sendEmailMutation.mutate()}
-            disabled={sendEmailMutation.isPending}
-            data-testid="button-email-quotation"
+            onClick={handlePrint}
+            data-testid="button-print-browser"
           >
-            {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
-            إرسال للعميل
+            <Printer className="w-3 h-3" />
+            طباعة
           </Button>
           <Button
             onClick={handleDownloadPDF}
+            disabled={pdfLoading}
             size="sm"
             className="bg-black text-white h-8 gap-1.5 text-xs"
-            data-testid="button-print"
+            data-testid="button-download-pdf"
           >
-            <Download className="w-3 h-3" />
+            {pdfLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
             تحميل PDF
           </Button>
         </div>
@@ -155,10 +242,16 @@ export default function QuotationPrint() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-black/30 mb-2 uppercase tracking-wider">مُقدَّم إلى</p>
-              <p className="font-black text-black text-sm">{client?.fullName || client?.username || "—"}</p>
-              {client?.email && <p className="text-xs text-black/40 mt-0.5">{client.email}</p>}
-              {client?.phone && <p className="text-xs text-black/40">{client.phone}</p>}
-              {client?.country && <p className="text-xs text-black/40">{client.country}</p>}
+              <p className="font-black text-black text-sm">{clientName}</p>
+              {clientCompany && <p className="text-xs text-black/60 font-medium mt-0.5">{clientCompany}</p>}
+              {clientEmail && <p className="text-xs text-black/40 mt-0.5">{clientEmail}</p>}
+              {clientPhone && <p className="text-xs text-black/40">{clientPhone}</p>}
+              {clientCountry && <p className="text-xs text-black/40">{clientCountry}</p>}
+              {isExternal && (
+                <span className="text-[10px] bg-orange-50 text-orange-500 border border-orange-100 px-1.5 py-0.5 rounded mt-1 inline-block">
+                  عميل خارجي
+                </span>
+              )}
             </div>
           </div>
 

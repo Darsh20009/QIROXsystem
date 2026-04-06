@@ -19,7 +19,9 @@ interface Client { id: string; fullName: string; email: string; username: string
 interface QuotationItem { name: string; description?: string; qty: number; unitPrice: number; total: number; }
 interface Quotation {
   id: string; quotationNumber: string;
-  userId: { id: string; fullName: string; email: string; username: string } | string;
+  userId: { id: string; fullName: string; email: string; username: string } | string | null;
+  externalName?: string; externalEmail?: string; externalCompany?: string;
+  orderId?: string;
   title: string; items: QuotationItem[];
   amount: number; vatRate: number; vatAmount: number; totalAmount: number;
   validUntil?: string; status: "draft" | "sent" | "accepted" | "rejected" | "expired";
@@ -39,6 +41,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const { lang, dir } = useI18n();
   const L = lang === "ar";
   const qc = useQueryClient();
+  const [clientMode, setClientMode] = useState<"registered" | "external">("registered");
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/users/clients"],
@@ -52,6 +55,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
 
   const [form, setForm] = useState({
     userId: "", title: "", vatRate: "15", validUntil: "", notes: "", termsAndConditions: "",
+    externalName: "", externalEmail: "", externalCompany: "",
     items: [] as QuotationItem[],
     newName: "", newDesc: "", newQty: "1", newPrice: "",
   });
@@ -73,14 +77,24 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
   const vatAmt = Math.round(subtotal * (Number(form.vatRate) / 100) * 100) / 100;
   const total = subtotal + vatAmt;
 
+  const isValid = form.items.length > 0 &&
+    (clientMode === "registered" ? !!form.userId : (!!form.externalName && !!form.externalEmail));
+
   const mutation = useMutation({
     mutationFn: async () => {
-      const r = await apiRequest("POST", "/api/quotations", {
-        userId: form.userId, title: form.title,
-        items: form.items, vatRate: Number(form.vatRate),
+      const body: Record<string, any> = {
+        title: form.title, items: form.items, vatRate: Number(form.vatRate),
         validUntil: form.validUntil || undefined,
         notes: form.notes, termsAndConditions: form.termsAndConditions,
-      });
+      };
+      if (clientMode === "registered") {
+        body.userId = form.userId;
+      } else {
+        body.externalName = form.externalName;
+        body.externalEmail = form.externalEmail;
+        body.externalCompany = form.externalCompany;
+      }
+      const r = await apiRequest("POST", "/api/quotations", body);
       return r.json();
     },
     onSuccess: () => {
@@ -88,24 +102,70 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
       toast({ title: L ? "تم إنشاء عرض السعر بنجاح" : "Quotation created successfully" });
       onClose();
     },
-    onError: () => toast({ title: L ? "فشل إنشاء العرض" : "Failed to create quotation", variant: "destructive" }),
+    onError: (err: any) => toast({ title: err?.message || (L ? "فشل إنشاء العرض" : "Failed to create quotation"), variant: "destructive" }),
   });
 
   return (
     <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1" dir={dir}>
+      {/* Client mode toggle */}
       <div>
-        <Label className="text-xs text-black/50 mb-1 block">{L ? "العميل *" : "Client *"}</Label>
-        <Select value={form.userId} onValueChange={v => setForm(p => ({ ...p, userId: v }))}>
-          <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-quotation-client">
-            <SelectValue placeholder={L ? "اختر العميل" : "Select client"} />
-          </SelectTrigger>
-          <SelectContent>
-            {(clients || []).map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.fullName || c.username} — {c.email}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label className="text-xs text-black/50 mb-2 block">{L ? "نوع العميل *" : "Client Type *"}</Label>
+        <div className="flex gap-2">
+          <button type="button"
+            onClick={() => setClientMode("registered")}
+            className={`flex-1 text-xs rounded-lg border px-3 py-2 text-right transition-colors ${clientMode === "registered" ? "border-black bg-black text-white" : "border-black/10 text-black/60 hover:border-black/20"}`}
+            data-testid="button-client-registered">
+            <div className="font-bold">{L ? "عميل مسجّل" : "Registered Client"}</div>
+            <div className="opacity-70 text-[11px]">{L ? "من قائمة العملاء" : "From client list"}</div>
+          </button>
+          <button type="button"
+            onClick={() => setClientMode("external")}
+            className={`flex-1 text-xs rounded-lg border px-3 py-2 text-right transition-colors ${clientMode === "external" ? "border-black bg-black text-white" : "border-black/10 text-black/60 hover:border-black/20"}`}
+            data-testid="button-client-external">
+            <div className="font-bold">{L ? "عميل خارجي" : "External Client"}</div>
+            <div className="opacity-70 text-[11px]">{L ? "بريد إلكتروني جديد" : "New / external email"}</div>
+          </button>
+        </div>
       </div>
+
+      {clientMode === "registered" ? (
+        <div>
+          <Label className="text-xs text-black/50 mb-1 block">{L ? "اختر العميل" : "Select Client"} *</Label>
+          <Select value={form.userId} onValueChange={v => setForm(p => ({ ...p, userId: v }))}>
+            <SelectTrigger className="h-9 text-sm border-black/[0.10]" data-testid="select-quotation-client">
+              <SelectValue placeholder={L ? "اختر من القائمة" : "Select from list"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(clients || []).map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.fullName || c.username} — {c.email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-black/50 mb-1 block">{L ? "الاسم *" : "Name *"}</Label>
+              <Input value={form.externalName} onChange={e => setForm(p => ({ ...p, externalName: e.target.value }))}
+                placeholder={L ? "اسم العميل" : "Client name"}
+                className="h-9 text-sm border-black/[0.10]" data-testid="input-external-client-name" />
+            </div>
+            <div>
+              <Label className="text-xs text-black/50 mb-1 block">{L ? "الشركة" : "Company"}</Label>
+              <Input value={form.externalCompany} onChange={e => setForm(p => ({ ...p, externalCompany: e.target.value }))}
+                placeholder={L ? "اسم الشركة" : "Company name"}
+                className="h-9 text-sm border-black/[0.10]" data-testid="input-external-company" />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-black/50 mb-1 block">{L ? "البريد الإلكتروني *" : "Email *"}</Label>
+            <Input type="email" value={form.externalEmail} onChange={e => setForm(p => ({ ...p, externalEmail: e.target.value }))}
+              placeholder="client@company.com"
+              className="h-9 text-sm border-black/[0.10]" dir="ltr" data-testid="input-external-email" />
+          </div>
+        </div>
+      )}
 
       <div>
         <Label className="text-xs text-black/50 mb-1 block">{L ? "عنوان العرض" : "Quotation Title"}</Label>
@@ -190,7 +250,7 @@ function QuotationForm({ onClose }: { onClose: () => void }) {
           rows={2} className="text-sm border-black/[0.10] resize-none" data-testid="textarea-quotation-terms" />
       </div>
 
-      <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !form.userId || form.items.length === 0}
+      <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !isValid}
         className="w-full bg-black text-white h-10" data-testid="button-create-quotation">
         {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (L ? "إنشاء عرض السعر" : "Create Quotation")}
       </Button>
@@ -326,6 +386,9 @@ export default function AdminQuotations() {
           <div className="space-y-3">
             {filtered.map(q => {
               const client = typeof q.userId === "object" ? q.userId : null;
+              const clientName = (q as any).externalName || client?.fullName || client?.username || "—";
+              const clientEmail = (q as any).externalEmail || client?.email || "—";
+              const isExternal = !!(q as any).externalEmail && !client;
               const st = STATUS_LABELS[q.status] || { label: q.status, color: "bg-gray-100 text-gray-600" };
               return (
                 <div key={q.id} className="border border-black/[0.08] rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-black/[0.01] transition-colors"
@@ -334,10 +397,13 @@ export default function AdminQuotations() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-black text-black font-mono text-sm">{q.quotationNumber}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
+                      {isExternal && <span className="text-[10px] bg-orange-50 text-orange-500 border border-orange-100 px-1.5 py-0.5 rounded">خارجي</span>}
+                      {(q as any).orderId && <span className="text-[10px] bg-green-50 text-green-600 border border-green-100 px-1.5 py-0.5 rounded">✓ طلب</span>}
                       {q.title && <span className="text-sm text-black/60 truncate">{q.title}</span>}
                     </div>
                     <div className="text-xs text-black/40 mt-1 flex items-center gap-3 flex-wrap">
-                      <span>{client?.fullName || client?.username || "—"} · {client?.email || "—"}</span>
+                      <span>{clientName} · {clientEmail}</span>
+                      {(q as any).externalCompany && <span className="text-black/30">{(q as any).externalCompany}</span>}
                       {q.validUntil && (
                         <span>صالح حتى: {new Date(q.validUntil).toLocaleDateString("ar-SA")}</span>
                       )}
@@ -366,10 +432,10 @@ export default function AdminQuotations() {
                         quotationId: q.id,
                         clientEmail: client?.email,
                         clientName: client?.fullName || client?.username,
-                        useExternal: !client?.email,
-                        externalEmail: "",
-                        externalName: "",
-                        companyName: "",
+                        useExternal: isExternal || !client?.email,
+                        externalEmail: q.externalEmail || "",
+                        externalName: q.externalName || "",
+                        companyName: q.externalCompany || "",
                       })}
                       data-testid={`button-email-quotation-${q.id}`}>
                       <Mail className="w-3 h-3" /> {L ? "إرسال" : "Email"}

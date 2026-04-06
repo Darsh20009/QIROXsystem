@@ -6487,8 +6487,8 @@ export async function registerRoutes(
     const user = req.user as any;
     if (user.role === "client") return res.sendStatus(403);
     const { QuotationModel } = await import("./models");
-    const { userId, title, items, vatRate, validUntil, notes, termsAndConditions } = req.body;
-    if (!userId) return res.status(400).json({ error: "يجب تحديد العميل" });
+    const { userId, externalName, externalEmail, externalCompany, title, items, vatRate, validUntil, notes, termsAndConditions } = req.body;
+    if (!userId && !externalEmail) return res.status(400).json({ error: "يجب تحديد العميل أو إدخال بريد إلكتروني خارجي" });
     const itemList = Array.isArray(items) ? items : [];
     const amount = itemList.reduce((s: number, i: any) => s + (Number(i.total) || 0), 0);
     const vat = (Number(vatRate) ?? 15) / 100;
@@ -6496,7 +6496,12 @@ export async function registerRoutes(
     const totalAmount = Math.round((amount + vatAmount) * 100) / 100;
     const quotationNumber = await generateQuotationNumber();
     const quotation = await QuotationModel.create({
-      quotationNumber, userId, title: title || "", items: itemList,
+      quotationNumber,
+      userId: userId || null,
+      externalName: externalName || "",
+      externalEmail: externalEmail || "",
+      externalCompany: externalCompany || "",
+      title: title || "", items: itemList,
       amount, vatRate: Number(vatRate) ?? 15, vatAmount, totalAmount,
       validUntil: validUntil || null, notes: notes || "", termsAndConditions: termsAndConditions || "",
       status: "draft", createdBy: user.id,
@@ -6549,9 +6554,10 @@ export async function registerRoutes(
 
     const { externalEmail, externalName, companyName } = req.body || {};
 
-    const client = quotation.userId as any;
-    const targetEmail: string = externalEmail?.trim() || client?.email;
-    const targetName: string = externalName?.trim() || client?.fullName || client?.username || "العميل";
+    const client = (quotation as any).userId as any;
+    const targetEmail: string = externalEmail?.trim() || client?.email || (quotation as any).externalEmail;
+    const targetName: string = externalName?.trim() || client?.fullName || client?.username || (quotation as any).externalName || "العميل";
+    const targetCompany: string = companyName?.trim() || (quotation as any).externalCompany || "";
 
     if (!targetEmail) return res.status(400).json({ error: "البريد الإلكتروني غير موجود" });
 
@@ -6567,7 +6573,7 @@ export async function registerRoutes(
       pdfBytes = await generateQuotationPdf({
         quotationNumber: quotation.quotationNumber,
         title: (quotation as any).title,
-        clientName: companyName ? `${targetName} — ${companyName}` : targetName,
+        clientName: targetCompany ? `${targetName} — ${targetCompany}` : targetName,
         clientEmail: targetEmail,
         totalAmount: (quotation as any).totalAmount,
         vatRate: (quotation as any).vatRate,
@@ -6611,6 +6617,67 @@ export async function registerRoutes(
     }
     await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { status } });
     res.json({ ok: true });
+  });
+
+  app.get("/api/quotations/:id/pdf", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { QuotationModel } = await import("./models");
+    const user = req.user as any;
+    const quotation = await QuotationModel.findById(req.params.id)
+      .populate("userId", "fullName email username phone country");
+    if (!quotation) return res.sendStatus(404);
+    if (user.role === "client" && String((quotation as any).userId?._id || quotation.userId) !== String(user.id)) return res.sendStatus(403);
+    const { generateQuotationPdf } = await import("./pdf");
+    const client = (quotation as any).userId as any;
+    const clientName = (quotation as any).externalName || client?.fullName || client?.username || "العميل";
+    const clientEmail = (quotation as any).externalEmail || client?.email || "";
+    const clientCompany = (quotation as any).externalCompany || "";
+    try {
+      const pdfBytes = await generateQuotationPdf({
+        quotationNumber: (quotation as any).quotationNumber,
+        title: (quotation as any).title,
+        clientName: clientCompany ? `${clientName} — ${clientCompany}` : clientName,
+        clientEmail,
+        totalAmount: (quotation as any).totalAmount,
+        vatRate: (quotation as any).vatRate,
+        vatAmount: (quotation as any).vatAmount,
+        amount: (quotation as any).amount,
+        validUntil: (quotation as any).validUntil,
+        items: (quotation as any).items,
+        notes: (quotation as any).notes,
+        createdAt: (quotation as any).createdAt,
+      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="quotation-${(quotation as any).quotationNumber}.pdf"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (err) {
+      console.error("[PDF] error:", err);
+      res.status(500).json({ error: "فشل توليد PDF" });
+    }
+  });
+
+  app.post("/api/quotations/:id/convert-to-order", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const user = req.user as any;
+    if (user.role === "client") return res.sendStatus(403);
+    const { QuotationModel, OrderModel } = await import("./models");
+    const quotation = await QuotationModel.findById(req.params.id).populate("userId", "fullName email username");
+    if (!quotation) return res.status(404).json({ error: "العرض غير موجود" });
+    const q = quotation as any;
+    if (!q.userId) return res.status(400).json({ error: "لا يمكن تحويل عرض السعر الخارجي إلى طلب بدون عميل مسجّل" });
+    const existingOrder = await OrderModel.findOne({ quotationId: q._id });
+    if (existingOrder) return res.status(400).json({ error: "تم تحويل هذا العرض مسبقاً إلى طلب", orderId: existingOrder._id });
+    const order = await OrderModel.create({
+      userId: q.userId._id || q.userId,
+      totalAmount: q.totalAmount,
+      notes: `تم تحويله من عرض سعر رقم ${q.quotationNumber}${q.title ? ` — ${q.title}` : ""}`,
+      items: q.items,
+      status: "pending",
+      paymentStatus: "pending",
+      quotationId: q._id,
+    });
+    await QuotationModel.findByIdAndUpdate(req.params.id, { $set: { orderId: order._id } });
+    res.json({ ok: true, orderId: order._id, message: "تم تحويل عرض السعر إلى طلب بنجاح" });
   });
 
   app.get("/api/admin/finance/summary", async (req, res) => {
