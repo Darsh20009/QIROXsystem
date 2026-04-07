@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Loader2, Printer, ArrowRight, Download, Mail, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
@@ -22,6 +22,7 @@ export default function QuotationPrint() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [pdfLoading, setPdfLoading] = useState(false);
+  const printCardRef = useRef<HTMLDivElement>(null);
 
   const { data: me } = useQuery<{ role: string }>({
     queryKey: ["/api/user"],
@@ -68,24 +69,42 @@ export default function QuotationPrint() {
   });
 
   const handleDownloadPDF = async () => {
-    if (!params.id) return;
+    if (!printCardRef.current) return;
     setPdfLoading(true);
     try {
-      const r = await fetch(`/api/quotations/${params.id}/pdf`, { credentials: "include" });
-      if (!r.ok) {
-        toast({ title: "فشل توليد PDF", variant: "destructive" });
-        return;
+      /* Dynamic imports — keep initial bundle small */
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      /* Capture the quotation card as a high-res image */
+      const canvas = await html2canvas(printCardRef.current, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 5000,
+      });
+
+      const imgData   = canvas.toDataURL("image/jpeg", 0.97);
+      const A4_W_MM   = 210;
+      const A4_H_MM   = 297;
+      const imgW_MM   = A4_W_MM;
+      const imgH_MM   = (canvas.height / canvas.width) * imgW_MM;
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      /* If content is taller than one page, split across pages */
+      let y = 0;
+      while (y < imgH_MM) {
+        if (y > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, -y, imgW_MM, imgH_MM, "", "FAST");
+        y += A4_H_MM;
       }
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `quotation-${quotation?.quotationNumber || params.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
+
+      pdf.save(`quotation-${quotation?.quotationNumber || params.id}.pdf`);
+    } catch (err) {
+      console.error("[PDF]", err);
       toast({ title: "فشل تحميل PDF", variant: "destructive" });
     } finally {
       setPdfLoading(false);
@@ -202,6 +221,7 @@ export default function QuotationPrint() {
       {/* Document Area */}
       <div className="min-h-screen bg-gray-50 py-8 px-4 no-print-bg">
         <div
+          ref={printCardRef}
           className="print-card bg-white w-full max-w-[800px] mx-auto shadow-lg rounded-2xl overflow-hidden"
           style={{ fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif" }}
           dir={dir}
