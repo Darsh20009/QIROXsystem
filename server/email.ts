@@ -737,20 +737,6 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
   if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
   rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
 
-  /* PDF download available via the view link — no server-side attachment */
-  const viewBtn = quotation.link
-    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 8px;">
-        <tr>
-          <td align="center">
-            <a href="${quotation.link}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">
-              عرض عرض السعر وتحميل PDF
-            </a>
-          </td>
-        </tr>
-      </table>
-      <p style="text-align:center;font-size:12px;color:#9ca3af;margin:0;">يمكنك عرض العرض كاملاً والرد عليه وتحميله PDF من الرابط أعلاه</p>`
-    : "";
-
   const pdfNote = quotation.pdfBytes
     ? text(`<span style="font-size:13px;color:#666;">📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF.</span>`)
     : "";
@@ -762,9 +748,7 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     infoTable(rows) +
     itemsHtml +
     (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
-    pdfNote +
-    divider() +
-    viewBtn
+    pdfNote
   );
 
   const attachments: EmailAttachment[] = quotation.pdfBytes ? [{
