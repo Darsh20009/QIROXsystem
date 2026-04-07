@@ -3,10 +3,9 @@ import { createRequire } from "module";
 import * as fs from "fs";
 import * as path from "path";
 
-/* CJS modules loaded via createRequire to avoid ESM default-import issues */
+/* fontkit is CJS — load via createRequire */
 const _require = createRequire(import.meta.url);
-const fontkit   = _require("@pdf-lib/fontkit");
-const reshaper  = _require("arabic-reshaper");
+const fontkit  = _require("@pdf-lib/fontkit");
 
 interface QuotationData {
   quotationNumber: string;
@@ -23,7 +22,6 @@ interface QuotationData {
   createdAt?: string;
 }
 
-/* ── helpers ── */
 function loadArabicFont(): Buffer | null {
   try {
     const p = path.resolve(process.cwd(), "public/fonts/arabic.ttf");
@@ -43,23 +41,18 @@ function loadLogo(): Buffer | null {
   } catch { return null; }
 }
 
-/** Returns true if the string contains Arabic characters */
 const hasArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 
 /**
- * Reshape Arabic text for proper letter-joining and reverse it so
- * pdf-lib (which draws LTR) renders it visually right-to-left.
+ * Prepare Arabic text for LTR drawing in pdf-lib.
+ * Reverses the WORD ORDER so that visual RTL reading is correct
+ * (e.g. "محمد الدباني" → "الدباني محمد" drawn LTR reads RTL correctly).
+ * fontkit's OpenType GSUB handles per-letter shaping (connections).
  */
-function shapeArabic(text: string): string {
-  try {
-    const shaped = reshaper.convertArabic(text);
-    return [...shaped].reverse().join("");
-  } catch {
-    return [...text].reverse().join("");
-  }
+function rtlWords(text: string): string {
+  return text.split(" ").reverse().join(" ");
 }
 
-/* ── main export ── */
 export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
@@ -68,11 +61,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const arabicFontBytes = loadArabicFont();
   let arabicFont: any = null;
   if (arabicFontBytes) {
-    try {
-      arabicFont = await pdfDoc.embedFont(arabicFontBytes);
-    } catch (err: any) {
-      console.error("[PDF] Arabic font embed failed:", err?.message);
-    }
+    try { arabicFont = await pdfDoc.embedFont(arabicFontBytes); }
+    catch (err: any) { console.error("[PDF] Arabic font embed failed:", err?.message); }
   }
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const helvetica     = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -87,57 +77,52 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const page = pdfDoc.addPage([595, 842]);
   const { width, height } = page.getSize();
 
-  /* colours */
-  const BLACK = rgb(0,   0,   0);
-  const GRAY  = rgb(0.5, 0.5, 0.5);
-  const LGRAY = rgb(0.94,0.94,0.94);
-  const DGRAY = rgb(0.2, 0.2, 0.2);
-  const WHITE = rgb(1,   1,   1);
+  const BLACK = rgb(0,    0,    0);
+  const GRAY  = rgb(0.5,  0.5,  0.5);
+  const LGRAY = rgb(0.94, 0.94, 0.94);
+  const DGRAY = rgb(0.2,  0.2,  0.2);
+  const WHITE = rgb(1,    1,    1);
 
-  /* font aliases */
   const latinBold = helveticaBold;
   const latinReg  = helvetica;
 
-  /* ── drawing helpers ── */
+  /* ── Drawing helpers ── */
 
-  /** Draw Latin / mixed text left-aligned. */
+  /** Draw Latin/number text left-aligned from (x, y). */
   const drawL = (
     txt: string, x: number, y: number, size: number,
     color = BLACK, font = latinReg
   ) => {
     if (!txt) return;
-    try { page.drawText(txt, { x, y, size, color, font }); }
-    catch { /* ignore unencodeable chars */ }
+    try { page.drawText(txt, { x, y, size, color, font }); } catch { /* skip */ }
   };
 
   /**
-   * Draw Arabic (or mixed Arabic/Latin) text.
-   * The text is reshaped and reversed, then drawn so its RIGHT edge
-   * lands at `rightX`. Pass the Amiri font; falls back to latinReg.
+   * Draw Arabic text, right-aligned so its RIGHT EDGE touches rightX.
+   * Word order is reversed for visual RTL; fontkit GSUB shapes letters.
    */
   const drawAR = (
     txt: string, rightX: number, y: number, size: number,
     color = BLACK
   ) => {
-    if (!txt) return;
-    const font = arabicFont || latinReg;
-    const shaped = hasArabic(txt) ? shapeArabic(txt) : txt;
+    if (!txt || !arabicFont) return;
+    const visual = rtlWords(txt);
     try {
-      const tw = font.widthOfTextAtSize(shaped, size);
-      page.drawText(shaped, { x: rightX - tw, y, size, color, font });
-    } catch { /* ignore */ }
+      const tw = arabicFont.widthOfTextAtSize(visual, size);
+      page.drawText(visual, { x: rightX - tw, y, size, color, font: arabicFont });
+    } catch (err: any) {
+      console.error("[PDF] drawAR failed:", err?.message);
+    }
   };
 
   /**
-   * Draw text that may be Latin or Arabic.
-   * If it contains Arabic chars → drawAR (right-aligned to rightX).
-   * Otherwise → drawL (left-aligned at leftX).
+   * Smart: if text has Arabic chars → drawAR (right-aligned to rightX);
+   * otherwise → drawL (left-aligned from leftX).
    */
   const drawSmart = (
     txt: string,
     leftX: number, rightX: number, y: number,
-    size: number, color = BLACK,
-    latinFont = latinReg
+    size: number, color = BLACK, latinFont = latinReg
   ) => {
     if (!txt) return;
     if (hasArabic(txt)) drawAR(txt, rightX, y, size, color);
@@ -150,9 +135,9 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const drawLine = (x1: number, y1: number, x2: number, y2: number, thick = 0.5, color = LGRAY) =>
     page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: thick, color });
 
-  /* ── layout ── */
+  /* ── Layout ── */
   const MARGIN = 30;
-  const pageW  = width - MARGIN * 2;   // usable width
+  const pageW  = width - MARGIN * 2;
   let curY = height - 40;
 
   /* ── Header bar ── */
@@ -160,20 +145,16 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   drawRect(0, curY - 14, width, headerH, BLACK);
 
   if (logoImage) {
-    const logoNatW: number = logoImage.width;
-    const logoNatH: number = logoImage.height;
-    const maxW = 90, maxH = 44;
-    const scale = Math.min(maxW / logoNatW, maxH / logoNatH);
-    const lw = logoNatW * scale;
-    const lh = logoNatH * scale;
+    const scale = Math.min(90 / logoImage.width, 44 / logoImage.height);
+    const lw = logoImage.width * scale;
+    const lh = logoImage.height * scale;
     page.drawImage(logoImage, {
-      x: 28, y: curY - 14 + (headerH - lh) / 2,
-      width: lw, height: lh,
+      x: 28, y: curY - 14 + (headerH - lh) / 2, width: lw, height: lh,
     });
     drawL("qiroxstudio.online", 28 + lw + 8, curY + 16, 8, rgb(0.55, 0.55, 0.55), latinReg);
   } else {
-    drawL("QIROX",           30,  curY + 20, 28, WHITE, latinBold);
-    drawL("STUDIO",          110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
+    drawL("QIROX",              30,  curY + 20, 28, WHITE, latinBold);
+    drawL("STUDIO",             110, curY + 22, 11, rgb(0.6, 0.6, 0.6), latinReg);
     drawL("qiroxstudio.online", width - 175, curY + 22, 9, rgb(0.6, 0.6, 0.6), latinReg);
   }
   drawL("QUOTATION", width - 100, curY + 8, 7, GRAY, latinReg);
@@ -203,7 +184,6 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   const boxRight = width - MARGIN;
   drawRect(MARGIN, curY - 46, pageW, 54, rgb(0.97, 0.97, 0.97));
   drawL("Prepared for:", MARGIN + 10, curY - 10, 7, GRAY, latinReg);
-  /* client name: Arabic → right-aligned; Latin → left-aligned */
   drawSmart(q.clientName || "—", MARGIN + 10, boxRight - 10, curY - 24, 11, BLACK, latinBold);
   if (q.clientEmail) {
     drawL(q.clientEmail, MARGIN + 10, curY - 37, 8, GRAY, latinReg);
@@ -212,8 +192,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   /* ── Items table ── */
   const items = q.items || [];
-  const tableX = MARGIN;
-  const tableW = pageW;
+  const tableX   = MARGIN;
+  const tableW   = pageW;
   const colWidths = [tableW * 0.45, tableW * 0.15, tableW * 0.2, tableW * 0.2];
   const cols = [
     tableX,
@@ -224,12 +204,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   /* Header row */
   drawRect(tableX, curY - 20, tableW, 24, BLACK);
-
-  /* "البند" right-aligned in col-0; other headers left-aligned */
-  const hdrArabic = "البند";
-  const hdrLatin  = "Item";
-  drawL(hdrLatin, cols[0] + 6, curY - 12, 8, WHITE, latinBold);
-  drawAR(hdrArabic, cols[0] + colWidths[0] - 6, curY - 12, 8, WHITE);
+  drawL("Item",       cols[0] + 6,              curY - 12, 8, WHITE, latinBold);
+  drawAR("البند",    cols[0] + colWidths[0] - 6, curY - 12, 8, WHITE);
   drawL("Qty",        cols[1] + 6, curY - 12, 8, WHITE, latinBold);
   drawL("Unit Price", cols[2] + 6, curY - 12, 8, WHITE, latinBold);
   drawL("Total",      cols[3] + 6, curY - 12, 8, WHITE, latinBold);
@@ -243,11 +219,10 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
     const name = item.name || "—";
     const nameDisplay = name.length > 45 ? name.substring(0, 45) + "…" : name;
-    /* item name: Arabic → right-aligned inside col-0; Latin → left-aligned */
     drawSmart(nameDisplay, cols[0] + 6, cols[1] - 6, curY - 12, 8, DGRAY);
-    drawL(String(item.qty),                       cols[1] + 6,  curY - 12, 8, DGRAY, latinReg);
-    drawL(item.unitPrice.toLocaleString("en-SA"), cols[2] + 6,  curY - 12, 8, DGRAY, latinReg);
-    drawL(item.total.toLocaleString("en-SA"),     cols[3] + 6,  curY - 12, 8, DGRAY, latinReg);
+    drawL(String(item.qty),                       cols[1] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(item.unitPrice.toLocaleString("en-SA"), cols[2] + 6, curY - 12, 8, DGRAY, latinReg);
+    drawL(item.total.toLocaleString("en-SA"),     cols[3] + 6, curY - 12, 8, DGRAY, latinReg);
     curY -= rowH;
   });
 
@@ -260,10 +235,10 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
 
   const addTotalRow = (label: string, value: string, bold = false, bgColor?: any) => {
     if (bgColor) drawRect(totalsX, curY - 16, totalsW, 22, bgColor);
-    const lf = bold ? latinBold : latinReg;
-    const col = bold ? BLACK : GRAY;
-    drawL(label, totalsX + 6, curY - 8, 8, col, lf);
-    drawL(value, totalsX + totalsW - 6 - latinReg.widthOfTextAtSize(value, 8), curY - 8, 8, col, lf);
+    const f = bold ? latinBold : latinReg;
+    const c = bold ? BLACK : GRAY;
+    drawL(label, totalsX + 6, curY - 8, 8, c, f);
+    drawL(value, totalsX + totalsW - 6 - latinReg.widthOfTextAtSize(value, 8), curY - 8, 8, c, f);
     curY -= 20;
   };
 
@@ -272,8 +247,8 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   addTotalRow(`VAT ${q.vatRate ?? 15}%`, (q.vatAmount ?? 0).toLocaleString("en-SA", { minimumFractionDigits: 2 }));
   addTotalRow("Total (SAR)", q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 }), true, BLACK);
 
-  /* overwrite total row text in white */
-  const totalY  = curY + 20;
+  /* re-draw total row text in white */
+  const totalY   = curY + 20;
   const totalStr = q.totalAmount.toLocaleString("en-SA", { minimumFractionDigits: 2 });
   drawL("Total (SAR)", totalsX + 6, totalY - 8, 8, WHITE, latinBold);
   drawL(totalStr, totalsX + totalsW - 6 - latinBold.widthOfTextAtSize(totalStr, 8), totalY - 8, 8, WHITE, latinBold);
@@ -293,9 +268,9 @@ export async function generateQuotationPdf(q: QuotationData): Promise<Uint8Array
   /* ── Footer ── */
   const footerY = 30;
   drawLine(MARGIN, footerY + 18, width - MARGIN, footerY + 18, 0.5, LGRAY);
-  drawL("QIROX Studio",        MARGIN,           footerY + 6, 8, GRAY, latinBold);
-  drawL("qiroxstudio.online",  width / 2 - 40,   footerY + 6, 8, GRAY, latinReg);
-  drawL("© 2026",              width - 70,        footerY + 6, 8, GRAY, latinReg);
+  drawL("QIROX Studio",       MARGIN,          footerY + 6, 8, GRAY, latinBold);
+  drawL("qiroxstudio.online", width / 2 - 40,  footerY + 6, 8, GRAY, latinReg);
+  drawL("© 2026",             width - 70,      footerY + 6, 8, GRAY, latinReg);
 
   return pdfDoc.save();
 }
