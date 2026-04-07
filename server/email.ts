@@ -95,30 +95,37 @@ const S = {
 };
 
 function emailBanner() {
-  const logoUrl = getEmailCfg().logoUrl;
+  const cfg = getEmailCfg();
+  const logoUrl = cfg.logoUrl;
+  const videoUrl = `${cfg.siteUrl}/videos/email-banner.mp4`;
   return `<tr>
   <td style="padding:0;margin:0;background:#000000;border-radius:16px 16px 0 0;overflow:hidden;">
-    <table width="580" cellpadding="0" cellspacing="0" border="0" style="background:#000000;width:100%;max-width:580px;">
-      <tr>
-        <td style="padding:24px 32px 20px;vertical-align:middle;">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="vertical-align:middle;padding-left:0;">
-                ${logoUrl
-                  ? `<img src="${logoUrl}" alt="QIROX" width="120" height="80" style="border:0;display:block;max-width:120px;height:auto;background:#ffffff;padding:6px 10px;border-radius:8px;" />`
-                  : `<p style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:900;letter-spacing:-1px;color:#ffffff;line-height:1;">QIROX</p>
-                     <p style="margin:4px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:400;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">STUDIO</p>`
-                }
-              </td>
-            </tr>
-          </table>
-          <p style="margin:14px 0 0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">منصة إدارة الأعمال الرقمية &bull; qiroxstudio.online</p>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="1" style="padding:0;height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000000);font-size:0;line-height:0;">&nbsp;</td>
-      </tr>
-    </table>
+    <!-- Video banner — plays in Apple Mail / iOS Mail; falls back to logo block elsewhere -->
+    <div style="width:100%;max-width:580px;background:#000000;position:relative;overflow:hidden;font-size:0;line-height:0;">
+      <video width="580" height="220" autoplay loop muted playsinline
+        style="display:block;width:100%;max-width:580px;height:220px;object-fit:cover;background:#000000;"
+        poster="${logoUrl || ''}">
+        <source src="${videoUrl}" type="video/mp4" />
+      </video>
+      <!-- Overlay: QIROX branding on top of video -->
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 24px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%);display:block;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="vertical-align:bottom;">
+              ${logoUrl
+                ? `<img src="${logoUrl}" alt="QIROX" width="90" height="auto" style="border:0;display:block;max-width:90px;height:auto;background:#ffffff;padding:4px 8px;border-radius:6px;" />`
+                : `<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;">QIROX</span>`
+              }
+            </td>
+            <td style="vertical-align:bottom;text-align:left;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:2px;">qiroxstudio.online</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <!-- Gradient divider line -->
+    <div style="height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000000);font-size:0;line-height:0;">&nbsp;</div>
   </td>
 </tr>`;
 }
@@ -703,7 +710,7 @@ export async function sendReceiptEmail(to: string, clientName: string, receipt: 
 export async function sendQuotationEmail(to: string, clientName: string, quotation: {
   quotationNumber: string; title?: string; totalAmount: number; vatRate?: number;
   validUntil?: string; items?: { name: string; qty: number; unitPrice: number; total: number }[];
-  notes?: string; link?: string; pdfBytes?: Uint8Array;
+  notes?: string; link?: string;
 }): Promise<boolean> {
   const itemsHtml = quotation.items && quotation.items.length > 0
     ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:16px 0;font-size:13px;">
@@ -730,11 +737,19 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
   if (quotation.vatRate) rows.push(["ضريبة القيمة المضافة", `${quotation.vatRate}%`]);
   rows.push(["الإجمالي", `<strong style="font-size:16px;">${quotation.totalAmount.toLocaleString()} ر.س</strong>`]);
 
-  const hasPdf = !!quotation.pdfBytes;
-  const pdfNote = hasPdf
-    ? text(`<span style="font-size:13px;color:#666;">📎 تجد عرض السعر مرفقاً بهذا البريد كملف PDF يمكنك فتحه وطباعته مباشرةً.</span>`)
+  /* PDF download available via the view link — no server-side attachment */
+  const viewBtn = quotation.link
+    ? `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 8px;">
+        <tr>
+          <td align="center">
+            <a href="${quotation.link}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">
+              عرض عرض السعر وتحميل PDF
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="text-align:center;font-size:12px;color:#9ca3af;margin:0;">يمكنك عرض العرض كاملاً والرد عليه وتحميله PDF من الرابط أعلاه</p>`
     : "";
-  const linkBtn = quotation.link ? btn(quotation.link, "عرض التفاصيل والرد على العرض") : "";
 
   const html = baseTemplate(
     tag("عرض سعر") +
@@ -743,17 +758,11 @@ export async function sendQuotationEmail(to: string, clientName: string, quotati
     infoTable(rows) +
     itemsHtml +
     (quotation.notes ? text(`<strong>ملاحظات:</strong> ${quotation.notes}`, "font-size:13px;margin-top:12px;") : "") +
-    pdfNote +
-    linkBtn
+    divider() +
+    viewBtn
   );
 
-  const attachments: EmailAttachment[] = hasPdf ? [{
-    filename: `quotation-${quotation.quotationNumber}.pdf`,
-    fileblob: Buffer.from(quotation.pdfBytes!).toString("base64"),
-    mimetype: "application/pdf",
-  }] : [];
-
-  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html, undefined, attachments);
+  return sendEmail(to, clientName, `عرض سعر رقم ${quotation.quotationNumber} | QIROX`, html);
 }
 
 export async function sendConsultationConfirmationEmail(to: string, clientName: string, data: {
