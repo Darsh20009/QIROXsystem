@@ -72,36 +72,45 @@ export default function QuotationPrint() {
     if (!printCardRef.current) return;
     setPdfLoading(true);
     try {
-      /* Dynamic imports — keep initial bundle small */
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
-      /* Capture the quotation card as a high-res image */
+      /* Capture at a fixed 800 px viewport so layout is always consistent */
       const canvas = await html2canvas(printCardRef.current, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
         logging: false,
-        imageTimeout: 5000,
+        windowWidth: 1200,
+        onclone: (_doc: Document, el: HTMLElement) => {
+          el.style.maxWidth = "800px";
+          el.style.width    = "800px";
+          el.style.borderRadius = "0";
+          el.style.boxShadow    = "none";
+        },
       });
 
-      const imgData   = canvas.toDataURL("image/jpeg", 0.97);
-      const A4_W_MM   = 210;
-      const A4_H_MM   = 297;
-      const imgW_MM   = A4_W_MM;
-      const imgH_MM   = (canvas.height / canvas.width) * imgW_MM;
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      /* Always fit the entire quotation onto ONE A4 page */
+      const A4_W = 210; // mm
+      const A4_H = 297; // mm
+      const aspect = canvas.height / canvas.width;
 
-      /* If content is taller than one page, split across pages */
-      let y = 0;
-      while (y < imgH_MM) {
-        if (y > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, -y, imgW_MM, imgH_MM, "", "FAST");
-        y += A4_H_MM;
+      let w = A4_W;
+      let h = w * aspect;
+      if (h > A4_H) {          // content taller than A4 — scale down
+        h = A4_H;
+        w = h / aspect;
       }
 
+      /* Center on the page */
+      const x = (A4_W - w) / 2;
+      const y = (A4_H - h) / 2;
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      pdf.addImage(imgData, "JPEG", x, y, w, h, "", "FAST");
       pdf.save(`quotation-${quotation?.quotationNumber || params.id}.pdf`);
     } catch (err) {
       console.error("[PDF]", err);
