@@ -75,6 +75,24 @@ export default function QuotationPrint() {
       const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
+      /* Load local Arabic font and convert to base64 for embedding */
+      let arabicFontDataUrl = "";
+      try {
+        const fontResp = await fetch("/fonts/arabic.ttf");
+        const fontBuf  = await fontResp.arrayBuffer();
+        const bytes    = new Uint8Array(fontBuf);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const base64   = btoa(binary);
+        arabicFontDataUrl = `data:font/truetype;base64,${base64}`;
+      } catch {
+        /* Non-fatal — fall back to system fonts */
+      }
+
+      /* Wait for browser fonts to settle */
+      await document.fonts.ready;
+      await new Promise((r) => setTimeout(r, 150));
+
       /* Capture at a fixed 800 px viewport so layout is always consistent */
       const canvas = await html2canvas(printCardRef.current, {
         scale: 2,
@@ -83,9 +101,25 @@ export default function QuotationPrint() {
         backgroundColor: "#ffffff",
         logging: false,
         windowWidth: 1200,
-        onclone: (_doc: Document, el: HTMLElement) => {
-          el.style.maxWidth = "800px";
-          el.style.width    = "800px";
+        onclone: (doc: Document, el: HTMLElement) => {
+          /* Inject local Arabic font + Cairo fallback */
+          const style = doc.createElement("style");
+          style.textContent = `
+            ${arabicFontDataUrl ? `
+            @font-face {
+              font-family: 'ArabicPDF';
+              src: url('${arabicFontDataUrl}') format('truetype');
+              font-weight: 400 900;
+            }` : ""}
+            *, *::before, *::after {
+              font-family: 'ArabicPDF', 'Cairo', 'IBM Plex Sans Arabic',
+                           'Segoe UI', Tahoma, Arial, sans-serif !important;
+            }
+          `;
+          doc.head.appendChild(style);
+
+          el.style.maxWidth     = "800px";
+          el.style.width        = "800px";
           el.style.borderRadius = "0";
           el.style.boxShadow    = "none";
         },
