@@ -657,17 +657,21 @@ function ClientQuickNav() {
   );
 }
 
-class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean; errorMsg: string }> {
+class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, retried: false, errorMsg: "" };
+    this.state = { hasError: false, retried: false };
   }
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, _info: ErrorInfo) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    /* Log internally for debugging — never shown to users */
+    console.error("[QIROX] Page error caught:", error?.name, error?.message);
+    console.error("[QIROX] Component stack:", info?.componentStack);
+
     const isChunkError =
       error?.name === "ChunkLoadError" ||
       error?.message?.includes("Loading chunk") ||
@@ -675,11 +679,7 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
       error?.message?.includes("Importing a module script failed");
 
     if (isChunkError && !this.state.retried) {
-      this.setState({ retried: true }, () => {
-        window.location.reload();
-      });
-    } else if (!isChunkError) {
-      this.setState({ retried: true, errorMsg: `${error?.name}: ${error?.message}` });
+      this.setState({ retried: true }, () => { window.location.reload(); });
     }
   }
 
@@ -694,47 +694,47 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 0,
             padding: "2rem",
             fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
             textAlign: "center",
             background: "linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
           }}
         >
-          {/* Animated icon */}
+          {/* Gear / maintenance icon */}
           <div style={{
-            width: 80, height: 80, borderRadius: 24,
+            width: 88, height: 88, borderRadius: 28,
             background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: 24, boxShadow: "0 0 40px rgba(99,102,241,0.4)",
+            marginBottom: 28, boxShadow: "0 0 48px rgba(99,102,241,0.45)",
           }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>
-            حدث خطأ غير متوقع
+
+          {/* Logo text */}
+          <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#fff", letterSpacing: "0.18em", marginBottom: 6, opacity: 0.9 }}>
+            QIROX
+          </div>
+
+          <h1 style={{ fontSize: "1.45rem", fontWeight: 800, color: "#fff", margin: "0 0 12px" }}>
+            هذه الصفحة تحت الصيانة
           </h1>
-          <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 28px", maxWidth: 400, lineHeight: 1.6 }}>
-            حدث خطأ أثناء تحميل هذه الصفحة. يمكنك إعادة المحاولة أو العودة للرئيسية.
+          <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", margin: "0 0 32px", maxWidth: 380, lineHeight: 1.7 }}>
+            نعمل على تحسين هذه الصفحة لتقديم تجربة أفضل.<br/>
+            يُرجى المحاولة مرة أخرى خلال لحظات.
           </p>
-          {this.state.errorMsg && (
-            <details style={{ marginBottom: 24, maxWidth: 500 }}>
-              <summary style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", cursor: "pointer", marginBottom: 8 }}>
-                تفاصيل الخطأ التقنية
-              </summary>
-              <p style={{ fontSize: "0.7rem", color: "#f87171", background: "rgba(239,68,68,0.1)", padding: "0.75rem 1rem", borderRadius: 8, maxWidth: 500, wordBreak: "break-word", direction: "ltr", textAlign: "left", border: "1px solid rgba(239,68,68,0.2)", margin: 0 }}>
-                {this.state.errorMsg}
-              </p>
-            </details>
-          )}
-          <div style={{ display: "flex", gap: 12 }}>
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => { this.setState({ hasError: false, retried: false }); window.location.reload(); }}
               style={{
-                padding: "0.75rem 1.75rem", background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                padding: "0.75rem 1.75rem",
+                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
                 color: "#fff", border: "none", borderRadius: 12, cursor: "pointer",
-                fontSize: "0.95rem", fontWeight: 700, boxShadow: "0 4px 20px rgba(99,102,241,0.35)",
+                fontSize: "0.95rem", fontWeight: 700,
+                boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
               }}
             >
               ↻ إعادة التحميل
@@ -742,12 +742,15 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
             <button
               onClick={() => { window.location.href = "/"; }}
               style={{
-                padding: "0.75rem 1.75rem", background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 12, cursor: "pointer", fontSize: "0.95rem", fontWeight: 600,
+                padding: "0.75rem 1.75rem",
+                background: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.7)",
+                border: "1px solid rgba(255,255,255,0.13)",
+                borderRadius: 12, cursor: "pointer",
+                fontSize: "0.95rem", fontWeight: 600,
               }}
             >
-              العودة للرئيسية
+              الرئيسية
             </button>
           </div>
         </div>
