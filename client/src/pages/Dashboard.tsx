@@ -28,6 +28,7 @@ import type { ModificationRequest, Order } from "@shared/schema";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { BiometricManager } from "@/components/BiometricManager";
 import { AIPanel } from "@/components/QiroxAI";
+import { ClientHeroVisual } from "@/components/ClientHeroVisual";
 import { NotificationsWidget, WhatsNewWidget } from "@/components/DashboardWidgets";
 import { WelcomeAssistant } from "@/components/WelcomeAssistant";
 
@@ -1807,41 +1808,87 @@ export default function Dashboard() {
       <WelcomeAssistant />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
-      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08]">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">
-                {user.fullName?.charAt(0) || "U"}
-              </div>
-              <div>
-                <p className="text-[10px] text-black/30 dark:text-white/30 mb-0.5">{dateStr}</p>
-                <h1 className="text-xl font-black text-black dark:text-white font-heading">
-                  {getGreeting(lang)}{L ? "،" : ","} {(user.fullName || user.username || "")?.split(" ")[0]}
-                </h1>
-                <p className="text-xs text-black/40 dark:text-white/40 mt-0.5">{user.email}</p>
-              </div>
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] overflow-hidden relative">
+        {/* Subtle grid bg */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 md:py-8 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+
+            {/* Left: Greeting + actions */}
+            <div>
+              {/* Name badge */}
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] rounded-full px-3 py-1.5 mb-4">
+                <div className="w-6 h-6 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black font-black text-[10px]">
+                  {user.fullName?.charAt(0) || "U"}
+                </div>
+                <span className="text-[11px] text-black/50 dark:text-white/50 font-medium">{user.email}</span>
+              </motion.div>
+
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                className="text-[11px] text-black/30 dark:text-white/30 mb-1">{dateStr}</motion.p>
+
+              <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.5 }}
+                className="text-3xl md:text-4xl font-black text-black dark:text-white font-heading leading-tight mb-2"
+                data-testid="text-client-greeting">
+                {getGreeting(lang)}{L ? "،" : ","}<br />
+                <span className="text-black/60 dark:text-white/60">{(user.fullName || user.username || "")?.split(" ")[0]}</span>
+              </motion.h1>
+
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
+                className="text-sm text-black/40 dark:text-white/40 mb-5 max-w-xs leading-relaxed">
+                {L ? "مرحباً بك في منصة QIROX — نظام إدارة الأعمال الرقمية المتكامل" : "Welcome to QIROX — your integrated digital business platform"}
+              </motion.p>
+
+              {/* Platform badges */}
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                className="flex items-center gap-2 flex-wrap mb-6">
+                {[
+                  { label: L ? "إدارة طلبات" : "Order Mgmt", icon: "📦" },
+                  { label: L ? "مشاريع حية" : "Live Projects", icon: "⚡" },
+                  { label: L ? "فواتير ذكية" : "Smart Invoices", icon: "🧾" },
+                  { label: L ? "AI مدمج" : "Built-in AI", icon: "✦" },
+                ].map((b, i) => (
+                  <motion.span key={i} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.35 + i * 0.08 }}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] rounded-full px-3 py-1.5 text-black/60 dark:text-white/50">
+                    <span>{b.icon}</span>{b.label}
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              {/* Action buttons */}
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+                className="flex items-center gap-3 flex-wrap">
+                <Link href="/order">
+                  <Button size="sm" className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 rounded-xl h-10 px-5 text-sm gap-2 font-bold shadow-lg" data-testid="button-new-order">
+                    <Plus className="w-4 h-4" />
+                    {L ? "طلب جديد" : "New Order"}
+                  </Button>
+                </Link>
+                <Link href="/prices">
+                  <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 text-sm border-black/[0.1] dark:border-white/[0.12] hover:border-black/25 dark:hover:border-white/25 gap-2" data-testid="button-browse-services">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    {L ? "تصفح الخدمات" : "Browse Services"}
+                  </Button>
+                </Link>
+                <Link href="/cart">
+                  <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 text-sm border-black/[0.1] dark:border-white/[0.12] hover:border-black/25 dark:hover:border-white/25 gap-2">
+                    <ShoppingCart className="w-3.5 h-3.5" />
+                    {L ? "السلة" : "Cart"}
+                  </Button>
+                </Link>
+              </motion.div>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Link href="/prices">
-                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] dark:border-white/[0.1] hover:border-black/20 dark:hover:border-white/20 gap-2" data-testid="button-browse-services">
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  {L ? "تصفح الخدمات" : "Browse Services"}
-                </Button>
-              </Link>
-              <Link href="/cart">
-                <Button size="sm" variant="outline" className="rounded-xl h-9 px-4 text-xs border-black/[0.08] dark:border-white/[0.1] hover:border-black/20 dark:hover:border-white/20 gap-2">
-                  <ShoppingCart className="w-3.5 h-3.5" />
-                  {L ? "السلة" : "Cart"}
-                </Button>
-              </Link>
-              <Link href="/order">
-                <Button size="sm" className="bg-black text-white hover:bg-black/80 rounded-xl h-9 px-5 text-xs gap-2 font-bold" data-testid="button-new-order">
-                  <Plus className="w-3.5 h-3.5" />
-                  {L ? "طلب جديد" : "New Order"}
-                </Button>
-              </Link>
-            </div>
+
+            {/* Right: Device mockups */}
+            <ClientHeroVisual
+              totalOrders={orders?.length || 0}
+              activeProjects={activeProjects.length}
+              completedOrders={completedOrders.length}
+            />
           </div>
         </div>
       </div>
