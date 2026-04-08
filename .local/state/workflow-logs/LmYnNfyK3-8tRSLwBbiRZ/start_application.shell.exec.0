@@ -1,0 +1,252 @@
+[1G[0K⠙[1G[0K[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+8:53:04 AM [express] serving on port 5000
+Initialized 13 cron jobs
+8:53:11 AM [express] GET /api/user 304 in 189ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":…
+8:53:11 AM [express] GET /api/public/settings 304 in 231ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+8:53:13 AM [express] GET /api/partners 304 in 47ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+8:53:13 AM [express] GET /api/discount-codes/public 304 in 45ms :: []
+8:53:13 AM [express] GET /api/app-downloads 304 in 48ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+8:53:13 AM [express] GET /api/templates 304 in 62ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+8:53:15 AM [express] GET /api/user 401 in 0ms
+8:53:15 AM [express] GET /api/public/settings 200 in 23ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+8:53:15 AM [express] GET /api/partners 200 in 1ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder":…
+8:53:15 AM [express] GET /api/app-downloads 200 in 24ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+8:53:15 AM [express] GET /api/discount-codes/public 200 in 23ms :: []
+8:53:15 AM [express] GET /api/templates 200 in 42ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+8:54:00 AM [express] POST /api/internal/push/promotional 200 in 27ms
+8:54:55 AM [express] GET /api/notifications/unread-count 304 in 385ms :: {"count":2}
+8:54:55 AM [express] GET /api/attendance/status 304 in 385ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+8:54:55 AM [express] GET /api/notifications 304 in 385ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida…
+8:54:55 AM [express] GET /api/inbox/unread-count 304 in 405ms :: {"count":0}
+8:54:55 AM [express] GET /api/orders/pending-count 304 in 46ms :: {"count":0}
+8:54:55 AM [express] GET /api/badges 304 in 689ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:54:56 AM [express] GET /api/qmeet/upcoming 304 in 42ms :: []
+8:54:56 AM [express] GET /api/modification-requests 304 in 43ms :: []
+8:54:56 AM [express] GET /api/projects 304 in 46ms :: []
+8:54:56 AM [express] GET /api/orders 304 in 87ms :: [{"_id":"699ae6bea81a646c92373be8","userId":{"_id":"699a420be5c888d6633c0611","username":"darwish","email":"youssefdarwish20009@gmail.com","fullName":"darsh","phone":"05…
+8:55:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+8:55:09 AM [express] GET /api/quotations 304 in 67ms :: [{"_id":"69d4160c18584cc38fd3a450","quotationNumber":"QT-2026-0005","userId":null,"externalName":"محمد الدباني","externalEmail":"qiroxsystem@gmail.com","externalComp…
+8:55:12 AM [express] GET /api/quotations/69d4160c18584cc38fd3a450 304 in 46ms :: {"_id":"69d4160c18584cc38fd3a450","quotationNumber":"QT-2026-0005","userId":null,"externalName":"محمد الدباني","externalEmail":"qiroxsystem@…
+8:55:15 AM [express] GET /api/quotations/69d4160c18584cc38fd3a450/pdf 200 in 2173ms
+8:55:15 AM [express] GET /api/notifications 304 in 60ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:55:36 AM [express] GET /api/notifications 304 in 43ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:55:55 AM [express] GET /api/inbox/unread-count 304 in 42ms :: {"count":0}
+8:55:55 AM [express] GET /api/orders/pending-count 304 in 42ms :: {"count":0}
+8:55:55 AM [express] GET /api/badges 304 in 48ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:55:56 AM [express] GET /api/notifications 304 in 42ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:56:00 AM [express] POST /api/internal/push/promotional 200 in 16ms
+8:56:16 AM [express] GET /api/notifications 304 in 43ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:56:25 AM [express] GET /api/inbox/unread-count 304 in 21ms :: {"count":0}
+8:56:25 AM [express] GET /api/orders/pending-count 304 in 42ms :: {"count":0}
+8:56:25 AM [express] GET /api/badges 304 in 20ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:56:36 AM [express] GET /api/notifications 304 in 58ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:56:55 AM [express] GET /api/inbox/unread-count 304 in 43ms :: {"count":0}
+8:56:56 AM [express] GET /api/orders/pending-count 304 in 43ms :: {"count":0}
+8:56:56 AM [express] GET /api/badges 304 in 45ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:56:57 AM [express] GET /api/notifications 304 in 42ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:57:00 AM [express] POST /api/internal/push/promotional 200 in 14ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:57:10 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/QuotationPrint.tsx, /src/index.css[22m
+8:57:17 AM [express] GET /api/notifications 304 in 44ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:57:18 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/QuotationPrint.tsx, /src/index.css[22m [33m(x2)[39m
+8:57:26 AM [express] GET /api/inbox/unread-count 304 in 21ms :: {"count":0}
+8:57:26 AM [express] GET /api/orders/pending-count 304 in 43ms :: {"count":0}
+8:57:26 AM [express] GET /api/badges 304 in 21ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:57:36 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/QuotationPrint.tsx, /src/index.css[22m [33m(x3)[39m
+8:57:37 AM [express] GET /api/notifications 304 in 57ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+[2m8:57:39 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ new dependencies optimized: [33mhtml2canvas[32m[39m
+[2m8:57:39 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ optimized dependencies changed. reloading[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:57:43 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/QuotationPrint.tsx, /src/index.css[22m
+8:57:44 AM [express] GET /api/user 304 in 31ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":f…
+8:57:44 AM [express] GET /api/public/settings 304 in 58ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+8:57:44 AM [express] GET /api/badges 304 in 24ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+8:57:44 AM [express] GET /api/inbox/unread-count 304 in 25ms :: {"count":0}
+8:57:44 AM [express] GET /api/attendance/status 304 in 45ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a1880…
+8:57:44 AM [express] GET /api/notifications 304 in 49ms :: [{"_id":"69cf49e32d2af998e9359193","userId":"69a487f0a18808005bdf3247","forAdmins":false,"type":"info","title":"🆕 عميل جديد انضم إلى المنصة","body":"Daniel Dida …
+8:57:44 AM [express] GET /api/orders/pending-count 304 in 42ms :: {"count":0}
+8:57:44 AM [express] GET /api/quotations/69d4160c18584cc38fd3a450 304 in 52ms :: {"_id":"69d4160c18584cc38fd3a450","quotationNumber":"QT-2026-0005","userId":null,"externalName":"محمد الدباني","externalEmail":"qiroxsystem@…

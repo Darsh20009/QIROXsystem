@@ -1,0 +1,34 @@
+[1G[0K⠙[1G[0K⠹[1G[0K⠸[1G[0K[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+4:30:57 AM [express] serving on port 5000
+Initialized 13 cron jobs
+4:31:00 AM [express] POST /api/internal/push/promotional 200 in 215ms
+4:31:05 AM [express] GET /api/user 401 in 104ms
+4:31:05 AM [express] GET /api/public/settings 304 in 145ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+4:31:07 AM [express] GET /api/app-downloads 304 in 77ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+4:31:07 AM [express] GET /api/partners 304 in 53ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+4:31:07 AM [express] GET /api/discount-codes/public 304 in 46ms :: []
+4:31:07 AM [express] GET /api/templates 304 in 63ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+4:32:00 AM [express] POST /api/internal/push/promotional 200 in 14ms
+4:33:00 AM [express] POST /api/internal/push/promotional 200 in 13ms
+4:34:00 AM [express] POST /api/internal/push/promotional 200 in 9ms
+4:35:00 AM [express] POST /api/internal/push/promotional 200 in 14ms
+4:36:00 AM [express] POST /api/internal/push/promotional 200 in 17ms
+4:37:00 AM [express] POST /api/internal/push/promotional 200 in 11ms
+4:38:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+4:39:00 AM [express] POST /api/internal/push/promotional 200 in 19ms
+4:40:00 AM [express] POST /api/internal/push/promotional 200 in 12ms
+4:41:00 AM [express] POST /api/internal/push/promotional 200 in 10ms
+4:42:00 AM [express] POST /api/internal/push/promotional 200 in 11ms
+4:42:31 AM [express] GET /api/pricing 304 in 52ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime…
+4:42:31 AM [express] GET /api/app-downloads 304 in 45ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+4:42:32 AM [express] GET /api/public/settings 304 in 45ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…

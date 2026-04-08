@@ -1,0 +1,255 @@
+[1G[0K⠙[1G[0K[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+1:24:05 PM [express] serving on port 5000
+Initialized 13 cron jobs
+1:24:15 PM [express] GET /api/user 304 in 254ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":…
+1:24:15 PM [express] GET /api/public/settings 304 in 285ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+1:24:16 PM [express] GET /api/partners 304 in 55ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+1:24:16 PM [express] GET /api/app-downloads 304 in 53ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+1:24:17 PM [express] GET /api/discount-codes/public 304 in 99ms :: []
+1:24:17 PM [express] GET /api/templates 304 in 99ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+1:25:02 PM [express] POST /api/internal/push/promotional 200 in 286ms
+1:26:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+1:27:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:28:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+1:29:00 PM [express] POST /api/internal/push/promotional 200 in 92ms
+1:30:00 PM [express] POST /api/internal/push/promotional 200 in 20ms
+1:31:00 PM [express] POST /api/internal/push/promotional 200 in 125ms
+1:32:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:33:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+1:34:00 PM [express] POST /api/internal/push/promotional 200 in 83ms
+1:35:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:36:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+1:37:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:38:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:39:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:40:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:41:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:42:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+1:43:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:44:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:45:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:46:00 PM [express] POST /api/internal/push/promotional 200 in 29ms
+1:47:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:48:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+1:49:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:50:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:51:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:52:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:53:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:54:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:55:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:56:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:57:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+1:58:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+1:59:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:00:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:01:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:02:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:03:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:04:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:05:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:06:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:07:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:08:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:09:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:10:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:11:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+2:12:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:13:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:14:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:15:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:16:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:17:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:18:00 PM [express] POST /api/internal/push/promotional 200 in 15ms
+2:19:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+2:20:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:21:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:22:00 PM [express] POST /api/internal/push/promotional 200 in 16ms
+2:22:18 PM [express] GET /api/user 304 in 22ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":f…
+2:22:18 PM [express] GET /api/public/settings 304 in 130ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin…
+2:22:19 PM [express] GET /api/partners 304 in 59ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+2:22:19 PM [express] GET /api/app-downloads 304 in 59ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+2:22:19 PM [express] GET /api/discount-codes/public 304 in 62ms :: []
+2:22:19 PM [express] GET /api/templates 304 in 74ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+2:22:25 PM [express] POST /api/logout 200 in 95ms
+2:22:30 PM [express] GET /api/auth/google/status 200 in 21ms :: {"enabled":true}
+2:22:30 PM [express] GET /api/auth/github/status 200 in 22ms :: {"enabled":false}
+2:22:38 PM [express] POST /api/login 200 in 273ms :: {"subscriptionPeriod":null,"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"linktree":"","referredBy":null,"referralCreditsEarned":0,"username":…
+2:22:38 PM [express] GET /api/notifications/unread-count 200 in 46ms :: {"count":14}
+2:22:38 PM [express] GET /api/badges 200 in 57ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+2:22:38 PM [express] GET /api/cart 200 in 63ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+2:22:38 PM [express] GET /api/orders 200 in 82ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","…
+2:22:39 PM [express] GET /api/wallet 200 in 320ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+2:22:39 PM [express] GET /api/inbox/unread-count 304 in 48ms :: {"count":0}
+2:22:39 PM [express] GET /api/notifications 200 in 50ms :: [{"_id":"69ce3d4c19655b8612853920","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MNHAVDCX","body":"صدرت فاتور…
+2:22:41 PM [express] GET /api/auth/webauthn/credentials 200 in 53ms :: [{"userId":"699a420be5c888d6633c0611","credentialId":"xPLrMVIy-PFLGAI3ZI6G-mj57DJGELk58kDA78iC6iA","counter":1,"transports":["internal"],"deviceName":…
+2:22:41 PM [express] GET /api/modification-requests 200 in 42ms :: [{"userId":"699a420be5c888d6633c0611","projectId":"69a27858527789d1101319be","title":"ق3","description":"ق3","priority":"urgent","status":"rejected","atta…
+2:22:41 PM [express] GET /api/attendance/status 200 in 46ms
+2:22:41 PM [express] GET /api/admin/mod-type-prices 200 in 45ms :: []
+2:22:41 PM [express] GET /api/mod-quota 200 in 65ms :: {"hasOrders":false}
+2:22:41 PM [express] GET /api/projects 200 in 75ms :: [{"usageGuide":{"title":"شرح استخدام النظام","files":[]},"orderId":{"sector":"يث","totalAmount":8000,"id":"699ae6bea81a646c92373be8"},"clientId":"699a420be5c888d6633c0…
+2:22:41 PM [express] GET /api/my-api-keys 200 in 43ms :: []
+2:22:41 PM [express] GET /api/qmeet/upcoming 304 in 43ms :: []
+2:22:41 PM [express] GET /api/pricing 200 in 47ms :: [{"name":"Lite","nameAr":"لايت","slug":"restaurant-lite","descriptionAr":"الباقة الأساسية — كل ما تحتاجه للبداية","price":3499,"currency":"SAR","billingCycle":"lifetime…
+2:22:41 PM [express] GET /api/phone-verify/status 200 in 65ms :: {"phone":"0532441566","phoneVerified":true,"pendingMethod":null,"pendingCallStatus":null,"pendingExpiresAt":null}
+2:22:59 PM [express] GET /api/notifications 304 in 51ms :: [{"_id":"69ce3d4c19655b8612853920","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MNHAVDCX","body":"صدرت فاتور…
+2:23:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+2:23:07 PM [express] GET /api/inbox 200 in 80ms :: [{"csSessionId":"69a680a1326302ec6bcf8a71","fromUserId":{"username":"darwish","role":"client","fullName":"darsh","profilePhotoUrl":"","avatarConfig":"","id":"699a420be5c8…
+2:23:09 PM [express] GET /api/badges 304 in 21ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+2:23:09 PM [express] GET /api/cart 304 in 49ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+2:23:09 PM [express] GET /api/inbox/unread-count 304 in 21ms :: {"count":0}
+2:23:10 PM [express] GET /api/inbox/thread/69a4ff10a18808005bdf37f9 200 in 130ms :: [{"deletedBy":[],"csSessionId":"69a680a1326302ec6bcf8a71","fromUserId":{"avatarConfig":"","username":"moh2030","role":"manager","fullName…
+2:23:14 PM [express] GET /api/user 200 in 22ms :: {"subscriptionPeriod":null,"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"linktree":"","referredBy":null,"referralCreditsEarned":0,"username":"da…
+2:23:14 PM [express] GET /api/public/settings 304 in 43ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+2:23:15 PM [express] GET /api/cart 304 in 42ms :: {"userId":"699a420be5c888d6633c0611","items":[{"type":"plan","refId":"69a1f64e5c8136208048878b","name":"برو","nameAr":"برو","price":349,"qty":1,"config":{"tier":"pro","tie…
+2:23:15 PM [express] GET /api/notifications 304 in 45ms :: [{"_id":"69ce3d4c19655b8612853920","userId":"699a420be5c888d6633c0611","forAdmins":false,"type":"payment","title":"فاتورة جديدة — INV-MNHAVDCX","body":"صدرت فاتور…
+2:23:15 PM [express] GET /api/orders 304 in 65ms :: [{"shippingFee":0,"paymentStatus":"pending","paymentRejectionReason":"","userId":"699a420be5c888d6633c0611","serviceId":"6988c86231b4aa7431de8be3","status":"cancelled","…
+2:23:15 PM [express] GET /api/inbox/unread-count 304 in 43ms :: {"count":0}
+2:23:15 PM [express] GET /api/badges 304 in 104ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":0,"total":0}
+2:23:15 PM [express] GET /api/wallet 304 in 163ms :: {"transactions":[{"userId":"699a420be5c888d6633c0611","type":"debit","amount":452.5,"description":"دفع طلب #69b604178410111ca6340806 من محفظة كيروكس باي","orderId":"69b…
+2:23:15 PM [express] GET /api/inbox 304 in 27ms :: [{"csSessionId":"69a680a1326302ec6bcf8a71","fromUserId":{"username":"darwish","role":"client","fullName":"darsh","profilePhotoUrl":"","avatarConfig":"","id":"699a420be5c8…
+2:23:22 PM [express] GET /api/notifications/unread-count 304 in 43ms :: {"count":14}
+2:23:23 PM [express] POST /api/logout 200 in 91ms
+2:23:24 PM [express] GET /api/partners 304 in 21ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder"…
+2:23:24 PM [express] GET /api/app-downloads 304 in 46ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+2:23:24 PM [express] GET /api/templates 304 in 63ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+2:23:24 PM [express] GET /api/discount-codes/public 304 in 43ms :: []
+2:24:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:25:00 PM [express] POST /api/internal/push/promotional 200 in 172ms
+2:26:00 PM [express] POST /api/internal/push/promotional 200 in 15ms
+2:27:00 PM [express] POST /api/internal/push/promotional 200 in 24ms
+2:28:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+2:29:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+2:30:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:31:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:32:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:33:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:34:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:35:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:36:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:37:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:38:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:39:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+2:40:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:41:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:42:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:43:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:44:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:45:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:46:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:47:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:48:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:49:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:50:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+2:51:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+2:52:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:53:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:54:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:55:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+2:56:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+2:57:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:58:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+2:59:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:00:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:01:01 PM [express] POST /api/internal/push/promotional 200 in 766ms
+3:02:00 PM [express] POST /api/internal/push/promotional 200 in 20ms
+3:03:00 PM [express] POST /api/internal/push/promotional 200 in 5ms
+3:04:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:05:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:06:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:07:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:08:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:09:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:10:00 PM [express] POST /api/internal/push/promotional 200 in 562ms
+3:11:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:12:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:13:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:14:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:15:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:16:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:17:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:18:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:19:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:20:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:21:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:22:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+3:23:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:24:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:25:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:26:00 PM [express] POST /api/internal/push/promotional 200 in 16ms
+3:27:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:28:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:29:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+3:30:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:31:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:32:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:33:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+3:34:00 PM [express] POST /api/internal/push/promotional 200 in 305ms
+[2026-04-07T15:35:41.910Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:42.577Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:42.943Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.063Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.074Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.089Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.115Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.146Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.198Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.239Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+[2026-04-07T15:35:43.271Z] [PID: 186] [32m[NODE-CRON][32m [33m[WARN][0m missed execution at Tue Apr 07 2026 15:35:00 GMT+0000 (Coordinated Universal Time)! Possible blocking IO or high CPU user at the same process used by node-cron.
+3:36:00 PM [express] POST /api/internal/push/promotional 200 in 92ms
+3:37:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:38:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:39:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:40:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+3:41:00 PM [express] POST /api/internal/push/promotional 200 in 13ms
+3:42:00 PM [express] POST /api/internal/push/promotional 200 in 14ms
+3:43:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:44:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+3:45:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:46:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:47:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+3:48:00 PM [express] POST /api/internal/push/promotional 200 in 17ms
+3:49:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:50:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:51:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+3:52:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+3:53:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:54:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+3:55:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+3:56:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:57:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:58:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+3:59:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:00:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:01:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:02:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:03:00 PM [express] POST /api/internal/push/promotional 200 in 15ms
+4:04:00 PM [express] POST /api/internal/push/promotional 200 in 35ms
+4:05:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+4:06:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+4:07:00 PM [express] POST /api/internal/push/promotional 200 in 12ms
+4:08:00 PM [express] POST /api/internal/push/promotional 200 in 11ms
+4:09:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:10:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:11:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:12:00 PM [express] POST /api/internal/push/promotional 200 in 9ms
+4:13:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:14:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:15:00 PM [express] POST /api/internal/push/promotional 200 in 6ms
+4:16:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:17:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:18:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:19:00 PM [express] POST /api/internal/push/promotional 200 in 8ms
+4:20:00 PM [express] POST /api/internal/push/promotional 200 in 10ms
+4:21:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
+4:22:00 PM [express] POST /api/internal/push/promotional 200 in 7ms
