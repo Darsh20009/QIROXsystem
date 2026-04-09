@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useTemplates } from "@/hooks/use-templates";
+import { AboutHeroVisual } from "@/components/MarketingVisual";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -99,25 +100,27 @@ export default function About() {
       <Navigation />
 
       {/* Hero */}
-      <section className="pt-28 pb-20 relative overflow-hidden">
-        <PageGraphics variant="full-light" />
-        <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
+      <section className="relative overflow-hidden bg-black">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.055]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-950 to-transparent pointer-events-none" />
+        <div className="container mx-auto px-4 relative z-10 pt-24 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             <motion.div initial="hidden" animate="visible" variants={stagger}>
-              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] mb-6">
-                <Info className="w-3.5 h-3.5 text-black/40 dark:text-white/40" />
-                <span className="text-black/40 dark:text-white/40 text-xs tracking-wider uppercase">{t("about.badge")}</span>
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.05] mb-6">
+                <span className="w-2 h-2 rounded-full bg-white/40 animate-pulse" />
+                <span className="text-white/45 text-xs tracking-wider uppercase">{t("about.badge")}</span>
               </motion.div>
-              <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-6xl lg:text-7xl font-black font-heading text-black dark:text-white leading-[1.05] mb-8 tracking-tight">
+              <motion.h1 variants={fadeUp} custom={1} className="text-4xl md:text-5xl lg:text-6xl font-black font-heading text-white leading-[1.08] mb-6 tracking-tight">
                 {t("about.hero.title1")}
                 <br />
-                <span className="text-gray-400 dark:text-gray-500">{t("about.hero.title2")}</span>
+                <span className="text-white/30">{t("about.hero.title2")}</span>
               </motion.h1>
-              <motion.p variants={fadeUp} custom={2} className="text-lg text-black/40 dark:text-white/40 leading-relaxed max-w-2xl mx-auto">
+              <motion.p variants={fadeUp} custom={2} className="text-base text-white/40 leading-relaxed max-w-md">
                 {t("about.hero.subtitle")}
               </motion.p>
             </motion.div>
+            <AboutHeroVisual lang={lang} />
           </div>
         </div>
       </section>
