@@ -887,8 +887,10 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
   log(`serving on port ${port}`);
 });
 
-// ── Static files and Vite (needed before routes) ─────────────────────────────
+// ── Full startup: DB → routes → Vite SPA catch-all ───────────────────────────
+// IMPORTANT: Vite must come LAST so it never intercepts /api/* requests
 (async () => {
+  // 1. Cafe demo static files (no async work needed)
   const cafeDemoDir = path.resolve(process.cwd(), "public/cafe-demo");
   if (existsSync(cafeDemoDir)) {
     app.use("/cafe-demo", express.static(cafeDemoDir, { index: false }));
@@ -897,16 +899,7 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     console.log("[CafeDemo] Serving from", cafeDemoDir);
   }
 
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
-})();
-
-// ── Connect to DB then register routes ───────────────────────────────────────
-(async () => {
+  // 2. Connect to DB (health check already works via /api/health above)
   try {
     await connectToDatabase();
   } catch (err: any) {
@@ -917,6 +910,8 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     // Render will restart the service, giving MongoDB time to become accessible
   }
 
+  // 3. Register ALL API routes BEFORE setting up Vite
+  //    This ensures Vite's SPA catch-all never intercepts /api/* requests
   await registerRoutes(httpServer, app);
   registerQMeetRoutes(app);
   startQMeetScheduler();
@@ -931,6 +926,14 @@ httpServer.listen({ port, host: "0.0.0.0" }, () => {
     if (res.headersSent) return next(err);
     return res.status(status).json({ message });
   });
+
+  // 4. Vite / static LAST — so it only catches non-API requests (SPA fallback)
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  } else {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
+  }
 
   // Cron jobs
   const nodeCron = await import("node-cron");
