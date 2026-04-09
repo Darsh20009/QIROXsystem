@@ -533,10 +533,10 @@ export default function Login() {
           </div>
 
           {/* Social login badges */}
-          {(googleEnabled || githubEnabled) && !isEmployeeRegister && (
+          {(googleEnabled || githubEnabled || appleEnabled) && !isEmployeeRegister && (
             <div className="flex flex-col gap-2">
               {googleEnabled && (
-                <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+                <button type="button" onClick={handleGoogleLogin} disabled={googleLoading} className="w-full relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5 hover:bg-white/[0.09] transition-colors cursor-pointer text-right">
                   {/* Google color top bar */}
                   <div className="absolute top-0 left-0 right-0 h-[2px] flex">
                     <div className="flex-1 bg-[#4285F4]/70" />
@@ -557,10 +557,10 @@ export default function Login() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34A853]" />
                     </span>
                   </span>
-                </div>
+                </button>
               )}
               {githubEnabled && (
-                <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+                <button type="button" onClick={handleGithubLogin} disabled={githubLoading} className="w-full relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5 hover:bg-white/[0.09] transition-colors cursor-pointer text-right">
                   {/* GitHub brand gradient top bar */}
                   <div className="absolute top-0 left-0 right-0 h-[2px] flex">
                     <div className="flex-1 bg-[#6e40c9]/80" />
@@ -581,10 +581,10 @@ export default function Login() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#8957e5]" />
                     </span>
                   </span>
-                </div>
+                </button>
               )}
               {appleEnabled && (
-                <div className="relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5">
+                <button type="button" onClick={handleAppleLogin} disabled={appleLoading} className="w-full relative overflow-hidden flex items-center gap-3 bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3.5 hover:bg-white/[0.09] transition-colors cursor-pointer text-right">
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/30" />
                   <div className="w-9 h-9 rounded-lg bg-black flex items-center justify-center shrink-0 shadow-md shadow-black/40 border border-white/[0.1]">
                     <SiApple className="w-[18px] h-[18px] text-white" />
@@ -599,7 +599,7 @@ export default function Login() {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-white/70" />
                     </span>
                   </span>
-                </div>
+                </button>
               )}
             </div>
           )}
