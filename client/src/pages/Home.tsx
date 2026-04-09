@@ -494,101 +494,164 @@ export default function Home() {
               className="hidden lg:flex items-center justify-center order-2 relative"
               dir="ltr"
             >
-              <div className="relative w-full max-w-[420px]">
-                {/* Main dashboard card */}
-                <div className="rounded-2xl border border-white/[0.09] bg-white/[0.04] backdrop-blur-md p-5 shadow-2xl shadow-black/60">
-                  {/* Window chrome */}
-                  <div className="flex items-center justify-between mb-5">
+              <div className="relative w-full max-w-[480px] h-[360px]">
+
+                {/* ── Browser / Dashboard Mockup ── */}
+                <div className="absolute top-0 left-0 w-[320px] rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.55)] border border-white/[0.07]">
+                  {/* Browser chrome bar */}
+                  <div className="bg-[#1a1a2e] px-4 py-2.5 flex items-center gap-3">
                     <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
                     </div>
-                    <div className="text-[10px] text-white/25 font-mono tracking-wider">dashboard.qirox</div>
-                    <div className="w-5 h-5 rounded-md bg-violet-500/20 flex items-center justify-center">
-                      <Sparkles className="w-3 h-3 text-violet-400" />
+                    {/* URL bar */}
+                    <div className="flex-1 bg-white/[0.06] rounded-md px-3 py-1 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400/60 flex-shrink-0" />
+                      <span className="text-[9px] text-white/30 font-mono tracking-wide">dashboard.qirox.com</span>
                     </div>
                   </div>
-                  {/* KPI Row */}
-                  <div className="grid grid-cols-3 gap-2.5 mb-4">
-                    {[
-                      { label: lang === "ar" ? "المبيعات" : "Revenue", value: "12.4k", sub: "+18%", color: "text-violet-400", bg: "bg-violet-500/10" },
-                      { label: lang === "ar" ? "الطلبات" : "Orders", value: "384", sub: "+7%", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-                      { label: lang === "ar" ? "العملاء" : "Clients", value: "94", sub: "+3%", color: "text-sky-400", bg: "bg-sky-500/10" },
-                    ].map((item, i) => (
-                      <div key={i} className={`rounded-xl ${item.bg} border border-white/[0.06] p-3`}>
-                        <div className="text-[10px] text-white/35 mb-1">{item.label}</div>
-                        <div className={`text-xl font-black font-heading ${item.color}`}>{item.value}</div>
-                        <div className="text-[9px] text-emerald-400/70 mt-0.5">{item.sub}</div>
+
+                  {/* Dashboard content */}
+                  <div className="bg-[#0d1117] p-4">
+                    {/* KPI row */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-white/[0.04] rounded-xl border border-white/[0.05] p-3">
+                        <div className="text-[9px] text-white/30 mb-1">{lang === "ar" ? "المشاريع" : "Projects"}</div>
+                        <div className="text-lg font-black text-white font-heading">27</div>
+                        <div className="text-[8px] text-emerald-400 mt-0.5">7%+</div>
                       </div>
-                    ))}
-                  </div>
-                  {/* Bar chart */}
-                  <div className="h-20 flex items-end gap-1 mb-3">
-                    {[38, 62, 45, 78, 52, 88, 68, 82, 57, 94, 73, 100].map((h, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-t-sm"
-                        style={{
-                          height: `${h}%`,
-                          background: i === 11
-                            ? "linear-gradient(to top, rgba(139,92,246,0.9), rgba(167,139,250,0.5))"
-                            : "linear-gradient(to top, rgba(139,92,246,0.35), rgba(139,92,246,0.1))"
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-[9px] text-white/20">{lang === "ar" ? "مبيعات الشهر" : "Monthly Sales"}</div>
-                    <div className="text-[9px] text-violet-400/70 font-bold">{lang === "ar" ? "↑ 18% من الشهر الماضي" : "↑ 18% vs last month"}</div>
+                      <div className="bg-white/[0.04] rounded-xl border border-white/[0.05] p-3">
+                        <div className="text-[9px] text-white/30 mb-1">{lang === "ar" ? "الطلبات" : "Orders"}</div>
+                        <div className="text-lg font-black text-white font-heading">384</div>
+                        <div className="text-[8px] text-emerald-400 mt-0.5">18%+</div>
+                      </div>
+                    </div>
+
+                    {/* Chart */}
+                    <div className="bg-white/[0.03] rounded-xl border border-white/[0.04] p-3 mb-3">
+                      <div className="text-[9px] text-white/25 mb-2">{lang === "ar" ? "الإيرادات الشهرية" : "Monthly Revenue"}</div>
+                      {/* Bar chart */}
+                      <div className="h-14 flex items-end gap-0.5 mb-1.5">
+                        {[35, 55, 42, 70, 48, 80, 62, 75, 50, 88, 65, 95].map((h, i) => (
+                          <div key={i} className="flex-1 rounded-t-[2px]"
+                            style={{ height: `${h}%`, background: i === 11 ? "rgba(139,92,246,0.85)" : "rgba(139,92,246,0.2)" }} />
+                        ))}
+                      </div>
+                      {/* Line chart */}
+                      <svg className="w-full h-8 overflow-visible" viewBox="0 0 120 24">
+                        <polyline points="0,20 10,16 20,18 30,12 40,15 50,8 60,11 70,6 80,9 90,3 100,5 110,1 120,0"
+                          fill="none" stroke="rgba(52,211,153,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <polyline points="0,20 10,16 20,18 30,12 40,15 50,8 60,11 70,6 80,9 90,3 100,5 110,1 120,0"
+                          fill="rgba(52,211,153,0.06)" stroke="none" />
+                      </svg>
+                    </div>
+
+                    {/* Bottom items list */}
+                    <div className="space-y-1.5">
+                      {[
+                        { dot: "bg-violet-400", name: lang === "ar" ? "طلبات الوارد" : "Incoming", val: "82%" },
+                        { dot: "bg-sky-400",    name: lang === "ar" ? "متكامل الشحن" : "Shipping", val: "64%" },
+                      ].map((row, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className={`w-1.5 h-1.5 rounded-full ${row.dot} flex-shrink-0`} />
+                          <span className="text-[9px] text-white/35 flex-1">{row.name}</span>
+                          <div className="flex-1 bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-full rounded-full ${row.dot} opacity-50`} style={{ width: row.val }} />
+                          </div>
+                          <span className="text-[8px] text-white/25 w-6 text-right">{row.val}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Floating: New Order notification */}
+                {/* ── Phone Mockup (overlapping right) ── */}
                 <motion.div
                   animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-5 -right-6 rounded-xl border border-white/[0.1] bg-[#0c0520]/95 backdrop-blur-sm p-3 shadow-xl shadow-black/50 min-w-[168px]"
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="absolute top-10 right-0 w-[120px] h-[220px] rounded-[22px] border border-white/[0.12] overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.65)]"
+                  style={{ background: "linear-gradient(160deg, #1c1c2e, #0f0f1a)" }}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                  {/* Phone top notch */}
+                  <div className="flex items-center justify-between px-3 pt-2 pb-1.5 border-b border-white/[0.05]">
+                    <span className="text-white/25 text-[6px] font-medium">9:41</span>
+                    <div className="w-8 h-1.5 rounded-full bg-white/10" />
+                    <div className="w-2 h-2 rounded-full border border-white/20" />
+                  </div>
+                  {/* App header */}
+                  <div className="px-2.5 py-2 border-b border-white/[0.05]">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-black text-gray-900">Q</span>
+                      </div>
+                      <div>
+                        <div className="text-[7.5px] font-bold text-white leading-tight">QIROX</div>
+                        <div className="text-[5.5px] text-emerald-400/80">{lang === "ar" ? "نشط" : "Active"}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Stats */}
+                  <div className="px-2.5 py-2 space-y-2">
+                    <div className="bg-violet-500/10 rounded-xl border border-violet-500/15 p-2">
+                      <div className="text-[6px] text-white/30 mb-0.5">{lang === "ar" ? "إجمالي الواردات" : "Total Revenue"}</div>
+                      <div className="text-base font-black text-white font-heading leading-none">12.4k</div>
+                      <div className="flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-2.5 h-2.5 text-emerald-400" />
+                        <span className="text-[6px] text-emerald-400">+18%</span>
+                      </div>
+                    </div>
+                    {/* Notification items */}
+                    {[
+                      { icon: "✅", title: lang === "ar" ? "طلب جديد #384" : "New Order #384", sub: lang === "ar" ? "منذ دقيقتين" : "2 min ago" },
+                      { icon: "🚀", title: lang === "ar" ? "مشروع محدّث" : "Project Updated", sub: lang === "ar" ? "منذ 5 دقائق" : "5 min ago" },
+                    ].map((n, i) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <span className="text-[10px] mt-0.5">{n.icon}</span>
+                        <div>
+                          <div className="text-[6.5px] font-semibold text-white/80 leading-tight">{n.title}</div>
+                          <div className="text-[5.5px] text-white/30">{n.sub}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Bottom nav */}
+                  <div className="absolute bottom-0 left-0 right-0 border-t border-white/[0.06] bg-black/40 py-2 px-3 flex justify-around">
+                    {[BarChart3, Package, Bell, User].map((Icon, i) => (
+                      <Icon key={i} className={`w-3.5 h-3.5 ${i === 0 ? "text-violet-400" : "text-white/25"}`} />
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* ── Floating badge: New order ── */}
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -bottom-6 left-4 rounded-2xl border border-white/[0.09] bg-[#0d1117]/95 backdrop-blur-sm px-4 py-3 shadow-2xl shadow-black/60 min-w-[180px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                       <Check className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div>
-                      <div className="text-[11px] font-bold text-white leading-tight">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
-                      <div className="text-[9px] text-white/35 mt-0.5">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "Gold Coffee — 3 items"}</div>
+                      <div className="text-[11px] font-bold text-white">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
+                      <div className="text-[9px] text-white/35">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "Gold Coffee — 3 items"}</div>
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Floating: QR Orders */}
+                {/* ── Floating badge: AI ── */}
                 <motion.div
-                  animate={{ y: [0, 7, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-                  className="absolute -bottom-5 -left-7 rounded-xl border border-white/[0.1] bg-[#0c0520]/95 backdrop-blur-sm p-3 shadow-xl shadow-black/50 min-w-[160px]"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-violet-500/15 flex items-center justify-center flex-shrink-0">
-                      <QrCode className="w-4 h-4 text-violet-400" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-bold text-white leading-tight">{lang === "ar" ? "قائمة QR فعّالة" : "Active QR Menu"}</div>
-                      <div className="text-[9px] text-white/35 mt-0.5">{lang === "ar" ? "48 طلب اليوم" : "48 orders today"}</div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Floating: AI badge */}
-                <motion.div
-                  animate={{ scale: [1, 1.04, 1] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                  className="absolute top-1/2 -translate-y-1/2 -right-10 rounded-full border border-white/15 bg-white/10 backdrop-blur-sm px-3 py-1.5 shadow-lg"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute -top-4 right-28 rounded-full border border-violet-500/30 bg-violet-500/10 backdrop-blur-sm px-3 py-1.5 shadow-lg"
                 >
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-white/70" />
-                    <span className="text-[10px] font-bold text-white/70">AI</span>
+                    <Sparkles className="w-3 h-3 text-violet-400" />
+                    <span className="text-[10px] font-bold text-violet-300">AI Ready</span>
                   </div>
                 </motion.div>
+
               </div>
             </motion.div>
 
