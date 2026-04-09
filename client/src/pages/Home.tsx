@@ -582,8 +582,8 @@ export default function Home() {
                   {/* App header */}
                   <div className="px-2.5 py-2 border-b border-white/[0.05]">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-black text-gray-900">Q</span>
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img src={qiroxNoBgLogo} alt="QIROX" className="w-5 h-5 object-contain" />
                       </div>
                       <div>
                         <div className="text-[7.5px] font-bold text-white leading-tight">QIROX</div>
