@@ -470,16 +470,15 @@ export async function registerRoutes(
     if (APPLE_ENABLED) {
       const AppleStrategy = (await import("passport-apple")).default;
       const passport = (await import("passport")).default;
-      const devDomain = process.env.REPLIT_DEV_DOMAIN;
-      const CALLBACK_URL =
-        process.env.NODE_ENV === "production"
-          ? "https://qiroxstudio.online/api/auth/apple/callback"
-          : devDomain
-          ? `https://${devDomain}/api/auth/apple/callback`
-          : `http://localhost:5000/api/auth/apple/callback`;
+      // Apple only accepts registered return URLs — always use the production domain
+      // regardless of which environment the server is running in.
+      const CALLBACK_URL = "https://qiroxstudio.online/api/auth/apple/callback";
 
       // Apple private key may have literal \n from env var — convert to real newlines
       const privateKeyString = APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n");
+      const keyLines = privateKeyString.split("\n");
+      const hasHeader = keyLines.some(l => l.includes("BEGIN PRIVATE KEY") || l.includes("BEGIN EC PRIVATE KEY"));
+      console.log(`[Apple] clientID=${APPLE_CLIENT_ID} teamID=${APPLE_TEAM_ID} keyID=${APPLE_KEY_ID} callbackURL=${CALLBACK_URL} keyLines=${keyLines.length} hasHeader=${hasHeader}`);
 
       passport.use(
         new AppleStrategy(
