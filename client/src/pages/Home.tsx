@@ -27,7 +27,7 @@ import instapayLogo from "@assets/Screenshot_2026-01-27_123515_1771717312922.png
 import {
   ArrowLeft, Globe, ArrowUpRight,
   BookOpen, GraduationCap, ClipboardCheck, Dumbbell,
-  User, Heart, ShoppingCart, Coffee, Layers,
+  User, Users, Heart, ShoppingCart, Coffee, Layers,
   Sparkles, Shield, Zap,
   UtensilsCrossed, Store, Building2, ChevronLeft, ChevronRight,
   Headphones, Palette,
@@ -663,32 +663,59 @@ export default function Home() {
       <div className="h-16 bg-gradient-to-b from-[#060b14] to-white dark:to-gray-950 relative z-10" />
 
       {/* STATS */}
-      <section className="py-10 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
+      <section className="py-12 relative z-10 bg-white dark:bg-gray-950" data-testid="section-stats">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            custom={0}
-            className="rounded-2xl overflow-hidden border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 shadow-lg shadow-black/[0.04]"
-          >
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-black/[0.05] dark:divide-white/[0.05] rtl:divide-x-reverse divide-y md:divide-y-0">
-              {[
-                { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), color: "text-gray-900 dark:text-white" },
-                { value: "6+", label: t("home.stats.sectorsCount"), color: "text-blue-600 dark:text-blue-400" },
-                { value: "5", label: lang === "ar" ? "باقات متنوعة" : "Pricing Plans", color: "text-emerald-600 dark:text-emerald-400" },
-                { value: "2", label: t("home.stats.locations"), color: "text-orange-500 dark:text-orange-400" },
-              ].map((stat, idx) => (
-                <div key={idx} className="px-4 py-7 sm:px-8 sm:py-9 text-center group" data-testid={`stat-card-${idx}`}>
-                  <div className={`text-3xl sm:text-4xl md:text-5xl font-black mb-2 font-heading ${stat.color}`}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              {
+                value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"),
+                icon: Layers, color: "text-violet-600 dark:text-violet-400",
+                bg: "bg-violet-50 dark:bg-violet-900/20", iconBg: "bg-violet-500/10 dark:bg-violet-500/15",
+                border: "border-violet-100 dark:border-violet-500/15",
+                glow: "shadow-violet-500/8",
+              },
+              {
+                value: "6+", label: t("home.stats.sectorsCount"),
+                icon: Globe2, color: "text-blue-600 dark:text-blue-400",
+                bg: "bg-blue-50 dark:bg-blue-900/20", iconBg: "bg-blue-500/10 dark:bg-blue-500/15",
+                border: "border-blue-100 dark:border-blue-500/15",
+                glow: "shadow-blue-500/8",
+              },
+              {
+                value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients",
+                icon: Users, color: "text-emerald-600 dark:text-emerald-400",
+                bg: "bg-emerald-50 dark:bg-emerald-900/20", iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15",
+                border: "border-emerald-100 dark:border-emerald-500/15",
+                glow: "shadow-emerald-500/8",
+              },
+              {
+                value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating",
+                icon: Star, color: "text-orange-500 dark:text-orange-400",
+                bg: "bg-orange-50 dark:bg-orange-900/20", iconBg: "bg-orange-500/10 dark:bg-orange-500/15",
+                border: "border-orange-100 dark:border-orange-500/15",
+                glow: "shadow-orange-500/8",
+              },
+            ].map((stat, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: idx * 0.08 }}
+                data-testid={`stat-card-${idx}`}
+              >
+                <div className={`rounded-2xl border ${stat.border} ${stat.bg} p-5 sm:p-7 h-full flex flex-col items-center text-center shadow-lg ${stat.glow}`}>
+                  <div className={`w-10 h-10 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-4`}>
+                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                  <div className={`text-3xl sm:text-4xl md:text-5xl font-black mb-1.5 font-heading ${stat.color}`}>
                     {stat.value}
                   </div>
-                  <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm" dir={dir}>{stat.label}</div>
+                  <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm leading-snug" dir={dir}>{stat.label}</div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1812,22 +1839,47 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto mb-10">
               {[
-                { icon: Layers, title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc"), accent: "from-blue-500/5 to-cyan-500/5" },
-                { icon: Palette, title: t("home.why.design.title"), desc: t("home.why.design.desc"), accent: "from-violet-500/5 to-purple-500/5" },
-                { icon: Headphones, title: t("home.why.support.title"), desc: t("home.why.support.desc"), accent: "from-emerald-500/5 to-green-500/5" },
-                { icon: Shield, title: t("home.why.security.title"), desc: t("home.why.security.desc"), accent: "from-orange-500/5 to-amber-500/5" },
+                {
+                  icon: Layers, title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc"),
+                  gradient: "from-blue-50 to-cyan-50/60 dark:from-blue-950/30 dark:to-cyan-950/20",
+                  border: "border-blue-100/80 dark:border-blue-500/15 hover:border-blue-200 dark:hover:border-blue-500/30",
+                  iconBg: "bg-blue-500/10 dark:bg-blue-500/15", iconColor: "text-blue-600 dark:text-blue-400",
+                  shadow: "hover:shadow-blue-500/8", stripe: "bg-blue-500",
+                },
+                {
+                  icon: Palette, title: t("home.why.design.title"), desc: t("home.why.design.desc"),
+                  gradient: "from-violet-50 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20",
+                  border: "border-violet-100/80 dark:border-violet-500/15 hover:border-violet-200 dark:hover:border-violet-500/30",
+                  iconBg: "bg-violet-500/10 dark:bg-violet-500/15", iconColor: "text-violet-600 dark:text-violet-400",
+                  shadow: "hover:shadow-violet-500/8", stripe: "bg-violet-500",
+                },
+                {
+                  icon: Headphones, title: t("home.why.support.title"), desc: t("home.why.support.desc"),
+                  gradient: "from-emerald-50 to-green-50/60 dark:from-emerald-950/30 dark:to-green-950/20",
+                  border: "border-emerald-100/80 dark:border-emerald-500/15 hover:border-emerald-200 dark:hover:border-emerald-500/30",
+                  iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15", iconColor: "text-emerald-600 dark:text-emerald-400",
+                  shadow: "hover:shadow-emerald-500/8", stripe: "bg-emerald-500",
+                },
+                {
+                  icon: Shield, title: t("home.why.security.title"), desc: t("home.why.security.desc"),
+                  gradient: "from-orange-50 to-amber-50/60 dark:from-orange-950/30 dark:to-amber-950/20",
+                  border: "border-orange-100/80 dark:border-orange-500/15 hover:border-orange-200 dark:hover:border-orange-500/30",
+                  iconBg: "bg-orange-500/10 dark:bg-orange-500/15", iconColor: "text-orange-600 dark:text-orange-400",
+                  shadow: "hover:shadow-orange-500/8", stripe: "bg-orange-500",
+                },
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-gradient-to-br ${item.accent} p-5 sm:p-8 h-full transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.04] hover:border-black/[0.1] dark:hover:border-white/[0.1]`}
+                    className={`relative rounded-[24px] border bg-gradient-to-br ${item.gradient} ${item.border} p-6 sm:p-8 h-full transition-all duration-500 hover:shadow-xl ${item.shadow} overflow-hidden`}
                     data-testid={`why-card-${idx}`}
                     dir={dir}
                   >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-black/[0.04] dark:bg-white/[0.04]">
-                      <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
+                    <div className={`absolute top-0 ${dir === "rtl" ? "right-0" : "left-0"} w-12 h-[3px] rounded-b-full ${item.stripe}`} />
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${item.iconBg} group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
                     <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title}</h3>
-                    <p className="text-sm text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
+                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">{item.desc}</p>
                   </div>
                 </motion.div>
               ))}
