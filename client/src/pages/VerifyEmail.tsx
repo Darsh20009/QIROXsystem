@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { Link } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";

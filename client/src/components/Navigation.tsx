@@ -5,7 +5,7 @@ import SARIcon from "@/components/SARIcon";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { useQuery } from "@tanstack/react-query";

@@ -27,7 +27,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiYoutube, SiTiktok, SiWhatsapp, SiLinktree } from "react-icons/si";
 
 const MANAGEMENT_ROLES = ["admin", "manager"];

@@ -15,7 +15,7 @@ import { useI18n } from "@/lib/i18n";
 import { useUser } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 
 interface NewsItem {

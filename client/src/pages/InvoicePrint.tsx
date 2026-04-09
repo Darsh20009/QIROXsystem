@@ -5,7 +5,7 @@ import { Loader2, Printer, ArrowRight, Mail, Building2, EyeOff } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 

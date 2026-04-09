@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minimize2 } from "lucide-react";
 import { AIPanel } from "@/components/QiroxAI";
 import { useUser } from "@/hooks/use-auth";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 
 export function FloatingAI() {
   const [open, setOpen] = useState(false);

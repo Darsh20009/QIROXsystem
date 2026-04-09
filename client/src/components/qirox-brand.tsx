@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
-import qiroxNoBgPath from "@assets/qirox_1771715726312.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
+const qiroxNoBgPath = qiroxLogoPath;
 
 const BAR_DATA = [38, 55, 42, 70, 58, 85, 63, 92, 74, 100, 82, 96];
 const LINE_POINTS = [
@@ -104,7 +104,7 @@ function MobileSplash({ onComplete }: { onComplete: () => void }) {
                 alt="QIROX"
                 className="w-full h-auto object-contain"
                 data-testid="img-splash-logo"
-                style={{ filter: "invert(1) brightness(1.2)" }}
+                style={{ mixBlendMode: "screen", borderRadius: 8 }}
               />
             </motion.div>
 
@@ -374,7 +374,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                   alt="QIROX"
                   className="w-full h-auto object-contain"
                   data-testid="img-splash-logo"
-                  style={{ filter: "invert(1) brightness(1.2)" }}
+                  style={{ mixBlendMode: "screen", borderRadius: 8 }}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={phase >= 3 ? { opacity: 1, scale: 1 } : {}}
                   transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}

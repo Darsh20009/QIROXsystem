@@ -10,7 +10,7 @@ import {
   FileText, Users, Clock, CheckCircle2, XCircle, AlertCircle,
   ChevronRight, Briefcase, Bell, Search, CreditCard, Mic, MicOff,
 } from "lucide-react";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { useI18n } from "@/lib/i18n";
 
 function uid() { return Math.random().toString(36).slice(2, 10); }

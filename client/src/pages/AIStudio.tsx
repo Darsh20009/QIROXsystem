@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AIPanel } from "@/components/QiroxAI";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 
 const EMPLOYEE_ROLES = ["developer", "designer", "support", "sales", "sales_manager", "accountant", "merchant"];
 

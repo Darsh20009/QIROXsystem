@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Zap, FileText, Bell, BarChart3 } from "lucide-react";
-import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { useI18n } from "@/lib/i18n";
 
 const STORAGE_KEY = (uid: string) => `qirox_ai_intro_v3_${uid}`;
