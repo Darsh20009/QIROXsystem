@@ -44,6 +44,9 @@ app.use(compression({
 }));
 
 const httpServer = createServer(app);
+// Render recommends >= 120s to avoid intermittent connection resets
+httpServer.keepAliveTimeout = 120000;
+httpServer.headersTimeout = 125000; // slightly above keepAliveTimeout
 
 declare module "http" {
   interface IncomingMessage {
