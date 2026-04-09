@@ -684,6 +684,105 @@ export default function Home() {
               </motion.p>
             </div>
 
+            {/* Services Mini Phone Showcase */}
+            <motion.div variants={fadeUp} custom={2} className="flex flex-wrap justify-center gap-4 mb-14 max-w-5xl mx-auto" dir="ltr">
+              {[
+                {
+                  emoji: "🍽️",
+                  label: lang === "ar" ? "مطاعم وكافيهات" : "Restaurants",
+                  accent: "orange",
+                  items: [
+                    { icon: "☕", name: lang === "ar" ? "لاتيه" : "Latte", sub: "22 SAR" },
+                    { icon: "🧁", name: lang === "ar" ? "كيك" : "Cake", sub: "15 SAR" },
+                    { icon: "🥪", name: lang === "ar" ? "ساندويش" : "Sandwich", sub: "30 SAR" },
+                  ],
+                  bar: "bg-orange-500",
+                  badge: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+                },
+                {
+                  emoji: "🛍️",
+                  label: lang === "ar" ? "متاجر إلكترونية" : "E-Commerce",
+                  accent: "blue",
+                  items: [
+                    { icon: "👜", name: lang === "ar" ? "حقيبة" : "Bag", sub: "249 SAR" },
+                    { icon: "⌚", name: lang === "ar" ? "ساعة" : "Watch", sub: "599 SAR" },
+                    { icon: "👟", name: lang === "ar" ? "حذاء" : "Shoes", sub: "349 SAR" },
+                  ],
+                  bar: "bg-blue-500",
+                  badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                },
+                {
+                  emoji: "📚",
+                  label: lang === "ar" ? "أكاديميات" : "Education",
+                  accent: "violet",
+                  items: [
+                    { icon: "🎓", name: lang === "ar" ? "كورس برمجة" : "Dev Course", sub: lang === "ar" ? "12 درس" : "12 lessons" },
+                    { icon: "📖", name: lang === "ar" ? "لغة إنجليزية" : "English", sub: lang === "ar" ? "8 درس" : "8 lessons" },
+                    { icon: "🎨", name: lang === "ar" ? "تصميم" : "Design", sub: lang === "ar" ? "10 درس" : "10 lessons" },
+                  ],
+                  bar: "bg-violet-500",
+                  badge: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                },
+                {
+                  emoji: "🏢",
+                  label: lang === "ar" ? "شركات ومؤسسات" : "Enterprises",
+                  accent: "emerald",
+                  items: [
+                    { icon: "📊", name: lang === "ar" ? "لوحة تحكم" : "Dashboard", sub: lang === "ar" ? "+18% نمو" : "+18% growth" },
+                    { icon: "👥", name: lang === "ar" ? "الموظفون" : "Team", sub: "24 " + (lang === "ar" ? "موظف" : "members") },
+                    { icon: "💰", name: lang === "ar" ? "الإيرادات" : "Revenue", sub: "12.4k SAR" },
+                  ],
+                  bar: "bg-emerald-500",
+                  badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                },
+              ].map((phone, idx) => (
+                <motion.div key={idx} variants={fadeUp} custom={idx} className="flex flex-col items-center gap-2">
+                  <div className="relative w-32 h-56 rounded-[20px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 overflow-hidden shadow-xl shadow-black/[0.06] dark:shadow-black/40">
+                    {/* Status */}
+                    <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
+                      <span className="text-black/30 dark:text-white/30 text-[6px] font-medium">9:41</span>
+                      <div className="w-7 h-2.5 rounded-full bg-black/10 dark:bg-white/10" />
+                      <div className="w-2 h-2 rounded-full border border-black/20 dark:border-white/20" />
+                    </div>
+                    {/* App header */}
+                    <div className="px-3 pb-2 border-b border-black/[0.05] dark:border-white/[0.05]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base">{phone.emoji}</span>
+                        <div>
+                          <div className="text-[8px] font-bold text-black dark:text-white leading-tight">{phone.label}</div>
+                          <div className={`text-[6px] px-1.5 py-0.5 rounded-full font-medium inline-block ${phone.badge}`}>QIROX</div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Items */}
+                    <div className="px-2 py-1.5 space-y-1.5">
+                      {phone.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs">{item.icon}</span>
+                            <div>
+                              <div className="text-[7px] font-semibold text-black dark:text-white leading-none">{item.name}</div>
+                              <div className="text-[6px] text-black/40 dark:text-white/40">{item.sub}</div>
+                            </div>
+                          </div>
+                          <div className={`w-3.5 h-3.5 rounded-full ${phone.bar} flex items-center justify-center`}>
+                            <span className="text-white text-[7px] font-bold">+</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Bottom bar */}
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <div className={`${phone.bar} rounded-lg py-1.5 text-center`}>
+                        <span className="text-white text-[7px] font-bold">{lang === "ar" ? "افتح التطبيق" : "Open App"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">{phone.label}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
               {[
                 {
@@ -799,7 +898,90 @@ export default function Home() {
                   {lang === "ar" ? "من القائمة الرقمية إلى شاشة المطبخ إلى تقارير المبيعات — منظومة متكاملة تعمل بانسجام تام" : "From digital menu to kitchen display to sales reports — a complete integrated system"}
                 </motion.p>
               </div>
-              <motion.div variants={fadeUp} custom={3}>
+              {/* Cafe Phone Mockup */}
+              <motion.div variants={fadeUp} custom={3} className="flex flex-col items-center md:items-end gap-5 mt-4 md:mt-0" dir="ltr">
+                <div className="relative">
+                  <div className="w-48 h-[330px] rounded-[28px] border border-white/20 bg-[#0a0a0a] relative overflow-hidden shadow-2xl shadow-black/80">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                      <span className="text-white/40 text-[8px] font-medium">9:41</span>
+                      <div className="w-12 h-4 rounded-full bg-black border border-white/10" />
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-1.5 rounded-sm bg-white/30" />
+                        <div className="w-1 h-2.5 rounded-sm bg-white/15" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between px-4 pb-2 border-b border-white/[0.06]">
+                      <div>
+                        <div className="text-white text-[11px] font-bold">☕ قهوة كوب</div>
+                        <div className="text-white/30 text-[8px]">القائمة الرقمية</div>
+                      </div>
+                      <div className="w-7 h-7 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                        <Bell className="w-3.5 h-3.5 text-orange-400" />
+                      </div>
+                    </div>
+                    <div className="px-3 py-2">
+                      <div className="rounded-lg bg-white/[0.05] border border-white/[0.06] px-3 py-1.5 flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full border border-white/20" />
+                        <span className="text-white/25 text-[8px]">{lang === "ar" ? "ابحث عن منتج..." : "Search..."}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 px-3 mb-2">
+                      {(lang === "ar" ? ["الكل", "قهوة", "عصير"] : ["All", "Coffee", "Juice"]).map((cat, i) => (
+                        <div key={i} className={`text-[7px] px-2.5 py-1 rounded-full font-medium ${i === 0 ? "bg-orange-500 text-white" : "bg-white/[0.06] text-white/40"}`}>{cat}</div>
+                      ))}
+                    </div>
+                    {[
+                      { name: lang === "ar" ? "لاتيه ذهبي" : "Golden Latte", price: "22", emoji: "☕" },
+                      { name: lang === "ar" ? "كابتشينو" : "Cappuccino", price: "18", emoji: "🫖" },
+                      { name: lang === "ar" ? "فريبيه" : "Frappé", price: "25", emoji: "🧋" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04]">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center text-sm">{item.emoji}</div>
+                          <div>
+                            <div className="text-white text-[9px] font-medium">{item.name}</div>
+                            <div className="text-white/35 text-[7px]">{item.price} {lang === "ar" ? "ر.س" : "SAR"}</div>
+                          </div>
+                        </div>
+                        <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                          <span className="text-white text-[9px] font-bold">+</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <div className="bg-orange-500 rounded-xl py-2 flex items-center justify-between px-3">
+                        <span className="text-white text-[8px] font-bold">3 {lang === "ar" ? "منتجات" : "items"}</span>
+                        <span className="text-white text-[8px] font-bold">{lang === "ar" ? "عرض الطلب ←" : "View Order →"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-4 -left-8 rounded-xl border border-white/[0.1] bg-[#0c0c0c]/95 backdrop-blur-sm p-2.5 shadow-xl min-w-[140px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-bold text-white">{lang === "ar" ? "طلب جديد #384" : "New Order #384"}</div>
+                        <div className="text-[7px] text-white/40 mt-0.5">{lang === "ar" ? "قهوة ذهبية — 3 منتجات" : "3 items"}</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    animate={{ y: [0, 5, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+                    className="absolute -bottom-3 -right-6 rounded-xl border border-white/[0.1] bg-[#0c0c0c]/95 backdrop-blur-sm px-3 py-2 shadow-xl"
+                  >
+                    <div className="text-[7px] text-white/40 mb-0.5">{lang === "ar" ? "المطبخ" : "Kitchen"}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                      <span className="text-[9px] text-white font-bold">4 {lang === "ar" ? "طلبات نشطة" : "active"}</span>
+                    </div>
+                  </motion.div>
+                </div>
                 <Link href="/order">
                   <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-gray-100 font-bold gap-2" data-testid="button-cafe-cta">
                     {lang === "ar" ? "ابدأ مشروعك" : "Start Your Project"}
@@ -861,7 +1043,72 @@ export default function Home() {
                   {lang === "ar" ? "من إدارة المنتجات والمخزون إلى Apple Pay وتقارير المبيعات — كل شيء في مكان واحد" : "From product management to Apple Pay and sales reports — everything in one place"}
                 </motion.p>
               </div>
-              <motion.div variants={fadeUp} custom={3}>
+              {/* Store Phone Mockup */}
+              <motion.div variants={fadeUp} custom={3} className="flex flex-col items-center md:items-end gap-5 mt-4 md:mt-0" dir="ltr">
+                <div className="relative">
+                  <div className="w-48 h-[330px] rounded-[28px] border border-black/10 bg-white relative overflow-hidden shadow-2xl shadow-black/15">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-white">
+                      <span className="text-black/40 text-[8px] font-medium">9:41</span>
+                      <div className="w-12 h-4 rounded-full bg-gray-200" />
+                      <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center">
+                        <ShoppingCart className="w-2.5 h-2.5 text-blue-500" />
+                      </div>
+                    </div>
+                    <div className="px-3 pb-2">
+                      <div className="rounded-lg bg-gray-100 px-3 py-1.5 flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full border border-black/20" />
+                        <span className="text-black/30 text-[8px]">{lang === "ar" ? "ابحث في المتجر..." : "Search products..."}</span>
+                      </div>
+                    </div>
+                    <div className="mx-3 mb-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5">
+                      <div className="text-white text-[8px] font-bold">{lang === "ar" ? "تخفيضات الصيف 🎉" : "Summer Sale 🎉"}</div>
+                      <div className="text-white/70 text-[7px]">{lang === "ar" ? "حتى 50% على المنتجات" : "Up to 50% off"}</div>
+                    </div>
+                    <div className="px-3 grid grid-cols-2 gap-2">
+                      {[
+                        { name: lang === "ar" ? "حقيبة جلد" : "Bag", price: "249", emoji: "👜", bg: "bg-amber-50" },
+                        { name: lang === "ar" ? "ساعة ذكية" : "Watch", price: "599", emoji: "⌚", bg: "bg-blue-50" },
+                        { name: lang === "ar" ? "نظارات" : "Glasses", price: "129", emoji: "🕶️", bg: "bg-gray-50" },
+                        { name: lang === "ar" ? "حذاء رياضي" : "Shoes", price: "349", emoji: "👟", bg: "bg-rose-50" },
+                      ].map((p, i) => (
+                        <div key={i} className={`${p.bg} rounded-xl p-2`}>
+                          <div className="text-lg text-center mb-1">{p.emoji}</div>
+                          <div className="text-[8px] font-bold text-black leading-tight">{p.name}</div>
+                          <div className="text-[7px] text-black/50">{p.price} {lang === "ar" ? "ر" : "SAR"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="bg-black rounded-xl py-2 flex items-center justify-center gap-1.5">
+                        <SiApple className="w-3 h-3 text-white" />
+                        <span className="text-white text-[9px] font-bold">Pay</span>
+                      </div>
+                    </div>
+                  </div>
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-4 -left-10 rounded-xl border border-black/[0.08] bg-white shadow-xl p-2.5 min-w-[144px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-bold text-black">{lang === "ar" ? "تم الدفع ✓" : "Payment Done ✓"}</div>
+                        <div className="text-[7px] text-black/40 mt-0.5">Apple Pay</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    animate={{ y: [0, 5, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    className="absolute -bottom-3 -right-8 rounded-xl border border-black/[0.08] bg-white shadow-xl px-3 py-2"
+                  >
+                    <div className="text-[7px] text-black/40 mb-0.5">{lang === "ar" ? "المخزون" : "Inventory"}</div>
+                    <div className="text-[9px] font-bold text-black">1,240 {lang === "ar" ? "منتج" : "items"}</div>
+                  </motion.div>
+                </div>
                 <Link href="/order">
                   <Button className="h-12 px-8 rounded-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 font-bold gap-2" data-testid="button-store-cta">
                     {lang === "ar" ? "أنشئ متجرك" : "Create Your Store"}
@@ -1525,22 +1772,88 @@ export default function Home() {
               ))}
             </div>
 
-            <motion.div variants={fadeUp} custom={4} className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-              {[
-                { icon: Cloud, title: "استضافة سحابية آمنة", desc: "AWS / DigitalOcean — بمعدل uptime 99.9%" },
-                { icon: Lock, title: "حماية متقدمة للبيانات", desc: "SSL، تشفير كامل، نسخ احتياطي يومي" },
-                { icon: Globe2, title: "متعدد اللغات RTL/LTR", desc: "يدعم العربية والإنجليزية بشكل كامل" },
-              ].map((item, i) => (
-                <div key={i} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/40 p-6 flex items-start gap-4" data-testid={`trust-feature-${i}`}>
-                  <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
-                  </div>
-                  <div dir={dir}>
-                    <p className="text-sm font-bold text-black dark:text-white mb-1">{item.title}</p>
-                    <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
+            <motion.div variants={fadeUp} custom={4} className="max-w-6xl mx-auto">
+              {/* Why Phone Mockup + Trust Features row */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                {/* Phone mockup — security & analytics */}
+                <div className="flex justify-center md:justify-start" dir="ltr">
+                  <div className="relative w-36 h-64 rounded-[24px] border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-gray-900 overflow-hidden shadow-xl shadow-black/[0.07] dark:shadow-black/50">
+                    <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
+                      <span className="text-black/30 dark:text-white/30 text-[6px]">9:41</span>
+                      <div className="w-8 h-2.5 rounded-full bg-black/10 dark:bg-white/10" />
+                      <div className="w-2 h-2 rounded-full border border-black/20 dark:border-white/20" />
+                    </div>
+                    <div className="px-3 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.05]">
+                      <div className="text-[9px] font-bold text-black dark:text-white">QIROX Analytics</div>
+                      <div className="text-[6px] text-black/40 dark:text-white/40">{lang === "ar" ? "لوحة الأداء" : "Performance"}</div>
+                    </div>
+                    <div className="px-3 py-2 space-y-2">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[7px] text-black/50 dark:text-white/50">{lang === "ar" ? "وقت التشغيل" : "Uptime"}</span>
+                          <span className="text-[7px] font-bold text-emerald-600 dark:text-emerald-400">99.9%</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
+                          <div className="h-full w-[99%] rounded-full bg-emerald-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[7px] text-black/50 dark:text-white/50">SSL</span>
+                          <span className="text-[7px] font-bold text-blue-600 dark:text-blue-400">{lang === "ar" ? "محمي" : "Secured"}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
+                          <div className="h-full w-full rounded-full bg-blue-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[7px] text-black/50 dark:text-white/50">{lang === "ar" ? "نسخ احتياطي" : "Backup"}</span>
+                          <span className="text-[7px] font-bold text-violet-600 dark:text-violet-400">{lang === "ar" ? "يومي" : "Daily"}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
+                          <div className="h-full w-[90%] rounded-full bg-violet-500" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-3">
+                      <div className="h-12 flex items-end gap-0.5">
+                        {[40, 65, 50, 80, 60, 90, 75, 95, 70, 100].map((h, i) => (
+                          <div key={i} className="flex-1 rounded-t-sm" style={{
+                            height: `${h}%`,
+                            background: i === 9 ? "rgb(139,92,246)" : "rgba(139,92,246,0.2)"
+                          }} />
+                        ))}
+                      </div>
+                      <div className="text-[6px] text-black/30 dark:text-white/30 mt-1">{lang === "ar" ? "أداء آخر 10 أيام" : "Last 10 days"}</div>
+                    </div>
+                    <div className="absolute bottom-2 left-3 right-3">
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[7px] font-semibold text-emerald-700 dark:text-emerald-400">{lang === "ar" ? "النظام يعمل بشكل مثالي" : "All systems operational"}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
+                {/* Trust features — 3 columns */}
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { icon: Cloud, title: "استضافة سحابية آمنة", desc: "AWS / DigitalOcean — بمعدل uptime 99.9%" },
+                    { icon: Lock, title: "حماية متقدمة للبيانات", desc: "SSL، تشفير كامل، نسخ احتياطي يومي" },
+                    { icon: Globe2, title: "متعدد اللغات RTL/LTR", desc: "يدعم العربية والإنجليزية بشكل كامل" },
+                  ].map((item, i) => (
+                    <div key={i} className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-[#fafafa] dark:bg-gray-900/40 p-6 flex items-start gap-4" data-testid={`trust-feature-${i}`}>
+                      <div className="w-10 h-10 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+                        <item.icon className="w-5 h-5 text-black/40 dark:text-white/40" />
+                      </div>
+                      <div dir={dir}>
+                        <p className="text-sm font-bold text-black dark:text-white mb-1">{item.title}</p>
+                        <p className="text-xs text-black/35 dark:text-white/35 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -1626,6 +1939,63 @@ export default function Home() {
               <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
               <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-white/[0.01] -translate-y-1/2" />
               <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full bg-white/[0.015] translate-y-1/2" />
+
+              {/* Floating phone mockups — left */}
+              <div className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-10 pointer-events-none" dir="ltr">
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-28 h-48 rounded-[20px] border border-white/[0.12] bg-white/[0.05] backdrop-blur-sm overflow-hidden"
+                >
+                  <div className="px-2.5 pt-2 pb-1.5">
+                    <div className="w-8 h-1.5 rounded-full bg-white/10 mx-auto mb-2" />
+                    <div className="text-[7px] font-bold text-white/70">☕ قهوة كوب</div>
+                    <div className="text-[5px] text-white/30 mb-1.5">طلب جديد #384</div>
+                    <div className="space-y-1">
+                      {["لاتيه ذهبي", "كابتشينو", "فريبيه"].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between">
+                          <span className="text-[6px] text-white/50">{item}</span>
+                          <span className="text-[6px] text-white/30">×1</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 bg-orange-500/30 rounded-lg py-1 text-center">
+                      <span className="text-[6px] text-orange-300 font-bold">65 ر.س</span>
+                    </div>
+                  </div>
+                  <div className="h-14 flex items-end gap-0.5 px-2 pb-2">
+                    {[30, 55, 40, 70, 50, 80, 65, 90].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%`, background: i === 7 ? "rgba(251,146,60,0.8)" : "rgba(251,146,60,0.2)" }} />
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+              {/* Floating phone mockups — right */}
+              <div className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-10 pointer-events-none" dir="ltr">
+                <motion.div
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  className="w-28 h-48 rounded-[20px] border border-white/[0.12] bg-white/[0.05] backdrop-blur-sm overflow-hidden"
+                >
+                  <div className="px-2.5 pt-2 pb-1.5">
+                    <div className="w-8 h-1.5 rounded-full bg-white/10 mx-auto mb-2" />
+                    <div className="text-[7px] font-bold text-white/70">🛍️ {lang === "ar" ? "المتجر" : "Store"}</div>
+                    <div className="text-[5px] text-white/30 mb-1.5">Apple Pay ✓</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {["👜", "⌚", "🕶️", "👟"].map((e, i) => (
+                        <div key={i} className="bg-white/[0.06] rounded-lg p-1.5 text-center text-sm">{e}</div>
+                      ))}
+                    </div>
+                    <div className="mt-2 bg-blue-500/30 rounded-lg py-1 text-center">
+                      <span className="text-[6px] text-blue-300 font-bold">{lang === "ar" ? "1,240 منتج" : "1,240 items"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[6px] text-white/40">{lang === "ar" ? "متصل" : "Online"}</span>
+                  </div>
+                </motion.div>
+              </div>
 
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] mb-8">
