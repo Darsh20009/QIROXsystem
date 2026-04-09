@@ -17,6 +17,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    target: "esnext",
+    minify: "esbuild",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+          "vendor-ui": ["lucide-react", "framer-motion"],
+          "vendor-form": ["react-hook-form", "@hookform/resolvers"],
+        },
+      },
+    },
   },
   server: {
     host: "0.0.0.0",

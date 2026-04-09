@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { createProxyMiddleware, responseInterceptor } from "http-proxy-middleware";
 import { registerRoutes, registerInstallmentRoutes, runInstallmentLateCheck } from "./routes";
 import { registerAiRoutes } from "./ai";
@@ -30,6 +31,18 @@ try { mkdirSync("sandbox-projects", { recursive: true }); } catch {}
 
 const app = express();
 app.set("trust proxy", 1);
+
+// Gzip/Brotli compression — reduces response size by 60-80%, dramatically speeds up all API and static responses
+app.use(compression({
+  level: 6,             // balanced speed vs compression (1=fastest, 9=smallest)
+  threshold: 1024,      // only compress responses > 1KB
+  filter: (req, res) => {
+    // Never compress SSE streams (WebSocket upgrades handled separately)
+    if (req.headers["accept"] === "text/event-stream") return false;
+    return compression.filter(req, res);
+  },
+}));
+
 const httpServer = createServer(app);
 
 declare module "http" {

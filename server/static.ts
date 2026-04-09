@@ -10,10 +10,22 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath, { maxAge: "1d" }));
+  // Static assets: long-lived cache (Vite fingerprints filenames so safe)
+  app.use(express.static(distPath, {
+    maxAge: "1y",
+    immutable: true,
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+      // HTML: always revalidate so updated app is served immediately
+      if (filePath.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      }
+    },
+  }));
 
   app.use("/{*path}", (_req, res) => {
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
