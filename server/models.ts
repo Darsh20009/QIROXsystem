@@ -63,6 +63,9 @@ const userSchema = new mongoose.Schema({
   referredBy: { type: String, default: null },
   referralCreditsEarned: { type: Number, default: 0 },
 }, { timestamps: true });
+userSchema.index({ role: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ createdAt: -1 });
 
 const serviceSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -546,19 +549,23 @@ inboxMessageSchema.index({ toUserId: 1, read: 1 });
 inboxMessageSchema.index({ fromUserId: 1, toUserId: 1, createdAt: 1 });
 
 const csSessionSchema = new mongoose.Schema({
-  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  status: { type: String, enum: ['waiting', 'active', 'closed'], default: 'waiting' },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  agentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+  status: { type: String, enum: ['waiting', 'active', 'closed'], default: 'waiting', index: true },
   subject: { type: String, default: "" },
   transferNote: { type: String, default: "" },
   previousAgentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   closedAt: Date,
+  closedReason: { type: String, default: "" },
   rating: { type: Number, min: 1, max: 5, default: null },
   ratingNote: { type: String, default: "" },
   lastMessageAt: { type: Date, default: Date.now },
   isUrgent: { type: Boolean, default: false },
   urgentNotifiedAt: { type: Date, default: null },
 }, { timestamps: true });
+csSessionSchema.index({ status: 1, lastMessageAt: -1 });
+csSessionSchema.index({ clientId: 1, status: 1 });
+csSessionSchema.index({ agentId: 1, status: 1 });
 
 const invoiceSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },

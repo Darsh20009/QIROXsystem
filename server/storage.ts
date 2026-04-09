@@ -175,8 +175,8 @@ export class MongoStorage implements IStorage {
   }
 
   async getUsers(): Promise<User[]> {
-    const users = await UserModel.find();
-    return users.map(u => ({ ...u.toObject(), id: u._id.toString() })) as any;
+    const users = await UserModel.find().lean();
+    return users.map(u => ({ ...u, id: u._id.toString() })) as any;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

@@ -562,9 +562,9 @@ function AgentView({ user }: { user: any }) {
     queryKey: ["/api/cs/sessions", statusFilter],
     queryFn: async () => {
       const r = await fetch(`/api/cs/sessions?status=${statusFilter}`, { credentials: "include" });
+      if (!r.ok) return [];
       return r.json();
     },
-    // WebSocket pushes cs_session_update events; poll only as a fallback every 30s
     refetchInterval: 30000,
   });
 
@@ -573,10 +573,10 @@ function AgentView({ user }: { user: any }) {
     queryFn: async () => {
       if (!selectedId) return null;
       const r = await fetch(`/api/cs/sessions/${selectedId}`, { credentials: "include" });
+      if (!r.ok) return null;
       return r.json();
     },
     enabled: !!selectedId,
-    // WebSocket pushes updates; poll only as a fallback every 60s
     refetchInterval: 60000,
   });
 
@@ -585,10 +585,10 @@ function AgentView({ user }: { user: any }) {
     queryFn: async () => {
       if (!selectedId) return [];
       const r = await fetch(`/api/cs/sessions/${selectedId}/messages`, { credentials: "include" });
+      if (!r.ok) return [];
       return r.json();
     },
     enabled: !!selectedId,
-    // WebSocket pushes new_message events; poll only as a fallback every 30s
     refetchInterval: 30000,
   });
 

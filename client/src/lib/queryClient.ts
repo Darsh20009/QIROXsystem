@@ -105,7 +105,18 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      // Smart retry: allow 1 retry for transient errors (network hiccups, timing issues)
+      // but never retry auth/permission errors which are definitive
+      retry: (failureCount, error) => {
+        const msg = String((error as any)?.message || "");
+        if (
+          msg.includes("403") ||
+          msg.includes("Forbidden") ||
+          msg.includes("لا يوجد اتصال")
+        ) return false;
+        return failureCount < 1;
+      },
+      retryDelay: 800,
     },
     mutations: {
       retry: false,

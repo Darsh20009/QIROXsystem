@@ -877,7 +877,23 @@ export async function registerRoutes(
       if (callerRole !== "admin" && targetUser.role !== "client") {
         return res.status(403).json({ error: "يُسمح فقط بحذف حسابات العملاء" });
       }
-      await storage.deleteUser(req.params.id);
+      const userId = req.params.id;
+      await storage.deleteUser(userId);
+
+      // ── Cascade cleanup: close all open CS sessions for this user ──────────
+      const { CsSessionModel, InboxMessageModel, AttendanceModel, DeviceTokenModel } = await import("./models");
+      await Promise.allSettled([
+        // Close their open chat sessions (as client or agent)
+        CsSessionModel.updateMany(
+          { $or: [{ clientId: userId }, { agentId: userId }], status: { $in: ['waiting', 'active'] } },
+          { status: 'closed', closedAt: new Date(), closedReason: 'user_deleted' }
+        ),
+        // Remove device tokens (prevents stale push notifications)
+        DeviceTokenModel.deleteMany({ userId }),
+        // Remove attendance records
+        AttendanceModel.deleteMany({ userId }),
+      ]);
+
       res.sendStatus(204);
     } catch (err: any) {
       res.status(500).json({ error: translateError(err) });
@@ -6091,13 +6107,16 @@ export async function registerRoutes(
   const CS_AGENT_ROLES = ['support', 'admin', 'manager'];
 
   async function populateSession(session: any) {
-    const { UserModel, InboxMessageModel, OrderModel, ProjectModel, ModificationRequestModel } = await import("./models");
+    const { UserModel } = await import("./models");
     const obj = session.toJSON ? session.toJSON() : session;
     const [client, agent] = await Promise.all([
       UserModel.findById(obj.clientId).select("username fullName email phone country role").lean(),
       obj.agentId ? UserModel.findById(obj.agentId).select("username fullName role").lean() : null,
     ]);
-    return { ...obj, client, agent };
+    // Gracefully handle deleted users — show placeholder instead of null/crash
+    const ghostClient = client || { _id: obj.clientId, username: '[محذوف]', fullName: 'مستخدم محذوف', email: '', phone: '', country: '', role: 'client', _deleted: true };
+    const ghostAgent = agent || (obj.agentId ? { _id: obj.agentId, username: '[محذوف]', fullName: 'موظف محذوف', role: 'support', _deleted: true } : null);
+    return { ...obj, client: ghostClient, agent: ghostAgent };
   }
 
   // Client: start or reopen a CS session
@@ -12413,6 +12432,23 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Promotional Push Notifications ─────────────────────────────────────────
+  app.post("/api/internal/push/promotional", async (req, res) => {
+    try {
+      const { UserModel } = await import("./models");
+      const { broadcastToAll } = await import("./ws");
+      const { title = "عرض خاص من QIROX Studio", body = "تحقق من أحدث عروضنا!", url = "/" } = req.body || {};
+      // Count active clients to notify
+      const clientCount = await UserModel.countDocuments({ role: "client" });
+      if (clientCount === 0) return res.json({ ok: true, sent: 0, message: "No clients to notify" });
+      // Broadcast via WebSocket to all connected users
+      broadcastToAll({ type: "promotional_push", title, body, url });
+      res.json({ ok: true, sent: clientCount, title, body });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
