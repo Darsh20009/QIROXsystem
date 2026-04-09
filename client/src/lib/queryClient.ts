@@ -1,5 +1,20 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError && (
+    err.message.includes("Failed to fetch") ||
+    err.message.includes("NetworkError") ||
+    err.message.includes("network") ||
+    err.message.includes("Load failed") ||
+    err.message.includes("fetch")
+  )) return true;
+  return !navigator.onLine;
+}
+
+function networkOfflineError(): Error {
+  return new Error("لا يوجد اتصال بالإنترنت. تحقق من الشبكة وأعد المحاولة.");
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = await res.text();
@@ -20,12 +35,20 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  if (!navigator.onLine) throw networkOfflineError();
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+  } catch (err) {
+    if (isNetworkError(err)) throw networkOfflineError();
+    throw err;
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -55,9 +78,17 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
+    if (!navigator.onLine) throw networkOfflineError();
+
+    let res: Response;
+    try {
+      res = await fetch(queryKey.join("/") as string, {
+        credentials: "include",
+      });
+    } catch (err) {
+      if (isNetworkError(err)) throw networkOfflineError();
+      throw err;
+    }
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;

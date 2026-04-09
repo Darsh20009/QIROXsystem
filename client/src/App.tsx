@@ -21,6 +21,7 @@ import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
 import { AIWelcomeIntro } from "@/components/AIWelcomeIntro";
 import { AntiDevTools } from "@/components/AntiDevTools";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 const Home = lazy(() => import("@/pages/Home"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -918,6 +919,7 @@ function App() {
         <ThemeProvider>
           <I18nProvider>
             <AntiDevTools />
+            <OfflineBanner />
             <AppInner />
           </I18nProvider>
         </ThemeProvider>

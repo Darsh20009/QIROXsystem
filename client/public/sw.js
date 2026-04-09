@@ -1,5 +1,8 @@
-const CACHE_NAME = "qirox-v13";
+const CACHE_NAME = "qirox-v14";
+const RUNTIME_CACHE = "qirox-runtime-v14";
+
 const STATIC_ASSETS = [
+  "/",
   "/manifest.json",
   "/browserconfig.xml",
   "/favicon.ico",
@@ -22,6 +25,7 @@ const STATIC_ASSETS = [
   "/apple-touch-icon-152.png",
   "/apple-touch-icon-180.png",
   "/logo.png",
+  "/widget-template.json",
 ];
 
 const OFFLINE_HTML = `<!DOCTYPE html>
@@ -33,18 +37,22 @@ const OFFLINE_HTML = `<!DOCTYPE html>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:system-ui,sans-serif;background:#111;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
-  .logo{width:64px;height:64px;background:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:28px;font-weight:900;color:#111}
-  h1{font-size:2rem;font-weight:900;margin-bottom:8px}
-  p{color:rgba(255,255,255,0.45);font-size:1rem;line-height:1.6;max-width:320px;margin:0 auto 28px}
-  button{background:#fff;color:#111;border:none;padding:12px 28px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer}
-  button:hover{opacity:0.85}
+  .wrap{max-width:360px}
+  .logo{width:72px;height:72px;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:32px;font-weight:900;color:#111}
+  h1{font-size:1.8rem;font-weight:900;margin-bottom:10px;letter-spacing:-0.02em}
+  p{color:rgba(255,255,255,0.45);font-size:0.95rem;line-height:1.65;margin-bottom:32px}
+  button{background:#fff;color:#111;border:none;padding:13px 32px;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+  button:hover{opacity:.85}
+  .dot{display:inline-block;width:8px;height:8px;background:#666;border-radius:50%;margin-bottom:32px;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 </style>
 </head>
 <body>
-  <div>
+  <div class="wrap">
     <div class="logo">Q</div>
-    <h1>أنت غير متصل بالإنترنت</h1>
-    <p>تحقق من اتصالك وأعد المحاولة. محتوى مخزّن قد يكون متاحاً.</p>
+    <span class="dot"></span>
+    <h1>لا يوجد اتصال بالإنترنت</h1>
+    <p>تحقق من اتصالك وأعد المحاولة.<br/>المحتوى المحفوظ قد يكون متاحاً.</p>
     <button onclick="location.reload()">إعادة المحاولة</button>
   </div>
 </body>
@@ -54,10 +62,13 @@ const OFFLINE_HTML = `<!DOCTYPE html>
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(STATIC_ASSETS);
       await cache.put("/__offline", new Response(OFFLINE_HTML, {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       }));
+      // Pre-cache static assets one by one, ignore failures
+      for (const asset of STATIC_ASSETS) {
+        try { await cache.add(asset); } catch (_) {}
+      }
     })
   );
   self.skipWaiting();
@@ -67,59 +78,113 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== RUNTIME_CACHE && !k.startsWith("qirox-pending"))
+          .map((k) => caches.delete(k))
+      )
     ).then(() => self.clients.claim())
   );
 });
 
 // ─── Fetch ─────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-  const url = new URL(event.request.url);
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+
+  // Skip cross-origin
   if (url.origin !== self.location.origin) return;
+
+  // Skip API requests — let the app handle offline errors itself
   if (url.pathname.startsWith("/api/")) return;
+
+  // Skip Vite HMR / websocket / internal dev stuff
   if (
-    url.pathname.startsWith("/@") ||
-    url.pathname.startsWith("/node_modules/") ||
     url.pathname.startsWith("/__vite") ||
-    url.search.includes("v=") ||
-    url.search.includes("t=")
+    url.pathname.startsWith("/@id/") ||
+    url.search.includes("import") ||
+    req.headers.get("accept") === "text/event-stream"
   ) return;
 
-  // Navigation requests → network-first with offline fallback
-  if (event.request.mode === "navigate") {
+  // Skip dev-mode HMR noise (but still cache normal module requests)
+  if (url.pathname.startsWith("/@react-refresh") || url.pathname.startsWith("/@vite")) return;
+
+  // ── Navigation requests: network-first, offline fallback ──
+  if (req.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(new Request("/"), clone));
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put("/", clone));
           }
-          return response;
+          return res;
         })
-        .catch(() =>
-          caches.match("/").then((cached) => cached || caches.match("/__offline"))
-        )
+        .catch(async () => {
+          const cached = await caches.match("/");
+          if (cached) return cached;
+          return caches.match("/__offline");
+        })
     );
     return;
   }
 
-  // Static assets → cache-first
-  const isStaticAsset = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".json", ".xml", ".woff2", ".woff"].some(
+  // ── Production built assets (/assets/*): cache-first ──
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const clone = res.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
+            }
+            return res;
+          })
+          .catch(() => new Response("", { status: 504 }));
+      })
+    );
+    return;
+  }
+
+  // ── Static assets (images, fonts, icons): cache-first ──
+  const isStaticExt = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico", ".json", ".xml", ".woff2", ".woff", ".ttf"].some(
     (ext) => url.pathname.endsWith(ext)
   );
-  if (isStaticAsset) {
+  if (isStaticExt) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
+      caches.match(req).then((cached) => {
         if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        }).catch(() => new Response("", { status: 404 }));
+        return fetch(req)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const clone = res.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
+            }
+            return res;
+          })
+          .catch(() => new Response("", { status: 404 }));
       })
+    );
+    return;
+  }
+
+  // ── JS/CSS in dev mode: network with runtime caching ──
+  const isScript = url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".mjs");
+  if (isScript) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(req, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || new Response("", { status: 504 })))
     );
     return;
   }
@@ -135,12 +200,9 @@ self.addEventListener("push", (event) => {
     tag: "qirox-notif",
     data: { url: "/dashboard" },
   };
-  try {
-    if (event.data) data = { ...data, ...event.data.json() };
-  } catch (e) {}
+  try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
 
   const isPushAuth = data.tag && data.tag.startsWith("push-auth-");
-
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
@@ -182,13 +244,9 @@ self.addEventListener("notificationclick", (event) => {
 
 // ─── Background Sync ───────────────────────────────────
 self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-pending-orders") {
-    event.waitUntil(syncPendingOrders());
-  } else if (event.tag === "sync-notifications") {
-    event.waitUntil(syncNotifications());
-  } else if (event.tag === "sync-contact-form") {
-    event.waitUntil(syncContactForm());
-  }
+  if (event.tag === "sync-pending-orders") event.waitUntil(syncPendingOrders());
+  else if (event.tag === "sync-notifications") event.waitUntil(syncNotifications());
+  else if (event.tag === "sync-contact-form") event.waitUntil(syncContactForm());
 });
 
 async function syncPendingOrders() {
@@ -240,7 +298,6 @@ async function syncContactForm() {
   } catch (_) {}
 }
 
-// Simple IndexedDB helpers for offline queue
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("qirox-offline", 1);
@@ -275,20 +332,18 @@ function deleteItem(db, store, id) {
 
 // ─── Background Fetch ──────────────────────────────────
 self.addEventListener("backgroundfetchsuccess", (event) => {
-  event.waitUntil(
-    (async () => {
-      const bgFetch = event.registration;
-      const cache = await caches.open(CACHE_NAME);
-      const records = await bgFetch.matchAll();
-      await Promise.all(records.map(async (record) => {
-        const response = await record.responseReady;
-        await cache.put(record.request, response);
-      }));
-      self.clients.matchAll({ type: "window" }).then((clients) => {
-        clients.forEach((c) => c.postMessage({ type: "BG_FETCH_DONE", id: bgFetch.id }));
-      });
-    })()
-  );
+  event.waitUntil((async () => {
+    const bgFetch = event.registration;
+    const cache = await caches.open(CACHE_NAME);
+    const records = await bgFetch.matchAll();
+    await Promise.all(records.map(async (record) => {
+      const response = await record.responseReady;
+      await cache.put(record.request, response);
+    }));
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      clients.forEach((c) => c.postMessage({ type: "BG_FETCH_DONE", id: bgFetch.id }));
+    });
+  })());
 });
 
 self.addEventListener("backgroundfetchfail", (event) => {
@@ -301,7 +356,7 @@ self.addEventListener("backgroundfetchclick", (event) => {
   event.waitUntil(self.clients.openWindow("/dashboard"));
 });
 
-// ─── Message (skip waiting + custom commands) ──────────
+// ─── Message ───────────────────────────────────────────
 self.addEventListener("message", (event) => {
   const { type, payload } = event.data || {};
   if (type === "SKIP_WAITING") {
@@ -319,7 +374,5 @@ self.addEventListener("message", (event) => {
 
 // ─── Periodic Background Sync ──────────────────────────
 self.addEventListener("periodicsync", (event) => {
-  if (event.tag === "refresh-notifications") {
-    event.waitUntil(syncNotifications());
-  }
+  if (event.tag === "refresh-notifications") event.waitUntil(syncNotifications());
 });
