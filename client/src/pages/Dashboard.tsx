@@ -1808,83 +1808,86 @@ export default function Dashboard() {
       <WelcomeAssistant />
       <div className="absolute inset-0 overflow-hidden pointer-events-none"><PageGraphics variant="dashboard" /></div>
       {/* Top Hero Banner */}
-      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] overflow-hidden relative">
-        {/* Subtle grid bg */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+      <div className="bg-black dark:bg-black overflow-hidden relative">
+        {/* Dot grid */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        {/* Bottom fade to page bg */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f8f8f8] dark:from-gray-950 to-transparent pointer-events-none" />
 
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 md:py-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 pt-8 md:pt-10 pb-16 md:pb-20 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
             {/* Left: Greeting + actions */}
-            <div>
-              {/* Name badge */}
+            <div dir={dir}>
+              {/* Top pill */}
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] rounded-full px-3 py-1.5 mb-4">
-                <div className="w-6 h-6 bg-black dark:bg-white rounded-full flex items-center justify-center text-white dark:text-black font-black text-[10px]">
-                  {user.fullName?.charAt(0) || "U"}
+                className="inline-flex items-center gap-2 border border-white/[0.12] bg-white/[0.06] rounded-full px-3 py-1.5 mb-5">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-black font-black text-[9px] flex-shrink-0">
+                  {user.fullName?.charAt(0)?.toUpperCase() || "U"}
                 </div>
-                <span className="text-[11px] text-black/50 dark:text-white/50 font-medium">{user.email}</span>
+                <span className="text-[11px] text-white/50 font-medium truncate max-w-[180px]">{(user.fullName || user.username || "").split(" ")[0]}</span>
+                <span className="w-px h-3 bg-white/15 mx-0.5" />
+                <span className="text-[10px] text-white/30">{dateStr}</span>
               </motion.div>
 
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-                className="text-[11px] text-black/30 dark:text-white/30 mb-1">{dateStr}</motion.p>
-
-              <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.5 }}
-                className="text-3xl md:text-4xl font-black text-black dark:text-white font-heading leading-tight mb-2"
+              <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.55 }}
+                className="text-[2.4rem] md:text-[3rem] font-black text-white font-heading leading-[1.1] mb-3 tracking-tight"
                 data-testid="text-client-greeting">
                 {getGreeting(lang)}{L ? "،" : ","}<br />
-                <span className="text-black/60 dark:text-white/60">{(user.fullName || user.username || "")?.split(" ")[0]}</span>
+                <span className="text-white/35">{(user.fullName || user.username || "")?.split(" ")[0]}</span>
               </motion.h1>
 
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-                className="text-sm text-black/40 dark:text-white/40 mb-5 max-w-xs leading-relaxed">
-                {L ? "مرحباً بك في منصة QIROX — نظام إدارة الأعمال الرقمية المتكامل" : "Welcome to QIROX — your integrated digital business platform"}
+                className="text-sm text-white/40 mb-7 max-w-sm leading-relaxed">
+                {L ? "منصة QIROX الرقمية — كل أعمالك في مكان واحد" : "QIROX Digital Platform — all your business in one place"}
               </motion.p>
 
-              {/* Platform badges */}
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                className="flex items-center gap-2 flex-wrap mb-6">
-                {[
-                  { label: L ? "إدارة طلبات" : "Order Mgmt", icon: "📦" },
-                  { label: L ? "مشاريع حية" : "Live Projects", icon: "⚡" },
-                  { label: L ? "فواتير ذكية" : "Smart Invoices", icon: "🧾" },
-                  { label: L ? "AI مدمج" : "Built-in AI", icon: "✦" },
-                ].map((b, i) => (
-                  <motion.span key={i} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.35 + i * 0.08 }}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-semibold bg-black/[0.04] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] rounded-full px-3 py-1.5 text-black/60 dark:text-white/50">
-                    <span>{b.icon}</span>{b.label}
-                  </motion.span>
-                ))}
-              </motion.div>
-
               {/* Action buttons */}
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-                className="flex items-center gap-3 flex-wrap">
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
+                className="flex items-center gap-3 flex-wrap mb-7" dir="ltr">
                 <Link href="/order">
-                  <Button size="sm" className="bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 rounded-xl h-10 px-5 text-sm gap-2 font-bold shadow-lg" data-testid="button-new-order">
+                  <Button size="sm" className="bg-white text-black hover:bg-white/90 rounded-full h-11 px-6 text-sm gap-2 font-bold shadow-lg shadow-black/30 border-0 no-default-hover-elevate no-default-active-elevate" data-testid="button-new-order">
                     <Plus className="w-4 h-4" />
                     {L ? "طلب جديد" : "New Order"}
                   </Button>
                 </Link>
                 <Link href="/prices">
-                  <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 text-sm border-black/[0.1] dark:border-white/[0.12] hover:border-black/25 dark:hover:border-white/25 gap-2" data-testid="button-browse-services">
+                  <Button size="sm" variant="outline" className="rounded-full h-11 px-5 text-sm border-white/15 text-white/70 bg-white/[0.06] hover:bg-white/[0.12] hover:text-white hover:border-white/25 gap-2" data-testid="button-browse-services">
                     <ShoppingBag className="w-3.5 h-3.5" />
-                    {L ? "تصفح الخدمات" : "Browse Services"}
+                    {L ? "الخدمات" : "Services"}
                   </Button>
                 </Link>
                 <Link href="/cart">
-                  <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 text-sm border-black/[0.1] dark:border-white/[0.12] hover:border-black/25 dark:hover:border-white/25 gap-2">
+                  <Button size="sm" variant="outline" className="rounded-full h-11 px-5 text-sm border-white/15 text-white/70 bg-white/[0.06] hover:bg-white/[0.12] hover:text-white hover:border-white/25 gap-2">
                     <ShoppingCart className="w-3.5 h-3.5" />
                     {L ? "السلة" : "Cart"}
                   </Button>
                 </Link>
               </motion.div>
+
+              {/* Quick stats */}
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}
+                className="flex items-center gap-5 flex-wrap" dir={dir}>
+                {[
+                  { value: orders?.length || 0, label: L ? "طلب" : "Orders" },
+                  { value: activeProjects.length, label: L ? "مشروع نشط" : "Active" },
+                  { value: completedOrders.length, label: L ? "مكتمل" : "Done" },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    {i > 0 && <div className="w-px h-6 bg-white/10" />}
+                    <div>
+                      <div className="text-xl font-black text-white font-heading leading-none">{s.value}</div>
+                      <div className="text-[11px] text-white/30 mt-0.5">{s.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
             </div>
 
             {/* Right: Device mockups */}
             <ClientHeroVisual
+              dark={true}
               totalOrders={orders?.length || 0}
               activeProjects={activeProjects.length}
               completedOrders={completedOrders.length}
