@@ -684,185 +684,183 @@ export default function Home() {
               </motion.p>
             </div>
 
-            {/* Services Mini Phone Showcase */}
-            <motion.div variants={fadeUp} custom={2} className="flex flex-wrap justify-center gap-4 mb-14 max-w-5xl mx-auto" dir="ltr">
-              {[
-                {
-                  emoji: "🍽️",
-                  label: lang === "ar" ? "مطاعم وكافيهات" : "Restaurants",
-                  accent: "orange",
-                  items: [
-                    { icon: "☕", name: lang === "ar" ? "لاتيه" : "Latte", sub: "22 SAR" },
-                    { icon: "🧁", name: lang === "ar" ? "كيك" : "Cake", sub: "15 SAR" },
-                    { icon: "🥪", name: lang === "ar" ? "ساندويش" : "Sandwich", sub: "30 SAR" },
-                  ],
-                  bar: "bg-orange-500",
-                  badge: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-                },
-                {
-                  emoji: "🛍️",
-                  label: lang === "ar" ? "متاجر إلكترونية" : "E-Commerce",
-                  accent: "blue",
-                  items: [
-                    { icon: "👜", name: lang === "ar" ? "حقيبة" : "Bag", sub: "249 SAR" },
-                    { icon: "⌚", name: lang === "ar" ? "ساعة" : "Watch", sub: "599 SAR" },
-                    { icon: "👟", name: lang === "ar" ? "حذاء" : "Shoes", sub: "349 SAR" },
-                  ],
-                  bar: "bg-blue-500",
-                  badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                },
-                {
-                  emoji: "📚",
-                  label: lang === "ar" ? "أكاديميات" : "Education",
-                  accent: "violet",
-                  items: [
-                    { icon: "🎓", name: lang === "ar" ? "كورس برمجة" : "Dev Course", sub: lang === "ar" ? "12 درس" : "12 lessons" },
-                    { icon: "📖", name: lang === "ar" ? "لغة إنجليزية" : "English", sub: lang === "ar" ? "8 درس" : "8 lessons" },
-                    { icon: "🎨", name: lang === "ar" ? "تصميم" : "Design", sub: lang === "ar" ? "10 درس" : "10 lessons" },
-                  ],
-                  bar: "bg-violet-500",
-                  badge: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-                },
-                {
-                  emoji: "🏢",
-                  label: lang === "ar" ? "شركات ومؤسسات" : "Enterprises",
-                  accent: "emerald",
-                  items: [
-                    { icon: "📊", name: lang === "ar" ? "لوحة تحكم" : "Dashboard", sub: lang === "ar" ? "+18% نمو" : "+18% growth" },
-                    { icon: "👥", name: lang === "ar" ? "الموظفون" : "Team", sub: "24 " + (lang === "ar" ? "موظف" : "members") },
-                    { icon: "💰", name: lang === "ar" ? "الإيرادات" : "Revenue", sub: "12.4k SAR" },
-                  ],
-                  bar: "bg-emerald-500",
-                  badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                },
-              ].map((phone, idx) => (
-                <motion.div key={idx} variants={fadeUp} custom={idx} className="flex flex-col items-center gap-2">
-                  <div className="relative w-32 h-56 rounded-[20px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-gray-900 overflow-hidden shadow-xl shadow-black/[0.06] dark:shadow-black/40">
-                    {/* Status */}
-                    <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
-                      <span className="text-black/30 dark:text-white/30 text-[6px] font-medium">9:41</span>
-                      <div className="w-7 h-2.5 rounded-full bg-black/10 dark:bg-white/10" />
-                      <div className="w-2 h-2 rounded-full border border-black/20 dark:border-white/20" />
-                    </div>
-                    {/* App header */}
-                    <div className="px-3 pb-2 border-b border-black/[0.05] dark:border-white/[0.05]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-base">{phone.emoji}</span>
-                        <div>
-                          <div className="text-[8px] font-bold text-black dark:text-white leading-tight">{phone.label}</div>
-                          <div className={`text-[6px] px-1.5 py-0.5 rounded-full font-medium inline-block ${phone.badge}`}>QIROX</div>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Items */}
-                    <div className="px-2 py-1.5 space-y-1.5">
-                      {phone.items.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs">{item.icon}</span>
-                            <div>
-                              <div className="text-[7px] font-semibold text-black dark:text-white leading-none">{item.name}</div>
-                              <div className="text-[6px] text-black/40 dark:text-white/40">{item.sub}</div>
-                            </div>
-                          </div>
-                          <div className={`w-3.5 h-3.5 rounded-full ${phone.bar} flex items-center justify-center`}>
-                            <span className="text-white text-[7px] font-bold">+</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Bottom bar */}
-                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <div className={`${phone.bar} rounded-lg py-1.5 text-center`}>
-                        <span className="text-white text-[7px] font-bold">{lang === "ar" ? "افتح التطبيق" : "Open App"}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">{phone.label}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
+            {/* Bento Grid — 4 Segments */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
               {[
                 {
                   icon: UtensilsCrossed,
                   title: t("home.services.restaurants.title"),
                   desc: t("home.services.restaurants.desc"),
                   features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
-                  badge: lang === "ar" ? "🍽️ مطاعم وكافيهات"     : "🍽️ Restaurants & Cafes",
-                  accentBorder: "hover:border-orange-200 dark:hover:border-orange-500/20",
-                  accentShadow: "hover:shadow-orange-500/8",
-                  accentIcon: "bg-orange-50 dark:bg-orange-500/10",
+                  badge: lang === "ar" ? "🍽️ مطاعم وكافيهات" : "🍽️ Restaurants & Cafes",
+                  gradient: "from-orange-50 to-amber-50/60 dark:from-orange-950/30 dark:to-amber-950/20",
+                  gradientStripe: "from-orange-400 to-amber-400",
+                  accentBorder: "border-orange-100/80 dark:border-orange-500/15 hover:border-orange-200 dark:hover:border-orange-500/30",
+                  accentShadow: "hover:shadow-orange-500/10",
+                  accentIcon: "bg-orange-500",
                   accentIconText: "text-orange-500 dark:text-orange-400",
-                  accentBadge: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400",
-                  accentTag: "border-orange-100 dark:border-orange-500/15 bg-orange-50/50 dark:bg-orange-500/5 text-orange-600/70 dark:text-orange-400/70",
+                  accentBadge: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+                  accentTag: "border-orange-200/70 dark:border-orange-500/15 bg-white/70 dark:bg-orange-500/5 text-orange-700/70 dark:text-orange-400/80",
+                  phone: {
+                    emoji: "🍽️", bar: "bg-orange-500", badge: "bg-orange-500/10 text-orange-600",
+                    items: [
+                      { icon: "☕", name: lang === "ar" ? "لاتيه" : "Latte", sub: "22 SAR" },
+                      { icon: "🧁", name: lang === "ar" ? "كيك" : "Cake", sub: "15 SAR" },
+                      { icon: "🥪", name: lang === "ar" ? "ساندويش" : "Sandwich", sub: "30 SAR" },
+                    ],
+                  },
                 },
                 {
                   icon: Store,
                   title: t("home.services.stores.title"),
                   desc: t("home.services.stores.desc"),
                   features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
-                  badge: lang === "ar" ? "🛍️ متاجر إلكترونية"    : "🛍️ E-Commerce Stores",
-                  accentBorder: "hover:border-blue-200 dark:hover:border-blue-500/20",
-                  accentShadow: "hover:shadow-blue-500/8",
-                  accentIcon: "bg-blue-50 dark:bg-blue-500/10",
+                  badge: lang === "ar" ? "🛍️ متاجر إلكترونية" : "🛍️ E-Commerce Stores",
+                  gradient: "from-blue-50 to-sky-50/60 dark:from-blue-950/30 dark:to-sky-950/20",
+                  gradientStripe: "from-blue-500 to-sky-400",
+                  accentBorder: "border-blue-100/80 dark:border-blue-500/15 hover:border-blue-200 dark:hover:border-blue-500/30",
+                  accentShadow: "hover:shadow-blue-500/10",
+                  accentIcon: "bg-blue-500",
                   accentIconText: "text-blue-500 dark:text-blue-400",
-                  accentBadge: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                  accentTag: "border-blue-100 dark:border-blue-500/15 bg-blue-50/50 dark:bg-blue-500/5 text-blue-600/70 dark:text-blue-400/70",
+                  accentBadge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                  accentTag: "border-blue-200/70 dark:border-blue-500/15 bg-white/70 dark:bg-blue-500/5 text-blue-700/70 dark:text-blue-400/80",
+                  phone: {
+                    emoji: "🛍️", bar: "bg-blue-500", badge: "bg-blue-500/10 text-blue-600",
+                    items: [
+                      { icon: "👜", name: lang === "ar" ? "حقيبة" : "Bag", sub: "249 SAR" },
+                      { icon: "⌚", name: lang === "ar" ? "ساعة" : "Watch", sub: "599 SAR" },
+                      { icon: "👟", name: lang === "ar" ? "حذاء" : "Shoes", sub: "349 SAR" },
+                    ],
+                  },
                 },
                 {
                   icon: GraduationCap,
                   title: t("home.services.education.title"),
                   desc: t("home.services.education.desc"),
                   features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
-                  badge: lang === "ar" ? "📚 تعليم وأكاديميات"    : "📚 Education & Academies",
-                  accentBorder: "hover:border-violet-200 dark:hover:border-violet-500/20",
-                  accentShadow: "hover:shadow-violet-500/8",
-                  accentIcon: "bg-violet-50 dark:bg-violet-500/10",
+                  badge: lang === "ar" ? "📚 تعليم وأكاديميات" : "📚 Education & Academies",
+                  gradient: "from-violet-50 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20",
+                  gradientStripe: "from-violet-500 to-purple-400",
+                  accentBorder: "border-violet-100/80 dark:border-violet-500/15 hover:border-violet-200 dark:hover:border-violet-500/30",
+                  accentShadow: "hover:shadow-violet-500/10",
+                  accentIcon: "bg-violet-500",
                   accentIconText: "text-violet-600 dark:text-violet-400",
-                  accentBadge: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400",
-                  accentTag: "border-violet-100 dark:border-violet-500/15 bg-violet-50/50 dark:bg-violet-500/5 text-violet-600/70 dark:text-violet-400/70",
+                  accentBadge: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                  accentTag: "border-violet-200/70 dark:border-violet-500/15 bg-white/70 dark:bg-violet-500/5 text-violet-700/70 dark:text-violet-400/80",
+                  phone: {
+                    emoji: "📚", bar: "bg-violet-500", badge: "bg-violet-500/10 text-violet-600",
+                    items: [
+                      { icon: "🎓", name: lang === "ar" ? "كورس برمجة" : "Dev Course", sub: lang === "ar" ? "12 درس" : "12 lessons" },
+                      { icon: "📖", name: lang === "ar" ? "لغة إنجليزية" : "English", sub: lang === "ar" ? "8 درس" : "8 lessons" },
+                      { icon: "🎨", name: lang === "ar" ? "تصميم" : "Design", sub: lang === "ar" ? "10 درس" : "10 lessons" },
+                    ],
+                  },
                 },
                 {
                   icon: Building2,
                   title: t("home.services.enterprise.title"),
                   desc: t("home.services.enterprise.desc"),
                   features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
-                  badge: lang === "ar" ? "🏢 شركات ومؤسسات"      : "🏢 Corporates & Enterprises",
-                  accentBorder: "hover:border-emerald-200 dark:hover:border-emerald-500/20",
-                  accentShadow: "hover:shadow-emerald-500/8",
-                  accentIcon: "bg-emerald-50 dark:bg-emerald-500/10",
+                  badge: lang === "ar" ? "🏢 شركات ومؤسسات" : "🏢 Corporates & Enterprises",
+                  gradient: "from-emerald-50 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20",
+                  gradientStripe: "from-emerald-500 to-teal-400",
+                  accentBorder: "border-emerald-100/80 dark:border-emerald-500/15 hover:border-emerald-200 dark:hover:border-emerald-500/30",
+                  accentShadow: "hover:shadow-emerald-500/10",
+                  accentIcon: "bg-emerald-500",
                   accentIconText: "text-emerald-600 dark:text-emerald-400",
-                  accentBadge: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                  accentTag: "border-emerald-100 dark:border-emerald-500/15 bg-emerald-50/50 dark:bg-emerald-500/5 text-emerald-600/70 dark:text-emerald-400/70",
+                  accentBadge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  accentTag: "border-emerald-200/70 dark:border-emerald-500/15 bg-white/70 dark:bg-emerald-500/5 text-emerald-700/70 dark:text-emerald-400/80",
+                  phone: {
+                    emoji: "🏢", bar: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600",
+                    items: [
+                      { icon: "📊", name: lang === "ar" ? "لوحة تحكم" : "Dashboard", sub: lang === "ar" ? "+18% نمو" : "+18% growth" },
+                      { icon: "👥", name: lang === "ar" ? "الموظفون" : "Team", sub: "24 " + (lang === "ar" ? "موظف" : "members") },
+                      { icon: "💰", name: lang === "ar" ? "الإيرادات" : "Revenue", sub: "12.4k SAR" },
+                    ],
+                  },
                 },
-              ].map((path, idx) => (
+              ].map((seg, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-5 sm:p-8 md:p-10 h-full group transition-all duration-300 ${path.accentBorder} hover:shadow-xl ${path.accentShadow}`}
+                    className={`relative rounded-[28px] border bg-gradient-to-br ${seg.gradient} ${seg.accentBorder} p-6 sm:p-8 h-full group transition-all duration-500 hover:shadow-2xl ${seg.accentShadow} overflow-hidden`}
                     data-testid={`service-path-${idx}`}
                     dir={dir}
                   >
-                    <div className="flex items-start justify-between mb-6">
-                      <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${path.accentBadge}`}>
-                        {path.badge}
+                    {/* Top accent line */}
+                    <div className={`absolute top-0 ${dir === "rtl" ? "right-0" : "left-0"} w-16 h-[3px] rounded-b-full bg-gradient-to-r ${seg.gradientStripe}`} />
+
+                    {/* Header row */}
+                    <div className="flex items-start justify-between mb-5">
+                      <span className={`text-[11px] px-3 py-1.5 rounded-full font-semibold ${seg.accentBadge} backdrop-blur-sm`}>
+                        {seg.badge}
                       </span>
                       <Link href="/systems">
-                        <ArrowUpRight className={`w-5 h-5 text-black/10 dark:text-white/10 group-hover:${path.accentIconText} transition-all duration-300 cursor-pointer`} />
+                        <div className={`w-8 h-8 rounded-full border ${seg.accentBorder} bg-white/60 dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 cursor-pointer`}>
+                          <ArrowUpRight className={`w-4 h-4 ${seg.accentIconText}`} />
+                        </div>
                       </Link>
                     </div>
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${path.accentIcon} transition-all duration-300 mb-5 group-hover:scale-110`}>
-                      <path.icon className={`w-6 h-6 ${path.accentIconText}`} />
+
+                    {/* Content + Phone side by side */}
+                    <div className="flex items-end gap-4 mb-6">
+                      {/* Left: text */}
+                      <div className="flex-1 min-w-0">
+                        <div className={`w-12 h-12 rounded-2xl ${seg.accentIcon} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                          <seg.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-2 leading-tight">{seg.title}</h3>
+                        <p className="text-sm text-black/45 dark:text-white/40 leading-relaxed">{seg.desc}</p>
+                      </div>
+
+                      {/* Right: floating phone mockup */}
+                      <div className="flex-shrink-0 hidden sm:block" dir="ltr">
+                        <div className="relative w-[88px] h-[152px] rounded-[16px] border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-gray-900 overflow-hidden shadow-2xl shadow-black/[0.12] dark:shadow-black/50 group-hover:-translate-y-1 transition-transform duration-500">
+                          {/* Status bar */}
+                          <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
+                            <span className="text-black/30 dark:text-white/30 text-[5px] font-medium">9:41</span>
+                            <div className="w-5 h-1.5 rounded-full bg-black/10 dark:bg-white/10" />
+                          </div>
+                          {/* App header */}
+                          <div className="px-2 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.05]">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px]">{seg.phone.emoji}</span>
+                              <div>
+                                <div className="text-[6px] font-bold text-black dark:text-white leading-tight truncate max-w-[52px]">{seg.badge.split(" ").slice(1).join(" ")}</div>
+                                <div className={`text-[5px] px-1 py-px rounded-full font-semibold inline-block ${seg.phone.badge}`}>QIROX</div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Items */}
+                          <div className="px-1.5 py-1 space-y-1">
+                            {seg.phone.items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px]">{item.icon}</span>
+                                  <div>
+                                    <div className="text-[5.5px] font-semibold text-black dark:text-white leading-none truncate max-w-[34px]">{item.name}</div>
+                                    <div className="text-[4.5px] text-black/40 dark:text-white/40">{item.sub}</div>
+                                  </div>
+                                </div>
+                                <div className={`w-3 h-3 rounded-full ${seg.phone.bar} flex items-center justify-center flex-shrink-0`}>
+                                  <span className="text-white text-[6px] font-bold">+</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* CTA bar */}
+                          <div className="absolute bottom-0 left-0 right-0 p-1.5">
+                            <div className={`${seg.phone.bar} rounded-[8px] py-1 text-center`}>
+                              <span className="text-white text-[5.5px] font-bold">{lang === "ar" ? "افتح التطبيق" : "Open App"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold font-heading text-black dark:text-white mb-3">{path.title}</h3>
-                    <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed mb-6">{path.desc}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {path.features.map((f, i) => (
-                        <span
-                          key={i}
-                          className={`text-[11px] px-3.5 py-1.5 rounded-full border ${path.accentTag}`}
-                        >
+
+                    {/* Feature tags */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {seg.features.map((f, i) => (
+                        <span key={i} className={`text-[10px] px-3 py-1 rounded-full border font-medium ${seg.accentTag}`}>
                           {f}
                         </span>
                       ))}
