@@ -667,34 +667,10 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              {
-                value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"),
-                icon: Layers, color: "text-violet-600 dark:text-violet-400",
-                bg: "bg-violet-50 dark:bg-violet-900/20", iconBg: "bg-violet-500/10 dark:bg-violet-500/15",
-                border: "border-violet-100 dark:border-violet-500/15",
-                glow: "shadow-violet-500/8",
-              },
-              {
-                value: "6+", label: t("home.stats.sectorsCount"),
-                icon: Globe2, color: "text-blue-600 dark:text-blue-400",
-                bg: "bg-blue-50 dark:bg-blue-900/20", iconBg: "bg-blue-500/10 dark:bg-blue-500/15",
-                border: "border-blue-100 dark:border-blue-500/15",
-                glow: "shadow-blue-500/8",
-              },
-              {
-                value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients",
-                icon: Users, color: "text-emerald-600 dark:text-emerald-400",
-                bg: "bg-emerald-50 dark:bg-emerald-900/20", iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15",
-                border: "border-emerald-100 dark:border-emerald-500/15",
-                glow: "shadow-emerald-500/8",
-              },
-              {
-                value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating",
-                icon: Star, color: "text-orange-500 dark:text-orange-400",
-                bg: "bg-orange-50 dark:bg-orange-900/20", iconBg: "bg-orange-500/10 dark:bg-orange-500/15",
-                border: "border-orange-100 dark:border-orange-500/15",
-                glow: "shadow-orange-500/8",
-              },
+              { value: `${templates?.length || 8}+`, label: t("home.stats.readySystems"), icon: Layers },
+              { value: "6+", label: t("home.stats.sectorsCount"), icon: Globe2 },
+              { value: "100+", label: lang === "ar" ? "عميل نشط" : "Active Clients", icon: Users },
+              { value: "5★", label: lang === "ar" ? "تقييم العملاء" : "Client Rating", icon: Star },
             ].map((stat, idx) => (
               <motion.div
                 key={idx}
@@ -704,11 +680,11 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: idx * 0.08 }}
                 data-testid={`stat-card-${idx}`}
               >
-                <div className={`rounded-2xl border ${stat.border} ${stat.bg} p-5 sm:p-7 h-full flex flex-col items-center text-center shadow-lg ${stat.glow}`}>
-                  <div className={`w-10 h-10 rounded-2xl ${stat.iconBg} flex items-center justify-center mb-4`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-[#fafafa] dark:bg-gray-900/60 p-5 sm:p-7 h-full flex flex-col items-center text-center hover:shadow-lg hover:shadow-black/[0.05] transition-all duration-300">
+                  <div className="w-10 h-10 rounded-2xl bg-black/[0.05] dark:bg-white/[0.05] flex items-center justify-center mb-4">
+                    <stat.icon className="w-5 h-5 text-black/50 dark:text-white/50" />
                   </div>
-                  <div className={`text-3xl sm:text-4xl md:text-5xl font-black mb-1.5 font-heading ${stat.color}`}>
+                  <div className="text-3xl sm:text-4xl md:text-5xl font-black mb-1.5 font-heading text-black dark:text-white">
                     {stat.value}
                   </div>
                   <div className="text-black/40 dark:text-white/40 text-xs sm:text-sm leading-snug" dir={dir}>{stat.label}</div>
@@ -783,16 +759,16 @@ export default function Home() {
                   desc: t("home.services.restaurants.desc"),
                   features: [t("home.services.restaurants.f1"), t("home.services.restaurants.f2"), t("home.services.restaurants.f3"), t("home.services.restaurants.f4")],
                   badge: lang === "ar" ? "🍽️ مطاعم وكافيهات" : "🍽️ Restaurants & Cafes",
-                  gradient: "from-orange-50 to-amber-50/60 dark:from-orange-950/30 dark:to-amber-950/20",
-                  gradientStripe: "from-orange-400 to-amber-400",
-                  accentBorder: "border-orange-100/80 dark:border-orange-500/15 hover:border-orange-200 dark:hover:border-orange-500/30",
-                  accentShadow: "hover:shadow-orange-500/10",
-                  accentIcon: "bg-orange-500",
-                  accentIconText: "text-orange-500 dark:text-orange-400",
-                  accentBadge: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-                  accentTag: "border-orange-200/70 dark:border-orange-500/15 bg-white/70 dark:bg-orange-500/5 text-orange-700/70 dark:text-orange-400/80",
+                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
+                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
+                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
+                  accentShadow: "hover:shadow-black/[0.06]",
+                  accentIcon: "bg-black",
+                  accentIconText: "text-black/60 dark:text-white/60",
+                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
+                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
                   phone: {
-                    emoji: "🍽️", bar: "bg-orange-500", badge: "bg-orange-500/10 text-orange-600",
+                    emoji: "🍽️", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
                     items: [
                       { icon: "☕", name: lang === "ar" ? "لاتيه" : "Latte", sub: "22 SAR" },
                       { icon: "🧁", name: lang === "ar" ? "كيك" : "Cake", sub: "15 SAR" },
@@ -806,16 +782,16 @@ export default function Home() {
                   desc: t("home.services.stores.desc"),
                   features: [t("home.services.stores.f1"), t("home.services.stores.f2"), t("home.services.stores.f3"), t("home.services.stores.f4")],
                   badge: lang === "ar" ? "🛍️ متاجر إلكترونية" : "🛍️ E-Commerce Stores",
-                  gradient: "from-blue-50 to-sky-50/60 dark:from-blue-950/30 dark:to-sky-950/20",
-                  gradientStripe: "from-blue-500 to-sky-400",
-                  accentBorder: "border-blue-100/80 dark:border-blue-500/15 hover:border-blue-200 dark:hover:border-blue-500/30",
-                  accentShadow: "hover:shadow-blue-500/10",
-                  accentIcon: "bg-blue-500",
-                  accentIconText: "text-blue-500 dark:text-blue-400",
-                  accentBadge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                  accentTag: "border-blue-200/70 dark:border-blue-500/15 bg-white/70 dark:bg-blue-500/5 text-blue-700/70 dark:text-blue-400/80",
+                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
+                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
+                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
+                  accentShadow: "hover:shadow-black/[0.06]",
+                  accentIcon: "bg-black",
+                  accentIconText: "text-black/60 dark:text-white/60",
+                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
+                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
                   phone: {
-                    emoji: "🛍️", bar: "bg-blue-500", badge: "bg-blue-500/10 text-blue-600",
+                    emoji: "🛍️", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
                     items: [
                       { icon: "👜", name: lang === "ar" ? "حقيبة" : "Bag", sub: "249 SAR" },
                       { icon: "⌚", name: lang === "ar" ? "ساعة" : "Watch", sub: "599 SAR" },
@@ -829,16 +805,16 @@ export default function Home() {
                   desc: t("home.services.education.desc"),
                   features: [t("home.services.education.f1"), t("home.services.education.f2"), t("home.services.education.f3"), t("home.services.education.f4")],
                   badge: lang === "ar" ? "📚 تعليم وأكاديميات" : "📚 Education & Academies",
-                  gradient: "from-violet-50 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20",
-                  gradientStripe: "from-violet-500 to-purple-400",
-                  accentBorder: "border-violet-100/80 dark:border-violet-500/15 hover:border-violet-200 dark:hover:border-violet-500/30",
-                  accentShadow: "hover:shadow-violet-500/10",
-                  accentIcon: "bg-violet-500",
-                  accentIconText: "text-violet-600 dark:text-violet-400",
-                  accentBadge: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-                  accentTag: "border-violet-200/70 dark:border-violet-500/15 bg-white/70 dark:bg-violet-500/5 text-violet-700/70 dark:text-violet-400/80",
+                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
+                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
+                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
+                  accentShadow: "hover:shadow-black/[0.06]",
+                  accentIcon: "bg-black",
+                  accentIconText: "text-black/60 dark:text-white/60",
+                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
+                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
                   phone: {
-                    emoji: "📚", bar: "bg-violet-500", badge: "bg-violet-500/10 text-violet-600",
+                    emoji: "📚", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
                     items: [
                       { icon: "🎓", name: lang === "ar" ? "كورس برمجة" : "Dev Course", sub: lang === "ar" ? "12 درس" : "12 lessons" },
                       { icon: "📖", name: lang === "ar" ? "لغة إنجليزية" : "English", sub: lang === "ar" ? "8 درس" : "8 lessons" },
@@ -852,16 +828,16 @@ export default function Home() {
                   desc: t("home.services.enterprise.desc"),
                   features: [t("home.services.enterprise.f1"), t("home.services.enterprise.f2"), t("home.services.enterprise.f3"), t("home.services.enterprise.f4")],
                   badge: lang === "ar" ? "🏢 شركات ومؤسسات" : "🏢 Corporates & Enterprises",
-                  gradient: "from-emerald-50 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20",
-                  gradientStripe: "from-emerald-500 to-teal-400",
-                  accentBorder: "border-emerald-100/80 dark:border-emerald-500/15 hover:border-emerald-200 dark:hover:border-emerald-500/30",
-                  accentShadow: "hover:shadow-emerald-500/10",
-                  accentIcon: "bg-emerald-500",
-                  accentIconText: "text-emerald-600 dark:text-emerald-400",
-                  accentBadge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                  accentTag: "border-emerald-200/70 dark:border-emerald-500/15 bg-white/70 dark:bg-emerald-500/5 text-emerald-700/70 dark:text-emerald-400/80",
+                  gradient: "from-[#fafafa] to-white dark:from-gray-900/60 dark:to-gray-900/30",
+                  gradientStripe: "from-black to-gray-700 dark:from-white dark:to-gray-400",
+                  accentBorder: "border-black/[0.07] dark:border-white/[0.07] hover:border-black/[0.14] dark:hover:border-white/[0.14]",
+                  accentShadow: "hover:shadow-black/[0.06]",
+                  accentIcon: "bg-black",
+                  accentIconText: "text-black/60 dark:text-white/60",
+                  accentBadge: "bg-black/[0.05] dark:bg-white/[0.05] text-black/60 dark:text-white/60",
+                  accentTag: "border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-white/[0.04] text-black/50 dark:text-white/50",
                   phone: {
-                    emoji: "🏢", bar: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600",
+                    emoji: "🏢", bar: "bg-black dark:bg-white", badge: "bg-black/[0.06] text-black/60 dark:bg-white/[0.06] dark:text-white/60",
                     items: [
                       { icon: "📊", name: lang === "ar" ? "لوحة تحكم" : "Dashboard", sub: lang === "ar" ? "+18% نمو" : "+18% growth" },
                       { icon: "👥", name: lang === "ar" ? "الموظفون" : "Team", sub: "24 " + (lang === "ar" ? "موظف" : "members") },
@@ -1839,44 +1815,19 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto mb-10">
               {[
-                {
-                  icon: Layers, title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc"),
-                  gradient: "from-blue-50 to-cyan-50/60 dark:from-blue-950/30 dark:to-cyan-950/20",
-                  border: "border-blue-100/80 dark:border-blue-500/15 hover:border-blue-200 dark:hover:border-blue-500/30",
-                  iconBg: "bg-blue-500/10 dark:bg-blue-500/15", iconColor: "text-blue-600 dark:text-blue-400",
-                  shadow: "hover:shadow-blue-500/8", stripe: "bg-blue-500",
-                },
-                {
-                  icon: Palette, title: t("home.why.design.title"), desc: t("home.why.design.desc"),
-                  gradient: "from-violet-50 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20",
-                  border: "border-violet-100/80 dark:border-violet-500/15 hover:border-violet-200 dark:hover:border-violet-500/30",
-                  iconBg: "bg-violet-500/10 dark:bg-violet-500/15", iconColor: "text-violet-600 dark:text-violet-400",
-                  shadow: "hover:shadow-violet-500/8", stripe: "bg-violet-500",
-                },
-                {
-                  icon: Headphones, title: t("home.why.support.title"), desc: t("home.why.support.desc"),
-                  gradient: "from-emerald-50 to-green-50/60 dark:from-emerald-950/30 dark:to-green-950/20",
-                  border: "border-emerald-100/80 dark:border-emerald-500/15 hover:border-emerald-200 dark:hover:border-emerald-500/30",
-                  iconBg: "bg-emerald-500/10 dark:bg-emerald-500/15", iconColor: "text-emerald-600 dark:text-emerald-400",
-                  shadow: "hover:shadow-emerald-500/8", stripe: "bg-emerald-500",
-                },
-                {
-                  icon: Shield, title: t("home.why.security.title"), desc: t("home.why.security.desc"),
-                  gradient: "from-orange-50 to-amber-50/60 dark:from-orange-950/30 dark:to-amber-950/20",
-                  border: "border-orange-100/80 dark:border-orange-500/15 hover:border-orange-200 dark:hover:border-orange-500/30",
-                  iconBg: "bg-orange-500/10 dark:bg-orange-500/15", iconColor: "text-orange-600 dark:text-orange-400",
-                  shadow: "hover:shadow-orange-500/8", stripe: "bg-orange-500",
-                },
+                { icon: Layers,     title: t("home.why.scalable.title"), desc: t("home.why.scalable.desc") },
+                { icon: Palette,    title: t("home.why.design.title"),   desc: t("home.why.design.desc") },
+                { icon: Headphones, title: t("home.why.support.title"),  desc: t("home.why.support.desc") },
+                { icon: Shield,     title: t("home.why.security.title"), desc: t("home.why.security.desc") },
               ].map((item, idx) => (
                 <motion.div key={idx} variants={fadeUp} custom={idx}>
                   <div
-                    className={`relative rounded-[24px] border bg-gradient-to-br ${item.gradient} ${item.border} p-6 sm:p-8 h-full transition-all duration-500 hover:shadow-xl ${item.shadow} overflow-hidden`}
+                    className="rounded-[24px] border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-gray-900/60 p-6 sm:p-8 h-full transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.05] hover:border-black/[0.1] dark:hover:border-white/[0.1]"
                     data-testid={`why-card-${idx}`}
                     dir={dir}
                   >
-                    <div className={`absolute top-0 ${dir === "rtl" ? "right-0" : "left-0"} w-12 h-[3px] rounded-b-full ${item.stripe}`} />
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${item.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 bg-black/[0.04] dark:bg-white/[0.04]">
+                      <item.icon className="w-5 h-5 text-black/60 dark:text-white/60" />
                     </div>
                     <h3 className="text-base font-bold font-heading text-black dark:text-white mb-3">{item.title}</h3>
                     <p className="text-sm text-black/40 dark:text-white/40 leading-relaxed">{item.desc}</p>
