@@ -3,7 +3,7 @@ services:
     name: qirox-studio
     runtime: node
     nodeVersion: 20.20.0
-    buildCommand: npm ci && npm run build
+    buildCommand: GIT_LFS_SKIP_SMUDGE=1 npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -11,6 +11,8 @@ services:
         value: production
       - key: PORT
         value: 5000
+      - key: GIT_LFS_SKIP_SMUDGE
+        value: "1"
       - key: SMTP2GO_SENDER
         value: noreply@qiroxstudio.online
       - key: SMTP2GO_SENDER_NAME

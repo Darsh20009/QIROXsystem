@@ -855,8 +855,68 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Graceful Shutdown ────────────────────────────────────────────────────────
+function gracefulShutdown(signal: string) {
+  console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
+  import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
+  httpServer.close(() => {
+    console.log("[Shutdown] HTTP server closed");
+    mongoose.connection.close().then(() => {
+      console.log("[Shutdown] MongoDB connections closed");
+      cache.destroy();
+      process.exit(0);
+    }).catch(() => process.exit(1));
+  });
+  setTimeout(() => {
+    console.error("[Shutdown] Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+}
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// ── Early health check — responds BEFORE DB connects ────────────────────────
+// This prevents Render from killing the app while MongoDB is still connecting
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString(), service: "QIROX Studio" });
+});
+
+// ── Start HTTP server immediately (Render needs it responding fast) ──────────
+const port = parseInt(process.env.PORT || "5000", 10);
+httpServer.listen({ port, host: "0.0.0.0" }, () => {
+  log(`serving on port ${port}`);
+});
+
+// ── Static files and Vite (needed before routes) ─────────────────────────────
 (async () => {
-  await connectToDatabase();
+  const cafeDemoDir = path.resolve(process.cwd(), "public/cafe-demo");
+  if (existsSync(cafeDemoDir)) {
+    app.use("/cafe-demo", express.static(cafeDemoDir, { index: false }));
+    app.get("/cafe-demo", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    app.get("/cafe-demo/*path", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
+    console.log("[CafeDemo] Serving from", cafeDemoDir);
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  } else {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
+  }
+})();
+
+// ── Connect to DB then register routes ───────────────────────────────────────
+(async () => {
+  try {
+    await connectToDatabase();
+  } catch (err: any) {
+    console.error("[Startup] ❌ MongoDB connection failed:", err.message);
+    console.error("[Startup] ⚠️  Server running without DB — check MongoDB Atlas Network Access");
+    console.error("[Startup]    → Atlas → Network Access → Add IP → 0.0.0.0/0 (Allow All)");
+    // Don't crash — let the server stay up so health check keeps responding
+    // Render will restart the service, giving MongoDB time to become accessible
+  }
+
   await registerRoutes(httpServer, app);
   registerQMeetRoutes(app);
   startQMeetScheduler();
@@ -872,26 +932,9 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // ── Cafe Demo Static SPA (always, dev & prod) ───────────────────────────
-  const cafeDemoDir = path.resolve(process.cwd(), "public/cafe-demo");
-  if (existsSync(cafeDemoDir)) {
-    // Serve static assets (js, css, images)
-    app.use("/cafe-demo", express.static(cafeDemoDir, { index: false }));
-    // SPA fallback — all /cafe-demo/* routes return index.html
-    app.get("/cafe-demo", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
-    app.get("/cafe-demo/*path", (_req, res) => res.sendFile(path.join(cafeDemoDir, "index.html")));
-    console.log("[CafeDemo] Serving from", cafeDemoDir);
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
-
-  // Pre-meeting reminders — runs every 2 minutes
+  // Cron jobs
   const nodeCron = await import("node-cron");
+
   nodeCron.default.schedule("*/2 * * * *", async () => {
     try {
       const { QMeetingModel: QMF } = await import("./qmeet-db");
@@ -900,7 +943,6 @@ app.use((req, res, next) => {
       const now = new Date();
       const in5  = new Date(now.getTime() + 5  * 60 * 1000);
       const in15 = new Date(now.getTime() + 15 * 60 * 1000);
-      // Meetings starting in the next 5-15 min that haven't sent reminder yet
       const upcoming = await (QMeetingModel as any).find({
         status: "scheduled",
         reminderSent: { $ne: true },
@@ -915,9 +957,7 @@ app.use((req, res, next) => {
           link: `/meeting/${meeting.roomName}`,
           icon: "🎥",
         };
-        // Notify host
         if (meeting.hostId) pushNotification(String(meeting.hostId), payload);
-        // Notify participants
         for (const pid of (meeting.participantIds || [])) {
           pushNotification(String(pid), payload);
         }
@@ -926,7 +966,6 @@ app.use((req, res, next) => {
     } catch (e: any) { console.error("[MeetingReminder] error:", e.message); }
   });
 
-  // Daily installment late-payment check at 8 AM
   nodeCron.default.schedule("0 8 * * *", async () => {
     try {
       const result = await runInstallmentLateCheck();
@@ -934,41 +973,13 @@ app.use((req, res, next) => {
     } catch (e: any) { console.error("[Installment] Late check error:", e.message); }
   });
 
-  // Weekly report email — every Sunday at 8 AM
   nodeCron.default.schedule("0 8 * * 0", async () => {
     try {
-      const r = await fetch(`http://127.0.0.1:${process.env.PORT || 5000}/api/internal/weekly-report`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const r = await fetch(`http://127.0.0.1:${port}/api/internal/weekly-report`, { method: "POST", headers: { "Content-Type": "application/json" } });
       const data = await r.json() as any;
       console.log(`[WeeklyReport] Sent to ${data.sent} admins — ${data.weekLabel}`);
     } catch (e: any) { console.error("[WeeklyReport] error:", e.message); }
   });
 
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen({ port, host: "0.0.0.0" }, () => {
-    log(`serving on port ${port}`);
-    initCronJobs().catch(err => console.error("Cron init error:", err));
-  });
-
-  function gracefulShutdown(signal: string) {
-    console.log(`\n[Shutdown] ${signal} received — shutting down gracefully...`);
-    import("./sandbox-runner").then(({ stopAllProcesses }) => stopAllProcesses()).catch(() => {});
-    httpServer.close(() => {
-      console.log("[Shutdown] HTTP server closed");
-      mongoose.connection.close().then(() => {
-        console.log("[Shutdown] MongoDB connections closed");
-        cache.destroy();
-        process.exit(0);
-      }).catch(() => {
-        process.exit(1);
-      });
-    });
-
-    setTimeout(() => {
-      console.error("[Shutdown] Forced shutdown after timeout");
-      process.exit(1);
-    }, 10000);
-  }
-
-  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+  initCronJobs().catch(err => console.error("Cron init error:", err));
 })();

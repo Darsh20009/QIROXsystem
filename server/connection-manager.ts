@@ -40,31 +40,54 @@ class ConnectionManager {
     const rawUri = process.env.MONGODB_URI!;
     const uri = rawUri.replace(/\s+/g, "");
     this._primaryUri = uri;
-    await mongoose.connect(uri, {
+
+    const MONGO_OPTS: mongoose.ConnectOptions = {
       maxPoolSize: 20,
-      minPoolSize: 5,
-      serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      heartbeatFrequencyMS: 10000,
-      maxIdleTimeMS: 50000,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+      heartbeatFrequencyMS: 15000,
+      maxIdleTimeMS: 60000,
       retryWrites: true,
       w: "majority",
       readPreference: "nearest",
       compressors: ["zlib"],
-    });
-    console.log("[ConnManager] Primary DB connected (env)");
+      family: 4,
+    };
+
+    // Retry logic with exponential backoff
+    const MAX_RETRIES = 5;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await mongoose.connect(uri, MONGO_OPTS);
+        console.log("[ConnManager] Primary DB connected (env)");
+        break;
+      } catch (err: any) {
+        const isLast = attempt === MAX_RETRIES;
+        const delay = Math.min(1000 * 2 ** attempt, 30000);
+        console.error(`[ConnManager] Primary DB connect failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
+        if (isLast) {
+          console.error("[ConnManager] ❌ All connection attempts exhausted. Check MongoDB Atlas Network Access:");
+          console.error("[ConnManager]    → Go to Atlas → Network Access → Add IP → Allow 0.0.0.0/0");
+          throw err;
+        }
+        console.log(`[ConnManager] Retrying in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
 
     const qmeetUri = process.env.QMEET_MONGODB_URI || uri.replace(/\/([^/?]+)(\?|$)/, "/qmeet_db$2");
     this._qmeetUri = qmeetUri;
     this._qmeetConn = mongoose.createConnection(qmeetUri, {
       maxPoolSize: 10,
       minPoolSize: 2,
-      serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      heartbeatFrequencyMS: 10000,
-      maxIdleTimeMS: 50000,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+      heartbeatFrequencyMS: 15000,
+      maxIdleTimeMS: 60000,
+      family: 4,
     });
     this._qmeetConn.on("connected", () => console.log("[ConnManager] QMeet DB connected (env)"));
     this._qmeetConn.on("error", (e) => console.error("[ConnManager] QMeet error:", e.message));

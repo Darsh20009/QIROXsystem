@@ -1,4 +1,2 @@
-attached_assets/c-demo-3_1774156237458.zip filter=lfs diff=lfs merge=lfs -text
-attached_assets/QIROXsystem-100_1774486349529.zip filter=lfs diff=lfs merge=lfs -text
-attached_assets/MeetingAppFull-main_1774489710116.zip filter=lfs diff=lfs merge=lfs -text
-attached_assets/QIROXsystem-80_1774494181445.zip filter=lfs diff=lfs merge=lfs -text
+# Large zip files are NOT tracked in LFS — use GIT_LFS_SKIP_SMUDGE=1 on CI/CD
+# attached_assets zip files intentionally excluded from LFS to avoid budget issues
