@@ -13292,6 +13292,71 @@ export async function registerInstallmentRoutes(app: Express) {
     const result = await runInstallmentLateCheck();
     res.json(result);
   });
+
+  // ─── PWA: Share Target ─────────────────────────────────
+  app.post("/share-target", async (req, res) => {
+    const { title, text, url } = req.body || {};
+    const params = new URLSearchParams();
+    if (title) params.set("title", title);
+    if (text) params.set("text", text);
+    if (url) params.set("url", url);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    res.redirect(303, `/order${query}&source=share`);
+  });
+
+  // ─── PWA: File Handler ─────────────────────────────────
+  app.get("/open-file", (req, res) => {
+    res.redirect(302, "/dashboard?source=file-handler");
+  });
+
+  // ─── PWA: Protocol Handler ─────────────────────────────
+  app.get("/handle", (req, res) => {
+    const protocol = String(req.query.protocol || "");
+    if (protocol.startsWith("mailto:")) {
+      const email = protocol.replace("mailto:", "");
+      return res.redirect(302, `/contact?email=${encodeURIComponent(email)}&source=protocol`);
+    }
+    if (protocol.startsWith("web+qirox://")) {
+      const path = protocol.replace("web+qirox://", "/");
+      return res.redirect(302, `${path}?source=protocol`);
+    }
+    res.redirect(302, "/?source=protocol");
+  });
+
+  // ─── PWA: Widget Stats API ─────────────────────────────
+  app.get("/api/widget/stats", async (req, res) => {
+    try {
+      const { OrderModel, UserModel } = await import("./models");
+      const [totalOrders, activeUsers] = await Promise.all([
+        OrderModel.countDocuments(),
+        UserModel.countDocuments({ role: "client" }),
+      ]);
+      res.json({
+        totalOrders,
+        activeUsers,
+        lastUpdated: new Date().toISOString(),
+        appName: "QIROX Studio",
+        tagline: "مصنع الأنظمة الرقمية",
+      });
+    } catch (_) {
+      res.json({ totalOrders: 0, activeUsers: 0, lastUpdated: new Date().toISOString() });
+    }
+  });
+
+  // ─── PWA: Notifications Unread Count ──────────────────
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    if (!req.isAuthenticated()) return res.json({ count: 0 });
+    try {
+      const { NotificationModel } = await import("./models");
+      const count = await NotificationModel.countDocuments({
+        userId: (req.user as any)._id,
+        read: false,
+      });
+      res.json({ count });
+    } catch (_) {
+      res.json({ count: 0 });
+    }
+  });
 }
 
 export async function runInstallmentLateCheck() {
