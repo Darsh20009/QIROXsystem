@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   googleAvatarUrl: String,
   githubId: { type: String, sparse: true, index: true },
   githubAvatarUrl: String,
+  appleId: { type: String, sparse: true, index: true },
   role: { type: String, enum: [...roles], default: "client", required: true },
   fullName: { type: String, required: true },
   phone: String,

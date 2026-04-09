@@ -459,6 +459,133 @@ export async function registerRoutes(
     app.get("/api/auth/github/status", (_req, res) => res.json({ enabled: GITHUB_ENABLED }));
   }
   // ────────────────────────────────────────────────────────────────────────────
+  // === APPLE SIGN IN ===
+  {
+    const APPLE_CLIENT_ID   = process.env.APPLE_CLIENT_ID;   // Services ID e.g. online.qiroxstudio.auth
+    const APPLE_TEAM_ID     = process.env.APPLE_TEAM_ID;     // 10-char team ID
+    const APPLE_KEY_ID      = process.env.APPLE_KEY_ID;      // Key ID from Apple Developer
+    const APPLE_PRIVATE_KEY = process.env.APPLE_PRIVATE_KEY; // .p8 content (newlines as \n)
+    const APPLE_ENABLED = !!(APPLE_CLIENT_ID && APPLE_TEAM_ID && APPLE_KEY_ID && APPLE_PRIVATE_KEY);
+
+    if (APPLE_ENABLED) {
+      const AppleStrategy = (await import("passport-apple")).default;
+      const passport = (await import("passport")).default;
+      const devDomain = process.env.REPLIT_DEV_DOMAIN;
+      const CALLBACK_URL =
+        process.env.NODE_ENV === "production"
+          ? "https://qiroxstudio.online/api/auth/apple/callback"
+          : devDomain
+          ? `https://${devDomain}/api/auth/apple/callback`
+          : `http://localhost:5000/api/auth/apple/callback`;
+
+      // Apple private key may have literal \n from env var — convert to real newlines
+      const privateKeyString = APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n");
+
+      passport.use(
+        new AppleStrategy(
+          {
+            clientID: APPLE_CLIENT_ID!,
+            teamID: APPLE_TEAM_ID!,
+            keyID: APPLE_KEY_ID!,
+            privateKeyString,
+            callbackURL: CALLBACK_URL,
+            scope: ["name", "email"],
+            passReqToCallback: false,
+          },
+          async (_accessToken: string, _refreshToken: string, idToken: any, profile: any, done: any) => {
+            try {
+              const { UserModel } = await import("./models");
+              const { randomBytes } = await import("crypto");
+
+              // Apple puts the user info in the idToken payload (jwt)
+              const sub: string = idToken?.sub || profile?.id || "";
+              if (!sub) return done(new Error("لم يتم الحصول على معرّف Apple"));
+
+              // Email: may be real OR Apple relay address
+              const email = (idToken?.email || profile?.email || `apple_${sub}@privaterelay.appleid.com`).toLowerCase().trim();
+
+              // Full name: Apple only sends it on the FIRST sign-in
+              const givenName  = profile?.name?.firstName || "";
+              const familyName = profile?.name?.lastName  || "";
+              const fullName   = [givenName, familyName].filter(Boolean).join(" ") || email.split("@")[0];
+
+              // Find or create user
+              let user = await UserModel.findOne({ appleId: sub });
+              if (!user) {
+                user = await UserModel.findOne({ email });
+              }
+
+              if (user) {
+                if (!user.appleId) {
+                  user.appleId = sub;
+                  user.emailVerified = true;
+                  await user.save();
+                }
+                return done(null, user);
+              }
+
+              // Build unique username
+              const rawUsername = (email.split("@")[0] + randomBytes(2).toString("hex"))
+                .replace(/[^a-z0-9_]/gi, "").slice(0, 20) || `user${randomBytes(4).toString("hex")}`;
+              let username = rawUsername;
+              let suffix = 1;
+              while (await UserModel.findOne({ username })) username = `${rawUsername}${suffix++}`;
+
+              const randomPw = await hashPassword(randomBytes(32).toString("hex"));
+              const newUser = await UserModel.create({
+                username,
+                password: randomPw,
+                email,
+                fullName,
+                appleId: sub,
+                emailVerified: true,
+                role: "client",
+              });
+              return done(null, newUser);
+            } catch (err: any) {
+              return done(err);
+            }
+          }
+        )
+      );
+    }
+
+    // Start Apple Sign In flow
+    app.get("/api/auth/apple", async (req, res, next) => {
+      if (!APPLE_ENABLED) return res.status(503).json({ error: "تسجيل الدخول بـ Apple غير مفعّل حالياً" });
+      const passport = (await import("passport")).default;
+      passport.authenticate("apple")(req, res, next);
+    });
+
+    // Apple sends POST to callback (not GET)
+    app.post("/api/auth/apple/callback", express.urlencoded({ extended: true }), async (req, res, next) => {
+      if (!APPLE_ENABLED) return res.redirect("/login?error=apple_disabled");
+      const passport = (await import("passport")).default;
+      const { DeviceTokenModel } = await import("./models");
+      const { randomBytes, createHash } = await import("crypto");
+
+      passport.authenticate("apple", { failureRedirect: "/login?error=apple_failed" }, async (err: any, user: any) => {
+        if (err || !user) return res.redirect("/login?error=apple_failed");
+        req.login(user, async (loginErr) => {
+          if (loginErr) return res.redirect("/login?error=apple_failed");
+          const plainToken = randomBytes(48).toString("hex");
+          const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+          const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+          await DeviceTokenModel.create({ userId: user._id, tokenHash, userAgent: req.headers["user-agent"] || "", expiresAt });
+          const MGMT_ROLES = ["admin", "manager"];
+          const redirectPath = user.role === "client"
+            ? "/dashboard"
+            : MGMT_ROLES.includes(user.role)
+              ? "/admin"
+              : "/employee/role-dashboard";
+          res.redirect(`/login?appleToken=${encodeURIComponent(plainToken)}&next=${encodeURIComponent(redirectPath)}`);
+        });
+      })(req, res, next);
+    });
+
+    app.get("/api/auth/apple/status", (_req, res) => res.json({ enabled: APPLE_ENABLED }));
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   app.use("/uploads", express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
