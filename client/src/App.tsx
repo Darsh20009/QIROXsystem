@@ -661,7 +661,8 @@ function ClientQuickNav() {
 class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; retried: boolean }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, retried: false };
+    // If we already retried (tracked via sessionStorage), start with retried=true
+    this.state = { hasError: false, retried: !!sessionStorage.getItem("__errRetried") };
   }
 
   static getDerivedStateFromError() {
@@ -669,18 +670,18 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    /* Log internally for debugging — never shown to users */
     console.error("[QIROX] Page error caught:", error?.name, error?.message);
     console.error("[QIROX] Component stack:", info?.componentStack);
 
-    const isChunkError =
-      error?.name === "ChunkLoadError" ||
-      error?.message?.includes("Loading chunk") ||
-      error?.message?.includes("Failed to fetch dynamically imported module") ||
-      error?.message?.includes("Importing a module script failed");
-
-    if (isChunkError && !this.state.retried) {
-      this.setState({ retried: true }, () => { window.location.reload(); });
+    if (!this.state.retried) {
+      // Auto-reload once for ANY error (chunk errors, transient auth errors, etc.)
+      sessionStorage.setItem("__errRetried", "1");
+      this.setState({ retried: true }, () => {
+        setTimeout(() => window.location.reload(), 400);
+      });
+    } else {
+      // Second crash — clear the flag so next fresh load can retry again
+      sessionStorage.removeItem("__errRetried");
     }
   }
 
@@ -810,6 +811,17 @@ function AppInner() {
 
   const isPublicRoute = publicRoutes.some(r => location === r)
     || location.startsWith("/templates/");
+
+  // While auth is still resolving on private routes, show a blank screen
+  // (Splash screen already showed — this is just a safety guard to prevent
+  //  child components from crashing when user is still null)
+  if (!isPublicRoute && userLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950">
+        <Loader2 className="w-5 h-5 animate-spin text-black/15 dark:text-white/15" />
+      </div>
+    );
+  }
 
   // Guard: redirect unauthenticated users to /login and save the return URL
   if (!isPublicRoute && !userLoading && user === null) {

@@ -1,6 +1,8 @@
 import { createRoot } from "react-dom/client";
+import { useState } from "react";
 import App from "./App";
 import "./index.css";
+import { SplashScreen } from "@/components/qirox-brand";
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -19,7 +21,6 @@ async function registerServiceWorker() {
       }
     });
 
-    // Register Periodic Background Sync if supported
     if ("periodicSync" in reg) {
       try {
         const status = await navigator.permissions.query({ name: "periodic-background-sync" as PermissionName });
@@ -30,7 +31,6 @@ async function registerServiceWorker() {
       } catch (_) {}
     }
 
-    // Register one-time background sync for notifications check on load
     if ("sync" in reg) {
       try {
         await (reg as any).sync.register("sync-notifications");
@@ -44,4 +44,24 @@ async function registerServiceWorker() {
 
 registerServiceWorker();
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Only show splash on full page loads, not on hot-reload in dev
+const isFirstLoad = !sessionStorage.getItem("__splashShown");
+
+function Root() {
+  const [splashDone, setSplashDone] = useState(!isFirstLoad);
+
+  if (!splashDone) {
+    return (
+      <SplashScreen
+        onComplete={() => {
+          sessionStorage.setItem("__splashShown", "1");
+          setSplashDone(true);
+        }}
+      />
+    );
+  }
+
+  return <App />;
+}
+
+createRoot(document.getElementById("root")!).render(<Root />);
