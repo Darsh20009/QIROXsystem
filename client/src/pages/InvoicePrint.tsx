@@ -1,12 +1,13 @@
 import SARIcon from "@/components/SARIcon";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { Loader2, Printer, ArrowRight, Mail } from "lucide-react";
+import { Loader2, Printer, ArrowRight, Mail, Building2, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import qiroxLogoPath from "@assets/QIROX_LOGO_1771674917456.png";
 import { useI18n } from "@/lib/i18n";
+import { useState } from "react";
 
 const DEFAULT_BANK = { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "", notes: "" };
 
@@ -15,6 +16,7 @@ export default function InvoicePrint() {
   const params = useParams<{ id: string }>();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const [showBankInfo, setShowBankInfo] = useState(true);
   const isClientView = location.startsWith("/client/");
 
   const { data: invoice, isLoading } = useQuery({
@@ -85,6 +87,17 @@ export default function InvoicePrint() {
           >
             {sendEmailMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
             إرسال للعميل
+          </Button>
+          <Button
+            onClick={() => setShowBankInfo(v => !v)}
+            variant="outline"
+            size="sm"
+            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" : "border-black/[0.12] text-black/50"}`}
+            data-testid="button-toggle-bank-info"
+            title={showBankInfo ? "إخفاء بيانات التحويل البنكي" : "إظهار بيانات التحويل البنكي"}
+          >
+            {showBankInfo ? <Building2 className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
           </Button>
           <Button
             onClick={() => {
@@ -221,34 +234,39 @@ export default function InvoicePrint() {
               </div>
             )}
 
-            {/* Bank info */}
-            <div className="border border-black/[0.08] rounded-xl px-4 py-4 mb-6">
-              <p className="text-xs font-bold text-black/40 mb-3">معلومات الدفع</p>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <p className="text-black/30">طريقة الدفع</p>
-                  <p className="font-bold text-black/70">تحويل بنكي</p>
+            {/* Bank info — toggleable */}
+            {showBankInfo && (
+              <div className="border border-blue-100 bg-blue-50/40 rounded-xl px-4 py-4 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="w-3.5 h-3.5 text-blue-500/60" />
+                  <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>
                 </div>
-                <div>
-                  <p className="text-black/30">البنك</p>
-                  <p className="font-bold text-black/70">{bank.bankName}</p>
-                </div>
-                <div>
-                  <p className="text-black/30">رقم الآيبان (IBAN)</p>
-                  <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.iban}</p>
-                </div>
-                <div>
-                  <p className="text-black/30">اسم المستفيد</p>
-                  <p className="font-bold text-black/70">{bank.beneficiaryName}</p>
-                </div>
-                {bank.accountNumber && (
+                <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <p className="text-black/30">رقم الحساب</p>
-                    <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.accountNumber}</p>
+                    <p className="text-black/30">طريقة الدفع</p>
+                    <p className="font-bold text-black/70">تحويل بنكي</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-black/30">البنك</p>
+                    <p className="font-bold text-black/70">{bank.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-black/30">رقم الآيبان (IBAN)</p>
+                    <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.iban}</p>
+                  </div>
+                  <div>
+                    <p className="text-black/30">اسم المستفيد</p>
+                    <p className="font-bold text-black/70">{bank.beneficiaryName}</p>
+                  </div>
+                  {bank.accountNumber && (
+                    <div>
+                      <p className="text-black/30">رقم الحساب</p>
+                      <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.accountNumber}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Footer */}
             <div className="border-t border-black/[0.06] pt-4 text-center text-xs text-black/25">

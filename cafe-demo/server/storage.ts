@@ -532,11 +532,19 @@ export class DBStorage implements IStorage {
   }
 
   async getEmployee(id: string): Promise<Employee | undefined> {
-    const employee = await EmployeeModel.findById(id).lean();
+    // Search by custom id field first, then fallback to MongoDB _id
+    let employee: any = await EmployeeModel.findOne({ id }).lean();
+    if (!employee) {
+      try {
+        employee = await EmployeeModel.findById(id).lean();
+      } catch {
+        // id is not a valid ObjectId — ignore
+      }
+    }
     if (!employee) return undefined;
     const result: any = {
       ...employee,
-      id: employee._id.toString(),
+      id: employee.id || employee._id.toString(),
     };
     delete result._id;
     delete result.__v;

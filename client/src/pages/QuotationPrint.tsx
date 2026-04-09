@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
-import { Loader2, Printer, ArrowRight, Download, Mail, RefreshCw } from "lucide-react";
+import { Loader2, Printer, ArrowRight, Download, Mail, RefreshCw, Building2, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,7 +22,13 @@ export default function QuotationPrint() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [showBankInfo, setShowBankInfo] = useState(true);
   const printCardRef = useRef<HTMLDivElement>(null);
+
+  const { data: bankSettings } = useQuery<{ bankName: string; beneficiaryName: string; iban: string; accountNumber?: string }>({
+    queryKey: ["/api/bank-settings"],
+  });
+  const bank = bankSettings || { bankName: "—", beneficiaryName: "—", iban: "—", accountNumber: "" };
 
   const { data: me } = useQuery<{ role: string }>({
     queryKey: ["/api/user"],
@@ -249,6 +255,17 @@ export default function QuotationPrint() {
             طباعة
           </Button>
           <Button
+            onClick={() => setShowBankInfo(v => !v)}
+            variant="outline"
+            size="sm"
+            className={`h-8 text-xs gap-1.5 ${showBankInfo ? "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" : "border-black/[0.12] text-black/50"}`}
+            data-testid="button-toggle-bank-info-quotation"
+            title={showBankInfo ? "إخفاء بيانات التحويل البنكي" : "إظهار بيانات التحويل البنكي"}
+          >
+            {showBankInfo ? <Building2 className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            {showBankInfo ? "إخفاء التحويل" : "إظهار التحويل"}
+          </Button>
+          <Button
             onClick={handleDownloadPDF}
             disabled={pdfLoading}
             size="sm"
@@ -401,6 +418,42 @@ export default function QuotationPrint() {
                   <p className="text-sm text-black/60 leading-relaxed">{quotation.termsAndConditions}</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Bank Transfer Info — toggleable */}
+          {showBankInfo && (
+            <div className="px-10 py-5 border-t border-black/[0.06]">
+              <div className="border border-blue-100 bg-blue-50/40 rounded-xl px-4 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="w-3.5 h-3.5 text-blue-500/60" />
+                  <p className="text-xs font-bold text-black/40">معلومات الدفع والتحويل البنكي</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <p className="text-black/30">طريقة الدفع</p>
+                    <p className="font-bold text-black/70">تحويل بنكي</p>
+                  </div>
+                  <div>
+                    <p className="text-black/30">البنك</p>
+                    <p className="font-bold text-black/70">{bank.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-black/30">رقم الآيبان (IBAN)</p>
+                    <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.iban}</p>
+                  </div>
+                  <div>
+                    <p className="text-black/30">اسم المستفيد</p>
+                    <p className="font-bold text-black/70">{bank.beneficiaryName}</p>
+                  </div>
+                  {bank.accountNumber && (
+                    <div>
+                      <p className="text-black/30">رقم الحساب</p>
+                      <p className="font-bold text-black/70 font-mono" dir="ltr">{bank.accountNumber}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
