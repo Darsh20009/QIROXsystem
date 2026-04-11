@@ -980,7 +980,7 @@ export async function registerRoutes(
       if (method === "totp") {
         if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
         const speakeasy = await import("speakeasy");
-        verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), step: 15, window: 3 });
+        verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(code), step: 30, window: 2 });
       } else if (method === "email") {
         if (!code || String(code).length !== 6) return res.status(400).json({ error: "أدخل رمز التحقق المكون من 6 أرقام" });
         const latestOtp = await OtpModel.findOne({ email: dbUser.email, type: "2fa_email", used: false }).sort({ createdAt: -1 });
@@ -10585,10 +10585,10 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         return res.status(409).json({ error: "المستخدم مسجّل بالفعل", code: "ALREADY_ENROLLED", enrolled: true });
       }
 
-      // Generate new TOTP secret (period=15 for QiroxAuthenticator compatibility)
+      // Generate new TOTP secret (period=30 — standard TOTP)
       const label = display_name ? `${ctx.app.name}:${display_name}` : `${ctx.app.name}:${external_user_id}`;
       const secret = speakeasy.default.generateSecret({ name: label, length: 20 });
-      const otpauthUrl = `otpauth://totp/${encodeURIComponent(label)}?secret=${secret.base32}&issuer=${encodeURIComponent(ctx.app.name)}&period=15`;
+      const otpauthUrl = `otpauth://totp/${encodeURIComponent(label)}?secret=${secret.base32}&issuer=${encodeURIComponent(ctx.app.name)}&period=30`;
 
       // Upsert enrollment record (unconfirmed)
       await AuthAppEnrollmentModel.findOneAndUpdate(
@@ -10632,8 +10632,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         secret: (enrollment as any).totpSecret,
         encoding: "base32",
         token: String(code),
-        step: 15,
-        window: 3,
+        step: 30,
+        window: 2,
       });
       if (!valid) return res.status(400).json({ error: "الرمز غير صحيح أو منتهي الصلاحية", code: "INVALID_CODE", confirmed: false });
 
@@ -10675,8 +10675,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
         secret: (enrollment as any).totpSecret,
         encoding: "base32",
         token: String(code),
-        step: 15,
-        window: 3,
+        step: 30,
+        window: 2,
       });
 
       if (!valid) {
@@ -10755,8 +10755,8 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const user = req.user as any;
       const secret = speakeasy.default.generateSecret({ name: `Qirox (${user.email || user.username})`, length: 20 });
       await UserModel.findByIdAndUpdate(user._id || user.id, { totpSecret: secret.base32 });
-      // Build otpauth_url with period=15 for QiroxAuthenticator
-      const otpauthUrl = `otpauth://totp/Qirox:${encodeURIComponent(user.email || user.username)}?secret=${secret.base32}&issuer=Qirox&period=15`;
+      // Build otpauth_url with standard period=30
+      const otpauthUrl = `otpauth://totp/Qirox:${encodeURIComponent(user.email || user.username)}?secret=${secret.base32}&issuer=Qirox&period=30`;
       res.json({ secret: secret.base32, otpauth_url: otpauthUrl });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10770,7 +10770,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { token } = req.body;
       const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
       if (!dbUser || !dbUser.totpSecret) return res.status(400).json({ error: "لم يتم إعداد المفتاح السري" });
-      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 15, window: 3 });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 30, window: 2 });
       if (!verified) return res.status(400).json({ error: "الرمز غير صحيح" });
       await UserModel.findByIdAndUpdate(user._id || user.id, { totpEnabled: true });
       res.json({ ok: true });
@@ -10796,7 +10796,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const { token } = req.body;
       const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret");
       if (!dbUser?.totpEnabled || !dbUser.totpSecret) return res.status(400).json({ error: "2FA غير مفعّل" });
-      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 15, window: 3 });
+      const verified = speakeasy.default.totp.verify({ secret: dbUser.totpSecret, encoding: "base32", token: String(token), step: 30, window: 2 });
       res.json({ valid: verified });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -10809,7 +10809,7 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
       const user = req.user as any;
       const dbUser = await UserModel.findById(user._id || user.id).select("+totpSecret totpEnabled");
       if (!dbUser?.totpEnabled || !dbUser.totpSecret) return res.status(400).json({ error: "المصادق الثنائي غير مفعّل" });
-      const STEP = 15;
+      const STEP = 30;
       const nowMs = Date.now();
       const epoch = Math.floor(nowMs / 1000);
       const currentPeriod = Math.floor(epoch / STEP);
