@@ -1,0 +1,25 @@
+[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+5:55:50 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 13 cron jobs
+5:56:00 PM [express] POST /api/internal/push/promotional 200 in 82ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+5:56:15 PM [express] GET /api/notifications/unread-count 401 in 2ms
+5:57:00 PM [express] POST /api/internal/push/promotional 200 in 74ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+5:58:00 PM [express] POST /api/internal/push/promotional 200 in 81ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+5:59:00 PM [express] POST /api/internal/push/promotional 200 in 78ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+6:00:00 PM [express] POST /api/internal/push/promotional 200 in 71ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+6:01:00 PM [express] POST /api/internal/push/promotional 200 in 66ms :: {"ok":true,"sent":45,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+[Shutdown] SIGTERM received — shutting down gracefully...
+[Shutdown] HTTP server closed
+[Shutdown] MongoDB connections closed

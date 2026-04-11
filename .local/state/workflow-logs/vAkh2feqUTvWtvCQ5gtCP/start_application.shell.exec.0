@@ -1,0 +1,19 @@
+[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+9:00:20 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 13 cron jobs
+9:00:40 PM [express] POST /api/internal/push/promotional 200 in 44ms :: {"ok":true,"sent":42,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+9:01:00 PM [express] POST /api/internal/push/promotional 200 in 42ms :: {"ok":true,"sent":42,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+[Shutdown] SIGTERM received — shutting down gracefully...
+[Shutdown] HTTP server closed
+[Shutdown] MongoDB connections closed
