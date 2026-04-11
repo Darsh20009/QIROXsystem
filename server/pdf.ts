@@ -3,8 +3,10 @@ import { createRequire } from "module";
 import * as fs from "fs";
 import * as path from "path";
 
-/* fontkit is CJS — load via createRequire */
-const _require = createRequire(import.meta.url);
+/* fontkit is CJS — load via createRequire.
+   In CJS builds (production/Render), import.meta.url is undefined, so we fall
+   back to __filename which is always available in CJS. */
+const _require = createRequire((globalThis as any).__filename ?? import.meta.url);
 const fontkit  = _require("@pdf-lib/fontkit");
 
 interface QuotationData {
