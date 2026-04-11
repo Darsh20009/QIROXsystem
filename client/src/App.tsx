@@ -343,6 +343,7 @@ function AdminSettingsRedirect() {
 }
 
 const ALL_PAGES = [
+  // Client pages
   { title: "لوحة التحكم", titleEn: "Dashboard", url: "/dashboard", group: "client" },
   { title: "سلة التسوق", titleEn: "Cart", url: "/cart", group: "client" },
   { title: "الرسائل", titleEn: "Messages", url: "/inbox", group: "client" },
@@ -353,22 +354,63 @@ const ALL_PAGES = [
   { title: "طلبات البيانات", titleEn: "Data Requests", url: "/my-requests", group: "client" },
   { title: "الأجهزة والإضافات", titleEn: "Devices & Add-ons", url: "/devices", group: "client" },
   { title: "أدواتي ومميزاتي", titleEn: "My Tools", url: "/my-tools", group: "client" },
-  { title: "الباقات", titleEn: "Pricing", url: "/prices", group: "public" },
+  { title: "الباقات والأسعار", titleEn: "Pricing", url: "/prices", group: "public" },
+  { title: "مركز المساعدة", titleEn: "Help Center", url: "/help", group: "client" },
+  { title: "عروضي وتحقق الهوية", titleEn: "Phone Verify", url: "/phone-verify", group: "client" },
+  { title: "المصادقة الثنائية", titleEn: "Two-Factor Auth", url: "/settings/2fa", group: "client" },
+  // Employee / Admin pages
   { title: "الطلبات", titleEn: "Orders", url: "/admin/orders", group: "employee" },
-  { title: "عربات التسوق", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
+  { title: "عربات التسوق المتروكة", titleEn: "Abandoned Carts", url: "/employee/abandoned-carts", group: "employee" },
   { title: "إنشاء عميل وطلب", titleEn: "New Client & Order", url: "/employee/new-order", group: "employee" },
   { title: "اشتراكات العملاء", titleEn: "Client Subscriptions", url: "/employee/subscriptions", group: "employee" },
   { title: "طلبات التعديل", titleEn: "Modification Requests", url: "/admin/mod-requests", group: "employee" },
-  { title: "المالية", titleEn: "Finance", url: "/admin/finance", group: "employee" },
+  { title: "المالية والحسابات", titleEn: "Finance", url: "/admin/finance", group: "employee" },
   { title: "محافظ العملاء", titleEn: "Client Wallets", url: "/admin/wallet", group: "employee" },
   { title: "الفواتير", titleEn: "Invoices", url: "/admin/invoices", group: "employee" },
+  { title: "الإيصالات", titleEn: "Receipts", url: "/admin/receipts", group: "employee" },
   { title: "بوابة المستثمرين", titleEn: "Investor Portal", url: "/investor/portal", group: "employee" },
   { title: "ملفي الشخصي", titleEn: "My Profile", url: "/employee/profile", group: "employee" },
   { title: "الإعدادات", titleEn: "Settings", url: "/admin/settings", group: "employee" },
   { title: "لوحتي المتخصصة", titleEn: "My Role Board", url: "/employee/role-dashboard", group: "employee" },
   { title: "رسائل التواصل", titleEn: "Contact Messages", url: "/admin/contact-messages", group: "employee" },
-  { title: "مركز المساعدة", titleEn: "Help Center", url: "/help", group: "client" },
   { title: "صانع الأنظمة", titleEn: "System Builder", url: "/employee/system-builder", group: "employee" },
+  { title: "العملاء والمستخدمون", titleEn: "Customers", url: "/admin/customers", group: "employee" },
+  { title: "الموظفون", titleEn: "Employees", url: "/admin/employees", group: "employee" },
+  { title: "الإحصاءات والتحليلات", titleEn: "Analytics", url: "/admin/analytics", group: "employee" },
+  { title: "المنتجات والخدمات", titleEn: "Products", url: "/admin/products", group: "employee" },
+  { title: "الخدمات", titleEn: "Services", url: "/admin/services", group: "employee" },
+  { title: "العروض والخصومات", titleEn: "Promotions", url: "/admin/promotions", group: "employee" },
+  { title: "أكواد الخصم", titleEn: "Discount Codes", url: "/admin/discount-codes", group: "employee" },
+  { title: "الإشعارات الدفعية", titleEn: "Push Notifications", url: "/admin/push", group: "employee" },
+  { title: "العقود", titleEn: "Contracts", url: "/admin/contracts", group: "employee" },
+  { title: "عروض الأسعار", titleEn: "Quotations", url: "/admin/quotations", group: "employee" },
+  { title: "الاستشارات", titleEn: "Consultations", url: "/admin/consultations", group: "employee" },
+  { title: "التقسيط", titleEn: "Installments", url: "/admin/installments", group: "employee" },
+  { title: "التقارير المالية", titleEn: "Profit Report", url: "/admin/profit-report", group: "employee" },
+  { title: "الشحنات والتوصيل", titleEn: "Shipments", url: "/admin/shipments", group: "employee" },
+  { title: "الموردين", titleEn: "Suppliers", url: "/admin/suppliers", group: "employee" },
+  { title: "الموارد البشرية والرواتب", titleEn: "Payroll", url: "/admin/payroll", group: "employee" },
+  { title: "الحضور والانصراف", titleEn: "Attendance", url: "/admin/attendance", group: "employee" },
+  { title: "الشركاء", titleEn: "Partners", url: "/admin/partners", group: "employee" },
+  { title: "لوحة كانبان", titleEn: "Kanban Board", url: "/admin/kanban", group: "employee" },
+  { title: "برنامج الولاء", titleEn: "Loyalty Program", url: "/admin/loyalty", group: "employee" },
+  { title: "الإحالات", titleEn: "Referrals", url: "/admin/referrals", group: "employee" },
+  { title: "التقييمات والآراء", titleEn: "Reviews", url: "/admin/reviews", group: "employee" },
+  { title: "الوظائف والتوظيف", titleEn: "Jobs", url: "/admin/jobs", group: "employee" },
+  { title: "الأخبار والمدونة", titleEn: "News", url: "/admin/news", group: "employee" },
+  { title: "الدول والمناطق", titleEn: "Countries", url: "/admin/countries", group: "employee" },
+  { title: "سجل النشاطات", titleEn: "Activity Log", url: "/admin/activity", group: "employee" },
+  { title: "جلسات الذكاء الاصطناعي", titleEn: "AI Sessions", url: "/admin/ai-sessions", group: "employee" },
+  { title: "إعدادات QIROX", titleEn: "QIROX Settings", url: "/admin/qirox-settings", group: "employee" },
+  { title: "تكوين الوحدات", titleEn: "Module Config", url: "/admin/mod-config", group: "employee" },
+  { title: "اجتماعات QMeet", titleEn: "QMeet", url: "/admin/qmeet", group: "employee" },
+  { title: "بيانات المشاريع", titleEn: "Project Data", url: "/admin/project-data", group: "employee" },
+  { title: "مميزات المشاريع", titleEn: "Project Features", url: "/admin/project-features", group: "employee" },
+  { title: "الألعاب والمكافآت", titleEn: "Gamification", url: "/admin/gamification", group: "employee" },
+  { title: "مفاتيح API", titleEn: "API Keys", url: "/admin/api-keys", group: "employee" },
+  { title: "إعدادات الاتصال", titleEn: "Connection Settings", url: "/admin/connection-settings", group: "employee" },
+  { title: "تحقق الهاتف", titleEn: "Phone Verifications", url: "/admin/phone-verifications", group: "employee" },
+  { title: "الاشتراكات الإضافية", titleEn: "Addon Subscriptions", url: "/admin/addon-subscriptions", group: "employee" },
 ];
 
 function GlobalSearch() {
@@ -385,7 +427,7 @@ function GlobalSearch() {
     queryKey: ["/api/search", q],
     queryFn: async () => {
       if (q.length < 2) return { orders: [], projects: [], clients: [] };
-      const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { credentials: "include" });
       if (!r.ok) return { orders: [], projects: [], clients: [] };
       return r.json();
     },
@@ -417,13 +459,24 @@ function GlobalSearch() {
 
   const isAdmin = user?.role !== "client";
   const ql = q.toLowerCase();
+  // Normalize Arabic text: remove diacritics and normalize alef variants for fuzzy matching
+  const normalizeAr = (s: string) => s
+    .replace(/[\u064B-\u065F]/g, "")
+    .replace(/[أإآا]/g, "ا")
+    .replace(/[ةه]/g, "ه")
+    .replace(/[يى]/g, "ي")
+    .toLowerCase();
+  const qNorm = normalizeAr(q);
 
   const pageResults = q.length >= 2
     ? ALL_PAGES.filter(p => {
-        const matchesGroup = isAdmin ? (p.group === "employee" || p.group === "client") : p.group !== "employee";
-        const matchesQuery = p.title.includes(q) || p.titleEn.toLowerCase().includes(ql) || p.url.includes(ql);
+        const matchesGroup = isAdmin ? (p.group === "employee" || p.group === "client" || p.group === "public") : p.group !== "employee";
+        const matchesQuery =
+          normalizeAr(p.title).includes(qNorm) ||
+          p.titleEn.toLowerCase().includes(ql) ||
+          p.url.includes(ql);
         return matchesGroup && matchesQuery;
-      }).slice(0, 4)
+      }).slice(0, 6)
     : [];
 
   const totalResults =
