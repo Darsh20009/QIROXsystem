@@ -1,5 +1,5 @@
-const CACHE_NAME = "qirox-v14";
-const RUNTIME_CACHE = "qirox-runtime-v14";
+const CACHE_NAME = "qirox-v15";
+const RUNTIME_CACHE = "qirox-runtime-v15";
 
 const STATIC_ASSETS = [
   "/",
@@ -227,16 +227,24 @@ self.addEventListener("push", (event) => {
 // ─── Notification Click ────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "/dashboard";
+  const rawUrl = event.notification.data?.url || "/dashboard";
   if (event.action === "dismiss") return;
+
+  // Ensure absolute URL for openWindow (required in some browsers)
+  const targetUrl = rawUrl.startsWith("http")
+    ? rawUrl
+    : self.location.origin + rawUrl;
+
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Prefer an already-open tab from our origin
       for (const client of clients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.postMessage({ type: "NAVIGATE", url: targetUrl });
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          client.postMessage({ type: "NAVIGATE", url: rawUrl });
           return client.focus();
         }
       }
+      // No open tab — open a new one
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );

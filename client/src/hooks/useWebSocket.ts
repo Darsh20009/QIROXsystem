@@ -2,6 +2,7 @@ import { createElement, useEffect, useRef, useCallback } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { useLocation } from "wouter";
 
 function playQiroxSound() {
   try {
@@ -36,6 +37,7 @@ export function useWebSocket(userId: string | undefined) {
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const destroyed = useRef(false);
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const connect = useCallback(() => {
     if (!userId || destroyed.current) return;
@@ -102,18 +104,13 @@ export function useWebSocket(userId: string | undefined) {
         if (data.type === "push_auth_challenge" && data.challengeId) {
           playQiroxSound();
           const challengeUrl = `/auth/push-approve?id=${data.challengeId}`;
+          // Auto-navigate to the approval page immediately — this is a security event
+          // that requires immediate user attention on the trusted device.
+          navigate(challengeUrl);
           toast({
             title: "🔐 محاولة تسجيل دخول جديدة",
             description: `رقم التأكيد: ${data.number} · ${data.deviceInfo || "جهاز غير معروف"}`,
             duration: 30000,
-            action: createElement(
-              ToastAction,
-              {
-                altText: "موافقة / رفض",
-                onClick: () => { window.location.href = challengeUrl; },
-              },
-              "موافقة / رفض"
-            ),
           });
         }
       } catch {}
@@ -132,7 +129,7 @@ export function useWebSocket(userId: string | undefined) {
         if (!destroyed.current) connect();
       }, delay);
     };
-  }, [userId, toast]);
+  }, [userId, toast, navigate]);
 
   useEffect(() => {
     if (!userId) return;

@@ -19,7 +19,12 @@ export interface PushPayload {
   data?: { url?: string; [key: string]: any };
 }
 
-export async function sendWebPush(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }, payload: PushPayload): Promise<boolean> {
+export async function sendWebPush(
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+  payload: PushPayload,
+  options?: { urgency?: "very-low" | "low" | "normal" | "high" | "very-high"; ttl?: number }
+): Promise<boolean> {
+  const isAuthChallenge = payload.tag?.startsWith("push-auth-");
   try {
     await webpush.sendNotification(
       {
@@ -35,7 +40,11 @@ export async function sendWebPush(subscription: { endpoint: string; keys: { p256
         tag: payload.tag || "qirox",
         requireInteraction: payload.requireInteraction ?? false,
         data: payload.data || { url: "/dashboard" },
-      })
+      }),
+      {
+        TTL: options?.ttl ?? 86400,
+        urgency: (options?.urgency ?? (isAuthChallenge ? "high" : "normal")) as any,
+      }
     );
     return true;
   } catch (err: any) {
