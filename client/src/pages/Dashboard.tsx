@@ -1845,6 +1845,9 @@ export default function Dashboard() {
       .filter(Boolean)
   );
   const unlinkedOrders = (orders || []).filter((o: any) => !linkedOrderIds.has(String(o.id)));
+  const activeUnlinkedOrders = unlinkedOrders.filter((o: any) =>
+    o.status === 'approved' || o.status === 'in_progress'
+  );
   const completedOrders = orders?.filter((o: any) => (o.status as string) === 'completed') || [];
   const totalSpent = orders?.reduce((sum: number, o: any) => {
     if ((o.status as string) === 'completed' || (o.status as string) === 'approved' || o.status === 'in_progress') {
@@ -2336,7 +2339,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            ) : activeProjects.length === 0 ? (
+            ) : activeProjects.length === 0 && activeUnlinkedOrders.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.08] p-16 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-3xl bg-black/[0.03] dark:bg-white/[0.05] flex items-center justify-center mb-5">
                   <Layers className="w-10 h-10 text-black/10 dark:text-white/10" />
@@ -2359,6 +2362,80 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-5">
+                {/* Active orders without a formal project yet */}
+                {activeUnlinkedOrders.map((order: any, i: number) => {
+                  const st = statusMap[order.status] || statusMap['pending'];
+                  const StatusIcon = st.icon;
+                  const serviceLabel = L ? (({
+                    restaurant: "مطعم وكافيه", store: "متجر إلكتروني", education: "منصة تعليمية",
+                    health: "صحة ولياقة", realestate: "عقارات", website: "موقع ويب",
+                    app: "تطبيق جوال", corporate: "شركة ومؤسسة", other: "خدمة عامة"
+                  } as Record<string,string>)[order?.sector || order?.serviceType || ""] || order?.serviceType || "مشروع رقمي")
+                  : (({
+                    restaurant: "Restaurant & Cafe", store: "E-commerce Store", education: "Education Platform",
+                    health: "Health & Fitness", realestate: "Real Estate", website: "Website",
+                    app: "Mobile App", corporate: "Corporate System", other: "General Service"
+                  } as Record<string,string>)[order?.sector || order?.serviceType || ""] || order?.serviceType || "Digital Project");
+                  return (
+                    <motion.div key={order.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+                      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-black/[0.06] dark:border-white/[0.07] overflow-hidden" data-testid={`active-order-card-${order.id}`}>
+                        {/* Dark header */}
+                        <div className="bg-gradient-to-br from-black via-gray-900 to-gray-800 p-5 relative overflow-hidden">
+                          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+                          <div className="relative flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${st.bg} ${st.color}`}>{st.label}</span>
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-white/5 text-white/40 border border-white/10">{serviceLabel}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-mono text-[10px] font-bold text-white/50 tracking-widest bg-white/10 px-1.5 py-0.5 rounded-md shrink-0">#{String(order.id)?.slice(-6).toUpperCase()}</span>
+                              </div>
+                              <h4 className="font-black text-white text-sm leading-tight line-clamp-2">
+                                {order.businessName || order.serviceType || (L ? "طلب قيد التنفيذ" : "Order In Progress")}
+                              </h4>
+                              <p className="text-[10px] text-white/35 mt-0.5">
+                                {order.createdAt ? (L ? `بدأ ${new Date(order.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}` : `Started ${new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`) : ""}
+                              </p>
+                            </div>
+                            <div className="shrink-0 w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                              <StatusIcon className="w-7 h-7 text-white/60" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="flex-1 h-1.5 bg-black/[0.05] dark:bg-white/[0.06] rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full bg-indigo-500 rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{ width: order.status === 'in_progress' ? '60%' : '35%' }}
+                                transition={{ duration: 1.2, ease: "easeOut" }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-bold text-black/40 dark:text-white/40">
+                              {order.status === 'in_progress' ? (L ? "قيد التنفيذ" : "In Progress") : (L ? "تمت الموافقة" : "Approved")}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 pt-3 border-t border-black/[0.04] dark:border-white/[0.05]">
+                            <button
+                              onClick={() => setClientSpecsOrderId(String(order.id))}
+                              className="flex items-center gap-1.5 h-8 px-4 text-[11px] rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 font-bold"
+                              data-testid={`button-order-specs-${order.id}`}
+                            >
+                              <Eye className="w-3 h-3" /> {L ? "مواصفات الطلب" : "Order Specs"}
+                            </button>
+                            <Link href="/project/chat">
+                              <Button size="sm" variant="outline" className="h-8 px-3 text-[11px] rounded-xl border-black/[0.08] dark:border-white/[0.1] gap-1.5">
+                                <MessageSquare className="w-3 h-3" /> {L ? "تواصل" : "Chat"}
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
                 {activeProjects.map((project: any, i: number) => {
                   const st = statusMap[project.status] || statusMap['pending'];
                   const pct = project.progress || 0;
