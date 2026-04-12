@@ -1,0 +1,258 @@
+[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+10:15:51 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[ConnManager] QMeet DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 14 cron jobs
+10:16:00 PM [express] POST /api/internal/push/promotional 200 in 44ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:17:00 PM [express] POST /api/internal/push/promotional 200 in 55ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:18:00 PM [express] POST /api/internal/push/promotional 200 in 36ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:19:00 PM [express] POST /api/internal/push/promotional 200 in 30ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:20:00 PM [express] POST /api/internal/push/promotional 200 in 175ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:21:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:21:45 PM [express] GET /api/user 401 in 1ms
+10:21:45 PM [express] GET /api/public/settings 200 in 85ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+10:21:46 PM [express] GET /api/app-downloads 200 in 24ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+10:21:46 PM [express] GET /api/partners 200 in 154ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+10:21:46 PM [express] GET /api/templates 200 in 46ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cent…
+10:21:47 PM [express] GET /api/discount-codes/public 200 in 24ms :: []
+10:21:54 PM [express] GET /api/auth/google/status 200 in 1ms :: {"enabled":true}
+10:21:54 PM [express] GET /api/auth/apple/status 200 in 0ms :: {"enabled":true}
+10:21:54 PM [express] GET /api/auth/github/status 200 in 0ms :: {"enabled":false}
+10:21:57 PM [express] POST /api/login 200 in 187ms :: {"requires2FA":true,"methods":["push","totp","email","passphrase"],"tempToken":"e9e03f73da9d9f059d828c66a4e569e671c7ab0782a63a524467956b0fa7c6fb"}
+10:22:00 PM [express] POST /api/internal/push/promotional 200 in 47ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:22:14 PM [express] POST /api/auth/push-challenge/request 200 in 131ms :: {"challengeId":"2459f9287d6a1ac13647fd93be2c776a","number":76}
+10:22:14 PM [express] GET /api/auth/push-challenge/status/2459f9287d6a1ac13647fd93be2c776a 200 in 33ms :: {"status":"pending","number":76}
+10:22:16 PM [express] GET /api/auth/push-challenge/status/2459f9287d6a1ac13647fd93be2c776a 304 in 21ms :: {"status":"pending","number":76}
+10:22:18 PM [express] POST /api/auth/push-challenge/request 200 in 101ms :: {"challengeId":"2c9dafd876658eeedba76d83143b3c77","number":88}
+10:22:18 PM [express] GET /api/auth/push-challenge/status/2c9dafd876658eeedba76d83143b3c77 200 in 35ms :: {"status":"pending","number":88}
+10:22:21 PM [express] GET /api/auth/push-challenge/status/2c9dafd876658eeedba76d83143b3c77 304 in 22ms :: {"status":"pending","number":88}
+10:23:00 PM [express] POST /api/internal/push/promotional 200 in 31ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:23:08 PM [express] POST /api/auth/verify-2fa 200 in 219ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","pho…
+10:23:08 PM [express] GET /api/user 200 in 33ms :: {"renewalReminderSentAt":null,"isProjectLive":false,"projectLiveAt":null,"instagram":"","twitter":"","snapchat":"","tiktok":"","youtube":"","linktree":"","phoneVerified":f…
+10:23:09 PM [express] GET /api/notifications/unread-count 200 in 171ms :: {"count":6}
+10:23:09 PM [express] GET /api/inbox/unread-count 200 in 60ms :: {"count":0}
+10:23:09 PM [express] GET /api/badges 200 in 285ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:23:09 PM [express] GET /api/notifications 200 in 315ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:23:09 PM [express] GET /api/attendance/status 200 in 318ms :: {"location":{"lat":24.60190601694043,"lng":46.65137306848707},"checkInNotes":"","checkOutNotes":"","achievements":"","activeMinutes":0,"userId":"69a487f0a188…
+10:23:09 PM [express] GET /api/orders/pending-count 200 in 53ms :: {"count":0}
+10:23:10 PM [express] GET /api/admin/system-overview 200 in 504ms :: {"overview":{"totalClients":47,"totalEmployees":3,"totalRevenue":3499,"totalOrders":28,"pendingOrders":0,"inProgressOrders":0,"completedOrders":1,"totalI…
+10:23:16 PM [express] GET /api/push/vapid-key 200 in 34ms :: {"publicKey":"BLRtNQGf06MwAy3q0FwWjWpRuxSRWS2VFQhO-ur-dl9koLyw92Evq1C3E_qCCcJR3seVMuL_df58h7NcvyA5ra4"}
+10:23:17 PM [express] POST /api/push/subscribe 200 in 98ms :: {"ok":true}
+10:23:29 PM [express] GET /api/search 200 in 86ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:29 PM [express] GET /api/search 200 in 73ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:29 PM [express] GET /api/notifications 304 in 100ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:23:29 PM [express] GET /api/search 200 in 84ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:30 PM [express] GET /api/search 200 in 82ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:30 PM [express] GET /api/search 200 in 102ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:30 PM [express] GET /api/search 200 in 75ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:35 PM [express] GET /api/search 200 in 93ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:35 PM [express] GET /api/search 200 in 79ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:37 PM [express] GET /api/search 200 in 126ms :: {"orders":[{"id":"69a12fdd5a5a2377125a1485","projectType":"نظام المطاعم والكافيهات","sector":"general","status":"cancelled","totalAmount":1379,"createdAt":"2026-02-27T0…
+10:23:37 PM [express] GET /api/search 200 in 87ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:38 PM [express] GET /api/search 200 in 92ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:38 PM [express] GET /api/search 200 in 95ms :: {"orders":[],"projects":[],"clients":[]}
+10:23:39 PM [express] GET /api/inbox/unread-count 304 in 30ms :: {"count":0}
+10:23:39 PM [express] GET /api/badges 304 in 30ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:23:39 PM [express] GET /api/orders/pending-count 304 in 55ms :: {"count":0}
+10:23:42 PM [express] GET /api/admin/partners 200 in 54ms :: [{"name":"tuwaiq association","nameAr":"جمعية طويق","logoUrl":"/uploads/8b6bf8667f70f75c3d0c140693dbb703.jpeg","websiteUrl":"https://tuwaiqassociation.sa","categ…
+10:23:49 PM [express] GET /api/notifications 304 in 52ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:24:00 PM [express] POST /api/internal/push/promotional 200 in 32ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:24:09 PM [express] GET /api/inbox/unread-count 304 in 61ms :: {"count":0}
+10:24:09 PM [express] GET /api/badges 304 in 61ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:24:09 PM [express] GET /api/orders/pending-count 304 in 53ms :: {"count":0}
+10:24:10 PM [express] GET /api/notifications 304 in 55ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:24:30 PM [express] GET /api/notifications 304 in 54ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:24:39 PM [express] GET /api/inbox/unread-count 304 in 31ms :: {"count":0}
+10:24:40 PM [express] GET /api/badges 304 in 30ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:24:40 PM [express] GET /api/orders/pending-count 304 in 58ms :: {"count":0}
+10:24:51 PM [express] GET /api/notifications 304 in 57ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:25:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:25:10 PM [express] GET /api/inbox/unread-count 304 in 52ms :: {"count":0}
+10:25:10 PM [express] GET /api/badges 304 in 202ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:25:10 PM [express] GET /api/orders/pending-count 304 in 52ms :: {"count":0}
+10:25:11 PM [express] GET /api/notifications 304 in 56ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:25:31 PM [express] GET /api/notifications 304 in 54ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:25:39 PM [express] POST /api/upload 200 in 173ms :: {"url":"/uploads/80c745d1f89526402d1026debc8031a7.png","filename":"Screenshot 2026-01-28 010045.png","size":57630}
+10:25:40 PM [express] GET /api/inbox/unread-count 304 in 32ms :: {"count":0}
+10:25:40 PM [express] GET /api/badges 304 in 35ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:25:40 PM [express] GET /api/orders/pending-count 304 in 53ms :: {"count":0}
+10:25:51 PM [express] GET /api/notifications 304 in 55ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:26:00 PM [express] POST /api/internal/push/promotional 200 in 189ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:26:10 PM [express] GET /api/inbox/unread-count 304 in 65ms :: {"count":0}
+10:26:11 PM [express] GET /api/badges 304 in 64ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:26:11 PM [express] GET /api/orders/pending-count 304 in 59ms :: {"count":0}
+10:26:12 PM [express] GET /api/notifications 304 in 100ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:26:32 PM [express] GET /api/notifications 304 in 67ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:26:40 PM [express] GET /api/inbox/unread-count 304 in 31ms :: {"count":0}
+10:26:41 PM [express] GET /api/badges 304 in 31ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:26:41 PM [express] GET /api/orders/pending-count 304 in 53ms :: {"count":0}
+10:26:52 PM [express] GET /api/notifications 304 in 102ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:27:00 PM [express] POST /api/internal/push/promotional 200 in 200ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:27:12 PM [express] GET /api/orders/pending-count 304 in 76ms :: {"count":0}
+10:27:12 PM [express] GET /api/inbox/unread-count 304 in 63ms :: {"count":0}
+10:27:12 PM [express] GET /api/notifications 304 in 54ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:27:13 PM [express] GET /api/badges 304 in 80ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:27:33 PM [express] GET /api/notifications 304 in 55ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:27:42 PM [express] GET /api/orders/pending-count 304 in 54ms :: {"count":0}
+10:27:42 PM [express] GET /api/inbox/unread-count 304 in 31ms :: {"count":0}
+10:27:43 PM [express] GET /api/badges 304 in 32ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:27:53 PM [express] GET /api/notifications 304 in 99ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:28:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:28:12 PM [express] GET /api/orders/pending-count 304 in 74ms :: {"count":0}
+10:28:13 PM [express] GET /api/inbox/unread-count 304 in 62ms :: {"count":0}
+10:28:13 PM [express] GET /api/badges 304 in 76ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:28:13 PM [express] GET /api/notifications 304 in 53ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:28:34 PM [express] GET /api/notifications 304 in 99ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:28:42 PM [express] GET /api/orders/pending-count 304 in 56ms :: {"count":0}
+10:28:43 PM [express] GET /api/inbox/unread-count 304 in 32ms :: {"count":0}
+10:28:43 PM [express] GET /api/badges 304 in 30ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:28:51 PM [express] POST /api/admin/partners 201 in 150ms :: {"name":"بلاك روز كافيه","nameAr":"BlackRose Cafe","logoUrl":"/uploads/80c745d1f89526402d1026debc8031a7.png","websiteUrl":"https://blackrose.com.sa","category"…
+10:28:51 PM [express] GET /api/admin/partners 200 in 73ms :: [{"name":"بلاك روز كافيه","nameAr":"BlackRose Cafe","logoUrl":"/uploads/80c745d1f89526402d1026debc8031a7.png","websiteUrl":"https://blackrose.com.sa","category":…
+10:28:54 PM [express] GET /api/notifications 304 in 100ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:29:00 PM [express] POST /api/internal/push/promotional 200 in 42ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:29:13 PM [express] GET /api/orders/pending-count 304 in 53ms :: {"count":0}
+10:29:13 PM [express] GET /api/inbox/unread-count 304 in 59ms :: {"count":0}
+10:29:14 PM [express] GET /api/badges 304 in 63ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:29:14 PM [express] GET /api/notifications 304 in 56ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:29:34 PM [express] GET /api/notifications 304 in 116ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:29:43 PM [express] GET /api/orders/pending-count 304 in 52ms :: {"count":0}
+10:29:43 PM [express] GET /api/inbox/unread-count 304 in 40ms :: {"count":0}
+10:29:44 PM [express] GET /api/badges 304 in 31ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:29:55 PM [express] GET /api/notifications 304 in 52ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:30:00 PM [express] POST /api/internal/push/promotional 200 in 34ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:30:13 PM [express] GET /api/orders/pending-count 304 in 59ms :: {"count":0}
+10:30:13 PM [express] GET /api/inbox/unread-count 304 in 58ms :: {"count":0}
+10:30:14 PM [express] GET /api/badges 304 in 62ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:30:14 PM [express] POST /api/upload 200 in 33ms :: {"url":"/uploads/15754f1e4120c86873413590cd42521a.png","filename":"Screenshot 2026-04-11 200431.png","size":33246}
+10:30:15 PM [express] GET /api/notifications 304 in 107ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:30:35 PM [express] GET /api/notifications 304 in 57ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:30:43 PM [express] GET /api/orders/pending-count 304 in 58ms :: {"count":0}
+10:30:44 PM [express] GET /api/inbox/unread-count 304 in 30ms :: {"count":0}
+10:30:44 PM [express] GET /api/badges 304 in 32ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:30:56 PM [express] GET /api/notifications 304 in 101ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:31:00 PM [express] POST /api/internal/push/promotional 200 in 22ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:31:14 PM [express] GET /api/orders/pending-count 304 in 54ms :: {"count":0}
+10:31:14 PM [express] GET /api/inbox/unread-count 304 in 52ms :: {"count":0}
+10:31:15 PM [express] GET /api/badges 304 in 64ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:31:16 PM [express] GET /api/notifications 304 in 55ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:31:36 PM [express] GET /api/notifications 304 in 57ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:31:44 PM [express] GET /api/orders/pending-count 304 in 53ms :: {"count":0}
+10:31:44 PM [express] GET /api/inbox/unread-count 304 in 31ms :: {"count":0}
+10:31:45 PM [express] GET /api/badges 304 in 31ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:31:56 PM [express] GET /api/notifications 304 in 51ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:32:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:32:14 PM [express] GET /api/orders/pending-count 304 in 83ms :: {"count":0}
+10:32:14 PM [express] GET /api/inbox/unread-count 304 in 59ms :: {"count":0}
+10:32:15 PM [express] GET /api/badges 304 in 56ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:32:17 PM [express] GET /api/notifications 304 in 109ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عب…
+10:32:37 PM [express] GET /api/notifications 304 in 54ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:32:44 PM [express] GET /api/orders/pending-count 304 in 57ms :: {"count":0}
+10:32:45 PM [express] GET /api/inbox/unread-count 304 in 31ms :: {"count":0}
+10:32:45 PM [express] GET /api/badges 304 in 31ms :: {"messages":0,"tickets":0,"orders":0,"modRequests":0,"consultations":0,"dataRequests":0,"contactMessages":0,"phoneRequests":11,"total":11}
+10:32:46 PM [express] POST /api/admin/partners 201 in 82ms :: {"name":"Mafasel ","nameAr":"مفاصل للتقنية الصحية","logoUrl":"/uploads/15754f1e4120c86873413590cd42521a.png","websiteUrl":"https://mafaseltech.com","category":"…
+10:32:46 PM [express] GET /api/admin/partners 200 in 73ms :: [{"name":"Mafasel ","nameAr":"مفاصل للتقنية الصحية","logoUrl":"/uploads/15754f1e4120c86873413590cd42521a.png","websiteUrl":"https://mafaseltech.com","category":"…
+10:32:57 PM [express] GET /api/notifications 304 in 74ms :: [{"_id":"69dc10edc6263fde611c0536","forAdmins":true,"type":"info","title":"📞 طلب توثيق جوال — Sultan","body":"العميل Sultan يطلب التحقق من رقمه +966545425452 عبر…
+10:32:58 PM [express] POST /api/upload 200 in 34ms :: {"url":"/uploads/4dcb30febb869843277cfae588d69257.png","filename":"Screenshot 2026-04-11 203825.png","size":5527}
+10:33:00 PM [express] POST /api/internal/push/promotional 200 in 22ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+(node:1669) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(Use `node --trace-warnings ...` to show where the warning was created)
+10:33:03 PM [express] PATCH /api/admin/partners/69dc1d8e8934f3bfb63a7ab8 200 in 102ms :: {"name":"Mafasel ","nameAr":"مفاصل للتقنية الصحية","logoUrl":"/uploads/4dcb30febb869843277cfae588d69257.png","websiteUrl":"https://ma…
+10:33:03 PM [express] GET /api/admin/partners 200 in 277ms :: [{"name":"Mafasel ","nameAr":"مفاصل للتقنية الصحية","logoUrl":"/uploads/4dcb30febb869843277cfae588d69257.png","websiteUrl":"https://mafaseltech.com","category":…
+10:33:06 PM [express] GET /api/notifications/unread-count 304 in 54ms :: {"count":6}
+10:33:09 PM [express] POST /api/logout 200 in 176ms
+10:33:09 PM [express] GET /api/app-downloads 304 in 54ms :: {"playStore":{"url":"https://apkpure.com/p/online.qiroxstudio.twa","enabled":true},"appStore":{"url":"","enabled":false},"msStore":{"url":"https://apps.microsoft.…
+10:33:09 PM [express] GET /api/partners 200 in 262ms :: [{"name":"cluny cafe","nameAr":"كلوني كافيه","logoUrl":"/uploads/1d8ee746c22e9535ba72203472d5bf39.png","websiteUrl":"https://cluny.cafe","category":"كافيه","sortOrder…
+10:33:09 PM [express] GET /api/public/settings 304 in 82ms :: {"instagram":"https://www.instagram.com/qiroxstudio.sa?igsh=MTJ3dXdheG84NGsxbg==","twitter":"https://x.com/qiroxstudiosa?s=21","linkedin":"https://www.linkedin.…
+10:33:10 PM [express] GET /api/discount-codes/public 304 in 56ms :: []
+10:33:10 PM [express] GET /api/templates 304 in 209ms :: [{"createdBy":null,"name":"Beauty and salon","nameAr":"التجميل و الصالونات","slug":"Beauty and salon","description":"Digital Transformation for Beauty & Wellness Cen…
+10:34:00 PM [express] POST /api/internal/push/promotional 200 in 26ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:35:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:36:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:37:00 PM [express] POST /api/internal/push/promotional 200 in 29ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:38:00 PM [express] POST /api/internal/push/promotional 200 in 31ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:38:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+10:39:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:40:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+10:41:00 PM [express] POST /api/internal/push/promotional 200 in 23ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:41:02 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:41:12 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+
+[Shutdown] SIGTERM received — shutting down gracefully...

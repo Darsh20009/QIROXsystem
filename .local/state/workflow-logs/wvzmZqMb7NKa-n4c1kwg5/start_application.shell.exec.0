@@ -1,0 +1,118 @@
+[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+10:41:22 PM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 14 cron jobs
+10:41:42 PM [express] GET /api/notifications/unread-count 401 in 2ms
+10:42:00 PM [express] POST /api/internal/push/promotional 200 in 37ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:42:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+10:43:00 PM [express] POST /api/internal/push/promotional 200 in 37ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:43:26 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+10:44:00 PM [express] POST /api/internal/push/promotional 200 in 22ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m10:44:02 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x4)[39m
+
+[Shutdown] SIGTERM received — shutting down gracefully...
+[Shutdown] HTTP server closed
+[Shutdown] MongoDB connections closed
