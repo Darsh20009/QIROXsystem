@@ -5148,6 +5148,15 @@ export async function registerRoutes(
         return;
       }
 
+      // Invalidate in-memory user cache so next /api/user fetch reflects emailVerified: true
+      const userId = String((user as any)._id || (user as any).id);
+      invalidateUserCache(userId);
+
+      // Update req.user in the current session so immediate /api/user calls see the change
+      if (req.user) {
+        (req.user as any).emailVerified = true;
+      }
+
       // Extend session to 14 days after successful verification
       const SESSION_14_DAYS = 14 * 24 * 60 * 60 * 1000;
       if (req.session && req.session.cookie) {

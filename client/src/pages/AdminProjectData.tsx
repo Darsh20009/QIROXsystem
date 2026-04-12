@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
@@ -9,7 +9,8 @@ import {
   ExternalLink, Search, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Clock, Package, FolderOpen,
   Pen, AlertCircle, Star, Image as ImageIcon,
-  Loader2, Layers, TrendingUp, Copy, Check, Video, Send
+  Loader2, Layers, TrendingUp, Copy, Check, Video, Send,
+  Server, Code2, Database, KeyRound, Globe, Lock, Link2, Terminal
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@/hooks/use-auth";
@@ -172,8 +173,21 @@ function OrderCard({ order: initialOrder }: { order: any }) {
   const [meetTime, setMeetTime]   = useState("");
   const [meetLink, setMeetLink]   = useState("");
   const [showMeetForm, setShowMeetForm] = useState(false);
+  const [specs, setSpecs] = useState<any>(null);
+  const [specsLoading, setSpecsLoading] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (expanded && !specs && !specsLoading) {
+      const ordId = order._id || order.id;
+      setSpecsLoading(true);
+      fetch(`/api/admin/orders/${ordId}/specs`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : {})
+        .then(data => { setSpecs(data || {}); setSpecsLoading(false); })
+        .catch(() => { setSpecs({}); setSpecsLoading(false); });
+    }
+  }, [expanded]);
 
   const w = order.wizardData || {};
   const status = STATUS_MAP[order.status] || STATUS_MAP.pending;
@@ -639,6 +653,101 @@ function OrderCard({ order: initialOrder }: { order: any }) {
                       ["العنوان", order.shippingAddress?.address],
                     ].map(([label, val], i) => <InfoRow key={i} label={label as string} value={val} />)}
                   </div>
+                </Section>
+              )}
+
+              {/* ── التفاصيل التقنية (specs) ── */}
+              {specsLoading && (
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500 py-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  جارٍ تحميل التفاصيل التقنية...
+                </div>
+              )}
+              {specs && (specs.techStack || specs.framework || specs.language || specs.database || specs.hosting || specs.githubRepoUrl || specs.serverIp || specs.databaseUri || specs.deploymentUsername || specs.deploymentPassword || specs.customDomain || specs.productionUrl || specs.stagingUrl || specs.projectConcept || specs.mainFeatures || specs.variables || specs.referenceLinks || specs.colorPalette || specs.estimatedHours || specs.deadline || specs.notes || specs.teamNotes) && (
+                <Section icon={Server} title="التفاصيل التقنية (داخلي)" color="rose">
+                  {/* Stack */}
+                  {(specs.techStack || specs.framework || specs.language || specs.database || specs.hosting) && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl px-4 py-1 mb-3">
+                      <div className="flex items-center gap-1.5 py-2 border-b border-gray-100 dark:border-white/[0.04]">
+                        <Code2 className="w-3 h-3 text-gray-400 dark:text-slate-500 shrink-0" />
+                        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Stack</span>
+                      </div>
+                      <InfoRow label="التقنيات"   value={specs.techStack} />
+                      <InfoRow label="الإطار"      value={specs.framework} />
+                      <InfoRow label="اللغة"       value={specs.language} />
+                      <InfoRow label="قاعدة البيانات" value={specs.database} />
+                      <InfoRow label="الاستضافة"  value={specs.hosting} />
+                    </div>
+                  )}
+                  {/* Infrastructure */}
+                  {(specs.githubRepoUrl || specs.serverIp || specs.customDomain || specs.productionUrl || specs.stagingUrl) && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl px-4 py-1 mb-3">
+                      <div className="flex items-center gap-1.5 py-2 border-b border-gray-100 dark:border-white/[0.04]">
+                        <Globe className="w-3 h-3 text-gray-400 dark:text-slate-500 shrink-0" />
+                        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Infrastructure</span>
+                      </div>
+                      <InfoRow label="رابط GitHub"       value={specs.githubRepoUrl} />
+                      <InfoRow label="IP الخادم"         value={specs.serverIp} />
+                      <InfoRow label="الدومين"           value={specs.customDomain} />
+                      <InfoRow label="رابط الإنتاج"      value={specs.productionUrl} />
+                      <InfoRow label="رابط التجربة"      value={specs.stagingUrl} />
+                      <InfoRow label="SSL"                value={specs.sslEnabled !== undefined ? (specs.sslEnabled ? "مفعّل" : "غير مفعّل") : undefined} />
+                      <InfoRow label="CDN"                value={specs.cdnEnabled !== undefined ? (specs.cdnEnabled ? "مفعّل" : "غير مفعّل") : undefined} />
+                    </div>
+                  )}
+                  {/* Credentials */}
+                  {(specs.databaseUri || specs.deploymentUsername || specs.deploymentPassword) && (
+                    <div className="bg-red-50 dark:bg-red-500/[0.05] border border-red-100 dark:border-red-500/10 rounded-xl px-4 py-1 mb-3">
+                      <div className="flex items-center gap-1.5 py-2 border-b border-red-100 dark:border-red-500/10">
+                        <KeyRound className="w-3 h-3 text-red-400 shrink-0" />
+                        <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Credentials (سري)</span>
+                      </div>
+                      <InfoRow label="URI قاعدة البيانات" value={specs.databaseUri} />
+                      <InfoRow label="اسم المستخدم"        value={specs.deploymentUsername} />
+                      <InfoRow label="كلمة المرور"          value={specs.deploymentPassword} />
+                    </div>
+                  )}
+                  {/* Env vars */}
+                  {specs.variables && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04] rounded-xl p-3 mb-3">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Terminal className="w-3 h-3 text-gray-400 dark:text-slate-500 shrink-0" />
+                        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">متغيرات البيئة</span>
+                      </div>
+                      <pre className="text-[11px] text-gray-700 dark:text-slate-300 whitespace-pre-wrap break-all font-mono leading-relaxed">{specs.variables}</pre>
+                    </div>
+                  )}
+                  {/* Concept */}
+                  {(specs.projectConcept || specs.targetAudience || specs.mainFeatures || specs.referenceLinks || specs.colorPalette) && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl px-4 py-1 mb-3">
+                      <InfoRow label="فكرة المشروع"       value={specs.projectConcept} />
+                      <InfoRow label="الجمهور المستهدف"   value={specs.targetAudience} />
+                      <InfoRow label="المميزات الرئيسية"  value={specs.mainFeatures} />
+                      <InfoRow label="روابط مرجعية"       value={specs.referenceLinks} />
+                      <InfoRow label="لوحة الألوان"       value={specs.colorPalette} />
+                    </div>
+                  )}
+                  {/* Timeline */}
+                  {(specs.estimatedHours || specs.startDate || specs.deadline) && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl px-4 py-1 mb-3">
+                      <InfoRow label="الساعات المقدّرة"   value={specs.estimatedHours ? `${specs.estimatedHours} ساعة` : undefined} />
+                      <InfoRow label="تاريخ البدء"        value={specs.startDate ? new Date(specs.startDate).toLocaleDateString("ar-SA") : undefined} />
+                      <InfoRow label="الموعد النهائي"     value={specs.deadline ? new Date(specs.deadline).toLocaleDateString("ar-SA") : undefined} />
+                    </div>
+                  )}
+                  {/* Notes */}
+                  {specs.notes && (
+                    <div className="p-3 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04] rounded-xl mb-2">
+                      <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">ملاحظات</p>
+                      <p className="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-wrap">{specs.notes}</p>
+                    </div>
+                  )}
+                  {specs.teamNotes && (
+                    <div className="p-3 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04] rounded-xl">
+                      <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">ملاحظات الفريق</p>
+                      <p className="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-wrap">{specs.teamNotes}</p>
+                    </div>
+                  )}
                 </Section>
               )}
 
