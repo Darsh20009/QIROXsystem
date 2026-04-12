@@ -2413,22 +2413,10 @@ export default function Dashboard() {
                                 {daysLeft < 0 ? (L ? `تأخر ${Math.abs(daysLeft)} يوم` : `${Math.abs(daysLeft)} days late`) : daysLeft === 0 ? (L ? "اليوم هو الموعد" : "Due today") : (L ? `${daysLeft} يوم متبقي` : `${daysLeft} days left`)}
                               </div>
                             )}
-                            {project.repoUrl && (
-                              <a href={project.repoUrl} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-[11px] text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors">
-                                <ExternalLink className="w-3 h-3" /> {L ? "كود المشروع" : "Project Code"}
-                              </a>
-                            )}
-                            {project.stagingUrl && (
-                              <a href={project.stagingUrl} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-[11px] text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors">
-                                <Globe className="w-3 h-3" /> {L ? "معاينة" : "Preview"}
-                              </a>
-                            )}
-                            {(project as any).productionUrl && (
-                              <a href={(project as any).productionUrl} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-50 dark:bg-green-950/30 text-[11px] text-green-700 dark:text-green-400 hover:opacity-80 transition-colors border border-green-200 dark:border-green-800">
-                                <ExternalLink className="w-3 h-3" /> {L ? "الموقع الرسمي" : "Live Site"}
+                            {((project as any).productionUrl || project.stagingUrl) && (
+                              <a href={(project as any).productionUrl || project.stagingUrl} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black text-white text-[11px] font-bold hover:opacity-80 transition-opacity">
+                                <Globe className="w-3 h-3" /> {L ? "زيارة موقعك" : "Visit Your Site"}
                               </a>
                             )}
                           </div>
@@ -2711,10 +2699,11 @@ export default function Dashboard() {
                                           <Globe className={`w-3.5 h-3.5 ${pst.color}`} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          {proj.productionUrl ? (
-                                            <a href={proj.productionUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline truncate block">{proj.productionUrl}</a>
-                                          ) : proj.stagingUrl ? (
-                                            <a href={proj.stagingUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline truncate block">{proj.stagingUrl}</a>
+                                          {(proj.productionUrl || proj.stagingUrl) ? (
+                                            <a href={proj.productionUrl || proj.stagingUrl} target="_blank" rel="noopener noreferrer"
+                                              className="inline-flex items-center gap-1 text-xs font-bold text-black dark:text-white hover:opacity-70 transition-opacity">
+                                              <Globe className="w-3 h-3" /> {L ? "زيارة الموقع" : "Visit Site"}
+                                            </a>
                                           ) : (
                                             <p className="text-xs font-bold text-black/60 dark:text-white/60">{L ? "مشروع قيد التنفيذ" : "Project in progress"}</p>
                                           )}
@@ -3746,34 +3735,43 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* URLs & Links */}
-                  {(clientOrderSpecs.githubRepoUrl || clientOrderSpecs.stagingUrl || clientOrderSpecs.productionUrl || clientOrderSpecs.customDomain) && (
-                    <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl p-5 bg-white dark:bg-gray-900">
-                      <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Globe className="w-3.5 h-3.5" />الروابط والنطاقات
-                      </p>
-                      <div className="space-y-2">
-                        {[
-                          { label: "GitHub Repository", url: clientOrderSpecs.githubRepoUrl, icon: "⌥" },
-                          { label: "Staging (اختبار)", url: clientOrderSpecs.stagingUrl, icon: "🧪" },
-                          { label: "Production (إنتاج)", url: clientOrderSpecs.productionUrl, icon: "🚀" },
-                          { label: "الدومين المخصص", url: clientOrderSpecs.customDomain ? `https://${clientOrderSpecs.customDomain}` : null, icon: "🌐" },
-                        ].filter(l => l.url).map((link, i) => (
-                          <a key={i} href={link.url!} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.04] rounded-xl hover:bg-black/[0.05] transition-colors group border border-black/[0.04] dark:border-white/[0.06]">
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-base">{link.icon}</span>
-                              <div>
-                                <p className="text-[10px] font-bold text-black/50 dark:text-white/50">{link.label}</p>
-                                <p className="text-xs font-mono text-black/70 dark:text-white/70 truncate max-w-[280px]">{link.url}</p>
-                              </div>
-                            </div>
-                            <ExternalLink className="w-3.5 h-3.5 text-black/20 dark:text-white/20 group-hover:text-black/60 dark:group-hover:text-white/60 flex-shrink-0" />
+                  {/* Website Preview (iframe) */}
+                  {(clientOrderSpecs.productionUrl || clientOrderSpecs.customDomain || clientOrderSpecs.stagingUrl) && (() => {
+                    const siteUrl = clientOrderSpecs.productionUrl ||
+                      (clientOrderSpecs.customDomain ? `https://${clientOrderSpecs.customDomain}` : null) ||
+                      clientOrderSpecs.stagingUrl;
+                    return (
+                      <div className="border border-black/[0.07] dark:border-white/[0.08] rounded-2xl overflow-hidden bg-white dark:bg-gray-900">
+                        <div className="px-5 py-3 flex items-center justify-between border-b border-black/[0.05] dark:border-white/[0.06]">
+                          <p className="text-[9px] font-bold text-black/40 dark:text-white/40 uppercase tracking-widest flex items-center gap-2">
+                            <Globe className="w-3.5 h-3.5" />
+                            {L ? "موقعك الحالي" : "Your Current Site"}
+                          </p>
+                          <a
+                            href={siteUrl!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-black text-white text-[10px] font-bold hover:opacity-80 transition-opacity"
+                            data-testid="btn-visit-site-specs"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {L ? "فتح الموقع" : "Open Site"}
                           </a>
-                        ))}
+                        </div>
+                        <div className="relative w-full bg-gray-100 dark:bg-gray-800" style={{ height: "260px" }}>
+                          <iframe
+                            src={siteUrl!}
+                            className="absolute inset-0 w-full h-full border-0"
+                            title={L ? "موقعك الحالي" : "Your Current Site"}
+                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                            loading="lazy"
+                            style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133.33%", height: "133.33%" }}
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white/80 dark:from-gray-900/80 to-transparent pointer-events-none" />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Project Concept */}
                   {(clientOrderSpecs.projectConcept || clientOrderSpecs.targetAudience || clientOrderSpecs.mainFeatures) && (
@@ -4135,22 +4133,17 @@ export default function Dashboard() {
                                   </span>
                                 )}
                               </div>
-                              {(project.stagingUrl || project.productionUrl) && (
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  {project.stagingUrl && (
-                                    <a href={project.stagingUrl} target="_blank" rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline"
-                                      data-testid={`link-staging-${project.id}`}>
-                                      <Globe className="w-3 h-3" /> {L ? "رابط التجربة" : "Staging"}
-                                    </a>
-                                  )}
-                                  {project.productionUrl && (
-                                    <a href={project.productionUrl} target="_blank" rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-[10px] text-green-600 dark:text-green-400 hover:underline"
-                                      data-testid={`link-production-${project.id}`}>
-                                      <ExternalLink className="w-3 h-3" /> {L ? "الرابط النهائي" : "Production"}
-                                    </a>
-                                  )}
+                              {(project.productionUrl || project.stagingUrl) && (
+                                <div className="mt-2">
+                                  <a
+                                    href={project.productionUrl || project.stagingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-black dark:text-white bg-black/[0.05] dark:bg-white/[0.07] px-3 py-1.5 rounded-lg hover:bg-black/[0.1] dark:hover:bg-white/[0.12] transition-colors"
+                                    data-testid={`btn-visit-linked-${project.id}`}
+                                  >
+                                    <Globe className="w-3 h-3" /> {L ? "زيارة الموقع" : "Visit Site"}
+                                  </a>
                                 </div>
                               )}
                             </div>
