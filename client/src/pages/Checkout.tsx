@@ -504,7 +504,7 @@ export default function Checkout() {
 
   const canProceedStep1 = !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city)
     && (!hasPhysicalItems || !!selectedShippingCompanyId);
-  const canProceedStep2 = (payMethod === "bank") || (payMethod === "paypal") ||
+  const canProceedStep2 = (payMethod === "bank") ||
     (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
 
   // ── Inline Auth Step (when user not logged in) ───────────────
@@ -1025,53 +1025,6 @@ export default function Checkout() {
                       )}
                     </button>
 
-                    {/* PayPal */}
-                    <button
-                      onClick={() => setPayMethod("paypal")}
-                      className={`w-full text-right rounded-2xl p-4 border-2 transition-all ${payMethod === "paypal" ? "border-blue-600 bg-blue-50" : "border-black/[0.07] hover:border-black/20"}`}
-                      data-testid="button-pay-paypal"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${payMethod === "paypal" ? "bg-blue-600" : "bg-black/[0.05]"}`}>
-                          <span className={`text-base font-black ${payMethod === "paypal" ? "text-white" : "text-black/40"}`}>P</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-sm text-black">PayPal</p>
-                          <p className="text-xs text-black/40">دفع آمن عبر PayPal</p>
-                        </div>
-                        {payMethod === "paypal" && <Check className="w-5 h-5 text-blue-600 shrink-0" />}
-                      </div>
-                      {payMethod === "paypal" && (
-                        <div className="mt-4 pt-4 border-t border-blue-100" onClick={e => e.stopPropagation()}>
-                          {paypalProcessing ? (
-                            <div className="flex items-center justify-center gap-2 py-4 text-[#003087]">
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                              <span className="font-bold text-sm">جاري تأكيد الدفع وإنشاء طلبك...</span>
-                            </div>
-                          ) : (
-                            <PayPalCheckoutButton
-                              amount={total}
-                              currency="SAR"
-                              returnPath="/checkout"
-                              pendingData={{
-                                pAddr: addr,
-                                pTotal: total,
-                                pItems: hasWizardData
-                                  ? [{ type: "plan", name: wizardData?.planTier, nameAr: `باقة ${wizardData?.planTier}`, price: wizardData?.grandTotal || wizardData?.planPrice || 0, qty: 1 },
-                                     ...(wizardData?.selectedAddons || []).map((id: string) => ({ type: "addon", name: id, nameAr: id, price: 0, qty: 1 }))]
-                                  : items.map((i: any) => ({ id: i._id || i.id, type: i.type, name: i.name, nameAr: i.nameAr, price: i.price, qty: i.qty, config: i.config, imageUrl: i.imageUrl })),
-                                pHasWizard: hasWizardData,
-                                pWizardData: hasWizardData ? wizardData : undefined,
-                                pWalletUsed: 0,
-                              }}
-                              onRedirecting={() => toast({ title: "جاري التحويل إلى PayPal..." })}
-                              onError={(msg) => toast({ title: msg || "فشل الدفع عبر PayPal، حاول مجدداً", variant: "destructive" })}
-                              disabled={total <= 0}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </button>
                   </div>
                 </div>
 
@@ -1079,25 +1032,16 @@ export default function Checkout() {
                   <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12 rounded-2xl gap-2" data-testid="button-back-address">
                     <ArrowRight className="w-4 h-4" /> {L ? "السابق" : "Back"}
                   </Button>
-                  {payMethod === "paypal" ? (
-                    <div className="flex-[2] h-12 rounded-2xl border-2 border-[#FFC439]/50 bg-[#FFC439]/10 flex items-center justify-center text-xs text-[#003087] font-bold gap-2" data-testid="paypal-action-hint">
-                      {paypalProcessing
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري المعالجة...</>
-                        : <><span className="text-[#FFC439]">⬆</span> استخدم زر PayPal أعلاه للدفع</>
-                      }
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => submitMutation.mutate()}
-                      disabled={!canProceedStep2 || submitMutation.isPending}
-                      className="flex-[2] h-12 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-black gap-2 shadow-lg shadow-green-600/20"
-                      data-testid="button-confirm-order"
-                    >
-                      {submitMutation.isPending
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ الإرسال...</>
-                        : <><Sparkles className="w-4 h-4" /> تأكيد الطلب</>}
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => submitMutation.mutate()}
+                    disabled={!canProceedStep2 || submitMutation.isPending}
+                    className="flex-[2] h-12 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-black gap-2 shadow-lg shadow-green-600/20"
+                    data-testid="button-confirm-order"
+                  >
+                    {submitMutation.isPending
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ الإرسال...</>
+                      : <><Sparkles className="w-4 h-4" /> تأكيد الطلب</>}
+                  </Button>
                 </div>
               </div>
             </motion.div>
