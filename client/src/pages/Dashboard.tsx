@@ -1418,6 +1418,63 @@ function EmployeeDashboard({ user }: { user: any }) {
   );
 }
 
+function ProjectTasksMini({ projectId, lang }: { projectId: string; lang: string }) {
+  const L = lang === "ar";
+  const { data: tasks, isLoading } = useQuery<any[]>({
+    queryKey: [`/api/projects/${projectId}/tasks`],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${projectId}/tasks`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  if (isLoading || !tasks || tasks.length === 0) return null;
+
+  const totalDone = tasks.filter((t: any) => t.status === "done").length;
+  const visible = tasks.slice(0, 5);
+
+  return (
+    <div className="mt-3 pt-3 border-t border-black/[0.04] dark:border-white/[0.05]">
+      <p className="text-[10px] font-bold text-black/30 dark:text-white/30 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+        <CheckCircle2 className="w-3 h-3" />
+        {L ? `مهام الفريق (${totalDone}/${tasks.length} مكتملة)` : `Team Tasks (${totalDone}/${tasks.length} done)`}
+      </p>
+      <div className="space-y-1.5">
+        {visible.map((task: any) => (
+          <div key={task.id} className="flex items-center gap-2" data-testid={`task-mini-${task.id}`}>
+            <div className={`w-3 h-3 rounded-full flex-shrink-0 border-2 ${
+              task.status === "done"
+                ? "bg-green-500 border-green-500"
+                : task.status === "in_progress"
+                ? "bg-blue-500 border-blue-500"
+                : "bg-transparent border-black/20 dark:border-white/20"
+            }`} />
+            <p className={`text-[11px] flex-1 truncate leading-tight ${
+              task.status === "done"
+                ? "line-through text-black/25 dark:text-white/25"
+                : "text-black/55 dark:text-white/55"
+            }`}>
+              {task.title}
+            </p>
+            {task.status === "in_progress" && (
+              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                {L ? "جارٍ" : "Active"}
+              </span>
+            )}
+          </div>
+        ))}
+        {tasks.length > 5 && (
+          <p className="text-[10px] text-black/20 dark:text-white/20 pt-0.5">
+            +{tasks.length - 5} {L ? "مهام أخرى" : "more"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: user } = useUser();
   const { lang, dir } = useI18n();
@@ -1781,7 +1838,13 @@ export default function Dashboard() {
   const { data: pricingPlans } = usePricingPlans();
 
   const pendingOrders = orders?.filter((o: any) => o.status === 'pending') || [];
-  const activeProjects = projects?.filter((p: any) => (p.status as string) !== 'completed') || [];
+  const activeProjects = projects?.filter((p: any) => (p.status as string) !== 'completed' && (p.status as string) !== 'closed') || [];
+  const linkedOrderIds = new Set(
+    (projects || [])
+      .map((p: any) => String(p.orderId?._id || p.orderId || ""))
+      .filter(Boolean)
+  );
+  const unlinkedOrders = (orders || []).filter((o: any) => !linkedOrderIds.has(String(o.id)));
   const completedOrders = orders?.filter((o: any) => (o.status as string) === 'completed') || [];
   const totalSpent = orders?.reduce((sum: number, o: any) => {
     if ((o.status as string) === 'completed' || (o.status as string) === 'approved' || o.status === 'in_progress') {
@@ -2273,7 +2336,7 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            ) : !projects || projects.length === 0 ? (
+            ) : activeProjects.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-black/[0.06] dark:border-white/[0.08] p-16 flex flex-col items-center text-center">
                 <div className="w-20 h-20 rounded-3xl bg-black/[0.03] dark:bg-white/[0.05] flex items-center justify-center mb-5">
                   <Layers className="w-10 h-10 text-black/10 dark:text-white/10" />
@@ -2296,7 +2359,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-5">
-                {projects.map((project: any, i: number) => {
+                {activeProjects.map((project: any, i: number) => {
                   const st = statusMap[project.status] || statusMap['pending'];
                   const pct = project.progress || 0;
                   const r = 28, cx = 36, cy = 36, circ = 2 * Math.PI * r;
@@ -2455,6 +2518,9 @@ export default function Dashboard() {
                               )}
                             </motion.div>
                           )}
+
+                          {/* Team Tasks */}
+                          <ProjectTasksMini projectId={project.id} lang={lang} />
 
                           {/* Actions */}
                           <div className="flex items-center gap-2 pt-3 border-t border-black/[0.04] dark:border-white/[0.05]">
@@ -2982,7 +3048,7 @@ export default function Dashboard() {
                 {L ? "سجل الطلبات" : "Orders History"}
               </h2>
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
-                {isLoadingOrders ? (
+                {(isLoadingOrders || isLoadingProjects) ? (
                   <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="px-4 py-3.5 flex items-center gap-3">
@@ -2995,7 +3061,7 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
-                ) : !orders || orders.length === 0 ? (
+                ) : unlinkedOrders.length === 0 ? (
                   <div className="p-10 text-center">
                     <FileText className="w-8 h-8 mx-auto text-black/10 dark:text-white/10 mb-3" />
                     <p className="text-xs text-black/25 dark:text-white/25">{L ? "لا توجد طلبات بعد" : "No orders yet"}</p>
@@ -3005,7 +3071,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
-                    {orders.slice(0, 6).map((order: any, i: number) => {
+                    {unlinkedOrders.slice(0, 6).map((order: any, i: number) => {
                       const st = statusMap[order.status] || statusMap['pending'];
                       const StatusIcon = st.icon;
                       return (
