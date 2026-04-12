@@ -1,4 +1,4 @@
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect, useRef, useCallback } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -26,38 +26,79 @@ function playQiroxSound() {
   } catch {}
 }
 
+const MAX_RETRIES = 10;
+const BASE_DELAY_MS = 1000;
+const MAX_DELAY_MS = 30000;
+
 export function useWebSocket(userId: string | undefined) {
   const wsRef = useRef<WebSocket | null>(null);
+  const retryCount = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const destroyed = useRef(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!userId) return;
+  const connect = useCallback(() => {
+    if (!userId || destroyed.current) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      retryCount.current = 0;
       ws.send(JSON.stringify({ type: "auth", userId }));
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
         if (data.type === "notification") {
           queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
           queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
           if (data.title) {
             playQiroxSound();
-            toast({
+            const toastOpts: any = {
               title: data.title,
               description: data.body || "",
-              duration: 5000,
-            });
+              duration: 6000,
+            };
+            if (data.link && data.link !== "/") {
+              toastOpts.action = createElement(
+                ToastAction,
+                {
+                  altText: "فتح",
+                  onClick: () => { window.location.href = data.link; },
+                },
+                "فتح"
+              );
+            }
+            toast(toastOpts);
           }
         }
 
-        // Push approval challenge: alert the authenticated device so the user can approve/deny
+        if (data.type === "promotional_push") {
+          if (data.title) {
+            playQiroxSound();
+            const toastOpts: any = {
+              title: data.title,
+              description: data.body || "",
+              duration: 8000,
+            };
+            if (data.url && data.url !== "/") {
+              toastOpts.action = createElement(
+                ToastAction,
+                {
+                  altText: "عرض",
+                  onClick: () => { window.location.href = data.url; },
+                },
+                "عرض"
+              );
+            }
+            toast(toastOpts);
+          }
+        }
+
         if (data.type === "push_auth_challenge" && data.challengeId) {
           playQiroxSound();
           const challengeUrl = `/auth/push-approve?id=${data.challengeId}`;
@@ -81,21 +122,39 @@ export function useWebSocket(userId: string | undefined) {
     ws.onerror = () => {};
 
     ws.onclose = () => {
-      setTimeout(() => {
-        if (wsRef.current === ws) wsRef.current = null;
-      }, 1000);
+      wsRef.current = null;
+      if (destroyed.current) return;
+      if (retryCount.current >= MAX_RETRIES) return;
+
+      const delay = Math.min(BASE_DELAY_MS * Math.pow(2, retryCount.current), MAX_DELAY_MS);
+      retryCount.current++;
+      retryTimer.current = setTimeout(() => {
+        if (!destroyed.current) connect();
+      }, delay);
     };
+  }, [userId, toast]);
+
+  useEffect(() => {
+    if (!userId) return;
+    destroyed.current = false;
+    retryCount.current = 0;
+    connect();
 
     return () => {
-      ws.close();
+      destroyed.current = true;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
-  }, [userId]);
+  }, [userId, connect]);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "PUSH_RECEIVED") {
-        const { title, body, data: d } = event.data.payload || {};
+        const { title, body } = event.data.payload || {};
         queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
         queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
         if (title) {
