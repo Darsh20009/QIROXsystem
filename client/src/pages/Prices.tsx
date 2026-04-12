@@ -288,8 +288,17 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
         <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-3.5 ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/25" : "text-gray-400 dark:text-slate-500"}`}>
           {lang === "ar" ? "يشمل النظام" : "SYSTEM INCLUDES"}
         </p>
+        {/* Lifetime unlock banner */}
+        {period === "lifetime" && (
+          <div className={`mb-3 flex items-center gap-2 px-3 py-2 rounded-xl ${isInfinite ? "bg-amber-400/10 border border-amber-400/20" : isPro ? "bg-white/10 border border-white/20" : "bg-green-50 border border-green-200 dark:bg-green-500/10 dark:border-green-500/20"}`}>
+            <InfinityIcon className={`w-4 h-4 shrink-0 ${isInfinite ? "text-amber-400" : isPro ? "text-blue-200" : "text-green-600 dark:text-green-400"}`} />
+            <span className={`text-[11px] font-black ${isInfinite ? "text-amber-300" : isPro ? "text-white" : "text-green-700 dark:text-green-300"}`}>
+              {lang === "ar" ? "كل الميزات مفتوحة — بلا حدود ومدى الحياة" : "All features unlocked — unlimited forever"}
+            </span>
+          </div>
+        )}
         <div className="space-y-2.5">
-          {features.slice(0, 6).map((f: string, i: number) => {
+          {(period === "lifetime" ? features : features.slice(0, 6)).map((f: string, i: number) => {
             const FIcon = featureIcon(f);
             return (
               <div key={i} className="flex items-start gap-2.5">
@@ -300,7 +309,7 @@ function TierCard({ plan, period, idx, isPopularOverride, onSelect, lang, isLoad
               </div>
             );
           })}
-          {features.length > 6 && (
+          {period !== "lifetime" && features.length > 6 && (
             <div className={`text-[10px] font-bold ${isInfinite ? "text-amber-400/40" : isPro ? "text-white/30" : "text-gray-400 dark:text-slate-400"} mr-7 rtl:mr-0 rtl:ml-7`}>
               {lang === "ar" ? `+ ${features.length - 6} ميزة أخرى` : `+ ${features.length - 6} more`}
             </div>

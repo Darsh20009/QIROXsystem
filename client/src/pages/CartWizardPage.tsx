@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -11,202 +10,77 @@ import { useI18n } from "@/lib/i18n";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import {
-  ChevronRight, ChevronLeft, Check, Loader2,
-  Building2, FileText, Target, Calendar,
-  MapPin, LogIn, UserPlus,
-  Upload, Globe, Users, Code2, Star, Sparkles, Camera,
-  ShoppingBag, Smartphone, BotMessageSquare, Languages,
-  TrendingUp, MessageSquare, Truck, BookOpen, Lock,
-  Database, BarChart3, Palette, Server, ArrowLeft, Eye, EyeOff,
-  Zap, Package, Send, Hash, Cpu, ShoppingCart,
-  Plus, Cloud, Image as ImageIcon, Headphones, Wifi, CreditCard, Settings,
-  IdCard, ShieldCheck, Briefcase, AlertCircle,
-  Info, ExternalLink, Percent, Pen, Download, Globe2, CheckCircle2
+  Check, Loader2, Building2, FileText, CreditCard,
+  LogIn, UserPlus, Upload, Globe, Sparkles,
+  Image as ImageIcon, Eye, EyeOff, ArrowLeft,
+  Lightbulb, Wand2, ShoppingCart, Phone, Mail, X
 } from "lucide-react";
-import paymobLogo from "@assets/download_1774503289938.png";
 import { QiroxIcon } from "@/components/qirox-brand";
 import type { Cart, CartItem } from "@shared/schema";
 
-/* ── Lucide icon name → component map (for addons from DB) ── */
-const ICON_MAP: Record<string, any> = {
-  Smartphone, Database, Server, Cloud, Globe, Lock, Star, Sparkles,
-  ShoppingBag, Package, Send, Users, TrendingUp, MessageSquare, Truck,
-  BookOpen, Code2, BarChart3, Palette, Hash, Cpu, Camera, Zap, MapPin,
-  Upload, Languages, BotMessageSquare, Plus, Image: ImageIcon,
-  Headphones, Wifi, CreditCard, Settings, Building2, FileText,
-};
-
-function AddonIcon({ iconName, imageUrl, selected }: { iconName?: string; imageUrl?: string; selected: boolean }) {
-  if (imageUrl) {
-    return (
-      <div className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${selected ? "border-blue-500/60" : "border-white/[0.07]"}`}>
-        <img src={imageUrl} alt="" className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  const Icon = (iconName && ICON_MAP[iconName]) || Package;
-  return (
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${selected ? "bg-blue-500/20" : "bg-white/[0.04]"}`}>
-      <Icon className={`w-5 h-5 ${selected ? "text-blue-400" : "text-slate-500"}`} />
-    </div>
-  );
-}
-
-const PAYMOB_REGISTER_URL = "https://ksa.paymob.com/portal2/en/register?accept_sales_owner=Amira_nabil";
-
-const PAYMOB_FEE_TABLE = [
-  { method: "رسوم الإعداد",                        fee: "مجانًا",          free: true },
-  { method: "مدى و STC Pay",                       fee: "1% + 1 ر.س",      free: false },
-  { method: "الكروت المحلية (فيزا - ماستركارد)",  fee: "2.7% + 1 ر.س",   free: false },
-  { method: "كروت دولية",                          fee: "3.7% + 1 ر.س",   free: false },
-  { method: "Apple Pay",                            fee: "حسب نوع الكارت", free: false },
+const SECTORS = [
+  { value: "restaurant", label: "🍽️ مطعم وكافيه" },
+  { value: "ecommerce",  label: "🛒 متجر إلكتروني" },
+  { value: "education",  label: "📚 تعليم وتدريب" },
+  { value: "healthcare", label: "🏥 صحة وعيادات" },
+  { value: "realestate", label: "🏠 عقارات" },
+  { value: "beauty",     label: "💅 تجميل وعناية" },
+  { value: "fitness",    label: "💪 رياضة ولياقة" },
+  { value: "technology", label: "💻 تقنية وبرمجة" },
+  { value: "corporate",  label: "🏢 شركات وخدمات" },
+  { value: "fashion",    label: "👗 أزياء وموضة" },
 ];
 
-const DAYS  = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-const TIMES = ["8:00 ص","9:00 ص","10:00 ص","11:00 ص","12:00 م","1:00 م","2:00 م","3:00 م","4:00 م","5:00 م","6:00 م","7:00 م","8:00 م","9:00 م"];
-const PHYSICAL_TYPES = ["product","gift","device"];
-
 interface WizardData {
-  businessName: string; whatsapp: string; email: string;
-  projectIdea: string; teamSize: string;
-  instagram: string; twitter: string; snapchat: string;
-  recipientName: string; recipientPhone: string;
-  selectedFeatures: string[]; extraAddons: string[];
-  commercialReg: string;
-  logoChoice: "upload" | "design" | "none";
+  businessName: string;
+  whatsapp: string;
+  email: string;
+  projectIdea: string;
+  sector: string;
   logoFile: string;
-  brandChoice: "upload" | "create" | "none";
-  brandFile: string;
-  expectedCustomers: string; extraFiles: string[];
-  competitorUrl: string; hadPrevSite: boolean; prevSiteFeedback: string;
-  technicalLevel: "high" | "low" | ""; technicalDetails: string;
-  hasDevTeam: boolean; devTeamDetails: string;
-  technicalFeatures: string[]; projectTechIdeas: string;
-  preferredTimes: string[]; preferredDays: string[];
-  address: { name: string; phone: string; city: string; district: string; street: string };
-  // Legal / KYC fields
-  legalDocType: "commercial" | "freelance";
-  legalDocNumber: string;
-  legalDocFile: string;
-  ibanCertFile: string;
-  taxNumber: string;
-  idNumber: string;
-  idPhotoFile: string;
-  // Paymob registration & agreement
-  paymobRegistered: boolean;
-  paymobPolicyAccepted: boolean;
-  paymobSignatureName: string;
+  extraFiles: string[];
+  planTier?: string;
+  grandTotal?: number;
+  planPrice?: number;
+  cartItems?: CartItem[];
 }
 
 const defaultData: WizardData = {
-  businessName: "", whatsapp: "", email: "", projectIdea: "", teamSize: "",
-  instagram: "", twitter: "", snapchat: "", recipientName: "", recipientPhone: "",
-  selectedFeatures: [], extraAddons: [],
-  commercialReg: "", logoChoice: "none", logoFile: "", brandChoice: "none", brandFile: "",
-  expectedCustomers: "", extraFiles: [],
-  legalDocType: "commercial", legalDocNumber: "", legalDocFile: "", ibanCertFile: "",
-  taxNumber: "", idNumber: "", idPhotoFile: "",
-  paymobRegistered: false, paymobPolicyAccepted: false, paymobSignatureName: "",
-  competitorUrl: "", hadPrevSite: false, prevSiteFeedback: "",
-  technicalLevel: "", technicalDetails: "", hasDevTeam: false, devTeamDetails: "",
-  technicalFeatures: [], projectTechIdeas: "",
-  preferredTimes: [], preferredDays: [],
-  address: { name: "", phone: "", city: "", district: "", street: "" },
+  businessName: "", whatsapp: "", email: "",
+  projectIdea: "", sector: "",
+  logoFile: "", extraFiles: [],
 };
 
 function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: any }) {
   return (
-    <div>
-      <label className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.12em] text-gray-500 dark:text-slate-400 mb-1.5">
-        {required && <span className="text-red-400 text-xs">*</span>}
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-1 text-xs font-bold text-gray-600 dark:text-slate-400">
+        {required && <span className="text-red-400">*</span>}
         {label}
       </label>
       {children}
-      {hint && <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-gray-400 dark:text-slate-500">{hint}</p>}
     </div>
   );
 }
 
-function TInput({ value, onChange, placeholder, type = "text", testId }: any) {
+function TInput({ value, onChange, placeholder, type = "text", testId, dir }: any) {
   return (
-    <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+    <input
+      type={type} value={value} dir={dir}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
       data-testid={testId}
-      className="w-full h-11 px-4 rounded-xl bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all" />
+      className="w-full h-11 px-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500 transition-all"
+    />
   );
 }
 
-function TArea({ value, onChange, placeholder, rows = 3, required }: any) {
-  return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
-      className={`w-full px-4 py-3 rounded-xl bg-gray-100 dark:bg-white/[0.05] border ${!value && required ? "border-red-500/30" : "border-gray-200 dark:border-slate-700/60"} text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-blue-500/60 transition-all resize-none leading-relaxed`} />
-  );
-}
-
-function Chips({ options, value, onChange, max }: { options: string[]; value: string[]; onChange: (v: string[]) => void; max?: number }) {
-  const toggle = (o: string) => {
-    if (value.includes(o)) { onChange(value.filter(x => x !== o)); }
-    else if (!max || value.length < max) { onChange([...value, o]); }
-  };
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map(o => (
-        <button key={o} type="button" onClick={() => toggle(o)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${value.includes(o) ? "bg-blue-500/20 border-blue-500/50 text-blue-600 dark:text-blue-300" : "bg-gray-100 dark:bg-white/[0.03] border-gray-200 dark:border-slate-700/60 text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-600 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-          {o}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
-  const [input, setInput] = useState("");
-  const addTag = () => {
-    const trimmed = input.trim();
-    if (trimmed && !value.includes(trimmed)) {
-      onChange([...value, trimmed]);
-    }
-    setInput("");
-  };
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") { e.preventDefault(); addTag(); }
-    if (e.key === "Backspace" && !input && value.length > 0) {
-      onChange(value.slice(0, -1));
-    }
-  };
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder={placeholder || "اكتب ثم اضغط Enter أو +"}
-          className="flex-1 h-10 px-4 rounded-xl bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-green-500/60 transition-all"
-        />
-        <button
-          type="button"
-          onClick={addTag}
-          disabled={!input.trim()}
-          className="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/25 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center font-black text-lg"
-        >
-          +
-        </button>
-      </div>
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {value.map((tag, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/25 text-green-700 dark:text-green-300 text-xs font-bold">
-              {tag}
-              <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="text-green-500/60 hover:text-red-400 transition-colors font-black leading-none">×</button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+const STEP_CONFIG = [
+  { id: 1, title: "فكرتك", desc: "اسم مشروعك وفكرته الأساسية", icon: Lightbulb, color: "blue" },
+  { id: 2, title: "ملفاتك", desc: "الشعار والوثائق (اختياري)", icon: FileText, color: "violet" },
+  { id: 3, title: "الدفع",  desc: "اختر طريقة الدفع وأكمل طلبك", icon: CreditCard, color: "green" },
+];
 
 export default function CartWizardPage() {
   const { dir } = useI18n();
@@ -216,17 +90,15 @@ export default function CartWizardPage() {
   const { data: cart, isLoading: isCartLoading } = useQuery<Cart>({
     queryKey: ["/api/cart"], enabled: !!user,
   });
-  const { data: extraAddons = [] } = useQuery<any[]>({
-    queryKey: ["/api/extra-addons"],
-  });
 
-  const cartItems: CartItem[] = cart?.items || [];
+  const cartItems: CartItem[] = (cart as any)?.items || [];
   const total = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-  const hasPhysical = cartItems.some(i => PHYSICAL_TYPES.includes(i.type));
+  const planItem = cartItems.find((i: any) => i.type === "plan");
+  const planTier: string = (planItem as any)?.config?.tier || "lite";
 
-  // Auth states (for when user is not logged in)
+  // Auth state
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [authData, setAuthData] = useState({ username: "", password: "", fullName: "", confirmPassword: "", email: "" });
+  const [authData, setAuthData] = useState({ identifier: "", password: "", fullName: "", email: "", phone: "" });
   const [showPass, setShowPass] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -234,18 +106,15 @@ export default function CartWizardPage() {
   const [step, setStep] = useState(!user ? 0 : 1);
   const [data, setData] = useState<WizardData>({ ...defaultData });
   const [uploading, setUploading] = useState(false);
+  const [uploadingExtra, setUploadingExtra] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const logoRef = useRef<HTMLInputElement>(null);
-  const brandRef = useRef<HTMLInputElement>(null);
-  const extraRef = useRef<HTMLInputElement>(null);
-  const legalDocRef = useRef<HTMLInputElement>(null);
-  const ibanRef = useRef<HTMLInputElement>(null);
-  const idPhotoRef = useRef<HTMLInputElement>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
-  // Scroll to top on step change
+  const logoRef = useRef<HTMLInputElement>(null);
+  const extraRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
 
-  // Auto-fill user data
   useEffect(() => {
     if (user) {
       setData(prev => ({
@@ -258,99 +127,85 @@ export default function CartWizardPage() {
     }
   }, [user]);
 
-  const planItem = cartItems.find(i => i.type === "plan");
-  const planTier: string = planItem?.config?.tier || "lite";
-  const maxFeatures = planTier === "infinite" ? 20 : planTier === "pro" ? 10 : 5;
-
-  const TOTAL_STEPS = hasPhysical ? 9 : 8;
-
-  const STEP_INFO = [
-    null,
-    { title: "هوية المنشأة",                 icon: Building2,   desc: "اسم نشاطك ومعلومات التواصل",       color: "blue" },
-    { title: "اختيار المميزات",              icon: Sparkles,    desc: `اختر حتى ${maxFeatures} مميزة`,    color: "amber" },
-    { title: "الملفات والبيانات",            icon: FileText,    desc: "الوثائق والهوية البصرية",           color: "violet" },
-    { title: "المعلومات القانونية",          icon: ShieldCheck, desc: "وثائق النشاط والهوية الوطنية",     color: "rose" },
-    { title: "تسجيل Paymob",                 icon: CreditCard,  desc: "تفعيل بوابة الدفع الإلكتروني",    color: "indigo" },
-    { title: "اتفاقية Paymob",               icon: CheckCircle2,desc: "رسوم الخدمة والموافقة على الشروط", color: "teal" },
-    { title: "المعلومات التنافسية",          icon: Target,      desc: "فهم احتياجاتك بعمق",               color: "green" },
-    { title: "جدولة الاجتماع",              icon: Calendar,    desc: "حدد مواعيدك المناسبة",             color: "cyan" },
-    ...(hasPhysical ? [{ title: "عنوان التوصيل", icon: MapPin, desc: "بيانات شحن المنتجات", color: "orange" }] : []),
-  ];
-
-  const STEP_COLORS: Record<string, string> = {
-    blue:   "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    amber:  "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    rose:   "bg-rose-500/10 text-rose-400 border-rose-500/20",
-    violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
-    green:  "bg-green-500/10 text-green-400 border-green-500/20",
-    cyan:   "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-    orange: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-    indigo: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-    teal:   "bg-teal-500/10 text-teal-400 border-teal-500/20",
-  };
-
   function upd(key: keyof WizardData, val: any) {
     setData(prev => ({ ...prev, [key]: val }));
   }
-  function updAddr(key: string, val: string) {
-    setData(prev => ({ ...prev, address: { ...prev.address, [key]: val } }));
-  }
 
   const canNext = () => {
-    if (step === 1) return data.businessName.trim().length >= 2 && data.whatsapp.trim().length >= 9 && data.projectIdea.trim().length >= 10;
-    if (step === 2) return data.selectedFeatures.length > 0;
-    if (step === 4) return (
-      data.legalDocNumber.trim().length >= 5 &&
-      data.legalDocFile.trim().length > 0 &&
-      data.ibanCertFile.trim().length > 0 &&
-      data.idNumber.trim().length >= 10 &&
-      data.idPhotoFile.trim().length > 0
-    );
-    if (step === 5) return data.paymobRegistered === true;
-    if (step === 6) return data.paymobPolicyAccepted === true && data.paymobSignatureName.trim().length >= 3;
-    if (step === 7) return data.technicalLevel !== "";
-    if (step === 8 || (hasPhysical && step === 9)) {
-      if (hasPhysical && step === 9) return data.address.name.trim() && data.address.phone.trim() && data.address.city.trim();
-      return data.preferredTimes.length >= 1 && data.preferredDays.length >= 1;
+    if (step === 1) {
+      return (
+        data.businessName.trim().length >= 2 &&
+        data.whatsapp.trim().length >= 9 &&
+        data.projectIdea.trim().length >= 10 &&
+        data.sector.trim().length > 0
+      );
     }
     return true;
   };
 
-  const uploadFile = async (file: File): Promise<string | null> => {
+  const uploadFile = async (file: File, setLoad: (v: boolean) => void): Promise<string | null> => {
     const fd = new FormData(); fd.append("file", file);
     try {
-      setUploading(true);
+      setLoad(true);
       const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "include" });
       const d = await res.json();
       return d.url || null;
     } catch { return null; }
-    finally { setUploading(false); }
+    finally { setLoad(false); }
+  };
+
+  const handleAIIdea = async () => {
+    if (!data.businessName.trim() && !data.sector) {
+      toast({ title: "أدخل اسم المشروع والقطاع أولاً", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const prompt = `اكتب وصفاً احترافياً ومقنعاً لمشروع "${data.businessName || "مشروع جديد"}" في قطاع "${SECTORS.find(s => s.value === data.sector)?.label || data.sector}". الوصف يجب أن يشرح فكرة المشروع وهدفه والجمهور المستهدف في 3-4 جمل واضحة ومقنعة باللغة العربية.`;
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], stream: false }),
+      });
+      if (!res.ok) throw new Error("فشل الذكاء الاصطناعي");
+      const d = await res.json();
+      const text = d.content || d.message || d.text || "";
+      if (text) upd("projectIdea", text.trim());
+      else toast({ title: "لم يتمكن الذكاء الاصطناعي من توليد النص، حاول مجدداً", variant: "destructive" });
+    } catch {
+      toast({ title: "تعذّر الاتصال بالذكاء الاصطناعي، اكتب الفكرة يدوياً", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleAuth = async () => {
-    if (!authData.username || !authData.password) {
-      toast({ title: "أدخل اسم المستخدم وكلمة المرور", variant: "destructive" }); return;
+    if (!authData.identifier || !authData.password) {
+      toast({ title: "أدخل بريدك الإلكتروني وكلمة المرور", variant: "destructive" }); return;
     }
     setAuthLoading(true);
     try {
       if (authMode === "login") {
         const res = await fetch("/api/login", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: authData.username, password: authData.password }),
+          body: JSON.stringify({ identifier: authData.identifier, password: authData.password }),
         });
         const d = await res.json();
-        if (!res.ok) throw new Error(d.error || "اسم المستخدم أو كلمة المرور غير صحيحة");
-        if (d.requires2FA) { toast({ title: "مطلوب التحقق الثنائي — سجّل الدخول من الصفحة الرئيسية", variant: "destructive" }); setAuthLoading(false); return; }
+        if (!res.ok) throw new Error(d.error || "البريد الإلكتروني أو كلمة المرور غير صحيحة");
       } else {
-        if (!authData.email) { toast({ title: "البريد الإلكتروني مطلوب", variant: "destructive" }); setAuthLoading(false); return; }
-        if (authData.password !== authData.confirmPassword) { toast({ title: "كلمة المرور غير متطابقة", variant: "destructive" }); setAuthLoading(false); return; }
+        if (!authData.email && !authData.identifier.includes("@")) {
+          toast({ title: "أدخل بريدك الإلكتروني", variant: "destructive" }); setAuthLoading(false); return;
+        }
+        const email = authData.identifier.includes("@") ? authData.identifier : authData.email;
+        const username = email.split("@")[0].replace(/[^a-z0-9_]/gi, "").slice(0, 15) + Math.random().toString(36).slice(2, 5);
         const regRes = await fetch("/api/register", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: authData.username, password: authData.password, fullName: authData.fullName || authData.username, role: "client", email: authData.email }),
+          body: JSON.stringify({ username, password: authData.password, fullName: authData.fullName || username, role: "client", email, phone: authData.phone }),
         });
         const regData = await regRes.json();
         if (!regRes.ok) throw new Error(regData.error || "فشل إنشاء الحساب");
-        await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: authData.username, password: authData.password }) });
+        await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: email, password: authData.password }) });
       }
       const guestCart = (() => { try { const s = localStorage.getItem("qiroxGuestCart"); return s ? JSON.parse(s) : null; } catch { return null; } })();
       if (guestCart?.items?.length) {
@@ -362,7 +217,7 @@ export default function CartWizardPage() {
       }
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
-      toast({ title: "✓ تم تسجيل الدخول بنجاح" });
+      toast({ title: "✓ تم تسجيل الدخول، يمكنك متابعة طلبك" });
       setStep(1);
     } catch (e: any) {
       toast({ title: e.message || "فشل تسجيل الدخول", variant: "destructive" });
@@ -372,772 +227,444 @@ export default function CartWizardPage() {
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      sessionStorage.setItem("qiroxWizardData", JSON.stringify({ ...data, cartItems, total, planTier, timestamp: Date.now() }));
+      sessionStorage.setItem("qiroxWizardData", JSON.stringify({
+        ...data,
+        cartItems, total, planTier,
+        grandTotal: total, planPrice: total,
+        timestamp: Date.now(),
+        formData: { sector: data.sector, businessName: data.businessName },
+        uploadedFiles: data.extraFiles,
+        selectedAddons: [],
+      }));
       navigate("/checkout");
-    } catch { toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" }); }
-    finally { setSubmitting(false); }
+    } catch {
+      toast({ title: "حدث خطأ، حاول مرة أخرى", variant: "destructive" });
+    } finally { setSubmitting(false); }
   };
 
   if (isUserLoading || isCartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex items-center justify-center" dir={dir}>
-        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
-  const currentStepInfo = step > 0 ? STEP_INFO[step] : null;
-  const colorClass = currentStepInfo ? STEP_COLORS[currentStepInfo.color] || STEP_COLORS.blue : STEP_COLORS.blue;
+  const activeStep = STEP_CONFIG[step - 1] || null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#09090f]" dir={dir}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#09090f] flex flex-col" dir={dir}>
       <Navigation />
+      <div className="h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-violet-500" />
 
-      {/* Top accent gradient */}
-      <div className="h-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-violet-600" />
+      <div className="flex-1 max-w-xl mx-auto w-full px-4 pt-8 pb-24">
 
-      <div className="max-w-2xl mx-auto px-4 pt-10 pb-24">
-
-        {/* Page header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded-full mb-4">
-            <QiroxIcon className="w-4 h-4 text-blue-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">QIROX FACTORY</span>
+        {/* Header */}
+        <div className="text-center mb-7">
+          <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-4 py-1.5 rounded-full mb-4">
+            <QiroxIcon className="w-4 h-4 text-blue-500" />
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-500">إتمام طلبك</span>
           </div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">إتمام طلبك</h1>
-          <p className="text-gray-500 dark:text-slate-500 text-sm">أكمل البيانات التالية وسنبدأ مشروعك فور تأكيد الطلب</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">3 خطوات بسيطة فقط</h1>
+          <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">سنبدأ مشروعك فور تأكيد الطلب والدفع</p>
         </div>
 
-        {/* Step progress bar */}
+        {/* Step progress */}
         {step > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-gray-400 dark:text-slate-500">الخطوة {step} من {TOTAL_STEPS}</span>
-              <span className="text-xs font-black text-gray-800 dark:text-white">{STEP_INFO[step]?.title}</span>
-            </div>
-            <div className="h-1.5 bg-gray-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-            <div className="flex items-center gap-1.5 mt-3">
-              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-                <div key={i} className={`rounded-full transition-all duration-300 ${i + 1 === step ? "flex-1 h-2 bg-blue-500" : i + 1 < step ? "w-5 h-2 bg-blue-400/50" : "w-5 h-2 bg-gray-200 dark:bg-slate-700"}`} />
-              ))}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              {STEP_CONFIG.map((s, i) => {
+                const done = step > s.id;
+                const active = step === s.id;
+                const Icon = s.icon;
+                return (
+                  <div key={s.id} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
+                        done ? "bg-green-500 border-green-500 text-white" :
+                        active ? "bg-blue-500 border-blue-500 text-white" :
+                        "bg-white dark:bg-gray-900 border-gray-200 dark:border-slate-700 text-gray-300 dark:text-slate-600"
+                      }`}>
+                        {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                      </div>
+                      <span className={`text-[10px] font-bold ${active ? "text-blue-500" : done ? "text-green-500" : "text-gray-300 dark:text-slate-600"}`}>{s.title}</span>
+                    </div>
+                    {i < STEP_CONFIG.length - 1 && (
+                      <div className={`h-0.5 flex-1 mx-1 mb-4 rounded-full transition-all ${done ? "bg-green-400" : "bg-gray-200 dark:bg-slate-700"}`} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Cart summary bar */}
+        {/* Cart summary */}
         {step > 0 && cartItems.length > 0 && (
-          <div className="mb-6 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-2xl px-4 py-3 flex items-center gap-3">
-            <ShoppingCart className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-400 dark:text-slate-500">{cartItems.length} عنصر في السلة</p>
+          <div className="mb-4 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06] rounded-2xl px-4 py-3 flex items-center gap-3">
+            <ShoppingCart className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-gray-400">{cartItems.length} عنصر</p>
               <p className="text-sm font-black text-gray-900 dark:text-white">{total.toLocaleString()} ر.س</p>
             </div>
-            <button onClick={() => navigate("/cart")} className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors flex items-center gap-1">
+            <button onClick={() => navigate("/cart")} className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors">
               <ArrowLeft className="w-3 h-3" /> رجوع للسلة
             </button>
           </div>
         )}
 
-        {/* Step content */}
+        {/* Step card */}
         <AnimatePresence mode="wait">
-          <motion.div key={step}
-            initial={{ opacity: 0, x: -24 }}
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="bg-white dark:bg-[#0e0e1a] border border-gray-200 dark:border-white/[0.07] rounded-3xl overflow-hidden shadow-lg dark:shadow-2xl">
-
-            {/* Step top bar */}
-            {step > 0 && currentStepInfo && (
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white dark:bg-[#0e0e1a] border border-gray-200 dark:border-white/[0.07] rounded-3xl overflow-hidden shadow-sm"
+          >
+            {/* Step header bar */}
+            {activeStep && (
               <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-white/[0.05] bg-gray-50 dark:bg-white/[0.02]">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${colorClass}`}>
-                  {(() => { const Icon = currentStepInfo.icon; return <Icon className="w-5 h-5" />; })()}
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center shrink-0">
+                  <activeStep.icon className="w-4 h-4 text-blue-500" />
                 </div>
                 <div>
-                  <p className="font-black text-gray-900 dark:text-white">{currentStepInfo.title}</p>
-                  <p className="text-gray-400 dark:text-slate-500 text-[11px]">{currentStepInfo.desc}</p>
+                  <p className="font-black text-gray-900 dark:text-white text-sm">{activeStep.title}</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-[11px]">{activeStep.desc}</p>
                 </div>
               </div>
             )}
 
             <div className="px-6 py-6 space-y-5">
 
-              {/* ══ STEP 0: AUTH ══════════════════════════════════════════════ */}
+              {/* ── STEP 0: AUTH ───────────────────────────────── */}
               {step === 0 && (
                 <div className="space-y-5">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20">
-                      {authMode === "login" ? <LogIn className="w-6 h-6 text-blue-400" /> : <UserPlus className="w-6 h-6 text-blue-400" />}
+                  <div className="text-center">
+                    <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-blue-200 dark:border-blue-500/20">
+                      {authMode === "login" ? <LogIn className="w-6 h-6 text-blue-500" /> : <UserPlus className="w-6 h-6 text-blue-500" />}
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white">{authMode === "login" ? "سجّل الدخول للمتابعة" : "أنشئ حسابك"}</h3>
-                    <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">منتجاتك محفوظة في السلة وستُكمل طلبك فوراً</p>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                      {authMode === "login" ? "سجّل الدخول للمتابعة" : "أنشئ حسابك مجاناً"}
+                    </h3>
+                    <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">لحفظ طلبك وتتبع تقدم مشروعك</p>
                   </div>
+
                   {authMode === "register" && (
                     <Field label="الاسم الكامل">
-                      <TInput value={authData.fullName} onChange={(v: string) => setAuthData(p => ({ ...p, fullName: v }))} placeholder="اسمك الكامل" />
+                      <TInput value={authData.fullName} onChange={(v: string) => setAuthData(p => ({ ...p, fullName: v }))} placeholder="اسمك الكامل" testId="input-full-name" />
                     </Field>
                   )}
-                  {authMode === "register" && (
-                    <Field label="البريد الإلكتروني" required>
-                      <TInput value={authData.email} onChange={(v: string) => setAuthData(p => ({ ...p, email: v }))} placeholder="example@email.com" type="email" />
-                    </Field>
-                  )}
-                  <Field label="اسم المستخدم" required>
-                    <TInput value={authData.username} onChange={(v: string) => setAuthData(p => ({ ...p, username: v }))} placeholder="username" />
+                  <Field label="البريد الإلكتروني" required>
+                    <TInput value={authData.identifier} onChange={(v: string) => setAuthData(p => ({ ...p, identifier: v }))} placeholder="name@email.com" type="email" dir="ltr" testId="input-email" />
                   </Field>
+                  {authMode === "register" && (
+                    <Field label="رقم الجوال" hint="سنتواصل معك على هذا الرقم">
+                      <TInput value={authData.phone} onChange={(v: string) => setAuthData(p => ({ ...p, phone: v }))} placeholder="05xxxxxxxx" dir="ltr" testId="input-phone" />
+                    </Field>
+                  )}
                   <Field label="كلمة المرور" required>
                     <div className="relative">
-                      <TInput value={authData.password} onChange={(v: string) => setAuthData(p => ({ ...p, password: v }))} placeholder="••••••••" type={showPass ? "text" : "password"} />
-                      <button type="button" onClick={() => setShowPass(p => !p)} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      <TInput value={authData.password} onChange={(v: string) => setAuthData(p => ({ ...p, password: v }))} placeholder="••••••••" type={showPass ? "text" : "password"} dir="ltr" testId="input-password" />
+                      <button type="button" onClick={() => setShowPass(p => !p)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                         {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </Field>
-                  {authMode === "register" && (
-                    <Field label="تأكيد كلمة المرور" required>
-                      <TInput value={authData.confirmPassword} onChange={(v: string) => setAuthData(p => ({ ...p, confirmPassword: v }))} placeholder="••••••••" type="password" />
-                    </Field>
-                  )}
-                  <Button onClick={handleAuth} disabled={authLoading} className="w-full bg-blue-600 hover:bg-blue-500 text-white h-12 rounded-xl font-black gap-2">
-                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : authMode === "login" ? <><LogIn className="w-4 h-4" /> تسجيل الدخول</> : <><UserPlus className="w-4 h-4" /> إنشاء حساب</>}
+
+                  <Button onClick={handleAuth} disabled={authLoading} className="w-full h-12 rounded-xl font-black gap-2 bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-auth-submit">
+                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : authMode === "login" ? <><LogIn className="w-4 h-4" /> تسجيل الدخول والمتابعة</> : <><UserPlus className="w-4 h-4" /> إنشاء الحساب والمتابعة</>}
                   </Button>
                   <div className="text-center">
-                    <button type="button" onClick={() => setAuthMode(m => m === "login" ? "register" : "login")} className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors">
+                    <button type="button" onClick={() => setAuthMode(m => m === "login" ? "register" : "login")} className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline">
                       {authMode === "login" ? "ليس لديك حساب؟ أنشئ حساباً جديداً" : "لديك حساب؟ سجّل الدخول"}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ══ STEP 1: IDENTITY ══════════════════════════════════════════ */}
+              {/* ── STEP 1: IDEA ───────────────────────────────── */}
               {step === 1 && (
-                <div className="space-y-4">
+                <div className="space-y-5">
+
+                  {/* Business name + WhatsApp */}
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="اسم النشاط / المشروع" required hint="مثال: مطعم الأصالة">
-                      <TInput value={data.businessName} onChange={(v: string) => upd("businessName", v)} placeholder="اسم مشروعك..." testId="input-business-name" />
+                    <Field label="اسم المشروع / النشاط" required hint="مثال: مطعم الأصالة">
+                      <TInput value={data.businessName} onChange={(v: string) => upd("businessName", v)} placeholder="اسم مشروعك" testId="input-business-name" />
                     </Field>
                     <Field label="رقم الواتساب" required>
-                      <TInput value={data.whatsapp} onChange={(v: string) => upd("whatsapp", v)} placeholder="05xxxxxxxx" testId="input-whatsapp" />
+                      <div className="relative">
+                        <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="tel" value={data.whatsapp} dir="ltr"
+                          onChange={e => upd("whatsapp", e.target.value)}
+                          placeholder="05xxxxxxxx" data-testid="input-whatsapp"
+                          className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                        />
+                      </div>
                     </Field>
                   </div>
-                  <Field label="البريد الإلكتروني الرسمي" required>
-                    <TInput value={data.email} onChange={(v: string) => upd("email", v)} placeholder="info@company.com" type="email" />
-                  </Field>
-                  <Field label="فكرة المشروع وهدفه" required hint="اشرح لنا فكرة مشروعك وجمهورك المستهدف">
-                    <TArea value={data.projectIdea} onChange={(v: string) => upd("projectIdea", v)} rows={4} required
-                      placeholder="اشرح لنا فكرة مشروعك، ماذا تريد أن تحقق، ومن هو جمهورك المستهدف..." />
-                  </Field>
-                  <Field label="حجم الفريق / الشركة" required>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["فرد واحد","2–5 أشخاص","6–20 موظف","أكثر من 20"].map(opt => (
-                        <button key={opt} type="button" onClick={() => upd("teamSize", opt)}
-                          className={`h-10 rounded-xl border text-xs font-bold transition-all ${data.teamSize === opt ? "border-blue-500/60 bg-blue-500/15 text-blue-600 dark:text-blue-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Field label="انستغرام"><TInput value={data.instagram} onChange={(v: string) => upd("instagram", v)} placeholder="@username" /></Field>
-                    <Field label="تويتر / X"><TInput value={data.twitter} onChange={(v: string) => upd("twitter", v)} placeholder="@username" /></Field>
-                    <Field label="سناب شات"><TInput value={data.snapchat} onChange={(v: string) => upd("snapchat", v)} placeholder="@username" /></Field>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 dark:text-slate-500">شخص استلام التحديثات (اختياري)</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <TInput value={data.recipientName} onChange={(v: string) => upd("recipientName", v)} placeholder="الاسم" />
-                      <TInput value={data.recipientPhone} onChange={(v: string) => upd("recipientPhone", v)} placeholder="رقم الجوال" />
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* ══ STEP 2: FEATURES ══════════════════════════════════════════ */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-gray-400 dark:text-slate-500">اختر المميزات الإضافية التي تحتاجها لمشروعك</p>
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-lg ${data.selectedFeatures.length >= maxFeatures ? "bg-green-500/20 text-green-600 dark:text-green-400" : "bg-gray-100 dark:bg-white/[0.05] text-gray-400 dark:text-slate-400"}`}>
-                      {data.selectedFeatures.length} / {maxFeatures}
-                    </span>
-                  </div>
-
-                  {extraAddons.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Package className="w-10 h-10 text-slate-700 mb-3" />
-                      <p className="text-slate-500 text-sm">لا توجد إضافات متاحة حالياً</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-2">
-                      {extraAddons.map((addon: any) => {
-                        const addonId = addon._id || addon.id;
-                        const selected = data.selectedFeatures.includes(addonId);
-                        const disabled = !selected && data.selectedFeatures.length >= maxFeatures;
-                        return (
-                          <button
-                            key={addonId}
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => {
-                              if (selected) upd("selectedFeatures", data.selectedFeatures.filter((x: string) => x !== addonId));
-                              else if (!disabled) upd("selectedFeatures", [...data.selectedFeatures, addonId]);
-                            }}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-right transition-all ${
-                              selected
-                                ? "border-blue-500/50 bg-blue-500/10"
-                                : disabled
-                                ? "border-gray-200 dark:border-slate-800/50 bg-gray-50 dark:bg-white/[0.01] opacity-40 cursor-not-allowed"
-                                : "border-gray-200 dark:border-slate-800/60 bg-gray-50 dark:bg-white/[0.02] hover:border-gray-300 dark:hover:border-slate-700 hover:bg-gray-100 dark:hover:bg-white/[0.04]"
-                            }`}
-                          >
-                            <AddonIcon
-                              iconName={addon.icon}
-                              imageUrl={addon.imageUrl}
-                              selected={selected}
-                            />
-                            <div className="flex-1 text-right min-w-0">
-                              <p className={`text-sm font-bold ${selected ? "text-blue-700 dark:text-white" : "text-gray-700 dark:text-slate-300"}`}>
-                                {addon.nameAr || addon.name}
-                              </p>
-                              {addon.descriptionAr && (
-                                <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate mt-0.5">{addon.descriptionAr}</p>
-                              )}
-                            </div>
-                            {addon.price > 0 && (
-                              <div className="text-right shrink-0">
-                                <span className={`text-xs font-black ${selected ? "text-blue-600 dark:text-blue-300" : "text-gray-400 dark:text-slate-500"}`}>
-                                  {addon.price.toLocaleString()}
-                                </span>
-                                <span className="text-[10px] text-gray-300 dark:text-slate-600 mr-0.5"> ر.س</span>
-                              </div>
-                            )}
-                            {selected && <Check className="w-4 h-4 text-blue-400 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ══ STEP 3: ASSETS ════════════════════════════════════════════ */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  <Field label="رقم السجل التجاري / وثيقة العمل الحر">
-                    <TInput value={data.commercialReg} onChange={(v: string) => upd("commercialReg", v)} placeholder="1234567890" />
-                  </Field>
-                  <Field label="الشعار (اللوغو)" required>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[{ v: "upload", l: "رفع شعاري" }, { v: "design", l: "تصميم بـ 15 ر.س" }, { v: "none", l: "لاحقاً" }].map(opt => (
-                        <button key={opt.v} type="button" onClick={() => upd("logoChoice", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.logoChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                    {data.logoChoice === "upload" && (
-                      <div className="mt-2">
-                        <input ref={logoRef} type="file" className="hidden" accept="image/*,.svg" onChange={async e => {
-                          if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("logoFile", u); }
-                        }} />
-                        {data.logoFile
-                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-green-600 dark:text-green-400">تم الرفع</span></div>
-                          : <button type="button" onClick={() => logoRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
-                              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> رفع الشعار</>}
-                            </button>}
-                      </div>
-                    )}
-                  </Field>
-                  <Field label="الهوية البصرية" required>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[{ v: "upload", l: "رفع الهوية" }, { v: "create", l: "إنشاء بـ 1800 ر.س" }, { v: "none", l: "لاحقاً" }].map(opt => (
-                        <button key={opt.v} type="button" onClick={() => upd("brandChoice", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.brandChoice === opt.v ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                    {data.brandChoice === "upload" && (
-                      <div className="mt-2">
-                        <input ref={brandRef} type="file" className="hidden" accept=".pdf,image/*,.zip" onChange={async e => {
-                          if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("brandFile", u); }
-                        }} />
-                        {data.brandFile
-                          ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2"><Check className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-green-600 dark:text-green-400">تم الرفع</span></div>
-                          : <button type="button" onClick={() => brandRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
-                              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> رفع ملف الهوية</>}
-                            </button>}
-                      </div>
-                    )}
-                  </Field>
-                  <Field label="العملاء المتوقعون شهرياً" required>
+                  {/* Sector */}
+                  <Field label="قطاع النشاط" required>
                     <div className="grid grid-cols-2 gap-2">
-                      {["أقل من 100","100 – 500","500 – 2000","أكثر من 2000"].map(opt => (
-                        <button key={opt} type="button" onClick={() => upd("expectedCustomers", opt)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.expectedCustomers === opt ? "border-violet-500/60 bg-violet-500/15 text-violet-600 dark:text-violet-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt}
+                      {SECTORS.map(s => (
+                        <button
+                          key={s.value} type="button"
+                          onClick={() => upd("sector", s.value)}
+                          data-testid={`sector-${s.value}`}
+                          className={`h-10 rounded-xl border text-xs font-bold text-right px-3 transition-all ${
+                            data.sector === s.value
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                              : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-white/[0.02] text-gray-600 dark:text-slate-400 hover:border-gray-300 hover:bg-gray-100"
+                          }`}
+                        >
+                          {s.label}
                         </button>
                       ))}
                     </div>
                   </Field>
-                  <Field label="ملفات إضافية (اختياري)" hint="يمكنك رفع ملفات عدة">
-                    <div>
-                      <input ref={extraRef} type="file" className="hidden" multiple onChange={async e => {
-                        if (e.target.files) {
-                          for (const file of Array.from(e.target.files)) {
-                            const u = await uploadFile(file);
-                            if (u) upd("extraFiles", [...data.extraFiles, u]);
-                          }
-                        }
-                      }} />
-                      <button type="button" onClick={() => extraRef.current?.click()} className="w-full h-10 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:border-gray-400 dark:hover:border-slate-600 hover:text-gray-600 dark:hover:text-slate-400 transition-all flex items-center justify-center gap-2">
-                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Upload className="w-3.5 h-3.5" /> {data.extraFiles.length > 0 ? `${data.extraFiles.length} ملف مرفوع — رفع المزيد` : "رفع ملفات إضافية"}</>}
+
+                  {/* Project idea with AI assist */}
+                  <Field label="فكرة مشروعك" required hint="اشرح لنا ما تريد تحقيقه وجمهورك المستهدف">
+                    <div className="relative">
+                      <textarea
+                        value={data.projectIdea}
+                        onChange={e => upd("projectIdea", e.target.value)}
+                        rows={5}
+                        placeholder="مثال: أريد موقعاً إلكترونياً لمطعمي يتيح للزبائن رؤية قائمة الطعام وحجز الطاولات وطلب التوصيل..."
+                        data-testid="textarea-project-idea"
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all resize-none leading-relaxed"
+                      />
+                      {/* AI help button */}
+                      <button
+                        type="button"
+                        onClick={handleAIIdea}
+                        disabled={aiLoading || (!data.businessName.trim() && !data.sector)}
+                        data-testid="button-ai-idea"
+                        className="absolute left-2 bottom-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white text-[11px] font-bold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                      >
+                        {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                        {aiLoading ? "جارٍ الكتابة..." : "✨ اكتب لي"}
                       </button>
                     </div>
-                  </Field>
-                </div>
-              )}
-
-              {/* ══ STEP 4: LEGAL / KYC ════════════════════════════════════════ */}
-              {step === 4 && (
-                <div className="space-y-5">
-
-                  {/* Document type selector */}
-                  <Field label="نوع وثيقة النشاط" required>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { v: "commercial", l: "سجل تجاري", icon: Briefcase },
-                        { v: "freelance",  l: "وثيقة عمل حر", icon: IdCard },
-                      ].map(opt => {
-                        const Icon = opt.icon;
-                        return (
-                          <button key={opt.v} type="button" onClick={() => upd("legalDocType", opt.v)}
-                            className={`h-14 rounded-xl border flex items-center justify-center gap-2 text-sm font-bold transition-all ${data.legalDocType === opt.v ? "border-rose-500/60 bg-rose-500/10 text-rose-400 dark:text-rose-400" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700"}`}>
-                            <Icon className="w-4 h-4" />{opt.l}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </Field>
-
-                  {/* Document number */}
-                  <Field label={data.legalDocType === "commercial" ? "رقم السجل التجاري *" : "رقم وثيقة العمل الحر *"} required>
-                    <TInput value={data.legalDocNumber} onChange={(v: string) => upd("legalDocNumber", v)}
-                      placeholder={data.legalDocType === "commercial" ? "1234567890" : "7XXXXXXXXX"} />
-                  </Field>
-
-                  {/* Document file upload */}
-                  <Field label={data.legalDocType === "commercial" ? "ملف السجل التجاري *" : "ملف وثيقة العمل الحر *"} required
-                    hint="صورة أو PDF واضح للوثيقة">
-                    <input ref={legalDocRef} type="file" className="hidden" accept="image/*,.pdf"
-                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("legalDocFile", u); } }} />
-                    {data.legalDocFile
-                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع الوثيقة</span>
-                        </div>
-                      : <button type="button" onClick={() => legalDocRef.current?.click()}
-                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-rose-400/50 hover:text-rose-400 transition-all flex items-center justify-center gap-2">
-                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> ارفع الوثيقة</>}
-                        </button>}
-                  </Field>
-
-                  {/* IBAN certificate */}
-                  <Field label="شهادة الإيبان *" required hint="وثيقة تثبت رقم الحساب البنكي — مطلوبة">
-                    <input ref={ibanRef} type="file" className="hidden" accept="image/*,.pdf"
-                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("ibanCertFile", u); } }} />
-                    {data.ibanCertFile
-                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع شهادة الإيبان</span>
-                        </div>
-                      : <button type="button" onClick={() => ibanRef.current?.click()}
-                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-blue-400/50 hover:text-blue-400 transition-all flex items-center justify-center gap-2">
-                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Upload className="w-4 h-4" /> ارفع شهادة الإيبان</>}
-                        </button>}
-                  </Field>
-
-                  {/* Tax number (optional) */}
-                  <Field label="الرقم الضريبي (اختياري)" hint="أدخله إذا كنت مسجلاً في هيئة الزكاة والضريبة">
-                    <TInput value={data.taxNumber} onChange={(v: string) => upd("taxNumber", v)} placeholder="300XXXXXXXXXXX" />
-                  </Field>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-100 dark:border-white/[0.05] pt-1" />
-
-                  {/* National ID number */}
-                  <Field label="رقم الهوية الوطنية *" required>
-                    <TInput value={data.idNumber} onChange={(v: string) => upd("idNumber", v)} placeholder="1XXXXXXXXX" />
-                  </Field>
-
-                  {/* ID photo */}
-                  <Field label="صورة الهوية الوطنية *" required hint="صورة واضحة للوجه الأمامي للهوية — مطلوبة">
-                    <input ref={idPhotoRef} type="file" className="hidden" accept="image/*"
-                      onChange={async e => { if (e.target.files?.[0]) { const u = await uploadFile(e.target.files[0]); if (u) upd("idPhotoFile", u); } }} />
-                    {data.idPhotoFile
-                      ? <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 dark:text-green-400 font-bold">تم رفع صورة الهوية</span>
-                        </div>
-                      : <button type="button" onClick={() => idPhotoRef.current?.click()}
-                          className="w-full h-12 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl text-sm text-gray-500 dark:text-slate-500 hover:border-amber-400/50 hover:text-amber-400 transition-all flex items-center justify-center gap-2">
-                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><IdCard className="w-4 h-4" /> ارفع صورة الهوية</>}
-                        </button>}
-                    <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 dark:bg-amber-500/[0.05] border border-amber-200 dark:border-amber-500/20 rounded-xl">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-700 dark:text-amber-400">تأكد من أن الصورة واضحة وجميع البيانات مقروءة — تُحفظ بشكل آمن وسري</p>
-                    </div>
-                  </Field>
-                </div>
-              )}
-
-              {/* ══ STEP 5: PAYMOB REGISTRATION ══════════════════════════════ */}
-              {step === 5 && (
-                <div className="space-y-5">
-                  {/* Partner logos */}
-                  <div className="flex items-center justify-center gap-4 py-3">
-                    <QiroxIcon className="w-8 h-8 text-gray-400 dark:text-slate-500" />
-                    <span className="text-gray-300 dark:text-slate-600 font-thin text-xl">×</span>
-                    <img src={paymobLogo} alt="Paymob" className="h-7 object-contain opacity-70" />
-                  </div>
-
-                  {/* Info alert */}
-                  <div className="p-4 bg-indigo-500/[0.07] border border-indigo-500/20 rounded-2xl flex gap-3">
-                    <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">تعليمات مهمة قبل التسجيل</p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                        استخدم <strong>نفس رقم الجوال</strong> المرتبط بحسابك في Qirox عند التسجيل في Paymob.
-                        هذا يضمن ربط حسابك بشكل صحيح وتفعيل الدفع تلقائياً.
+                    {(!data.businessName.trim() || !data.sector) && (
+                      <p className="text-[10px] text-violet-500 flex items-center gap-1">
+                        <Lightbulb className="w-3 h-3" />
+                        أدخل اسم المشروع واختر القطاع لتفعيل المساعد الذكي
                       </p>
-                    </div>
-                  </div>
+                    )}
+                  </Field>
 
-                  {/* Steps */}
-                  <div className="space-y-3">
-                    {[
-                      { num: "١", title: "افتح رابط تسجيل Paymob", desc: "اضغط على الزر أدناه لفتح صفحة التسجيل في نافذة جديدة" },
-                      { num: "٢", title: "أدخل بياناتك", desc: "استخدم نفس رقم الجوال المسجل في Qirox" },
-                      { num: "٣", title: "أكمل التسجيل", desc: "اتبع تعليمات Paymob حتى تصل لصفحة التأكيد" },
-                      { num: "٤", title: "عُد هنا وأكّد", desc: "فعّل المربع أدناه بعد إتمام التسجيل" },
-                    ].map((s, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.04]">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 text-indigo-400 font-black text-sm">{s.num}</div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-800 dark:text-white">{s.title}</p>
-                          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{s.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* CTA Button */}
-                  <a
-                    href={PAYMOB_REGISTER_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2.5 w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-all shadow-lg shadow-indigo-600/20"
-                    data-testid="btn-paymob-register"
-                  >
-                    <Globe2 className="w-4 h-4" />
-                    فتح صفحة تسجيل Paymob
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </a>
-
-                  {/* Confirmation checkbox */}
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl">
-                    <input
-                      type="checkbox"
-                      id="paymob-done"
-                      checked={data.paymobRegistered}
-                      onChange={e => upd("paymobRegistered", e.target.checked)}
-                      className="w-4 h-4 rounded accent-indigo-500"
-                      data-testid="checkbox-paymob-registered"
-                    />
-                    <label htmlFor="paymob-done" className="text-sm text-gray-600 dark:text-slate-400 cursor-pointer leading-snug">
-                      أؤكد أنني أكملت التسجيل في منصة Paymob وسأرسل اسم المستخدم لفريق Qirox
-                    </label>
-                  </div>
-
-                  {!data.paymobRegistered && (
-                    <p className="text-xs text-amber-500 dark:text-amber-400 flex items-center gap-1.5 justify-center">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      يجب التسجيل في Paymob أولاً قبل المتابعة
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* ══ STEP 6: PAYMOB POLICY & AGREEMENT ════════════════════════ */}
-              {step === 6 && (
-                <div className="space-y-5">
-
-                  {/* Fee Table */}
-                  <div>
-                    <h3 className="text-sm font-black text-gray-800 dark:text-white flex items-center gap-2 mb-3">
-                      <Percent className="w-4 h-4 text-teal-400" />
-                      جدول رسوم بوابة الدفع
-                    </h3>
-                    <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/[0.07]">
-                      <div className="bg-teal-50 dark:bg-teal-500/10 border-b border-teal-100 dark:border-teal-500/15 px-4 py-2.5 text-center">
-                        <p className="text-xs font-black text-teal-700 dark:text-teal-300 uppercase tracking-widest">جدول الرسوم</p>
-                      </div>
-                      {PAYMOB_FEE_TABLE.map((row, i) => (
-                        <div key={i} className={`flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/[0.03] last:border-0 ${i % 2 === 0 ? "bg-gray-50/50 dark:bg-white/[0.01]" : ""}`}>
-                          <span className="text-sm text-gray-600 dark:text-slate-400 font-medium">{row.method}</span>
-                          <span className={`text-sm font-black ${row.free ? "text-green-600 dark:text-green-400" : "text-gray-800 dark:text-white"}`}>{row.fee}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Policy Summary */}
-                  <div className="p-4 bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black text-gray-800 dark:text-white flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-teal-400" />
-                        أبرز بنود اتفاقية Paymob
-                      </h3>
-                      <a
-                        href="/paymob-policy.txt"
-                        download="paymob-policy.txt"
-                        className="text-xs text-teal-500 dark:text-teal-400 hover:text-teal-600 flex items-center gap-1 transition-colors"
-                      >
-                        <Download className="w-3 h-3" />
-                        تحميل النص الكامل
-                      </a>
-                    </div>
-                    {[
-                      "الرسوم تُخصم تلقائياً من المبالغ المحولة قبل التسوية",
-                      "بعد إتمام الدفع لا يمكن التراجع عنه",
-                      "يلتزم التاجر بحماية بيانات العملاء",
-                      "يلتزم Paymob بتزويدك بتقارير العمليات",
-                      "يمكن إنهاء الاتفاقية بإشعار كتابي قبل 30 يوماً",
-                    ].map((point, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 text-teal-500 mt-0.5 shrink-0" />
-                        <p className="text-xs text-gray-500 dark:text-slate-400">{point}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Agreement + Signature */}
-                  <div className="p-4 bg-teal-500/[0.05] border border-teal-500/15 rounded-2xl space-y-4">
-                    <div className="flex items-start gap-3">
+                  {/* Email */}
+                  <Field label="البريد الإلكتروني الرسمي">
+                    <div className="relative">
+                      <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
-                        type="checkbox"
-                        id="paymob-policy"
-                        checked={data.paymobPolicyAccepted}
-                        onChange={e => upd("paymobPolicyAccepted", e.target.checked)}
-                        className="w-4 h-4 rounded accent-teal-500 mt-0.5"
-                        data-testid="checkbox-paymob-policy"
+                        type="email" value={data.email} dir="ltr"
+                        onChange={e => upd("email", e.target.value)}
+                        placeholder="info@company.com"
+                        className="w-full h-11 pr-10 pl-4 rounded-xl bg-gray-50 dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 transition-all"
                       />
-                      <label htmlFor="paymob-policy" className="text-sm text-gray-600 dark:text-slate-400 cursor-pointer leading-relaxed">
-                        أقر بأنني قرأت وفهمت واتفقت على جميع شروط وأحكام اتفاقية Paymob بما فيها جدول الرسوم أعلاه.
-                      </label>
                     </div>
-
-                    {data.paymobPolicyAccepted && (
-                      <div className="pt-3 border-t border-teal-500/10 space-y-2">
-                        <label className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                          <Pen className="w-3 h-3" />
-                          التوقيع الرقمي — اكتب اسمك الكامل *
-                        </label>
-                        <input
-                          type="text"
-                          value={data.paymobSignatureName}
-                          onChange={e => upd("paymobSignatureName", e.target.value)}
-                          placeholder="اسمك الكامل بالعربية أو الإنجليزية"
-                          className="w-full h-11 px-4 rounded-xl bg-white dark:bg-white/[0.05] border border-gray-200 dark:border-slate-700/60 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 text-sm focus:outline-none focus:border-teal-500/60 transition-all font-bold"
-                          data-testid="input-paymob-signature"
-                        />
-                        {data.paymobSignatureName && data.paymobSignatureName.trim().length >= 3 && (
-                          <div className="flex items-center justify-between p-3 bg-white dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-white/[0.05]">
-                            <span className="text-xs text-gray-400 dark:text-slate-500">التوقيع الرقمي المعتمد:</span>
-                            <span className="text-gray-800 dark:text-white font-bold text-base" style={{ fontFamily: "Georgia, serif" }}>
-                              {data.paymobSignatureName}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  </Field>
                 </div>
               )}
 
-              {/* ══ STEP 7: STRATEGIC ═════════════════════════════════════════ */}
-              {step === 7 && (
-                <div className="space-y-4">
-                  <Field label="رابط موقع منافس" hint="يساعدنا في فهم السوق المستهدف">
-                    <TInput value={data.competitorUrl} onChange={(v: string) => upd("competitorUrl", v)} placeholder="https://competitor.com" type="url" />
-                  </Field>
-                  <Field label="هل لديك موقع سابق؟" required>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      {[{ v: true, l: "نعم" }, { v: false, l: "لا" }].map(opt => (
-                        <button key={String(opt.v)} type="button" onClick={() => upd("hadPrevSite", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hadPrevSite === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                    <TArea value={data.prevSiteFeedback} onChange={(v: string) => upd("prevSiteFeedback", v)} rows={2}
-                      placeholder={data.hadPrevSite ? "ما هي عيوب الموقع السابق؟" : "ما هي توقعاتك من الموقع الجديد؟"} />
-                  </Field>
-                  <Field label="مستوى المعرفة التقنية" required>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      {[{ v: "high", l: "لدي خلفية تقنية" }, { v: "low", l: "أعمال فقط" }].map(opt => (
-                        <button key={opt.v} type="button" onClick={() => upd("technicalLevel", opt.v)}
-                          className={`h-10 rounded-lg border text-xs font-bold transition-all ${data.technicalLevel === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                    {data.technicalLevel === "high" && (
-                      <TArea value={data.technicalDetails} onChange={(v: string) => upd("technicalDetails", v)} rows={2} placeholder="اذكر التقنيات التي تعرفها أو تفضلها..." />
-                    )}
-                  </Field>
-                  <Field label="هل لديك مبرمجون خاصون؟" required>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      {[{ v: true, l: "نعم" }, { v: false, l: "لا" }].map(opt => (
-                        <button key={String(opt.v)} type="button" onClick={() => upd("hasDevTeam", opt.v)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.hasDevTeam === opt.v ? "border-green-500/60 bg-green-500/15 text-green-600 dark:text-green-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {opt.l}
-                        </button>
-                      ))}
-                    </div>
-                    {data.hasDevTeam && (
-                      <TArea value={data.devTeamDetails} onChange={(v: string) => upd("devTeamDetails", v)} rows={2} placeholder="أسماء المطورين وتخصصاتهم..." />
-                    )}
-                  </Field>
-
-                  {/* ── المميزات التقنية ── */}
-                  <div className="pt-2 border-t border-gray-100 dark:border-white/[0.05]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
-                        <Cpu className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="font-black text-gray-900 dark:text-white text-sm">المتطلبات التقنية للمشروع</p>
-                        <p className="text-gray-400 dark:text-slate-500 text-[11px]">أضف التقنيات والأفكار التي تريدها</p>
-                      </div>
-                    </div>
-
-                    <Field label="المميزات التقنية المطلوبة" hint="اكتب كل ميزة ثم اضغط + أو Enter لإضافتها">
-                      <TagInput
-                        value={data.technicalFeatures}
-                        onChange={v => upd("technicalFeatures", v)}
-                        placeholder="مثال: دفع إلكتروني، نظام نقاط، تحليلات..."
-                      />
-                    </Field>
+              {/* ── STEP 2: FILES (all optional) ───────────────── */}
+              {step === 2 && (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/[0.08] border border-blue-200 dark:border-blue-500/20 rounded-xl px-4 py-3">
+                    <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
+                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">كل الملفات في هذه الخطوة <strong>اختيارية تماماً</strong> — يمكنك إرسالها لاحقاً عبر واتساب أو البريد الإلكتروني</p>
                   </div>
 
-                  <Field label="الأفكار التقنية والرؤية الخاصة بك" hint="شارك أفكارك ورؤيتك للمشروع بحرية">
-                    <TArea
-                      value={data.projectTechIdeas}
-                      onChange={(v: string) => upd("projectTechIdeas", v)}
-                      rows={4}
-                      placeholder="اكتب أفكارك التقنية بتفصيل... مثال: أريد نظاماً يعمل تلقائياً لإشعار العملاء عند تغيير حالة الطلب، مع تكامل مع واتساب..."
+                  {/* Logo */}
+                  <Field label="شعار مشروعك" hint="PNG أو JPG — إذا لم يكن لديك شعار سنساعدك لاحقاً">
+                    <input ref={logoRef} type="file" accept="image/*" className="hidden"
+                      onChange={async e => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const url = await uploadFile(f, setUploading);
+                        if (url) upd("logoFile", url);
+                        else toast({ title: "فشل رفع الشعار", variant: "destructive" });
+                      }}
                     />
-                  </Field>
-                </div>
-              )}
-
-              {/* ══ STEP 8: MEETING ═══════════════════════════════════════════ */}
-              {step === 8 && (
-                <div className="space-y-4">
-                  <Field label={`الأوقات المفضلة (${data.preferredTimes.length}/3)`} required hint="اختر حتى 3 أوقات مناسبة">
-                    <Chips options={TIMES} value={data.preferredTimes} onChange={v => upd("preferredTimes", v)} max={3} />
-                  </Field>
-                  <Field label={`الأيام المناسبة (${data.preferredDays.length}/3)`} required hint="اختر حتى 3 أيام">
-                    <Chips options={DAYS} value={data.preferredDays} onChange={v => upd("preferredDays", v)} max={3} />
-                  </Field>
-                  {data.preferredTimes.length > 0 && data.preferredDays.length > 0 && (
-                    <div className="bg-cyan-500/[0.07] border border-cyan-500/20 rounded-xl p-4">
-                      <p className="text-xs font-black text-cyan-600 dark:text-cyan-400 mb-2">📅 مواعيدك المفضلة</p>
-                      <p className="text-gray-700 dark:text-slate-300 text-xs">الأيام: {data.preferredDays.join(" · ")}</p>
-                      <p className="text-gray-700 dark:text-slate-300 text-xs mt-1">الأوقات: {data.preferredTimes.join(" · ")}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ══ STEP 9: ADDRESS ═══════════════════════════════════════════ */}
-              {step === 9 && hasPhysical && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="اسم المستلم" required>
-                      <TInput value={data.address.name} onChange={(v: string) => updAddr("name", v)} placeholder="الاسم الكامل" />
-                    </Field>
-                    <Field label="رقم الجوال" required>
-                      <TInput value={data.address.phone} onChange={(v: string) => updAddr("phone", v)} placeholder="05xxxxxxxx" />
-                    </Field>
-                  </div>
-                  <Field label="المدينة" required>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["الرياض","جدة","مكة المكرمة","المدينة","الدمام","أخرى"].map(c => (
-                        <button key={c} type="button" onClick={() => updAddr("city", c)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition-all ${data.address.city === c ? "border-orange-500/60 bg-orange-500/15 text-orange-600 dark:text-orange-300" : "border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-white/[0.02] text-gray-500 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-700 hover:text-gray-700 dark:hover:text-slate-300"}`}>
-                          {c}
+                    {data.logoFile ? (
+                      <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-500/[0.08] border border-green-200 dark:border-green-500/20 rounded-xl">
+                        <img src={data.logoFile} alt="logo" className="w-12 h-12 object-contain rounded-lg border border-green-200" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-green-700 dark:text-green-300">✓ تم رفع الشعار</p>
+                        </div>
+                        <button type="button" onClick={() => upd("logoFile", "")} className="text-gray-400 hover:text-red-500 transition-colors">
+                          <X className="w-4 h-4" />
                         </button>
-                      ))}
-                    </div>
-                    {data.address.city === "أخرى" && (
-                      <div className="mt-2"><TInput value={data.address.district} onChange={(v: string) => updAddr("city", v)} placeholder="اكتب اسم المدينة" /></div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button" onClick={() => logoRef.current?.click()} disabled={uploading}
+                        data-testid="button-upload-logo"
+                        className="w-full h-24 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/[0.05] transition-all group"
+                      >
+                        {uploading ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <ImageIcon className="w-6 h-6 text-gray-300 group-hover:text-blue-400 transition-colors" />}
+                        <span className="text-xs text-gray-400 group-hover:text-blue-500 transition-colors font-medium">اضغط لرفع الشعار</span>
+                      </button>
                     )}
                   </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="الحي">
-                      <TInput value={data.address.district} onChange={(v: string) => updAddr("district", v)} placeholder="اسم الحي" />
-                    </Field>
-                    <Field label="الشارع">
-                      <TInput value={data.address.street} onChange={(v: string) => updAddr("street", v)} placeholder="اسم الشارع" />
-                    </Field>
+
+                  {/* Extra files */}
+                  <Field label="ملفات إضافية" hint="هوية بصرية، وثائق، مراجع تصميم... أي شيء يساعدنا على فهم مشروعك">
+                    <input ref={extraRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.zip" className="hidden"
+                      onChange={async e => {
+                        const files = Array.from(e.target.files || []);
+                        if (!files.length) return;
+                        setUploadingExtra(true);
+                        const urls: string[] = [];
+                        for (const f of files) {
+                          const url = await uploadFile(f, () => {});
+                          if (url) urls.push(url);
+                        }
+                        setUploadingExtra(false);
+                        if (urls.length) upd("extraFiles", [...data.extraFiles, ...urls]);
+                        else toast({ title: "فشل رفع الملفات", variant: "destructive" });
+                      }}
+                    />
+                    <button
+                      type="button" onClick={() => extraRef.current?.click()} disabled={uploadingExtra}
+                      data-testid="button-upload-extra"
+                      className="w-full h-20 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/[0.05] transition-all group"
+                    >
+                      {uploadingExtra ? <Loader2 className="w-5 h-5 animate-spin text-violet-500" /> : <Upload className="w-5 h-5 text-gray-300 group-hover:text-violet-400 transition-colors" />}
+                      <span className="text-xs text-gray-400 group-hover:text-violet-500 transition-colors font-medium">
+                        {data.extraFiles.length > 0 ? `${data.extraFiles.length} ملف — اضغط لإضافة المزيد` : "اضغط لرفع ملفات (اختياري)"}
+                      </span>
+                    </button>
+                    {data.extraFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {data.extraFiles.map((url, i) => (
+                          <div key={i} className="flex items-center gap-1.5 bg-gray-100 dark:bg-white/[0.05] border border-gray-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1.5">
+                            <FileText className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-600 dark:text-slate-400">ملف {i + 1}</span>
+                            <button type="button" onClick={() => upd("extraFiles", data.extraFiles.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 transition-colors ml-0.5">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Field>
+
+                  <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-xl p-4 text-center">
+                    <p className="text-xs text-gray-400 dark:text-slate-500">
+                      لا تقلق إذا لم تكن لديك الملفات الآن — فريقنا سيتواصل معك على <strong className="text-gray-600 dark:text-slate-300">واتساب</strong> بعد تأكيد الطلب
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── STEP 3: REVIEW & GO TO PAYMENT ─────────────── */}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div className="text-center py-2">
+                    <div className="w-14 h-14 bg-green-50 dark:bg-green-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-green-200 dark:border-green-500/20">
+                      <Check className="w-7 h-7 text-green-500" />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white">جاهز للدفع!</h3>
+                    <p className="text-gray-400 dark:text-slate-500 text-sm mt-1">راجع ملخص طلبك ثم انتقل لاختيار طريقة الدفع</p>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-200 dark:border-white/[0.06] rounded-2xl p-4 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">ملخص طلبك</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 dark:text-slate-500">اسم المشروع</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{data.businessName}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 dark:text-slate-500">القطاع</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{SECTORS.find(s => s.value === data.sector)?.label || data.sector}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500 dark:text-slate-500">واتساب</span>
+                        <span className="font-bold text-gray-900 dark:text-white" dir="ltr">{data.whatsapp}</span>
+                      </div>
+                      {data.logoFile && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500 dark:text-slate-500">الشعار</span>
+                          <span className="font-bold text-green-600">✓ تم الرفع</span>
+                        </div>
+                      )}
+                      {data.extraFiles.length > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500 dark:text-slate-500">ملفات إضافية</span>
+                          <span className="font-bold text-gray-900 dark:text-white">{data.extraFiles.length} ملف</span>
+                        </div>
+                      )}
+                    </div>
+                    {cartItems.length > 0 && (
+                      <>
+                        <div className="border-t border-gray-200 dark:border-white/[0.06] pt-3">
+                          {cartItems.map((item, i) => (
+                            <div key={i} className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600 dark:text-slate-400">{(item as any).nameAr || item.name}</span>
+                              <span className="font-bold text-gray-900 dark:text-white">{(item.price * item.qty).toLocaleString()} ر.س</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-white/[0.06] pt-3 flex justify-between items-center">
+                          <span className="font-black text-gray-900 dark:text-white">الإجمالي</span>
+                          <span className="text-xl font-black text-blue-600">{total.toLocaleString()} ر.س</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200 dark:border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
+                    <Globe className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700 dark:text-amber-300">بعد الدفع سيتواصل معك فريقنا على واتساب خلال <strong>24 ساعة</strong> لبدء تنفيذ مشروعك</p>
                   </div>
                 </div>
               )}
 
             </div>
 
-            {/* ── Bottom navigation ── */}
-            {step > 0 && (
-              <div className="flex items-center gap-3 px-6 py-5 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.01]">
-                {step > 1 && (
-                  <button onClick={() => setStep(s => s - 1)} className="flex items-center gap-2 text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors font-bold h-11 px-4 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.04]">
-                    <ChevronRight className="w-4 h-4" /> السابق
-                  </button>
-                )}
-                <div className="flex-1" />
-                {step < TOTAL_STEPS ? (
-                  <Button onClick={() => { if (canNext()) setStep(s => s + 1); }} disabled={!canNext()}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white h-11 px-7 rounded-xl font-black gap-2 shadow-lg shadow-blue-600/20">
-                    التالي <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button onClick={handleFinish} disabled={!canNext() || submitting}
-                    className="bg-gradient-to-l from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 disabled:opacity-40 text-white h-11 px-7 rounded-xl font-black gap-2 shadow-lg shadow-cyan-600/20">
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> الانتقال للدفع</>}
-                  </Button>
-                )}
-              </div>
-            )}
+            {/* Navigation buttons */}
+            <div className="px-6 pb-6 flex gap-3">
+              {step > 1 && step <= 3 && (
+                <Button variant="outline" onClick={() => setStep(s => (s - 1) as any)} className="flex-1 h-12 rounded-xl gap-2 font-bold" data-testid="button-wizard-back">
+                  <ArrowLeft className="w-4 h-4" /> السابق
+                </Button>
+              )}
+
+              {step >= 1 && step < 3 && (
+                <Button
+                  onClick={() => setStep(s => (s + 1) as any)}
+                  disabled={!canNext()}
+                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  data-testid="button-wizard-next"
+                >
+                  التالي
+                  {step < 2 ? <Lightbulb className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                </Button>
+              )}
+
+              {step === 3 && (
+                <Button
+                  onClick={handleFinish}
+                  disabled={submitting}
+                  className="flex-[2] h-12 rounded-xl font-black gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20"
+                  data-testid="button-wizard-finish"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> انتقل للدفع</>}
+                </Button>
+              )}
+            </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Required fields note */}
-        {step > 0 && (
-          <p className="text-center text-xs text-gray-400 dark:text-slate-600 mt-4">
-            <span className="text-red-400">*</span> الحقول المطلوبة
-          </p>
-        )}
       </div>
-
       <Footer />
     </div>
   );

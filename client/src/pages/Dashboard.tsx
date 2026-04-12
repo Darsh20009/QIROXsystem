@@ -1,4 +1,5 @@
 import { useUser } from "@/hooks/use-auth";
+import ClientDashboardSimple from "@/components/ClientDashboardSimple";
 import { useI18n } from "@/lib/i18n";
 import { useOrders } from "@/hooks/use-orders";
 import SARIcon from "@/components/SARIcon";
@@ -536,6 +537,8 @@ function EmployeeDashboard({ user }: { user: any }) {
   });
   const [statusUpdate, setStatusUpdate] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
+  const [aiChecklistLoading, setAiChecklistLoading] = useState<string | null>(null);
+  const [aiChecklists, setAiChecklists] = useState<Record<string, string[]>>({});
 
   const { data: selectedOrderSpecs, isLoading: isLoadingSpecs } = useQuery<any>({
     queryKey: ['/api/admin/orders', selectedOrder?.id, 'specs'],
@@ -625,6 +628,48 @@ function EmployeeDashboard({ user }: { user: any }) {
     setStatusUpdate(order.status || "pending");
     setAdminNotes(order.adminNotes || "");
     setSpecsForm(prev => ({ ...prev, techStack: "", database: "", hosting: "", domain: "", projectConcept: "", variables: "", notes: "" }));
+  };
+
+  const generateAIChecklist = async (order: any) => {
+    const orderId = order.id || order._id;
+    setAiChecklistLoading(orderId);
+    try {
+      const projectType = order.projectType || order.formData?.projectType || "موقع إلكتروني";
+      const sector = order.formData?.sector || order.sector || "عام";
+      const businessName = order.businessName || order.formData?.businessName || "";
+      const idea = order.projectIdea || order.formData?.projectIdea || "";
+      const prompt = `أنت مدير مشروع متخصص في التسويق الرقمي والمواقع الإلكترونية. قم بإنشاء قائمة مهام تفصيلية لتنفيذ مشروع "${projectType}" لنشاط "${businessName}" في قطاع "${sector}". ${idea ? `فكرة المشروع: ${idea}` : ""}
+
+اكتب القائمة بالعربية كعناصر مرتبة، كل عنصر في سطر مستقل يبدأ بـ "- "، تشمل:
+- مرحلة الاستلام والمراجعة (3 مهام)
+- مرحلة التصميم (4 مهام)
+- مرحلة التطوير (4 مهام)
+- مرحلة الاختبار (3 مهام)
+- مرحلة التسليم (3 مهام)
+
+أعطِ قائمة عملية ومحددة فقط، بدون تفسيرات أو ترقيم، فقط عناصر تبدأ بـ "- ".`;
+
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], stream: false }),
+      });
+      if (!res.ok) throw new Error("AI error");
+      const d = await res.json();
+      const text = d.content || d.message || d.text || "";
+      const items = text.split("\n").map((l: string) => l.replace(/^[-•*]\s*/, "").trim()).filter((l: string) => l.length > 3);
+      if (items.length) {
+        setAiChecklists(prev => ({ ...prev, [orderId]: items }));
+        toast({ title: `✓ تم إنشاء ${items.length} مهمة للمشروع` });
+      } else {
+        toast({ title: "لم يتمكن الذكاء الاصطناعي من إنشاء القائمة", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "تعذّر الاتصال بالذكاء الاصطناعي", variant: "destructive" });
+    } finally {
+      setAiChecklistLoading(null);
+    }
   };
 
   const handleCheckIn = () => {
@@ -741,6 +786,47 @@ function EmployeeDashboard({ user }: { user: any }) {
               </div>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* ── Employee Workflow Guide ─────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-blue-900 dark:text-blue-100">دليل تدفق العمل</p>
+              <p className="text-[11px] text-blue-600 dark:text-blue-400">لكل طلب جديد — اتبع هذه الخطوات بالترتيب</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {[
+              { step: "١", title: "مراجعة الطلب", desc: "تحقق من البيانات والمرفقات", color: "bg-blue-500" },
+              { step: "٢", title: "تواصل مع العميل", desc: "واتساب خلال 24 ساعة", color: "bg-indigo-500" },
+              { step: "٣", title: "رفع الطلب", desc: "غيّر الحالة إلى موافق", color: "bg-violet-500" },
+              { step: "٤", title: "إنشاء القائمة", desc: "استخدم الذكاء الاصطناعي", color: "bg-purple-500" },
+              { step: "٥", title: "التنفيذ والتسليم", desc: "حدّث التقدم دورياً", color: "bg-pink-500" },
+            ].map((s, i) => (
+              <div key={i} className="bg-white dark:bg-white/[0.05] rounded-xl p-3 flex flex-col gap-1.5">
+                <div className={`w-6 h-6 ${s.color} rounded-lg text-white text-[10px] font-black flex items-center justify-center`}>{s.step}</div>
+                <p className="text-[11px] font-bold text-gray-900 dark:text-white leading-tight">{s.title}</p>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 leading-tight">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+          {/* New orders needing attention */}
+          {allOrders.filter((o: any) => o.status === "pending").length > 0 && (
+            <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                {allOrders.filter((o: any) => o.status === "pending").length} طلب جديد ينتظر المراجعة
+              </p>
+              <button onClick={() => setFilterStatus("pending")} className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 transition-colors underline font-medium mr-auto">
+                عرضها →
+              </button>
+            </div>
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
@@ -920,6 +1006,39 @@ function EmployeeDashboard({ user }: { user: any }) {
                             <p className="text-xs text-black/25 dark:text-white/25 py-3 text-center">لم يُملأ الاستبيان بعد</p>
                           )}
                         </div>
+                      </div>
+
+                      {/* AI Checklist Generator */}
+                      <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-100 dark:border-violet-900/40 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-xs font-black text-violet-900 dark:text-violet-100 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-violet-500" /> قائمة مهام المشروع (ذكاء اصطناعي)
+                            </p>
+                            <p className="text-[10px] text-violet-600 dark:text-violet-400 mt-0.5">اضغط لإنشاء قائمة مهام تفصيلية للمشروع</p>
+                          </div>
+                          <button
+                            onClick={() => generateAIChecklist(selectedOrder)}
+                            disabled={aiChecklistLoading === (selectedOrder.id || selectedOrder._id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-bold rounded-lg transition-all disabled:opacity-50"
+                            data-testid="button-generate-ai-checklist"
+                          >
+                            {aiChecklistLoading === (selectedOrder.id || selectedOrder._id)
+                              ? <><Loader2 className="w-3 h-3 animate-spin" /> جارٍ الإنشاء...</>
+                              : <><Sparkles className="w-3 h-3" /> إنشاء القائمة</>
+                            }
+                          </button>
+                        </div>
+                        {aiChecklists[selectedOrder.id || selectedOrder._id] && (
+                          <div className="space-y-1.5 mt-2">
+                            {aiChecklists[selectedOrder.id || selectedOrder._id].map((task, i) => (
+                              <div key={i} className="flex items-start gap-2 bg-white dark:bg-white/[0.05] rounded-lg px-3 py-2">
+                                <div className="w-4 h-4 rounded-md border-2 border-violet-300 dark:border-violet-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-gray-700 dark:text-slate-300 leading-relaxed">{task}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Boolean Flags */}
@@ -1811,6 +1930,8 @@ export default function Dashboard() {
   if (user.role !== 'client') {
     return <EmployeeDashboard user={user} />;
   }
+
+  return <ClientDashboardSimple user={user} />;
 
   const handleCheckIn = () => {
     if ("geolocation" in navigator) {
