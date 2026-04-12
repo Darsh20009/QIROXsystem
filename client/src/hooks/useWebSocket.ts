@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { createElement, useEffect, useRef } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 function playQiroxSound() {
   try {
@@ -54,6 +55,25 @@ export function useWebSocket(userId: string | undefined) {
               duration: 5000,
             });
           }
+        }
+
+        // Push approval challenge: alert the authenticated device so the user can approve/deny
+        if (data.type === "push_auth_challenge" && data.challengeId) {
+          playQiroxSound();
+          const challengeUrl = `/auth/push-approve?id=${data.challengeId}`;
+          toast({
+            title: "🔐 محاولة تسجيل دخول جديدة",
+            description: `رقم التأكيد: ${data.number} · ${data.deviceInfo || "جهاز غير معروف"}`,
+            duration: 30000,
+            action: createElement(
+              ToastAction,
+              {
+                altText: "موافقة / رفض",
+                onClick: () => { window.location.href = challengeUrl; },
+              },
+              "موافقة / رفض"
+            ),
+          });
         }
       } catch {}
     };

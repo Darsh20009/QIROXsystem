@@ -1266,7 +1266,7 @@ export default function Home() {
                     <motion.div variants={fadeUp} custom={4} className="space-y-6">
                       <Link href="/prices">
                         <Button className="h-12 px-8 rounded-full bg-white text-black hover:bg-gray-100 font-bold gap-2" data-testid="button-mobile-app-cta">
-                          {lang === "ar" ? <span className="flex items-center gap-1">يُضاف بـ 1,000 <SARIcon size={13} className="opacity-70" /> فقط</span> : "Add for only 1,000 SAR"}
+                          {lang === "ar" ? <span className="flex items-center gap-1">يُضاف بـ 1,500 <SARIcon size={13} className="opacity-70" /> فقط</span> : "Add for only 1,500 SAR"}
                           <ArrowLeft className="w-4 h-4" />
                         </Button>
                       </Link>
