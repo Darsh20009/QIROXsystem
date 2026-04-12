@@ -97,34 +97,23 @@ const S = {
 function emailBanner() {
   const cfg = getEmailCfg();
   const logoUrl = cfg.logoUrl;
-  const videoUrl = `${cfg.siteUrl}/videos/email-banner.mp4`;
   return `<tr>
   <td style="padding:0;margin:0;background:#000000;border-radius:16px 16px 0 0;overflow:hidden;">
-    <!-- Video banner — plays in Apple Mail / iOS Mail; falls back to logo block elsewhere -->
-    <div style="width:100%;max-width:580px;background:#000000;position:relative;overflow:hidden;font-size:0;line-height:0;">
-      <video width="580" height="220" autoplay loop muted playsinline
-        style="display:block;width:100%;max-width:580px;height:220px;object-fit:cover;background:#000000;"
-        poster="${logoUrl || ''}">
-        <source src="${videoUrl}" type="video/mp4" />
-      </video>
-      <!-- Overlay: QIROX branding on top of video -->
-      <div style="position:absolute;bottom:0;left:0;right:0;padding:14px 24px;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%);display:block;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="vertical-align:bottom;">
-              ${logoUrl
-                ? `<img src="${logoUrl}" alt="QIROX" width="90" height="auto" style="border:0;display:block;max-width:90px;height:auto;background:#ffffff;padding:4px 8px;border-radius:6px;" />`
-                : `<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:22px;font-weight:900;letter-spacing:2px;">QIROX</span>`
-              }
-            </td>
-            <td style="vertical-align:bottom;text-align:left;">
-              <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:2px;">qiroxstudio.online</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
-    <!-- Gradient divider line -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background:#000000;padding:32px 32px 24px 32px;text-align:center;">
+          ${logoUrl
+            ? `<img src="${logoUrl}" alt="QIROX Studio" width="120" height="120"
+                style="border:0;display:block;margin:0 auto;width:120px;height:120px;object-fit:contain;border-radius:24px;background:#111111;padding:8px;" />`
+            : `<div style="width:96px;height:96px;border-radius:24px;background:#111111;margin:0 auto;display:inline-block;line-height:96px;text-align:center;">
+                <span style="color:#ffffff;font-family:Arial,sans-serif;font-size:36px;font-weight:900;letter-spacing:2px;">Q</span>
+               </div>`
+          }
+          <p style="margin:14px 0 2px 0;font-family:Arial,sans-serif;font-size:18px;font-weight:900;color:#ffffff;letter-spacing:3px;">QIROX STUDIO</p>
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:1px;">qiroxstudio.online</p>
+        </td>
+      </tr>
+    </table>
     <div style="height:3px;background:linear-gradient(90deg,#4f46e5,#7c3aed,#000000);font-size:0;line-height:0;">&nbsp;</div>
   </td>
 </tr>`;
@@ -204,11 +193,6 @@ export async function sendOtpEmail(to: string, name: string, otp: string): Promi
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
       ${emailBanner()}
       <tr>
-        <td style="background:#000000;padding:24px 32px;text-align:center;">
-          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
-        </td>
-      </tr>
-      <tr>
         <td style="padding:36px 32px;">
           <p style="margin:0 0 8px 0;font-size:13px;color:#6b7280;">اعادة تعيين كلمة المرور</p>
           <h2 style="margin:0 0 20px 0;font-size:22px;font-weight:800;color:#111111;">رمز التحقق الخاص بك</h2>
@@ -268,12 +252,6 @@ export async function sendEmailVerificationEmail(to: string, name: string, otp: 
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
       ${emailBanner()}
-      <!-- header -->
-      <tr>
-        <td style="background:#000000;padding:24px 32px;text-align:center;">
-          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
-        </td>
-      </tr>
       <!-- body -->
       <tr>
         <td style="padding:36px 32px;">
@@ -338,11 +316,6 @@ export async function sendLoginOtpEmail(to: string, name: string, otp: string, u
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e2e2;overflow:hidden;max-width:560px;">
       ${emailBanner()}
-      <tr>
-        <td style="background:#000000;padding:24px 32px;text-align:center;">
-          <span style="color:#ffffff;font-size:24px;font-weight:900;letter-spacing:4px;">QIROX</span>
-        </td>
-      </tr>
       <tr>
         <td style="padding:36px 32px;">
           <p style="margin:0 0 8px 0;font-size:13px;color:#dc2626;font-weight:600;">&#9888; تنبيه أمني — محاولة تسجيل دخول</p>
