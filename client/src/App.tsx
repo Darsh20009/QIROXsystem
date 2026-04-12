@@ -730,7 +730,7 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
       // Auto-reload once for ANY error (chunk errors, transient auth errors, etc.)
       sessionStorage.setItem("__errRetried", "1");
       this.setState({ retried: true }, () => {
-        setTimeout(() => window.location.reload(), 400);
+        window.location.reload();
       });
     } else {
       // Second crash — clear the flag so next fresh load can retry again
@@ -740,6 +740,8 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 
   render() {
     if (this.state.hasError) {
+      // First error: silently reloading — don't flash the error page
+      if (!this.state.retried) return null;
       return (
         <div
           dir="rtl"
