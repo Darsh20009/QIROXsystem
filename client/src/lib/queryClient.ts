@@ -119,7 +119,27 @@ export const queryClient = new QueryClient({
       retryDelay: 800,
     },
     mutations: {
-      retry: false,
+      // Retry once automatically for transient network/server errors.
+      // Never retry for business-logic failures (4xx) or offline errors.
+      retry: (failureCount, error) => {
+        if (failureCount >= 1) return false;
+        const msg = String((error as any)?.message || "");
+        // Don't retry auth, validation, permission, or offline errors
+        if (
+          msg.includes("401") ||
+          msg.includes("403") ||
+          msg.includes("400") ||
+          msg.includes("422") ||
+          msg.includes("404") ||
+          msg.includes("لا يوجد اتصال") ||
+          msg.includes("Unauthorized") ||
+          msg.includes("Forbidden") ||
+          msg.includes("Not Found")
+        ) return false;
+        // Retry once for network/server (5xx) errors
+        return true;
+      },
+      retryDelay: 800,
     },
   },
 });
