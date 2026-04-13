@@ -79,7 +79,7 @@ function AIWritingAssistant({
             <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-violet-600" />
             </div>
-            مساعد الذكاء الاصطناعي
+            مساعد كيروكس
           </DialogTitle>
         </DialogHeader>
 
@@ -429,11 +429,11 @@ export default function ProjectDetailsSetup() {
                         data-testid="setup-ai-helper-btn"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        ساعدني بالذكاء الاصطناعي
+                        مساعد كيروكس
                       </button>
                     </div>
                     <Textarea value={form.requiredFunctions} onChange={e => set("requiredFunctions", e.target.value)}
-                      placeholder="صف فكرة مشروعك، ماذا تريد أن يفعل النظام، ومن سيستخدمه... (أو اضغط 'ساعدني بالذكاء الاصطناعي' وسنساعدك)"
+                      placeholder="صف فكرة مشروعك، ماذا تريد أن يفعل النظام، ومن سيستخدمه... (أو اضغط 'مساعد كيروكس' وسنساعدك)"
                       rows={6} className="rounded-xl resize-none" data-testid="setup-input-notes" />
                     <p className="text-[11px] text-black/30 mt-1">💡 كلما كانت المعلومات أكثر، كان المشروع أفضل وأسرع</p>
                   </div>
