@@ -12638,6 +12638,61 @@ sUpy4laxfcJWSuKqtIMN_78SK0eZ9tMHqkrk6EC_-oiHnxkkofFupg`;
     }
   });
 
+  app.post("/api/ai/document-assistant", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const me = req.user as any;
+    if (!["admin", "manager", "accountant", "sales_manager", "sales"].includes(me.role)) return res.sendStatus(403);
+    try {
+      const { documentType, mode, text, instructions, partyA, partyB, amount } = req.body || {};
+      if (!["contract", "invoice"].includes(documentType)) return res.status(400).json({ error: "نوع المستند غير صحيح" });
+      if (!["create", "improve"].includes(mode)) return res.status(400).json({ error: "وضع المعالجة غير صحيح" });
+      if (mode === "improve" && !String(text || "").trim()) return res.status(400).json({ error: "النص مطلوب للتعديل" });
+
+      const OpenAI = (await import("openai")).default;
+      const groqKey = process.env.GROQ_API_KEY;
+      const openai = new OpenAI(groqKey ? {
+        apiKey: groqKey,
+        baseURL: "https://api.groq.com/openai/v1",
+      } : {
+        apiKey: "pollinations",
+        baseURL: "https://text.pollinations.ai/openai",
+      });
+      const model = groqKey ? "llama-3.3-70b-versatile" : "openai";
+      const safeText = String(text || "").slice(0, 12000);
+      const safeInstructions = String(instructions || "").slice(0, 3000);
+      const docLabel = documentType === "contract" ? "عقد" : "فاتورة";
+      const framing = documentType === "contract"
+        ? `نسّق الناتج كعقد عربي رسمي مشابه لإطار اتفاقية سرية المعلومات وعدم المنافسة: عنوان واضح في الأعلى، تمهيد، تعريف الأطراف، بنود مرقمة بصيغة "أولاً، ثانياً، ثالثاً"، لغة قانونية واضحة، نطاق المملكة العربية السعودية عند الحاجة، وخاتمة تتضمن الطرف الأول والطرف الثاني والتوقيع.`
+        : `نسّق الناتج كفاتورة عربية رسمية واضحة: عنوان الفاتورة، بيانات العميل ومقدم الخدمة، وصف البنود والأسعار بطريقة قابلة للنسخ، الإجمالي، حالة الدفع أو تاريخ الاستحقاق إن وجد، وملاحظات/شروط الدفع.`;
+
+      const prompt = `أنت مساعد متخصص في صياغة العقود والفواتير العربية لمنصة تقنية سعودية.
+المطلوب: ${mode === "create" ? `إنشاء ${docLabel} من الصفر` : `تحسين وإعادة صياغة ${docLabel} موجود`}.
+
+${framing}
+
+بيانات مساعدة:
+- الطرف الأول / مقدم الخدمة: ${partyA || "منصة كيروكس التقنية"}
+- الطرف الثاني / العميل: ${partyB || "العميل"}
+- المبلغ: ${amount || "غير محدد"}
+- تعليمات المستخدم: ${safeInstructions || "لا توجد تعليمات إضافية"}
+
+${mode === "improve" ? `النص الحالي:\n${safeText}` : ""}
+
+اكتب الناتج النهائي فقط بدون مقدمة شرح، وبدون Markdown، وبلغة عربية رسمية مفهومة.`;
+
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.35,
+        max_tokens: 2200,
+      });
+      res.json({ text: completion.choices[0]?.message?.content?.trim() || "" });
+    } catch (err: any) {
+      console.error("[AI DOCUMENT ASSISTANT]", err);
+      res.status(500).json({ error: err.message || "فشل توليد المستند" });
+    }
+  });
+
   // ── CSV Export Endpoints ───────────────────────────────────────────────────
   app.get("/api/admin/customers/export", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

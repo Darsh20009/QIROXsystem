@@ -1,5 +1,14 @@
 # Qirox Platform
 
+## Latest Changes (Apr 13, 2026) — AI Document Assistant
+
+### Contracts & Invoices AI Tool
+- Added a reusable AI document composer for contracts and invoices (`client/src/components/DocumentAiComposer.tsx`)
+- Admin contracts now include a full AI tool that can create contracts from scratch or improve pasted text
+- Contract preview uses a formal document frame inspired by the attached NDA/non-compete PDF: centered title area, bordered page, RTL legal text, and signature blocks
+- Admin invoices now include an AI tool inside the invoice creation flow for drafting or improving invoice text/terms
+- Added backend endpoint `/api/ai/document-assistant` with authenticated staff permissions and Arabic document-specific prompting
+
 ## Latest Changes (Apr 6, 2026) — Session 11: UI/UX Overhaul
 
 ### Brand Color & Global Styling

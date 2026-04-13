@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Printer, Mail, Check, Trash2, Eye, FileText, Search, X } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Check, Trash2, FileText, Search, X, Wand2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
+import { DocumentAiComposer } from "@/components/DocumentAiComposer";
 
 interface Invoice {
   id: string;
@@ -71,6 +72,7 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
   });
 
   const [sendEmail, setSendEmail] = useState(true);
+  const [showAi, setShowAi] = useState(false);
 
   const [form, setForm] = useState({
     userId: "",
@@ -150,6 +152,34 @@ function InvoiceForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
+
+      {/* Status Toggle */}
+      <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-violet-900">{L ? "أداة الذكاء الاصطناعي للفواتير" : "Invoice AI Tool"}</p>
+            <p className="text-xs text-violet-700/70">{L ? "اكتب تفاصيل الفاتورة أو الصق نصاً ليتم تحسينه." : "Write invoice details or paste text to improve."}</p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => setShowAi(v => !v)} className="border-violet-200 text-violet-700 gap-2" data-testid="button-toggle-invoice-ai">
+            <Wand2 className="w-4 h-4" /> {showAi ? (L ? "إخفاء" : "Hide") : (L ? "فتح الأداة" : "Open")}
+          </Button>
+        </div>
+        {showAi && (
+          <div className="mt-4">
+            <DocumentAiComposer
+              documentType="invoice"
+              L={L}
+              initialText={form.notes}
+              defaultContext={L ? "أنشئ وصف فاتورة احترافي يتضمن البنود والمبالغ وشروط الدفع بصياغة واضحة للعميل." : "Create a professional invoice description with items, amounts, and payment terms."}
+              onUseText={(text) => {
+                setForm(p => ({ ...p, notes: text }));
+                setShowAi(false);
+                toast({ title: L ? "تم وضع النص في ملاحظات الفاتورة" : "Text added to invoice notes" });
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Status Toggle */}
       <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
