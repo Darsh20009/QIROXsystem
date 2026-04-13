@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send, Package } from "lucide-react";
+import { Loader2, FileText, CheckCircle, XCircle, Eye, UserCheck, FolderPlus, Briefcase, Layers, Server, Globe, Save, Link2, ExternalLink, Phone, Mail, Shield, Download, Upload, CreditCard, TrendingUp, TrendingDown, PlusCircle, Trash2, DollarSign, BarChart3, PhoneOff, Send, Package, Sparkles, ClipboardList, Wand2, RefreshCw, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -112,6 +112,10 @@ export default function AdminOrders() {
   const [editAmount, setEditAmount] = useState("");
   const [editAssignedTo, setEditAssignedTo] = useState("");
   const [editAdminNotes, setEditAdminNotes] = useState("");
+  const [aiChecklist, setAiChecklist] = useState<{ name: string; tasks: string[] }[]>([]);
+  const [aiChecklistLoading, setAiChecklistLoading] = useState(false);
+  const [aiChecklistExpanded, setAiChecklistExpanded] = useState<Record<number, boolean>>({});
+  const [aiChecklistDone, setAiChecklistDone] = useState<Record<string, boolean>>({});
   const [filterStatus, setFilterStatus] = useState("all");
   const [specsForm, setSpecsForm] = useState({ ...EMPTY_SPECS });
   const [newExpense, setNewExpense] = useState({ category: "other", description: "", amount: "" });
@@ -1275,6 +1279,113 @@ export default function AdminOrders() {
                           </Button>
                         </div>
                       )}
+
+                      {/* ── AI Checklist Generator ── */}
+                      <div className="pt-3 border-t border-black/[0.05]">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-violet-100 rounded-xl flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-black">{L ? "دليل التنفيذ الذكي" : "AI Workflow Guide"}</p>
+                              <p className="text-[10px] text-black/40">{L ? "تشيك ليست مخصصة بالذكاء الاصطناعي" : "AI-generated custom checklist"}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              setAiChecklistLoading(true);
+                              setAiChecklist([]);
+                              try {
+                                const o = selectedOrder as any;
+                                const res = await fetch("/api/ai/project-checklist", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  credentials: "include",
+                                  body: JSON.stringify({
+                                    businessName: o.businessName || o.clientId?.fullName || "",
+                                    sector: o.sector || o.projectType || "",
+                                    planTier: o.planTier || o.subscriptionTier || "",
+                                    targetAudience: o.targetAudience || "",
+                                    requiredFunctions: o.requiredFunctions || o.notes || "",
+                                    addons: Array.isArray(o.selectedAddons) ? o.selectedAddons.join("، ") : (o.selectedAddons || ""),
+                                    visualStyle: o.visualStyle || "",
+                                    siteLanguage: o.siteLanguage || "ar",
+                                    integrations: [o.whatsappIntegration && "واتساب", o.needsPayment && "دفع", o.needsBooking && "حجز"].filter(Boolean).join("، "),
+                                  }),
+                                });
+                                const data = await res.json();
+                                const phases = data.phases || [];
+                                setAiChecklist(phases);
+                                setAiChecklistExpanded(Object.fromEntries(phases.map((_: any, i: number) => [i, true])));
+                              } catch {
+                                // ignore
+                              } finally {
+                                setAiChecklistLoading(false);
+                              }
+                            }}
+                            disabled={aiChecklistLoading}
+                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs rounded-xl"
+                            data-testid="button-ai-checklist"
+                          >
+                            {aiChecklistLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                            {aiChecklistLoading ? (L ? "جارٍ التوليد..." : "Generating...") : (aiChecklist.length > 0 ? (L ? "إعادة التوليد" : "Regenerate") : (L ? "توليد التشيك ليست" : "Generate Checklist"))}
+                          </Button>
+                        </div>
+
+                        {aiChecklist.length > 0 && (
+                          <div className="space-y-3">
+                            {aiChecklist.map((phase, pi) => {
+                              const doneCount = (phase.tasks || []).filter((_: string, ti: number) => aiChecklistDone[`${pi}-${ti}`]).length;
+                              const expanded = aiChecklistExpanded[pi] !== false;
+                              return (
+                                <div key={pi} className="border border-violet-100 rounded-2xl overflow-hidden bg-violet-50/30">
+                                  <button
+                                    onClick={() => setAiChecklistExpanded(p => ({ ...p, [pi]: !p[pi] }))}
+                                    className="w-full flex items-center justify-between p-3 hover:bg-violet-50 transition-colors text-right"
+                                    data-testid={`checklist-phase-toggle-${pi}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${doneCount === phase.tasks.length ? "bg-green-500 text-white" : "bg-violet-200 text-violet-700"}`}>
+                                        {doneCount === phase.tasks.length ? <Check className="w-3 h-3" /> : pi + 1}
+                                      </div>
+                                      <span className="text-sm font-bold text-black">{phase.name}</span>
+                                      <span className="text-[10px] text-black/40 font-medium">{doneCount}/{phase.tasks.length}</span>
+                                    </div>
+                                    {expanded ? <ChevronUp className="w-4 h-4 text-black/30" /> : <ChevronDown className="w-4 h-4 text-black/30" />}
+                                  </button>
+                                  {expanded && (
+                                    <div className="px-3 pb-3 space-y-1.5">
+                                      {(phase.tasks || []).map((task: string, ti: number) => {
+                                        const key = `${pi}-${ti}`;
+                                        const done = aiChecklistDone[key];
+                                        return (
+                                          <button
+                                            key={ti}
+                                            onClick={() => setAiChecklistDone(p => ({ ...p, [key]: !p[key] }))}
+                                            className={`w-full flex items-start gap-2.5 text-right py-2 px-2.5 rounded-xl transition-all ${done ? "bg-green-50 border border-green-100" : "hover:bg-white border border-transparent"}`}
+                                            data-testid={`checklist-task-${pi}-${ti}`}
+                                          >
+                                            <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${done ? "bg-green-500 border-green-500" : "border-black/20"}`}>
+                                              {done && <Check className="w-2.5 h-2.5 text-white" />}
+                                            </div>
+                                            <span className={`text-xs leading-relaxed ${done ? "line-through text-black/30" : "text-black/70"}`}>{task}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            <p className="text-[10px] text-black/30 text-center">
+                              {L ? "انقر على مهمة لتحديدها كمنجزة ✓" : "Click a task to mark it as done ✓"}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   </ScrollArea>
                 </TabsContent>

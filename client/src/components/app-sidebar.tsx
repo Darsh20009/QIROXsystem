@@ -64,35 +64,17 @@ export function AppSidebar() {
     { title: ar ? "عن المنصة" : "About", icon: FileText, url: "/about", group: "public", section: "main" },
     { title: ar ? "تواصل" : "Contact", icon: Briefcase, url: "/contact", group: "public", section: "main" },
 
-    // Client — main
+    // Client — main (core, always visible)
     { title: ar ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, url: "/dashboard", group: "client", section: "main" },
-    // Client — shopping
-    { title: ar ? "الأجهزة والإضافات" : "Devices & Add-ons", icon: Cpu, url: "/devices", group: "client", section: "shopping" },
-    { title: ar ? "سلة التسوق" : "Cart", icon: ShoppingCart, url: "/cart", group: "client", section: "shopping" },
-    // Client — services
+    // Client — communication
     { title: ar ? "الرسائل" : "Messages", icon: MessageSquare, url: "/inbox", group: "client", section: "services" },
-    { title: ar ? "اجتماعاتي" : "My Meetings", icon: Video, url: "/qmeet", group: "client", section: "services" },
     { title: ar ? "خدمة العملاء" : "Customer Service", icon: Headphones, url: "/cs-chat", group: "client", section: "services" },
     { title: ar ? "الدعم الفني" : "Support", icon: LifeBuoy, url: "/support", group: "client", section: "services" },
-    { title: ar ? "تذكيرني قبل انتهاء اشتراكي" : "Renewal Reminder", icon: Bell, url: "/switch-reminder", group: "client", section: "services" },
     { title: ar ? "مركز المساعدة" : "Help Center", icon: HelpCircle, url: "/help", group: "client", section: "services" },
-    { title: ar ? "مفاتيح API" : "API Keys", icon: KeyRound, url: "/my-api-keys", group: "client", section: "tools" },
-    // Client — account
-    { title: ar ? "سجل المدفوعات" : "Payment History", icon: Receipt, url: "/payment-history", group: "client", section: "account" },
-    { title: ar ? "محفظتي الإلكترونية" : "My Wallet", icon: Wallet, url: "/wallet", group: "client", section: "account" },
-    { title: ar ? "أقساطي" : "My Installments", icon: Banknote, url: "/installments", group: "client", section: "account" },
-    { title: ar ? "طلبات البيانات" : "Data Requests", icon: ClipboardList, url: "/my-requests", group: "client", section: "account" },
-    { title: ar ? "مجموعة العملاء" : "Clients Group", icon: Users, url: "/clients-group", group: "client", section: "account" },
-    // Client — tools
-    { title: ar ? "أدواتي ومميزاتي ⚡" : "My Tools ⚡", icon: Wand2, url: "/my-tools", group: "client", section: "tools" },
-    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "client", section: "tools" },
-    { title: ar ? "برنامج الإحالات" : "Referral Program", icon: Gift, url: "/referral", group: "client", section: "account" },
-    { title: ar ? "نقاط الولاء" : "Loyalty Points", icon: Award, url: "/client/loyalty", group: "client", section: "account" },
-    { title: ar ? "تتبع الشحنات" : "Track Shipments", icon: Package, url: "/client/shipments", group: "client", section: "account" },
-    { title: ar ? "عقودي" : "My Contracts", icon: FileText, url: "/client/contracts", group: "client", section: "account" },
+    // Client — account (essential financial)
     { title: ar ? "فواتيري" : "My Invoices", icon: Receipt, url: "/client/invoices", group: "client", section: "account" },
-    { title: ar ? "عروض الأسعار" : "Quotations", icon: ClipboardList, url: "/client/quotations", group: "client", section: "account" },
-    { title: ar ? "الأمان (2FA)" : "Security (2FA)", icon: Shield, url: "/security/2fa", group: "client", section: "tools" },
+    { title: ar ? "محفظتي" : "My Wallet", icon: Wallet, url: "/wallet", group: "client", section: "account" },
+    { title: ar ? "ملفي الشخصي" : "My Profile", icon: User, url: "/profile", group: "client", section: "account" },
     // Client — investor
     { title: ar ? "بوابة المستثمر" : "Investor Portal", icon: TrendingUp, url: "/investor/portal", group: "client", section: "investor", allowedRoles: ["investor", "admin", "manager"] },
 

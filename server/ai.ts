@@ -1286,6 +1286,85 @@ async function handleBatchTranslate(req: any, res: any) {
   }
 }
 
+/* ─── Client: Help write project description ─── */
+async function handleDescribeProject(req: Request, res: Response) {
+  const { businessName, sector, targetAudience, existingIdea } = req.body;
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `أنت مساعد ذكي لشركة QIROX Studio لتطوير البرمجيات. مهمتك مساعدة العميل في صياغة فكرة مشروعه بوضوح ودقة للفريق التقني. الرد يجب أن يكون بالعربية، موجز وعملي.`
+        },
+        {
+          role: "user",
+          content: `ساعدني في كتابة وصف مشروعي التقني للفريق.
+اسم النشاط: ${businessName || "غير محدد"}
+القطاع: ${sector || "غير محدد"}
+الجمهور المستهدف: ${targetAudience || "غير محدد"}
+الفكرة الأولية: ${existingIdea || "لا توجد"}
+
+أريد وصفاً واضحاً ومنظماً يغطي: هدف المشروع، المستخدمون، الميزات الأساسية، وأي متطلبات مهمة. الرد في 3-5 جمل فقط.`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 400,
+    });
+    res.json({ description: comp.choices[0]?.message?.content?.trim() || "" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+/* ─── Employee: Generate project checklist ─── */
+async function handleProjectChecklist(req: Request, res: Response) {
+  const { businessName, sector, planTier, targetAudience, requiredFunctions, addons, visualStyle, siteLanguage, integrations } = req.body;
+  try {
+    const comp = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `أنت مدير مشاريع تقنية متخصص في تطوير البرمجيات. مهمتك توليد تشيك ليست تنفيذية دقيقة للفريق التقني بناءً على تفاصيل المشروع. الرد يجب أن يكون JSON فقط.`
+        },
+        {
+          role: "user",
+          content: `بناءً على هذا المشروع، ولّد تشيك ليست تنفيذية للفريق:
+- النشاط: ${businessName || "غير محدد"}
+- القطاع: ${sector || "غير محدد"}
+- الباقة: ${planTier || "pro"}
+- الجمهور: ${targetAudience || "غير محدد"}
+- المتطلبات: ${requiredFunctions || "غير محدد"}
+- الإضافات: ${addons || "لا يوجد"}
+- النمط البصري: ${visualStyle || "غير محدد"}
+- لغة الموقع: ${siteLanguage || "عربي"}
+- التكاملات: ${integrations || "لا يوجد"}
+
+أرجع JSON بهذا الشكل فقط:
+{
+  "phases": [
+    {
+      "name": "اسم المرحلة",
+      "tasks": ["مهمة 1", "مهمة 2", ...]
+    }
+  ]
+}
+المراحل: التخطيط والتصميم، التطوير، التكاملات، الاختبار، التسليم`
+        }
+      ],
+      temperature: 0.5,
+      max_tokens: 800,
+    });
+    const raw = comp.choices[0]?.message?.content?.trim() || "{}";
+    const match = raw.match(/\{[\s\S]*\}/);
+    const result = match ? JSON.parse(match[0]) : { phases: [] };
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, phases: [] });
+  }
+}
+
 /* ─── Register Routes ─── */
 export function registerAiRoutes(app: Express) {
   app.post("/api/ai/message", handleChat);
@@ -1304,6 +1383,8 @@ export function registerAiRoutes(app: Express) {
   app.post("/api/ai/meeting-summary", handleMeetingSummary);
   app.post("/api/ai/translate", handleTranslate);
   app.post("/api/ai/batch-translate", handleBatchTranslate);
+  app.post("/api/ai/describe-project", handleDescribeProject);
+  app.post("/api/ai/project-checklist", handleProjectChecklist);
   app.delete("/api/ai/session/:id", (req, res) => {
     sessions.delete(req.params.id);
     finderSessions.delete(req.params.id);

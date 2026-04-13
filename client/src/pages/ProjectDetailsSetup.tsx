@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Building2, Globe, Zap, Layers, Check, ChevronRight, ChevronLeft,
-  Loader2, MessageCircle, CreditCard, CalendarCheck, ArrowRight,
-  LayoutDashboard, ClipboardList, Sparkles
+  Loader2, MessageCircle, CreditCard, CalendarCheck,
+  LayoutDashboard, ClipboardList, Sparkles, X, Wand2, RefreshCw
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const LANGUAGES = [
   { v: "ar", label: "عربي", flag: "🇸🇦" },
@@ -32,8 +33,124 @@ const SECTIONS = [
   { label: "بيانات النشاط", icon: Building2 },
   { label: "اللغة", icon: Globe },
   { label: "التكاملات", icon: Zap },
-  { label: "الألوان والملاحظات", icon: Layers },
+  { label: "فكرتك ومتطلباتك", icon: Layers },
 ];
+
+/* ── AI Writing Assistant Dialog ── */
+function AIWritingAssistant({
+  open, onClose, businessName, sector, targetAudience,
+  onApply
+}: {
+  open: boolean;
+  onClose: () => void;
+  businessName: string;
+  sector: string;
+  targetAudience: string;
+  onApply: (text: string) => void;
+}) {
+  const { toast } = useToast();
+  const [idea, setIdea] = useState("");
+  const [generated, setGenerated] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/describe-project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ businessName, sector, targetAudience, existingIdea: idea }),
+      });
+      const data = await res.json();
+      setGenerated(data.description || "");
+    } catch {
+      toast({ title: "فشل توليد الوصف، حاول مجدداً", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 font-black">
+            <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-violet-600" />
+            </div>
+            مساعد الذكاء الاصطناعي
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
+            <p className="text-xs text-violet-700 font-medium">
+              🤖 اكتب فكرتك باختصار وسأساعدك في صياغتها بشكل احترافي للفريق التقني
+            </p>
+          </div>
+
+          <div>
+            <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block">
+              فكرتك الأولية (اختياري)
+            </Label>
+            <Textarea
+              value={idea}
+              onChange={e => setIdea(e.target.value)}
+              placeholder="مثال: أريد موقع لمطعمي يقبل الطلبات أونلاين ويعرض المنيو..."
+              rows={3}
+              className="rounded-xl resize-none text-sm"
+              data-testid="ai-idea-input"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-xs text-black/40">
+            {[
+              { label: "النشاط", value: businessName || "—" },
+              { label: "القطاع", value: sector || "—" },
+              { label: "الجمهور", value: targetAudience || "—" },
+            ].map(info => (
+              <div key={info.label} className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                <p className="font-bold text-[9px] uppercase tracking-wider mb-0.5">{info.label}</p>
+                <p className="text-[11px] text-black/60 font-medium truncate">{info.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <Button onClick={generate} disabled={loading} className="w-full gap-2 rounded-xl bg-violet-600 hover:bg-violet-700 font-bold" data-testid="ai-generate-btn">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            {loading ? "جارٍ التوليد..." : "اكتب لي وصف المشروع"}
+          </Button>
+
+          {generated && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> تم التوليد
+                </p>
+                <Textarea
+                  value={generated}
+                  onChange={e => setGenerated(e.target.value)}
+                  rows={5}
+                  className="rounded-xl resize-none text-sm border-emerald-200 bg-white"
+                  data-testid="ai-generated-text"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={generate} variant="outline" size="sm" className="gap-1.5 rounded-xl" data-testid="ai-retry-btn">
+                  <RefreshCw className="w-3.5 h-3.5" /> إعادة التوليد
+                </Button>
+                <Button onClick={() => { onApply(generated); onClose(); }} className="flex-1 gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold" data-testid="ai-apply-btn">
+                  <Check className="w-3.5 h-3.5" /> استخدم هذا الوصف
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ProjectDetailsSetup() {
   const { dir } = useI18n();
@@ -45,6 +162,7 @@ export default function ProjectDetailsSetup() {
 
   const [section, setSection] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [form, setForm] = useState({
     businessName: (user as any)?.businessName || (user as any)?.fullName || "",
     phone: (user as any)?.phone || "",
@@ -99,6 +217,16 @@ export default function ProjectDetailsSetup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50/30" dir={dir}>
+
+      <AIWritingAssistant
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        businessName={form.businessName}
+        sector={form.sector}
+        targetAudience={form.targetAudience}
+        onApply={text => set("requiredFunctions", text)}
+      />
+
       {/* Hero header */}
       <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-5 pt-safe-top pb-8">
         <div className="max-w-xl mx-auto pt-6">
@@ -275,40 +403,52 @@ export default function ProjectDetailsSetup() {
             </motion.div>
           )}
 
-          {/* Section 3: Colors & Notes */}
+          {/* Section 3: Colors & Notes with AI */}
           {section === 3 && (
             <motion.div key="s3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
               <div className="bg-white rounded-3xl border border-black/[0.06] p-5 shadow-sm">
                 <h2 className="font-black text-black mb-4 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-violet-600" /> الألوان والملاحظات
+                  <Layers className="w-5 h-5 text-violet-600" /> فكرتك ومتطلباتك
                 </h2>
                 <div className="space-y-4">
                   <div>
                     <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" /> ألوان البراند المفضّلة
+                      ألوان البراند المفضّلة
                     </Label>
                     <Input value={form.brandColor} onChange={e => set("brandColor", e.target.value)}
                       placeholder="مثال: أزرق وذهبي، أخضر داكن..." className="h-11 rounded-xl" data-testid="setup-input-color" />
                   </div>
                   <div>
-                    <Label className="text-xs font-bold text-black/40 uppercase tracking-wider mb-1.5 block flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5" /> ملاحظات ومتطلبات إضافية
-                    </Label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-xs font-bold text-black/40 uppercase tracking-wider flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5" /> فكرة مشروعك ومتطلباتك
+                      </Label>
+                      <button
+                        onClick={() => setAiOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-100 hover:bg-violet-200 text-violet-700 text-[11px] font-bold rounded-lg transition-colors"
+                        data-testid="setup-ai-helper-btn"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        ساعدني بالذكاء الاصطناعي
+                      </button>
+                    </div>
                     <Textarea value={form.requiredFunctions} onChange={e => set("requiredFunctions", e.target.value)}
-                      placeholder="أي تفاصيل إضافية، ميزات خاصة، أو أي شيء تريدنا معرفته..."
-                      rows={5} className="rounded-xl resize-none" data-testid="setup-input-notes" />
+                      placeholder="صف فكرة مشروعك، ماذا تريد أن يفعل النظام، ومن سيستخدمه... (أو اضغط 'ساعدني بالذكاء الاصطناعي' وسنساعدك)"
+                      rows={6} className="rounded-xl resize-none" data-testid="setup-input-notes" />
+                    <p className="text-[11px] text-black/30 mt-1">💡 كلما كانت المعلومات أكثر، كان المشروع أفضل وأسرع</p>
                   </div>
                 </div>
               </div>
 
               {/* Summary card */}
               <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 space-y-2">
-                <p className="text-xs font-bold text-violet-700 mb-2">ملخص ما ستُرسله:</p>
+                <p className="text-xs font-bold text-violet-700 mb-2">ملخص ما ستُرسله للفريق:</p>
                 {[
                   { label: "النشاط", val: form.businessName },
                   { label: "القطاع", val: form.sector },
                   { label: "اللغة", val: LANGUAGES.find(l => l.v === form.siteLanguage)?.label },
                   { label: "التكاملات", val: INTEGRATIONS.filter(i => (form as any)[i.key]).map(i => i.label).join("، ") || "لا يوجد" },
+                  { label: "الفكرة", val: form.requiredFunctions ? form.requiredFunctions.slice(0, 80) + (form.requiredFunctions.length > 80 ? "..." : "") : undefined },
                 ].map(r => r.val && (
                   <div key={r.label} className="flex items-start gap-2 text-xs">
                     <span className="text-violet-500 font-bold shrink-0 w-16">{r.label}:</span>
