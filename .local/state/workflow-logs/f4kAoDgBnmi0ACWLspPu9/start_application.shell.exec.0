@@ -1,0 +1,185 @@
+[AI] Provider: Groq (llama-3.3-70b-versatile) ⚡}
+[Sandbox] SANDBOX_ENC_KEY not set — using default key (dev only)
+[CafeDemo] Serving from /home/runner/workspace/public/cafe-demo
+12:40:22 AM [express] serving on port 5000
+[ConnManager] Primary DB connected (env)
+[SystemSettings] Bootstrap DB connected
+[ConnManager] QMeet DB connected (env)
+[DB] Email settings applied from SystemSettings
+[Apple] clientID=V4K6RM59LS.online.qiroxstudio.qirox teamID=V4K6RM59LS keyID=8J92ZKSZ3Q callbackURL=https://qiroxstudio.online/api/auth/apple/callback keyLines=6 hasHeader=true
+[Seed] Admin account verified: qadmin
+[WalletMigration] Synced walletBalance for 1 users
+[QMeet] Routes registered (main MongoDB)
+[QMeet] Smart scheduler started
+Initialized 14 cron jobs
+12:40:47 AM [express] GET /api/notifications/unread-count 401 in 3ms
+12:41:00 AM [express] POST /api/internal/push/promotional 200 in 67ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:42:00 AM [express] POST /api/internal/push/promotional 200 in 76ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:43:00 AM [express] POST /api/internal/push/promotional 200 in 78ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:44:00 AM [express] POST /api/internal/push/promotional 200 in 498ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:45:00 AM [express] POST /api/internal/push/promotional 200 in 489ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:46:00 AM [express] POST /api/internal/push/promotional 200 in 72ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:47:00 AM [express] POST /api/internal/push/promotional 200 in 67ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:48:00 AM [express] POST /api/internal/push/promotional 200 in 74ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:49:00 AM [express] POST /api/internal/push/promotional 200 in 67ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:50:00 AM [express] POST /api/internal/push/promotional 200 in 73ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:51:00 AM [express] POST /api/internal/push/promotional 200 in 68ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:52:00 AM [express] POST /api/internal/push/promotional 200 in 68ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:53:00 AM [express] POST /api/internal/push/promotional 200 in 487ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:54:00 AM [express] POST /api/internal/push/promotional 200 in 66ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:55:00 AM [express] POST /api/internal/push/promotional 200 in 68ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:56:00 AM [express] POST /api/internal/push/promotional 200 in 73ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:56:07 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/app-sidebar.tsx, /src/index.css[22m
+12:57:00 AM [express] POST /api/internal/push/promotional 200 in 73ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+12:58:00 AM [express] POST /api/internal/push/promotional 200 in 67ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:58:26 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+12:59:00 AM [express] POST /api/internal/push/promotional 200 in 66ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+1:00:00 AM [express] POST /api/internal/push/promotional 200 in 81ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:00:12 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+1:01:00 AM [express] POST /api/internal/push/promotional 200 in 70ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:01:18 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:01:29 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x4)[39m
+1:02:00 AM [express] POST /api/internal/push/promotional 200 in 73ms :: {"ok":true,"sent":47,"title":"عرض خاص من QIROX Studio","body":"تحقق من أحدث عروضنا!"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:02:05 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x5)[39m
+
+[Shutdown] SIGTERM received — shutting down gracefully...
+[Shutdown] HTTP server closed
+[Shutdown] MongoDB connections closed
