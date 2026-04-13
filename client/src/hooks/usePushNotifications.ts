@@ -36,7 +36,7 @@ export function usePushNotifications() {
       const perm = await Notification.requestPermission();
       if (perm !== "granted") { setStatus("denied"); return false; }
 
-      const keyRes = await fetch("/api/push/vapid-key");
+      const keyRes = await fetch("/api/push/vapid-key", { credentials: "include" });
       const { publicKey } = await keyRes.json();
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
@@ -46,6 +46,7 @@ export function usePushNotifications() {
 
       await fetch("/api/push/subscribe", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           endpoint: sub.endpoint,
@@ -71,6 +72,7 @@ export function usePushNotifications() {
     try {
       await fetch("/api/push/unsubscribe", {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: subscription.endpoint }),
       });

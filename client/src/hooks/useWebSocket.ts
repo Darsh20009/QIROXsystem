@@ -79,28 +79,6 @@ export function useWebSocket(userId: string | undefined) {
           }
         }
 
-        if (data.type === "promotional_push") {
-          if (data.title) {
-            playQiroxSound();
-            const toastOpts: any = {
-              title: data.title,
-              description: data.body || "",
-              duration: 8000,
-            };
-            if (data.url && data.url !== "/") {
-              toastOpts.action = createElement(
-                ToastAction,
-                {
-                  altText: "عرض",
-                  onClick: () => { window.location.href = data.url; },
-                },
-                "عرض"
-              );
-            }
-            toast(toastOpts);
-          }
-        }
-
         if (data.type === "push_auth_challenge" && data.challengeId) {
           playQiroxSound();
           const challengeUrl = `/auth/push-approve?id=${data.challengeId}`;
