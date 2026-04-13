@@ -46,11 +46,11 @@ interface AddressData {
 
 interface UpFile { url: string; filename: string; }
 
-function StepBar({ step }: { step: Step }) {
+function StepBar({ step, projectMode = false }: { step: Step; projectMode?: boolean }) {
   const { lang } = useI18n();
   const L = lang === "ar";
   const STEP_LABELS = [
-    { id: 1, label: L ? "عنوان الاستلام" : "Delivery Address", icon: MapPin },
+    { id: 1, label: projectMode ? (L ? "بيانات التواصل" : "Contact Details") : (L ? "عنوان الاستلام" : "Delivery Address"), icon: projectMode ? Phone : MapPin },
     { id: 2, label: L ? "طريقة الدفع" : "Payment Method",   icon: CreditCard },
     { id: 3, label: L ? "تأكيد الطلب" : "Confirm Order",   icon: CheckCircle2 },
   ];
@@ -204,6 +204,7 @@ export default function Checkout() {
     : hasWizardData ? (wizardData.grandTotal || 0) : 0;
 
   const hasPhysicalItems = items.some((i: any) => i.type === "product" || i.type === "gift");
+  const isProjectCheckout = !hasPhysicalItems && (hasWizardData || items.some((i: any) => i.type === "plan" || i.type === "service"));
   const activeShippingCos: any[] = shippingCompanies || [];
   const selectedShippingCo = activeShippingCos.find(c => (c._id || c.id) === selectedShippingCompanyId) || null;
   const shippingFee = hasPhysicalItems && selectedShippingCo
@@ -434,7 +435,9 @@ export default function Checkout() {
       const effWallet = payMethod === "wallet" ? Math.min(walletUse || total, walletBalance) : 0;
       const fullyWallet = payMethod === "wallet" && effWallet >= total - 0.01;
       const method = fullyWallet ? "wallet" : payMethod === "paypal" ? "paypal" : payMethod === "card" ? "wallet" : "bank_transfer";
-      const addressLine = `الشحن: ${addr.recipientName} — ${addr.recipientPhone} — ${addr.city} — ${addr.district} — ${addr.street}`;
+      const addressLine = isProjectCheckout
+        ? `بيانات التواصل: ${addr.recipientName} — ${addr.recipientPhone} | قد يتواصل فريق كيروكس عبر الواتساب أو الهاتف عند الحاجة لاستكمال ملفات أو تفاصيل ناقصة.`
+        : `الشحن: ${addr.recipientName} — ${addr.recipientPhone} — ${addr.city} — ${addr.district} — ${addr.street}`;
       const meetingLine = wizardData?.preferredTimes?.length
         ? `موعد الاجتماع: ${wizardData.preferredTimes.join(" / ")} — أيام: ${wizardData.preferredDays?.join(" / ") || ""}`
         : "";
@@ -454,7 +457,7 @@ export default function Checkout() {
         notes,
         files: hasWizardData ? wizardData.uploadedFiles : undefined,
         wizardData: hasWizardData ? wizardData : undefined,
-        shippingAddress: { name: addr.recipientName, phone: addr.recipientPhone, city: addr.city, address: `${addr.district} ${addr.street}`.trim(), nationalAddressId: addr.nationalAddressId },
+        shippingAddress: hasPhysicalItems ? { name: addr.recipientName, phone: addr.recipientPhone, city: addr.city, address: `${addr.district} ${addr.street}`.trim(), nationalAddressId: addr.nationalAddressId } : undefined,
         ...(hasPhysicalItems && selectedShippingCo ? {
           shippingCompanyId: selectedShippingCompanyId,
           shippingCompanyName: selectedShippingCo.nameAr || selectedShippingCo.name,
@@ -502,8 +505,9 @@ export default function Checkout() {
     onError: () => toast({ title: "فشل رفع الإيصال", variant: "destructive" }),
   });
 
-  const canProceedStep1 = !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city)
-    && (!hasPhysicalItems || !!selectedShippingCompanyId);
+  const canProceedStep1 = isProjectCheckout
+    ? !!(addr.recipientName.trim() && addr.recipientPhone.trim())
+    : !!(addr.recipientName.trim() && addr.recipientPhone.trim() && addr.city) && (!hasPhysicalItems || !!selectedShippingCompanyId);
   const canProceedStep2 = (payMethod === "bank") ||
     (payMethod === "wallet") || (payMethod === "card" && !!cardPin);
 
@@ -638,7 +642,7 @@ export default function Checkout() {
     <div className="min-h-screen flex flex-col bg-gray-50/50" dir={dir}>
       <Navigation />
       <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-8">
-        {step < 3 && <StepBar step={step} />}
+        {step < 3 && <StepBar step={step} projectMode={isProjectCheckout} />}
 
         <AnimatePresence mode="wait">
           {/* ─── STEP 1: ADDRESS ─── */}
@@ -649,8 +653,12 @@ export default function Checkout() {
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 mb-3">
                     <MapPin className="w-6 h-6 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-black text-black">{L ? "عنوان الاستلام" : "Delivery Address"}</h2>
-                  <p className="text-black/40 text-sm mt-1">{L ? "أدخل بيانات المستلم والعنوان" : "Enter recipient details and address"}</p>
+                  <h2 className="text-2xl font-black text-black">{isProjectCheckout ? (L ? "بيانات التواصل" : "Contact Details") : (L ? "عنوان الاستلام" : "Delivery Address")}</h2>
+                  <p className="text-black/40 text-sm mt-1">
+                    {isProjectCheckout
+                      ? (L ? "أدخل اسمك ورقمك فقط، وسنطلب أي ملفات ناقصة لاحقاً عند الحاجة" : "Enter your name and phone only; we will request missing files later if needed")
+                      : (L ? "أدخل بيانات المستلم والعنوان" : "Enter recipient details and address")}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -666,74 +674,85 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 relative">
-                  <Label className="text-xs font-bold text-black/50">المدينة *</Label>
-                  <button
-                    onClick={() => setCityOpen(o => !o)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 border border-black/10 rounded-xl bg-white hover:bg-gray-50 transition-all text-sm"
-                    data-testid="button-city-select"
-                  >
-                    <span className={addr.city ? "text-black" : "text-black/30"}>{addr.city || "اختر المدينة"}</span>
-                    <ChevronDown className={`w-4 h-4 text-black/30 transition-transform ${cityOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {cityOpen && (
-                    <div className="absolute z-20 right-0 left-0 top-full mt-1 bg-white border border-black/10 rounded-2xl shadow-xl overflow-auto max-h-48">
-                      {SAUDI_CITIES.map(c => (
-                        <button key={c} onClick={() => { setAddr(p => ({ ...p, city: c })); setCityOpen(false); }}
-                          className={`w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${addr.city === c ? "font-bold text-blue-600" : "text-black"}`}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-black/50">الحي / المنطقة</Label>
-                    <Input value={addr.district} onChange={e => setAddr(p => ({ ...p, district: e.target.value }))}
-                      placeholder="حي النخيل" className="rounded-xl" data-testid="input-district" />
+                {isProjectCheckout ? (
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-start gap-3">
+                    <MessageCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-700 leading-relaxed">
+                      لا تحتاج لرفع كل الملفات الآن. بعد تأكيد الطلب قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف لاستكمال أي ملفات أو تفاصيل ناقصة.
+                    </p>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-black/50">الشارع والرقم</Label>
-                    <Input value={addr.street} onChange={e => setAddr(p => ({ ...p, street: e.target.value }))}
-                      placeholder="شارع الملك فهد" className="rounded-xl" data-testid="input-street" />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-black/50 flex items-center gap-1.5">
-                    <span>العنوان الوطني</span>
-                    <span className="text-[10px] text-black/25 font-normal">(اختياري — 12 رمزاً من أبشر)</span>
-                  </Label>
-                  <Input value={addr.nationalAddressId} onChange={e => setAddr(p => ({ ...p, nationalAddressId: e.target.value.toUpperCase().slice(0, 12) }))}
-                    placeholder="مثال: RIAD123456" dir="ltr" maxLength={12}
-                    className="rounded-xl font-mono tracking-widest" data-testid="input-national-address" />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-black/50 flex items-center gap-1"><NavIcon className="w-3 h-3" /> اختر موقعك على الخريطة</Label>
-                    <Button size="sm" variant="outline" onClick={handleGeolocate} disabled={geoLoading}
-                      className="text-xs h-7 gap-1.5 rounded-lg" data-testid="button-geolocate">
-                      {geoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <NavIcon className="w-3 h-3" />}
-                      موقعي الحالي
-                    </Button>
-                  </div>
-                  {addr.lat && addr.lng ? (
-                    <div className="rounded-2xl overflow-hidden border border-black/[0.06]">
-                      <iframe
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${addr.lng - 0.005},${addr.lat - 0.005},${addr.lng + 0.005},${addr.lat + 0.005}&layer=mapnik&marker=${addr.lat},${addr.lng}`}
-                        width="100%" height="200" style={{ border: 0 }} loading="lazy"
-                        title="خريطة الموقع"
-                      />
+                ) : (
+                  <>
+                    <div className="space-y-1.5 relative">
+                      <Label className="text-xs font-bold text-black/50">المدينة *</Label>
+                      <button
+                        onClick={() => setCityOpen(o => !o)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 border border-black/10 rounded-xl bg-white hover:bg-gray-50 transition-all text-sm"
+                        data-testid="button-city-select"
+                      >
+                        <span className={addr.city ? "text-black" : "text-black/30"}>{addr.city || "اختر المدينة"}</span>
+                        <ChevronDown className={`w-4 h-4 text-black/30 transition-transform ${cityOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      {cityOpen && (
+                        <div className="absolute z-20 right-0 left-0 top-full mt-1 bg-white border border-black/10 rounded-2xl shadow-xl overflow-auto max-h-48">
+                          {SAUDI_CITIES.map(c => (
+                            <button key={c} onClick={() => { setAddr(p => ({ ...p, city: c })); setCityOpen(false); }}
+                              className={`w-full text-right px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${addr.city === c ? "font-bold text-blue-600" : "text-black"}`}>
+                              {c}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="h-20 flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-black/10">
-                      <p className="text-xs text-black/25">اضغط "موقعي الحالي" لعرض الخريطة</p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-black/50">الحي / المنطقة</Label>
+                        <Input value={addr.district} onChange={e => setAddr(p => ({ ...p, district: e.target.value }))}
+                          placeholder="حي النخيل" className="rounded-xl" data-testid="input-district" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-black/50">الشارع والرقم</Label>
+                        <Input value={addr.street} onChange={e => setAddr(p => ({ ...p, street: e.target.value }))}
+                          placeholder="شارع الملك فهد" className="rounded-xl" data-testid="input-street" />
+                      </div>
                     </div>
-                  )}
-                </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-black/50 flex items-center gap-1.5">
+                        <span>العنوان الوطني</span>
+                        <span className="text-[10px] text-black/25 font-normal">(اختياري — 12 رمزاً من أبشر)</span>
+                      </Label>
+                      <Input value={addr.nationalAddressId} onChange={e => setAddr(p => ({ ...p, nationalAddressId: e.target.value.toUpperCase().slice(0, 12) }))}
+                        placeholder="مثال: RIAD123456" dir="ltr" maxLength={12}
+                        className="rounded-xl font-mono tracking-widest" data-testid="input-national-address" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-bold text-black/50 flex items-center gap-1"><NavIcon className="w-3 h-3" /> اختر موقعك على الخريطة</Label>
+                        <Button size="sm" variant="outline" onClick={handleGeolocate} disabled={geoLoading}
+                          className="text-xs h-7 gap-1.5 rounded-lg" data-testid="button-geolocate">
+                          {geoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <NavIcon className="w-3 h-3" />}
+                          موقعي الحالي
+                        </Button>
+                      </div>
+                      {addr.lat && addr.lng ? (
+                        <div className="rounded-2xl overflow-hidden border border-black/[0.06]">
+                          <iframe
+                            src={`https://www.openstreetmap.org/export/embed.html?bbox=${addr.lng - 0.005},${addr.lat - 0.005},${addr.lng + 0.005},${addr.lat + 0.005}&layer=mapnik&marker=${addr.lat},${addr.lng}`}
+                            width="100%" height="200" style={{ border: 0 }} loading="lazy"
+                            title="خريطة الموقع"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-20 flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-black/10">
+                          <p className="text-xs text-black/25">اضغط "موقعي الحالي" لعرض الخريطة</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* ── Shipping Company Selector ── */}
                 {hasPhysicalItems && (
@@ -1109,7 +1128,7 @@ export default function Checkout() {
                   </motion.div>
                   <div>
                     <h2 className="text-xl font-black text-black mb-1">🎉 تم الدفع بنجاح!</h2>
-                    <p className="text-black/50 text-sm">سيتواصل معك فريق QIROX قريباً</p>
+                    <p className="text-black/50 text-sm">قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف لاستكمال أي ملفات أو تفاصيل ناقصة.</p>
                     {orderId && (
                       <div className="mt-2 inline-flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
                         <span className="text-xs text-black/40">رقم الطلب</span>

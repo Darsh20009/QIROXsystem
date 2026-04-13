@@ -1772,10 +1772,6 @@ export async function registerRoutes(
   app.post("/api/orders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const user = req.user as User;
-    if (!(user as any).emailVerified) {
-      return res.status(403).json({ error: "account_not_verified", message: "يجب تفعيل حسابك أولاً قبل تقديم أي طلب" });
-    }
-
     // ── Server-side totalAmount validation from cart ─────────────
     const { CartModel, UserModel, WalletTransactionModel } = await import("./models");
     const cart = await CartModel.findOne({ userId: String(user.id) }).lean();
@@ -1878,7 +1874,7 @@ export async function registerRoutes(
     if ((user as any).email) {
       sendOrderConfirmationEmail((user as any).email, (user as any).fullName || (user as any).username, String(order.id), items).catch(console.error);
       const { NotificationModel } = await import("./models");
-      await NotificationModel.create({ userId: user.id, type: 'order', title: 'تم استلام طلبك', body: `تم استلام طلبك بنجاح، سنتواصل معك قريباً.`, link: '/dashboard', icon: '📦' });
+      await NotificationModel.create({ userId: user.id, type: 'order', title: 'تم استلام طلبك', body: `تم استلام طلبك بنجاح. قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف لاستكمال أي ملفات أو تفاصيل ناقصة.`, link: '/dashboard', icon: '📦' });
     }
     const _clientName = (user as any).fullName || (user as any).username;
     const _clientEmail = (user as any).email || "";

@@ -956,7 +956,7 @@ export default function Home() {
                   <span className="text-white/50 text-xs tracking-wider uppercase">{lang === "ar" ? "نظام الكافيهات والمطاعم" : "Restaurants & Cafes System"}</span>
                 </motion.div>
                 <motion.h2 variants={fadeUp} custom={1} className="text-3xl md:text-5xl font-bold font-heading text-white mb-4">
-                  {lang === "ar" ? <>كل ما يحتاجه<br /><span className="text-white/30">مطعمك أو كافيهك</span></> : <>Everything your<br /><span className="text-white/30">restaurant or cafe needs</span></>}
+                  {lang === "ar" ? <>كل ما يحتاجه<br /><span className="text-white/30">مطعمك أو مقهاك</span></> : <>Everything your<br /><span className="text-white/30">restaurant or cafe needs</span></>}
                 </motion.h2>
                 <motion.p variants={fadeUp} custom={2} className="text-white/40 max-w-lg text-base leading-relaxed">
                   {lang === "ar" ? "من القائمة الرقمية إلى شاشة المطبخ إلى تقارير المبيعات — منظومة متكاملة تعمل بانسجام تام" : "From digital menu to kitchen display to sales reports — a complete integrated system"}

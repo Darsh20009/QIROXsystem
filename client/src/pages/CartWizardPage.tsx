@@ -557,7 +557,7 @@ export default function CartWizardPage() {
 
                   <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-xl p-4 text-center">
                     <p className="text-xs text-gray-400 dark:text-slate-500">
-                      لا تقلق إذا لم تكن لديك الملفات الآن — فريقنا سيتواصل معك على <strong className="text-gray-600 dark:text-slate-300">واتساب</strong> بعد تأكيد الطلب
+                      لا تقلق إذا لم تكن لديك الملفات الآن — قد يتواصل معك فريق كيروكس عبر <strong className="text-gray-600 dark:text-slate-300">الواتساب أو الهاتف</strong> بعد تأكيد الطلب لاستكمال أي ملفات ناقصة
                     </p>
                   </div>
                 </div>
@@ -623,7 +623,7 @@ export default function CartWizardPage() {
 
                   <div className="bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200 dark:border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
                     <Globe className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 dark:text-amber-300">بعد الدفع سيتواصل معك فريقنا على واتساب خلال <strong>24 ساعة</strong> لبدء تنفيذ مشروعك</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">بعد الدفع قد يتواصل معك فريق كيروكس عبر الواتساب أو الهاتف خلال <strong>24 ساعة</strong> لاستكمال أي ملفات أو تفاصيل لازمة لبدء تنفيذ مشروعك</p>
                   </div>
                 </div>
               )}

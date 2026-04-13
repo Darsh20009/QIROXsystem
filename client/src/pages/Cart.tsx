@@ -877,7 +877,7 @@ export default function Cart() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { icon: Shield,       label: "دفع آمن",              sub: "معاملات مشفّرة" },
-                { icon: Clock3,       label: "استجابة خلال 24 ساعة", sub: "نتواصل معك فوراً" },
+                { icon: Clock3,       label: "استجابة خلال 24 ساعة", sub: "تواصل عند الحاجة" },
                 { icon: CheckCircle2, label: "ضمان الجودة",          sub: "نتيجة مضمونة" },
               ].map(g => {
                 const Icon = g.icon;
