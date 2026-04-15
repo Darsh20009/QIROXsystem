@@ -136,11 +136,10 @@ export default function AdminEmployees() {
       const { salaryType, fixedSalary, hourlyRate, commissionRate, ...userFields } = data;
       const res = await apiRequest("POST", "/api/admin/users", userFields);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || (L ? "خطأ" : "Error"));
       return { user: json, form: data };
     },
     onSuccess: async ({ user, form }) => {
-      await saveSalaryData(user.id, form);
+      await saveSalaryData(user.id || user._id, form);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setCredResult({ username: form.username, rawPassword: form.password, email: form.email, fullName: form.fullName });
       resetForm();
@@ -175,9 +174,7 @@ export default function AdminEmployees() {
   const resetPasswordMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest("POST", `/api/admin/users/${id}/reset-password`, {});
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || (L ? "خطأ" : "Error"));
-      return json;
+      return res.json();
     },
     onSuccess: (data) => {
       setCredResult({ username: data.username, rawPassword: data.rawPassword, email: data.email, isReset: true });
