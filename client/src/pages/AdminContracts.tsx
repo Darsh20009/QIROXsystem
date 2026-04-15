@@ -237,15 +237,27 @@ export default function AdminContracts() {
                 <Select value={form.orderId} onValueChange={handleOrderSelect}>
                   <SelectTrigger className="border-black/20" data-testid="select-order"><SelectValue placeholder={L ? "اختر الطلب..." : "Select order..."} /></SelectTrigger>
                   <SelectContent>
-                    {orders.slice(0, 50).map((o: any) => (
-                      <SelectItem key={o.id || o._id} value={o.id || o._id}>{o.serviceTitle || o.title || o.id}</SelectItem>
+                    {orders.slice(0, 100).map((o: any) => (
+                      <SelectItem key={o.id || o._id} value={o.id || o._id}>
+                        {o.serviceTitle || o.title || `طلب #${o.id || o._id}`}
+                        {o.client?.fullName ? ` — ${o.client.fullName}` : ""}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">{L ? "معرف العميل" : "Client ID"}</label>
-                <Input value={form.clientId} onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))} placeholder={L ? "يُحدد عند اختيار الطلب" : "Auto-set from order"} className="border-black/20" data-testid="input-client-id" />
+                <label className="text-sm font-medium mb-1.5 block">{L ? "العميل" : "Client"}</label>
+                <Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v }))}>
+                  <SelectTrigger className="border-black/20" data-testid="select-client"><SelectValue placeholder={L ? "اختر العميل..." : "Select client..."} /></SelectTrigger>
+                  <SelectContent>
+                    {(clients as any[]).map((c: any) => (
+                      <SelectItem key={c.id || c._id} value={c.id || c._id}>
+                        {c.fullName || c.username || c.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>

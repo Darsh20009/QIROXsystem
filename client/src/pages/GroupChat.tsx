@@ -30,14 +30,16 @@ const ROLE_COLORS: Record<string, string> = {
   sales_manager: "bg-red-600 text-white", accountant: "bg-teal-600 text-white",
 };
 
-function timeAgo(d: string) {
+function timeAgo(d: string, _L?: boolean) {
+  if (!d) return "";
   const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
   if (diff < 60) return "الآن";
   if (diff < 3600) return `${Math.floor(diff / 60)} د`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} س`;
   return new Date(d).toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
 }
-function formatTime(d: string) {
+function formatTime(d: string, _L?: boolean) {
+  if (!d) return "";
   return new Date(d).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
 }
 

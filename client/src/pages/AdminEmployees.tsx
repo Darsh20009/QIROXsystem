@@ -2,14 +2,13 @@ import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import SARIcon from "@/components/SARIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit2, Trash2, X, Search, Shield, Mail, Phone, KeyRound, Copy, Eye, EyeOff, Camera, Link, Link2, AlertCircle, LayoutGrid, List } from "lucide-react";
 import { SiInstagram, SiX, SiLinkedin, SiSnapchat, SiTiktok, SiYoutube } from "react-icons/si";
 import { type User } from "@shared/schema";
 import { useState, useRef } from "react";
@@ -234,6 +233,8 @@ export default function AdminEmployees() {
     toast({ title: L ? `تم نسخ ${label}` : `Copied ${label}` });
   };
 
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+
   const employees = users?.filter(u => u.role !== 'client') || [];
   const clients = users?.filter(u => u.role === 'client') || [];
 
@@ -418,13 +419,14 @@ export default function AdminEmployees() {
         )}
       </AnimatePresence>
 
+      {/* Search + Filter + View Toggle */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/20" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={L ? "بحث بالاسم أو البريد..." : "Search by name or email..."} className="h-9 text-xs border-black/[0.08] pr-9" data-testid="input-search-employees" />
         </div>
         <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="h-9 text-xs border-black/[0.08] w-full md:w-[180px]" data-testid="select-filter-role">
+          <SelectTrigger className="h-9 text-xs border-black/[0.08] w-full md:w-[200px]" data-testid="select-filter-role">
             <SelectValue placeholder={L ? "جميع الأدوار" : "All Roles"} />
           </SelectTrigger>
           <SelectContent>
@@ -433,128 +435,150 @@ export default function AdminEmployees() {
             {employeeRoles.map(r => <SelectItem key={r} value={r}>{roleLabels[r] || r}</SelectItem>)}
           </SelectContent>
         </Select>
+        <div className="flex border border-black/[0.08] rounded-lg overflow-hidden h-9 shrink-0">
+          <button onClick={() => setViewMode("cards")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors ${viewMode === "cards" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-cards">
+            <LayoutGrid className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => setViewMode("list")} className={`px-3 flex items-center gap-1.5 text-xs transition-colors border-r border-black/[0.08] ${viewMode === "list" ? "bg-black text-white" : "text-black/40 hover:bg-black/[0.04]"}`} data-testid="button-view-list">
+            <List className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <Card className="border border-black/[0.06] shadow-none overflow-hidden">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-black/[0.02] border-b border-black/[0.06]">
-                <TableHead className="text-[11px] font-bold text-black/40">{L ? "الموظف" : "Employee"}</TableHead>
-                <TableHead className="text-[11px] font-bold text-black/40">{L ? "الدور" : "Role"}</TableHead>
-                <TableHead className="text-[11px] font-bold text-black/40 hidden md:table-cell">{L ? "البريد" : "Email"}</TableHead>
-                <TableHead className="text-[11px] font-bold text-black/40 hidden lg:table-cell">{L ? "الهاتف" : "Phone"}</TableHead>
-                <TableHead className="text-[11px] font-bold text-black/40 text-left w-[130px]">{L ? "إجراءات" : "Actions"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-xs text-black/25">{L ? "لا يوجد نتائج" : "No results"}</TableCell>
-                </TableRow>
-              ) : filtered.map((emp) => (
-                <TableRow key={emp.id} className="border-b border-black/[0.04] hover:bg-black/[0.01]" data-testid={`row-employee-${emp.id}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="relative group flex-shrink-0">
-                        <div className="w-9 h-9 rounded-xl overflow-hidden bg-black/[0.04] flex items-center justify-center">
-                          {(emp as any).avatarUrl ? (
-                            <img src={(emp as any).avatarUrl} alt={emp.fullName} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[12px] font-bold text-black/30">{emp.fullName?.charAt(0)}</span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleAvatarClick(String(emp.id))}
-                          disabled={uploadingAvatarId === String(emp.id)}
-                          className="absolute inset-0 rounded-xl bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
-                          data-testid={`button-avatar-${emp.id}`}
-                          title={L ? "تغيير الصورة" : "Change Photo"}
-                        >
-                          {uploadingAvatarId === String(emp.id)
-                            ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                            : <Camera className="w-3.5 h-3.5 text-white" />
-                          }
-                        </button>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-black">{emp.fullName}</p>
-                        <p className="text-[10px] text-black/25">@{emp.username}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`text-[10px] border ${roleColors[emp.role] || roleColors.client}`}>
-                      <Shield className="w-2.5 h-2.5 ml-1" />
-                      {roleLabels[emp.role] || emp.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-[11px] text-black/40 flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {emp.email}
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(emp.email, L ? "البريد" : "email")}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Copy className="w-3 h-3 text-black/30 hover:text-black/60" />
-                      </button>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <span className="text-[11px] text-black/30 flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      {emp.phone || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-black/20 hover:text-black/60"
-                        onClick={() => startEdit(emp)}
-                        data-testid={`button-edit-${emp.id}`}
-                        title={L ? "تعديل" : "Edit"}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      {emp.role !== 'admin' && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-blue-400 hover:text-blue-600 hover:bg-blue-50"
-                            onClick={() => resetPasswordMutation.mutate(String(emp.id))}
-                            disabled={resetPasswordMutation.isPending}
-                            data-testid={`button-reset-pw-${emp.id}`}
-                            title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}
-                          >
-                            {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-black/20 hover:text-red-500"
-                            onClick={() => handleDelete(emp)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`button-delete-${emp.id}`}
-                            title={L ? "حذف" : "Delete"}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
+      {/* Stats Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: L ? "إجمالي الفريق" : "Total Team", value: employees.length, color: "text-black dark:text-white" },
+          { label: L ? "المدراء" : "Managers", value: employees.filter(e => ["admin","manager"].includes(e.role)).length, color: "text-violet-600" },
+          { label: L ? "الموظفون" : "Staff", value: employees.filter(e => !["admin","manager","client"].includes(e.role)).length, color: "text-blue-600" },
+          { label: L ? "العملاء" : "Clients", value: clients.length, color: "text-emerald-600" },
+        ].map((s, i) => (
+          <Card key={i} className="border border-black/[0.06] shadow-none">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div>
+                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] text-black/40">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Employee Cards */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-black/25">
+          <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+          <p className="text-sm">{L ? "لا يوجد نتائج" : "No results"}</p>
+        </div>
+      ) : viewMode === "cards" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((emp) => (
+            <Card key={emp.id} className="border border-black/[0.06] shadow-none hover:border-black/20 hover:shadow-sm transition-all" data-testid={`card-employee-${emp.id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="relative group flex-shrink-0">
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-black/[0.04] flex items-center justify-center">
+                      {(emp as any).avatarUrl ? (
+                        <img src={(emp as any).avatarUrl} alt={emp.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-black/30">{emp.fullName?.charAt(0)}</span>
                       )}
                     </div>
-                  </TableCell>
-                </TableRow>
+                    <button
+                      onClick={() => handleAvatarClick(String(emp.id))}
+                      disabled={uploadingAvatarId === String(emp.id)}
+                      className="absolute inset-0 rounded-2xl bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                      data-testid={`button-avatar-${emp.id}`}
+                    >
+                      {uploadingAvatarId === String(emp.id)
+                        ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        : <Camera className="w-4 h-4 text-white" />
+                      }
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-black dark:text-white truncate">{emp.fullName}</p>
+                    <p className="text-[10px] text-black/30 truncate">@{emp.username}</p>
+                    <Badge className={`mt-1.5 text-[10px] border ${roleColors[emp.role] || roleColors.client}`}>
+                      {roleLabels[emp.role] || emp.role}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1.5 border-t border-black/[0.05] pt-3">
+                  <div className="flex items-center gap-2 group">
+                    <Mail className="w-3 h-3 text-black/20 flex-shrink-0" />
+                    <span className="text-[11px] text-black/40 truncate flex-1">{emp.email}</span>
+                    <button onClick={() => copyToClipboard(emp.email, "email")} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Copy className="w-3 h-3 text-black/30 hover:text-black/60" />
+                    </button>
+                  </div>
+                  {emp.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3 h-3 text-black/20 flex-shrink-0" />
+                      <span className="text-[11px] text-black/40">{emp.phone}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-1.5">
+                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs border-black/[0.08] gap-1" onClick={() => startEdit(emp)} data-testid={`button-edit-${emp.id}`}>
+                    <Edit2 className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
+                  </Button>
+                  {emp.role !== 'admin' && (
+                    <>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-blue-200 text-blue-500 hover:bg-blue-50" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-${emp.id}`} title={L ? "إعادة تعيين كلمة المرور" : "Reset Password"}>
+                        {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-${emp.id}`}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        /* List View */
+        <Card className="border border-black/[0.06] shadow-none overflow-hidden">
+          <CardContent className="p-0">
+            <div className="divide-y divide-black/[0.04]">
+              {filtered.map((emp) => (
+                <div key={emp.id} className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.01] transition-colors" data-testid={`row-employee-${emp.id}`}>
+                  <div className="relative group flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl overflow-hidden bg-black/[0.04] flex items-center justify-center">
+                      {(emp as any).avatarUrl ? (
+                        <img src={(emp as any).avatarUrl} alt={emp.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-bold text-black/30">{emp.fullName?.charAt(0)}</span>
+                      )}
+                    </div>
+                    <button onClick={() => handleAvatarClick(String(emp.id))} disabled={uploadingAvatarId === String(emp.id)} className="absolute inset-0 rounded-xl bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer" data-testid={`button-avatar-list-${emp.id}`}>
+                      {uploadingAvatarId === String(emp.id) ? <Loader2 className="w-3 h-3 text-white animate-spin" /> : <Camera className="w-3 h-3 text-white" />}
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-black dark:text-white truncate">{emp.fullName}</p>
+                    <p className="text-[10px] text-black/30">@{emp.username} · {emp.email}</p>
+                  </div>
+                  <Badge className={`text-[10px] border hidden md:flex ${roleColors[emp.role] || roleColors.client}`}>{roleLabels[emp.role] || emp.role}</Badge>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-black/60" onClick={() => startEdit(emp)} data-testid={`button-edit-list-${emp.id}`}><Edit2 className="w-3.5 h-3.5" /></Button>
+                    {emp.role !== 'admin' && (
+                      <>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-400 hover:text-blue-600 hover:bg-blue-50" onClick={() => resetPasswordMutation.mutate(String(emp.id))} disabled={resetPasswordMutation.isPending} data-testid={`button-reset-pw-list-${emp.id}`}>
+                          {resetPasswordMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-black/20 hover:text-red-500" onClick={() => handleDelete(emp)} disabled={deleteMutation.isPending} data-testid={`button-delete-list-${emp.id}`}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </>
+                    )}
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Credential Dialog */}
       <Dialog open={!!credResult} onOpenChange={() => { setCredResult(null); setShowPassword(false); }}>
