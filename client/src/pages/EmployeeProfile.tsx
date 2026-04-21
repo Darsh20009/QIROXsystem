@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download } from "lucide-react";
+import { Loader2, Save, Briefcase, CreditCard, Umbrella, X, Plus, ShieldCheck, Camera, Smile, FolderOpen, Video, FileText, Link2, Trash2, ExternalLink, QrCode, RefreshCw, Download, Instagram, Twitter, Linkedin, Youtube, Music2, Globe, RotateCw, IdCard } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import qiroxLogoPath from "@assets/QIROX_LOGO_1770391223929.png";
 import { BiometricManager } from "@/components/BiometricManager";
 import { UserAvatar } from "@/components/UserAvatar";
 import AvatarBuilder, { DEFAULT_AVATAR, type AvatarConfig } from "@/components/AvatarBuilder";
@@ -64,6 +65,7 @@ export default function EmployeeProfile() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [newItem, setNewItem] = useState({ title: "", type: "template" as PortfolioItem["type"], url: "", description: "" });
   const [addingItem, setAddingItem] = useState(false);
+  const [cardFlipped, setCardFlipped] = useState(false);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     queryKey: ["/api/employee/profile"],
@@ -533,38 +535,215 @@ export default function EmployeeProfile() {
         </CardContent>
       </Card>
 
-      {/* QR Barcode Login Card */}
+      {/* Employee ID Card - Canva Style */}
       <Card className="border-black/[0.07] dark:border-white/[0.07] shadow-none rounded-2xl dark:bg-gray-900 overflow-hidden">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-bold text-black/60 dark:text-white/60 flex items-center gap-2">
-            <QrCode className="w-4 h-4 text-violet-500" />
-            {L ? "باركود تسجيل الدخول" : "QR Login Barcode"}
+            <IdCard className="w-4 h-4 text-violet-500" />
+            {L ? "بطاقة الهوية الوظيفية" : "Employee ID Card"}
           </CardTitle>
+          {qrLoginUrl && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setCardFlipped(f => !f)}
+              className="h-7 gap-1.5 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+              data-testid="button-flip-card"
+            >
+              <RotateCw className="w-3 h-3" />
+              {L ? "قلب البطاقة" : "Flip"}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {qrLoginUrl ? (
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-white border border-black/[0.08] rounded-2xl shadow-sm inline-block">
-                <QRCodeSVG
-                  id="qr-login-svg"
-                  value={qrLoginUrl}
-                  size={160}
-                  level="M"
-                  includeMargin={false}
-                  bgColor="#ffffff"
-                  fgColor="#1a1a1a"
-                />
+            <div className="flex flex-col items-center gap-4" dir="ltr">
+              {/* 3D Flip Card */}
+              <div
+                className="relative w-[280px] h-[440px] cursor-pointer"
+                style={{ perspective: "1500px" }}
+                onClick={() => setCardFlipped(f => !f)}
+                data-testid="employee-id-card"
+              >
+                <motion.div
+                  className="relative w-full h-full"
+                  style={{ transformStyle: "preserve-3d" }}
+                  animate={{ rotateY: cardFlipped ? 180 : 0 }}
+                  transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                >
+                  {/* FRONT */}
+                  <div
+                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-zinc-800" />
+                    {/* Decorative grain overlay */}
+                    <div className="absolute inset-0 opacity-[0.08]" style={{
+                      backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+                      backgroundSize: "16px 16px"
+                    }} />
+                    {/* Top diagonal silver accent */}
+                    <div className="absolute top-0 left-0 right-0 h-24 overflow-hidden">
+                      <div className="absolute -top-12 -left-8 w-[140%] h-24 bg-gradient-to-r from-zinc-700/40 via-zinc-500/20 to-transparent rotate-[-6deg]" />
+                    </div>
+                    {/* Lanyard hole */}
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-zinc-950 border border-zinc-700/60 shadow-inner" />
+
+                    <div className="relative z-10 flex flex-col items-center pt-8 pb-5 px-5 h-full">
+                      {/* Logo */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <img src={qiroxLogoPath} alt="QIROX" className="h-7 w-auto object-contain invert" />
+                      </div>
+                      <div className="text-[9px] tracking-[0.4em] text-zinc-500 font-medium mb-5">EMPLOYEE</div>
+
+                      {/* Photo */}
+                      <div className="relative mb-4">
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-zinc-300 via-zinc-500 to-zinc-700 opacity-70 blur-[2px]" />
+                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-zinc-200/30 bg-zinc-800 shadow-xl">
+                          {profile?.profilePhotoUrl ? (
+                            <img src={profile.profilePhotoUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl text-zinc-500 font-bold">
+                              {(profile?.fullName || (user as any)?.fullName || "?")[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name */}
+                      <div className="text-white font-bold text-lg tracking-wide text-center leading-tight" data-testid="text-id-name">
+                        {profile?.fullName || (user as any)?.fullName || (user as any)?.username}
+                      </div>
+
+                      {/* Job title */}
+                      <div className="mt-1 px-3 py-0.5 rounded-full border border-zinc-600/50 text-zinc-300 text-[10px] tracking-[0.2em] uppercase font-medium">
+                        {profile?.jobTitle || (user as any)?.role || "Member"}
+                      </div>
+
+                      {/* Divider */}
+                      <div className="my-4 w-12 h-px bg-gradient-to-r from-transparent via-zinc-500 to-transparent" />
+
+                      {/* Social handles */}
+                      <div className="flex flex-wrap justify-center gap-2 px-2">
+                        {(user as any)?.instagram && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Instagram className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).instagram}</span>
+                          </div>
+                        )}
+                        {(user as any)?.twitter && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Twitter className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).twitter}</span>
+                          </div>
+                        )}
+                        {(user as any)?.linkedin && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Linkedin className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).linkedin}</span>
+                          </div>
+                        )}
+                        {(user as any)?.tiktok && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Music2 className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).tiktok}</span>
+                          </div>
+                        )}
+                        {(user as any)?.youtube && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Youtube className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).youtube}</span>
+                          </div>
+                        )}
+                        {(user as any)?.linktree && (
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-300">
+                            <Globe className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[80px]">{(user as any).linktree}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom brand strip */}
+                      <div className="mt-auto w-full pt-3 border-t border-zinc-700/40 flex items-center justify-between">
+                        <span className="text-[8px] tracking-[0.3em] text-zinc-500">qiroxstudio.online</span>
+                        <span className="text-[8px] tracking-[0.3em] text-zinc-500">© QIROX</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BACK */}
+                  <div
+                    className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)"
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900" />
+                    <div className="absolute inset-0 opacity-[0.08]" style={{
+                      backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+                      backgroundSize: "16px 16px"
+                    }} />
+                    {/* Top accent */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-600 via-zinc-300 to-zinc-600" />
+                    {/* Bottom accent */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-600 via-zinc-300 to-zinc-600" />
+
+                    <div className="relative z-10 flex flex-col items-center justify-between pt-7 pb-5 px-5 h-full">
+                      {/* Header */}
+                      <div className="flex flex-col items-center">
+                        <img src={qiroxLogoPath} alt="QIROX" className="h-6 w-auto object-contain invert opacity-90" />
+                        <div className="mt-1 text-[9px] tracking-[0.5em] text-zinc-500 font-semibold">IDENTIFICATION</div>
+                      </div>
+
+                      {/* Big ID label */}
+                      <div className="absolute top-14 left-4 text-[80px] font-black text-white/[0.04] leading-none tracking-tighter select-none">
+                        ID
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="relative">
+                        <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-zinc-200 via-zinc-400 to-zinc-600 opacity-30 blur-sm" />
+                        <div className="relative p-3 bg-white rounded-2xl shadow-xl">
+                          <QRCodeSVG
+                            id="qr-login-svg"
+                            value={qrLoginUrl}
+                            size={160}
+                            level="M"
+                            includeMargin={false}
+                            bgColor="#ffffff"
+                            fgColor="#0a0a0a"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Scan instructions */}
+                      <div className="text-center space-y-1.5">
+                        <div className="text-white text-xs font-bold tracking-wider">
+                          {L ? "امسح للدخول الفوري" : "SCAN TO LOGIN"}
+                        </div>
+                        <div className="text-zinc-500 text-[9px] tracking-wide">
+                          {L ? "افتح كاميرا هاتفك ووجهها للباركود" : "Open your phone camera & point it at the code"}
+                        </div>
+                      </div>
+
+                      {/* ID footer */}
+                      <div className="w-full flex items-center justify-between pt-3 border-t border-zinc-700/40">
+                        <span className="text-[8px] tracking-[0.3em] text-zinc-500">EMP. ID</span>
+                        <span className="text-[9px] font-mono text-zinc-300 tracking-wider">
+                          {((user as any)?.id || "").toString().slice(-8).toUpperCase() || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              <div className="text-center space-y-1">
-                <p className="text-xs font-semibold text-black/70 dark:text-white/70">
-                  {L ? "امسح هذا الباركود بكاميرا هاتفك لتسجيل الدخول فوراً" : "Scan this QR code with your phone camera to login instantly"}
-                </p>
-                {qrData?.createdAt && (
-                  <p className="text-[10px] text-black/30 dark:text-white/30">
-                    {L ? "تم الإنشاء:" : "Generated:"} {new Date(qrData.createdAt).toLocaleDateString(L ? "ar-SA" : "en-US")}
-                  </p>
-                )}
-              </div>
+
+              <p className="text-[10px] text-black/40 dark:text-white/40 text-center">
+                {L ? "اضغط على البطاقة لقلبها وعرض الباركود" : "Tap the card to flip and reveal the QR code"}
+              </p>
+
               <div className="flex gap-2 w-full">
                 <Button
                   onClick={() => generateQrMutation.mutate()}
@@ -592,26 +771,26 @@ export default function EmployeeProfile() {
                   data-testid="button-download-qr"
                 >
                   <Download className="w-3 h-3" />
-                  {L ? "تحميل" : "Download"}
+                  {L ? "تحميل QR" : "Download QR"}
                 </Button>
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-4">
-              <div className="w-16 h-16 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-                <QrCode className="w-8 h-8 text-violet-300" />
+              <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center">
+                <IdCard className="w-8 h-8 text-zinc-500" />
               </div>
-              <p className="text-xs text-black/40 dark:text-white/40 text-center max-w-[200px]">
-                {L ? "أنشئ باركوداً خاصاً لتسجيل الدخول التلقائي بدون كلمة مرور" : "Create a personal QR code for instant passwordless login"}
+              <p className="text-xs text-black/40 dark:text-white/40 text-center max-w-[220px]">
+                {L ? "أنشئ بطاقة هويتك الوظيفية المصممة بطراز كانفا مع باركود لتسجيل دخول فوري" : "Create your Canva-style employee ID badge with a QR for instant login"}
               </p>
               <Button
                 onClick={() => generateQrMutation.mutate()}
                 disabled={generateQrMutation.isPending}
-                className="bg-violet-600 hover:bg-violet-700 text-white gap-2 text-sm"
+                className="bg-zinc-900 hover:bg-zinc-800 text-white gap-2 text-sm"
                 data-testid="button-generate-qr"
               >
-                {generateQrMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                {L ? "إنشاء باركود تسجيل الدخول" : "Generate Login QR Code"}
+                {generateQrMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <IdCard className="w-4 h-4" />}
+                {L ? "إنشاء البطاقة" : "Create ID Card"}
               </Button>
             </div>
           )}
