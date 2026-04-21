@@ -1057,6 +1057,13 @@ const extraAddonSchema = new mongoose.Schema({
   freeQuotaForIncluded: { type: Number, default: 0 },
   // Optional image
   imageUrl: { type: String, default: "" },
+  // ── Profit tracking (staff-only, never sent to client) ──
+  cost: { type: Number, default: 0 },          // internal cost used to compute profit
+  // ── Custom client features ──
+  isCustom: { type: Boolean, default: false }, // created specifically for one client
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  promotedToStandardAt: { type: Date, default: null }, // when staff promoted to standard catalog
+  createdByEmployeeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 }, { timestamps: true });
 
 // ── ProjectAddonSubscription (اشتراك ميزة لمشروع) ──────────────────────────

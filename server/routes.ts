@@ -9189,13 +9189,31 @@ export async function registerRoutes(
   app.get("/api/extra-addons", async (req, res) => {
     try {
       const { segment, plan } = req.query as { segment?: string; plan?: string };
-      const addons = await ExtraAddonModel.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
+      const user: any = req.user;
+      const isStaff = req.isAuthenticated?.() && user && ["admin","manager","sales","sales_manager","accountant","support","developer"].includes(user.role);
+      const currentClientId = !isStaff && user ? String(user.id) : null;
+
+      // Public sees only standard addons; client also sees their own custom features
+      const query: any = { isActive: true };
+      if (!isStaff) {
+        query.$or = [
+          { isCustom: { $ne: true } },
+          ...(currentClientId ? [{ isCustom: true, clientId: currentClientId }] : []),
+        ];
+      }
+      const addons = await ExtraAddonModel.find(query).sort({ sortOrder: 1, createdAt: 1 });
       const filtered = addons.filter((a: any) => {
         const segOk = !a.segments?.length || !segment || a.segments.includes(segment);
         const planOk = !a.plans?.length || !plan || a.plans.includes(plan);
         return segOk && planOk;
       });
-      res.json(filtered);
+      // Strip internal cost from public response
+      const cleaned = filtered.map((a: any) => {
+        const o = a.toObject ? a.toObject() : a;
+        if (!isStaff) { delete o.cost; delete o.createdByEmployeeId; }
+        return o;
+      });
+      res.json(cleaned);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -9236,6 +9254,101 @@ export async function registerRoutes(
       console.error(`[ExtraAddon] Delete error for ${req.params.id}:`, err.message);
       res.status(500).json({ error: err.message });
     }
+  });
+
+  // ── WIPE all addons (legacy + reseed) — for the new official QIROX catalog ──
+  app.post("/api/admin/extra-addons/wipe-and-seed", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      // Keep custom client features intact, only wipe standard catalog
+      await ExtraAddonModel.deleteMany({ isCustom: { $ne: true } });
+      const cat = [
+        // ── البريد الاحترافي على نطاقك ─────────────────────────────────
+        { nameAr: "باقة البريد الأساسية (5 بريدات)", name: "Basic Email Pack (5 mailboxes)",
+          descriptionAr: "5 حسابات بريد على نطاقك مع الإدارة الكاملة من داخل النظام (إرسال + استقبال).",
+          category: "communication", price: 600, cost: 500, icon: "Mail", sortOrder: 10,
+          billingType: "annual", quotaCount: 5, quotaLabel: "بريد", segments: [], plans: [] },
+        { nameAr: "بريد إضافي على النطاق", name: "Extra Domain Mailbox",
+          descriptionAr: "حساب بريد واحد إضافي على نطاقك يُضاف لباقتك ويُدار من النظام.",
+          category: "communication", price: 70, cost: 50, icon: "Mail", sortOrder: 11,
+          billingType: "annual", quotaCount: 1, quotaLabel: "بريد", segments: [], plans: [] },
+
+        // ── قاعدة البيانات ─────────────────────────────────
+        { nameAr: "قاعدة بيانات 10 جيجا", name: "Database 10GB",
+          descriptionAr: "قاعدة بيانات منفصلة (MongoDB أو PostgreSQL) بسعة 10 جيجا — مرنة وسريعة.",
+          category: "hosting", price: 300, cost: 250, icon: "Database", sortOrder: 20,
+          billingType: "one_time", segments: [], plans: [] },
+
+        // ── الرسائل ─────────────────────────────────
+        { nameAr: "رسائل نصية SMS — 1500 رسالة/شهر", name: "SMS — 1500 / month",
+          descriptionAr: "1500 رسالة نصية شهرياً للإشعارات والتنبيهات والتسويق.",
+          category: "communication", price: 300, cost: 200, icon: "MessageSquare", sortOrder: 30,
+          billingType: "monthly", quotaCount: 1500, quotaLabel: "رسالة", segments: [], plans: [] },
+
+        // ── إرسال البريد ─────────────────────────────────
+        { nameAr: "خدمة إرسال البريد — 1000 رسالة/شهر", name: "Email Sending — 1000 / month",
+          descriptionAr: "إرسال 1000 بريد إلكتروني شهرياً للإشعارات والتسويق التلقائي.",
+          category: "communication", price: 100, cost: 80, icon: "Send", sortOrder: 40,
+          billingType: "monthly", quotaCount: 1000, quotaLabel: "بريد", segments: [], plans: [] },
+
+        // ── تحسين محركات البحث ─────────────────────────────────
+        { nameAr: "تحسين محركات البحث (SEO)", name: "SEO Optimization",
+          descriptionAr: "تهيئة كاملة لمحركات البحث + ربط Google Analytics و Search Console.",
+          category: "marketing", price: 300, cost: 150, icon: "TrendingUp", sortOrder: 50,
+          billingType: "one_time", segments: [], plans: [] },
+
+        // ── الذكاء الاصطناعي — ٣ مستويات ─────────────────────────────────
+        { nameAr: "ذكاء اصطناعي A1 — أساسي", name: "AI A1 — Basic",
+          descriptionAr: "ذكاء اصطناعي خفيف داخل نظامك للرد التلقائي والمساعدة الأساسية.",
+          category: "ai", price: 150, cost: 100, icon: "Sparkles", sortOrder: 60,
+          billingType: "annual", segments: [], plans: [] },
+        { nameAr: "ذكاء اصطناعي A2 — متوسط", name: "AI A2 — Pro",
+          descriptionAr: "ذكاء اصطناعي أقوى مع تحليل بيانات وردود متقدمة وتكامل مع أنظمتك.",
+          category: "ai", price: 500, cost: 400, icon: "Sparkles", sortOrder: 61,
+          billingType: "annual", segments: [], plans: [] },
+        { nameAr: "ذكاء اصطناعي A3 — متقدم (Agent)", name: "AI A3 — Agent",
+          descriptionAr: "وكيل ذكاء اصطناعي ينفذ المهام داخل نظامك ويتفاعل مع العملاء بشكل احترافي.",
+          category: "ai", price: 2000, cost: 1500, icon: "Sparkles", sortOrder: 62,
+          billingType: "annual", segments: [], plans: [] },
+      ] as any[];
+      const created = await ExtraAddonModel.insertMany(
+        cat.map(d => ({ ...d, isActive: true, currency: "SAR" }))
+      );
+      res.json({ ok: true, wiped: true, added: created.length });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── Create CUSTOM addon for a specific client (employee-driven) ──
+  app.post("/api/admin/extra-addons/custom", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager","sales","sales_manager","support"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const { clientId, nameAr, name, descriptionAr, price, cost, billingType, icon } = req.body || {};
+      if (!clientId || !nameAr || !price) return res.status(400).json({ error: "clientId, nameAr, price مطلوبة" });
+      const a = await ExtraAddonModel.create({
+        nameAr, name: name || nameAr, descriptionAr: descriptionAr || "",
+        price: Number(price), cost: Number(cost || 0),
+        billingType: billingType || "one_time",
+        icon: icon || "Plus", category: "custom",
+        isCustom: true, clientId,
+        createdByEmployeeId: (req.user as any).id,
+        isActive: true, currency: "SAR", sortOrder: 9999,
+      });
+      res.json(a);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── PROMOTE a custom addon to standard catalog (employee decision) ──
+  app.patch("/api/admin/extra-addons/:id/promote", async (req, res) => {
+    if (!req.isAuthenticated() || !["admin","manager"].includes((req.user as any).role)) return res.sendStatus(403);
+    try {
+      const a = await ExtraAddonModel.findByIdAndUpdate(
+        req.params.id,
+        { isCustom: false, clientId: null, promotedToStandardAt: new Date() },
+        { returnDocument: "after" }
+      );
+      if (!a) return res.status(404).json({ error: "غير موجود" });
+      res.json(a);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
   app.post("/api/admin/extra-addons/seed-defaults", async (req, res) => {

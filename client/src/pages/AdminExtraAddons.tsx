@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Pencil, Package, Tag, Sparkles, Globe, Lock, Image as ImageIcon, RefreshCw, TrendingUp, Crown, UserPlus } from "lucide-react";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -53,7 +53,7 @@ const ALL_PLANS = [
 
 const empty = {
   name: "", nameAr: "", description: "", descriptionAr: "",
-  icon: "Plus", price: 0, currency: "SAR", category: "feature",
+  icon: "Plus", price: 0, cost: 0, currency: "SAR", category: "feature",
   sortOrder: 0, isActive: true, segments: [] as string[], plans: [] as string[],
   imageUrl: "",
 };
@@ -147,6 +147,24 @@ export default function AdminExtraAddons() {
     onError: () => toast({ title: L ? "خطأ في الزرع" : "Seeding error", variant: "destructive" }),
   });
 
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const wipeAndSeed = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/extra-addons/wipe-and-seed", {}),
+    onSuccess: async (res) => {
+      const data = await res.json();
+      qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] });
+      setConfirmWipe(false);
+      toast({ title: L ? `✅ تم استبدال الكتالوج. ${data.added} منتج جديد` : `✅ Catalog replaced. ${data.added} items` });
+    },
+    onError: (e: any) => toast({ title: L ? "فشل الاستبدال" : "Wipe failed", description: e.message, variant: "destructive" }),
+  });
+
+  const promote = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/admin/extra-addons/${id}/promote`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/admin/extra-addons"] }); toast({ title: L ? "✅ تمت الترقية للكتالوج العام" : "✅ Promoted to standard" }); },
+    onError: (e: any) => toast({ title: L ? "فشل الترقية" : "Promote failed", description: e.message, variant: "destructive" }),
+  });
+
   function openNew() { setEditId(null); setForm({ ...empty }); setOpen(true); }
   function openEdit(a: any) {
     setEditId(a.id);
@@ -177,15 +195,41 @@ export default function AdminExtraAddons() {
           <h1 className="text-xl sm:text-2xl font-bold">{L ? "المميزات الإضافية" : "Extra Add-ons"}</h1>
           <p className="text-xs sm:text-sm text-black/40">{L ? "إضافات اختيارية بأسعار منفصلة — يمكن تقييدها بقطاع أو باقة معينة" : "Optional add-ons with separate pricing — can be restricted by segment or plan"}</p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-seed-addons">
-            <Sparkles className="w-3.5 h-3.5" /> {seedDefaults.isPending ? (L ? "جاري الإضافة..." : "Seeding...") : (L ? "إضافات افتراضية" : "Default Add-ons")}
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmWipe(true)}
+            disabled={wipeAndSeed.isPending}
+            className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none border-black text-black hover:bg-black hover:text-white"
+            data-testid="button-wipe-and-seed"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            {wipeAndSeed.isPending ? (L ? "..." : "...") : (L ? "كتالوج QIROX الجديد" : "QIROX Catalog")}
           </Button>
-          <Button onClick={openNew} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none" data-testid="button-new-addon">
+          <Button onClick={openNew} className="gap-1.5 text-xs sm:text-sm flex-1 sm:flex-none bg-black text-white hover:bg-black/90" data-testid="button-new-addon">
             <Plus className="w-3.5 h-3.5" /> {L ? "إضافة جديدة" : "New Add-on"}
           </Button>
         </div>
       </div>
+
+      {/* Wipe confirmation */}
+      <Dialog open={confirmWipe} onOpenChange={setConfirmWipe}>
+        <DialogContent className="max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="text-black">{L ? "استبدال الكتالوج بالقائمة الرسمية الجديدة؟" : "Replace catalog with new official list?"}</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-black/60 space-y-2">
+            <p>{L ? "سيتم حذف كل المنتجات القياسية الحالية واستبدالها بالكتالوج الرسمي الجديد لـ QIROX (٩ منتجات)." : "All current standard add-ons will be deleted and replaced with the new official QIROX catalog (9 items)."}</p>
+            <p className="text-black/40 text-xs">{L ? "الميزات المخصصة للعملاء لن تتأثر." : "Custom client features will not be affected."}</p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmWipe(false)}>{L ? "إلغاء" : "Cancel"}</Button>
+            <Button onClick={() => wipeAndSeed.mutate()} disabled={wipeAndSeed.isPending} className="bg-black text-white hover:bg-black/90" data-testid="button-confirm-wipe">
+              {wipeAndSeed.isPending ? (L ? "جاري الاستبدال..." : "Replacing...") : (L ? "استبدال الآن" : "Replace now")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats + filter */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -250,16 +294,37 @@ export default function AdminExtraAddons() {
                           <Badge className={`text-[10px] ${catColor[a.category] || "bg-gray-100 text-gray-600"}`}>
                             {catLabel[a.category] || a.category}
                           </Badge>
+                          {a.isCustom && (
+                            <Badge className="text-[10px] bg-black text-white gap-1">
+                              <UserPlus className="w-2.5 h-2.5" /> {L ? "مخصص لعميل" : "Custom"}
+                            </Badge>
+                          )}
+                          {a.promotedToStandardAt && (
+                            <Badge className="text-[10px] bg-white text-black border border-black gap-1">
+                              <Crown className="w-2.5 h-2.5" /> {L ? "مُرقّى" : "Promoted"}
+                            </Badge>
+                          )}
                         </div>
                         {a.name && <span className="text-[11px] text-black/30 block">{a.name}</span>}
                       </div>
-                      {/* Price + actions on same row */}
+                      {/* Price + profit + actions on same row */}
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <p className="font-black text-sm sm:text-base leading-tight">{(a.price || 0).toLocaleString()}</p>
+                          <p className="font-black text-sm sm:text-base leading-tight" data-testid={`text-price-${a.id}`}>{(a.price || 0).toLocaleString()}</p>
                           <p className="text-[9px] sm:text-[10px] text-black/30">{a.currency}</p>
+                          {typeof a.cost === "number" && a.cost > 0 && (
+                            <p className="text-[10px] text-black/50 mt-0.5 flex items-center gap-0.5 justify-end" data-testid={`text-profit-${a.id}`} title={L ? `التكلفة: ${a.cost}` : `Cost: ${a.cost}`}>
+                              <TrendingUp className="w-2.5 h-2.5" />
+                              <span className="font-bold">{((a.price || 0) - (a.cost || 0)).toLocaleString()}</span>
+                            </p>
+                          )}
                         </div>
                         <div className="flex gap-0.5">
+                          {a.isCustom && (
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-black" onClick={() => promote.mutate(a.id)} title={L ? "ترقية للكتالوج العام" : "Promote to standard"} data-testid={`button-promote-${a.id}`}>
+                              <Crown className="w-3 h-3" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(a)} data-testid={`button-edit-addon-${a.id}`}>
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -331,12 +396,25 @@ export default function AdminExtraAddons() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="flex items-center gap-1">السعر (<SARIcon size={10} className="opacity-60" />) *</Label>
+                <Label className="flex items-center gap-1">{L ? "سعر البيع" : "Sale Price"} (<SARIcon size={10} className="opacity-60" />) *</Label>
                 <Input type="number" value={form.price}
                   onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
-                  min={0} step={50} data-testid="input-addon-price" />
+                  min={0} step={10} data-testid="input-addon-price" />
               </div>
               <div>
+                <Label className="flex items-center gap-1 text-black">
+                  {L ? "التكلفة (داخلي)" : "Cost (internal)"} (<SARIcon size={10} className="opacity-60" />)
+                  {form.price > 0 && form.cost > 0 && (
+                    <span className="text-[10px] text-black/60 font-bold mr-auto">
+                      {L ? "ربح:" : "Profit:"} {(form.price - form.cost).toLocaleString()}
+                    </span>
+                  )}
+                </Label>
+                <Input type="number" value={form.cost}
+                  onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))}
+                  min={0} step={10} data-testid="input-addon-cost" placeholder={L ? "تكلفتنا الداخلية" : "our internal cost"} />
+              </div>
+              <div className="col-span-2">
                 <Label>{L ? "الفئة" : "Category"}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger data-testid="select-addon-cat"><SelectValue /></SelectTrigger>
