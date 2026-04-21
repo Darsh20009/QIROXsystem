@@ -387,6 +387,23 @@ const QIROX_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "send_email",
+      description: "إرسال بريد إلكتروني فعلي عبر صندوق QIROX الرسمي إلى أي عنوان. للموظفين/الإدارة فقط. استخدمها عندما يطلب المستخدم 'أرسل إيميل/بريد' لشخص أو لنفسه. صياغة المحتوى تلقائياً بناءً على السياق إن لم يحدّد المستخدم.",
+      parameters: {
+        type: "object",
+        required: ["to", "subject", "body"],
+        properties: {
+          to: { type: "string", description: "البريد الإلكتروني للمستلم (مثال: name@example.com). يمكن إرسال لعدة عناوين بالفصل بفواصل." },
+          subject: { type: "string", description: "موضوع الرسالة" },
+          body: { type: "string", description: "نص الرسالة الكامل (نص عادي أو HTML بسيط)" },
+          toName: { type: "string", description: "اسم المستلم (اختياري، يُستخدم في التحية)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "submit_consultation_request",
       description: "إرسال طلب استشارة أو تواصل باسم زائر أو عميل. يجمع الذكاء الاصطناعي الاسم ورقم الهاتف والموضوع من المحادثة ثم يُرسل الطلب للفريق. يعمل بدون تسجيل دخول. استخدم هذه الأداة عندما يطلب الزائر التواصل أو الاستشارة أو المتابعة.",
       parameters: {
@@ -656,12 +673,49 @@ async function executeTool(name: string, args: any, userId?: string, userRole?: 
         createdAt: new Date(),
       });
       try {
-        await sendDirectEmail("info@qiroxstudio.online", `تذكرة دعم جديدة: ${args.subject}`, `من: ${user?.fullName || user?.username}\n\n${args.message}`);
+        await sendDirectEmail("info@qiroxstudio.online", "QIROX Support", `تذكرة دعم جديدة: ${args.subject}`, `من: ${user?.fullName || user?.username}\n\n${args.message}`);
         const { pushToUser } = await import("./ws");
         const admins = await UserModel.find({ role: { $in: ["admin", "manager"] } }).select("_id").lean();
         for (const a of admins) pushToUser(String(a._id), { type: "notification", title: "تذكرة دعم جديدة", body: args.subject });
       } catch {}
       return { success: true, data: { ticketId: String(ticket._id), subject: args.subject }, display: { type: "action_success" } };
+    }
+
+    /* ── WRITE: send_email (real email via QIROX SMTP) ── */
+    if (name === "send_email") {
+      if (!isAdmin && !isEmployee) {
+        return { success: false, error: "إرسال البريد الإلكتروني متاح للموظفين والإدارة فقط" };
+      }
+      const rawTo = String(args.to || "").trim();
+      if (!rawTo) return { success: false, error: "يجب تحديد عنوان المستلم" };
+      const recipients = rawTo.split(/[,;\s]+/).map((s: string) => s.trim()).filter(Boolean);
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalid = recipients.filter((r: string) => !emailRe.test(r));
+      if (invalid.length) return { success: false, error: `عنوان البريد غير صحيح: ${invalid.join(", ")}` };
+      const subject = String(args.subject || "").trim() || "رسالة من QIROX Studio";
+      const body = String(args.body || "").trim();
+      if (!body) return { success: false, error: "نص الرسالة فارغ" };
+      const toName = String(args.toName || "").trim();
+
+      const results: Array<{ to: string; ok: boolean; error?: string }> = [];
+      for (const r of recipients) {
+        try {
+          const ok = await sendDirectEmail(r, toName || r.split("@")[0], subject, body);
+          results.push({ to: r, ok });
+        } catch (e: any) {
+          results.push({ to: r, ok: false, error: e?.message || "send failed" });
+        }
+      }
+      const sent = results.filter(r => r.ok).length;
+      const failed = results.filter(r => !r.ok);
+      if (sent === 0) {
+        return { success: false, error: `فشل الإرسال إلى جميع المستلمين${failed[0]?.error ? `: ${failed[0].error}` : ""}` };
+      }
+      return {
+        success: true,
+        data: { sent, failed: failed.length, recipients, subject },
+        display: { type: "action_success" },
+      };
     }
 
     /* ── search_web ── */
@@ -762,7 +816,10 @@ function buildSystemPrompt(userRole?: string, userName?: string, systemData?: an
 أنت لست مجرد محادثة — أنت عامل ذكي يمكنه **تنفيذ عمليات فعلية** على النظام:
 - 📋 **قراءة البيانات**: الطلبات، العملاء، الموظفون، المشاريع، التحليلات، المحفظة
 - ✏️ **تعديل البيانات**: تغيير حالة الطلبات، إنشاء المهام، تحديث الملاحظات
-- 📩 **الإرسال**: إشعارات فورية، تذاكر دعم، بريد إلكتروني
+- 📩 **الإرسال**:
+  - إشعارات فورية داخل المنصة (أداة send_notification — للمدراء فقط)
+  - **بريد إلكتروني فعلي** عبر صندوق QIROX إلى أي عنوان إيميل (أداة send_email — للموظفين والمدراء). استخدمها فوراً كلما طلب المستخدم "أرسل بريد/إيميل" لأي شخص. صُغ المحتوى بنفسك من سياق المحادثة إن لم يكتبه المستخدم بشكل صريح. لا تخلط بينها وبين الإشعارات.
+  - تذاكر دعم (send_support_ticket)
 - 🗑️ **الإلغاء**: إلغاء الطلبات المعلّقة (للعملاء فقط)
 - 📅 **للزوار بدون حساب**: إرسال طلب استشارة أو تواصل باسم الزائر ورقمه مباشرةً (أداة submit_consultation_request)
 
