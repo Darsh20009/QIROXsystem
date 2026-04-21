@@ -478,7 +478,17 @@ export default function OrderFlow() {
   const uploadProofMutation = useMutation({
     mutationFn: async ({ orderId, proofUrl }: { orderId: string; proofUrl: string }) =>
       apiRequest("PATCH", `/api/orders/${orderId}/proof`, { paymentProofUrl: proofUrl }),
-    onSuccess: () => toast({ title: "تم رفع إيصال التحويل بنجاح" }),
+    onSuccess: () => {
+      toast({ title: "تم رفع إيصال التحويل بنجاح ✓", description: "سيتم تحويلك للواتساب لإرسال الشهادات والأوراق المتبقية" });
+      // Auto-redirect to WhatsApp support with order number after 1.5s
+      setTimeout(() => {
+        const orderNum = (submittedOrder as any)?.orderNumber || (submittedOrder as any)?.id || "";
+        const msg = encodeURIComponent(
+          `السلام عليكم،\nتم رفع إيصال التحويل لطلبي رقم: ${orderNum}\nأرغب في إرفاق الشهادات والأوراق المتبقية. شكراً.`
+        );
+        window.open(`https://wa.me/966554656670?text=${msg}`, "_blank", "noopener");
+      }, 1500);
+    },
   });
 
   const handleProofUpload = async (file: File) => {

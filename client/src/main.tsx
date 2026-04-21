@@ -44,23 +44,8 @@ async function registerServiceWorker() {
 
 registerServiceWorker();
 
-// Only show splash on full page loads, not on hot-reload in dev
-const isFirstLoad = !sessionStorage.getItem("__splashShown");
-
+// Splash screen disabled — direct entry to the app
 function Root() {
-  const [splashDone, setSplashDone] = useState(!isFirstLoad);
-
-  if (!splashDone) {
-    return (
-      <SplashScreen
-        onComplete={() => {
-          sessionStorage.setItem("__splashShown", "1");
-          setSplashDone(true);
-        }}
-      />
-    );
-  }
-
   return <App />;
 }
 
