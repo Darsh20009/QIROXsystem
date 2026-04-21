@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Printer, Mail, Check, Trash2, FileText, Search, X, Wand2, Pencil, Copy } from "lucide-react";
+import { Loader2, Plus, Printer, Mail, Check, Trash2, FileText, Search, X, Wand2, Pencil, Copy, CheckCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { PageGraphics } from "@/components/AnimatedPageGraphics";
 import { useI18n } from "@/lib/i18n";
@@ -318,15 +318,38 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
     newItemName: "", newItemQty: "1", newItemPrice: "",
   });
 
+  // Inline item editing
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editBuf, setEditBuf] = useState({ name: "", qty: "1", unitPrice: "" });
+
+  const startEdit = (i: number) => {
+    const it = form.items[i];
+    setEditBuf({ name: it.name, qty: String(it.qty), unitPrice: String(it.unitPrice) });
+    setEditingIdx(i);
+  };
+  const saveEdit = () => {
+    if (editingIdx === null) return;
+    const qty = Number(editBuf.qty) || 1;
+    const unitPrice = Number(editBuf.unitPrice) || 0;
+    setForm(p => ({
+      ...p,
+      items: p.items.map((it, idx) => idx === editingIdx ? { ...it, name: editBuf.name, qty, unitPrice, total: qty * unitPrice } : it),
+    }));
+    setEditingIdx(null);
+  };
+
   const addItem = () => {
     if (!form.newItemName || !form.newItemPrice) return;
     const qty = Number(form.newItemQty) || 1;
     const unitPrice = Number(form.newItemPrice);
-    const total = qty * unitPrice;
-    setForm(p => ({ ...p, items: [...p.items, { name: p.newItemName, qty, unitPrice, total }], newItemName: "", newItemQty: "1", newItemPrice: "" }));
+    setForm(p => ({ ...p, items: [...p.items, { name: p.newItemName, qty, unitPrice, total: qty * unitPrice }], newItemName: "", newItemQty: "1", newItemPrice: "" }));
   };
 
-  const removeItem = (i: number) => setForm(p => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }));
+  const removeItem = (i: number) => {
+    if (editingIdx === i) setEditingIdx(null);
+    setForm(p => ({ ...p, items: p.items.filter((_, idx) => idx !== i) }));
+  };
+
   const totalFromItems = form.items.reduce((s, i) => s + i.total, 0);
   const finalAmount = totalFromItems > 0 ? totalFromItems : Number(form.amount) || 0;
 
@@ -351,6 +374,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1" dir={dir}>
+      {/* Status toggle */}
       <div className="flex gap-2 p-1 bg-black/[0.04] rounded-xl">
         {([["paid", L ? "✅ مدفوعة" : "✅ Paid"], ["unpaid", L ? "⏳ غير مدفوعة" : "⏳ Unpaid"], ["cancelled", L ? "❌ ملغي" : "❌ Cancelled"]] as const).map(([val, label]) => (
           <button key={val} type="button" onClick={() => setForm(p => ({ ...p, status: val }))}
@@ -359,6 +383,7 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
           </button>
         ))}
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label className="text-xs text-black/50 mb-1 flex items-center gap-1">{L ? "المبلغ" : "Amount"} (<SARIcon size={9} className="opacity-60" />)</Label>
@@ -369,37 +394,76 @@ function EditInvoiceForm({ invoice, onClose }: { invoice: Invoice; onClose: () =
           <Input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} className="h-9 text-sm border-black/[0.10]" dir="ltr" />
         </div>
       </div>
+
+      {/* Items with inline edit */}
       <div>
-        <Label className="text-xs text-black/50 mb-2 block">{L ? "بنود الفاتورة" : "Invoice Items"}</Label>
-        <div className="grid grid-cols-4 gap-2 mb-2">
-          <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
-          <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
-          <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
-        </div>
-        <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs mb-3" disabled={!form.newItemName || !form.newItemPrice}>
-          <Plus className="w-3 h-3 ml-1" /> {L ? "إضافة بند" : "Add Item"}
-        </Button>
+        <Label className="text-xs text-black/50 mb-2 block font-semibold">{L ? "بنود الفاتورة" : "Invoice Items"} ({form.items.length})</Label>
         {form.items.length > 0 && (
-          <div className="space-y-1.5 mb-2">
+          <div className="space-y-2 mb-3">
             {form.items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between bg-black/[0.02] rounded-lg px-3 py-2 border border-black/[0.06]">
-                <span className="text-xs text-black/60">{item.name} × {item.qty}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
-                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+              editingIdx === i ? (
+                <div key={i} className="bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    <Input value={editBuf.name} onChange={e => setEditBuf(p => ({ ...p, name: e.target.value }))} placeholder={L ? "اسم البند" : "Name"} className="col-span-2 h-8 text-xs border-violet-300" />
+                    <Input type="number" value={editBuf.qty} onChange={e => setEditBuf(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" className="h-8 text-xs border-violet-300" dir="ltr" />
+                    <Input type="number" value={editBuf.unitPrice} onChange={e => setEditBuf(p => ({ ...p, unitPrice: e.target.value }))} placeholder={L ? "السعر" : "Price"} className="h-8 text-xs border-violet-300" dir="ltr" />
+                  </div>
+                  {editBuf.unitPrice && (
+                    <p className="text-[11px] text-violet-600 font-bold px-1">
+                      {L ? "الإجمالي:" : "Total:"} {((Number(editBuf.qty) || 1) * (Number(editBuf.unitPrice) || 0)).toLocaleString()} {L ? "ر.س" : "SAR"}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="button" onClick={saveEdit} size="sm" className="bg-violet-600 hover:bg-violet-700 text-white h-7 text-xs px-3 gap-1" disabled={!editBuf.name || !editBuf.unitPrice}>
+                      <CheckCircle className="w-3 h-3" /> {L ? "حفظ" : "Save"}
+                    </Button>
+                    <Button type="button" onClick={() => setEditingIdx(null)} size="sm" variant="outline" className="h-7 text-xs px-3 border-violet-200">
+                      <X className="w-3 h-3" /> {L ? "إلغاء" : "Cancel"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div key={i} className="group flex items-center justify-between bg-black/[0.02] hover:bg-violet-50/60 rounded-xl px-3 py-2.5 border border-black/[0.06] hover:border-violet-200 transition-all">
+                  <span className="text-xs text-black font-medium flex-1">{item.name} <span className="text-black/40 font-mono">× {item.qty} × {item.unitPrice.toLocaleString()}</span></span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-black flex items-center gap-1">{item.total.toLocaleString()} <SARIcon size={10} className="opacity-60" /></span>
+                    <button onClick={() => startEdit(i)} className="opacity-0 group-hover:opacity-100 text-violet-500 hover:text-violet-700 transition-all p-1 rounded-lg hover:bg-violet-100">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1 rounded-lg hover:bg-red-50">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )
             ))}
+            <div className="text-xs font-bold text-black/70 px-3 pt-1 border-t border-black/[0.06] flex justify-between">
+              <span>{L ? "الإجمالي" : "Total"}</span>
+              <span className="flex items-center gap-1">{totalFromItems.toLocaleString()} <SARIcon size={10} className="opacity-70" /></span>
+            </div>
           </div>
         )}
+        {/* Add new item */}
+        <div className="bg-black/[0.01] border border-dashed border-black/[0.12] rounded-xl p-3">
+          <p className="text-[10px] font-semibold text-black/40 uppercase tracking-wide mb-2">{L ? "إضافة بند جديد" : "Add New Item"}</p>
+          <div className="grid grid-cols-4 gap-2 mb-2">
+            <Input placeholder={L ? "اسم البند" : "Item name"} value={form.newItemName} onChange={e => setForm(p => ({ ...p, newItemName: e.target.value }))} className="col-span-2 h-8 text-xs border-black/[0.10]" />
+            <Input placeholder={L ? "الكمية" : "Qty"} type="number" value={form.newItemQty} onChange={e => setForm(p => ({ ...p, newItemQty: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+            <Input placeholder={L ? "السعر" : "Price"} type="number" value={form.newItemPrice} onChange={e => setForm(p => ({ ...p, newItemPrice: e.target.value }))} className="h-8 text-xs border-black/[0.10]" dir="ltr" />
+          </div>
+          <Button type="button" onClick={addItem} size="sm" className="bg-black text-white h-7 text-xs gap-1" disabled={!form.newItemName || !form.newItemPrice}>
+            <Plus className="w-3 h-3" /> {L ? "إضافة بند" : "Add Item"}
+          </Button>
+        </div>
       </div>
+
       <div>
         <Label className="text-xs text-black/50 mb-1 block">{L ? "ملاحظات" : "Notes"}</Label>
         <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="h-16 resize-none text-sm border-black/[0.10]" placeholder={L ? "ملاحظات اختيارية..." : "Optional notes..."} />
       </div>
       <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || finalAmount <= 0}
         className="w-full bg-black text-white h-10 rounded-xl font-bold">
-        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : (L ? "حفظ التعديلات" : "Save Changes")}
+        {mutation.isPending ? <Loader2 className="animate-spin w-4 h-4" /> : (L ? "💾 حفظ التعديلات" : "💾 Save Changes")}
       </Button>
     </div>
   );
@@ -582,20 +646,19 @@ export default function AdminInvoices() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => setEditingInvoice(inv)}
-                            className="p-1.5 rounded-lg hover:bg-violet-50 text-black/40 hover:text-violet-600 transition-colors"
-                            title={L ? "تعديل" : "Edit"}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors text-xs font-semibold"
                             data-testid={`button-edit-invoice-${inv.id}`}
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-3 h-3" /> {L ? "تعديل" : "Edit"}
                           </button>
                           <button
                             onClick={() => duplicateMutation.mutate(inv.id)}
                             disabled={duplicateMutation.isPending}
-                            className="p-1.5 rounded-lg hover:bg-cyan-50 text-black/40 hover:text-cyan-600 transition-colors"
-                            title={L ? "نسخ الفاتورة" : "Duplicate Invoice"}
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-700 hover:bg-cyan-100 transition-colors text-xs font-semibold"
+                            title={L ? "نسخ" : "Copy"}
                             data-testid={`button-duplicate-invoice-${inv.id}`}
                           >
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => setLocation(`/admin/invoice-print/${inv.id}`)}
