@@ -20,6 +20,7 @@ import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner"
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
 import { AIWelcomeIntro } from "@/components/AIWelcomeIntro";
+import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
 
@@ -970,6 +971,7 @@ function AppInner() {
                 userRole={user.role}
               />
             )}
+            <QiroxCompanion />
             <Toaster />
           </div>
         </div>
