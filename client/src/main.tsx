@@ -6,6 +6,21 @@ import { SplashScreen } from "@/components/qirox-brand";
 
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
+  // In dev, ensure no stale SW intercepts module/HTML requests and breaks the app.
+  if (import.meta.env.DEV) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      console.log("[PWA] Service workers + caches cleared (dev mode)");
+    } catch (err) {
+      console.warn("[PWA] SW cleanup failed:", err);
+    }
+    return;
+  }
   try {
     const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     console.log("[PWA] Service Worker registered:", reg.scope);
