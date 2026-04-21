@@ -15,7 +15,7 @@ import {
   Bell, Users, Lock, BarChart3, Layers, Rocket, Boxes
 } from "lucide-react";
 import { QiroxIcon } from "@/components/qirox-brand";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -732,59 +732,9 @@ export default function Prices() {
         </div>
       </section>
 
-      {/* ─── ADDONS ─── */}
-      <section className="py-16 bg-gray-50 dark:bg-[#080810]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-gray-600 dark:text-slate-300" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">{lang === "ar" ? "المميزات الإضافية" : "Additional Features"}</h2>
-              <p className="text-xs text-gray-400 dark:text-slate-600">{lang === "ar" ? "تُضاف إلى أي باقة" : "Available on any plan"}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(lang === "ar" ? [
-              { icon: Smartphone, label: "تطبيق جوال",  sub: "iOS + Android",        price: "1,500+", features: ["نشر App Store & Play","iOS و Android","إشعارات Push","تجربة أصيلة"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & تسويق", sub: "تحسين محركات البحث",  price: "500+",   features: ["SEO احترافي","Google Analytics","Sitemap XML","تقرير شهري"],       color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "هوية بصرية",  sub: "شعار + هوية كاملة",   price: "800+",   features: ["تصميم شعار","دليل الهوية","ألوان وخطوط","كل الصيغ"],            color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
-            ] : [
-              { icon: Smartphone, label: "Mobile App",      sub: "iOS + Android",    price: "1,500+", features: ["App Store & Play","iOS & Android","Push Notifications","Native experience"], color: "text-gray-500 dark:text-slate-300", border: "border-gray-200 dark:border-slate-700/50", glow: "" },
-              { icon: TrendingUp, label: "SEO & Marketing", sub: "Search optimization", price: "500+", features: ["Professional SEO","Google Analytics","Sitemap XML","Monthly report"], color: "text-violet-500 dark:text-violet-300", border: "border-violet-200 dark:border-violet-700/30", glow: "" },
-              { icon: Palette,    label: "Brand Identity",  sub: "Logo + full identity", price: "800+", features: ["Logo design","Brand guide","Colors & fonts","All formats"],      color: "text-amber-500 dark:text-amber-300", border: "border-amber-200 dark:border-amber-700/30", glow: "" },
-            ]).map((a, ai) => (
-              <motion.div
-                key={a.label}
-                initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: ai * 0.08 }}
-                className={`relative rounded-xl border ${a.border} bg-white dark:bg-white/[0.025] p-6 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors`}
-              >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-5">
-                  <a.icon className={`w-5 h-5 ${a.color}`} />
-                </div>
-                <p className="text-[9px] font-black text-gray-400 dark:text-slate-600 uppercase tracking-[0.18em] mb-0.5">{a.label}</p>
-                <p className="text-gray-900 dark:text-white font-black text-base mb-4">{a.sub}</p>
-                <div className="flex items-baseline gap-1.5 mb-5">
-                  <span className="text-3xl font-black text-gray-900 dark:text-white">{a.price}</span>
-                  {lang === "ar" ? <SARIcon size={13} className="opacity-50" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
-                </div>
-                <div className="space-y-2 mb-5">
-                  {a.features.map(f => (
-                    <div key={f} className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-500">
-                      <Check className="w-3 h-3 text-emerald-500 shrink-0" />{f}
-                    </div>
-                  ))}
-                </div>
-                <Link href="/contact">
-                  <Button variant="outline" className="w-full h-9 rounded-lg font-bold text-xs border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-400 dark:hover:border-slate-600">
-                    {lang === "ar" ? "أضف للطلب" : "Add to order"}
-                  </Button>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ─── ADDONS — official QIROX catalog (live from API) ─── */}
+      <ExtraAddonsSection lang={lang} />
+
 
       {/* ─── CTA ─── */}
       <section className="py-16 bg-white dark:bg-[#050508] border-t border-gray-200 dark:border-slate-800/60">
@@ -852,5 +802,133 @@ export default function Prices() {
 
       <Footer />
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Extra add-ons section — driven by the official QIROX catalog API
+// ─────────────────────────────────────────────────────────────────────────
+const ADDON_ICON_MAP: Record<string, any> = {
+  Plus, Smartphone, TrendingUp, Palette, Database, Bell, Cpu, Sparkles,
+  Globe, Server, BarChart3, Layers, Shield, Lock, Users, Rocket, Boxes,
+  Code2, LayoutDashboard, Zap, Star, Mail: Bell,
+};
+
+const BILLING_LABEL: Record<string, { ar: string; en: string }> = {
+  one_time: { ar: "مرة واحدة", en: "One-time" },
+  monthly:  { ar: "شهرياً",    en: "Monthly" },
+  annual:   { ar: "سنوياً",    en: "Annual" },
+  lifetime: { ar: "مدى الحياة", en: "Lifetime" },
+};
+
+function ExtraAddonsSection({ lang }: { lang: string }) {
+  const { data: addons = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/extra-addons"] });
+  const L = lang === "ar";
+
+  const visible = (addons || []).filter((a: any) => a.isActive !== false);
+
+  return (
+    <section className="py-16 bg-gray-50 dark:bg-[#080810]" data-testid="section-extra-addons">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-8 h-8 rounded-xl bg-black dark:bg-white flex items-center justify-center">
+            <Plus className="w-4 h-4 text-white dark:text-black" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white">
+              {L ? "كتالوج الميزات الإضافية الرسمي" : "Official Add-ons Catalog"}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-slate-500">
+              {L ? "أسعار رسمية موحّدة — تُضاف إلى أي باقة" : "Official unified pricing — add to any plan"}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-gray-400 dark:text-slate-600 mb-8 ms-11">
+          {L ? "الأسعار شاملة، والميزات المخصّصة لمشروعك تظهر هنا أيضاً عند تسجيل الدخول." : "Prices are inclusive. Your custom features appear here when you're signed in."}
+        </p>
+
+        {isLoading ? (
+          <div className="text-center py-16 text-xs text-gray-400 dark:text-slate-600 uppercase tracking-widest">
+            <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+            {L ? "جارٍ تحميل الكتالوج..." : "Loading catalog..."}
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="text-center py-20 border border-dashed border-gray-300 dark:border-slate-800 rounded-2xl">
+            <Gift className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-slate-500">
+              {L ? "لا توجد ميزات إضافية متاحة حالياً." : "No add-ons available right now."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visible.map((a: any, idx: number) => {
+              const Icon = ADDON_ICON_MAP[a.icon] || Plus;
+              const isCustom = !!a.isCustom;
+              const billing = BILLING_LABEL[a.billingType || "one_time"];
+              const quotaTxt = a.quotaCount > 0
+                ? `${a.quotaCount.toLocaleString()} ${a.quotaLabel || (L ? "وحدة" : "units")}`
+                : null;
+              return (
+                <motion.div
+                  key={a.id || a._id || idx}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: Math.min(idx * 0.04, 0.3) }}
+                  className={`relative rounded-2xl border bg-white dark:bg-white/[0.025] p-5 transition-colors ${
+                    isCustom
+                      ? "border-black dark:border-white"
+                      : "border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30"
+                  }`}
+                  data-testid={`card-addon-${a.id || a._id || idx}`}
+                >
+                  {isCustom && (
+                    <span className="absolute top-3 end-3 text-[9px] font-black tracking-[0.18em] uppercase px-2 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+                      {L ? "مخصّص لك" : "Custom"}
+                    </span>
+                  )}
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-gray-700 dark:text-slate-200" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 dark:text-slate-600 mb-1">
+                    {a.category || "Feature"}
+                  </p>
+                  <h3 className="text-gray-900 dark:text-white font-black text-base mb-1" data-testid={`text-addon-name-${a.id || idx}`}>
+                    {L ? (a.nameAr || a.name) : (a.name || a.nameAr)}
+                  </h3>
+                  {(L ? a.descriptionAr : a.description) && (
+                    <p className="text-xs text-gray-500 dark:text-slate-500 leading-relaxed mb-4 line-clamp-2">
+                      {L ? a.descriptionAr : a.description}
+                    </p>
+                  )}
+                  <div className="flex items-baseline gap-1.5 mb-1">
+                    <span className="text-3xl font-black text-gray-900 dark:text-white">
+                      {Number(a.price || 0).toLocaleString()}
+                    </span>
+                    {L ? <SARIcon size={13} className="opacity-60" /> : <span className="text-sm text-gray-400 dark:text-slate-600">SAR</span>}
+                    <span className="text-[10px] text-gray-400 dark:text-slate-600 ms-1">/ {billing[L ? "ar" : "en"]}</span>
+                  </div>
+                  {quotaTxt && (
+                    <p className="text-[11px] text-gray-500 dark:text-slate-500 mb-4">
+                      {L ? "يشمل: " : "Includes: "} <span className="font-semibold text-gray-700 dark:text-slate-300">{quotaTxt}</span>
+                    </p>
+                  )}
+                  <Link href="/order">
+                    <Button
+                      variant="outline"
+                      className="w-full h-9 rounded-lg font-bold text-xs mt-3 border-gray-300 dark:border-white/15 text-gray-700 dark:text-slate-200 hover:bg-black hover:text-white hover:border-black dark:hover:bg-white dark:hover:text-black dark:hover:border-white"
+                      data-testid={`button-add-addon-${a.id || idx}`}
+                    >
+                      {L ? "أضف لطلبي" : "Add to my order"}
+                    </Button>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
