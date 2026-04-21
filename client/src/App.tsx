@@ -19,7 +19,6 @@ import { FloatingBrandPulse } from "@/components/FloatingBrandPulse";
 import { GlobalNotificationBanner } from "@/components/GlobalNotificationBanner";
 import { PushPermissionBanner } from "@/components/PushPermissionBanner";
 import { PageHintCard } from "@/components/PageHintCard";
-import { AIWelcomeIntro } from "@/components/AIWelcomeIntro";
 import QiroxCompanion from "@/components/QiroxCompanion";
 import { AntiDevTools } from "@/components/AntiDevTools";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -964,13 +963,6 @@ function AppInner() {
             <MobileBottomNav />
             <PageHintCard />
             <PushPermissionBanner show={!!user} />
-            {user && user.role !== "client" && (
-              <AIWelcomeIntro
-                userId={user.id}
-                userName={user.fullName || ""}
-                userRole={user.role}
-              />
-            )}
             <QiroxCompanion />
             <Toaster />
           </div>
