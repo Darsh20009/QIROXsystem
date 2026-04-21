@@ -123,6 +123,7 @@ export default function EmployeeNewOrder() {
   });
 
   /* ── Order fields ── */
+  const [businessName, setBusinessName] = useState("");
   const [projectType, setProjectType] = useState("");
   const [sector, setSector] = useState("");
   const [idea, setIdea] = useState("");
@@ -205,10 +206,10 @@ export default function EmployeeNewOrder() {
       if (!fullName || !email || !username || !password) {
         toast({ title: L ? "أكمل بيانات العميل أولاً" : "Complete client info first", variant: "destructive" }); return;
       }
-      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
+      newClientMutation.mutate({ fullName, email, phone, username, password, businessType, country, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, services: items });
     } else {
       if (!selectedClient) { toast({ title: L ? "يجب تحديد عميل" : "Please select a client", variant: "destructive" }); return; }
-      existingClientMutation.mutate({ clientId: selectedClient.id, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank" });
+      existingClientMutation.mutate({ clientId: selectedClient.id, businessName, projectType, sector, idea, notes, totalAmount: calculatedTotal, items, paymentMethod: "bank" });
     }
   }
 
@@ -233,8 +234,8 @@ export default function EmployeeNewOrder() {
             </button>
           </Link>
           <div>
-            <h1 className="text-2xl font-black font-heading text-black">{L ? "إنشاء طلب" : "Create Order"}</h1>
-            <p className="text-black/40 text-sm">{L ? "أنشئ طلباً لعميل جديد أو موجود مسبقاً" : "Create an order for a new or existing client"}</p>
+            <h1 className="text-2xl font-black font-heading text-black">{L ? "إنشاء مشروع" : "Create Project"}</h1>
+            <p className="text-black/40 text-sm">{L ? "أنشئ مشروعاً لعميل جديد أو موجود مسبقاً" : "Create a project for a new or existing client"}</p>
           </div>
         </div>
 
@@ -611,6 +612,10 @@ export default function EmployeeNewOrder() {
                   <span className="text-sm font-bold text-black">{L ? "تفاصيل إضافية" : "Additional Details"}</span>
                 </div>
 
+                <div>
+                  <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "اسم المشروع / النشاط التجاري *" : "Project / Business Name *"}</label>
+                  <input value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder={L ? "مثال: مطعم الوفاء، متجر الأناقة..." : "e.g. Al Wafa Restaurant, Fashion Store..."} className="w-full h-11 px-4 border border-black/[0.08] bg-black/[0.01] rounded-xl text-sm outline-none focus:border-black/25" data-testid="input-business-name" />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-black/50 block mb-1.5">{L ? "نوع المشروع" : "Project Type"}</label>
@@ -740,7 +745,7 @@ export default function EmployeeNewOrder() {
 
               {/* Submit */}
               <Button onClick={handleSubmit} disabled={isPending} className="w-full bg-black hover:bg-black/80 text-white rounded-xl h-12 font-bold text-sm gap-2 shadow-lg" data-testid="button-submit-order">
-                {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> {L ? "جاري الإنشاء..." : "Creating..."}</> : <><CheckCircle2 className="w-4 h-4" /> {mode === "new" ? (L ? "إنشاء العميل والطلب" : "Create Client & Order") : (L ? "إنشاء الطلب" : "Create Order")}</>}
+                {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> {L ? "جاري الإنشاء..." : "Creating..."}</> : <><CheckCircle2 className="w-4 h-4" /> {mode === "new" ? (L ? "إنشاء العميل والمشروع" : "Create Client & Project") : (L ? "إنشاء المشروع" : "Create Project")}</>}
               </Button>
             </motion.div>
           )}
@@ -764,19 +769,19 @@ export default function EmployeeNewOrder() {
                   </div>
                   {result.order && (
                     <div className="bg-black/[0.02] rounded-xl p-4">
-                      <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">{L ? "رقم الطلب" : "Order Number"}</p>
-                      <p className="font-mono font-bold text-sm text-black">#{String(result.order.id).slice(-8).toUpperCase()}</p>
+                      <p className="text-[10px] font-semibold text-black/30 uppercase tracking-wider mb-1">{L ? "رقم المشروع" : "Project Number"}</p>
+                      <p className="font-mono font-bold text-xl text-black">#{(result.order as any).orderNumber || String(result.order.id).slice(-3).toUpperCase()}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
-                    <Plus className="w-4 h-4" /> {L ? "طلب جديد" : "New Order"}
+                  <Button onClick={() => { setStep("client"); setResult(null); setSelectedItems([]); setTotalAmount(""); setIdea(""); setNotes(""); setProjectType(""); setSector(""); setBusinessName(""); setDiscountValue(""); setDiscountType("fixed"); if (mode === "new") { setFullName(""); setEmail(""); setPhone(""); setUsername(""); setPassword(generatePassword()); } else { setSelectedClient(null); setClientSearch(""); } }} variant="outline" className="rounded-xl gap-2">
+                    <Plus className="w-4 h-4" /> {L ? "مشروع جديد" : "New Project"}
                   </Button>
                   <Link href="/admin/orders">
                     <Button className="bg-black text-white rounded-xl gap-2">
-                      <FileText className="w-4 h-4" /> {L ? "عرض الطلبات" : "View Orders"}
+                      <FileText className="w-4 h-4" /> {L ? "عرض المشاريع" : "View Projects"}
                     </Button>
                   </Link>
                 </div>

@@ -7189,15 +7189,18 @@ export async function registerRoutes(
       let createdOrder = null;
       if (projectType || idea || (services && services.length > 0)) {
         const serviceNames: string[] = (services || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+        const orderNum = await generateOrderNumber();
         const orderData = {
           userId: String(newClient._id),
           projectType: projectType || "طلب من موظف",
           sector: sector || "عام",
+          businessName: req.body.businessName || fullName,
           notes: idea ? `الفكرة: ${idea}${notes ? `\n${notes}` : ""}` : (notes || ""),
           totalAmount: totalAmount || 0,
           status: "pending",
           paymentMethod: "bank_transfer",
           items: services || [],
+          orderNumber: orderNum,
           adminNotes: `أُنشئ بواسطة الموظف: ${actor.fullName || actor.username}`,
         };
         createdOrder = await storage.createOrder(orderData);
@@ -7226,20 +7229,23 @@ export async function registerRoutes(
     if (actor.role === "client") return res.sendStatus(403);
     try {
       const { UserModel } = await import("./models");
-      const { clientId, projectType, sector, idea, notes, totalAmount, items, paymentMethod } = req.body;
+      const { clientId, projectType, sector, idea, notes, totalAmount, items, paymentMethod, businessName } = req.body;
       if (!clientId) return res.status(400).json({ error: "يجب تحديد العميل" });
       const client = await UserModel.findById(clientId);
       if (!client || client.role !== "client") return res.status(404).json({ error: "العميل غير موجود" });
       const serviceNames: string[] = (items || []).map((s: any) => s.nameAr || s.name || s).filter(Boolean);
+      const orderNum = await generateOrderNumber();
       const orderData = {
         userId: String(client._id),
         projectType: projectType || "طلب من موظف",
         sector: sector || "عام",
+        businessName: businessName || client.fullName || client.username,
         notes: [idea ? `الفكرة: ${idea}` : "", notes || ""].filter(Boolean).join("\n") || `طلب من قِبل ${actor.fullName || actor.username}`,
         totalAmount: totalAmount || 0,
         status: "pending",
         paymentMethod: paymentMethod || "bank_transfer",
         items: items || [],
+        orderNumber: orderNum,
         adminNotes: `أُنشئ بواسطة: ${actor.fullName || actor.username}`,
       };
       const createdOrder = await storage.createOrder(orderData);
